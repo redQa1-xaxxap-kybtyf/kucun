@@ -27,6 +27,7 @@ model User {
   // 关联关系
   salesOrders    SalesOrder[]
   inboundRecords InboundRecord[]
+  paymentRecords PaymentRecord[]
 
   @@index([email])
   @@index([role])
@@ -49,7 +50,8 @@ model Customer {
   childCustomers Customer[] @relation("CustomerHierarchy")
 
   // 关联关系
-  salesOrders SalesOrder[]
+  salesOrders    SalesOrder[]
+  paymentRecords PaymentRecord[]
 
   @@index([name])
   @@index([phone])
@@ -97,6 +99,7 @@ model SalesOrder {
   customer Customer         @relation(fields: [customerId], references: [id])
   user     User             @relation(fields: [userId], references: [id])
   items    SalesOrderItem[]
+  payments PaymentRecord[]
 
   @@index([customerId], map: "idx_sales_orders_customer")
   @@index([userId], map: "idx_sales_orders_user")
@@ -168,4 +171,35 @@ model InboundRecord {
   @@index([type], map: "idx_inbound_records_type")
   @@index([createdAt(sort: Desc)], map: "idx_inbound_records_date")
   @@map("inbound_records")
+}
+
+// 收款记录表 - 收款管理，支持部分收款和分期收款
+model PaymentRecord {
+  id              String   @id @default(uuid())
+  paymentNumber   String   @unique @map("payment_number")
+  salesOrderId    String   @map("sales_order_id")
+  customerId      String   @map("customer_id")
+  userId          String   @map("user_id")
+  paymentMethod   String   @default("cash") // cash, bank_transfer, check, other
+  paymentAmount   Float    @map("payment_amount")
+  paymentDate     DateTime @map("payment_date")
+  status          String   @default("pending") // pending, confirmed, cancelled
+  remarks         String?
+  receiptNumber   String?  @map("receipt_number") // 收据号
+  bankInfo        String?  @map("bank_info") // 银行信息（转账时使用）
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id])
+  customer   Customer   @relation(fields: [customerId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@index([salesOrderId], map: "idx_payment_records_order")
+  @@index([customerId], map: "idx_payment_records_customer")
+  @@index([userId], map: "idx_payment_records_user")
+  @@index([status], map: "idx_payment_records_status")
+  @@index([paymentDate(sort: Desc)], map: "idx_payment_records_date")
+  @@index([paymentMethod], map: "idx_payment_records_method")
+  @@map("payment_records")
 }

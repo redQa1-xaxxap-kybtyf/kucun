@@ -1,226 +1,406 @@
+// 仪表盘主页面
+// 基于T11 UI组件库的完整仪表盘实现
+
 'use client'
 
-import { useSession, signOut } from 'next-auth/react'
+import * as React from 'react'
+import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
-import { useEffect } from 'react'
-import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { LogOut, User, Shield, Clock } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue
+} from '@/components/ui/select'
+import { cn } from '@/lib/utils'
+import {
+  RefreshCw,
+  Calendar,
+  TrendingUp,
+  BarChart3,
+  AlertCircle,
+  CheckSquare,
+  Zap,
+  Settings
+} from 'lucide-react'
+
+// 仪表盘组件
+import { StatCardsGrid } from '@/components/dashboard/stat-cards'
+import { InventoryAlerts } from '@/components/dashboard/inventory-alerts'
+import { TodoList } from '@/components/dashboard/todo-list'
+import { QuickActions, QuickActionButtons } from '@/components/dashboard/quick-actions'
+
+// T11 UI组件库
+import { MobileDataTable } from '@/components/ui/mobile-data-table'
+import { InventoryStatusIndicator } from '@/components/ui/inventory-status-indicator'
+
+// API和类型
+import {
+  useDashboardData,
+  useBusinessOverview,
+  useInventoryAlerts,
+  useTodoItems,
+  useQuickActions,
+  dashboardUtils
+} from '@/lib/api/dashboard'
+import type { TimeRange, DashboardFilters } from '@/lib/types/dashboard'
+
+// 时间范围选项
+const TIME_RANGE_OPTIONS = [
+  { value: '1d', label: '今天' },
+  { value: '7d', label: '最近7天' },
+  { value: '30d', label: '最近30天' },
+  { value: '90d', label: '最近90天' },
+  { value: '1y', label: '最近1年' },
+  { value: 'all', label: '全部' },
+] as const
 
 export default function DashboardPage() {
   const { data: session, status } = useSession()
   const router = useRouter()
 
-  useEffect(() => {
+  // 状态管理
+  const [filters, setFilters] = React.useState<DashboardFilters>({
+    timeRange: '30d'
+  })
+  const [activeTab, setActiveTab] = React.useState('overview')
+  const [refreshKey, setRefreshKey] = React.useState(0)
+
+  // 认证检查
+  React.useEffect(() => {
     if (status === 'unauthenticated') {
       router.push('/auth/signin')
     }
   }, [status, router])
 
-  if (status === 'loading') {
+  // 数据获取
+  const {
+    data: dashboardData,
+    isLoading: isDashboardLoading,
+    error: dashboardError,
+    refetch: refetchDashboard
+  } = useDashboardData(filters)
+
+  const {
+    data: businessOverview,
+    isLoading: isOverviewLoading,
+    refetch: refetchOverview
+  } = useBusinessOverview(filters.timeRange)
+
+  const {
+    data: inventoryAlerts,
+    isLoading: isAlertsLoading,
+    refetch: refetchAlerts
+  } = useInventoryAlerts()
+
+  const {
+    data: todoItems,
+    isLoading: isTodosLoading,
+    refetch: refetchTodos
+  } = useTodoItems()
+
+  const {
+    data: quickActions,
+    isLoading: isActionsLoading
+  } = useQuickActions()
+
+  // 处理刷新
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1)
+    refetchDashboard()
+    refetchOverview()
+    refetchAlerts()
+    refetchTodos()
+  }
+
+  // 处理时间范围变化
+  const handleTimeRangeChange = (timeRange: TimeRange) => {
+    setFilters(prev => ({ ...prev, timeRange }))
+  }
+
+  // 处理待办事项查看
+  const handleViewTodo = (todo: any) => {
+    // 根据待办事项类型跳转到相应页面
+    const routes = {
+      sales_order: '/sales-orders',
+      purchase_order: '/purchase-orders',
+      return_order: '/return-orders',
+      inventory_alert: '/inventory',
+      customer_follow_up: '/customers'
+    }
+
+    const route = routes[todo.type as keyof typeof routes]
+    if (route) {
+      router.push(todo.relatedId ? `${route}/${todo.relatedId}` : route)
+    }
+  }
+
+  // 处理产品查看
+  const handleViewProduct = (productId: string) => {
+    router.push(`/products/${productId}`)
+  }
+
+  if (status === 'loading' || !session) {
+    return <DashboardPageSkeleton />
+  }
+
+  if (dashboardError) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-2 text-gray-600">加载中...</p>
+      <div className="container mx-auto py-6">
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {dashboardError instanceof Error ? dashboardError.message : '获取仪表盘数据失败'}
+          </AlertDescription>
+        </Alert>
+        <div className="mt-4">
+          <Button onClick={handleRefresh}>重试</Button>
         </div>
       </div>
     )
   }
 
-  if (!session) {
-    return null
-  }
-
-  const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/auth/signin' })
-  }
-
-  const getRoleBadgeVariant = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return 'destructive'
-      case 'sales':
-        return 'default'
-      default:
-        return 'secondary'
-    }
-  }
-
-  const getRoleDisplayName = (role: string) => {
-    switch (role) {
-      case 'admin':
-        return '系统管理员'
-      case 'sales':
-        return '销售员'
-      default:
-        return '未知角色'
-    }
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* 顶部导航栏 */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-gray-900">
-                库存管理系统
-              </h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
-                <User className="h-4 w-4 text-gray-500" />
-                <span className="text-sm text-gray-700">{session.user.name}</span>
-                <Badge variant={getRoleBadgeVariant(session.user.role)}>
-                  {getRoleDisplayName(session.user.role)}
-                </Badge>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleSignOut}
-              >
-                <LogOut className="h-4 w-4 mr-2" />
-                退出登录
-              </Button>
-            </div>
-          </div>
+    <div className="container mx-auto py-6 space-y-6">
+      {/* 页面标题和控制 */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">仪表盘</h1>
+          <p className="text-muted-foreground">
+            欢迎回来，{session.user?.name || '用户'}
+          </p>
         </div>
-      </header>
+
+        <div className="flex items-center space-x-4">
+          {/* 时间范围选择 */}
+          <Select value={filters.timeRange} onValueChange={handleTimeRangeChange}>
+            <SelectTrigger className="w-32">
+              <Calendar className="h-4 w-4 mr-2" />
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {TIME_RANGE_OPTIONS.map((option) => (
+                <SelectItem key={option.value} value={option.value}>
+                  {option.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {/* 刷新按钮 */}
+          <Button variant="outline" onClick={handleRefresh}>
+            <RefreshCw className="h-4 w-4 mr-2" />
+            刷新
+          </Button>
+        </div>
+      </div>
+
+      {/* 移动端快速操作按钮 */}
+      <div className="md:hidden">
+        <QuickActionButtons
+          actions={quickActions || []}
+          maxVisible={3}
+        />
+      </div>
 
       {/* 主要内容 */}
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {/* 用户信息卡片 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <User className="h-5 w-5 mr-2" />
-                  用户信息
-                </CardTitle>
-                <CardDescription>
-                  当前登录用户的基本信息
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">姓名:</span>
-                  <span className="text-sm">{session.user.name}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">邮箱:</span>
-                  <span className="text-sm">{session.user.email}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">角色:</span>
-                  <Badge variant={getRoleBadgeVariant(session.user.role)}>
-                    {getRoleDisplayName(session.user.role)}
-                  </Badge>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">状态:</span>
-                  <Badge variant={session.user.status === 'active' ? 'default' : 'secondary'}>
-                    {session.user.status === 'active' ? '活跃' : '非活跃'}
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="overview" className="flex items-center space-x-2">
+            <BarChart3 className="h-4 w-4" />
+            <span className="hidden sm:inline">概览</span>
+          </TabsTrigger>
+          <TabsTrigger value="alerts" className="flex items-center space-x-2">
+            <AlertCircle className="h-4 w-4" />
+            <span className="hidden sm:inline">预警</span>
+            {inventoryAlerts && inventoryAlerts.length > 0 && (
+              <Badge variant="destructive" className="ml-1 text-xs">
+                {inventoryAlerts.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="todos" className="flex items-center space-x-2">
+            <CheckSquare className="h-4 w-4" />
+            <span className="hidden sm:inline">待办</span>
+            {todoItems && todoItems.filter(t => t.status !== 'completed').length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">
+                {todoItems.filter(t => t.status !== 'completed').length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="actions" className="flex items-center space-x-2">
+            <Zap className="h-4 w-4" />
+            <span className="hidden sm:inline">操作</span>
+          </TabsTrigger>
+        </TabsList>
 
-            {/* 权限信息卡片 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Shield className="h-5 w-5 mr-2" />
-                  权限信息
-                </CardTitle>
-                <CardDescription>
-                  当前用户的系统权限
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="space-y-1">
-                  <p className="text-sm font-medium">可访问功能:</p>
-                  <ul className="text-sm text-gray-600 space-y-1">
-                    <li>• 查看仪表板</li>
-                    <li>• 管理客户信息</li>
-                    <li>• 管理产品信息</li>
-                    <li>• 处理销售订单</li>
-                    <li>• 管理库存</li>
-                    {session.user.role === 'admin' && (
-                      <>
-                        <li>• 用户管理</li>
-                        <li>• 系统设置</li>
-                      </>
-                    )}
-                  </ul>
-                </div>
-              </CardContent>
-            </Card>
+        {/* 概览标签页 */}
+        <TabsContent value="overview" className="space-y-6">
+          {/* 统计卡片 */}
+          <StatCardsGrid
+            overview={businessOverview}
+            loading={isOverviewLoading}
+          />
 
-            {/* 会话信息卡片 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <Clock className="h-5 w-5 mr-2" />
-                  会话信息
-                </CardTitle>
-                <CardDescription>
-                  当前登录会话的详细信息
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">用户ID:</span>
-                  <span className="text-sm font-mono">{session.user.id}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-sm font-medium">会话状态:</span>
-                  <Badge variant="default">已认证</Badge>
-                </div>
-                <div className="text-sm text-gray-600">
-                  <p>会话将在24小时后自动过期</p>
-                </div>
-              </CardContent>
-            </Card>
+          {/* 主要内容网格 */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* 库存预警 */}
+            <div className="lg:col-span-1">
+              <InventoryAlerts
+                alerts={inventoryAlerts || []}
+                loading={isAlertsLoading}
+                onRefresh={refetchAlerts}
+                onViewProduct={handleViewProduct}
+                maxHeight="400px"
+                compact
+              />
+            </div>
+
+            {/* 待办事项 */}
+            <div className="lg:col-span-1">
+              <TodoList
+                todos={todoItems || []}
+                loading={isTodosLoading}
+                onRefresh={refetchTodos}
+                onViewTodo={handleViewTodo}
+                maxHeight="400px"
+                compact
+              />
+            </div>
+
+            {/* 库存健康度 */}
+            <div className="lg:col-span-1">
+              {businessOverview && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <TrendingUp className="h-5 w-5" />
+                      <span>库存健康度</span>
+                    </CardTitle>
+                    <CardDescription>
+                      库存状态总览
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <InventoryStatusIndicator
+                      items={[
+                        {
+                          id: '1',
+                          name: '总库存',
+                          currentStock: businessOverview.inventory.totalStock,
+                          safetyStock: Math.floor(businessOverview.inventory.totalStock * 0.2),
+                          status: businessOverview.inventory.stockHealth >= 80 ? 'in_stock' :
+                                 businessOverview.inventory.stockHealth >= 60 ? 'low_stock' : 'out_of_stock'
+                        }
+                      ]}
+                    />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
           </div>
+        </TabsContent>
 
-          {/* 快速操作区域 */}
-          <div className="mt-8">
-            <Card>
+        {/* 预警标签页 */}
+        <TabsContent value="alerts" className="space-y-6">
+          <InventoryAlerts
+            alerts={inventoryAlerts || []}
+            loading={isAlertsLoading}
+            onRefresh={refetchAlerts}
+            onViewProduct={handleViewProduct}
+            maxHeight="600px"
+          />
+        </TabsContent>
+
+        {/* 待办标签页 */}
+        <TabsContent value="todos" className="space-y-6">
+          <TodoList
+            todos={todoItems || []}
+            loading={isTodosLoading}
+            onRefresh={refetchTodos}
+            onViewTodo={handleViewTodo}
+            maxHeight="600px"
+            showCompleted
+          />
+        </TabsContent>
+
+        {/* 快速操作标签页 */}
+        <TabsContent value="actions" className="space-y-6">
+          <QuickActions
+            actions={quickActions || []}
+            loading={isActionsLoading}
+            columns={3}
+          />
+        </TabsContent>
+      </Tabs>
+    </div>
+  )
+}
+
+// 加载骨架屏
+function DashboardPageSkeleton() {
+  return (
+    <div className="container mx-auto py-6 space-y-6">
+      {/* 标题骨架屏 */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+        <div className="flex items-center space-x-4">
+          <Skeleton className="h-10 w-32" />
+          <Skeleton className="h-10 w-20" />
+        </div>
+      </div>
+
+      {/* 标签页骨架屏 */}
+      <div className="space-y-6">
+        <Skeleton className="h-10 w-full" />
+
+        {/* 统计卡片骨架屏 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-20" />
+                    <Skeleton className="h-8 w-24" />
+                    <Skeleton className="h-3 w-16" />
+                  </div>
+                  <Skeleton className="h-12 w-12 rounded-lg" />
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* 主要内容骨架屏 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
               <CardHeader>
-                <CardTitle>快速操作</CardTitle>
-                <CardDescription>
-                  常用功能的快速入口
-                </CardDescription>
+                <Skeleton className="h-5 w-24" />
+                <Skeleton className="h-4 w-32" />
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Button variant="outline" className="h-20 flex-col">
-                    <span className="text-lg mb-1">📦</span>
-                    <span>产品管理</span>
-                  </Button>
-                  <Button variant="outline" className="h-20 flex-col">
-                    <span className="text-lg mb-1">👥</span>
-                    <span>客户管理</span>
-                  </Button>
-                  <Button variant="outline" className="h-20 flex-col">
-                    <span className="text-lg mb-1">📊</span>
-                    <span>销售订单</span>
-                  </Button>
-                  <Button variant="outline" className="h-20 flex-col">
-                    <span className="text-lg mb-1">📋</span>
-                    <span>库存管理</span>
-                  </Button>
+                <div className="space-y-4">
+                  {Array.from({ length: 3 }).map((_, j) => (
+                    <Skeleton key={j} className="h-16 w-full" />
+                  ))}
                 </div>
               </CardContent>
             </Card>
-          </div>
+          ))}
         </div>
-      </main>
+      </div>
     </div>
   )
 }
