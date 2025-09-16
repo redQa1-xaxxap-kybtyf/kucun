@@ -4,40 +4,33 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import {
-  isNavigationItem,
-  isUserInfo,
-  isNotificationItem,
-  isSidebarState,
-  isBreadcrumbItem,
-  isLayoutConfig,
-  TypeSafeConverter,
-  TypeAssert,
-} from '@/lib/utils/type-guards';
-import {
-  validateNavigationItem,
-  validateUserInfo,
-  validateNotificationItem,
-  validateLayoutConfig,
-  validateFormData,
-  NavigationItemSchema,
-  UserInfoSchema,
+    NavigationItemSchema,
+    validateNavigationItem,
+    validateUserInfo
 } from '@/lib/schemas/layout';
-import {
-  hasRole,
-  hasPermission,
-  canAccessPath,
-  getAccessibleNavItems,
-  usePermissions,
-} from '@/lib/utils/permissions';
 import type {
-  NavigationItem,
-  UserInfo,
-  NotificationItem,
-  SidebarState,
-  LayoutConfig,
+    LayoutConfig,
+    NavigationItem,
+    NotificationItem,
+    UserInfo
 } from '@/lib/types/layout';
+import {
+    canAccessPath,
+    getAccessibleNavItems,
+    hasPermission,
+    hasRole
+} from '@/lib/utils/permissions';
+import {
+    isLayoutConfig,
+    isNavigationItem,
+    isNotificationItem,
+    isUserInfo,
+    TypeAssert,
+    TypeSafeConverter
+} from '@/lib/utils/type-guards';
+import { describe, expect, it, jest } from '@jest/globals';
+import { Home } from 'lucide-react';
 
 describe('布局系统类型守卫测试', () => {
   describe('isNavigationItem', () => {
@@ -77,8 +70,10 @@ describe('布局系统类型守卫测试', () => {
         id: '123',
         name: '张三',
         email: 'zhangsan@example.com',
+        username: 'zhangsan',
         avatar: 'https://example.com/avatar.jpg',
         role: 'admin',
+        status: 'active',
       };
 
       expect(isUserInfo(validUser)).toBe(true);
@@ -294,6 +289,7 @@ describe('TypeAssert测试', () => {
         id: 'test',
         title: '测试',
         href: '/test',
+        icon: Home,
       };
 
       expect(() => {
@@ -329,6 +325,7 @@ describe('性能测试', () => {
       id: 'test',
       title: '测试',
       href: '/test',
+      icon: Home,
     };
 
     const startTime = performance.now();

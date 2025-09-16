@@ -1,61 +1,59 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-  Save,
-  ArrowLeft,
-  Plus,
-  Trash2,
-  AlertCircle,
-  Loader2,
-  ShoppingCart,
-  Calendar,
-  Palette,
-  Calculator,
-  Building2,
-  Package,
+    AlertCircle,
+    ArrowLeft,
+    Building2,
+    Calculator,
+    Calendar,
+    Loader2,
+    Package,
+    Plus,
+    Save,
+    ShoppingCart,
+    Trash2
 } from 'lucide-react';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 
 // UI Components
-import { useForm, useFieldArray } from 'react-hook-form';
+import { useFieldArray, useForm } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -64,24 +62,24 @@ import { Textarea } from '@/components/ui/textarea';
 // Custom Components
 
 // API and Types
-import { getProduct } from '@/lib/api/products';
 import {
-  createPurchaseOrder,
-  updatePurchaseOrder,
-  getSuppliers,
-  purchaseOrderQueryKeys,
+    createPurchaseOrder,
+    getSuppliers,
+    purchaseOrderQueryKeys,
+    updatePurchaseOrder,
 } from '@/lib/api/purchase-orders';
 import type { PurchaseOrder } from '@/lib/types/purchase-order';
-import { Supplier, COMMON_COLOR_CODES } from '@/lib/types/purchase-order';
+import { COMMON_COLOR_CODES } from '@/lib/types/purchase-order';
 import type {
-  PurchaseOrderCreateFormData,
-  PurchaseOrderUpdateFormData } from '@/lib/validations/purchase-order';
+    PurchaseOrderCreateFormData,
+    PurchaseOrderUpdateFormData
+} from '@/lib/validations/purchase-order';
 import {
-  purchaseOrderCreateSchema,
-  purchaseOrderUpdateSchema,
-  purchaseOrderCreateDefaults,
-  purchaseOrderUpdateDefaults,
-  calculateOrderTotal,
+    calculateOrderTotal,
+    purchaseOrderCreateDefaults,
+    purchaseOrderCreateSchema,
+    purchaseOrderUpdateDefaults,
+    purchaseOrderUpdateSchema,
 } from '@/lib/validations/purchase-order';
 
 import { ProductSelector } from '@/components/products/product-selector';
@@ -751,52 +749,5 @@ export function PurchaseOrderForm({
         </form>
       </Form>
     </div>
-  );
-}
-
-// 简化的产品选择器组件（实际应该从产品管理模块导入）
-interface ProductSelectorProps {
-  control: any;
-  name: string;
-  label?: string;
-  placeholder?: string;
-  disabled?: boolean;
-}
-
-function ProductSelector({
-  control,
-  name,
-  label = '选择产品',
-  placeholder = '搜索产品...',
-  disabled = false,
-}: ProductSelectorProps) {
-  return (
-    <FormField
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          {label && <FormLabel>{label}</FormLabel>}
-          <Select
-            onValueChange={field.onChange}
-            value={field.value}
-            disabled={disabled}
-          >
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder={placeholder} />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              <SelectItem value="none">请选择产品</SelectItem>
-              {/* 这里应该显示产品列表，简化处理 */}
-              <SelectItem value="product-1">示例产品 1</SelectItem>
-              <SelectItem value="product-2">示例产品 2</SelectItem>
-            </SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
   );
 }

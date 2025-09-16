@@ -1,16 +1,15 @@
 // 移动端数据表格组件测试用例
 
-import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
-import '@testing-library/jest-dom';
 import {
-  MobileDataTable,
-  createTextColumn,
-  createBadgeColumn,
-  createDateColumn,
-  createNumberColumn,
-  type ColumnDef,
+    MobileDataTable,
+    createBadgeColumn,
+    createDateColumn,
+    createNumberColumn,
+    createTextColumn,
+    type ColumnDef,
 } from '@/components/ui/mobile-data-table';
+import '@testing-library/jest-dom';
+import { fireEvent, render, screen } from '@testing-library/react';
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
@@ -104,9 +103,8 @@ describe('MobileDataTable', () => {
       render(<MobileDataTable data={testData} columns={testColumns} loading />);
 
       // 检查骨架屏是否存在
-      expect(
-        document.querySelectorAll('[class*="animate-pulse"]')
-      ).toHaveLength.greaterThan(0);
+      const skeletonElements = document.querySelectorAll('[class*="animate-pulse"]');
+      expect(skeletonElements.length).toBeGreaterThan(0);
     });
   });
 

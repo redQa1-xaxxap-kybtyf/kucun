@@ -4,32 +4,28 @@
 'use client';
 
 import {
-  AlertTriangle,
-  XCircle,
-  TrendingUp,
-  Package,
-  Clock,
-  X,
-  ExternalLink,
-  RefreshCw,
+    AlertTriangle,
+    Clock,
+    ExternalLink,
+    Package,
+    RefreshCw,
+    X,
+    XCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
-import {
-  InventoryStatusIndicator,
-  ColorCodeDisplay,
-} from '@/components/ui/color-code-display';
+import { ColorCodeDisplay } from '@/components/ui/color-code-display';
+import { InventoryStatusIndicator } from '@/components/ui/inventory-status-indicator';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { dashboardUtils, useDismissAlert } from '@/lib/api/dashboard';
@@ -430,4 +426,4 @@ const InventoryAlerts = React.forwardRef<HTMLDivElement, InventoryAlertsProps>(
 
 InventoryAlerts.displayName = 'InventoryAlerts';
 
-export { InventoryAlerts, InventoryAlertItem };
+export { InventoryAlertItem, InventoryAlerts };

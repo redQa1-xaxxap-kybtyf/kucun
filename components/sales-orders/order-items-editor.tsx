@@ -2,57 +2,54 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  Plus,
-  Trash2,
-  Package,
-  Calculator,
-  AlertCircle,
-  Calendar,
+    Calculator,
+    Calendar,
+    Package,
+    Plus,
+    Trash2
 } from 'lucide-react';
-import { useState } from 'react';
 import type { Control } from 'react-hook-form';
 import { useFieldArray, useWatch } from 'react-hook-form';
 
 // UI Components
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 
 // Icons
 
 // Custom Components
-import { getProducts, productQueryKeys } from '@/lib/api/products';
 import type { Product } from '@/lib/types/product';
 import { COMMON_COLOR_CODES } from '@/lib/types/sales-order';
 import type {
-  SalesOrderItemCreateFormData,
-  SalesOrderItemUpdateFormData } from '@/lib/validations/sales-order';
+    SalesOrderItemCreateFormData,
+    SalesOrderItemUpdateFormData
+} from '@/lib/validations/sales-order';
 import {
-  calculateItemSubtotal,
-  calculateOrderTotal,
+    calculateItemSubtotal,
+    calculateOrderTotal,
 } from '@/lib/validations/sales-order';
 
 import { ProductSelector } from '@/components/products/product-selector';
@@ -465,67 +462,5 @@ function OrderItemRow({
         )}
       </CardContent>
     </Card>
-  );
-}
-
-// 产品选择器组件（简化版，实际应该从产品管理模块导入）
-interface ProductSelectorProps {
-  control: Control<any>;
-  name: string;
-  label?: string;
-  placeholder?: string;
-  disabled?: boolean;
-  onProductChange?: (productId: string) => void;
-}
-
-function ProductSelector({
-  control,
-  name,
-  label = '选择产品',
-  placeholder = '搜索产品...',
-  disabled = false,
-  onProductChange,
-}: ProductSelectorProps) {
-  const [searchQuery, setSearchQuery] = useState('');
-
-  // 搜索产品
-  const { data: searchResults, isLoading } = useQuery({
-    queryKey: productQueryKeys.list({ search: searchQuery, limit: 20 }),
-    queryFn: () => getProducts({ search: searchQuery, limit: 20 }),
-    enabled: searchQuery.length > 0,
-    staleTime: 30000,
-  });
-
-  return (
-    <FormField
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>{label}</FormLabel>
-          <Select
-            onValueChange={value => {
-              field.onChange(value);
-              onProductChange?.(value);
-            }}
-            value={field.value}
-            disabled={disabled}
-          >
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder={placeholder} />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              <SelectItem value="none">请选择产品</SelectItem>
-              {/* 这里应该显示产品列表，简化处理 */}
-              <SelectItem value="product-1">示例产品 1</SelectItem>
-              <SelectItem value="product-2">示例产品 2</SelectItem>
-            </SelectContent>
-          </Select>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
   );
 }

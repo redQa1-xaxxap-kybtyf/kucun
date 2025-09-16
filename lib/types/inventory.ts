@@ -390,3 +390,21 @@ export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 // 库存预警阈值
 export const DEFAULT_MIN_QUANTITY = 10;
 export const CRITICAL_MIN_QUANTITY = 5;
+
+// 库存警报类型标签
+export const INVENTORY_ALERT_TYPE_LABELS: Record<string, string> = {
+  low_stock: '库存不足',
+  out_of_stock: '缺货',
+  overstock: '库存过多',
+  expired: '过期商品',
+  damaged: '损坏商品',
+} as const;
+
+// 库存警报类型变体
+export const INVENTORY_ALERT_TYPE_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  low_stock: 'outline',
+  out_of_stock: 'destructive',
+  overstock: 'secondary',
+  expired: 'destructive',
+  damaged: 'destructive',
+} as const;

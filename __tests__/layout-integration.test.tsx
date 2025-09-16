@@ -4,22 +4,20 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import React from 'react';
+import { AuthLayout } from '@/components/common/AuthLayout';
+import { DashboardLayout } from '@/components/common/DashboardLayout';
+import { GlobalSearch } from '@/components/common/GlobalSearch';
+import { Header } from '@/components/common/Header';
+import { MobileNav } from '@/components/common/MobileNav';
 import {
-  render,
-  screen,
-  fireEvent,
-  waitFor,
-  act,
+    fireEvent,
+    render,
+    screen,
+    waitFor
 } from '@testing-library/react';
 import { SessionProvider } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { DashboardLayout } from '@/components/common/DashboardLayout';
-import { AuthLayout } from '@/components/common/AuthLayout';
-import { MobileNav } from '@/components/common/MobileNav';
-import { Sidebar } from '@/components/common/Sidebar';
-import { Header } from '@/components/common/Header';
-import { GlobalSearch } from '@/components/common/GlobalSearch';
+import React from 'react';
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
@@ -53,7 +51,10 @@ const mockSession = {
     id: '1',
     name: '测试用户',
     email: 'test@example.com',
+    username: 'testuser',
     role: 'admin',
+    status: 'active',
+    avatar: 'https://example.com/avatar.jpg',
   },
   expires: '2024-12-31',
 };

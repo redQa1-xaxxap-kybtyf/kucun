@@ -5,10 +5,10 @@
 
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
-  Customer,
-  CustomerQueryParams,
-  CustomerCreateInput,
-  CustomerUpdateInput,
+    Customer,
+    CustomerCreateInput,
+    CustomerQueryParams,
+    CustomerUpdateInput,
 } from '@/lib/types/customer';
 
 /**
@@ -159,4 +159,40 @@ export async function deleteCustomer(id: string): Promise<void> {
   if (!data.success) {
     throw new Error(data.error || '删除客户失败');
   }
+}
+
+/**
+ * 搜索客户
+ */
+export async function searchCustomers(
+  query: string,
+  options?: {
+    limit?: number;
+    includeInactive?: boolean;
+  }
+): Promise<Customer[]> {
+  const params = new URLSearchParams({
+    q: query,
+    limit: (options?.limit || 10).toString(),
+    includeInactive: (options?.includeInactive || false).toString(),
+  });
+
+  const response = await fetch(`${API_BASE}/search?${params}`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`搜索客户失败: ${response.statusText}`);
+  }
+
+  const data: ApiResponse<Customer[]> = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || '搜索客户失败');
+  }
+
+  return data.data!;
 }

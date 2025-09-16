@@ -5,11 +5,12 @@
 
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
-  Inventory,
-  InventoryQueryParams,
-  InboundCreateInput,
-  OutboundCreateInput,
-  InventoryAdjustInput,
+    InboundCreateInput,
+    Inventory,
+    InventoryAdjustInput,
+    InventoryAlert,
+    InventoryQueryParams,
+    OutboundCreateInput,
 } from '@/lib/types/inventory';
 
 /**
@@ -30,6 +31,8 @@ export const inventoryQueryKeys = {
     [...inventoryQueryKeys.details(), productId] as const,
   stats: () => [...inventoryQueryKeys.all, 'stats'] as const,
   alerts: () => [...inventoryQueryKeys.all, 'alerts'] as const,
+  inboundRecords: () => [...inventoryQueryKeys.all, 'inbound-records'] as const,
+  outboundRecords: () => [...inventoryQueryKeys.all, 'outbound-records'] as const,
 };
 
 /**
@@ -159,6 +162,58 @@ export async function adjustInventory(
 
   if (!data.success) {
     throw new Error(data.error || '库存调整失败');
+  }
+
+  return data.data!;
+}
+
+/**
+ * 获取库存警报
+ */
+export async function getInventoryAlerts(): Promise<InventoryAlert[]> {
+  const response = await fetch(`${API_BASE}/alerts`, {
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`获取库存警报失败: ${response.statusText}`);
+  }
+
+  const data: ApiResponse<InventoryAlert[]> = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || '获取库存警报失败');
+  }
+
+  return data.data!;
+}
+
+/**
+ * 检查库存可用性
+ */
+export async function checkInventoryAvailability(
+  productId: string,
+  quantity: number
+): Promise<{ available: boolean; currentStock: number; message?: string }> {
+  const response = await fetch(`${API_BASE}/check-availability`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ productId, quantity }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`检查库存可用性失败: ${response.statusText}`);
+  }
+
+  const data: ApiResponse<{ available: boolean; currentStock: number; message?: string }> = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || '检查库存可用性失败');
   }
 
   return data.data!;
