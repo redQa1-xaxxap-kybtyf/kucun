@@ -105,12 +105,12 @@ export const productCreateDefaults: Partial<ProductCreateFormData> = {
   unit: 'piece',
   piecesPerUnit: 1,
   specification: '',
-  weight: undefined,
+  weight: 0, // 修复：使用 0 而不是 undefined，避免受控/非受控组件错误
   images: [],
   specifications: {
     color: '',
     surface: '',
-    thickness: undefined,
+    thickness: 0, // 修复：使用 0 而不是 undefined，避免受控/非受控组件错误
     size: '',
     pattern: '',
     grade: '',

@@ -3,7 +3,13 @@ import * as React from "react"
 import { cn } from "@/lib/utils"
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
-  ({ className, type, ...props }, ref) => {
+  ({ className, type, value, defaultValue, ...props }, ref) => {
+    // 确保受控组件的一致性：如果提供了 value，则确保它不是 undefined
+    // 如果没有提供 value 但提供了 defaultValue，则使用 defaultValue
+    // 否则使用空字符串作为默认值
+    const controlledValue = value !== undefined ? value : (defaultValue !== undefined ? undefined : '')
+    const isControlled = value !== undefined
+
     return (
       <input
         type={type}
@@ -12,6 +18,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<"input">>(
           className
         )}
         ref={ref}
+        {...(isControlled ? { value: controlledValue } : { defaultValue })}
         {...props}
       />
     )
