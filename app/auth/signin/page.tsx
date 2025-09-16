@@ -12,8 +12,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { Captcha, verifyCaptcha } from '@/components/ui/captcha'
-import { Loader2, User, Lock, Shield } from 'lucide-react'
+import { Loader2, User, Lock, Shield, CheckCircle } from 'lucide-react'
 import { userValidations, type UserLoginInput } from '@/lib/validations/database'
+import { useToast } from '@/hooks/use-toast'
 import Link from 'next/link'
 
 export default function SignInPage() {
@@ -25,6 +26,10 @@ export default function SignInPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [formError, setFormError] = useState('')
   const [currentCaptcha, setCurrentCaptcha] = useState('')
+  const [isSuccess, setIsSuccess] = useState(false)
+  const [isRedirecting, setIsRedirecting] = useState(false)
+
+  const { toast } = useToast()
 
   // 表单配置
   const form = useForm<UserLoginInput>({
@@ -48,6 +53,7 @@ export default function SignInPage() {
   const handleSubmit = async (data: UserLoginInput) => {
     setIsLoading(true)
     setFormError('')
+    setIsSuccess(false)
 
     try {
       // 验证验证码
@@ -68,20 +74,53 @@ export default function SignInPage() {
         setFormError(errorMessages[result.error] || errorMessages.Default)
         // 登录失败时清空验证码
         form.setValue('captcha', '')
+
+        // 显示错误 Toast
+        toast({
+          title: '登录失败',
+          description: errorMessages[result.error] || errorMessages.Default,
+          variant: 'destructive',
+        })
       } else if (result?.ok) {
         // 登录成功，获取会话信息
         const session = await getSession()
         if (session) {
-          router.push(callbackUrl)
-          router.refresh()
+          // 设置成功状态
+          setIsSuccess(true)
+
+          // 显示成功 Toast
+          toast({
+            title: '登录成功！',
+            description: `欢迎回来，${session.user.name}（${session.user.role === 'admin' ? '管理员' : '销售员'}）`,
+            variant: 'success',
+          })
+
+          // 延迟跳转，让用户看到成功反馈
+          setTimeout(() => {
+            setIsRedirecting(true)
+            setTimeout(() => {
+              router.push(callbackUrl)
+              router.refresh()
+            }, 500) // 额外的短暂延迟用于显示跳转状态
+          }, 1500) // 1.5秒延迟让用户看到成功消息
         }
       }
     } catch (error) {
       console.error('登录错误:', error)
       setFormError('登录失败，请稍后重试')
       form.setValue('captcha', '')
+
+      // 显示错误 Toast
+      toast({
+        title: '登录失败',
+        description: '登录失败，请稍后重试',
+        variant: 'destructive',
+      })
     } finally {
-      setIsLoading(false)
+      // 只有在非成功状态下才立即设置 loading 为 false
+      if (!isSuccess) {
+        setIsLoading(false)
+      }
     }
   }
 
@@ -91,7 +130,26 @@ export default function SignInPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+      <div className="max-w-md w-full space-y-8 relative">
+        {/* 成功/跳转遮罩层 */}
+        {(isSuccess || isRedirecting) && (
+          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center">
+            <div className="text-center space-y-4">
+              {isRedirecting ? (
+                <>
+                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
+                  <p className="text-sm font-medium text-blue-600">正在跳转到仪表盘...</p>
+                </>
+              ) : (
+                <>
+                  <CheckCircle className="h-8 w-8 mx-auto text-green-600" />
+                  <p className="text-sm font-medium text-green-600">登录成功！</p>
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl text-center">库存管理系统</CardTitle>
@@ -109,8 +167,18 @@ export default function SignInPage() {
               </Alert>
             )}
 
+            {/* 成功信息 */}
+            {isSuccess && (
+              <Alert className="mb-4 border-green-200 bg-green-50 text-green-800">
+                <CheckCircle className="h-4 w-4 text-green-600" />
+                <AlertDescription className="text-green-800">
+                  登录成功！正在为您跳转到仪表盘...
+                </AlertDescription>
+              </Alert>
+            )}
+
             {/* 显示表单错误信息 */}
-            {formError && (
+            {formError && !isSuccess && (
               <Alert className="mb-4" variant="destructive">
                 <AlertDescription>{formError}</AlertDescription>
               </Alert>
@@ -202,11 +270,33 @@ export default function SignInPage() {
 
                 <Button
                   type="submit"
-                  className="w-full"
-                  disabled={isLoading}
+                  className={`w-full transition-all duration-300 ${
+                    isSuccess
+                      ? 'bg-green-600 hover:bg-green-700 border-green-600'
+                      : isRedirecting
+                      ? 'bg-blue-600 hover:bg-blue-700 border-blue-600'
+                      : ''
+                  }`}
+                  disabled={isLoading || isSuccess || isRedirecting}
                 >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  {isLoading ? '登录中...' : '登录'}
+                  {isRedirecting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      正在跳转到仪表盘...
+                    </>
+                  ) : isSuccess ? (
+                    <>
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      登录成功！
+                    </>
+                  ) : isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      登录中...
+                    </>
+                  ) : (
+                    '登录'
+                  )}
                 </Button>
               </form>
             </Form>
