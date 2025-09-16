@@ -196,7 +196,7 @@ export default function ProductsPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">全部状态</SelectItem>
+                          <SelectItem value="all">全部状态</SelectItem>
                           <SelectItem value="active">启用</SelectItem>
                           <SelectItem value="inactive">停用</SelectItem>
                         </SelectContent>

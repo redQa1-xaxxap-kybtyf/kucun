@@ -519,7 +519,7 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                           </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                          <SelectItem value="">无色号</SelectItem>
+                                          <SelectItem value="none">无色号</SelectItem>
                                           {COMMON_COLOR_CODES.map(color => (
                                             <SelectItem key={color.value} value={color.value}>
                                               {color.label}
@@ -687,7 +687,7 @@ function ProductSelector({
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              <SelectItem value="">请选择产品</SelectItem>
+              <SelectItem value="none">请选择产品</SelectItem>
               {/* 这里应该显示产品列表，简化处理 */}
               <SelectItem value="product-1">示例产品 1</SelectItem>
               <SelectItem value="product-2">示例产品 2</SelectItem>

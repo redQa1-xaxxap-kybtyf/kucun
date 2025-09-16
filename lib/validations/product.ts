@@ -89,7 +89,7 @@ export const productUpdateSchema = z.object({
 // 产品搜索表单验证
 export const productSearchSchema = z.object({
   search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
-  status: z.enum(['active', 'inactive', '']).optional(),
+  status: z.enum(['active', 'inactive', 'all']).optional(),
   unit: z.enum(['piece', 'sheet', 'strip', '']).optional(),
   sortBy: z.enum(['name', 'code', 'createdAt', 'updatedAt']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
@@ -121,7 +121,7 @@ export const productCreateDefaults: Partial<ProductCreateFormData> = {
 
 export const productSearchDefaults: ProductSearchFormData = {
   search: '',
-  status: '',
+  status: 'all',
   unit: '',
   sortBy: 'createdAt',
   sortOrder: 'desc',

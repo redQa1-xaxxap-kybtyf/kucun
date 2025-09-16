@@ -77,7 +77,7 @@ export default function SalesOrdersPage() {
     page: currentPage,
     limit: DEFAULT_PAGE_SIZE,
     search: searchParams.search || undefined,
-    status: searchParams.status || undefined,
+    status: (searchParams.status && searchParams.status !== 'all') ? searchParams.status : undefined,
     customerId: searchParams.customerId || undefined,
     userId: searchParams.userId || undefined,
     startDate: searchParams.startDate || undefined,
@@ -238,7 +238,7 @@ export default function SalesOrdersPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">全部状态</SelectItem>
+                        <SelectItem value="all">全部状态</SelectItem>
                         {Object.entries(SALES_ORDER_STATUS_LABELS).map(([value, label]) => (
                           <SelectItem key={value} value={value}>
                             {label}

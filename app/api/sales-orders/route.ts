@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
       ]
     }
 
-    if (status) {
+    if (status && status !== 'all') {
       where.status = status
     }
 

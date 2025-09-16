@@ -127,7 +127,7 @@ export const salesOrderUpdateSchema = z.object({
 // 销售订单搜索表单验证
 export const salesOrderSearchSchema = z.object({
   search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
-  status: z.enum(['draft', 'confirmed', 'shipped', 'completed', 'cancelled']).optional().or(z.literal('')),
+  status: z.enum(['draft', 'confirmed', 'shipped', 'completed', 'cancelled']).optional().or(z.literal('all')),
   customerId: z.string().uuid('客户ID格式不正确').optional().or(z.literal('')),
   userId: z.string().uuid('销售员ID格式不正确').optional().or(z.literal('')),
   startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '开始日期格式不正确').optional().or(z.literal('')),
@@ -169,7 +169,7 @@ export const salesOrderCreateDefaults: Partial<SalesOrderCreateFormData> = {
 
 export const salesOrderSearchDefaults: SalesOrderSearchFormData = {
   search: '',
-  status: '',
+  status: 'all',
   customerId: '',
   userId: '',
   startDate: '',
