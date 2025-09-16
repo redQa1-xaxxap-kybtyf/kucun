@@ -61,10 +61,10 @@ interface PurchaseOrderDetailPageProps {
 }
 
 export default function PurchaseOrderDetailPage({ params }: PurchaseOrderDetailPageProps) {
-  const { data: session, status } = useSession()
+  const { data: session, status: sessionStatus } = useSession()
   const router = useRouter()
   const queryClient = useQueryClient()
-  
+
   // 状态管理
   const [showStatusDialog, setShowStatusDialog] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -74,10 +74,10 @@ export default function PurchaseOrderDetailPage({ params }: PurchaseOrderDetailP
 
   // 认证检查
   useEffect(() => {
-    if (status === 'unauthenticated') {
+    if (sessionStatus === 'unauthenticated') {
       router.push('/auth/signin')
     }
-  }, [status, router])
+  }, [sessionStatus, router])
 
   // 获取采购订单详情
   const {
@@ -160,7 +160,7 @@ export default function PurchaseOrderDetailPage({ params }: PurchaseOrderDetailP
     deleteMutation.mutate()
   }
 
-  if (status === 'loading' || isLoading) {
+  if (sessionStatus === 'loading' || isLoading) {
     return <PurchaseOrderDetailPageSkeleton />
   }
 
