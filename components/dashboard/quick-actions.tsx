@@ -83,7 +83,32 @@ const COLOR_CONFIG = {
     icon: 'text-gray-500',
     border: 'border-gray-200 hover:border-gray-300',
   },
+  orange: {
+    bg: 'bg-orange-50 hover:bg-orange-100',
+    text: 'text-orange-600',
+    icon: 'text-orange-500',
+    border: 'border-orange-200 hover:border-orange-300',
+  },
+  indigo: {
+    bg: 'bg-indigo-50 hover:bg-indigo-100',
+    text: 'text-indigo-600',
+    icon: 'text-indigo-500',
+    border: 'border-indigo-200 hover:border-indigo-300',
+  },
 } as const
+
+// 默认颜色配置（防御性编程）
+const DEFAULT_COLOR_CONFIG = {
+  bg: 'bg-gray-50 hover:bg-gray-100',
+  text: 'text-gray-600',
+  icon: 'text-gray-500',
+  border: 'border-gray-200 hover:border-gray-300',
+}
+
+// 类型安全的颜色配置获取函数
+const getColorConfig = (color: string) => {
+  return COLOR_CONFIG[color as keyof typeof COLOR_CONFIG] || DEFAULT_COLOR_CONFIG
+}
 
 export interface QuickActionItemProps {
   action: QuickAction
@@ -95,7 +120,7 @@ export interface QuickActionItemProps {
 const QuickActionItem = React.forwardRef<HTMLDivElement, QuickActionItemProps>(
   ({ action, onClick, compact = false, className, ...props }, ref) => {
     const IconComponent = ICON_MAP[action.icon as keyof typeof ICON_MAP] || Package
-    const colorConfig = COLOR_CONFIG[action.color]
+    const colorConfig = getColorConfig(action.color)
     
     const handleClick = () => {
       if (onClick) {
@@ -397,7 +422,7 @@ const QuickActionButtons = React.forwardRef<HTMLDivElement, QuickActionButtonsPr
       >
         {visibleActions.map((action) => {
           const IconComponent = ICON_MAP[action.icon as keyof typeof ICON_MAP] || Package
-          const colorConfig = COLOR_CONFIG[action.color]
+          const colorConfig = getColorConfig(action.color)
           
           return (
             <Link key={action.id} href={action.href}>

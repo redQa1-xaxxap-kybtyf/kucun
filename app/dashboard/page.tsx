@@ -39,7 +39,7 @@ import { QuickActions, QuickActionButtons } from '@/components/dashboard/quick-a
 
 // T11 UI组件库
 import { MobileDataTable } from '@/components/ui/mobile-data-table'
-import { InventoryStatusIndicator } from '@/components/ui/inventory-status-indicator'
+import { InventoryHealth } from '@/components/ui/inventory-status-indicator'
 
 // API和类型
 import {
@@ -289,7 +289,7 @@ export default function DashboardPage() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <InventoryStatusIndicator
+                    <InventoryHealth
                       items={[
                         {
                           id: '1',

@@ -138,7 +138,7 @@ export interface QuickAction {
   description: string
   icon: string                // 图标名称
   href: string               // 跳转链接
-  color: 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'gray'
+  color: 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'gray' | 'orange' | 'indigo'
   requiresPermission?: string // 需要的权限
   badge?: {                  // 徽章显示
     text: string
@@ -188,7 +188,7 @@ export interface StatCard {
     period: string
   }
   icon: string
-  color: 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'gray'
+  color: 'blue' | 'green' | 'yellow' | 'red' | 'purple' | 'gray' | 'orange' | 'indigo'
   href?: string
 }
 
