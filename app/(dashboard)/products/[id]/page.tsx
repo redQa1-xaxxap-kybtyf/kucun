@@ -1,26 +1,42 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, Edit, Trash2, Package, Info, BarChart3 } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query';
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  Package,
+  Info,
+  BarChart3,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // API and Types
-import { getProduct, productQueryKeys } from '@/lib/api/products'
-import { PRODUCT_STATUS_LABELS, PRODUCT_UNIT_LABELS } from '@/lib/types/product'
+import { getProduct, productQueryKeys } from '@/lib/api/products';
+import {
+  PRODUCT_STATUS_LABELS,
+  PRODUCT_UNIT_LABELS,
+} from '@/lib/types/product';
 
 interface ProductDetailPageProps {
   params: {
-    id: string
-  }
+    id: string;
+  };
 }
 
 /**
@@ -28,24 +44,29 @@ interface ProductDetailPageProps {
  * 严格遵循全栈项目统一约定规范
  */
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {
-  const router = useRouter()
-  const { id } = params
+  const router = useRouter();
+  const { id } = params;
 
   // 获取产品详情数据
-  const { data: product, isLoading, error } = useQuery({
+  const {
+    data: product,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: productQueryKeys.detail(id),
     queryFn: () => getProduct(id),
-  })
+  });
 
   // 状态标签渲染
   const getStatusBadge = (status: string) => {
-    const variant = status === 'active' ? 'default' : 'secondary'
+    const variant = status === 'active' ? 'default' : 'secondary';
     return (
       <Badge variant={variant}>
-        {PRODUCT_STATUS_LABELS[status as keyof typeof PRODUCT_STATUS_LABELS] || status}
+        {PRODUCT_STATUS_LABELS[status as keyof typeof PRODUCT_STATUS_LABELS] ||
+          status}
       </Badge>
-    )
-  }
+    );
+  };
 
   if (error) {
     return (
@@ -68,7 +89,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   if (isLoading) {
@@ -81,7 +102,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           </Button>
           <div>
             <Skeleton className="h-8 w-32" />
-            <Skeleton className="h-4 w-48 mt-2" />
+            <Skeleton className="mt-2 h-4 w-48" />
           </div>
         </div>
         <div className="grid gap-6 md:grid-cols-2">
@@ -108,7 +129,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           </Card>
         </div>
       </div>
-    )
+    );
   }
 
   if (!product) {
@@ -132,7 +153,7 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -145,12 +166,17 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             返回
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">{product.name}</h1>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {product.name}
+            </h1>
             <p className="text-muted-foreground">产品编码: {product.code}</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => router.push(`/products/${id}/edit`)}>
+          <Button
+            variant="outline"
+            onClick={() => router.push(`/products/${id}/edit`)}
+          >
             <Edit className="mr-2 h-4 w-4" />
             编辑
           </Button>
@@ -174,38 +200,58 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <div className="text-sm font-medium text-muted-foreground">产品编码</div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  产品编码
+                </div>
                 <div className="mt-1">{product.code}</div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground">产品名称</div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  产品名称
+                </div>
                 <div className="mt-1">{product.name}</div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground">规格</div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  规格
+                </div>
                 <div className="mt-1">{product.specification || '-'}</div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground">计量单位</div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  计量单位
+                </div>
                 <div className="mt-1">
-                  {PRODUCT_UNIT_LABELS[product.unit as keyof typeof PRODUCT_UNIT_LABELS] || product.unit}
+                  {PRODUCT_UNIT_LABELS[
+                    product.unit as keyof typeof PRODUCT_UNIT_LABELS
+                  ] || product.unit}
                 </div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground">每单位片数</div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  每单位片数
+                </div>
                 <div className="mt-1">{product.piecesPerUnit || '-'}</div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground">重量(kg)</div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  重量(kg)
+                </div>
                 <div className="mt-1">{product.weight || '-'}</div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground">状态</div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  状态
+                </div>
                 <div className="mt-1">{getStatusBadge(product.status)}</div>
               </div>
               <div>
-                <div className="text-sm font-medium text-muted-foreground">创建时间</div>
-                <div className="mt-1">{new Date(product.createdAt).toLocaleString()}</div>
+                <div className="text-sm font-medium text-muted-foreground">
+                  创建时间
+                </div>
+                <div className="mt-1">
+                  {new Date(product.createdAt).toLocaleString()}
+                </div>
               </div>
             </div>
           </CardContent>
@@ -224,13 +270,15 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               <div className="space-y-2">
                 {Object.entries(product.specifications).map(([key, value]) => (
                   <div key={key} className="flex justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">{key}:</span>
+                    <span className="text-sm font-medium text-muted-foreground">
+                      {key}:
+                    </span>
                     <span className="text-sm">{String(value)}</span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="text-center text-muted-foreground py-8">
+              <div className="py-8 text-center text-muted-foreground">
                 暂无规格信息
               </div>
             )}
@@ -248,17 +296,17 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               <TabsTrigger value="history">操作历史</TabsTrigger>
             </TabsList>
             <TabsContent value="inventory" className="mt-6">
-              <div className="text-center text-muted-foreground py-8">
+              <div className="py-8 text-center text-muted-foreground">
                 库存信息功能开发中...
               </div>
             </TabsContent>
             <TabsContent value="sales" className="mt-6">
-              <div className="text-center text-muted-foreground py-8">
+              <div className="py-8 text-center text-muted-foreground">
                 销售记录功能开发中...
               </div>
             </TabsContent>
             <TabsContent value="history" className="mt-6">
-              <div className="text-center text-muted-foreground py-8">
+              <div className="py-8 text-center text-muted-foreground">
                 操作历史功能开发中...
               </div>
             </TabsContent>
@@ -266,5 +314,5 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

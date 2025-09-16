@@ -1,8 +1,9 @@
-import * as React from 'react'
-import { AuthLayout } from '@/components/common/AuthLayout'
+import * as React from 'react';
+
+import { AuthLayout } from '@/components/common/AuthLayout';
 
 interface DashboardLayoutProps {
-  children: React.ReactNode
+  children: React.ReactNode;
 }
 
 /**
@@ -19,7 +20,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     >
       {children}
     </AuthLayout>
-  )
+  );
 }
 
 /**
@@ -31,4 +32,4 @@ export const metadata = {
     default: '库存管理工具',
   },
   description: '专业的库存管理解决方案',
-}
+};

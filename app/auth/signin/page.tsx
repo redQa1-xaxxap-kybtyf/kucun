@@ -1,35 +1,53 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { signIn, getSession } from 'next-auth/react'
-import { useRouter, useSearchParams } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Captcha, verifyCaptcha } from '@/components/ui/captcha'
-import { Loader2, User, Lock, Shield, CheckCircle } from 'lucide-react'
-import { userValidations, type UserLoginInput } from '@/lib/validations/database'
-import { useToast } from '@/hooks/use-toast'
-import Link from 'next/link'
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2, User, Lock, Shield, CheckCircle } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { signIn, getSession } from 'next-auth/react';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import { Captcha, verifyCaptcha } from '@/components/ui/captcha';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useToast } from '@/hooks/use-toast';
+import {
+  userValidations,
+  type UserLoginInput,
+} from '@/lib/validations/database';
+
 
 export default function SignInPage() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard'
-  const error = searchParams.get('error')
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
+  const error = searchParams.get('error');
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [formError, setFormError] = useState('')
-  const [currentCaptcha, setCurrentCaptcha] = useState('')
-  const [isSuccess, setIsSuccess] = useState(false)
-  const [isRedirecting, setIsRedirecting] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [currentCaptcha, setCurrentCaptcha] = useState('');
+  const [isSuccess, setIsSuccess] = useState(false);
+  const [isRedirecting, setIsRedirecting] = useState(false);
 
-  const { toast } = useToast()
+  const { toast } = useToast();
 
   // 表单配置
   const form = useForm<UserLoginInput>({
@@ -39,7 +57,7 @@ export default function SignInPage() {
       password: '',
       captcha: '',
     },
-  })
+  });
 
   // 错误信息映射
   const errorMessages: Record<string, string> = {
@@ -48,19 +66,19 @@ export default function SignInPage() {
     AccessDenied: '访问被拒绝，权限不足',
     AuthenticationError: '认证失败，请重新登录',
     Default: '登录失败，请稍后重试',
-  }
+  };
 
   const handleSubmit = async (data: UserLoginInput) => {
-    setIsLoading(true)
-    setFormError('')
-    setIsSuccess(false)
+    setIsLoading(true);
+    setFormError('');
+    setIsSuccess(false);
 
     try {
       // 验证验证码
       if (!verifyCaptcha(data.captcha, currentCaptcha)) {
-        setFormError('验证码错误，请重新输入')
-        form.setValue('captcha', '')
-        return
+        setFormError('验证码错误，请重新输入');
+        form.setValue('captcha', '');
+        return;
       }
 
       const result = await signIn('credentials', {
@@ -68,82 +86,86 @@ export default function SignInPage() {
         password: data.password,
         captcha: data.captcha,
         redirect: false,
-      })
+      });
 
       if (result?.error) {
-        setFormError(errorMessages[result.error] || errorMessages.Default)
+        setFormError(errorMessages[result.error] || errorMessages.Default);
         // 登录失败时清空验证码
-        form.setValue('captcha', '')
+        form.setValue('captcha', '');
 
         // 显示错误 Toast
         toast({
           title: '登录失败',
           description: errorMessages[result.error] || errorMessages.Default,
           variant: 'destructive',
-        })
+        });
       } else if (result?.ok) {
         // 登录成功，获取会话信息
-        const session = await getSession()
+        const session = await getSession();
         if (session) {
           // 设置成功状态
-          setIsSuccess(true)
+          setIsSuccess(true);
 
           // 显示成功 Toast
           toast({
             title: '登录成功！',
             description: `欢迎回来，${session.user.name}（${session.user.role === 'admin' ? '管理员' : '销售员'}）`,
             variant: 'success',
-          })
+          });
 
           // 延迟跳转，让用户看到成功反馈
           setTimeout(() => {
-            setIsRedirecting(true)
+            setIsRedirecting(true);
             setTimeout(() => {
-              router.push(callbackUrl)
-              router.refresh()
-            }, 500) // 额外的短暂延迟用于显示跳转状态
-          }, 1500) // 1.5秒延迟让用户看到成功消息
+              router.push(callbackUrl);
+              router.refresh();
+            }, 500); // 额外的短暂延迟用于显示跳转状态
+          }, 1500); // 1.5秒延迟让用户看到成功消息
         }
       }
     } catch (error) {
-      console.error('登录错误:', error)
-      setFormError('登录失败，请稍后重试')
-      form.setValue('captcha', '')
+      console.error('登录错误:', error);
+      setFormError('登录失败，请稍后重试');
+      form.setValue('captcha', '');
 
       // 显示错误 Toast
       toast({
         title: '登录失败',
         description: '登录失败，请稍后重试',
         variant: 'destructive',
-      })
+      });
     } finally {
       // 只有在非成功状态下才立即设置 loading 为 false
       if (!isSuccess) {
-        setIsLoading(false)
+        setIsLoading(false);
       }
     }
-  }
+  };
 
   const handleCaptchaChange = (captcha: string) => {
-    setCurrentCaptcha(captcha)
-  }
+    setCurrentCaptcha(captcha);
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 relative">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="relative w-full max-w-md space-y-8">
         {/* 成功/跳转遮罩层 */}
         {(isSuccess || isRedirecting) && (
-          <div className="absolute inset-0 bg-white/80 backdrop-blur-sm rounded-lg z-10 flex items-center justify-center">
-            <div className="text-center space-y-4">
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 backdrop-blur-sm">
+            <div className="space-y-4 text-center">
               {isRedirecting ? (
                 <>
-                  <Loader2 className="h-8 w-8 animate-spin mx-auto text-blue-600" />
-                  <p className="text-sm font-medium text-blue-600">正在跳转到仪表盘...</p>
+                  <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600" />
+                  <p className="text-sm font-medium text-blue-600">
+                    正在跳转到仪表盘...
+                  </p>
                 </>
               ) : (
                 <>
-                  <CheckCircle className="h-8 w-8 mx-auto text-green-600" />
-                  <p className="text-sm font-medium text-green-600">登录成功！</p>
+                  <CheckCircle className="mx-auto h-8 w-8 text-green-600" />
+                  <p className="text-sm font-medium text-green-600">
+                    登录成功！
+                  </p>
                 </>
               )}
             </div>
@@ -152,7 +174,7 @@ export default function SignInPage() {
 
         <Card>
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">库存管理系统</CardTitle>
+            <CardTitle className="text-center text-2xl">库存管理系统</CardTitle>
             <CardDescription className="text-center">
               请输入您的账户信息登录系统
             </CardDescription>
@@ -185,7 +207,10 @@ export default function SignInPage() {
             )}
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(handleSubmit)}
+                className="space-y-4"
+              >
                 {/* 用户名字段 */}
                 <FormField
                   control={form.control}
@@ -272,10 +297,10 @@ export default function SignInPage() {
                   type="submit"
                   className={`w-full transition-all duration-300 ${
                     isSuccess
-                      ? 'bg-green-600 hover:bg-green-700 border-green-600'
+                      ? 'border-green-600 bg-green-600 hover:bg-green-700'
                       : isRedirecting
-                      ? 'bg-blue-600 hover:bg-blue-700 border-blue-600'
-                      : ''
+                        ? 'border-blue-600 bg-blue-600 hover:bg-blue-700'
+                        : ''
                   }`}
                   disabled={isLoading || isSuccess || isRedirecting}
                 >
@@ -311,11 +336,11 @@ export default function SignInPage() {
                   立即注册
                 </Link>
               </p>
-              <div className="mt-4 pt-4 border-t border-gray-200">
+              <div className="mt-4 border-t border-gray-200 pt-4">
                 <p>默认测试账户：</p>
                 <p>管理员：admin / admin123456</p>
                 <p>销售员：sales / sales123456</p>
-                <p className="text-xs text-gray-500 mt-2">
+                <p className="mt-2 text-xs text-gray-500">
                   点击验证码图片可刷新验证码
                 </p>
               </div>
@@ -324,5 +349,5 @@ export default function SignInPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

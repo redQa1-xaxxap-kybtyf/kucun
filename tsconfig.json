@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
-    "target": "es5",
-    "lib": ["dom", "dom.iterable", "es6"],
+    "target": "es2022",
+    "lib": ["dom", "dom.iterable", "es2022"],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -21,8 +21,21 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["./*"]
-    }
+    },
+    // 严格模式配置（逐步启用）
+    "noUnusedLocals": false,
+    "noUnusedParameters": false,
+    "exactOptionalPropertyTypes": false,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    "noUncheckedIndexedAccess": false,
+    "noImplicitOverride": true,
+    "allowUnusedLabels": false,
+    "allowUnreachableCode": false,
+    // 类型检查增强
+    "forceConsistentCasingInFileNames": true,
+    "verbatimModuleSyntax": false
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "exclude": ["node_modules", ".next", "out", "dist", "build", "coverage"]
 }

@@ -1,16 +1,16 @@
-import { PrismaClient } from '@prisma/client'
-import bcrypt from 'bcryptjs'
+import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
-const prisma = new PrismaClient()
+const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 开始数据库种子数据初始化...')
+  console.log('🌱 开始数据库种子数据初始化...');
 
   // 1. 创建默认管理员用户
-  console.log('👤 创建默认用户...')
-  
-  const adminPasswordHash = await bcrypt.hash('admin123456', 10)
-  const salesPasswordHash = await bcrypt.hash('sales123456', 10)
+  console.log('👤 创建默认用户...');
+
+  const adminPasswordHash = await bcrypt.hash('admin123456', 10);
+  const salesPasswordHash = await bcrypt.hash('sales123456', 10);
 
   const adminUser = await prisma.user.upsert({
     where: { email: 'admin@inventory.com' },
@@ -23,7 +23,7 @@ async function main() {
       role: 'admin',
       status: 'active',
     },
-  })
+  });
 
   const salesUser = await prisma.user.upsert({
     where: { email: 'sales@inventory.com' },
@@ -36,13 +36,13 @@ async function main() {
       role: 'sales',
       status: 'active',
     },
-  })
+  });
 
-  console.log(`✅ 创建用户: ${adminUser.name} (${adminUser.email})`)
-  console.log(`✅ 创建用户: ${salesUser.name} (${salesUser.email})`)
+  console.log(`✅ 创建用户: ${adminUser.name} (${adminUser.email})`);
+  console.log(`✅ 创建用户: ${salesUser.name} (${salesUser.email})`);
 
   // 2. 创建示例产品（包含JSON规格）
-  console.log('📦 创建示例产品...')
+  console.log('📦 创建示例产品...');
 
   const products = await Promise.all([
     prisma.product.upsert({
@@ -117,12 +117,12 @@ async function main() {
         status: 'active',
       },
     }),
-  ])
+  ]);
 
-  console.log(`✅ 创建产品: ${products.map(p => p.name).join(', ')}`)
+  console.log(`✅ 创建产品: ${products.map(p => p.name).join(', ')}`);
 
   // 3. 创建示例客户（包含JSON扩展信息）
-  console.log('👥 创建示例客户...')
+  console.log('👥 创建示例客户...');
 
   const customers = await Promise.all([
     prisma.customer.upsert({
@@ -163,12 +163,12 @@ async function main() {
         }),
       },
     }),
-  ])
+  ]);
 
-  console.log(`✅ 创建客户: ${customers.map(c => c.name).join(', ')}`)
+  console.log(`✅ 创建客户: ${customers.map(c => c.name).join(', ')}`);
 
   // 4. 创建初始库存
-  console.log('📊 创建初始库存...')
+  console.log('📊 创建初始库存...');
 
   const inventoryRecords = await Promise.all([
     // TC001 抛光砖库存
@@ -242,12 +242,12 @@ async function main() {
         reservedQuantity: 0,
       },
     }),
-  ])
+  ]);
 
-  console.log(`✅ 创建库存记录: ${inventoryRecords.length} 条`)
+  console.log(`✅ 创建库存记录: ${inventoryRecords.length} 条`);
 
   // 5. 创建入库记录
-  console.log('📥 创建入库记录...')
+  console.log('📥 创建入库记录...');
 
   const inboundRecords = await Promise.all([
     prisma.inboundRecord.create({
@@ -274,22 +274,22 @@ async function main() {
         userId: adminUser.id,
       },
     }),
-  ])
+  ]);
 
-  console.log(`✅ 创建入库记录: ${inboundRecords.length} 条`)
+  console.log(`✅ 创建入库记录: ${inboundRecords.length} 条`);
 
-  console.log('🎉 数据库种子数据初始化完成！')
-  console.log('\n📋 默认账户信息:')
-  console.log('管理员账户: admin@inventory.com / admin123456')
-  console.log('销售员账户: sales@inventory.com / sales123456')
+  console.log('🎉 数据库种子数据初始化完成！');
+  console.log('\n📋 默认账户信息:');
+  console.log('管理员账户: admin@inventory.com / admin123456');
+  console.log('销售员账户: sales@inventory.com / sales123456');
 }
 
 main()
   .then(async () => {
-    await prisma.$disconnect()
+    await prisma.$disconnect();
   })
-  .catch(async (e) => {
-    console.error('❌ 种子数据初始化失败:', e)
-    await prisma.$disconnect()
-    process.exit(1)
-  })
+  .catch(async e => {
+    console.error('❌ 种子数据初始化失败:', e);
+    await prisma.$disconnect();
+    process.exit(1);
+  });

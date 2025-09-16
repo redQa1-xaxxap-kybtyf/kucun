@@ -1,6 +1,6 @@
-import { authMiddleware } from './lib/auth-middleware'
+import { authMiddleware } from './lib/auth-middleware';
 
-export { authMiddleware as middleware }
+export { authMiddleware as middleware };
 
 // 配置中间件匹配的路径
 export const config = {
@@ -15,4 +15,4 @@ export const config = {
      */
     '/((?!api/auth|_next/static|_next/image|favicon.ico|public).*)',
   ],
-}
+};

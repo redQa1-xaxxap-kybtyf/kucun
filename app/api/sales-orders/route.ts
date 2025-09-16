@@ -1,32 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { salesOrderValidations, paginationValidations } from '@/lib/validations/database'
-import { prisma, withTransaction } from '@/lib/db'
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+
+import { authOptions } from '@/lib/auth';
+import { prisma, withTransaction } from '@/lib/db';
+import {
+  salesOrderValidations,
+  paginationValidations,
+} from '@/lib/validations/database';
 
 // 生成订单号
 function generateOrderNumber(): string {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const timestamp = now.getTime().toString().slice(-6)
-  return `SO${year}${month}${day}${timestamp}`
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const timestamp = now.getTime().toString().slice(-6);
+  return `SO${year}${month}${day}${timestamp}`;
 }
 
 // 获取销售订单列表
 export async function GET(request: NextRequest) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
-      )
+      );
     }
 
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(request.url);
     const queryParams = {
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '20'),
@@ -36,10 +41,10 @@ export async function GET(request: NextRequest) {
       status: searchParams.get('status') || undefined,
       customerId: searchParams.get('customerId') || undefined,
       userId: searchParams.get('userId') || undefined,
-    }
+    };
 
     // 验证查询参数
-    const validationResult = paginationValidations.query.safeParse(queryParams)
+    const validationResult = paginationValidations.query.safeParse(queryParams);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -48,33 +53,33 @@ export async function GET(request: NextRequest) {
           details: validationResult.error.errors,
         },
         { status: 400 }
-      )
+      );
     }
 
-    const { page, limit, search, sortBy, sortOrder } = validationResult.data
-    const { status, customerId, userId } = queryParams
+    const { page, limit, search, sortBy, sortOrder } = validationResult.data;
+    const { status, customerId, userId } = queryParams;
 
     // 构建查询条件
-    const where: any = {}
-    
+    const where: any = {};
+
     if (search) {
       where.OR = [
         { orderNumber: { contains: search } },
         { customer: { name: { contains: search } } },
         { remarks: { contains: search } },
-      ]
+      ];
     }
 
     if (status && status !== 'all') {
-      where.status = status
+      where.status = status;
     }
 
     if (customerId) {
-      where.customerId = customerId
+      where.customerId = customerId;
     }
 
     if (userId) {
-      where.userId = userId
+      where.userId = userId;
     }
 
     // 查询销售订单列表
@@ -134,9 +139,9 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       prisma.salesOrder.count({ where }),
-    ])
+    ]);
 
-    const totalPages = Math.ceil(total / limit)
+    const totalPages = Math.ceil(total / limit);
 
     // 转换数据格式（snake_case -> camelCase）
     const formattedSalesOrders = salesOrders.map(order => ({
@@ -162,7 +167,7 @@ export async function GET(request: NextRequest) {
       itemsCount: order._count.items,
       createdAt: order.createdAt,
       updatedAt: order.updatedAt,
-    }))
+    }));
 
     return NextResponse.json({
       success: true,
@@ -173,17 +178,17 @@ export async function GET(request: NextRequest) {
         total,
         totalPages,
       },
-    })
+    });
   } catch (error) {
-    console.error('获取销售订单列表错误:', error)
-    
+    console.error('获取销售订单列表错误:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : '获取销售订单列表失败',
       },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -191,18 +196,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
-      )
+      );
     }
 
-    const body = await request.json()
-    
+    const body = await request.json();
+
     // 验证输入数据
-    const validationResult = salesOrderValidations.create.safeParse(body)
+    const validationResult = salesOrderValidations.create.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -211,54 +216,57 @@ export async function POST(request: NextRequest) {
           details: validationResult.error.errors,
         },
         { status: 400 }
-      )
+      );
     }
 
-    const { customerId, items, remarks } = validationResult.data
+    const { customerId, items, remarks } = validationResult.data;
 
     // 验证客户是否存在
     const customer = await prisma.customer.findUnique({
       where: { id: customerId },
-    })
+    });
 
     if (!customer) {
       return NextResponse.json(
         { success: false, error: '指定的客户不存在' },
         { status: 400 }
-      )
+      );
     }
 
     // 验证所有产品是否存在
-    const productIds = items.map(item => item.productId)
+    const productIds = items.map(item => item.productId);
     const products = await prisma.product.findMany({
       where: { id: { in: productIds } },
       select: { id: true, status: true },
-    })
+    });
 
     if (products.length !== productIds.length) {
       return NextResponse.json(
         { success: false, error: '存在无效的产品' },
         { status: 400 }
-      )
+      );
     }
 
     // 检查产品状态
-    const inactiveProducts = products.filter(p => p.status !== 'active')
+    const inactiveProducts = products.filter(p => p.status !== 'active');
     if (inactiveProducts.length > 0) {
       return NextResponse.json(
         { success: false, error: '存在已停用的产品，无法创建订单' },
         { status: 400 }
-      )
+      );
     }
 
     // 计算总金额
-    const totalAmount = items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+    const totalAmount = items.reduce(
+      (sum, item) => sum + item.quantity * item.unitPrice,
+      0
+    );
 
     // 生成订单号
-    const orderNumber = generateOrderNumber()
+    const orderNumber = generateOrderNumber();
 
     // 使用事务创建销售订单
-    const salesOrder = await prisma.$transaction(async (tx) => {
+    const salesOrder = await prisma.$transaction(async tx => {
       // 创建销售订单
       const order = await tx.salesOrder.create({
         data: {
@@ -269,7 +277,7 @@ export async function POST(request: NextRequest) {
           totalAmount,
           remarks,
         },
-      })
+      });
 
       // 创建订单明细
       const orderItems = await Promise.all(
@@ -286,10 +294,10 @@ export async function POST(request: NextRequest) {
             },
           })
         )
-      )
+      );
 
-      return { order, items: orderItems }
-    })
+      return { order, items: orderItems };
+    });
 
     // 获取完整的订单信息
     const fullOrder = await prisma.salesOrder.findUnique({
@@ -337,7 +345,7 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-    })
+    });
 
     // 转换数据格式
     const formattedOrder = {
@@ -362,22 +370,22 @@ export async function POST(request: NextRequest) {
       })),
       createdAt: fullOrder!.createdAt,
       updatedAt: fullOrder!.updatedAt,
-    }
+    };
 
     return NextResponse.json({
       success: true,
       data: formattedOrder,
       message: '销售订单创建成功',
-    })
+    });
   } catch (error) {
-    console.error('创建销售订单错误:', error)
-    
+    console.error('创建销售订单错误:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : '创建销售订单失败',
       },
       { status: 500 }
-    )
+    );
   }
 }

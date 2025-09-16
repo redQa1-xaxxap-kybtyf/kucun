@@ -1,24 +1,26 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+
+import { authOptions } from '@/lib/auth';
 
 // 获取快速操作数据
 export async function GET(request: NextRequest) {
   try {
     // 身份验证
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
-      )
+      );
     }
 
     // 根据用户角色定义快速操作
-    const isAdmin = session.user.role === 'admin'
-    const isSales = session.user.role === 'sales'
+    const isAdmin = session.user.role === 'admin';
+    const isSales = session.user.role === 'sales';
 
-    const quickActions = []
+    const quickActions = [];
 
     // 销售相关操作
     if (isSales || isAdmin) {
@@ -53,7 +55,7 @@ export async function GET(request: NextRequest) {
           category: 'inventory',
           priority: 3,
         }
-      )
+      );
     }
 
     // 管理员专用操作
@@ -89,7 +91,7 @@ export async function GET(request: NextRequest) {
           category: 'admin',
           priority: 6,
         }
-      )
+      );
     }
 
     // 通用操作
@@ -114,24 +116,24 @@ export async function GET(request: NextRequest) {
         category: 'system',
         priority: 8,
       }
-    )
+    );
 
     // 按优先级排序
-    quickActions.sort((a, b) => a.priority - b.priority)
+    quickActions.sort((a, b) => a.priority - b.priority);
 
     return NextResponse.json({
       success: true,
       data: quickActions,
-    })
+    });
   } catch (error) {
-    console.error('获取快速操作失败:', error)
-    
+    console.error('获取快速操作失败:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : '获取快速操作失败',
       },
       { status: 500 }
-    )
+    );
   }
 }

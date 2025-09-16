@@ -1,74 +1,118 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Users, Phone, MapPin } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query';
+import {
+    Edit,
+    Eye,
+    MapPin,
+    MoreHorizontal,
+    Phone,
+    Plus,
+    Search,
+    Trash2,
+    Users
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Skeleton } from '@/components/ui/skeleton'
-import { MobileDataTable } from '@/components/ui/mobile-data-table'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { MobileDataTable } from '@/components/ui/mobile-data-table';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 // API and Types
-import { getCustomers, customerQueryKeys } from '@/lib/api/customers'
-import { Customer, CustomerQueryParams } from '@/lib/types/customer'
+import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
+import type { Customer, CustomerQueryParams } from '@/lib/types/customer';
 
 /**
  * 客户管理页面
  * 严格遵循全栈项目统一约定规范
  */
 export default function CustomersPage() {
-  const router = useRouter()
+  const router = useRouter();
   const [queryParams, setQueryParams] = React.useState<CustomerQueryParams>({
     page: 1,
     limit: 20,
     search: '',
     sortBy: 'createdAt',
     sortOrder: 'desc',
-  })
+  });
 
   // 获取客户列表数据
   const { data, isLoading, error } = useQuery({
     queryKey: customerQueryKeys.list(queryParams),
     queryFn: () => getCustomers(queryParams),
-  })
+  });
 
   // 搜索处理
   const handleSearch = (value: string) => {
-    setQueryParams(prev => ({ ...prev, search: value, page: 1 }))
-  }
+    setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
+  };
 
   // 筛选处理
   const handleFilter = (key: keyof CustomerQueryParams, value: any) => {
-    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }))
-  }
+    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
+  };
 
   // 分页处理
   const handlePageChange = (page: number) => {
-    setQueryParams(prev => ({ ...prev, page }))
-  }
+    setQueryParams(prev => ({ ...prev, page }));
+  };
 
   // 移动端表格列配置
   const mobileColumns = [
     { key: 'name', title: '客户名称', mobilePrimary: true },
     { key: 'phone', title: '联系电话', mobileLabel: '电话' },
-    { key: 'address', title: '地址', render: (item: Customer) => item.address || '-' },
-    { key: 'salesOrdersCount', title: '订单数', render: (item: Customer) => `${item.salesOrdersCount || 0}个订单` },
-  ]
+    {
+      key: 'address',
+      title: '地址',
+      render: (item: Customer) => item.address || '-',
+    },
+    {
+      key: 'salesOrdersCount',
+      title: '订单数',
+      render: (item: Customer) => `${item.totalOrders || 0}个订单`,
+    },
+  ];
 
   if (error) {
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">客户管理</h1>
-          <p className="text-muted-foreground">管理客户信息、联系方式和业务关系</p>
+          <p className="text-muted-foreground">
+            管理客户信息、联系方式和业务关系
+          </p>
         </div>
         <Card>
           <CardContent className="pt-6">
@@ -78,7 +122,7 @@ export default function CustomersPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -87,7 +131,9 @@ export default function CustomersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">客户管理</h1>
-          <p className="text-muted-foreground">管理客户信息、联系方式和业务关系</p>
+          <p className="text-muted-foreground">
+            管理客户信息、联系方式和业务关系
+          </p>
         </div>
         <Button onClick={() => router.push('/customers/create')}>
           <Plus className="mr-2 h-4 w-4" />
@@ -105,7 +151,7 @@ export default function CustomersPage() {
                 <Input
                   placeholder="搜索客户名称或电话..."
                   value={queryParams.search}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={e => handleSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -113,7 +159,7 @@ export default function CustomersPage() {
             <div className="flex gap-2">
               <Select
                 value={queryParams.sortBy || 'createdAt'}
-                onValueChange={(value) => handleFilter('sortBy', value)}
+                onValueChange={value => handleFilter('sortBy', value)}
               >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="排序" />
@@ -134,7 +180,9 @@ export default function CustomersPage() {
         <CardHeader>
           <CardTitle>客户列表</CardTitle>
           <CardDescription>
-            {data?.pagination ? `共 ${data.pagination.total} 个客户` : '加载中...'}
+            {data?.pagination
+              ? `共 ${data.pagination.total} 个客户`
+              : '加载中...'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -166,7 +214,7 @@ export default function CustomersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data?.data?.map((customer) => (
+                    {data?.data?.map(customer => (
                       <TableRow key={customer.id}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
@@ -183,17 +231,19 @@ export default function CustomersPage() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span className="truncate max-w-[200px]">
+                            <span className="max-w-[200px] truncate">
                               {customer.address || '-'}
                             </span>
                           </div>
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {customer.salesOrdersCount || 0} 个订单
+                            {customer.totalOrders || 0} 个订单
                           </Badge>
                         </TableCell>
-                        <TableCell>{new Date(customer.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {new Date(customer.createdAt).toLocaleDateString()}
+                        </TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -202,11 +252,19 @@ export default function CustomersPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/customers/${customer.id}`)}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(`/customers/${customer.id}`)
+                                }
+                              >
                                 <Eye className="mr-2 h-4 w-4" />
                                 查看详情
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => router.push(`/customers/${customer.id}/edit`)}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(`/customers/${customer.id}/edit`)
+                                }
+                              >
                                 <Edit className="mr-2 h-4 w-4" />
                                 编辑
                               </DropdownMenuItem>
@@ -228,8 +286,8 @@ export default function CustomersPage() {
                 <MobileDataTable
                   data={data?.data || []}
                   columns={mobileColumns}
-                  onItemClick={(item) => router.push(`/customers/${item.id}`)}
-                  renderActions={(item) => (
+                  onItemClick={item => router.push(`/customers/${item.id}`)}
+                  renderActions={item => (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -237,11 +295,17 @@ export default function CustomersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/customers/${item.id}`)}>
+                        <DropdownMenuItem
+                          onClick={() => router.push(`/customers/${item.id}`)}
+                        >
                           <Eye className="mr-2 h-4 w-4" />
                           查看详情
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/customers/${item.id}/edit`)}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            router.push(`/customers/${item.id}/edit`)
+                          }
+                        >
                           <Edit className="mr-2 h-4 w-4" />
                           编辑
                         </DropdownMenuItem>
@@ -259,7 +323,13 @@ export default function CustomersPage() {
               {data?.pagination && data.pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4">
                   <div className="text-sm text-muted-foreground">
-                    显示第 {((data.pagination.page - 1) * data.pagination.limit) + 1} - {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} 条，共 {data.pagination.total} 条
+                    显示第{' '}
+                    {(data.pagination.page - 1) * data.pagination.limit + 1} -{' '}
+                    {Math.min(
+                      data.pagination.page * data.pagination.limit,
+                      data.pagination.total
+                    )}{' '}
+                    条，共 {data.pagination.total} 条
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -271,13 +341,16 @@ export default function CustomersPage() {
                       上一页
                     </Button>
                     <div className="text-sm">
-                      第 {data.pagination.page} / {data.pagination.totalPages} 页
+                      第 {data.pagination.page} / {data.pagination.totalPages}{' '}
+                      页
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handlePageChange(data.pagination.page + 1)}
-                      disabled={data.pagination.page >= data.pagination.totalPages}
+                      disabled={
+                        data.pagination.page >= data.pagination.totalPages
+                      }
                     >
                       下一页
                     </Button>
@@ -289,5 +362,5 @@ export default function CustomersPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

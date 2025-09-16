@@ -1,53 +1,60 @@
 // UI组件库展示示例
 // 展示所有自定义组件的使用方法和效果
 
-'use client'
+'use client';
 
-import * as React from 'react'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import * as React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 
 // 瓷砖行业特色组件
-import { 
-  ColorCodeDisplay, 
-  ColorCodeSelector, 
-  ColorCodeGrid 
-} from '@/components/ui/color-code-display'
-import { 
-  SpecificationDisplay, 
-  SpecificationCard, 
-  SpecificationCompare,
-  type TileSpecification 
-} from '@/components/ui/specification-display'
-import { 
-  ProductionDatePicker, 
-  ProductionDateRangePicker,
-  type ProductionBatch 
-} from '@/components/ui/production-date-picker'
-import { 
-  InventoryStatusIndicator, 
-  InventoryHealth, 
+import {
+  ColorCodeDisplay,
+  ColorCodeSelector,
+  ColorCodeGrid,
+} from '@/components/ui/color-code-display';
+import {
+  InventoryStatusIndicator,
+  InventoryHealth,
   QuickStatusToggle,
-  type InventoryStatus 
-} from '@/components/ui/inventory-status-indicator'
+  type InventoryStatus,
+} from '@/components/ui/inventory-status-indicator';
 
 // 移动端优化组件
-import { 
-  MobileDataTable, 
-  createTextColumn, 
-  createBadgeColumn, 
+import {
+  MobileDataTable,
+  createTextColumn,
+  createBadgeColumn,
   createDateColumn,
-  type ColumnDef 
-} from '@/components/ui/mobile-data-table'
-import { 
-  MobileSearchBar, 
-  type SearchState, 
-  type FilterOption, 
-  type SortOption 
-} from '@/components/ui/mobile-search-bar'
+  type ColumnDef,
+} from '@/components/ui/mobile-data-table';
+import {
+  MobileSearchBar,
+  type SearchState,
+  type FilterOption,
+  type SortOption,
+} from '@/components/ui/mobile-search-bar';
+import {
+  ProductionDatePicker,
+  ProductionDateRangePicker,
+  type ProductionBatch,
+} from '@/components/ui/production-date-picker';
+import { Separator } from '@/components/ui/separator';
+import {
+  SpecificationDisplay,
+  SpecificationCard,
+  SpecificationCompare,
+  type TileSpecification,
+} from '@/components/ui/specification-display';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // 示例数据
 const sampleSpecification: TileSpecification = {
@@ -62,8 +69,8 @@ const sampleSpecification: TileSpecification = {
   frostResistance: true,
   weight: 25,
   packingQuantity: 4,
-  coverageArea: 1.44
-}
+  coverageArea: 1.44,
+};
 
 const sampleBatches: ProductionBatch[] = [
   {
@@ -71,16 +78,16 @@ const sampleBatches: ProductionBatch[] = [
     batchNumber: 'B20240115001',
     quantity: 1000,
     quality: 'AAA',
-    notes: '优质批次，质量稳定'
+    notes: '优质批次，质量稳定',
   },
   {
     date: '2024-01-16',
     batchNumber: 'B20240116001',
     quantity: 800,
     quality: 'AA',
-    notes: '少量色差，整体良好'
-  }
-]
+    notes: '少量色差，整体良好',
+  },
+];
 
 const sampleProducts = [
   {
@@ -91,7 +98,7 @@ const sampleProducts = [
     stock: 150,
     safetyStock: 100,
     status: 'in_stock' as InventoryStatus,
-    createdAt: '2024-01-15'
+    createdAt: '2024-01-15',
   },
   {
     id: '2',
@@ -101,7 +108,7 @@ const sampleProducts = [
     stock: 50,
     safetyStock: 100,
     status: 'low_stock' as InventoryStatus,
-    createdAt: '2024-01-14'
+    createdAt: '2024-01-14',
   },
   {
     id: '3',
@@ -111,46 +118,49 @@ const sampleProducts = [
     stock: 0,
     safetyStock: 50,
     status: 'out_of_stock' as InventoryStatus,
-    createdAt: '2024-01-13'
-  }
-]
+    createdAt: '2024-01-13',
+  },
+];
 
 export default function UIComponentsShowcase() {
   // 状态管理
-  const [selectedColorCode, setSelectedColorCode] = React.useState('W001')
-  const [productionDate, setProductionDate] = React.useState('2024-01-15')
-  const [inventoryStatus, setInventoryStatus] = React.useState<InventoryStatus>('in_stock')
+  const [selectedColorCode, setSelectedColorCode] = React.useState('W001');
+  const [productionDate, setProductionDate] = React.useState('2024-01-15');
+  const [inventoryStatus, setInventoryStatus] =
+    React.useState<InventoryStatus>('in_stock');
   const [searchState, setSearchState] = React.useState<SearchState>({
     keyword: '',
     filters: {},
-    sort: undefined
-  })
+    sort: undefined,
+  });
 
   // 表格列定义
-  const columns: ColumnDef<typeof sampleProducts[0]>[] = [
+  const columns: ColumnDef<(typeof sampleProducts)[0]>[] = [
     createTextColumn('name', '产品名称', { mobilePrimary: true }),
     createTextColumn('code', '产品编码', { mobileLabel: '编码' }),
     {
       key: 'colorCode',
       title: '色号',
-      render: (value) => <ColorCodeDisplay colorCode={value} size="sm" />,
-      mobileLabel: '色号'
+      render: value => <ColorCodeDisplay colorCode={value} size="sm" />,
+      mobileLabel: '色号',
     },
     {
       key: 'status',
       title: '库存状态',
       render: (value, record) => (
-        <InventoryStatusIndicator 
-          status={value} 
+        <InventoryStatusIndicator
+          status={value}
           currentStock={record.stock}
           safetyStock={record.safetyStock}
           size="sm"
         />
       ),
-      mobileLabel: '状态'
+      mobileLabel: '状态',
     },
-    createDateColumn('createdAt', '创建时间', undefined, { mobileHidden: true })
-  ]
+    createDateColumn('createdAt', '创建时间', undefined, {
+      mobileHidden: true,
+    }),
+  ];
 
   // 筛选选项
   const filterOptions: FilterOption[] = [
@@ -161,27 +171,27 @@ export default function UIComponentsShowcase() {
       options: [
         { value: 'in_stock', label: '有库存' },
         { value: 'low_stock', label: '库存不足' },
-        { value: 'out_of_stock', label: '缺货' }
-      ]
+        { value: 'out_of_stock', label: '缺货' },
+      ],
     },
     {
       key: 'minStock',
       label: '最小库存',
       type: 'number',
-      placeholder: '输入最小库存数量'
-    }
-  ]
+      placeholder: '输入最小库存数量',
+    },
+  ];
 
   // 排序选项
   const sortOptions: SortOption[] = [
     { key: 'name', label: '产品名称' },
     { key: 'stock', label: '库存数量' },
-    { key: 'createdAt', label: '创建时间' }
-  ]
+    { key: 'createdAt', label: '创建时间' },
+  ];
 
   return (
-    <div className="container mx-auto py-6 space-y-8">
-      <div className="text-center space-y-2">
+    <div className="container mx-auto space-y-8 py-6">
+      <div className="space-y-2 text-center">
         <h1 className="text-3xl font-bold">UI组件库展示</h1>
         <p className="text-muted-foreground">
           瓷砖行业特色组件和移动端优化组件的使用示例
@@ -207,7 +217,7 @@ export default function UIComponentsShowcase() {
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div>
-                  <h4 className="font-medium mb-2">基础展示</h4>
+                  <h4 className="mb-2 font-medium">基础展示</h4>
                   <div className="flex flex-wrap gap-2">
                     <ColorCodeDisplay colorCode="W001" />
                     <ColorCodeDisplay colorCode="G003" />
@@ -215,28 +225,37 @@ export default function UIComponentsShowcase() {
                     <ColorCodeDisplay colorCode="BL004" />
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div>
-                  <h4 className="font-medium mb-2">色号选择器</h4>
+                  <h4 className="mb-2 font-medium">色号选择器</h4>
                   <div className="max-w-xs">
                     <ColorCodeSelector
                       value={selectedColorCode}
                       onValueChange={setSelectedColorCode}
                     />
                   </div>
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <p className="mt-2 text-sm text-muted-foreground">
                     当前选中: {selectedColorCode}
                   </p>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div>
-                  <h4 className="font-medium mb-2">色号网格</h4>
+                  <h4 className="mb-2 font-medium">色号网格</h4>
                   <ColorCodeGrid
-                    colorCodes={['W001', 'W002', 'G001', 'G002', 'BR001', 'BR002', 'BL001', 'BL002']}
+                    colorCodes={[
+                      'W001',
+                      'W002',
+                      'G001',
+                      'G002',
+                      'BR001',
+                      'BR002',
+                      'BL001',
+                      'BL002',
+                    ]}
                     selectedColorCode={selectedColorCode}
                     onColorCodeSelect={setSelectedColorCode}
                     columns={4}
@@ -255,14 +274,20 @@ export default function UIComponentsShowcase() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
                 <div>
-                  <h4 className="font-medium mb-2">详细规格</h4>
-                  <SpecificationDisplay specification={sampleSpecification} showAll />
+                  <h4 className="mb-2 font-medium">详细规格</h4>
+                  <SpecificationDisplay
+                    specification={sampleSpecification}
+                    showAll
+                  />
                 </div>
                 <div>
-                  <h4 className="font-medium mb-2">紧凑模式</h4>
-                  <SpecificationDisplay specification={sampleSpecification} compact />
+                  <h4 className="mb-2 font-medium">紧凑模式</h4>
+                  <SpecificationDisplay
+                    specification={sampleSpecification}
+                    compact
+                  />
                 </div>
               </div>
             </CardContent>
@@ -277,9 +302,9 @@ export default function UIComponentsShowcase() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
-                  <h4 className="font-medium mb-2">基础日期选择</h4>
+                  <h4 className="mb-2 font-medium">基础日期选择</h4>
                   <ProductionDatePicker
                     value={productionDate}
                     onValueChange={setProductionDate}
@@ -287,7 +312,7 @@ export default function UIComponentsShowcase() {
                   />
                 </div>
                 <div>
-                  <h4 className="font-medium mb-2">带批次信息</h4>
+                  <h4 className="mb-2 font-medium">带批次信息</h4>
                   <ProductionDatePicker
                     value={productionDate}
                     onValueChange={setProductionDate}
@@ -311,59 +336,61 @@ export default function UIComponentsShowcase() {
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 <div>
-                  <h4 className="font-medium mb-2">状态指示器</h4>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <InventoryStatusIndicator 
-                      status="in_stock" 
+                  <h4 className="mb-2 font-medium">状态指示器</h4>
+                  <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+                    <InventoryStatusIndicator
+                      status="in_stock"
                       currentStock={150}
                       safetyStock={100}
                       showQuantity
                     />
-                    <InventoryStatusIndicator 
-                      status="low_stock" 
+                    <InventoryStatusIndicator
+                      status="low_stock"
                       currentStock={50}
                       safetyStock={100}
                       showQuantity
                     />
-                    <InventoryStatusIndicator 
-                      status="out_of_stock" 
+                    <InventoryStatusIndicator
+                      status="out_of_stock"
                       currentStock={0}
                       safetyStock={100}
                       showQuantity
                     />
-                    <InventoryStatusIndicator 
-                      status="overstock" 
+                    <InventoryStatusIndicator
+                      status="overstock"
                       currentStock={500}
                       safetyStock={100}
                       showQuantity
                     />
                   </div>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div>
-                  <h4 className="font-medium mb-2">快速状态切换</h4>
+                  <h4 className="mb-2 font-medium">快速状态切换</h4>
                   <QuickStatusToggle
                     currentStatus={inventoryStatus}
                     onStatusChange={setInventoryStatus}
                   />
-                  <p className="text-sm text-muted-foreground mt-2">
+                  <p className="mt-2 text-sm text-muted-foreground">
                     当前状态: {inventoryStatus}
                   </p>
                 </div>
-                
+
                 <Separator />
-                
+
                 <div>
-                  <h4 className="font-medium mb-2">库存健康度</h4>
-                  <InventoryHealth items={sampleProducts.map(p => ({
-                    id: p.id,
-                    name: p.name,
-                    currentStock: p.stock,
-                    safetyStock: p.safetyStock,
-                    status: p.status
-                  }))} />
+                  <h4 className="mb-2 font-medium">库存健康度</h4>
+                  <InventoryHealth
+                    items={sampleProducts.map(p => ({
+                      id: p.id,
+                      name: p.name,
+                      currentStock: p.stock,
+                      safetyStock: p.safetyStock,
+                      status: p.status,
+                    }))}
+                  />
                 </div>
               </div>
             </CardContent>
@@ -387,7 +414,7 @@ export default function UIComponentsShowcase() {
                 placeholder="搜索产品..."
                 filterOptions={filterOptions}
                 sortOptions={sortOptions}
-                onSearch={(state) => console.log('搜索:', state)}
+                onSearch={state => console.log('搜索:', state)}
               />
             </CardContent>
           </Card>
@@ -404,20 +431,20 @@ export default function UIComponentsShowcase() {
               <MobileDataTable
                 data={sampleProducts}
                 columns={columns}
-                onRowClick={(record) => console.log('点击行:', record)}
+                onRowClick={record => console.log('点击行:', record)}
                 actions={[
                   {
                     key: 'edit',
                     label: '编辑',
-                    onClick: (record) => console.log('编辑:', record),
-                    variant: 'outline'
+                    onClick: record => console.log('编辑:', record),
+                    variant: 'outline',
                   },
                   {
                     key: 'delete',
                     label: '删除',
-                    onClick: (record) => console.log('删除:', record),
-                    variant: 'destructive'
-                  }
+                    onClick: record => console.log('删除:', record),
+                    variant: 'destructive',
+                  },
                 ]}
               />
             </CardContent>
@@ -431,9 +458,9 @@ export default function UIComponentsShowcase() {
           <CardTitle>使用说明</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 gap-4 text-sm md:grid-cols-2">
             <div>
-              <h4 className="font-medium mb-2">技术特性</h4>
+              <h4 className="mb-2 font-medium">技术特性</h4>
               <ul className="space-y-1 text-muted-foreground">
                 <li>• 基于 shadcn/ui 构建</li>
                 <li>• 完整的 TypeScript 类型支持</li>
@@ -443,7 +470,7 @@ export default function UIComponentsShowcase() {
               </ul>
             </div>
             <div>
-              <h4 className="font-medium mb-2">瓷砖行业特色</h4>
+              <h4 className="mb-2 font-medium">瓷砖行业特色</h4>
               <ul className="space-y-1 text-muted-foreground">
                 <li>• 色号可视化展示</li>
                 <li>• 完整的规格信息管理</li>
@@ -453,13 +480,13 @@ export default function UIComponentsShowcase() {
               </ul>
             </div>
           </div>
-          
+
           <Separator />
-          
+
           <div className="text-center">
             <p className="text-sm text-muted-foreground">
-              更多使用方法请参考 
-              <Button variant="link" className="p-0 h-auto text-sm">
+              更多使用方法请参考
+              <Button variant="link" className="h-auto p-0 text-sm">
                 UI组件库使用指南
               </Button>
             </p>
@@ -467,5 +494,5 @@ export default function UIComponentsShowcase() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

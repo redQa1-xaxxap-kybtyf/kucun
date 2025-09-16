@@ -1,32 +1,66 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query';
+import {
+    Edit,
+    Eye,
+    MoreHorizontal,
+    Plus,
+    Search,
+    Trash2
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Skeleton } from '@/components/ui/skeleton'
-import { MobileDataTable } from '@/components/ui/mobile-data-table'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { MobileDataTable } from '@/components/ui/mobile-data-table';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 // API and Types
-import { getProducts, productQueryKeys } from '@/lib/api/products'
-import { Product, ProductQueryParams } from '@/lib/types/product'
-import { PRODUCT_STATUS_LABELS, PRODUCT_UNIT_LABELS } from '@/lib/types/product'
+import { getProducts, productQueryKeys } from '@/lib/api/products';
+import type { Product, ProductQueryParams } from '@/lib/types/product';
+import {
+    PRODUCT_STATUS_LABELS,
+    PRODUCT_UNIT_LABELS,
+} from '@/lib/types/product';
 
 /**
  * 产品管理页面
  * 严格遵循全栈项目统一约定规范
  */
 export default function ProductsPage() {
-  const router = useRouter()
+  const router = useRouter();
   const [queryParams, setQueryParams] = React.useState<ProductQueryParams>({
     page: 1,
     limit: 20,
@@ -35,46 +69,57 @@ export default function ProductsPage() {
     unit: undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc',
-  })
+  });
 
   // 获取产品列表数据
   const { data, isLoading, error } = useQuery({
     queryKey: productQueryKeys.list(queryParams),
     queryFn: () => getProducts(queryParams),
-  })
+  });
 
   // 搜索处理
   const handleSearch = (value: string) => {
-    setQueryParams(prev => ({ ...prev, search: value, page: 1 }))
-  }
+    setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
+  };
 
   // 筛选处理
   const handleFilter = (key: keyof ProductQueryParams, value: any) => {
-    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }))
-  }
+    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
+  };
 
   // 分页处理
   const handlePageChange = (page: number) => {
-    setQueryParams(prev => ({ ...prev, page }))
-  }
+    setQueryParams(prev => ({ ...prev, page }));
+  };
 
   // 状态标签渲染
   const getStatusBadge = (status: string) => {
-    const variant = status === 'active' ? 'default' : 'secondary'
+    const variant = status === 'active' ? 'default' : 'secondary';
     return (
       <Badge variant={variant}>
-        {PRODUCT_STATUS_LABELS[status as keyof typeof PRODUCT_STATUS_LABELS] || status}
+        {PRODUCT_STATUS_LABELS[status as keyof typeof PRODUCT_STATUS_LABELS] ||
+          status}
       </Badge>
-    )
-  }
+    );
+  };
 
   // 移动端表格列配置
   const mobileColumns = [
     { key: 'name', title: '产品名称', mobilePrimary: true },
     { key: 'code', title: '产品编码', mobileLabel: '编码' },
-    { key: 'status', title: '状态', render: (item: Product) => getStatusBadge(item.status) },
-    { key: 'unit', title: '单位', render: (item: Product) => PRODUCT_UNIT_LABELS[item.unit as keyof typeof PRODUCT_UNIT_LABELS] || item.unit },
-  ]
+    {
+      key: 'status',
+      title: '状态',
+      render: (item: Product) => getStatusBadge(item.status),
+    },
+    {
+      key: 'unit',
+      title: '单位',
+      render: (item: Product) =>
+        PRODUCT_UNIT_LABELS[item.unit as keyof typeof PRODUCT_UNIT_LABELS] ||
+        item.unit,
+    },
+  ];
 
   if (error) {
     return (
@@ -91,7 +136,7 @@ export default function ProductsPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -118,7 +163,7 @@ export default function ProductsPage() {
                 <Input
                   placeholder="搜索产品名称或编码..."
                   value={queryParams.search}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={e => handleSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -126,7 +171,9 @@ export default function ProductsPage() {
             <div className="flex gap-2">
               <Select
                 value={queryParams.status || 'all'}
-                onValueChange={(value) => handleFilter('status', value === 'all' ? undefined : value)}
+                onValueChange={value =>
+                  handleFilter('status', value === 'all' ? undefined : value)
+                }
               >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="状态" />
@@ -139,7 +186,9 @@ export default function ProductsPage() {
               </Select>
               <Select
                 value={queryParams.unit || 'all'}
-                onValueChange={(value) => handleFilter('unit', value === 'all' ? undefined : value)}
+                onValueChange={value =>
+                  handleFilter('unit', value === 'all' ? undefined : value)
+                }
               >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="单位" />
@@ -161,7 +210,9 @@ export default function ProductsPage() {
         <CardHeader>
           <CardTitle>产品列表</CardTitle>
           <CardDescription>
-            {data?.pagination ? `共 ${data.pagination.total} 个产品` : '加载中...'}
+            {data?.pagination
+              ? `共 ${data.pagination.total} 个产品`
+              : '加载中...'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -194,16 +245,22 @@ export default function ProductsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data?.data?.map((product) => (
+                    {data?.data?.map(product => (
                       <TableRow key={product.id}>
-                        <TableCell className="font-medium">{product.code}</TableCell>
+                        <TableCell className="font-medium">
+                          {product.code}
+                        </TableCell>
                         <TableCell>{product.name}</TableCell>
                         <TableCell>{product.specification || '-'}</TableCell>
                         <TableCell>
-                          {PRODUCT_UNIT_LABELS[product.unit as keyof typeof PRODUCT_UNIT_LABELS] || product.unit}
+                          {PRODUCT_UNIT_LABELS[
+                            product.unit as keyof typeof PRODUCT_UNIT_LABELS
+                          ] || product.unit}
                         </TableCell>
                         <TableCell>{getStatusBadge(product.status)}</TableCell>
-                        <TableCell>{new Date(product.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          {new Date(product.createdAt).toLocaleDateString()}
+                        </TableCell>
                         <TableCell>
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
@@ -212,11 +269,19 @@ export default function ProductsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/products/${product.id}`)}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(`/products/${product.id}`)
+                                }
+                              >
                                 <Eye className="mr-2 h-4 w-4" />
                                 查看详情
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => router.push(`/products/${product.id}/edit`)}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(`/products/${product.id}/edit`)
+                                }
+                              >
                                 <Edit className="mr-2 h-4 w-4" />
                                 编辑
                               </DropdownMenuItem>
@@ -238,8 +303,8 @@ export default function ProductsPage() {
                 <MobileDataTable
                   data={data?.data || []}
                   columns={mobileColumns}
-                  onItemClick={(item) => router.push(`/products/${item.id}`)}
-                  renderActions={(item) => (
+                  onItemClick={item => router.push(`/products/${item.id}`)}
+                  renderActions={item => (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -247,11 +312,17 @@ export default function ProductsPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/products/${item.id}`)}>
+                        <DropdownMenuItem
+                          onClick={() => router.push(`/products/${item.id}`)}
+                        >
                           <Eye className="mr-2 h-4 w-4" />
                           查看详情
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/products/${item.id}/edit`)}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            router.push(`/products/${item.id}/edit`)
+                          }
+                        >
                           <Edit className="mr-2 h-4 w-4" />
                           编辑
                         </DropdownMenuItem>
@@ -269,7 +340,13 @@ export default function ProductsPage() {
               {data?.pagination && data.pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4">
                   <div className="text-sm text-muted-foreground">
-                    显示第 {((data.pagination.page - 1) * data.pagination.limit) + 1} - {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} 条，共 {data.pagination.total} 条
+                    显示第{' '}
+                    {(data.pagination.page - 1) * data.pagination.limit + 1} -{' '}
+                    {Math.min(
+                      data.pagination.page * data.pagination.limit,
+                      data.pagination.total
+                    )}{' '}
+                    条，共 {data.pagination.total} 条
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -281,13 +358,16 @@ export default function ProductsPage() {
                       上一页
                     </Button>
                     <div className="text-sm">
-                      第 {data.pagination.page} / {data.pagination.totalPages} 页
+                      第 {data.pagination.page} / {data.pagination.totalPages}{' '}
+                      页
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handlePageChange(data.pagination.page + 1)}
-                      disabled={data.pagination.page >= data.pagination.totalPages}
+                      disabled={
+                        data.pagination.page >= data.pagination.totalPages
+                      }
                     >
                       下一页
                     </Button>
@@ -299,5 +379,5 @@ export default function ProductsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

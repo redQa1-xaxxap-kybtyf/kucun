@@ -1,39 +1,15 @@
 // 应收账款组件
 // 实现应收账款查询和统计展示
 
-'use client'
+'use client';
 
-import * as React from 'react'
-import Link from 'next/link'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Badge } from '@/components/ui/badge'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Progress } from '@/components/ui/progress'
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select'
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
-import { cn } from '@/lib/utils'
-import { format } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
-import { 
-  Search, 
-  Filter, 
-  MoreHorizontal, 
-  Eye, 
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import {
+  Search,
+  Filter,
+  MoreHorizontal,
+  Eye,
   DollarSign,
   Calendar,
   User,
@@ -45,78 +21,115 @@ import {
   XCircle,
   RefreshCw,
   Download,
-  Plus
-} from 'lucide-react'
+  Plus,
+} from 'lucide-react';
+import Link from 'next/link';
+import * as React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { MobileDataTable } from '@/components/ui/mobile-data-table';
+import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { paymentUtils } from '@/lib/api/payments';
+import type {
+  AccountsReceivable,
+  AccountsReceivableQuery,
+  PaymentStatistics,
+} from '@/lib/types/payment';
+import { cn } from '@/lib/utils';
+
 
 // 使用T11移动端组件
-import { MobileDataTable } from '@/components/ui/mobile-data-table'
-
-import type { 
-  AccountsReceivable, 
-  AccountsReceivableQuery,
-  PaymentStatistics
-} from '@/lib/types/payment'
-import { paymentUtils } from '@/lib/api/payments'
 
 export interface AccountsReceivableProps {
-  receivables: AccountsReceivable[]
-  statistics: PaymentStatistics
-  total: number
-  page: number
-  pageSize: number
-  query: AccountsReceivableQuery
-  loading?: boolean
-  onQueryChange: (query: Partial<AccountsReceivableQuery>) => void
-  onView?: (receivable: AccountsReceivable) => void
-  onCreatePayment?: (receivable: AccountsReceivable) => void
-  onRefresh?: () => void
-  className?: string
+  receivables: AccountsReceivable[];
+  statistics: PaymentStatistics;
+  total: number;
+  page: number;
+  pageSize: number;
+  query: AccountsReceivableQuery;
+  loading?: boolean;
+  onQueryChange: (query: Partial<AccountsReceivableQuery>) => void;
+  onView?: (receivable: AccountsReceivable) => void;
+  onCreatePayment?: (receivable: AccountsReceivable) => void;
+  onRefresh?: () => void;
+  className?: string;
 }
 
-const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsReceivableProps>(
-  ({ 
-    receivables, 
-    statistics, 
-    total, 
-    page, 
-    pageSize, 
-    query, 
-    loading = false, 
-    onQueryChange, 
-    onView, 
-    onCreatePayment, 
-    onRefresh,
-    className,
-    ...props 
-  }, ref) => {
+const AccountsReceivableComponent = React.forwardRef<
+  HTMLDivElement,
+  AccountsReceivableProps
+>(
+  (
+    {
+      receivables,
+      statistics,
+      total,
+      page,
+      pageSize,
+      query,
+      loading = false,
+      onQueryChange,
+      onView,
+      onCreatePayment,
+      onRefresh,
+      className,
+      ...props
+    },
+    ref
+  ) => {
     // 搜索状态
-    const [searchValue, setSearchValue] = React.useState(query.search || '')
+    const [searchValue, setSearchValue] = React.useState(query.search || '');
 
     // 处理搜索
     const handleSearch = (value: string) => {
-      setSearchValue(value)
-      onQueryChange({ search: value, page: 1 })
-    }
+      setSearchValue(value);
+      onQueryChange({ search: value, page: 1 });
+    };
 
     // 处理筛选
     const handleFilter = (key: keyof AccountsReceivableQuery, value: any) => {
-      onQueryChange({ [key]: value, page: 1 })
-    }
+      onQueryChange({ [key]: value, page: 1 });
+    };
 
     // 处理分页
     const handlePageChange = (newPage: number) => {
-      onQueryChange({ page: newPage })
-    }
+      onQueryChange({ page: newPage });
+    };
 
     // 处理页面大小变化
     const handlePageSizeChange = (newPageSize: number) => {
-      onQueryChange({ pageSize: newPageSize, page: 1 })
-    }
+      onQueryChange({ pageSize: newPageSize, page: 1 });
+    };
 
     // 处理排序
     const handleSort = (sortBy: string, sortOrder: 'asc' | 'desc') => {
-      onQueryChange({ sortBy, sortOrder })
-    }
+      onQueryChange({ sortBy, sortOrder });
+    };
 
     // 获取付款状态配置
     const getPaymentStatusConfig = (status: string) => {
@@ -124,10 +137,10 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
         unpaid: { label: '未付款', color: 'red', icon: XCircle },
         partial: { label: '部分付款', color: 'yellow', icon: Clock },
         paid: { label: '已付款', color: 'green', icon: CheckCircle },
-        overdue: { label: '已逾期', color: 'red', icon: AlertTriangle }
-      }
-      return configs[status as keyof typeof configs] || configs.unpaid
-    }
+        overdue: { label: '已逾期', color: 'red', icon: AlertTriangle },
+      };
+      return configs[status as keyof typeof configs] || configs.unpaid;
+    };
 
     // 桌面端表格列定义
     const columns = [
@@ -136,13 +149,13 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
         title: '销售订单',
         width: '120px',
         render: (receivable: AccountsReceivable) => (
-          <Link 
+          <Link
             href={`/sales-orders/${receivable.salesOrderId}`}
-            className="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+            className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
           >
             {receivable.orderNumber}
           </Link>
-        )
+        ),
       },
       {
         key: 'customerName',
@@ -150,7 +163,7 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
         width: '150px',
         render: (receivable: AccountsReceivable) => (
           <div className="font-medium">{receivable.customerName}</div>
-        )
+        ),
       },
       {
         key: 'totalAmount',
@@ -161,7 +174,7 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
           <div className="font-medium">
             {paymentUtils.formatAmount(receivable.totalAmount)}
           </div>
-        )
+        ),
       },
       {
         key: 'paidAmount',
@@ -172,7 +185,7 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
           <div className="font-medium text-green-600">
             {paymentUtils.formatAmount(receivable.paidAmount)}
           </div>
-        )
+        ),
       },
       {
         key: 'remainingAmount',
@@ -183,44 +196,47 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
           <div className="font-medium text-orange-600">
             {paymentUtils.formatAmount(receivable.remainingAmount)}
           </div>
-        )
+        ),
       },
       {
         key: 'paymentProgress',
         title: '收款进度',
         width: '120px',
         render: (receivable: AccountsReceivable) => {
-          const progress = paymentUtils.calculatePaymentRate(receivable.totalAmount, receivable.paidAmount)
+          const progress = paymentUtils.calculatePaymentRate(
+            receivable.totalAmount,
+            receivable.paidAmount
+          );
           return (
             <div className="space-y-1">
               <Progress value={progress} className="h-2" />
-              <div className="text-xs text-center text-muted-foreground">
+              <div className="text-center text-xs text-muted-foreground">
                 {progress}%
               </div>
             </div>
-          )
-        }
+          );
+        },
       },
       {
         key: 'paymentStatus',
         title: '付款状态',
         width: '100px',
         render: (receivable: AccountsReceivable) => {
-          const config = getPaymentStatusConfig(receivable.paymentStatus)
-          const IconComponent = config.icon
+          const config = getPaymentStatusConfig(receivable.paymentStatus);
+          const IconComponent = config.icon;
           return (
-            <Badge 
-              variant="outline" 
+            <Badge
+              variant="outline"
               className={cn(
                 `text-${config.color}-600`,
                 `border-${config.color}-200`
               )}
             >
-              <IconComponent className="h-3 w-3 mr-1" />
+              <IconComponent className="mr-1 h-3 w-3" />
               {config.label}
             </Badge>
-          )
-        }
+          );
+        },
       },
       {
         key: 'orderDate',
@@ -230,20 +246,24 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
           <div className="text-sm">
             {format(new Date(receivable.orderDate), 'yyyy-MM-dd')}
           </div>
-        )
+        ),
       },
       {
         key: 'overdueDays',
         title: '逾期天数',
         width: '80px',
         render: (receivable: AccountsReceivable) => (
-          <div className={cn(
-            "text-sm font-medium",
-            receivable.overdueDays && receivable.overdueDays > 0 ? "text-red-600" : "text-muted-foreground"
-          )}>
+          <div
+            className={cn(
+              'text-sm font-medium',
+              receivable.overdueDays && receivable.overdueDays > 0
+                ? 'text-red-600'
+                : 'text-muted-foreground'
+            )}
+          >
             {receivable.overdueDays || 0}天
           </div>
-        )
+        ),
       },
       {
         key: 'actions',
@@ -273,43 +293,46 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
               )}
             </DropdownMenuContent>
           </DropdownMenu>
-        )
-      }
-    ]
+        ),
+      },
+    ];
 
     // 移动端卡片渲染
     const renderMobileCard = (receivable: AccountsReceivable) => {
-      const config = getPaymentStatusConfig(receivable.paymentStatus)
-      const IconComponent = config.icon
-      const progress = paymentUtils.calculatePaymentRate(receivable.totalAmount, receivable.paidAmount)
-      
+      const config = getPaymentStatusConfig(receivable.paymentStatus);
+      const IconComponent = config.icon;
+      const progress = paymentUtils.calculatePaymentRate(
+        receivable.totalAmount,
+        receivable.paidAmount
+      );
+
       return (
         <Card key={receivable.salesOrderId} className="mb-4">
           <CardContent className="p-4">
-            <div className="flex items-start justify-between mb-3">
+            <div className="mb-3 flex items-start justify-between">
               <div>
-                <Link 
+                <Link
                   href={`/sales-orders/${receivable.salesOrderId}`}
                   className="font-medium text-blue-600 hover:text-blue-800"
                 >
                   {receivable.orderNumber}
                 </Link>
-                <div className="text-sm text-muted-foreground mt-1">
+                <div className="mt-1 text-sm text-muted-foreground">
                   {receivable.customerName}
                 </div>
               </div>
-              <Badge 
-                variant="outline" 
+              <Badge
+                variant="outline"
                 className={cn(
                   `text-${config.color}-600`,
                   `border-${config.color}-200`
                 )}
               >
-                <IconComponent className="h-3 w-3 mr-1" />
+                <IconComponent className="mr-1 h-3 w-3" />
                 {config.label}
               </Badge>
             </div>
-            
+
             <div className="space-y-3">
               {/* 金额信息 */}
               <div className="grid grid-cols-3 gap-4 text-sm">
@@ -332,7 +355,7 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
                   </div>
                 </div>
               </div>
-              
+
               {/* 收款进度 */}
               <div className="space-y-2">
                 <div className="flex items-center justify-between text-sm">
@@ -341,54 +364,68 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
                 </div>
                 <Progress value={progress} className="h-2" />
               </div>
-              
+
               {/* 其他信息 */}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">订单日期:</span>
-                <span>{format(new Date(receivable.orderDate), 'yyyy-MM-dd')}</span>
+                <span>
+                  {format(new Date(receivable.orderDate), 'yyyy-MM-dd')}
+                </span>
               </div>
-              
+
               {receivable.overdueDays && receivable.overdueDays > 0 && (
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">逾期天数:</span>
-                  <span className="font-medium text-red-600">{receivable.overdueDays}天</span>
+                  <span className="font-medium text-red-600">
+                    {receivable.overdueDays}天
+                  </span>
                 </div>
               )}
             </div>
-            
+
             {/* 移动端操作按钮 */}
-            <div className="flex items-center justify-end space-x-2 mt-4 pt-3 border-t">
+            <div className="mt-4 flex items-center justify-end space-x-2 border-t pt-3">
               {onView && (
-                <Button variant="outline" size="sm" onClick={() => onView(receivable)}>
-                  <Eye className="h-3 w-3 mr-1" />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onView(receivable)}
+                >
+                  <Eye className="mr-1 h-3 w-3" />
                   查看
                 </Button>
               )}
               {onCreatePayment && receivable.remainingAmount > 0 && (
-                <Button variant="default" size="sm" onClick={() => onCreatePayment(receivable)}>
-                  <Plus className="h-3 w-3 mr-1" />
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onCreatePayment(receivable)}
+                >
+                  <Plus className="mr-1 h-3 w-3" />
                   收款
                 </Button>
               )}
             </div>
           </CardContent>
         </Card>
-      )
-    }
+      );
+    };
 
     if (loading) {
-      return <AccountsReceivableSkeleton />
+      return <AccountsReceivableSkeleton />;
     }
 
     return (
-      <div className={cn("space-y-6", className)} ref={ref} {...props}>
+      <div className={cn('space-y-6', className)} ref={ref} {...props}>
         {/* 统计卡片 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">总应收金额</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    总应收金额
+                  </p>
                   <p className="text-2xl font-bold">
                     {paymentUtils.formatAmount(statistics.totalReceivable)}
                   </p>
@@ -397,12 +434,14 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">已收金额</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    已收金额
+                  </p>
                   <p className="text-2xl font-bold text-green-600">
                     {paymentUtils.formatAmount(statistics.totalReceived)}
                   </p>
@@ -411,12 +450,14 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">待收金额</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    待收金额
+                  </p>
                   <p className="text-2xl font-bold text-orange-600">
                     {paymentUtils.formatAmount(statistics.totalPending)}
                   </p>
@@ -425,12 +466,14 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
               </div>
             </CardContent>
           </Card>
-          
+
           <Card>
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">收款率</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    收款率
+                  </p>
                   <p className="text-2xl font-bold">
                     {statistics.paymentRate.toFixed(1)}%
                   </p>
@@ -444,26 +487,28 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
         {/* 搜索和筛选栏 */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 md:space-x-4">
+            <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-x-4 md:space-y-0">
               {/* 搜索框 */}
-              <div className="flex-1 max-w-md">
+              <div className="max-w-md flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
                     placeholder="搜索订单号、客户名称..."
                     value={searchValue}
-                    onChange={(e) => handleSearch(e.target.value)}
+                    onChange={e => handleSearch(e.target.value)}
                     className="pl-10"
                   />
                 </div>
               </div>
-              
+
               {/* 筛选器 */}
               <div className="flex items-center space-x-2">
                 {/* 付款状态筛选 */}
                 <Select
                   value={query.paymentStatus || ''}
-                  onValueChange={(value) => handleFilter('paymentStatus', value || undefined)}
+                  onValueChange={value =>
+                    handleFilter('paymentStatus', value || undefined)
+                  }
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue placeholder="付款状态" />
@@ -476,7 +521,7 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
                     <SelectItem value="overdue">已逾期</SelectItem>
                   </SelectContent>
                 </Select>
-                
+
                 {/* 刷新按钮 */}
                 {onRefresh && (
                   <Button variant="outline" size="sm" onClick={onRefresh}>
@@ -492,7 +537,7 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
         {receivables.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <DollarSign className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
+              <DollarSign className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
               <p className="text-muted-foreground">暂无应收账款</p>
             </CardContent>
           </Card>
@@ -511,18 +556,18 @@ const AccountsReceivableComponent = React.forwardRef<HTMLDivElement, AccountsRec
           />
         )}
       </div>
-    )
+    );
   }
-)
+);
 
-AccountsReceivableComponent.displayName = "AccountsReceivableComponent"
+AccountsReceivableComponent.displayName = 'AccountsReceivableComponent';
 
 // 加载骨架屏
 function AccountsReceivableSkeleton() {
   return (
     <div className="space-y-6">
       {/* 统计卡片骨架屏 */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
             <CardContent className="p-4">
@@ -537,11 +582,11 @@ function AccountsReceivableSkeleton() {
           </Card>
         ))}
       </div>
-      
+
       {/* 搜索筛选骨架屏 */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0 md:space-x-4">
+          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-x-4 md:space-y-0">
             <Skeleton className="h-10 w-full max-w-md" />
             <div className="flex items-center space-x-2">
               <Skeleton className="h-10 w-32" />
@@ -550,7 +595,7 @@ function AccountsReceivableSkeleton() {
           </div>
         </CardContent>
       </Card>
-      
+
       {/* 表格骨架屏 */}
       <Card>
         <CardContent className="p-0">
@@ -573,7 +618,7 @@ function AccountsReceivableSkeleton() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
 
-export { AccountsReceivableComponent }
+export { AccountsReceivableComponent };

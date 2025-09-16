@@ -1,141 +1,188 @@
-'use client'
+'use client';
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { AlertCircle, ArrowLeft, Loader2, Package, Save } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
+import { useForm } from 'react-hook-form';
+
+import { ImageUpload } from '@/components/common/image-upload';
+import { SpecificationsEditor } from '@/components/products/specifications-editor';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 // Icons
-import { Save, ArrowLeft, Package, AlertCircle, Loader2 } from 'lucide-react'
 
 // Custom Components
-import { ImageUpload } from '@/components/common/image-upload'
-import { SpecificationsEditor } from '@/components/products/specifications-editor'
 
 // API and Types
-import { createProduct, updateProduct, productQueryKeys } from '@/lib/api/products'
-import { Product, ProductCreateInput, ProductUpdateInput } from '@/lib/types/product'
-import { 
-  productCreateSchema, 
-  productUpdateSchema, 
-  ProductCreateFormData, 
-  ProductUpdateFormData,
-  productCreateDefaults 
-} from '@/lib/validations/product'
-import { PRODUCT_UNIT_LABELS, PRODUCT_STATUS_LABELS } from '@/lib/types/product'
+import {
+    createProduct,
+    productQueryKeys,
+    updateProduct,
+} from '@/lib/api/products';
+import type {
+    Product,
+    ProductCreateInput,
+    ProductUpdateInput
+} from '@/lib/types/product';
+import {
+    PRODUCT_STATUS_LABELS,
+    PRODUCT_UNIT_LABELS
+} from '@/lib/types/product';
+import type {
+    ProductCreateFormData,
+    ProductUpdateFormData
+} from '@/lib/validations/product';
+import {
+    productCreateDefaults,
+    productCreateSchema,
+    productUpdateSchema,
+} from '@/lib/validations/product';
 
 interface ProductFormProps {
-  mode: 'create' | 'edit'
-  initialData?: Product
-  onSuccess?: (product: Product) => void
-  onCancel?: () => void
+  mode: 'create' | 'edit';
+  initialData?: Product;
+  onSuccess?: (product: Product) => void;
+  onCancel?: () => void;
 }
 
-export function ProductForm({ mode, initialData, onSuccess, onCancel }: ProductFormProps) {
-  const router = useRouter()
-  const queryClient = useQueryClient()
-  const [submitError, setSubmitError] = useState<string>('')
+export function ProductForm({
+  mode,
+  initialData,
+  onSuccess,
+  onCancel,
+}: ProductFormProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [submitError, setSubmitError] = useState<string>('');
 
   // 表单配置
-  const isEdit = mode === 'edit'
-  const schema = isEdit ? productUpdateSchema : productCreateSchema
-  
+  const isEdit = mode === 'edit';
+  const schema = isEdit ? productUpdateSchema : productCreateSchema;
+
   const form = useForm<ProductCreateFormData | ProductUpdateFormData>({
     resolver: zodResolver(schema),
-    defaultValues: isEdit && initialData ? {
-      id: initialData.id,
-      code: initialData.code,
-      name: initialData.name,
-      specification: initialData.specification || '',
-      unit: initialData.unit,
-      piecesPerUnit: initialData.piecesPerUnit,
-      weight: initialData.weight,
-      status: initialData.status,
-      specifications: initialData.specifications || productCreateDefaults.specifications,
-    } : {
-      ...productCreateDefaults,
-      code: '',
-      name: '',
-    }
-  })
+    defaultValues:
+      isEdit && initialData
+        ? {
+            id: initialData.id,
+            code: initialData.code,
+            name: initialData.name,
+            specification: initialData.specification || '',
+            unit: initialData.unit,
+            piecesPerUnit: initialData.piecesPerUnit,
+            weight: initialData.weight,
+            status: initialData.status,
+            specifications:
+              initialData.specifications ||
+              productCreateDefaults.specifications,
+          }
+        : {
+            ...productCreateDefaults,
+            code: '',
+            name: '',
+          },
+  });
 
   // 创建产品 Mutation
   const createMutation = useMutation({
     mutationFn: createProduct,
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() })
+    onSuccess: response => {
+      queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() });
       if (onSuccess) {
-        onSuccess(response.data)
+        onSuccess(response);
       } else {
-        router.push('/products')
+        router.push('/products');
       }
     },
-    onError: (error) => {
-      setSubmitError(error instanceof Error ? error.message : '创建产品失败')
-    }
-  })
+    onError: error => {
+      setSubmitError(error instanceof Error ? error.message : '创建产品失败');
+    },
+  });
 
   // 更新产品 Mutation
   const updateMutation = useMutation({
-    mutationFn: updateProduct,
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: productQueryKeys.detail(response.data.id) })
+    mutationFn: (data: ProductUpdateInput) => updateProduct(initialData!.id, data),
+    onSuccess: response => {
+      queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: productQueryKeys.detail(response.id),
+      });
       if (onSuccess) {
-        onSuccess(response.data)
+        onSuccess(response);
       } else {
-        router.push('/products')
+        router.push('/products');
       }
     },
-    onError: (error) => {
-      setSubmitError(error instanceof Error ? error.message : '更新产品失败')
-    }
-  })
+    onError: error => {
+      setSubmitError(error instanceof Error ? error.message : '更新产品失败');
+    },
+  });
 
-  const isLoading = createMutation.isPending || updateMutation.isPending
+  const isLoading = createMutation.isPending || updateMutation.isPending;
 
   // 表单提交
-  const onSubmit = async (data: ProductCreateFormData | ProductUpdateFormData) => {
-    setSubmitError('')
-    
+  const onSubmit = async (
+    data: ProductCreateFormData | ProductUpdateFormData
+  ) => {
+    setSubmitError('');
+
     try {
       if (isEdit) {
-        await updateMutation.mutateAsync(data as ProductUpdateFormData)
+        await updateMutation.mutateAsync(data as ProductUpdateFormData);
       } else {
-        await createMutation.mutateAsync(data as ProductCreateInput)
+        await createMutation.mutateAsync(data as ProductCreateInput);
       }
     } catch (error) {
       // 错误已在 mutation 的 onError 中处理
     }
-  }
+  };
 
   // 取消操作
   const handleCancel = () => {
     if (onCancel) {
-      onCancel()
+      onCancel();
     } else {
-      router.push('/products')
+      router.push('/products');
     }
-  }
+  };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto space-y-6 py-6">
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button variant="outline" size="sm" onClick={handleCancel}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             返回
           </Button>
           <div>
@@ -163,7 +210,7 @@ export function ProductForm({ mode, initialData, onSuccess, onCancel }: ProductF
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Package className="h-5 w-5 mr-2" />
+                <Package className="mr-2 h-5 w-5" />
                 基础信息
               </CardTitle>
               <CardDescription>
@@ -171,7 +218,7 @@ export function ProductForm({ mode, initialData, onSuccess, onCancel }: ProductF
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="code"
@@ -206,9 +253,7 @@ export function ProductForm({ mode, initialData, onSuccess, onCancel }: ProductF
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        产品的显示名称
-                      </FormDescription>
+                      <FormDescription>产品的显示名称</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -220,23 +265,27 @@ export function ProductForm({ mode, initialData, onSuccess, onCancel }: ProductF
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>计量单位</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isLoading}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="选择计量单位" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {Object.entries(PRODUCT_UNIT_LABELS).map(([value, label]) => (
-                            <SelectItem key={value} value={value}>
-                              {label}
-                            </SelectItem>
-                          ))}
+                          {Object.entries(PRODUCT_UNIT_LABELS).map(
+                            ([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            )
+                          )}
                         </SelectContent>
                       </Select>
-                      <FormDescription>
-                        产品的销售计量单位
-                      </FormDescription>
+                      <FormDescription>产品的销售计量单位</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -255,9 +304,9 @@ export function ProductForm({ mode, initialData, onSuccess, onCancel }: ProductF
                           max="10000"
                           disabled={isLoading}
                           {...field}
-                          onChange={(e) => {
-                            const value = e.target.value
-                            field.onChange(value ? parseInt(value, 10) : 1)
+                          onChange={e => {
+                            const value = e.target.value;
+                            field.onChange(value ? parseInt(value, 10) : 1);
                           }}
                         />
                       </FormControl>
@@ -284,9 +333,11 @@ export function ProductForm({ mode, initialData, onSuccess, onCancel }: ProductF
                           placeholder="如：25.5"
                           disabled={isLoading}
                           {...field}
-                          onChange={(e) => {
-                            const value = e.target.value
-                            field.onChange(value ? parseFloat(value) : undefined)
+                          onChange={e => {
+                            const value = e.target.value;
+                            field.onChange(
+                              value ? parseFloat(value) : undefined
+                            );
                           }}
                         />
                       </FormControl>
@@ -305,18 +356,24 @@ export function ProductForm({ mode, initialData, onSuccess, onCancel }: ProductF
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>产品状态</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={isLoading}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(PRODUCT_STATUS_LABELS).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
-                              </SelectItem>
-                            ))}
+                            {Object.entries(PRODUCT_STATUS_LABELS).map(
+                              ([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                  {label}
+                                </SelectItem>
+                              )
+                            )}
                           </SelectContent>
                         </Select>
                         <FormDescription>
@@ -401,13 +458,13 @@ export function ProductForm({ mode, initialData, onSuccess, onCancel }: ProductF
               取消
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <Save className="h-4 w-4 mr-2" />
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Save className="mr-2 h-4 w-4" />
               {isEdit ? '保存修改' : '创建产品'}
             </Button>
           </div>
         </form>
       </Form>
     </div>
-  )
+  );
 }

@@ -25,23 +25,27 @@
 ## 快速开始
 
 1. 克隆项目
+
 ```bash
 git clone <repository-url>
 cd kucun
 ```
 
 2. 安装依赖
+
 ```bash
 npm install
 ```
 
 3. 配置环境变量
+
 ```bash
 cp .env.example .env.local
 # 编辑 .env.local 文件，配置数据库连接等信息
 ```
 
 4. 启动开发服务器
+
 ```bash
 npm run dev
 ```
@@ -89,7 +93,7 @@ npm run dev
 1. **全栈类型安全**: 使用 TypeScript + Prisma + Zod 确保端到端类型安全
 2. **组件复用**: 严格使用 shadcn/ui 组件库，禁止重复开发
 3. **代码质量**: 通过 ESLint + Prettier + Husky 确保代码质量
-4. **命名规范**: 
+4. **命名规范**:
    - 数据库: snake_case
    - API响应: camelCase
    - 前端: camelCase

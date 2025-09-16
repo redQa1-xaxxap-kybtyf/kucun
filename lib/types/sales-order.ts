@@ -1,127 +1,132 @@
 // 销售订单管理相关类型定义
 // 遵循命名约定：数据库 snake_case → API camelCase → 前端 camelCase
 
-import { Customer } from './customer'
-import { Product } from './product'
-import { User } from './user'
+import type { Customer } from './customer';
+import type { Product } from './product';
+import type { User } from './user';
 
 // 销售订单状态枚举
-export type SalesOrderStatus = 'draft' | 'confirmed' | 'shipped' | 'completed' | 'cancelled'
+export type SalesOrderStatus =
+  | 'draft'
+  | 'confirmed'
+  | 'shipped'
+  | 'completed'
+  | 'cancelled';
 
 // 销售订单明细类型
 export interface SalesOrderItem {
-  id: string
-  salesOrderId: string
-  productId: string
-  colorCode?: string
-  productionDate?: string // 生产日期，瓷砖行业特有
-  quantity: number
-  unitPrice: number
-  subtotal: number
-  
+  id: string;
+  salesOrderId: string;
+  productId: string;
+  colorCode?: string;
+  productionDate?: string; // 生产日期，瓷砖行业特有
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+
   // 关联数据（可选，根据查询需要包含）
-  product?: Product
+  product?: Product;
 }
 
 // 基础销售订单类型（对应数据库模型）
 export interface SalesOrder {
-  id: string
-  orderNumber: string
-  customerId: string
-  userId: string
-  status: SalesOrderStatus
-  totalAmount: number
-  remarks?: string
-  createdAt: string
-  updatedAt: string
-  
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  userId: string;
+  status: SalesOrderStatus;
+  totalAmount: number;
+  remarks?: string;
+  createdAt: string;
+  updatedAt: string;
+
   // 关联数据（可选，根据查询需要包含）
-  customer?: Customer
-  user?: User
-  items?: SalesOrderItem[]
+  customer?: Customer;
+  user?: User;
+  items?: SalesOrderItem[];
 }
 
 // API 查询参数类型
 export interface SalesOrderQueryParams {
-  page?: number
-  limit?: number
-  search?: string
-  sortBy?: 'orderNumber' | 'createdAt' | 'updatedAt' | 'totalAmount' | 'status'
-  sortOrder?: 'asc' | 'desc'
-  status?: SalesOrderStatus
-  customerId?: string
-  userId?: string
-  startDate?: string
-  endDate?: string
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: 'orderNumber' | 'createdAt' | 'updatedAt' | 'totalAmount' | 'status';
+  sortOrder?: 'asc' | 'desc';
+  status?: SalesOrderStatus;
+  customerId?: string;
+  userId?: string;
+  startDate?: string;
+  endDate?: string;
 }
 
 // API 响应类型
 export interface SalesOrderListResponse {
-  success: boolean
+  success: boolean;
   data: {
-    salesOrders: SalesOrder[]
+    salesOrders: SalesOrder[];
     pagination: {
-      page: number
-      limit: number
-      total: number
-      totalPages: number
-    }
-  }
-  message?: string
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+  message?: string;
 }
 
 export interface SalesOrderDetailResponse {
-  success: boolean
-  data: SalesOrder
-  message?: string
+  success: boolean;
+  data: SalesOrder;
+  message?: string;
 }
 
 // 销售订单创建输入类型
 export interface SalesOrderCreateInput {
-  customerId: string
-  remarks?: string
-  items: SalesOrderItemCreateInput[]
+  customerId: string;
+  remarks?: string;
+  items: SalesOrderItemCreateInput[];
 }
 
 // 销售订单更新输入类型
 export interface SalesOrderUpdateInput {
-  id: string
-  customerId?: string
-  status?: SalesOrderStatus
-  remarks?: string
-  items?: SalesOrderItemUpdateInput[]
+  id: string;
+  customerId?: string;
+  status?: SalesOrderStatus;
+  remarks?: string;
+  items?: SalesOrderItemUpdateInput[];
 }
 
 // 销售订单明细创建输入类型
 export interface SalesOrderItemCreateInput {
-  productId: string
-  colorCode?: string
-  productionDate?: string
-  quantity: number
-  unitPrice: number
+  productId: string;
+  colorCode?: string;
+  productionDate?: string;
+  quantity: number;
+  unitPrice: number;
 }
 
 // 销售订单明细更新输入类型
 export interface SalesOrderItemUpdateInput {
-  id?: string // 新增明细时为空
-  productId: string
-  colorCode?: string
-  productionDate?: string
-  quantity: number
-  unitPrice: number
-  _action?: 'create' | 'update' | 'delete' // 操作类型
+  id?: string; // 新增明细时为空
+  productId: string;
+  colorCode?: string;
+  productionDate?: string;
+  quantity: number;
+  unitPrice: number;
+  _action?: 'create' | 'update' | 'delete'; // 操作类型
 }
 
 // 销售订单统计类型
 export interface SalesOrderStats {
-  totalOrders: number
-  totalAmount: number
-  statusCounts: Record<SalesOrderStatus, number>
+  totalOrders: number;
+  totalAmount: number;
+  statusCounts: Record<SalesOrderStatus, number>;
   monthlyStats: {
-    month: string
-    orderCount: number
-    totalAmount: number
-  }[]
+    month: string;
+    orderCount: number;
+    totalAmount: number;
+  }[];
 }
 
 // 显示标签映射
@@ -130,25 +135,31 @@ export const SALES_ORDER_STATUS_LABELS: Record<SalesOrderStatus, string> = {
   confirmed: '已确认',
   shipped: '已发货',
   completed: '已完成',
-  cancelled: '已取消'
-}
+  cancelled: '已取消',
+};
 
-export const SALES_ORDER_STATUS_VARIANTS: Record<SalesOrderStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+export const SALES_ORDER_STATUS_VARIANTS: Record<
+  SalesOrderStatus,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
   draft: 'outline',
   confirmed: 'default',
   shipped: 'secondary',
   completed: 'default',
-  cancelled: 'destructive'
-}
+  cancelled: 'destructive',
+};
 
 // 状态流转规则
-export const SALES_ORDER_STATUS_TRANSITIONS: Record<SalesOrderStatus, SalesOrderStatus[]> = {
+export const SALES_ORDER_STATUS_TRANSITIONS: Record<
+  SalesOrderStatus,
+  SalesOrderStatus[]
+> = {
   draft: ['confirmed', 'cancelled'],
   confirmed: ['shipped', 'cancelled'],
   shipped: ['completed', 'cancelled'],
   completed: [], // 已完成不能转换到其他状态
-  cancelled: [] // 已取消不能转换到其他状态
-}
+  cancelled: [], // 已取消不能转换到其他状态
+};
 
 // 排序选项
 export const SALES_ORDER_SORT_OPTIONS = [
@@ -156,8 +167,8 @@ export const SALES_ORDER_SORT_OPTIONS = [
   { value: 'updatedAt', label: '更新时间' },
   { value: 'orderNumber', label: '订单号' },
   { value: 'totalAmount', label: '订单金额' },
-  { value: 'status', label: '订单状态' }
-] as const
+  { value: 'status', label: '订单状态' },
+] as const;
 
 // 销售订单字段标签映射
 export const SALES_ORDER_FIELD_LABELS = {
@@ -174,8 +185,8 @@ export const SALES_ORDER_FIELD_LABELS = {
   colorCode: '色号',
   productionDate: '生产日期',
   createdAt: '创建时间',
-  updatedAt: '更新时间'
-} as const
+  updatedAt: '更新时间',
+} as const;
 
 // 瓷砖行业特有的色号选项（示例）
 export const COMMON_COLOR_CODES = [
@@ -188,22 +199,27 @@ export const COMMON_COLOR_CODES = [
   { value: 'R001', label: 'R001 - 砖红' },
   { value: 'BR001', label: 'BR001 - 棕色' },
   { value: 'BL001', label: 'BL001 - 黑色' },
-  { value: 'MIX001', label: 'MIX001 - 混色' }
-] as const
+  { value: 'MIX001', label: 'MIX001 - 混色' },
+] as const;
 
 // 订单明细计算辅助函数
-export const calculateOrderItemSubtotal = (quantity: number, unitPrice: number): number => {
-  return Math.round(quantity * unitPrice * 100) / 100 // 保留两位小数
-}
+export const calculateOrderItemSubtotal = (
+  quantity: number,
+  unitPrice: number
+): number => 
+   Math.round(quantity * unitPrice * 100) / 100 // 保留两位小数
+;
 
-export const calculateOrderTotal = (items: SalesOrderItem[]): number => {
-  return Math.round(items.reduce((total, item) => total + item.subtotal, 0) * 100) / 100
-}
+export const calculateOrderTotal = (items: SalesOrderItem[]): number => (
+    Math.round(items.reduce((total, item) => total + item.subtotal, 0) * 100) /
+    100
+  );
 
 // 订单状态检查函数
-export const canTransitionToStatus = (currentStatus: SalesOrderStatus, targetStatus: SalesOrderStatus): boolean => {
-  return SALES_ORDER_STATUS_TRANSITIONS[currentStatus].includes(targetStatus)
-}
+export const canTransitionToStatus = (
+  currentStatus: SalesOrderStatus,
+  targetStatus: SalesOrderStatus
+): boolean => SALES_ORDER_STATUS_TRANSITIONS[currentStatus].includes(targetStatus);
 
 // 订单状态颜色映射
 export const getStatusColor = (status: SalesOrderStatus): string => {
@@ -212,10 +228,10 @@ export const getStatusColor = (status: SalesOrderStatus): string => {
     confirmed: 'text-blue-600',
     shipped: 'text-orange-600',
     completed: 'text-green-600',
-    cancelled: 'text-red-600'
-  }
-  return colors[status]
-}
+    cancelled: 'text-red-600',
+  };
+  return colors[status];
+};
 
 // 订单状态背景色映射
 export const getStatusBgColor = (status: SalesOrderStatus): string => {
@@ -224,30 +240,30 @@ export const getStatusBgColor = (status: SalesOrderStatus): string => {
     confirmed: 'bg-blue-100',
     shipped: 'bg-orange-100',
     completed: 'bg-green-100',
-    cancelled: 'bg-red-100'
-  }
-  return colors[status]
-}
+    cancelled: 'bg-red-100',
+  };
+  return colors[status];
+};
 
 // 生产日期格式化函数
 export const formatProductionDate = (dateString?: string): string => {
-  if (!dateString) return ''
-  
+  if (!dateString) return '';
+
   try {
-    const date = new Date(dateString)
+    const date = new Date(dateString);
     return date.toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
-      day: '2-digit'
-    })
+      day: '2-digit',
+    });
   } catch {
-    return dateString
+    return dateString;
   }
-}
+};
 
 // 订单号生成规则说明
-export const ORDER_NUMBER_FORMAT = 'SO + YYYYMMDD + 6位时间戳'
+export const ORDER_NUMBER_FORMAT = 'SO + YYYYMMDD + 6位时间戳';
 
 // 默认分页配置
-export const DEFAULT_PAGE_SIZE = 20
-export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const
+export const DEFAULT_PAGE_SIZE = 20;
+export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;

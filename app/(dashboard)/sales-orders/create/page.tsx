@@ -1,35 +1,66 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, Save, Loader2, Plus, Trash2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { ArrowLeft, Save, Loader2, Plus, Trash2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
-import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders'
-import { getCustomers, customerQueryKeys } from '@/lib/api/customers'
-import { getProducts, productQueryKeys } from '@/lib/api/products'
-import { CreateSalesOrderSchema, CreateSalesOrderData } from '@/lib/schemas/sales-order'
+import { getCustomers, customerQueryKeys } from '@/lib/api/customers';
+import { getProducts, productQueryKeys } from '@/lib/api/products';
+import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
+import type {
+  CreateSalesOrderData } from '@/lib/schemas/sales-order';
+import {
+  CreateSalesOrderSchema
+} from '@/lib/schemas/sales-order';
 
 /**
  * 新建销售订单页面
  * 严格遵循全栈项目统一约定规范
  */
 export default function CreateSalesOrderPage() {
-  const router = useRouter()
-  const queryClient = useQueryClient()
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
   // 表单配置
   const form = useForm<CreateSalesOrderData>({
@@ -41,71 +72,77 @@ export default function CreateSalesOrderPage() {
       notes: '',
       items: [],
     },
-  })
+  });
 
   // 获取客户列表
   const { data: customers } = useQuery({
     queryKey: customerQueryKeys.list({ page: 1, limit: 100 }),
     queryFn: () => getCustomers({ page: 1, limit: 100 }),
-  })
+  });
 
   // 获取产品列表
   const { data: products } = useQuery({
     queryKey: productQueryKeys.list({ page: 1, limit: 100 }),
     queryFn: () => getProducts({ page: 1, limit: 100 }),
-  })
+  });
 
   // 创建销售订单Mutation
   const createMutation = useMutation({
     mutationFn: createSalesOrder,
-    onSuccess: (data) => {
-      toast.success('销售订单创建成功')
-      queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() })
-      router.push(`/sales-orders/${data.id}`)
+    onSuccess: data => {
+      toast.success('销售订单创建成功');
+      queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
+      router.push(`/sales-orders/${data.id}`);
     },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : '创建失败')
+    onError: error => {
+      toast.error(error instanceof Error ? error.message : '创建失败');
     },
-  })
+  });
 
   // 订单项状态
-  const [orderItems, setOrderItems] = React.useState<Array<{
-    productId: string
-    quantity: number
-    unitPrice: number
-    subtotal: number
-  }>>([])
+  const [orderItems, setOrderItems] = React.useState<
+    Array<{
+      productId: string;
+      quantity: number;
+      unitPrice: number;
+      subtotal: number;
+    }>
+  >([]);
 
   // 添加订单项
   const addOrderItem = () => {
-    setOrderItems([...orderItems, {
-      productId: '',
-      quantity: 1,
-      unitPrice: 0,
-      subtotal: 0,
-    }])
-  }
+    setOrderItems([
+      ...orderItems,
+      {
+        productId: '',
+        quantity: 1,
+        unitPrice: 0,
+        subtotal: 0,
+      },
+    ]);
+  };
 
   // 删除订单项
   const removeOrderItem = (index: number) => {
-    setOrderItems(orderItems.filter((_, i) => i !== index))
-  }
+    setOrderItems(orderItems.filter((_, i) => i !== index));
+  };
 
   // 更新订单项
   const updateOrderItem = (index: number, field: string, value: any) => {
-    const newItems = [...orderItems]
-    newItems[index] = { ...newItems[index], [field]: value }
-    
+    const newItems = [...orderItems];
+    newItems[index] = { ...newItems[index], [field]: value };
+
     // 计算小计
     if (field === 'quantity' || field === 'unitPrice') {
-      newItems[index].subtotal = newItems[index].quantity * newItems[index].unitPrice
+      newItems[index].subtotal =
+        newItems[index].quantity * newItems[index].unitPrice;
     }
-    
-    setOrderItems(newItems)
-  }
+
+    setOrderItems(newItems);
+  };
 
   // 计算总金额
-  const totalAmount = orderItems.reduce((sum, item) => sum + item.subtotal, 0)
+  const totalAmount = orderItems.reduce((sum, item) => sum + item.subtotal, 0);
 
   // 表单提交处理
   const onSubmit = (data: CreateSalesOrderData) => {
@@ -113,9 +150,9 @@ export default function CreateSalesOrderPage() {
       ...data,
       items: orderItems,
       totalAmount,
-    }
-    createMutation.mutate(orderData)
-  }
+    };
+    createMutation.mutate(orderData);
+  };
 
   return (
     <div className="space-y-6">
@@ -151,9 +188,7 @@ export default function CreateSalesOrderPage() {
                       <FormControl>
                         <Input placeholder="请输入订单号" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        订单的唯一标识号
-                      </FormDescription>
+                      <FormDescription>订单的唯一标识号</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -165,14 +200,17 @@ export default function CreateSalesOrderPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>客户 *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="选择客户" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {customers?.data?.map((customer) => (
+                          {customers?.data?.map(customer => (
                             <SelectItem key={customer.id} value={customer.id}>
                               {customer.name}
                             </SelectItem>
@@ -190,7 +228,10 @@ export default function CreateSalesOrderPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>状态 *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="选择状态" />
@@ -215,15 +256,13 @@ export default function CreateSalesOrderPage() {
                     <FormItem>
                       <FormLabel>备注</FormLabel>
                       <FormControl>
-                        <Textarea 
+                        <Textarea
                           placeholder="请输入备注信息"
                           className="min-h-[100px]"
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        订单的备注信息
-                      </FormDescription>
+                      <FormDescription>订单的备注信息</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -240,11 +279,15 @@ export default function CreateSalesOrderPage() {
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">商品数量:</span>
+                    <span className="text-sm text-muted-foreground">
+                      商品数量:
+                    </span>
                     <span className="font-medium">{orderItems.length} 项</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">总数量:</span>
+                    <span className="text-sm text-muted-foreground">
+                      总数量:
+                    </span>
                     <span className="font-medium">
                       {orderItems.reduce((sum, item) => sum + item.quantity, 0)}
                     </span>
@@ -274,7 +317,7 @@ export default function CreateSalesOrderPage() {
             </CardHeader>
             <CardContent>
               {orderItems.length === 0 ? (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="py-8 text-center text-muted-foreground">
                   暂无商品，请点击"添加商品"按钮添加
                 </div>
               ) : (
@@ -294,13 +337,15 @@ export default function CreateSalesOrderPage() {
                         <TableCell>
                           <Select
                             value={item.productId}
-                            onValueChange={(value) => updateOrderItem(index, 'productId', value)}
+                            onValueChange={value =>
+                              updateOrderItem(index, 'productId', value)
+                            }
                           >
                             <SelectTrigger>
                               <SelectValue placeholder="选择产品" />
                             </SelectTrigger>
                             <SelectContent>
-                              {products?.data?.map((product) => (
+                              {products?.data?.map(product => (
                                 <SelectItem key={product.id} value={product.id}>
                                   {product.name}
                                 </SelectItem>
@@ -313,7 +358,13 @@ export default function CreateSalesOrderPage() {
                             type="number"
                             min="1"
                             value={item.quantity}
-                            onChange={(e) => updateOrderItem(index, 'quantity', Number(e.target.value))}
+                            onChange={e =>
+                              updateOrderItem(
+                                index,
+                                'quantity',
+                                Number(e.target.value)
+                              )
+                            }
                           />
                         </TableCell>
                         <TableCell>
@@ -322,7 +373,13 @@ export default function CreateSalesOrderPage() {
                             min="0"
                             step="0.01"
                             value={item.unitPrice}
-                            onChange={(e) => updateOrderItem(index, 'unitPrice', Number(e.target.value))}
+                            onChange={e =>
+                              updateOrderItem(
+                                index,
+                                'unitPrice',
+                                Number(e.target.value)
+                              )
+                            }
                           />
                         </TableCell>
                         <TableCell>¥{item.subtotal.toFixed(2)}</TableCell>
@@ -371,5 +428,5 @@ export default function CreateSalesOrderPage() {
         </form>
       </Form>
     </div>
-  )
+  );
 }

@@ -1,23 +1,41 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Loader2, User, Mail, Lock, ArrowLeft } from 'lucide-react'
-import { userValidations, type UserRegisterInput } from '@/lib/validations/database'
-import Link from 'next/link'
+import { zodResolver } from '@hookform/resolvers/zod';
+import { Loader2, User, Mail, Lock, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  userValidations,
+  type UserRegisterInput,
+} from '@/lib/validations/database';
+
 
 export default function RegisterPage() {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [formError, setFormError] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [formError, setFormError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   // 表单配置
   const form = useForm<UserRegisterInput>({
@@ -29,12 +47,12 @@ export default function RegisterPage() {
       password: '',
       confirmPassword: '',
     },
-  })
+  });
 
   const handleSubmit = async (data: UserRegisterInput) => {
-    setIsLoading(true)
-    setFormError('')
-    setSuccessMessage('')
+    setIsLoading(true);
+    setFormError('');
+    setSuccessMessage('');
 
     try {
       const response = await fetch('/api/auth/register', {
@@ -48,29 +66,29 @@ export default function RegisterPage() {
           name: data.name,
           password: data.password,
         }),
-      })
+      });
 
-      const result = await response.json()
+      const result = await response.json();
 
       if (result.success) {
-        setSuccessMessage('注册成功！正在跳转到登录页面...')
+        setSuccessMessage('注册成功！正在跳转到登录页面...');
         setTimeout(() => {
-          router.push('/auth/signin')
-        }, 2000)
+          router.push('/auth/signin');
+        }, 2000);
       } else {
-        setFormError(result.error || '注册失败，请稍后重试')
+        setFormError(result.error || '注册失败，请稍后重试');
       }
     } catch (error) {
-      console.error('注册错误:', error)
-      setFormError('注册失败，请稍后重试')
+      console.error('注册错误:', error);
+      setFormError('注册失败，请稍后重试');
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
+    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
         <Card>
           <CardHeader className="space-y-1">
             <div className="flex items-center gap-2">
@@ -78,11 +96,11 @@ export default function RegisterPage() {
                 href="/auth/signin"
                 className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
               >
-                <ArrowLeft className="h-4 w-4 mr-1" />
+                <ArrowLeft className="mr-1 h-4 w-4" />
                 返回登录
               </Link>
             </div>
-            <CardTitle className="text-2xl text-center">用户注册</CardTitle>
+            <CardTitle className="text-center text-2xl">用户注册</CardTitle>
             <CardDescription className="text-center">
               创建您的库存管理系统账户
             </CardDescription>
@@ -105,7 +123,10 @@ export default function RegisterPage() {
             )}
 
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+              <form
+                onSubmit={form.handleSubmit(handleSubmit)}
+                className="space-y-4"
+              >
                 {/* 邮箱字段 */}
                 <FormField
                   control={form.control}
@@ -223,12 +244,10 @@ export default function RegisterPage() {
                   )}
                 />
 
-                <Button
-                  type="submit"
-                  className="w-full"
-                  disabled={isLoading}
-                >
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                <Button type="submit" className="w-full" disabled={isLoading}>
+                  {isLoading && (
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  )}
                   {isLoading ? '注册中...' : '注册账户'}
                 </Button>
               </form>
@@ -249,5 +268,5 @@ export default function RegisterPage() {
         </Card>
       </div>
     </div>
-  )
+  );
 }

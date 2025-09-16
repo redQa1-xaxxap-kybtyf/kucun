@@ -1,31 +1,49 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, Save, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
-import { createCustomer, customerQueryKeys } from '@/lib/api/customers'
-import { CreateCustomerSchema, CreateCustomerData } from '@/lib/schemas/customer'
+import { createCustomer, customerQueryKeys } from '@/lib/api/customers';
+import type {
+  CreateCustomerData } from '@/lib/schemas/customer';
+import {
+  CreateCustomerSchema
+} from '@/lib/schemas/customer';
 
 /**
  * 新建客户页面
  * 严格遵循全栈项目统一约定规范
  */
 export default function CreateCustomerPage() {
-  const router = useRouter()
-  const queryClient = useQueryClient()
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
   // 表单配置
   const form = useForm<CreateCustomerData>({
@@ -36,25 +54,25 @@ export default function CreateCustomerPage() {
       address: '',
       extendedInfo: {},
     },
-  })
+  });
 
   // 创建客户Mutation
   const createMutation = useMutation({
     mutationFn: createCustomer,
-    onSuccess: (data) => {
-      toast.success('客户创建成功')
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() })
-      router.push(`/customers/${data.id}`)
+    onSuccess: data => {
+      toast.success('客户创建成功');
+      queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
+      router.push(`/customers/${data.id}`);
     },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : '创建失败')
+    onError: error => {
+      toast.error(error instanceof Error ? error.message : '创建失败');
     },
-  })
+  });
 
   // 表单提交处理
   const onSubmit = (data: CreateCustomerData) => {
-    createMutation.mutate(data)
-  }
+    createMutation.mutate(data);
+  };
 
   return (
     <div className="space-y-6">
@@ -107,9 +125,7 @@ export default function CreateCustomerPage() {
                       <FormControl>
                         <Input placeholder="请输入联系电话" {...field} />
                       </FormControl>
-                      <FormDescription>
-                        客户的主要联系电话
-                      </FormDescription>
+                      <FormDescription>客户的主要联系电话</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -122,15 +138,13 @@ export default function CreateCustomerPage() {
                     <FormItem>
                       <FormLabel>地址</FormLabel>
                       <FormControl>
-                        <Textarea 
+                        <Textarea
                           placeholder="请输入客户地址"
                           className="min-h-[100px]"
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        客户的详细地址信息
-                      </FormDescription>
+                      <FormDescription>客户的详细地址信息</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -202,5 +216,5 @@ export default function CreateCustomerPage() {
         </form>
       </Form>
     </div>
-  )
+  );
 }

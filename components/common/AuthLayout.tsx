@@ -1,31 +1,33 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter, usePathname } from 'next/navigation'
-import { cn } from '@/lib/utils'
-import { DashboardLayout } from './DashboardLayout'
-import { GlobalSearch } from './GlobalSearch'
-import { Breadcrumb } from './Breadcrumb'
-import { canAccessPath } from '@/lib/utils/permissions'
+import { useRouter, usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import * as React from 'react';
+
+import { cn } from '@/lib/utils';
+import { canAccessPath } from '@/lib/utils/permissions';
+
+import { Breadcrumb } from './Breadcrumb';
+import { DashboardLayout } from './DashboardLayout';
+import { GlobalSearch } from './GlobalSearch';
 
 interface AuthLayoutProps {
   /** 子组件 */
-  children: React.ReactNode
+  children: React.ReactNode;
   /** 自定义样式类名 */
-  className?: string
+  className?: string;
   /** 是否需要认证 */
-  requireAuth?: boolean
+  requireAuth?: boolean;
   /** 需要的角色权限 */
-  requiredRoles?: string[]
+  requiredRoles?: string[];
   /** 是否显示面包屑 */
-  showBreadcrumb?: boolean
+  showBreadcrumb?: boolean;
   /** 是否显示全局搜索 */
-  enableGlobalSearch?: boolean
+  enableGlobalSearch?: boolean;
   /** 页面标题 */
-  title?: string
+  title?: string;
   /** 页面描述 */
-  description?: string
+  description?: string;
 }
 
 /**
@@ -41,82 +43,82 @@ export function AuthLayout({
   showBreadcrumb = true,
   enableGlobalSearch = true,
   title,
-  description
+  description,
 }: AuthLayoutProps) {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const pathname = usePathname()
-  
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const pathname = usePathname();
+
   // 全局搜索状态
-  const [globalSearchOpen, setGlobalSearchOpen] = React.useState(false)
+  const [globalSearchOpen, setGlobalSearchOpen] = React.useState(false);
 
   // 认证检查
   React.useEffect(() => {
-    if (status === 'loading') return
+    if (status === 'loading') return;
 
     if (requireAuth && status === 'unauthenticated') {
       // 未认证用户重定向到登录页
-      const signInUrl = `/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`
-      router.push(signInUrl)
-      return
+      const signInUrl = `/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`;
+      router.push(signInUrl);
+      return;
     }
 
     if (session?.user && requiredRoles.length > 0) {
       // 检查角色权限
-      const hasRequiredRole = requiredRoles.includes(session.user.role)
+      const hasRequiredRole = requiredRoles.includes(session.user.role);
       if (!hasRequiredRole) {
-        router.push('/auth/error?error=AccessDenied')
-        return
+        router.push('/auth/error?error=AccessDenied');
+        return;
       }
     }
 
     if (session?.user) {
       // 检查路径访问权限
-      const canAccess = canAccessPath(session.user.role, pathname)
+      const canAccess = canAccessPath(session.user.role, pathname);
       if (!canAccess) {
-        router.push('/auth/error?error=AccessDenied')
-        return
+        router.push('/auth/error?error=AccessDenied');
+        return;
       }
     }
-  }, [status, session, requireAuth, requiredRoles, pathname, router])
+  }, [status, session, requireAuth, requiredRoles, pathname, router]);
 
   // 全局键盘快捷键
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ctrl/Cmd + K 打开全局搜索
       if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-        event.preventDefault()
+        event.preventDefault();
         if (enableGlobalSearch) {
-          setGlobalSearchOpen(true)
+          setGlobalSearchOpen(true);
         }
       }
-    }
+    };
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [enableGlobalSearch])
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [enableGlobalSearch]);
 
   // 处理搜索
   const handleSearch = (query: string) => {
-    console.log('搜索:', query)
+    console.log('搜索:', query);
     // 这里可以添加搜索逻辑或导航到搜索结果页面
-  }
+  };
 
   // 加载状态
   if (status === 'loading') {
-    return <AuthLoadingScreen />
+    return <AuthLoadingScreen />;
   }
 
   // 未认证状态
   if (requireAuth && !session) {
-    return null // 将重定向到登录页
+    return null; // 将重定向到登录页
   }
 
   // 权限不足状态
   if (session?.user && requiredRoles.length > 0) {
-    const hasRequiredRole = requiredRoles.includes(session.user.role)
+    const hasRequiredRole = requiredRoles.includes(session.user.role);
     if (!hasRequiredRole) {
-      return <AccessDeniedScreen />
+      return <AccessDeniedScreen />;
     }
   }
 
@@ -131,13 +133,13 @@ export function AuthLayout({
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
                 {description && (
-                  <p className="text-muted-foreground mt-2">{description}</p>
+                  <p className="mt-2 text-muted-foreground">{description}</p>
                 )}
               </div>
             )}
           </div>
         )}
-        
+
         {/* 主要内容 */}
         {children}
       </DashboardLayout>
@@ -151,7 +153,7 @@ export function AuthLayout({
         />
       )}
     </>
-  )
+  );
 }
 
 /**
@@ -159,27 +161,29 @@ export function AuthLayout({
  */
 function AuthLoadingScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center space-y-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="space-y-4 text-center">
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">正在加载...</h2>
-          <p className="text-sm text-muted-foreground">请稍候，正在验证您的身份</p>
+          <p className="text-sm text-muted-foreground">
+            请稍候，正在验证您的身份
+          </p>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /**
  * 访问被拒绝屏幕
  */
 function AccessDeniedScreen() {
-  const router = useRouter()
+  const router = useRouter();
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="text-center space-y-6 max-w-md">
+    <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="max-w-md space-y-6 text-center">
         <div className="space-y-2">
           <h1 className="text-4xl font-bold text-destructive">403</h1>
           <h2 className="text-xl font-semibold">访问被拒绝</h2>
@@ -187,24 +191,24 @@ function AccessDeniedScreen() {
             抱歉，您没有权限访问此页面。请联系管理员获取相应权限。
           </p>
         </div>
-        
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+
+        <div className="flex flex-col justify-center gap-4 sm:flex-row">
           <button
             onClick={() => router.back()}
-            className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            className="px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
           >
             返回上一页
           </button>
           <button
             onClick={() => router.push('/dashboard')}
-            className="px-4 py-2 text-sm font-medium bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors"
+            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
           >
             返回首页
           </button>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /**
@@ -214,9 +218,9 @@ function AccessDeniedScreen() {
 interface PageWrapperProps extends AuthLayoutProps {
   /** 页面元数据 */
   meta?: {
-    title?: string
-    description?: string
-  }
+    title?: string;
+    description?: string;
+  };
 }
 
 export function PageWrapper({
@@ -229,19 +233,15 @@ export function PageWrapper({
   // 设置页面标题
   React.useEffect(() => {
     if (title) {
-      document.title = `${title} - 库存管理工具`
+      document.title = `${title} - 库存管理工具`;
     }
-  }, [title])
+  }, [title]);
 
   return (
-    <AuthLayout
-      title={title}
-      description={description}
-      {...props}
-    >
+    <AuthLayout title={title} description={description} {...props}>
       {children}
     </AuthLayout>
-  )
+  );
 }
 
 /**
@@ -251,15 +251,13 @@ export function withAuthLayout<P extends object>(
   Component: React.ComponentType<P>,
   layoutProps?: Omit<AuthLayoutProps, 'children'>
 ) {
-  const WrappedComponent = (props: P) => {
-    return (
+  const WrappedComponent = (props: P) => (
       <AuthLayout {...layoutProps}>
         <Component {...props} />
       </AuthLayout>
-    )
-  }
+    );
 
-  WrappedComponent.displayName = `withAuthLayout(${Component.displayName || Component.name})`
-  
-  return WrappedComponent
+  WrappedComponent.displayName = `withAuthLayout(${Component.displayName || Component.name})`;
+
+  return WrappedComponent;
 }

@@ -21,6 +21,7 @@
 **用途**: 展示瓷砖色号，支持颜色可视化和交互选择
 
 **基本用法**:
+
 ```tsx
 import { ColorCodeDisplay } from '@/components/ui/color-code-display'
 
@@ -28,20 +29,22 @@ import { ColorCodeDisplay } from '@/components/ui/color-code-display'
 <ColorCodeDisplay colorCode="W001" />
 
 // 交互式色号选择
-<ColorCodeDisplay 
-  colorCode="W001" 
-  interactive 
-  onColorCodeClick={(code) => console.log(code)} 
+<ColorCodeDisplay
+  colorCode="W001"
+  interactive
+  onColorCodeClick={(code) => console.log(code)}
 />
 ```
 
 **主要特性**:
+
 - 支持常见瓷砖色号的颜色映射
 - 可交互的色号选择
 - 响应式设计，移动端友好
 - 支持自定义标签和样式变体
 
 **组件变体**:
+
 - `ColorCodeSelector`: 下拉式色号选择器
 - `ColorCodeGrid`: 网格式色号展示
 
@@ -50,6 +53,7 @@ import { ColorCodeDisplay } from '@/components/ui/color-code-display'
 **用途**: 展示瓷砖的详细规格信息，包括尺寸、厚度、表面处理等
 
 **基本用法**:
+
 ```tsx
 import { SpecificationDisplay } from '@/components/ui/specification-display'
 
@@ -66,12 +70,14 @@ const specification = {
 ```
 
 **主要特性**:
+
 - 完整的瓷砖规格数据结构
 - 紧凑模式和详细模式切换
 - 规格比较功能
 - 移动端优化的展示方式
 
 **组件变体**:
+
 - `SpecificationCard`: 卡片式规格展示
 - `SpecificationCompare`: 规格对比表格
 
@@ -80,8 +86,9 @@ const specification = {
 **用途**: 专门用于瓷砖生产日期的选择，支持批次管理
 
 **基本用法**:
+
 ```tsx
-import { ProductionDatePicker } from '@/components/ui/production-date-picker'
+import { ProductionDatePicker } from '@/components/ui/production-date-picker';
 
 <ProductionDatePicker
   value={productionDate}
@@ -89,16 +96,18 @@ import { ProductionDatePicker } from '@/components/ui/production-date-picker'
   format="YYYY-MM-DD"
   showBatchInfo
   batches={productionBatches}
-/>
+/>;
 ```
 
 **主要特性**:
+
 - 多种日期格式支持
 - 生产批次信息展示
 - 日期范围限制
 - 移动端优化的日历界面
 
 **组件变体**:
+
 - `ProductionDateRangePicker`: 日期范围选择器
 
 #### 1.4 库存状态指示器 (InventoryStatusIndicator)
@@ -106,8 +115,9 @@ import { ProductionDatePicker } from '@/components/ui/production-date-picker'
 **用途**: 显示库存状态、预警级别和库存健康度
 
 **基本用法**:
+
 ```tsx
-import { InventoryStatusIndicator } from '@/components/ui/inventory-status-indicator'
+import { InventoryStatusIndicator } from '@/components/ui/inventory-status-indicator';
 
 <InventoryStatusIndicator
   status="low_stock"
@@ -115,16 +125,18 @@ import { InventoryStatusIndicator } from '@/components/ui/inventory-status-indic
   safetyStock={100}
   maxStock={1000}
   showProgress
-/>
+/>;
 ```
 
 **主要特性**:
+
 - 多种库存状态支持
 - 库存进度条展示
 - 自动预警级别计算
 - 库存健康度统计
 
 **组件变体**:
+
 - `InventoryHealth`: 库存健康度总览
 - `QuickStatusToggle`: 快速状态切换器
 
@@ -135,6 +147,7 @@ import { InventoryStatusIndicator } from '@/components/ui/inventory-status-indic
 **用途**: 响应式数据表格，桌面端显示表格，移动端显示卡片
 
 **基本用法**:
+
 ```tsx
 import { MobileDataTable } from '@/components/ui/mobile-data-table'
 
@@ -160,6 +173,7 @@ const columns = [
 ```
 
 **主要特性**:
+
 - 自动响应式布局切换
 - 灵活的列配置
 - 移动端优化的卡片展示
@@ -170,6 +184,7 @@ const columns = [
 **用途**: 移动端优化的搜索和筛选组件
 
 **基本用法**:
+
 ```tsx
 import { MobileSearchBar } from '@/components/ui/mobile-search-bar'
 
@@ -200,6 +215,7 @@ const sortOptions = [
 ```
 
 **主要特性**:
+
 - 实时搜索支持
 - 底部抽屉式筛选器
 - 多种筛选类型支持
@@ -211,25 +227,25 @@ const sortOptions = [
 
 ```tsx
 // 正确的导入方式
-import { ColorCodeDisplay } from '@/components/ui/color-code-display'
-import { SpecificationDisplay } from '@/components/ui/specification-display'
+import { ColorCodeDisplay } from '@/components/ui/color-code-display';
+import { SpecificationDisplay } from '@/components/ui/specification-display';
 
 // 避免的导入方式
-import ColorCodeDisplay from '@/components/ui/color-code-display' // ❌
+import ColorCodeDisplay from '@/components/ui/color-code-display'; // ❌
 ```
 
 ### 2. 样式规范
 
 ```tsx
 // 正确的样式使用
-<ColorCodeDisplay 
-  colorCode="W001" 
+<ColorCodeDisplay
+  colorCode="W001"
   className="mb-4" // 使用 Tailwind CSS 类
 />
 
 // 避免的样式使用
-<ColorCodeDisplay 
-  colorCode="W001" 
+<ColorCodeDisplay
+  colorCode="W001"
   style={{ marginBottom: '16px' }} // ❌ 避免内联样式
 />
 ```
@@ -251,15 +267,15 @@ import ColorCodeDisplay from '@/components/ui/color-code-display' // ❌
 所有组件都提供完整的TypeScript类型定义：
 
 ```tsx
-import { TileSpecification } from '@/components/ui/specification-display'
+import { TileSpecification } from '@/components/ui/specification-display';
 
 const spec: TileSpecification = {
   length: 600,
   width: 600,
   thickness: 10,
   surface: 'polished', // 类型安全的枚举值
-  grade: 'AAA'
-}
+  grade: 'AAA',
+};
 ```
 
 ## 最佳实践
@@ -276,7 +292,7 @@ const spec: TileSpecification = {
     <div className="space-y-4">
       <ColorCodeDisplay colorCode={product.colorCode} />
       <SpecificationDisplay specification={product.specification} />
-      <InventoryStatusIndicator 
+      <InventoryStatusIndicator
         status={product.inventoryStatus}
         currentStock={product.stock}
         safetyStock={product.safetyStock}
@@ -295,23 +311,22 @@ const transformApiData = (apiData: ApiProduct): DisplayProduct => ({
   // 遵循 snake_case → camelCase 转换规则
   colorCode: apiData.color_code,
   productionDate: apiData.production_date,
-  safetyStock: apiData.safety_stock
-})
+  safetyStock: apiData.safety_stock,
+});
 ```
 
 ### 3. 错误处理
 
 ```tsx
 // 推荐的错误处理方式
-<SpecificationDisplay 
-  specification={specification || {}} 
-  showAll={false}
-/>
+<SpecificationDisplay specification={specification || {}} showAll={false} />;
 
 // 或使用条件渲染
-{specification && (
-  <SpecificationDisplay specification={specification} showAll />
-)}
+{
+  specification && (
+    <SpecificationDisplay specification={specification} showAll />
+  );
+}
 ```
 
 ## 性能优化
@@ -320,11 +335,11 @@ const transformApiData = (apiData: ApiProduct): DisplayProduct => ({
 
 ```tsx
 // 对于大型组件使用懒加载
-const MobileDataTable = React.lazy(() => 
+const MobileDataTable = React.lazy(() =>
   import('@/components/ui/mobile-data-table').then(module => ({
-    default: module.MobileDataTable
+    default: module.MobileDataTable,
   }))
-)
+);
 ```
 
 ### 2. 记忆化
@@ -332,8 +347,8 @@ const MobileDataTable = React.lazy(() =>
 ```tsx
 // 对于复杂计算使用 useMemo
 const processedData = React.useMemo(() => {
-  return data.map(transformApiData)
-}, [data])
+  return data.map(transformApiData);
+}, [data]);
 ```
 
 ## 测试指南
@@ -341,33 +356,33 @@ const processedData = React.useMemo(() => {
 ### 1. 组件测试
 
 ```tsx
-import { render, screen } from '@testing-library/react'
-import { ColorCodeDisplay } from '@/components/ui/color-code-display'
+import { render, screen } from '@testing-library/react';
+import { ColorCodeDisplay } from '@/components/ui/color-code-display';
 
 test('displays color code correctly', () => {
-  render(<ColorCodeDisplay colorCode="W001" />)
-  expect(screen.getByText('W001')).toBeInTheDocument()
-})
+  render(<ColorCodeDisplay colorCode="W001" />);
+  expect(screen.getByText('W001')).toBeInTheDocument();
+});
 ```
 
 ### 2. 交互测试
 
 ```tsx
-import { fireEvent } from '@testing-library/react'
+import { fireEvent } from '@testing-library/react';
 
 test('handles color code click', () => {
-  const handleClick = jest.fn()
+  const handleClick = jest.fn();
   render(
-    <ColorCodeDisplay 
-      colorCode="W001" 
-      interactive 
-      onColorCodeClick={handleClick} 
+    <ColorCodeDisplay
+      colorCode="W001"
+      interactive
+      onColorCodeClick={handleClick}
     />
-  )
-  
-  fireEvent.click(screen.getByText('W001'))
-  expect(handleClick).toHaveBeenCalledWith('W001')
-})
+  );
+
+  fireEvent.click(screen.getByText('W001'));
+  expect(handleClick).toHaveBeenCalledWith('W001');
+});
 ```
 
 ## 故障排除
@@ -390,14 +405,17 @@ test('handles color code click', () => {
 
 ```tsx
 // 使用开发模式查看组件状态
-{process.env.NODE_ENV === 'development' && (
-  <pre>{JSON.stringify(componentState, null, 2)}</pre>
-)}
+{
+  process.env.NODE_ENV === 'development' && (
+    <pre>{JSON.stringify(componentState, null, 2)}</pre>
+  );
+}
 ```
 
 ## 更新日志
 
 ### v1.0.0 (2025-01-16)
+
 - 初始版本发布
 - 完成瓷砖行业特色组件
 - 完成移动端优化组件

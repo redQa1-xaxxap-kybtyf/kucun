@@ -1,0 +1,50 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+echo "🔍 运行pre-push检查..."
+
+# 1. TypeScript类型检查
+echo "📝 检查TypeScript类型..."
+npm run type-check
+if [ $? -ne 0 ]; then
+    echo "❌ TypeScript类型检查失败！"
+    exit 1
+fi
+
+# 2. ESLint检查
+echo "🔍 运行ESLint检查..."
+npm run lint
+if [ $? -ne 0 ]; then
+    echo "❌ ESLint检查失败！"
+    exit 1
+fi
+
+# 3. Prettier格式检查
+echo "💅 检查代码格式..."
+npm run format:check
+if [ $? -ne 0 ]; then
+    echo "❌ 代码格式检查失败！请运行 npm run format 修复格式问题。"
+    exit 1
+fi
+
+# 4. 构建检查
+echo "🏗️  检查项目构建..."
+npm run build
+if [ $? -ne 0 ]; then
+    echo "❌ 项目构建失败！"
+    exit 1
+fi
+
+# 5. 运行测试（如果存在测试文件）
+if [ -d "__tests__" ] || [ -d "tests" ] || find . -name "*.test.*" -o -name "*.spec.*" | grep -q .; then
+    echo "🧪 运行测试套件..."
+    npm run test:ci
+    if [ $? -ne 0 ]; then
+        echo "❌ 测试失败！"
+        exit 1
+    fi
+else
+    echo "ℹ️  未发现测试文件，跳过测试检查"
+fi
+
+echo "✅ 所有pre-push检查通过！"

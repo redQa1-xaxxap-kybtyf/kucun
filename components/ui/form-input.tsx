@@ -1,41 +1,49 @@
 // 增强的表单输入组件
 // 确保受控组件的一致性，防止受控/非受控组件错误
 
-'use client'
+'use client';
 
-import * as React from 'react'
-import { Control, FieldPath, FieldValues } from 'react-hook-form'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage, FormDescription } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
+import * as React from 'react';
+import type { Control, FieldPath, FieldValues } from 'react-hook-form';
+
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+  FormDescription,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { cn } from '@/lib/utils';
 
 interface FormInputProps<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 > {
-  control: Control<TFieldValues>
-  name: TName
-  label?: string
-  description?: string
-  placeholder?: string
-  type?: string
-  disabled?: boolean
-  className?: string
-  required?: boolean
-  autoComplete?: string
-  maxLength?: number
-  icon?: React.ReactNode
+  control: Control<TFieldValues>;
+  name: TName;
+  label?: string;
+  description?: string;
+  placeholder?: string;
+  type?: string;
+  disabled?: boolean;
+  className?: string;
+  required?: boolean;
+  autoComplete?: string;
+  maxLength?: number;
+  icon?: React.ReactNode;
 }
 
 /**
  * 增强的表单输入组件
- * 
+ *
  * 特性：
  * - 自动处理受控组件状态，确保 value 永远不为 undefined
  * - 集成 React Hook Form 和 shadcn/ui Form 组件
  * - 提供一致的错误处理和验证反馈
  * - 支持图标、描述、占位符等常用属性
- * 
+ *
  * 使用方式：
  * ```tsx
  * <FormInput
@@ -49,7 +57,7 @@ interface FormInputProps<
  */
 export function FormInput<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >({
   control,
   name,
@@ -71,10 +79,12 @@ export function FormInput<
       render={({ field }) => (
         <FormItem>
           {label && (
-            <FormLabel className={cn(
-              "flex items-center gap-2",
-              required && "after:content-['*'] after:text-destructive"
-            )}>
+            <FormLabel
+              className={cn(
+                'flex items-center gap-2',
+                required && "after:text-destructive after:content-['*']"
+              )}
+            >
               {icon}
               {label}
             </FormLabel>
@@ -90,27 +100,24 @@ export function FormInput<
               maxLength={maxLength}
               // 确保 value 永远不为 undefined，防止受控/非受控组件错误
               value={field.value ?? ''}
-              onChange={(e) => {
+              onChange={e => {
                 // 对于数字类型，确保传递正确的值类型
                 if (type === 'number') {
-                  const numValue = e.target.value === '' ? 0 : Number(e.target.value)
-                  field.onChange(numValue)
+                  const numValue =
+                    e.target.value === '' ? 0 : Number(e.target.value);
+                  field.onChange(numValue);
                 } else {
-                  field.onChange(e.target.value)
+                  field.onChange(e.target.value);
                 }
               }}
             />
           </FormControl>
-          {description && (
-            <FormDescription>
-              {description}
-            </FormDescription>
-          )}
+          {description && <FormDescription>{description}</FormDescription>}
           <FormMessage />
         </FormItem>
       )}
     />
-  )
+  );
 }
 
 /**
@@ -119,14 +126,16 @@ export function FormInput<
  */
 export function FormNumberInput<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
->(props: Omit<FormInputProps<TFieldValues, TName>, 'type'> & {
-  min?: number
-  max?: number
-  step?: number
-}) {
-  const { min, max, step, ...restProps } = props
-  
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>(
+  props: Omit<FormInputProps<TFieldValues, TName>, 'type'> & {
+    min?: number;
+    max?: number;
+    step?: number;
+  }
+) {
+  const { min, max, step, ...restProps } = props;
+
   return (
     <FormInput
       {...restProps}
@@ -136,7 +145,7 @@ export function FormNumberInput<
       {...(max !== undefined && { max })}
       {...(step !== undefined && { step })}
     />
-  )
+  );
 }
 
 /**
@@ -145,15 +154,9 @@ export function FormNumberInput<
  */
 export function FormEmailInput<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >(props: Omit<FormInputProps<TFieldValues, TName>, 'type' | 'autoComplete'>) {
-  return (
-    <FormInput
-      {...props}
-      type="email"
-      autoComplete="email"
-    />
-  )
+  return <FormInput {...props} type="email" autoComplete="email" />;
 }
 
 /**
@@ -162,13 +165,9 @@ export function FormEmailInput<
  */
 export function FormPasswordInput<
   TFieldValues extends FieldValues = FieldValues,
-  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
 >(props: Omit<FormInputProps<TFieldValues, TName>, 'type' | 'autoComplete'>) {
   return (
-    <FormInput
-      {...props}
-      type="password"
-      autoComplete="current-password"
-    />
-  )
+    <FormInput {...props} type="password" autoComplete="current-password" />
+  );
 }

@@ -1,33 +1,57 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { ArrowLeft, Save, Loader2 } from 'lucide-react'
-import { toast } from 'sonner'
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
-import { createProduct, productQueryKeys } from '@/lib/api/products'
-import { CreateProductSchema, CreateProductData } from '@/lib/schemas/product'
-import { PRODUCT_UNIT_OPTIONS, PRODUCT_STATUS_OPTIONS } from '@/lib/types/product'
+import { createProduct, productQueryKeys } from '@/lib/api/products';
+import type { CreateProductData } from '@/lib/schemas/product';
+import { CreateProductSchema } from '@/lib/schemas/product';
+import {
+  PRODUCT_UNIT_OPTIONS,
+  PRODUCT_STATUS_OPTIONS,
+} from '@/lib/types/product';
 
 /**
  * 新建产品页面
  * 严格遵循全栈项目统一约定规范
  */
 export default function CreateProductPage() {
-  const router = useRouter()
-  const queryClient = useQueryClient()
+  const router = useRouter();
+  const queryClient = useQueryClient();
 
   // 表单配置
   const form = useForm<CreateProductData>({
@@ -42,25 +66,25 @@ export default function CreateProductPage() {
       status: 'active',
       specifications: {},
     },
-  })
+  });
 
   // 创建产品Mutation
   const createMutation = useMutation({
     mutationFn: createProduct,
-    onSuccess: (data) => {
-      toast.success('产品创建成功')
-      queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() })
-      router.push(`/products/${data.id}`)
+    onSuccess: data => {
+      toast.success('产品创建成功');
+      queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() });
+      router.push(`/products/${data.id}`);
     },
-    onError: (error) => {
-      toast.error(error instanceof Error ? error.message : '创建失败')
+    onError: error => {
+      toast.error(error instanceof Error ? error.message : '创建失败');
     },
-  })
+  });
 
   // 表单提交处理
   const onSubmit = (data: CreateProductData) => {
-    createMutation.mutate(data)
-  }
+    createMutation.mutate(data);
+  };
 
   return (
     <div className="space-y-6">
@@ -141,14 +165,17 @@ export default function CreateProductPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>计量单位 *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="选择计量单位" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {PRODUCT_UNIT_OPTIONS.map((option) => (
+                          {PRODUCT_UNIT_OPTIONS.map(option => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
                             </SelectItem>
@@ -166,14 +193,17 @@ export default function CreateProductPage() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>状态 *</FormLabel>
-                      <Select onValueChange={field.onChange} defaultValue={field.value}>
+                      <Select
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="选择产品状态" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {PRODUCT_STATUS_OPTIONS.map((option) => (
+                          {PRODUCT_STATUS_OPTIONS.map(option => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
                             </SelectItem>
@@ -205,12 +235,16 @@ export default function CreateProductPage() {
                           type="number"
                           placeholder="请输入每单位片数"
                           {...field}
-                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          onChange={e =>
+                            field.onChange(
+                              e.target.value
+                                ? Number(e.target.value)
+                                : undefined
+                            )
+                          }
                         />
                       </FormControl>
-                      <FormDescription>
-                        每个计量单位包含的片数
-                      </FormDescription>
+                      <FormDescription>每个计量单位包含的片数</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -228,12 +262,16 @@ export default function CreateProductPage() {
                           step="0.01"
                           placeholder="请输入重量"
                           {...field}
-                          onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : undefined)}
+                          onChange={e =>
+                            field.onChange(
+                              e.target.value
+                                ? Number(e.target.value)
+                                : undefined
+                            )
+                          }
                         />
                       </FormControl>
-                      <FormDescription>
-                        单个产品的重量（千克）
-                      </FormDescription>
+                      <FormDescription>单个产品的重量（千克）</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -280,5 +318,5 @@ export default function CreateProductPage() {
         </form>
       </Form>
     </div>
-  )
+  );
 }

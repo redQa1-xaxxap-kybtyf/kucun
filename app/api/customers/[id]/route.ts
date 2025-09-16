@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { customerValidations } from '@/lib/validations/database'
-import { prisma } from '@/lib/db'
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { customerValidations } from '@/lib/validations/database';
 
 // 获取单个客户信息
 export async function GET(
@@ -11,12 +13,12 @@ export async function GET(
 ) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
-      )
+      );
     }
 
     const customer = await prisma.customer.findUnique({
@@ -55,13 +57,13 @@ export async function GET(
           },
         },
       },
-    })
+    });
 
     if (!customer) {
       return NextResponse.json(
         { success: false, error: '客户不存在' },
         { status: 404 }
-      )
+      );
     }
 
     // 转换数据格式
@@ -70,7 +72,9 @@ export async function GET(
       name: customer.name,
       phone: customer.phone,
       address: customer.address,
-      extendedInfo: customer.extendedInfo ? JSON.parse(customer.extendedInfo as string) : null,
+      extendedInfo: customer.extendedInfo
+        ? JSON.parse(customer.extendedInfo as string)
+        : null,
       parentCustomerId: customer.parentCustomerId,
       parentCustomer: customer.parentCustomer,
       subCustomers: [], // 暂时设为空数组，后续可以通过单独查询获取
@@ -87,22 +91,22 @@ export async function GET(
       },
       createdAt: customer.createdAt,
       updatedAt: customer.updatedAt,
-    }
+    };
 
     return NextResponse.json({
       success: true,
       data: formattedCustomer,
-    })
+    });
   } catch (error) {
-    console.error('获取客户信息错误:', error)
-    
+    console.error('获取客户信息错误:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : '获取客户信息失败',
       },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -113,21 +117,21 @@ export async function PUT(
 ) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
-      )
+      );
     }
 
-    const body = await request.json()
-    
+    const body = await request.json();
+
     // 验证输入数据
     const validationResult = customerValidations.update.safeParse({
       id: params.id,
       ...body,
-    })
+    });
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -136,21 +140,22 @@ export async function PUT(
           details: validationResult.error.errors,
         },
         { status: 400 }
-      )
+      );
     }
 
-    const { name, phone, address, extendedInfo, parentCustomerId } = validationResult.data
+    const { name, phone, address, extendedInfo, parentCustomerId } =
+      validationResult.data;
 
     // 检查客户是否存在
     const existingCustomer = await prisma.customer.findUnique({
       where: { id: params.id },
-    })
+    });
 
     if (!existingCustomer) {
       return NextResponse.json(
         { success: false, error: '客户不存在' },
         { status: 404 }
-      )
+      );
     }
 
     // 如果指定了上级客户，验证其存在性和循环引用
@@ -159,42 +164,48 @@ export async function PUT(
         return NextResponse.json(
           { success: false, error: '不能将自己设置为上级客户' },
           { status: 400 }
-        )
+        );
       }
 
       const parentCustomer = await prisma.customer.findUnique({
         where: { id: parentCustomerId },
-      })
+      });
 
       if (!parentCustomer) {
         return NextResponse.json(
           { success: false, error: '指定的上级客户不存在' },
           { status: 400 }
-        )
+        );
       }
 
       // 检查是否会形成循环引用
-      const checkCircularReference = async (customerId: string, targetParentId: string): Promise<boolean> => {
-        let currentId = targetParentId
+      const checkCircularReference = async (
+        customerId: string,
+        targetParentId: string
+      ): Promise<boolean> => {
+        let currentId = targetParentId;
         while (currentId) {
           if (currentId === customerId) {
-            return true // 发现循环引用
+            return true; // 发现循环引用
           }
           const parent = await prisma.customer.findUnique({
             where: { id: currentId },
             select: { parentCustomerId: true },
-          })
-          currentId = parent?.parentCustomerId || ''
+          });
+          currentId = parent?.parentCustomerId || '';
         }
-        return false
-      }
+        return false;
+      };
 
-      const hasCircularReference = await checkCircularReference(params.id, parentCustomerId)
+      const hasCircularReference = await checkCircularReference(
+        params.id,
+        parentCustomerId
+      );
       if (hasCircularReference) {
         return NextResponse.json(
           { success: false, error: '不能设置会形成循环引用的上级客户' },
           { status: 400 }
-        )
+        );
       }
     }
 
@@ -205,8 +216,8 @@ export async function PUT(
         ...(name && { name }),
         ...(phone !== undefined && { phone }),
         ...(address !== undefined && { address }),
-        ...(extendedInfo !== undefined && { 
-          extendedInfo: extendedInfo ? JSON.stringify(extendedInfo) : null 
+        ...(extendedInfo !== undefined && {
+          extendedInfo: extendedInfo ? JSON.stringify(extendedInfo) : null,
         }),
         ...(parentCustomerId !== undefined && { parentCustomerId }),
       },
@@ -226,7 +237,7 @@ export async function PUT(
           },
         },
       },
-    })
+    });
 
     // 转换数据格式
     const formattedCustomer = {
@@ -234,28 +245,30 @@ export async function PUT(
       name: updatedCustomer.name,
       phone: updatedCustomer.phone,
       address: updatedCustomer.address,
-      extendedInfo: updatedCustomer.extendedInfo ? JSON.parse(updatedCustomer.extendedInfo as string) : null,
+      extendedInfo: updatedCustomer.extendedInfo
+        ? JSON.parse(updatedCustomer.extendedInfo as string)
+        : null,
       parentCustomerId: updatedCustomer.parentCustomerId,
       parentCustomer: updatedCustomer.parentCustomer,
       createdAt: updatedCustomer.createdAt,
       updatedAt: updatedCustomer.updatedAt,
-    }
+    };
 
     return NextResponse.json({
       success: true,
       data: formattedCustomer,
       message: '客户信息更新成功',
-    })
+    });
   } catch (error) {
-    console.error('更新客户信息错误:', error)
-    
+    console.error('更新客户信息错误:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : '更新客户信息失败',
       },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -266,12 +279,12 @@ export async function DELETE(
 ) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
-      )
+      );
     }
 
     // 检查客户是否存在
@@ -280,13 +293,13 @@ export async function DELETE(
       include: {
         salesOrders: true,
       },
-    })
+    });
 
     if (!existingCustomer) {
       return NextResponse.json(
         { success: false, error: '客户不存在' },
         { status: 404 }
-      )
+      );
     }
 
     // 检查是否有关联数据
@@ -294,30 +307,30 @@ export async function DELETE(
       return NextResponse.json(
         {
           success: false,
-          error: `该客户有 ${existingCustomer.salesOrders.length} 个销售订单，无法删除`
+          error: `该客户有 ${existingCustomer.salesOrders.length} 个销售订单，无法删除`,
         },
         { status: 400 }
-      )
+      );
     }
 
     // 删除客户
     await prisma.customer.delete({
       where: { id: params.id },
-    })
+    });
 
     return NextResponse.json({
       success: true,
       message: '客户删除成功',
-    })
+    });
   } catch (error) {
-    console.error('删除客户错误:', error)
-    
+    console.error('删除客户错误:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : '删除客户失败',
       },
       { status: 500 }
-    )
+    );
   }
 }

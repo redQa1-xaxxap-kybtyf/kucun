@@ -1,32 +1,70 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, ShoppingCart, User, Calendar, DollarSign } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query';
+import {
+    Calendar,
+    DollarSign,
+    Edit,
+    Eye,
+    MoreHorizontal,
+    Plus,
+    Search,
+    ShoppingCart,
+    Trash2,
+    User
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Skeleton } from '@/components/ui/skeleton'
-import { MobileDataTable } from '@/components/ui/mobile-data-table'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { MobileDataTable } from '@/components/ui/mobile-data-table';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from '@/components/ui/table';
 
 // API and Types
-import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders'
-import { SalesOrder, SalesOrderQueryParams } from '@/lib/types/sales-order'
-import { SALES_ORDER_STATUS_LABELS, SALES_ORDER_STATUS_VARIANTS } from '@/lib/types/sales-order'
+import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
+import type { SalesOrder, SalesOrderQueryParams, SalesOrderStatus } from '@/lib/types/sales-order';
+import {
+    SALES_ORDER_STATUS_LABELS,
+    SALES_ORDER_STATUS_VARIANTS,
+} from '@/lib/types/sales-order';
 
 /**
  * 销售订单页面
  * 严格遵循全栈项目统一约定规范
  */
 export default function SalesOrdersPage() {
-  const router = useRouter()
+  const router = useRouter();
   const [queryParams, setQueryParams] = React.useState<SalesOrderQueryParams>({
     page: 1,
     limit: 20,
@@ -34,59 +72,73 @@ export default function SalesOrdersPage() {
     status: undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc',
-  })
+  });
 
   // 获取销售订单列表数据
   const { data, isLoading, error } = useQuery({
     queryKey: salesOrderQueryKeys.list(queryParams),
     queryFn: () => getSalesOrders(queryParams),
-  })
+  });
 
   // 搜索处理
   const handleSearch = (value: string) => {
-    setQueryParams(prev => ({ ...prev, search: value, page: 1 }))
-  }
+    setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
+  };
 
   // 筛选处理
   const handleFilter = (key: keyof SalesOrderQueryParams, value: any) => {
-    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }))
-  }
+    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
+  };
 
   // 分页处理
   const handlePageChange = (page: number) => {
-    setQueryParams(prev => ({ ...prev, page }))
-  }
+    setQueryParams(prev => ({ ...prev, page }));
+  };
 
   // 状态标签渲染
   const getStatusBadge = (status: string) => {
-    const variant = SALES_ORDER_STATUS_VARIANTS[status] || 'outline'
+    const variant = SALES_ORDER_STATUS_VARIANTS[status as SalesOrderStatus] || 'outline';
     return (
       <Badge variant={variant}>
-        {SALES_ORDER_STATUS_LABELS[status] || status}
+        {SALES_ORDER_STATUS_LABELS[status as SalesOrderStatus] || status}
       </Badge>
-    )
-  }
+    );
+  };
 
   // 格式化金额
   const formatAmount = (amount?: number) => {
-    if (!amount) return '¥0.00'
-    return `¥${amount.toFixed(2)}`
-  }
+    if (!amount) return '¥0.00';
+    return `¥${amount.toFixed(2)}`;
+  };
 
   // 移动端表格列配置
   const mobileColumns = [
     { key: 'orderNumber', title: '订单号', mobilePrimary: true },
-    { key: 'customer', title: '客户', render: (item: SalesOrder) => item.customer?.name || '-' },
-    { key: 'status', title: '状态', render: (item: SalesOrder) => getStatusBadge(item.status) },
-    { key: 'totalAmount', title: '金额', render: (item: SalesOrder) => formatAmount(item.totalAmount) },
-  ]
+    {
+      key: 'customer',
+      title: '客户',
+      render: (item: SalesOrder) => item.customer?.name || '-',
+    },
+    {
+      key: 'status',
+      title: '状态',
+      render: (item: SalesOrder) => getStatusBadge(item.status),
+    },
+    {
+      key: 'totalAmount',
+      title: '金额',
+      render: (item: SalesOrder) => formatAmount(item.totalAmount),
+    },
+  ];
 
   if (error) {
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">销售订单</h1>
-          <p className="text-muted-foreground">管理所有销售订单和客户订单信息</p>
+          <p className="text-muted-foreground">
+            管理所有销售订单和客户订单信息
+          </p>
         </div>
         <Card>
           <CardContent className="pt-6">
@@ -96,7 +148,7 @@ export default function SalesOrdersPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -105,7 +157,9 @@ export default function SalesOrdersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">销售订单</h1>
-          <p className="text-muted-foreground">管理所有销售订单和客户订单信息</p>
+          <p className="text-muted-foreground">
+            管理所有销售订单和客户订单信息
+          </p>
         </div>
         <Button onClick={() => router.push('/sales-orders/create')}>
           <Plus className="mr-2 h-4 w-4" />
@@ -123,7 +177,7 @@ export default function SalesOrdersPage() {
                 <Input
                   placeholder="搜索订单号或客户名称..."
                   value={queryParams.search}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={e => handleSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -131,7 +185,9 @@ export default function SalesOrdersPage() {
             <div className="flex gap-2">
               <Select
                 value={queryParams.status || 'all'}
-                onValueChange={(value) => handleFilter('status', value === 'all' ? undefined : value)}
+                onValueChange={value =>
+                  handleFilter('status', value === 'all' ? undefined : value)
+                }
               >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="状态" />
@@ -147,7 +203,7 @@ export default function SalesOrdersPage() {
               </Select>
               <Select
                 value={queryParams.sortBy || 'createdAt'}
-                onValueChange={(value) => handleFilter('sortBy', value)}
+                onValueChange={value => handleFilter('sortBy', value)}
               >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="排序" />
@@ -169,7 +225,9 @@ export default function SalesOrdersPage() {
         <CardHeader>
           <CardTitle>订单列表</CardTitle>
           <CardDescription>
-            {data?.pagination ? `共 ${data.pagination.total} 个订单` : '加载中...'}
+            {data?.pagination
+              ? `共 ${data.pagination.total} 个订单`
+              : '加载中...'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -201,7 +259,7 @@ export default function SalesOrdersPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data?.data?.map((order) => (
+                    {data?.data?.map(order => (
                       <TableRow key={order.id}>
                         <TableCell className="font-medium">
                           <div className="flex items-center gap-2">
@@ -236,11 +294,19 @@ export default function SalesOrdersPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => router.push(`/sales-orders/${order.id}`)}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(`/sales-orders/${order.id}`)
+                                }
+                              >
                                 <Eye className="mr-2 h-4 w-4" />
                                 查看详情
                               </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => router.push(`/sales-orders/${order.id}/edit`)}>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  router.push(`/sales-orders/${order.id}/edit`)
+                                }
+                              >
                                 <Edit className="mr-2 h-4 w-4" />
                                 编辑
                               </DropdownMenuItem>
@@ -262,8 +328,8 @@ export default function SalesOrdersPage() {
                 <MobileDataTable
                   data={data?.data || []}
                   columns={mobileColumns}
-                  onItemClick={(item) => router.push(`/sales-orders/${item.id}`)}
-                  renderActions={(item) => (
+                  onItemClick={item => router.push(`/sales-orders/${item.id}`)}
+                  renderActions={item => (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -271,11 +337,19 @@ export default function SalesOrdersPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/sales-orders/${item.id}`)}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            router.push(`/sales-orders/${item.id}`)
+                          }
+                        >
                           <Eye className="mr-2 h-4 w-4" />
                           查看详情
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/sales-orders/${item.id}/edit`)}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            router.push(`/sales-orders/${item.id}/edit`)
+                          }
+                        >
                           <Edit className="mr-2 h-4 w-4" />
                           编辑
                         </DropdownMenuItem>
@@ -293,7 +367,13 @@ export default function SalesOrdersPage() {
               {data?.pagination && data.pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4">
                   <div className="text-sm text-muted-foreground">
-                    显示第 {((data.pagination.page - 1) * data.pagination.limit) + 1} - {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} 条，共 {data.pagination.total} 条
+                    显示第{' '}
+                    {(data.pagination.page - 1) * data.pagination.limit + 1} -{' '}
+                    {Math.min(
+                      data.pagination.page * data.pagination.limit,
+                      data.pagination.total
+                    )}{' '}
+                    条，共 {data.pagination.total} 条
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -305,13 +385,16 @@ export default function SalesOrdersPage() {
                       上一页
                     </Button>
                     <div className="text-sm">
-                      第 {data.pagination.page} / {data.pagination.totalPages} 页
+                      第 {data.pagination.page} / {data.pagination.totalPages}{' '}
+                      页
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handlePageChange(data.pagination.page + 1)}
-                      disabled={data.pagination.page >= data.pagination.totalPages}
+                      disabled={
+                        data.pagination.page >= data.pagination.totalPages
+                      }
                     >
                       下一页
                     </Button>
@@ -323,5 +406,5 @@ export default function SalesOrdersPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

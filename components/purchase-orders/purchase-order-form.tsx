@@ -1,159 +1,212 @@
-'use client'
+'use client';
 
-import { useForm, useFieldArray } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query'
-import { useState, useEffect } from 'react'
-
-// UI Components
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Badge } from '@/components/ui/badge'
-import { Separator } from '@/components/ui/separator'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-
-// Icons
-import { 
-  Save, 
-  ArrowLeft, 
-  Plus, 
-  Trash2, 
-  AlertCircle, 
-  Loader2, 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import {
+  Save,
+  ArrowLeft,
+  Plus,
+  Trash2,
+  AlertCircle,
+  Loader2,
   ShoppingCart,
   Calendar,
   Palette,
   Calculator,
   Building2,
-  Package
-} from 'lucide-react'
+  Package,
+} from 'lucide-react';
+import { useState, useEffect } from 'react';
+
+// UI Components
+import { useForm, useFieldArray } from 'react-hook-form';
+
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { Textarea } from '@/components/ui/textarea';
+
+// Icons
 
 // Custom Components
-import { ProductSelector } from '@/components/products/product-selector'
 
 // API and Types
-import { 
-  createPurchaseOrder, 
-  updatePurchaseOrder, 
+import { getProduct } from '@/lib/api/products';
+import {
+  createPurchaseOrder,
+  updatePurchaseOrder,
   getSuppliers,
-  purchaseOrderQueryKeys 
-} from '@/lib/api/purchase-orders'
-import { getProduct } from '@/lib/api/products'
-import { PurchaseOrder, Supplier } from '@/lib/types/purchase-order'
-import { 
-  purchaseOrderCreateSchema, 
+  purchaseOrderQueryKeys,
+} from '@/lib/api/purchase-orders';
+import type { PurchaseOrder } from '@/lib/types/purchase-order';
+import { Supplier, COMMON_COLOR_CODES } from '@/lib/types/purchase-order';
+import type {
+  PurchaseOrderCreateFormData,
+  PurchaseOrderUpdateFormData } from '@/lib/validations/purchase-order';
+import {
+  purchaseOrderCreateSchema,
   purchaseOrderUpdateSchema,
-  PurchaseOrderCreateFormData, 
-  PurchaseOrderUpdateFormData,
   purchaseOrderCreateDefaults,
   purchaseOrderUpdateDefaults,
-  calculateOrderTotal
-} from '@/lib/validations/purchase-order'
-import { COMMON_COLOR_CODES } from '@/lib/types/purchase-order'
+  calculateOrderTotal,
+} from '@/lib/validations/purchase-order';
+
+import { ProductSelector } from '@/components/products/product-selector';
 
 interface PurchaseOrderFormProps {
-  mode: 'create' | 'edit'
-  initialData?: PurchaseOrder
-  onSuccess?: (result: PurchaseOrder) => void
-  onCancel?: () => void
+  mode: 'create' | 'edit';
+  initialData?: PurchaseOrder;
+  onSuccess?: (result: PurchaseOrder) => void;
+  onCancel?: () => void;
 }
 
-export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: PurchaseOrderFormProps) {
-  const queryClient = useQueryClient()
-  const [submitError, setSubmitError] = useState<string>('')
+export function PurchaseOrderForm({
+  mode,
+  initialData,
+  onSuccess,
+  onCancel,
+}: PurchaseOrderFormProps) {
+  const queryClient = useQueryClient();
+  const [submitError, setSubmitError] = useState<string>('');
 
   // 表单配置
-  const isEdit = mode === 'edit'
-  const schema = isEdit ? purchaseOrderUpdateSchema : purchaseOrderCreateSchema
-  const defaults = isEdit ? 
-    {
-      ...purchaseOrderUpdateDefaults,
-      supplierId: initialData?.supplierId || '',
-      expectedDeliveryDate: initialData?.expectedDeliveryDate || '',
-      remarks: initialData?.remarks || '',
-      items: initialData?.items?.map(item => ({
-        id: item.id,
-        productId: item.productId,
-        colorCode: item.colorCode || '',
-        productionDate: item.productionDate || '',
-        quantity: item.quantity,
-        unitPrice: item.unitPrice
-      })) || []
-    } as PurchaseOrderUpdateFormData :
-    purchaseOrderCreateDefaults
+  const isEdit = mode === 'edit';
+  const schema = isEdit ? purchaseOrderUpdateSchema : purchaseOrderCreateSchema;
+  const defaults = isEdit
+    ? ({
+        ...purchaseOrderUpdateDefaults,
+        supplierId: initialData?.supplierId || '',
+        expectedDeliveryDate: initialData?.expectedDeliveryDate || '',
+        remarks: initialData?.remarks || '',
+        items:
+          initialData?.items?.map(item => ({
+            id: item.id,
+            productId: item.productId,
+            colorCode: item.colorCode || '',
+            productionDate: item.productionDate || '',
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+          })) || [],
+      } as PurchaseOrderUpdateFormData)
+    : purchaseOrderCreateDefaults;
 
-  const form = useForm<PurchaseOrderCreateFormData | PurchaseOrderUpdateFormData>({
+  const form = useForm<
+    PurchaseOrderCreateFormData | PurchaseOrderUpdateFormData
+  >({
     resolver: zodResolver(schema),
-    defaultValues: defaults as any
-  })
+    defaultValues: defaults as any,
+  });
 
   // 明细项目管理
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: 'items'
-  })
+    name: 'items',
+  });
 
   // 监听表单变化计算总金额
-  const watchedItems = form.watch('items')
-  const totalAmount = calculateOrderTotal(watchedItems || [])
+  const watchedItems = form.watch('items');
+  const totalAmount = calculateOrderTotal(watchedItems || []);
 
   // 获取供应商列表
   const { data: suppliersData } = useQuery({
     queryKey: purchaseOrderQueryKeys.suppliersList(),
     queryFn: () => getSuppliers(),
-  })
+  });
 
   // 创建 Mutation
   const createMutation = useMutation({
     mutationFn: createPurchaseOrder,
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: purchaseOrderQueryKeys.lists() })
+    onSuccess: response => {
+      queryClient.invalidateQueries({
+        queryKey: purchaseOrderQueryKeys.lists(),
+      });
       if (onSuccess) {
-        onSuccess(response.data)
+        onSuccess(response.data);
       }
     },
-    onError: (error) => {
-      setSubmitError(error instanceof Error ? error.message : '创建采购订单失败')
-    }
-  })
+    onError: error => {
+      setSubmitError(
+        error instanceof Error ? error.message : '创建采购订单失败'
+      );
+    },
+  });
 
   // 更新 Mutation
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: PurchaseOrderUpdateFormData }) => 
-      updatePurchaseOrder(id, data),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: purchaseOrderQueryKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: purchaseOrderQueryKeys.detail(initialData!.id) })
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: PurchaseOrderUpdateFormData;
+    }) => updatePurchaseOrder(id, data),
+    onSuccess: response => {
+      queryClient.invalidateQueries({
+        queryKey: purchaseOrderQueryKeys.lists(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: purchaseOrderQueryKeys.detail(initialData!.id),
+      });
       if (onSuccess) {
-        onSuccess(response.data)
+        onSuccess(response.data);
       }
     },
-    onError: (error) => {
-      setSubmitError(error instanceof Error ? error.message : '更新采购订单失败')
-    }
-  })
+    onError: error => {
+      setSubmitError(
+        error instanceof Error ? error.message : '更新采购订单失败'
+      );
+    },
+  });
 
-  const isLoading = createMutation.isPending || updateMutation.isPending
+  const isLoading = createMutation.isPending || updateMutation.isPending;
 
   // 表单提交
   const onSubmit = async (data: any) => {
-    setSubmitError('')
-    
+    setSubmitError('');
+
     try {
       if (isEdit && initialData) {
-        await updateMutation.mutateAsync({ id: initialData.id, data })
+        await updateMutation.mutateAsync({ id: initialData.id, data });
       } else {
-        await createMutation.mutateAsync(data)
+        await createMutation.mutateAsync(data);
       }
     } catch (error) {
       // 错误已在 mutation 的 onError 中处理
     }
-  }
+  };
 
   // 添加明细项目
   const addItem = () => {
@@ -162,36 +215,34 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
       colorCode: '',
       productionDate: '',
       quantity: 1,
-      unitPrice: 0
-    })
-  }
+      unitPrice: 0,
+    });
+  };
 
   // 删除明细项目
   const removeItem = (index: number) => {
-    remove(index)
-  }
+    remove(index);
+  };
 
   // 计算明细小计
-  const calculateItemSubtotal = (quantity: number, unitPrice: number) => {
-    return quantity * unitPrice
-  }
+  const calculateItemSubtotal = (quantity: number, unitPrice: number) => quantity * unitPrice;
 
-  const suppliers = suppliersData?.data || []
+  const suppliers = suppliersData?.data || [];
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto space-y-6 py-6">
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           {onCancel && (
             <Button variant="outline" size="sm" onClick={onCancel}>
-              <ArrowLeft className="h-4 w-4 mr-2" />
+              <ArrowLeft className="mr-2 h-4 w-4" />
               返回
             </Button>
           )}
           <div>
-            <h1 className="text-3xl font-bold tracking-tight flex items-center">
-              <ShoppingCart className="h-8 w-8 mr-3" />
+            <h1 className="flex items-center text-3xl font-bold tracking-tight">
+              <ShoppingCart className="mr-3 h-8 w-8" />
               {isEdit ? '编辑采购订单' : '创建采购订单'}
             </h1>
             <p className="text-muted-foreground">
@@ -215,15 +266,13 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Building2 className="h-5 w-5 mr-2" />
+                <Building2 className="mr-2 h-5 w-5" />
                 基础信息
               </CardTitle>
-              <CardDescription>
-                填写采购订单的基本信息
-              </CardDescription>
+              <CardDescription>填写采购订单的基本信息</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {/* 供应商选择 */}
                 <FormField
                   control={form.control}
@@ -231,7 +280,11 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>供应商 *</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isLoading}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="选择供应商" />
@@ -240,10 +293,13 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                         <SelectContent>
                           {suppliers.map(supplier => (
                             <SelectItem key={supplier.id} value={supplier.id}>
-                              <div className="flex items-center justify-between w-full">
+                              <div className="flex w-full items-center justify-between">
                                 <span>{supplier.name}</span>
                                 {supplier.status === 'inactive' && (
-                                  <Badge variant="destructive" className="ml-2 text-xs">
+                                  <Badge
+                                    variant="destructive"
+                                    className="ml-2 text-xs"
+                                  >
                                     已停用
                                   </Badge>
                                 )}
@@ -264,15 +320,11 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center">
-                        <Calendar className="h-4 w-4 mr-1" />
+                        <Calendar className="mr-1 h-4 w-4" />
                         预期交货日期
                       </FormLabel>
                       <FormControl>
-                        <Input
-                          type="date"
-                          disabled={isLoading}
-                          {...field}
-                        />
+                        <Input type="date" disabled={isLoading} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -308,12 +360,10 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle className="flex items-center">
-                    <Package className="h-5 w-5 mr-2" />
+                    <Package className="mr-2 h-5 w-5" />
                     采购明细
                   </CardTitle>
-                  <CardDescription>
-                    添加采购的产品和数量信息
-                  </CardDescription>
+                  <CardDescription>添加采购的产品和数量信息</CardDescription>
                 </div>
                 <Button
                   type="button"
@@ -322,17 +372,17 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                   onClick={addItem}
                   disabled={isLoading}
                 >
-                  <Plus className="h-4 w-4 mr-2" />
+                  <Plus className="mr-2 h-4 w-4" />
                   添加明细
                 </Button>
               </div>
             </CardHeader>
             <CardContent>
               {fields.length === 0 ? (
-                <div className="text-center py-8">
-                  <Package className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                  <h3 className="text-lg font-medium mb-2">暂无采购明细</h3>
-                  <p className="text-muted-foreground mb-4">
+                <div className="py-8 text-center">
+                  <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <h3 className="mb-2 text-lg font-medium">暂无采购明细</h3>
+                  <p className="mb-4 text-muted-foreground">
                     请添加需要采购的产品
                   </p>
                   <Button
@@ -341,7 +391,7 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                     onClick={addItem}
                     disabled={isLoading}
                   >
-                    <Plus className="h-4 w-4 mr-2" />
+                    <Plus className="mr-2 h-4 w-4" />
                     添加第一个明细
                   </Button>
                 </div>
@@ -363,9 +413,14 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                       </TableHeader>
                       <TableBody>
                         {fields.map((field, index) => {
-                          const quantity = form.watch(`items.${index}.quantity`) || 0
-                          const unitPrice = form.watch(`items.${index}.unitPrice`) || 0
-                          const subtotal = calculateItemSubtotal(quantity, unitPrice)
+                          const quantity =
+                            form.watch(`items.${index}.quantity`) || 0;
+                          const unitPrice =
+                            form.watch(`items.${index}.unitPrice`) || 0;
+                          const subtotal = calculateItemSubtotal(
+                            quantity,
+                            unitPrice
+                          );
 
                           return (
                             <TableRow key={field.id}>
@@ -382,14 +437,23 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                   control={form.control}
                                   name={`items.${index}.colorCode`}
                                   render={({ field }) => (
-                                    <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                                    <Select
+                                      onValueChange={field.onChange}
+                                      value={field.value}
+                                      disabled={isLoading}
+                                    >
                                       <SelectTrigger className="w-full">
                                         <SelectValue placeholder="色号" />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="none">无色号</SelectItem>
+                                        <SelectItem value="none">
+                                          无色号
+                                        </SelectItem>
                                         {COMMON_COLOR_CODES.map(color => (
-                                          <SelectItem key={color.value} value={color.value}>
+                                          <SelectItem
+                                            key={color.value}
+                                            value={color.value}
+                                          >
                                             {color.label}
                                           </SelectItem>
                                         ))}
@@ -422,9 +486,11 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                       max="999999"
                                       disabled={isLoading}
                                       {...field}
-                                      onChange={(e) => {
-                                        const value = e.target.value
-                                        field.onChange(value ? parseInt(value) : 0)
+                                      onChange={e => {
+                                        const value = e.target.value;
+                                        field.onChange(
+                                          value ? parseInt(value) : 0
+                                        );
                                       }}
                                     />
                                   )}
@@ -442,9 +508,11 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                       max="999999.99"
                                       disabled={isLoading}
                                       {...field}
-                                      onChange={(e) => {
-                                        const value = e.target.value
-                                        field.onChange(value ? parseFloat(value) : 0)
+                                      onChange={e => {
+                                        const value = e.target.value;
+                                        field.onChange(
+                                          value ? parseFloat(value) : 0
+                                        );
                                       }}
                                     />
                                   )}
@@ -452,7 +520,10 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                               </TableCell>
                               <TableCell>
                                 <div className="font-medium">
-                                  ¥{subtotal.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                                  ¥
+                                  {subtotal.toLocaleString('zh-CN', {
+                                    minimumFractionDigits: 2,
+                                  })}
                                 </div>
                               </TableCell>
                               <TableCell>
@@ -467,23 +538,28 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                 </Button>
                               </TableCell>
                             </TableRow>
-                          )
+                          );
                         })}
                       </TableBody>
                     </Table>
                   </div>
 
                   {/* 移动端卡片 */}
-                  <div className="md:hidden space-y-4">
+                  <div className="space-y-4 md:hidden">
                     {fields.map((field, index) => {
-                      const quantity = form.watch(`items.${index}.quantity`) || 0
-                      const unitPrice = form.watch(`items.${index}.unitPrice`) || 0
-                      const subtotal = calculateItemSubtotal(quantity, unitPrice)
+                      const quantity =
+                        form.watch(`items.${index}.quantity`) || 0;
+                      const unitPrice =
+                        form.watch(`items.${index}.unitPrice`) || 0;
+                      const subtotal = calculateItemSubtotal(
+                        quantity,
+                        unitPrice
+                      );
 
                       return (
                         <Card key={field.id} className="border-muted">
                           <CardContent className="p-4">
-                            <div className="flex items-center justify-between mb-3">
+                            <div className="mb-3 flex items-center justify-between">
                               <h4 className="font-medium">明细 #{index + 1}</h4>
                               <Button
                                 type="button"
@@ -495,7 +571,7 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                 <Trash2 className="h-4 w-4" />
                               </Button>
                             </div>
-                            
+
                             <div className="space-y-3">
                               <ProductSelector
                                 control={form.control}
@@ -504,7 +580,7 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                 placeholder="选择产品..."
                                 disabled={isLoading}
                               />
-                              
+
                               <div className="grid grid-cols-2 gap-3">
                                 <FormField
                                   control={form.control}
@@ -512,16 +588,25 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                   render={({ field }) => (
                                     <FormItem>
                                       <FormLabel>色号</FormLabel>
-                                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                                      <Select
+                                        onValueChange={field.onChange}
+                                        value={field.value}
+                                        disabled={isLoading}
+                                      >
                                         <FormControl>
                                           <SelectTrigger>
                                             <SelectValue placeholder="色号" />
                                           </SelectTrigger>
                                         </FormControl>
                                         <SelectContent>
-                                          <SelectItem value="none">无色号</SelectItem>
+                                          <SelectItem value="none">
+                                            无色号
+                                          </SelectItem>
                                           {COMMON_COLOR_CODES.map(color => (
-                                            <SelectItem key={color.value} value={color.value}>
+                                            <SelectItem
+                                              key={color.value}
+                                              value={color.value}
+                                            >
                                               {color.label}
                                             </SelectItem>
                                           ))}
@@ -530,7 +615,7 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                     </FormItem>
                                   )}
                                 />
-                                
+
                                 <FormField
                                   control={form.control}
                                   name={`items.${index}.productionDate`}
@@ -548,7 +633,7 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                   )}
                                 />
                               </div>
-                              
+
                               <div className="grid grid-cols-2 gap-3">
                                 <FormField
                                   control={form.control}
@@ -563,16 +648,18 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                           max="999999"
                                           disabled={isLoading}
                                           {...field}
-                                          onChange={(e) => {
-                                            const value = e.target.value
-                                            field.onChange(value ? parseInt(value) : 0)
+                                          onChange={e => {
+                                            const value = e.target.value;
+                                            field.onChange(
+                                              value ? parseInt(value) : 0
+                                            );
                                           }}
                                         />
                                       </FormControl>
                                     </FormItem>
                                   )}
                                 />
-                                
+
                                 <FormField
                                   control={form.control}
                                   name={`items.${index}.unitPrice`}
@@ -587,9 +674,11 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                           max="999999.99"
                                           disabled={isLoading}
                                           {...field}
-                                          onChange={(e) => {
-                                            const value = e.target.value
-                                            field.onChange(value ? parseFloat(value) : 0)
+                                          onChange={e => {
+                                            const value = e.target.value;
+                                            field.onChange(
+                                              value ? parseFloat(value) : 0
+                                            );
                                           }}
                                         />
                                       </FormControl>
@@ -597,19 +686,24 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                   )}
                                 />
                               </div>
-                              
-                              <div className="pt-2 border-t">
+
+                              <div className="border-t pt-2">
                                 <div className="flex items-center justify-between">
-                                  <span className="text-sm text-muted-foreground">小计:</span>
+                                  <span className="text-sm text-muted-foreground">
+                                    小计:
+                                  </span>
                                   <span className="font-medium">
-                                    ¥{subtotal.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                                    ¥
+                                    {subtotal.toLocaleString('zh-CN', {
+                                      minimumFractionDigits: 2,
+                                    })}
                                   </span>
                                 </div>
                               </div>
                             </div>
                           </CardContent>
                         </Card>
-                      )
+                      );
                     })}
                   </div>
 
@@ -624,7 +718,10 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                     <div className="flex items-center space-x-2">
                       <Calculator className="h-4 w-4 text-muted-foreground" />
                       <span className="text-lg font-bold">
-                        总金额: ¥{totalAmount.toLocaleString('zh-CN', { minimumFractionDigits: 2 })}
+                        总金额: ¥
+                        {totalAmount.toLocaleString('zh-CN', {
+                          minimumFractionDigits: 2,
+                        })}
                       </span>
                     </div>
                   </div>
@@ -646,24 +743,24 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
               </Button>
             )}
             <Button type="submit" disabled={isLoading || fields.length === 0}>
-              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <Save className="h-4 w-4 mr-2" />
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Save className="mr-2 h-4 w-4" />
               {isEdit ? '保存修改' : '创建订单'}
             </Button>
           </div>
         </form>
       </Form>
     </div>
-  )
+  );
 }
 
 // 简化的产品选择器组件（实际应该从产品管理模块导入）
 interface ProductSelectorProps {
-  control: any
-  name: string
-  label?: string
-  placeholder?: string
-  disabled?: boolean
+  control: any;
+  name: string;
+  label?: string;
+  placeholder?: string;
+  disabled?: boolean;
 }
 
 function ProductSelector({
@@ -671,7 +768,7 @@ function ProductSelector({
   name,
   label = '选择产品',
   placeholder = '搜索产品...',
-  disabled = false
+  disabled = false,
 }: ProductSelectorProps) {
   return (
     <FormField
@@ -680,7 +777,11 @@ function ProductSelector({
       render={({ field }) => (
         <FormItem>
           {label && <FormLabel>{label}</FormLabel>}
-          <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
+          <Select
+            onValueChange={field.onChange}
+            value={field.value}
+            disabled={disabled}
+          >
             <FormControl>
               <SelectTrigger>
                 <SelectValue placeholder={placeholder} />
@@ -697,5 +798,5 @@ function ProductSelector({
         </FormItem>
       )}
     />
-  )
+  );
 }

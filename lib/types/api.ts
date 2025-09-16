@@ -7,129 +7,129 @@
  * 基础API响应接口
  */
 export interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
-  error?: string
-  message?: string
+  success: boolean;
+  data?: T;
+  error?: string;
+  message?: string;
 }
 
 /**
  * 分页信息接口
  */
 export interface PaginationInfo {
-  page: number
-  limit: number
-  total: number
-  totalPages: number
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
 }
 
 /**
  * 分页响应接口
  */
 export interface PaginatedResponse<T> {
-  data: T[]
-  pagination: PaginationInfo
+  data: T[];
+  pagination: PaginationInfo;
 }
 
 /**
  * 错误响应接口
  */
 export interface ErrorResponse {
-  success: false
-  error: string
-  details?: any[]
-  code?: string
+  success: false;
+  error: string;
+  details?: any[];
+  code?: string;
 }
 
 /**
  * 成功响应接口
  */
 export interface SuccessResponse<T = any> {
-  success: true
-  data: T
-  message?: string
+  success: true;
+  data: T;
+  message?: string;
 }
 
 /**
  * 批量操作响应接口
  */
 export interface BatchOperationResponse {
-  success: boolean
-  processed: number
-  failed: number
-  errors?: string[]
+  success: boolean;
+  processed: number;
+  failed: number;
+  errors?: string[];
 }
 
 /**
  * 统计信息响应接口
  */
 export interface StatsResponse {
-  [key: string]: number | string | boolean
+  [key: string]: number | string | boolean;
 }
 
 /**
  * 搜索响应接口
  */
 export interface SearchResponse<T> {
-  results: T[]
-  total: number
-  query: string
-  took: number // 搜索耗时（毫秒）
+  results: T[];
+  total: number;
+  query: string;
+  took: number; // 搜索耗时（毫秒）
 }
 
 /**
  * 文件上传响应接口
  */
 export interface UploadResponse {
-  success: boolean
+  success: boolean;
   data?: {
-    filename: string
-    originalName: string
-    size: number
-    mimetype: string
-    url: string
-  }
-  error?: string
+    filename: string;
+    originalName: string;
+    size: number;
+    mimetype: string;
+    url: string;
+  };
+  error?: string;
 }
 
 /**
  * 导出响应接口
  */
 export interface ExportResponse {
-  success: boolean
+  success: boolean;
   data?: {
-    filename: string
-    url: string
-    size: number
-    recordCount: number
-  }
-  error?: string
+    filename: string;
+    url: string;
+    size: number;
+    recordCount: number;
+  };
+  error?: string;
 }
 
 /**
  * 通用查询参数接口
  */
 export interface BaseQueryParams {
-  page?: number
-  limit?: number
-  search?: string
-  sortBy?: string
-  sortOrder?: 'asc' | 'desc'
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }
 
 /**
  * 日期范围查询参数
  */
 export interface DateRangeParams {
-  startDate?: string
-  endDate?: string
+  startDate?: string;
+  endDate?: string;
 }
 
 /**
  * 状态筛选参数
  */
 export interface StatusFilterParams {
-  status?: string | string[]
+  status?: string | string[];
 }
 
 /**
@@ -168,103 +168,115 @@ export enum HttpStatus {
  * API请求配置接口
  */
 export interface ApiRequestConfig {
-  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
-  headers?: Record<string, string>
-  body?: any
-  timeout?: number
-  retries?: number
+  method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+  headers?: Record<string, string>;
+  body?: any;
+  timeout?: number;
+  retries?: number;
 }
 
 /**
  * 缓存配置接口
  */
 export interface CacheConfig {
-  ttl?: number // 缓存时间（秒）
-  key?: string // 缓存键
-  tags?: string[] // 缓存标签
+  ttl?: number; // 缓存时间（秒）
+  key?: string; // 缓存键
+  tags?: string[]; // 缓存标签
 }
 
 /**
  * 实时更新配置接口
  */
 export interface RealtimeConfig {
-  enabled: boolean
-  channel?: string
-  events?: string[]
+  enabled: boolean;
+  channel?: string;
+  events?: string[];
 }
 
 /**
  * API端点配置接口
  */
 export interface ApiEndpointConfig {
-  baseUrl: string
-  version?: string
-  timeout?: number
-  retries?: number
-  cache?: CacheConfig
-  realtime?: RealtimeConfig
+  baseUrl: string;
+  version?: string;
+  timeout?: number;
+  retries?: number;
+  cache?: CacheConfig;
+  realtime?: RealtimeConfig;
 }
 
 /**
  * 通用API客户端接口
  */
 export interface ApiClient {
-  get<T>(url: string, config?: ApiRequestConfig): Promise<ApiResponse<T>>
-  post<T>(url: string, data?: any, config?: ApiRequestConfig): Promise<ApiResponse<T>>
-  put<T>(url: string, data?: any, config?: ApiRequestConfig): Promise<ApiResponse<T>>
-  patch<T>(url: string, data?: any, config?: ApiRequestConfig): Promise<ApiResponse<T>>
-  delete<T>(url: string, config?: ApiRequestConfig): Promise<ApiResponse<T>>
+  get<T>(url: string, config?: ApiRequestConfig): Promise<ApiResponse<T>>;
+  post<T>(
+    url: string,
+    data?: any,
+    config?: ApiRequestConfig
+  ): Promise<ApiResponse<T>>;
+  put<T>(
+    url: string,
+    data?: any,
+    config?: ApiRequestConfig
+  ): Promise<ApiResponse<T>>;
+  patch<T>(
+    url: string,
+    data?: any,
+    config?: ApiRequestConfig
+  ): Promise<ApiResponse<T>>;
+  delete<T>(url: string, config?: ApiRequestConfig): Promise<ApiResponse<T>>;
 }
 
 /**
  * 数据验证结果接口
  */
 export interface ValidationResult {
-  valid: boolean
-  errors: ValidationError[]
+  valid: boolean;
+  errors: ValidationError[];
 }
 
 /**
  * 验证错误接口
  */
 export interface ValidationError {
-  field: string
-  message: string
-  code?: string
-  value?: any
+  field: string;
+  message: string;
+  code?: string;
+  value?: any;
 }
 
 /**
  * 审计日志接口
  */
 export interface AuditLog {
-  id: string
-  userId: string
-  action: string
-  resource: string
-  resourceId: string
-  changes?: Record<string, any>
-  metadata?: Record<string, any>
-  timestamp: string
-  ipAddress?: string
-  userAgent?: string
+  id: string;
+  userId: string;
+  action: string;
+  resource: string;
+  resourceId: string;
+  changes?: Record<string, any>;
+  metadata?: Record<string, any>;
+  timestamp: string;
+  ipAddress?: string;
+  userAgent?: string;
 }
 
 /**
  * 系统健康检查响应接口
  */
 export interface HealthCheckResponse {
-  status: 'healthy' | 'unhealthy' | 'degraded'
-  timestamp: string
-  uptime: number
-  version: string
+  status: 'healthy' | 'unhealthy' | 'degraded';
+  timestamp: string;
+  uptime: number;
+  version: string;
   services: {
     [serviceName: string]: {
-      status: 'up' | 'down' | 'degraded'
-      responseTime?: number
-      error?: string
-    }
-  }
+      status: 'up' | 'down' | 'degraded';
+      responseTime?: number;
+      error?: string;
+    };
+  };
 }
 
 /**
@@ -281,30 +293,37 @@ export function createApiResponse<T>(
     data,
     error,
     message,
-  }
+  };
 }
 
 /**
  * 创建成功响应
  */
-export function createSuccessResponse<T>(data: T, message?: string): SuccessResponse<T> {
+export function createSuccessResponse<T>(
+  data: T,
+  message?: string
+): SuccessResponse<T> {
   return {
     success: true,
     data,
     message,
-  }
+  };
 }
 
 /**
  * 创建错误响应
  */
-export function createErrorResponse(error: string, details?: any[], code?: string): ErrorResponse {
+export function createErrorResponse(
+  error: string,
+  details?: any[],
+  code?: string
+): ErrorResponse {
   return {
     success: false,
     error,
     details,
     code,
-  }
+  };
 }
 
 /**
@@ -317,5 +336,5 @@ export function createPaginatedResponse<T>(
   return {
     data,
     pagination,
-  }
+  };
 }

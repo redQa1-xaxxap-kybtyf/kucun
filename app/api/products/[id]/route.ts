@@ -1,8 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { productValidations } from '@/lib/validations/database'
-import { prisma } from '@/lib/db'
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+
+import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { productValidations } from '@/lib/validations/database';
 
 // 获取单个产品信息
 export async function GET(
@@ -11,12 +13,12 @@ export async function GET(
 ) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
-      )
+      );
     }
 
     const product = await prisma.product.findUnique({
@@ -42,10 +44,7 @@ export async function GET(
             reservedQuantity: true,
             updatedAt: true,
           },
-          orderBy: [
-            { colorCode: 'asc' },
-            { productionDate: 'desc' },
-          ],
+          orderBy: [{ colorCode: 'asc' }, { productionDate: 'desc' }],
         },
         salesOrderItems: {
           select: {
@@ -107,51 +106,54 @@ export async function GET(
           },
         },
       },
-    })
+    });
 
     if (!product) {
       return NextResponse.json(
         { success: false, error: '产品不存在' },
         { status: 404 }
-      )
+      );
     }
 
     // 计算库存汇总
     const inventorySummary = product.inventory.reduce(
       (acc, inv) => {
-        acc.totalQuantity += inv.quantity
-        acc.reservedQuantity += inv.reservedQuantity
-        acc.availableQuantity += inv.quantity - inv.reservedQuantity
-        return acc
+        acc.totalQuantity += inv.quantity;
+        acc.reservedQuantity += inv.reservedQuantity;
+        acc.availableQuantity += inv.quantity - inv.reservedQuantity;
+        return acc;
       },
       { totalQuantity: 0, reservedQuantity: 0, availableQuantity: 0 }
-    )
+    );
 
     // 按色号分组库存
-    const inventoryByColor = product.inventory.reduce((acc, inv) => {
-      const colorKey = inv.colorCode || '无色号'
-      if (!acc[colorKey]) {
-        acc[colorKey] = {
-          colorCode: inv.colorCode,
-          totalQuantity: 0,
-          reservedQuantity: 0,
-          availableQuantity: 0,
-          records: [],
+    const inventoryByColor = product.inventory.reduce(
+      (acc, inv) => {
+        const colorKey = inv.colorCode || '无色号';
+        if (!acc[colorKey]) {
+          acc[colorKey] = {
+            colorCode: inv.colorCode,
+            totalQuantity: 0,
+            reservedQuantity: 0,
+            availableQuantity: 0,
+            records: [],
+          };
         }
-      }
-      acc[colorKey].totalQuantity += inv.quantity
-      acc[colorKey].reservedQuantity += inv.reservedQuantity
-      acc[colorKey].availableQuantity += inv.quantity - inv.reservedQuantity
-      acc[colorKey].records.push({
-        id: inv.id,
-        productionDate: inv.productionDate,
-        quantity: inv.quantity,
-        reservedQuantity: inv.reservedQuantity,
-        availableQuantity: inv.quantity - inv.reservedQuantity,
-        updatedAt: inv.updatedAt,
-      })
-      return acc
-    }, {} as Record<string, any>)
+        acc[colorKey].totalQuantity += inv.quantity;
+        acc[colorKey].reservedQuantity += inv.reservedQuantity;
+        acc[colorKey].availableQuantity += inv.quantity - inv.reservedQuantity;
+        acc[colorKey].records.push({
+          id: inv.id,
+          productionDate: inv.productionDate,
+          quantity: inv.quantity,
+          reservedQuantity: inv.reservedQuantity,
+          availableQuantity: inv.quantity - inv.reservedQuantity,
+          updatedAt: inv.updatedAt,
+        });
+        return acc;
+      },
+      {} as Record<string, any>
+    );
 
     // 转换数据格式
     const formattedProduct = {
@@ -159,7 +161,9 @@ export async function GET(
       code: product.code,
       name: product.name,
       specification: product.specification,
-      specifications: product.specifications ? JSON.parse(product.specifications as string) : null,
+      specifications: product.specifications
+        ? JSON.parse(product.specifications as string)
+        : null,
       unit: product.unit,
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
@@ -199,22 +203,22 @@ export async function GET(
       },
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
-    }
+    };
 
     return NextResponse.json({
       success: true,
       data: formattedProduct,
-    })
+    });
   } catch (error) {
-    console.error('获取产品信息错误:', error)
-    
+    console.error('获取产品信息错误:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : '获取产品信息失败',
       },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -225,21 +229,21 @@ export async function PUT(
 ) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
-      )
+      );
     }
 
-    const body = await request.json()
-    
+    const body = await request.json();
+
     // 验证输入数据
     const validationResult = productValidations.update.safeParse({
       id: params.id,
       ...body,
-    })
+    });
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -248,43 +252,43 @@ export async function PUT(
           details: validationResult.error.errors,
         },
         { status: 400 }
-      )
+      );
     }
 
-    const { 
-      code, 
-      name, 
-      specification, 
-      specifications, 
-      unit, 
-      piecesPerUnit, 
-      weight, 
-      status 
-    } = validationResult.data
+    const {
+      code,
+      name,
+      specification,
+      specifications,
+      unit,
+      piecesPerUnit,
+      weight,
+      status,
+    } = validationResult.data;
 
     // 检查产品是否存在
     const existingProduct = await prisma.product.findUnique({
       where: { id: params.id },
-    })
+    });
 
     if (!existingProduct) {
       return NextResponse.json(
         { success: false, error: '产品不存在' },
         { status: 404 }
-      )
+      );
     }
 
     // 如果更新产品编码，检查是否与其他产品冲突
     if (code && code !== existingProduct.code) {
       const codeConflict = await prisma.product.findUnique({
         where: { code },
-      })
+      });
 
       if (codeConflict) {
         return NextResponse.json(
           { success: false, error: '产品编码已存在' },
           { status: 400 }
-        )
+        );
       }
     }
 
@@ -295,8 +299,10 @@ export async function PUT(
         ...(code && { code }),
         ...(name && { name }),
         ...(specification !== undefined && { specification }),
-        ...(specifications !== undefined && { 
-          specifications: specifications ? JSON.stringify(specifications) : null 
+        ...(specifications !== undefined && {
+          specifications: specifications
+            ? JSON.stringify(specifications)
+            : null,
         }),
         ...(unit && { unit }),
         ...(piecesPerUnit !== undefined && { piecesPerUnit }),
@@ -316,7 +322,7 @@ export async function PUT(
         createdAt: true,
         updatedAt: true,
       },
-    })
+    });
 
     // 转换数据格式
     const formattedProduct = {
@@ -324,30 +330,32 @@ export async function PUT(
       code: updatedProduct.code,
       name: updatedProduct.name,
       specification: updatedProduct.specification,
-      specifications: updatedProduct.specifications ? JSON.parse(updatedProduct.specifications as string) : null,
+      specifications: updatedProduct.specifications
+        ? JSON.parse(updatedProduct.specifications as string)
+        : null,
       unit: updatedProduct.unit,
       piecesPerUnit: updatedProduct.piecesPerUnit,
       weight: updatedProduct.weight,
       status: updatedProduct.status,
       createdAt: updatedProduct.createdAt,
       updatedAt: updatedProduct.updatedAt,
-    }
+    };
 
     return NextResponse.json({
       success: true,
       data: formattedProduct,
       message: '产品信息更新成功',
-    })
+    });
   } catch (error) {
-    console.error('更新产品信息错误:', error)
-    
+    console.error('更新产品信息错误:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : '更新产品信息失败',
       },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -358,12 +366,12 @@ export async function DELETE(
 ) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
-      )
+      );
     }
 
     // 检查产品是否存在
@@ -374,64 +382,64 @@ export async function DELETE(
         salesOrderItems: true,
         inboundRecords: true,
       },
-    })
+    });
 
     if (!existingProduct) {
       return NextResponse.json(
         { success: false, error: '产品不存在' },
         { status: 404 }
-      )
+      );
     }
 
     // 检查是否有关联数据
     if (existingProduct.inventory.length > 0) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `该产品有 ${existingProduct.inventory.length} 条库存记录，无法删除` 
+        {
+          success: false,
+          error: `该产品有 ${existingProduct.inventory.length} 条库存记录，无法删除`,
         },
         { status: 400 }
-      )
+      );
     }
 
     if (existingProduct.salesOrderItems.length > 0) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `该产品有 ${existingProduct.salesOrderItems.length} 条销售记录，无法删除` 
+        {
+          success: false,
+          error: `该产品有 ${existingProduct.salesOrderItems.length} 条销售记录，无法删除`,
         },
         { status: 400 }
-      )
+      );
     }
 
     if (existingProduct.inboundRecords.length > 0) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `该产品有 ${existingProduct.inboundRecords.length} 条入库记录，无法删除` 
+        {
+          success: false,
+          error: `该产品有 ${existingProduct.inboundRecords.length} 条入库记录，无法删除`,
         },
         { status: 400 }
-      )
+      );
     }
 
     // 删除产品
     await prisma.product.delete({
       where: { id: params.id },
-    })
+    });
 
     return NextResponse.json({
       success: true,
       message: '产品删除成功',
-    })
+    });
   } catch (error) {
-    console.error('删除产品错误:', error)
-    
+    console.error('删除产品错误:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : '删除产品失败',
       },
       { status: 500 }
-    )
+    );
   }
 }

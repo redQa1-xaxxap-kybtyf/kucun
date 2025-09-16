@@ -1,21 +1,5 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useSession } from 'next-auth/react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/ui/sheet'
 import {
   LayoutDashboard,
   Package,
@@ -27,11 +11,28 @@ import {
   Warehouse,
   Settings,
   HelpCircle,
-  X
-} from 'lucide-react'
-import type { NavigationItem } from '@/lib/types/layout'
-import { getAccessibleNavItems } from '@/lib/utils/permissions'
-import { useNavigationBadges } from '@/hooks/use-navigation-badges'
+  X,
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import * as React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
+import { useNavigationBadges } from '@/hooks/use-navigation-badges';
+import type { NavigationItem } from '@/lib/types/layout';
+import { cn } from '@/lib/utils';
+import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
 /**
  * 移动端导航菜单配置
@@ -86,7 +87,7 @@ const mobileNavigationItems: NavigationItem[] = [
     href: '/payments',
     icon: CreditCard,
   },
-]
+];
 
 /**
  * 移动端底部辅助功能导航
@@ -105,15 +106,15 @@ const mobileBottomNavigationItems: NavigationItem[] = [
     href: '/help',
     icon: HelpCircle,
   },
-]
+];
 
 interface MobileNavProps {
   /** 是否打开 */
-  open: boolean
+  open: boolean;
   /** 打开状态变化回调 */
-  onOpenChange: (open: boolean) => void
+  onOpenChange: (open: boolean) => void;
   /** 自定义样式类名 */
-  className?: string
+  className?: string;
 }
 
 /**
@@ -122,65 +123,71 @@ interface MobileNavProps {
  * 集成权限控制、徽章显示、手势支持等功能
  */
 export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
-  const pathname = usePathname()
-  const { data: session } = useSession()
-  const { addBadgesToNavItems } = useNavigationBadges()
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const { addBadgesToNavItems } = useNavigationBadges();
 
   // 触摸手势状态
-  const [touchStart, setTouchStart] = React.useState<number | null>(null)
-  const [touchEnd, setTouchEnd] = React.useState<number | null>(null)
+  const [touchStart, setTouchStart] = React.useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = React.useState<number | null>(null);
 
   // 根据用户权限过滤导航项
   const accessibleNavItems = React.useMemo(() => {
-    if (!session?.user?.role) return []
+    if (!session?.user?.role) return [];
 
-    const filteredItems = getAccessibleNavItems(mobileNavigationItems, session.user.role)
-    return addBadgesToNavItems(filteredItems)
-  }, [session?.user?.role, addBadgesToNavItems])
+    const filteredItems = getAccessibleNavItems(
+      mobileNavigationItems,
+      session.user.role
+    );
+    return addBadgesToNavItems(filteredItems);
+  }, [session?.user?.role, addBadgesToNavItems]);
 
   const accessibleBottomNavItems = React.useMemo(() => {
-    if (!session?.user?.role) return []
+    if (!session?.user?.role) return [];
 
-    const filteredItems = getAccessibleNavItems(mobileBottomNavigationItems, session.user.role)
-    return addBadgesToNavItems(filteredItems)
-  }, [session?.user?.role, addBadgesToNavItems])
+    const filteredItems = getAccessibleNavItems(
+      mobileBottomNavigationItems,
+      session.user.role
+    );
+    return addBadgesToNavItems(filteredItems);
+  }, [session?.user?.role, addBadgesToNavItems]);
 
   const handleNavItemClick = () => {
     // 点击导航项后关闭抽屉
-    onOpenChange(false)
-  }
+    onOpenChange(false);
+  };
 
   // 检查路径是否匹配（支持子路由）
   const isPathActive = (href: string) => {
     if (href === '/dashboard') {
-      return pathname === '/dashboard'
+      return pathname === '/dashboard';
     }
-    return pathname.startsWith(href)
-  }
+    return pathname.startsWith(href);
+  };
 
   // 手势处理
-  const minSwipeDistance = 50
+  const minSwipeDistance = 50;
 
   const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null)
-    setTouchStart(e.targetTouches[0].clientX)
-  }
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
 
   const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return
+    if (!touchStart || !touchEnd) return;
 
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > minSwipeDistance
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
 
     // 向左滑动关闭抽屉
     if (isLeftSwipe) {
-      onOpenChange(false)
+      onOpenChange(false);
     }
-  }
+  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -194,10 +201,10 @@ export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
         <SheetHeader className="border-b px-6 py-4">
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded bg-primary flex items-center justify-center">
+              <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
                 <Package className="h-4 w-4 text-primary-foreground" />
               </div>
-              <span className="font-semibold text-lg">库存管理</span>
+              <span className="text-lg font-semibold">库存管理</span>
             </SheetTitle>
           </div>
         </SheetHeader>
@@ -205,7 +212,7 @@ export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
         <ScrollArea className="flex-1 px-6 py-4">
           {/* 主导航区域 */}
           <nav className="space-y-2" role="navigation" aria-label="主导航">
-            {accessibleNavItems.map((item) => (
+            {accessibleNavItems.map(item => (
               <MobileNavItem
                 key={item.id}
                 item={item}
@@ -220,8 +227,12 @@ export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
               <Separator className="my-6" />
 
               {/* 底部辅助导航 */}
-              <nav className="space-y-2" role="navigation" aria-label="辅助导航">
-                {accessibleBottomNavItems.map((item) => (
+              <nav
+                className="space-y-2"
+                role="navigation"
+                aria-label="辅助导航"
+              >
+                {accessibleBottomNavItems.map(item => (
                   <MobileNavItem
                     key={item.id}
                     item={item}
@@ -235,13 +246,13 @@ export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
         </ScrollArea>
       </SheetContent>
     </Sheet>
-  )
+  );
 }
 
 interface MobileNavItemProps {
-  item: NavigationItem
-  isActive: boolean
-  onClick: () => void
+  item: NavigationItem;
+  isActive: boolean;
+  onClick: () => void;
 }
 
 /**
@@ -249,8 +260,8 @@ interface MobileNavItemProps {
  * 优化的移动端交互体验
  */
 function MobileNavItem({ item, isActive, onClick }: MobileNavItemProps) {
-  const Icon = item.icon
-  const [isPressed, setIsPressed] = React.useState(false)
+  const Icon = item.icon;
+  const [isPressed, setIsPressed] = React.useState(false);
 
   return (
     <Link
@@ -268,15 +279,15 @@ function MobileNavItem({ item, isActive, onClick }: MobileNavItemProps) {
       <Button
         variant={isActive ? 'secondary' : 'ghost'}
         className={cn(
-          'w-full justify-start h-12 px-4 transition-all duration-200',
+          'h-12 w-full justify-start px-4 transition-all duration-200',
           isActive && 'bg-secondary font-medium shadow-sm',
-          'active:scale-95 touch-manipulation'
+          'touch-manipulation active:scale-95'
         )}
         disabled={item.disabled}
         asChild
       >
         <div>
-          <Icon className="h-5 w-5 mr-3" />
+          <Icon className="mr-3 h-5 w-5" />
           <span className="flex-1 text-left text-base">{item.title}</span>
           {item.badge && (
             <Badge
@@ -289,7 +300,7 @@ function MobileNavItem({ item, isActive, onClick }: MobileNavItemProps) {
         </div>
       </Button>
     </Link>
-  )
+  );
 }
 
 /**
@@ -297,18 +308,20 @@ function MobileNavItem({ item, isActive, onClick }: MobileNavItemProps) {
  * 可以单独使用，也可以集成到Header组件中
  */
 interface MobileNavTriggerProps {
-  children: React.ReactNode
-  open: boolean
-  onOpenChange: (open: boolean) => void
+  children: React.ReactNode;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function MobileNavTrigger({ children, open, onOpenChange }: MobileNavTriggerProps) {
+export function MobileNavTrigger({
+  children,
+  open,
+  onOpenChange,
+}: MobileNavTriggerProps) {
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetTrigger asChild>
-        {children}
-      </SheetTrigger>
+      <SheetTrigger asChild>{children}</SheetTrigger>
       <MobileNav open={open} onOpenChange={onOpenChange} />
     </Sheet>
-  )
+  );
 }

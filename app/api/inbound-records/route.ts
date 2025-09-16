@@ -1,32 +1,37 @@
-import { NextRequest, NextResponse } from 'next/server'
-import { getServerSession } from 'next-auth'
-import { authOptions } from '@/lib/auth'
-import { inboundRecordValidations, paginationValidations } from '@/lib/validations/database'
-import { prisma, withTransaction } from '@/lib/db'
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+
+import { authOptions } from '@/lib/auth';
+import { prisma, withTransaction } from '@/lib/db';
+import {
+  inboundRecordValidations,
+  paginationValidations,
+} from '@/lib/validations/database';
 
 // 生成入库单号
 function generateRecordNumber(): string {
-  const now = new Date()
-  const year = now.getFullYear()
-  const month = String(now.getMonth() + 1).padStart(2, '0')
-  const day = String(now.getDate()).padStart(2, '0')
-  const timestamp = now.getTime().toString().slice(-6)
-  return `IN${year}${month}${day}${timestamp}`
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  const timestamp = now.getTime().toString().slice(-6);
+  return `IN${year}${month}${day}${timestamp}`;
 }
 
 // 获取入库记录列表
 export async function GET(request: NextRequest) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
-      )
+      );
     }
 
-    const { searchParams } = new URL(request.url)
+    const { searchParams } = new URL(request.url);
     const queryParams = {
       page: parseInt(searchParams.get('page') || '1'),
       limit: parseInt(searchParams.get('limit') || '20'),
@@ -36,10 +41,10 @@ export async function GET(request: NextRequest) {
       type: searchParams.get('type') || undefined,
       productId: searchParams.get('productId') || undefined,
       userId: searchParams.get('userId') || undefined,
-    }
+    };
 
     // 验证查询参数
-    const validationResult = paginationValidations.query.safeParse(queryParams)
+    const validationResult = paginationValidations.query.safeParse(queryParams);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -48,15 +53,15 @@ export async function GET(request: NextRequest) {
           details: validationResult.error.errors,
         },
         { status: 400 }
-      )
+      );
     }
 
-    const { page, limit, search, sortBy, sortOrder } = validationResult.data
-    const { type, productId, userId } = queryParams
+    const { page, limit, search, sortBy, sortOrder } = validationResult.data;
+    const { type, productId, userId } = queryParams;
 
     // 构建查询条件
-    const where: any = {}
-    
+    const where: any = {};
+
     if (search) {
       where.OR = [
         { recordNumber: { contains: search } },
@@ -64,19 +69,19 @@ export async function GET(request: NextRequest) {
         { product: { name: { contains: search } } },
         { colorCode: { contains: search } },
         { remarks: { contains: search } },
-      ]
+      ];
     }
 
     if (type) {
-      where.type = type
+      where.type = type;
     }
 
     if (productId) {
-      where.productId = productId
+      where.productId = productId;
     }
 
     if (userId) {
-      where.userId = userId
+      where.userId = userId;
     }
 
     // 查询入库记录列表
@@ -116,9 +121,9 @@ export async function GET(request: NextRequest) {
         take: limit,
       }),
       prisma.inboundRecord.count({ where }),
-    ])
+    ]);
 
-    const totalPages = Math.ceil(total / limit)
+    const totalPages = Math.ceil(total / limit);
 
     // 转换数据格式（snake_case -> camelCase）
     const formattedRecords = inboundRecords.map(record => ({
@@ -134,7 +139,7 @@ export async function GET(request: NextRequest) {
       product: record.product,
       user: record.user,
       createdAt: record.createdAt,
-    }))
+    }));
 
     return NextResponse.json({
       success: true,
@@ -145,17 +150,17 @@ export async function GET(request: NextRequest) {
         total,
         totalPages,
       },
-    })
+    });
   } catch (error) {
-    console.error('获取入库记录列表错误:', error)
-    
+    console.error('获取入库记录列表错误:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : '获取入库记录列表失败',
       },
       { status: 500 }
-    )
+    );
   }
 }
 
@@ -163,18 +168,18 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions)
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
-      )
+      );
     }
 
-    const body = await request.json()
-    
+    const body = await request.json();
+
     // 验证输入数据
-    const validationResult = inboundRecordValidations.create.safeParse(body)
+    const validationResult = inboundRecordValidations.create.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -183,42 +188,36 @@ export async function POST(request: NextRequest) {
           details: validationResult.error.errors,
         },
         { status: 400 }
-      )
+      );
     }
 
-    const { 
-      productId, 
-      type, 
-      colorCode, 
-      productionDate, 
-      quantity, 
-      remarks 
-    } = validationResult.data
+    const { productId, type, colorCode, productionDate, quantity, remarks } =
+      validationResult.data;
 
     // 验证产品是否存在
     const product = await prisma.product.findUnique({
       where: { id: productId },
-    })
+    });
 
     if (!product) {
       return NextResponse.json(
         { success: false, error: '指定的产品不存在' },
         { status: 400 }
-      )
+      );
     }
 
     if (product.status !== 'active') {
       return NextResponse.json(
         { success: false, error: '产品已停用，无法入库' },
         { status: 400 }
-      )
+      );
     }
 
     // 生成入库单号
-    const recordNumber = generateRecordNumber()
+    const recordNumber = generateRecordNumber();
 
     // 使用事务创建入库记录并更新库存
-    const result = await withTransaction(async (tx) => {
+    const result = await withTransaction(async tx => {
       // 创建入库记录
       const inboundRecord = await tx.inboundRecord.create({
         data: {
@@ -231,7 +230,7 @@ export async function POST(request: NextRequest) {
           quantity,
           remarks,
         },
-      })
+      });
 
       // 查找或创建对应的库存记录
       let inventory = await tx.inventory.findFirst({
@@ -240,7 +239,7 @@ export async function POST(request: NextRequest) {
           colorCode,
           productionDate: productionDate ? new Date(productionDate) : null,
         },
-      })
+      });
 
       if (inventory) {
         // 更新现有库存
@@ -249,7 +248,7 @@ export async function POST(request: NextRequest) {
           data: {
             quantity: inventory.quantity + quantity,
           },
-        })
+        });
       } else {
         // 创建新的库存记录
         inventory = await tx.inventory.create({
@@ -260,11 +259,11 @@ export async function POST(request: NextRequest) {
             quantity,
             reservedQuantity: 0,
           },
-        })
+        });
       }
 
-      return { inboundRecord, inventory }
-    })
+      return { inboundRecord, inventory };
+    });
 
     // 获取完整的入库记录信息
     const fullRecord = await prisma.inboundRecord.findUnique({
@@ -297,7 +296,7 @@ export async function POST(request: NextRequest) {
           },
         },
       },
-    })
+    });
 
     // 转换数据格式
     const formattedRecord = {
@@ -313,22 +312,22 @@ export async function POST(request: NextRequest) {
       product: fullRecord!.product,
       user: fullRecord!.user,
       createdAt: fullRecord!.createdAt,
-    }
+    };
 
     return NextResponse.json({
       success: true,
       data: formattedRecord,
       message: '入库记录创建成功，库存已更新',
-    })
+    });
   } catch (error) {
-    console.error('创建入库记录错误:', error)
-    
+    console.error('创建入库记录错误:', error);
+
     return NextResponse.json(
       {
         success: false,
         error: error instanceof Error ? error.message : '创建入库记录失败',
       },
       { status: 500 }
-    )
+    );
   }
 }

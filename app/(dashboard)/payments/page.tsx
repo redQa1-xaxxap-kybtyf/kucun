@@ -1,25 +1,58 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { Plus, Search, MoreHorizontal, Eye, CreditCard, DollarSign, Calendar, User } from 'lucide-react'
+import {
+  Plus,
+  Search,
+  MoreHorizontal,
+  Eye,
+  CreditCard,
+  DollarSign,
+  Calendar,
+  User,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { MobileDataTable } from '@/components/ui/mobile-data-table'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { MobileDataTable } from '@/components/ui/mobile-data-table';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 /**
  * 支付管理页面
  * 严格遵循全栈项目统一约定规范
  */
 export default function PaymentsPage() {
-  const router = useRouter()
+  const router = useRouter();
   const [queryParams, setQueryParams] = React.useState({
     page: 1,
     limit: 20,
@@ -27,7 +60,7 @@ export default function PaymentsPage() {
     status: undefined as string | undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc' as 'asc' | 'desc',
-  })
+  });
 
   // 模拟数据 - 实际项目中应该从API获取
   const mockData = {
@@ -36,7 +69,7 @@ export default function PaymentsPage() {
         id: '1',
         paymentNumber: 'PAY-2025-001',
         customer: { name: '张三建材' },
-        amount: 15000.00,
+        amount: 15000.0,
         status: 'completed',
         paymentMethod: 'bank_transfer',
         createdAt: '2025-01-16T10:00:00Z',
@@ -45,7 +78,7 @@ export default function PaymentsPage() {
         id: '2',
         paymentNumber: 'PAY-2025-002',
         customer: { name: '李四装饰' },
-        amount: 8500.00,
+        amount: 8500.0,
         status: 'pending',
         paymentMethod: 'cash',
         createdAt: '2025-01-15T14:30:00Z',
@@ -56,18 +89,18 @@ export default function PaymentsPage() {
       limit: 20,
       total: 2,
       totalPages: 1,
-    }
-  }
+    },
+  };
 
   // 搜索处理
   const handleSearch = (value: string) => {
-    setQueryParams(prev => ({ ...prev, search: value, page: 1 }))
-  }
+    setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
+  };
 
   // 筛选处理
   const handleFilter = (key: string, value: any) => {
-    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }))
-  }
+    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
+  };
 
   // 状态标签渲染
   const getStatusBadge = (status: string) => {
@@ -76,10 +109,13 @@ export default function PaymentsPage() {
       pending: { label: '待处理', variant: 'secondary' as const },
       failed: { label: '失败', variant: 'destructive' as const },
       cancelled: { label: '已取消', variant: 'outline' as const },
-    }
-    const config = statusMap[status as keyof typeof statusMap] || { label: status, variant: 'outline' as const }
-    return <Badge variant={config.variant}>{config.label}</Badge>
-  }
+    };
+    const config = statusMap[status as keyof typeof statusMap] || {
+      label: status,
+      variant: 'outline' as const,
+    };
+    return <Badge variant={config.variant}>{config.label}</Badge>;
+  };
 
   // 支付方式标签
   const getPaymentMethodLabel = (method: string) => {
@@ -89,22 +125,32 @@ export default function PaymentsPage() {
       credit_card: '信用卡',
       alipay: '支付宝',
       wechat: '微信支付',
-    }
-    return methodMap[method as keyof typeof methodMap] || method
-  }
+    };
+    return methodMap[method as keyof typeof methodMap] || method;
+  };
 
   // 格式化金额
-  const formatAmount = (amount: number) => {
-    return `¥${amount.toFixed(2)}`
-  }
+  const formatAmount = (amount: number) => `¥${amount.toFixed(2)}`;
 
   // 移动端表格列配置
   const mobileColumns = [
     { key: 'paymentNumber', title: '支付单号', mobilePrimary: true },
-    { key: 'customer', title: '客户', render: (item: any) => item.customer?.name || '-' },
-    { key: 'status', title: '状态', render: (item: any) => getStatusBadge(item.status) },
-    { key: 'amount', title: '金额', render: (item: any) => formatAmount(item.amount) },
-  ]
+    {
+      key: 'customer',
+      title: '客户',
+      render: (item: any) => item.customer?.name || '-',
+    },
+    {
+      key: 'status',
+      title: '状态',
+      render: (item: any) => getStatusBadge(item.status),
+    },
+    {
+      key: 'amount',
+      title: '金额',
+      render: (item: any) => formatAmount(item.amount),
+    },
+  ];
 
   return (
     <div className="space-y-6">
@@ -130,7 +176,7 @@ export default function PaymentsPage() {
                 <Input
                   placeholder="搜索支付单号或客户名称..."
                   value={queryParams.search}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={e => handleSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -138,7 +184,9 @@ export default function PaymentsPage() {
             <div className="flex gap-2">
               <Select
                 value={queryParams.status || 'all'}
-                onValueChange={(value) => handleFilter('status', value === 'all' ? undefined : value)}
+                onValueChange={value =>
+                  handleFilter('status', value === 'all' ? undefined : value)
+                }
               >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="状态" />
@@ -180,7 +228,7 @@ export default function PaymentsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockData.data.map((payment) => (
+                {mockData.data.map(payment => (
                   <TableRow key={payment.id}>
                     <TableCell className="font-medium">
                       <div className="flex items-center gap-2">
@@ -220,7 +268,11 @@ export default function PaymentsPage() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => router.push(`/payments/${payment.id}`)}>
+                          <DropdownMenuItem
+                            onClick={() =>
+                              router.push(`/payments/${payment.id}`)
+                            }
+                          >
                             <Eye className="mr-2 h-4 w-4" />
                             查看详情
                           </DropdownMenuItem>
@@ -238,8 +290,8 @@ export default function PaymentsPage() {
             <MobileDataTable
               data={mockData.data}
               columns={mobileColumns}
-              onItemClick={(item) => router.push(`/payments/${item.id}`)}
-              renderActions={(item) => (
+              onItemClick={item => router.push(`/payments/${item.id}`)}
+              renderActions={item => (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="h-8 w-8 p-0">
@@ -247,7 +299,9 @@ export default function PaymentsPage() {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={() => router.push(`/payments/${item.id}`)}>
+                    <DropdownMenuItem
+                      onClick={() => router.push(`/payments/${item.id}`)}
+                    >
                       <Eye className="mr-2 h-4 w-4" />
                       查看详情
                     </DropdownMenuItem>
@@ -259,5 +313,5 @@ export default function PaymentsPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

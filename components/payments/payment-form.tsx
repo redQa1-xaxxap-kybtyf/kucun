@@ -1,120 +1,164 @@
 // 收款记录表单组件
 // 使用React Hook Form + Zod实现收款记录的创建和编辑表单
 
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Calendar } from '@/components/ui/calendar'
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Badge } from '@/components/ui/badge'
-import { cn } from '@/lib/utils'
-import { format } from 'date-fns'
-import { zhCN } from 'date-fns/locale'
-import { 
-  CalendarIcon, 
-  DollarSign, 
-  CreditCard, 
-  Building2, 
+import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import {
+  CalendarIcon,
+  DollarSign,
+  CreditCard,
+  Building2,
   Receipt,
   AlertCircle,
   Loader2,
   Check,
-  X
-} from 'lucide-react'
+  X,
+} from 'lucide-react';
+import * as React from 'react';
+import { useForm } from 'react-hook-form';
 
-import { 
-  createPaymentRecordSchema, 
-  updatePaymentRecordSchema,
-  type CreatePaymentRecordInput,
-  type UpdatePaymentRecordInput,
-  PAYMENT_FORM_FIELDS
-} from '@/lib/validations/payment'
-import { 
-  DEFAULT_PAYMENT_METHODS, 
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Textarea } from '@/components/ui/textarea';
+import { paymentUtils } from '@/lib/api/payments';
+import {
+  DEFAULT_PAYMENT_METHODS,
   DEFAULT_PAYMENT_STATUSES,
   type PaymentRecord,
   type PaymentRecordDetail,
   type PaymentMethod,
-  type PaymentStatus
-} from '@/lib/types/payment'
-import { paymentUtils } from '@/lib/api/payments'
+  type PaymentStatus,
+} from '@/lib/types/payment';
+import { cn } from '@/lib/utils';
+import {
+  createPaymentRecordSchema,
+  updatePaymentRecordSchema,
+  type CreatePaymentRecordInput,
+  type UpdatePaymentRecordInput,
+  PAYMENT_FORM_FIELDS,
+} from '@/lib/validations/payment';
 
 export interface PaymentFormProps {
-  initialData?: PaymentRecordDetail
-  salesOrderId?: string
-  customerId?: string
-  onSubmit: (data: CreatePaymentRecordInput | UpdatePaymentRecordInput) => Promise<void>
-  onCancel?: () => void
-  isLoading?: boolean
-  className?: string
+  initialData?: PaymentRecordDetail;
+  salesOrderId?: string;
+  customerId?: string;
+  onSubmit: (
+    data: CreatePaymentRecordInput | UpdatePaymentRecordInput
+  ) => Promise<void>;
+  onCancel?: () => void;
+  isLoading?: boolean;
+  className?: string;
 }
 
 const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
-  ({ initialData, salesOrderId, customerId, onSubmit, onCancel, isLoading = false, className, ...props }, ref) => {
-    const isEditing = !!initialData
-    const [isSubmitting, setIsSubmitting] = React.useState(false)
-    
+  (
+    {
+      initialData,
+      salesOrderId,
+      customerId,
+      onSubmit,
+      onCancel,
+      isLoading = false,
+      className,
+      ...props
+    },
+    ref
+  ) => {
+    const isEditing = !!initialData;
+    const [isSubmitting, setIsSubmitting] = React.useState(false);
+
     // 表单配置
     const form = useForm<CreatePaymentRecordInput | UpdatePaymentRecordInput>({
-      resolver: zodResolver(isEditing ? updatePaymentRecordSchema : createPaymentRecordSchema),
-      defaultValues: isEditing ? {
-        paymentMethod: initialData.paymentMethod,
-        paymentAmount: initialData.paymentAmount,
-        paymentDate: initialData.paymentDate.split('T')[0],
-        status: initialData.status,
-        remarks: initialData.remarks || '',
-        receiptNumber: initialData.receiptNumber || '',
-        bankInfo: initialData.bankInfo || ''
-      } : {
-        salesOrderId: salesOrderId || '',
-        customerId: customerId || '',
-        paymentMethod: 'cash' as PaymentMethod,
-        paymentAmount: 0,
-        paymentDate: format(new Date(), 'yyyy-MM-dd'),
-        remarks: '',
-        receiptNumber: '',
-        bankInfo: ''
-      }
-    })
+      resolver: zodResolver(
+        isEditing ? updatePaymentRecordSchema : createPaymentRecordSchema
+      ),
+      defaultValues: isEditing
+        ? {
+            paymentMethod: initialData.paymentMethod,
+            paymentAmount: initialData.paymentAmount,
+            paymentDate: initialData.paymentDate.split('T')[0],
+            status: initialData.status,
+            remarks: initialData.remarks || '',
+            receiptNumber: initialData.receiptNumber || '',
+            bankInfo: initialData.bankInfo || '',
+          }
+        : {
+            salesOrderId: salesOrderId || '',
+            customerId: customerId || '',
+            paymentMethod: 'cash' as PaymentMethod,
+            paymentAmount: 0,
+            paymentDate: format(new Date(), 'yyyy-MM-dd'),
+            remarks: '',
+            receiptNumber: '',
+            bankInfo: '',
+          },
+    });
 
     // 监听收款方式变化
-    const watchedPaymentMethod = form.watch('paymentMethod')
-    
+    const watchedPaymentMethod = form.watch('paymentMethod');
+
     // 处理表单提交
-    const handleSubmit = async (data: CreatePaymentRecordInput | UpdatePaymentRecordInput) => {
+    const handleSubmit = async (
+      data: CreatePaymentRecordInput | UpdatePaymentRecordInput
+    ) => {
       try {
-        setIsSubmitting(true)
-        await onSubmit(data)
+        setIsSubmitting(true);
+        await onSubmit(data);
       } catch (error) {
-        console.error('提交表单失败:', error)
+        console.error('提交表单失败:', error);
       } finally {
-        setIsSubmitting(false)
+        setIsSubmitting(false);
       }
-    }
+    };
 
     // 处理取消
     const handleCancel = () => {
-      form.reset()
-      onCancel?.()
-    }
+      form.reset();
+      onCancel?.();
+    };
 
     if (isLoading) {
-      return <PaymentFormSkeleton />
+      return <PaymentFormSkeleton />;
     }
 
     return (
-      <Card className={cn("w-full", className)} ref={ref} {...props}>
+      <Card className={cn('w-full', className)} ref={ref} {...props}>
         <CardHeader>
           <CardTitle className="flex items-center space-x-2">
             <DollarSign className="h-5 w-5" />
@@ -124,12 +168,15 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
             {isEditing ? '修改收款记录信息' : '填写收款记录详细信息'}
           </CardDescription>
         </CardHeader>
-        
+
         <CardContent>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+            <form
+              onSubmit={form.handleSubmit(handleSubmit)}
+              className="space-y-6"
+            >
               {/* 基础信息 */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* 销售订单（仅创建时显示） */}
                 {!isEditing && (
                   <FormField
@@ -137,16 +184,29 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                     name="salesOrderId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{PAYMENT_FORM_FIELDS.salesOrderId.label}</FormLabel>
+                        <FormLabel>
+                          {PAYMENT_FORM_FIELDS.salesOrderId.label}
+                        </FormLabel>
                         <FormControl>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
                             <SelectTrigger>
-                              <SelectValue placeholder={PAYMENT_FORM_FIELDS.salesOrderId.placeholder} />
+                              <SelectValue
+                                placeholder={
+                                  PAYMENT_FORM_FIELDS.salesOrderId.placeholder
+                                }
+                              />
                             </SelectTrigger>
                             <SelectContent>
                               {/* 这里应该从API获取销售订单列表 */}
-                              <SelectItem value="sample-order-1">SO-2024-001</SelectItem>
-                              <SelectItem value="sample-order-2">SO-2024-002</SelectItem>
+                              <SelectItem value="sample-order-1">
+                                SO-2024-001
+                              </SelectItem>
+                              <SelectItem value="sample-order-2">
+                                SO-2024-002
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </FormControl>
@@ -163,16 +223,29 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                     name="customerId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{PAYMENT_FORM_FIELDS.customerId.label}</FormLabel>
+                        <FormLabel>
+                          {PAYMENT_FORM_FIELDS.customerId.label}
+                        </FormLabel>
                         <FormControl>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
                             <SelectTrigger>
-                              <SelectValue placeholder={PAYMENT_FORM_FIELDS.customerId.placeholder} />
+                              <SelectValue
+                                placeholder={
+                                  PAYMENT_FORM_FIELDS.customerId.placeholder
+                                }
+                              />
                             </SelectTrigger>
                             <SelectContent>
                               {/* 这里应该从API获取客户列表 */}
-                              <SelectItem value="sample-customer-1">张三建材</SelectItem>
-                              <SelectItem value="sample-customer-2">李四装饰</SelectItem>
+                              <SelectItem value="sample-customer-1">
+                                张三建材
+                              </SelectItem>
+                              <SelectItem value="sample-customer-2">
+                                李四装饰
+                              </SelectItem>
                             </SelectContent>
                           </Select>
                         </FormControl>
@@ -188,17 +261,35 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                   name="paymentMethod"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{PAYMENT_FORM_FIELDS.paymentMethod.label}</FormLabel>
+                      <FormLabel>
+                        {PAYMENT_FORM_FIELDS.paymentMethod.label}
+                      </FormLabel>
                       <FormControl>
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
                           <SelectTrigger>
-                            <SelectValue placeholder={PAYMENT_FORM_FIELDS.paymentMethod.placeholder} />
+                            <SelectValue
+                              placeholder={
+                                PAYMENT_FORM_FIELDS.paymentMethod.placeholder
+                              }
+                            />
                           </SelectTrigger>
                           <SelectContent>
-                            {DEFAULT_PAYMENT_METHODS.filter(method => method.isActive).map((method) => (
-                              <SelectItem key={method.method} value={method.method}>
+                            {DEFAULT_PAYMENT_METHODS.filter(
+                              method => method.isActive
+                            ).map(method => (
+                              <SelectItem
+                                key={method.method}
+                                value={method.method}
+                              >
                                 <div className="flex items-center space-x-2">
-                                  <span>{paymentUtils.getPaymentMethodIcon(method.method)}</span>
+                                  <span>
+                                    {paymentUtils.getPaymentMethodIcon(
+                                      method.method
+                                    )}
+                                  </span>
                                   <span>{method.label}</span>
                                 </div>
                               </SelectItem>
@@ -217,7 +308,9 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                   name="paymentAmount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{PAYMENT_FORM_FIELDS.paymentAmount.label}</FormLabel>
+                      <FormLabel>
+                        {PAYMENT_FORM_FIELDS.paymentAmount.label}
+                      </FormLabel>
                       <FormControl>
                         <div className="relative">
                           <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
@@ -225,10 +318,14 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                             type="number"
                             step="0.01"
                             min="0"
-                            placeholder={PAYMENT_FORM_FIELDS.paymentAmount.placeholder}
+                            placeholder={
+                              PAYMENT_FORM_FIELDS.paymentAmount.placeholder
+                            }
                             className="pl-10"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            onChange={e =>
+                              field.onChange(parseFloat(e.target.value) || 0)
+                            }
                           />
                         </div>
                       </FormControl>
@@ -243,31 +340,43 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                   name="paymentDate"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{PAYMENT_FORM_FIELDS.paymentDate.label}</FormLabel>
+                      <FormLabel>
+                        {PAYMENT_FORM_FIELDS.paymentDate.label}
+                      </FormLabel>
                       <FormControl>
                         <Popover>
                           <PopoverTrigger asChild>
                             <Button
                               variant="outline"
                               className={cn(
-                                "w-full justify-start text-left font-normal",
-                                !field.value && "text-muted-foreground"
+                                'w-full justify-start text-left font-normal',
+                                !field.value && 'text-muted-foreground'
                               )}
                             >
                               <CalendarIcon className="mr-2 h-4 w-4" />
                               {field.value ? (
-                                format(new Date(field.value), 'PPP', { locale: zhCN })
+                                format(new Date(field.value), 'PPP', {
+                                  locale: zhCN,
+                                })
                               ) : (
-                                <span>{PAYMENT_FORM_FIELDS.paymentDate.placeholder}</span>
+                                <span>
+                                  {PAYMENT_FORM_FIELDS.paymentDate.placeholder}
+                                </span>
                               )}
                             </Button>
                           </PopoverTrigger>
                           <PopoverContent className="w-auto p-0" align="start">
                             <Calendar
                               mode="single"
-                              selected={field.value ? new Date(field.value) : undefined}
-                              onSelect={(date) => field.onChange(date ? format(date, 'yyyy-MM-dd') : '')}
-                              disabled={(date) => date > new Date()}
+                              selected={
+                                field.value ? new Date(field.value) : undefined
+                              }
+                              onSelect={date =>
+                                field.onChange(
+                                  date ? format(date, 'yyyy-MM-dd') : ''
+                                )
+                              }
+                              disabled={date => date > new Date()}
                               initialFocus
                             />
                           </PopoverContent>
@@ -284,12 +393,16 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                   name="receiptNumber"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>{PAYMENT_FORM_FIELDS.receiptNumber.label}</FormLabel>
+                      <FormLabel>
+                        {PAYMENT_FORM_FIELDS.receiptNumber.label}
+                      </FormLabel>
                       <FormControl>
                         <div className="relative">
                           <Receipt className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                           <Input
-                            placeholder={PAYMENT_FORM_FIELDS.receiptNumber.placeholder}
+                            placeholder={
+                              PAYMENT_FORM_FIELDS.receiptNumber.placeholder
+                            }
                             className="pl-10"
                             {...field}
                           />
@@ -309,15 +422,26 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                       <FormItem>
                         <FormLabel>收款状态</FormLabel>
                         <FormControl>
-                          <Select value={field.value} onValueChange={field.onChange}>
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="请选择收款状态" />
                             </SelectTrigger>
                             <SelectContent>
-                              {DEFAULT_PAYMENT_STATUSES.filter(status => status.isActive).map((status) => (
-                                <SelectItem key={status.status} value={status.status}>
+                              {DEFAULT_PAYMENT_STATUSES.filter(
+                                status => status.isActive
+                              ).map(status => (
+                                <SelectItem
+                                  key={status.status}
+                                  value={status.status}
+                                >
                                   <div className="flex items-center space-x-2">
-                                    <Badge variant="outline" className={`text-${status.color}-600`}>
+                                    <Badge
+                                      variant="outline"
+                                      className={`text-${status.color}-600`}
+                                    >
                                       {status.label}
                                     </Badge>
                                   </div>
@@ -343,7 +467,9 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                       <FormLabel className="flex items-center space-x-2">
                         <Building2 className="h-4 w-4" />
                         <span>{PAYMENT_FORM_FIELDS.bankInfo.label}</span>
-                        <Badge variant="destructive" className="text-xs">必填</Badge>
+                        <Badge variant="destructive" className="text-xs">
+                          必填
+                        </Badge>
                       </FormLabel>
                       <FormControl>
                         <Textarea
@@ -381,24 +507,21 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
               />
 
               {/* 操作按钮 */}
-              <div className="flex items-center justify-end space-x-4 pt-6 border-t">
+              <div className="flex items-center justify-end space-x-4 border-t pt-6">
                 <Button
                   type="button"
                   variant="outline"
                   onClick={handleCancel}
                   disabled={isSubmitting}
                 >
-                  <X className="h-4 w-4 mr-2" />
+                  <X className="mr-2 h-4 w-4" />
                   取消
                 </Button>
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                >
+                <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                   ) : (
-                    <Check className="h-4 w-4 mr-2" />
+                    <Check className="mr-2 h-4 w-4" />
                   )}
                   {isEditing ? '更新' : '创建'}
                 </Button>
@@ -407,11 +530,11 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
           </Form>
         </CardContent>
       </Card>
-    )
+    );
   }
-)
+);
 
-PaymentForm.displayName = "PaymentForm"
+PaymentForm.displayName = 'PaymentForm';
 
 // 加载骨架屏
 function PaymentFormSkeleton() {
@@ -426,7 +549,7 @@ function PaymentFormSkeleton() {
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
             {Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="space-y-2">
                 <Skeleton className="h-4 w-20" />
@@ -438,14 +561,14 @@ function PaymentFormSkeleton() {
             <Skeleton className="h-4 w-16" />
             <Skeleton className="h-20 w-full" />
           </div>
-          <div className="flex justify-end space-x-4 pt-6 border-t">
+          <div className="flex justify-end space-x-4 border-t pt-6">
             <Skeleton className="h-10 w-16" />
             <Skeleton className="h-10 w-16" />
           </div>
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
-export { PaymentForm }
+export { PaymentForm };

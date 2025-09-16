@@ -1,65 +1,77 @@
-'use client'
+'use client';
 
-import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
-
-// UI Components
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Skeleton } from '@/components/ui/skeleton'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-
-// Icons
-import { 
-  AlertTriangle, 
-  AlertCircle, 
-  Package, 
+import { useQuery } from '@tanstack/react-query';
+import {
+  AlertTriangle,
+  AlertCircle,
+  Package,
   TrendingUp,
   RefreshCw,
   Bell,
   BellOff,
   Calendar,
-  Palette
-} from 'lucide-react'
+  Palette,
+} from 'lucide-react';
+import { useState } from 'react';
+
+// UI Components
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+// Icons
 
 // API and Types
-import { getInventoryAlerts, inventoryQueryKeys } from '@/lib/api/inventory'
-import { InventoryAlert } from '@/lib/types/inventory'
-import { 
+import { getInventoryAlerts, inventoryQueryKeys } from '@/lib/api/inventory';
+import { InventoryAlert,
   INVENTORY_ALERT_TYPE_LABELS,
   INVENTORY_ALERT_TYPE_VARIANTS,
-  formatProductionDate
-} from '@/lib/types/inventory'
+  formatProductionDate,
+} from '@/lib/types/inventory';
 
 interface InventoryAlertsProps {
-  className?: string
-  showTitle?: boolean
-  maxItems?: number
+  className?: string;
+  showTitle?: boolean;
+  maxItems?: number;
 }
 
-export function InventoryAlerts({ 
-  className = '', 
-  showTitle = true, 
-  maxItems 
+export function InventoryAlerts({
+  className = '',
+  showTitle = true,
+  maxItems,
 }: InventoryAlertsProps) {
-  const [showAll, setShowAll] = useState(false)
+  const [showAll, setShowAll] = useState(false);
 
   // 获取库存预警
   const {
     data: alertsData,
     isLoading,
     error,
-    refetch
+    refetch,
   } = useQuery({
     queryKey: inventoryQueryKeys.alerts(),
     queryFn: () => getInventoryAlerts(),
     refetchInterval: 5 * 60 * 1000, // 5分钟自动刷新
-  })
+  });
 
   if (isLoading) {
-    return <InventoryAlertsSkeleton showTitle={showTitle} />
+    return <InventoryAlertsSkeleton showTitle={showTitle} />;
   }
 
   if (error) {
@@ -68,7 +80,7 @@ export function InventoryAlerts({
         {showTitle && (
           <CardHeader>
             <CardTitle className="flex items-center text-red-600">
-              <AlertCircle className="h-5 w-5 mr-2" />
+              <AlertCircle className="mr-2 h-5 w-5" />
               库存预警
             </CardTitle>
           </CardHeader>
@@ -82,23 +94,27 @@ export function InventoryAlerts({
           </Alert>
           <div className="mt-4">
             <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="mr-2 h-4 w-4" />
               重试
             </Button>
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
-  const alerts = alertsData?.data || []
-  const displayAlerts = maxItems && !showAll ? alerts.slice(0, maxItems) : alerts
+  const alerts = alertsData?.data || [];
+  const displayAlerts =
+    maxItems && !showAll ? alerts.slice(0, maxItems) : alerts;
 
   // 按类型分组统计
-  const alertStats = alerts.reduce((acc, alert) => {
-    acc[alert.type] = (acc[alert.type] || 0) + 1
-    return acc
-  }, {} as Record<string, number>)
+  const alertStats = alerts.reduce(
+    (acc, alert) => {
+      acc[alert.type] = (acc[alert.type] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
 
   return (
     <Card className={className}>
@@ -107,39 +123,45 @@ export function InventoryAlerts({
           <div className="flex items-center justify-between">
             <div>
               <CardTitle className="flex items-center">
-                <AlertTriangle className="h-5 w-5 mr-2 text-orange-500" />
+                <AlertTriangle className="mr-2 h-5 w-5 text-orange-500" />
                 库存预警
               </CardTitle>
               <CardDescription>
-                {alerts.length > 0 ? `发现 ${alerts.length} 个库存预警` : '暂无库存预警'}
+                {alerts.length > 0
+                  ? `发现 ${alerts.length} 个库存预警`
+                  : '暂无库存预警'}
               </CardDescription>
             </div>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="h-4 w-4 mr-2" />
+              <RefreshCw className="mr-2 h-4 w-4" />
               刷新
             </Button>
           </div>
         </CardHeader>
       )}
-      
+
       <CardContent>
         {alerts.length === 0 ? (
-          <div className="text-center py-8">
-            <BellOff className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-            <h3 className="text-lg font-medium mb-2">暂无库存预警</h3>
-            <p className="text-muted-foreground">
-              所有产品库存状态正常
-            </p>
+          <div className="py-8 text-center">
+            <BellOff className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+            <h3 className="mb-2 text-lg font-medium">暂无库存预警</h3>
+            <p className="text-muted-foreground">所有产品库存状态正常</p>
           </div>
         ) : (
           <>
             {/* 预警统计 */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
               {Object.entries(alertStats).map(([type, count]) => (
                 <div key={type} className="text-center">
-                  <div className="text-2xl font-bold text-orange-600">{count}</div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    {count}
+                  </div>
                   <div className="text-sm text-muted-foreground">
-                    {INVENTORY_ALERT_TYPE_LABELS[type as keyof typeof INVENTORY_ALERT_TYPE_LABELS]}
+                    {
+                      INVENTORY_ALERT_TYPE_LABELS[
+                        type as keyof typeof INVENTORY_ALERT_TYPE_LABELS
+                      ]
+                    }
                   </div>
                 </div>
               ))}
@@ -162,16 +184,18 @@ export function InventoryAlerts({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayAlerts.map((alert) => (
+                  {displayAlerts.map(alert => (
                     <TableRow key={alert.id}>
                       <TableCell>
-                        <Badge variant={INVENTORY_ALERT_TYPE_VARIANTS[alert.type]}>
+                        <Badge
+                          variant={INVENTORY_ALERT_TYPE_VARIANTS[alert.type]}
+                        >
                           {INVENTORY_ALERT_TYPE_LABELS[alert.type]}
                         </Badge>
                       </TableCell>
                       <TableCell>
                         <div>
-                          <div className="font-medium text-sm">
+                          <div className="text-sm font-medium">
                             {alert.inventory?.product?.name || '未知产品'}
                           </div>
                           <div className="text-xs text-muted-foreground">
@@ -182,31 +206,39 @@ export function InventoryAlerts({
                       <TableCell>
                         {alert.inventory?.colorCode ? (
                           <Badge variant="outline" className="text-xs">
-                            <Palette className="h-3 w-3 mr-1" />
+                            <Palette className="mr-1 h-3 w-3" />
                             {alert.inventory.colorCode}
                           </Badge>
                         ) : (
-                          <span className="text-muted-foreground text-sm">无</span>
+                          <span className="text-sm text-muted-foreground">
+                            无
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>
                         {alert.inventory?.productionDate ? (
                           <div className="flex items-center text-sm">
-                            <Calendar className="h-3 w-3 mr-1" />
-                            {formatProductionDate(alert.inventory.productionDate)}
+                            <Calendar className="mr-1 h-3 w-3" />
+                            {formatProductionDate(
+                              alert.inventory.productionDate
+                            )}
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-sm">无</span>
+                          <span className="text-sm text-muted-foreground">
+                            无
+                          </span>
                         )}
                       </TableCell>
                       <TableCell>
                         <span className="font-medium text-orange-600">
-                          {alert.inventory?.quantity || 0} {alert.inventory?.product?.unit || '件'}
+                          {alert.inventory?.quantity || 0}{' '}
+                          {alert.inventory?.product?.unit || '件'}
                         </span>
                       </TableCell>
                       <TableCell>
                         <span className="font-medium">
-                          {alert.inventory?.product?.safetyStock || 0} {alert.inventory?.product?.unit || '件'}
+                          {alert.inventory?.product?.safetyStock || 0}{' '}
+                          {alert.inventory?.product?.unit || '件'}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -215,15 +247,15 @@ export function InventoryAlerts({
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Button 
-                          variant="outline" 
+                        <Button
+                          variant="outline"
                           size="sm"
                           onClick={() => {
                             // 跳转到入库页面，预填产品信息
-                            window.location.href = `/inventory/inbound?productId=${alert.inventory?.productId}`
+                            window.location.href = `/inventory/inbound?productId=${alert.inventory?.productId}`;
                           }}
                         >
-                          <TrendingUp className="h-4 w-4 mr-1" />
+                          <TrendingUp className="mr-1 h-4 w-4" />
                           入库
                         </Button>
                       </TableCell>
@@ -234,26 +266,32 @@ export function InventoryAlerts({
             </div>
 
             {/* 移动端卡片 */}
-            <div className="md:hidden space-y-4">
-              {displayAlerts.map((alert) => (
-                <Card key={alert.id} className="border-orange-200 bg-orange-50/50">
+            <div className="space-y-4 md:hidden">
+              {displayAlerts.map(alert => (
+                <Card
+                  key={alert.id}
+                  className="border-orange-200 bg-orange-50/50"
+                >
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <Badge variant={INVENTORY_ALERT_TYPE_VARIANTS[alert.type]} className="text-xs">
+                    <div className="mb-3 flex items-center justify-between">
+                      <Badge
+                        variant={INVENTORY_ALERT_TYPE_VARIANTS[alert.type]}
+                        className="text-xs"
+                      >
                         {INVENTORY_ALERT_TYPE_LABELS[alert.type]}
                       </Badge>
-                      <Button 
-                        variant="outline" 
+                      <Button
+                        variant="outline"
                         size="sm"
                         onClick={() => {
-                          window.location.href = `/inventory/inbound?productId=${alert.inventory?.productId}`
+                          window.location.href = `/inventory/inbound?productId=${alert.inventory?.productId}`;
                         }}
                       >
-                        <TrendingUp className="h-4 w-4 mr-1" />
+                        <TrendingUp className="mr-1 h-4 w-4" />
                         入库
                       </Button>
                     </div>
-                    
+
                     <div className="space-y-2 text-sm">
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">产品:</span>
@@ -272,25 +310,34 @@ export function InventoryAlerts({
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">生产日期:</span>
                         <span>
-                          {alert.inventory?.productionDate ? 
-                            formatProductionDate(alert.inventory.productionDate) : '无'}
+                          {alert.inventory?.productionDate
+                            ? formatProductionDate(
+                                alert.inventory.productionDate
+                              )
+                            : '无'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">当前库存:</span>
                         <span className="font-medium text-orange-600">
-                          {alert.inventory?.quantity || 0} {alert.inventory?.product?.unit || '件'}
+                          {alert.inventory?.quantity || 0}{' '}
+                          {alert.inventory?.product?.unit || '件'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">安全库存:</span>
                         <span className="font-medium">
-                          {alert.inventory?.product?.safetyStock || 0} {alert.inventory?.product?.unit || '件'}
+                          {alert.inventory?.product?.safetyStock || 0}{' '}
+                          {alert.inventory?.product?.unit || '件'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">预警时间:</span>
-                        <span>{new Date(alert.createdAt).toLocaleDateString('zh-CN')}</span>
+                        <span>
+                          {new Date(alert.createdAt).toLocaleDateString(
+                            'zh-CN'
+                          )}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
@@ -300,11 +347,8 @@ export function InventoryAlerts({
 
             {/* 显示更多按钮 */}
             {maxItems && alerts.length > maxItems && (
-              <div className="text-center mt-4">
-                <Button 
-                  variant="outline" 
-                  onClick={() => setShowAll(!showAll)}
-                >
+              <div className="mt-4 text-center">
+                <Button variant="outline" onClick={() => setShowAll(!showAll)}>
                   {showAll ? '收起' : `显示全部 ${alerts.length} 个预警`}
                 </Button>
               </div>
@@ -313,7 +357,7 @@ export function InventoryAlerts({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // 加载骨架屏
@@ -331,13 +375,13 @@ function InventoryAlertsSkeleton({ showTitle }: { showTitle: boolean }) {
           </div>
         </CardHeader>
       )}
-      
+
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="text-center space-y-2">
-              <Skeleton className="h-8 w-8 mx-auto" />
-              <Skeleton className="h-4 w-16 mx-auto" />
+            <div key={i} className="space-y-2 text-center">
+              <Skeleton className="mx-auto h-8 w-8" />
+              <Skeleton className="mx-auto h-4 w-16" />
             </div>
           ))}
         </div>
@@ -349,5 +393,5 @@ function InventoryAlertsSkeleton({ showTitle }: { showTitle: boolean }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

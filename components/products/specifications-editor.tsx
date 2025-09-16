@@ -1,27 +1,45 @@
-'use client'
+'use client';
 
-import { Control, useFieldArray } from 'react-hook-form'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Separator } from '@/components/ui/separator'
-import { Plus, Minus, Palette, Ruler, Layers } from 'lucide-react'
-import { TileSpecifications } from '@/lib/types/product'
+import { Plus, Minus, Palette, Ruler, Layers } from 'lucide-react';
+import type { Control } from 'react-hook-form';
+import { useFieldArray } from 'react-hook-form';
+
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { TileSpecifications } from '@/lib/types/product';
 
 interface SpecificationsEditorProps {
-  control: Control<any>
-  name: string
-  disabled?: boolean
+  control: Control<any>;
+  name: string;
+  disabled?: boolean;
 }
 
-export function SpecificationsEditor({ control, name, disabled = false }: SpecificationsEditorProps) {
+export function SpecificationsEditor({
+  control,
+  name,
+  disabled = false,
+}: SpecificationsEditorProps) {
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center">
-          <Layers className="h-5 w-5 mr-2" />
+          <Layers className="mr-2 h-5 w-5" />
           瓷砖规格信息
         </CardTitle>
         <CardDescription>
@@ -30,14 +48,14 @@ export function SpecificationsEditor({ control, name, disabled = false }: Specif
       </CardHeader>
       <CardContent className="space-y-6">
         {/* 基础规格信息 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <FormField
             control={control}
             name={`${name}.color`}
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center">
-                  <Palette className="h-4 w-4 mr-1" />
+                  <Palette className="mr-1 h-4 w-4" />
                   颜色
                 </FormLabel>
                 <FormControl>
@@ -76,7 +94,7 @@ export function SpecificationsEditor({ control, name, disabled = false }: Specif
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="flex items-center">
-                  <Ruler className="h-4 w-4 mr-1" />
+                  <Ruler className="mr-1 h-4 w-4" />
                   尺寸规格
                 </FormLabel>
                 <FormControl>
@@ -106,9 +124,9 @@ export function SpecificationsEditor({ control, name, disabled = false }: Specif
                     max="100"
                     disabled={disabled}
                     {...field}
-                    onChange={(e) => {
-                      const value = e.target.value
-                      field.onChange(value ? parseFloat(value) : undefined)
+                    onChange={e => {
+                      const value = e.target.value;
+                      field.onChange(value ? parseFloat(value) : undefined);
                     }}
                   />
                 </FormControl>
@@ -194,30 +212,37 @@ export function SpecificationsEditor({ control, name, disabled = false }: Specif
         <SpecificationPreview control={control} name={name} />
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // 规格信息预览组件
-function SpecificationPreview({ control, name }: { control: Control<any>, name: string }) {
-  const watchedSpecs = control._formValues?.[name.split('.')[0]]?.specifications || {}
-  
-  const hasSpecs = Object.values(watchedSpecs).some(value => 
-    value !== undefined && value !== null && value !== ''
-  )
+function SpecificationPreview({
+  control,
+  name,
+}: {
+  control: Control<any>;
+  name: string;
+}) {
+  const watchedSpecs =
+    control._formValues?.[name.split('.')[0]]?.specifications || {};
+
+  const hasSpecs = Object.values(watchedSpecs).some(
+    value => value !== undefined && value !== null && value !== ''
+  );
 
   if (!hasSpecs) {
-    return null
+    return null;
   }
 
   return (
     <div className="space-y-3">
       <Separator />
       <div>
-        <h4 className="text-sm font-medium mb-3">规格信息预览</h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 text-sm">
+        <h4 className="mb-3 text-sm font-medium">规格信息预览</h4>
+        <div className="grid grid-cols-1 gap-2 text-sm md:grid-cols-2 lg:grid-cols-3">
           {Object.entries(watchedSpecs).map(([key, value]) => {
-            if (!value) return null
-            
+            if (!value) return null;
+
             const labels: Record<string, string> = {
               color: '颜色',
               surface: '表面处理',
@@ -226,40 +251,42 @@ function SpecificationPreview({ control, name }: { control: Control<any>, name: 
               pattern: '花纹',
               grade: '等级',
               origin: '产地',
-              series: '系列'
-            }
+              series: '系列',
+            };
 
             return (
               <div key={key} className="flex items-center space-x-2">
-                <span className="text-muted-foreground">{labels[key] || key}:</span>
+                <span className="text-muted-foreground">
+                  {labels[key] || key}:
+                </span>
                 <span className="font-medium">
                   {key === 'thickness' ? `${value}mm` : value}
                 </span>
               </div>
-            )
+            );
           })}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 // 自定义规格字段组件（用于扩展字段）
 interface CustomSpecificationFieldProps {
-  control: Control<any>
-  name: string
-  onRemove: () => void
-  disabled?: boolean
+  control: Control<any>;
+  name: string;
+  onRemove: () => void;
+  disabled?: boolean;
 }
 
-export function CustomSpecificationField({ 
-  control, 
-  name, 
-  onRemove, 
-  disabled = false 
+export function CustomSpecificationField({
+  control,
+  name,
+  onRemove,
+  disabled = false,
 }: CustomSpecificationFieldProps) {
   return (
-    <div className="flex gap-2 items-end">
+    <div className="flex items-end gap-2">
       <FormField
         control={control}
         name={`${name}.key`}
@@ -307,36 +334,34 @@ export function CustomSpecificationField({
         <Minus className="h-4 w-4" />
       </Button>
     </div>
-  )
+  );
 }
 
 // 扩展规格编辑器（支持自定义字段）
 interface ExtendedSpecificationsEditorProps extends SpecificationsEditorProps {
-  allowCustomFields?: boolean
+  allowCustomFields?: boolean;
 }
 
-export function ExtendedSpecificationsEditor({ 
-  control, 
-  name, 
+export function ExtendedSpecificationsEditor({
+  control,
+  name,
   disabled = false,
-  allowCustomFields = false
+  allowCustomFields = false,
 }: ExtendedSpecificationsEditorProps) {
   const { fields, append, remove } = useFieldArray({
     control,
-    name: `${name}.customFields`
-  })
+    name: `${name}.customFields`,
+  });
 
   return (
     <div className="space-y-6">
       <SpecificationsEditor control={control} name={name} disabled={disabled} />
-      
+
       {allowCustomFields && (
         <Card>
           <CardHeader>
             <CardTitle className="text-base">自定义规格字段</CardTitle>
-            <CardDescription>
-              添加产品特有的规格参数
-            </CardDescription>
+            <CardDescription>添加产品特有的规格参数</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             {fields.map((field, index) => (
@@ -348,7 +373,7 @@ export function ExtendedSpecificationsEditor({
                 disabled={disabled}
               />
             ))}
-            
+
             <Button
               type="button"
               variant="outline"
@@ -356,12 +381,12 @@ export function ExtendedSpecificationsEditor({
               onClick={() => append({ key: '', value: '' })}
               disabled={disabled}
             >
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               添加自定义字段
             </Button>
           </CardContent>
         </Card>
       )}
     </div>
-  )
+  );
 }

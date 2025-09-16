@@ -1,32 +1,68 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import { useRouter } from 'next/navigation'
-import { useQuery } from '@tanstack/react-query'
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Package, AlertTriangle, TrendingUp, TrendingDown } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query';
+import {
+  Plus,
+  Search,
+  Filter,
+  MoreHorizontal,
+  Edit,
+  Trash2,
+  Eye,
+  Package,
+  AlertTriangle,
+  TrendingUp,
+  TrendingDown,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
-import { Skeleton } from '@/components/ui/skeleton'
-import { MobileDataTable } from '@/components/ui/mobile-data-table'
-import { Progress } from '@/components/ui/progress'
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import { MobileDataTable } from '@/components/ui/mobile-data-table';
+import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Skeleton } from '@/components/ui/skeleton';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 // API and Types
-import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory'
-import { Inventory, InventoryQueryParams } from '@/lib/types/inventory'
+import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
+import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 
 /**
  * 库存管理页面
  * 严格遵循全栈项目统一约定规范
  */
 export default function InventoryPage() {
-  const router = useRouter()
+  const router = useRouter();
   const [queryParams, setQueryParams] = React.useState<InventoryQueryParams>({
     page: 1,
     limit: 20,
@@ -34,58 +70,73 @@ export default function InventoryPage() {
     lowStock: false,
     sortBy: 'updatedAt',
     sortOrder: 'desc',
-  })
+  });
 
   // 获取库存列表数据
   const { data, isLoading, error } = useQuery({
     queryKey: inventoryQueryKeys.list(queryParams),
     queryFn: () => getInventories(queryParams),
-  })
+  });
 
   // 搜索处理
   const handleSearch = (value: string) => {
-    setQueryParams(prev => ({ ...prev, search: value, page: 1 }))
-  }
+    setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
+  };
 
   // 筛选处理
   const handleFilter = (key: keyof InventoryQueryParams, value: any) => {
-    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }))
-  }
+    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
+  };
 
   // 分页处理
   const handlePageChange = (page: number) => {
-    setQueryParams(prev => ({ ...prev, page }))
-  }
+    setQueryParams(prev => ({ ...prev, page }));
+  };
 
   // 库存状态判断
   const getStockStatus = (quantity: number, minStock: number = 10) => {
     if (quantity <= 0) {
-      return { status: 'out', label: '缺货', variant: 'destructive' as const, color: 'text-red-600' }
+      return {
+        status: 'out',
+        label: '缺货',
+        variant: 'destructive' as const,
+        color: 'text-red-600',
+      };
     } else if (quantity <= minStock) {
-      return { status: 'low', label: '库存不足', variant: 'secondary' as const, color: 'text-yellow-600' }
+      return {
+        status: 'low',
+        label: '库存不足',
+        variant: 'secondary' as const,
+        color: 'text-yellow-600',
+      };
     } else {
-      return { status: 'normal', label: '正常', variant: 'default' as const, color: 'text-green-600' }
+      return {
+        status: 'normal',
+        label: '正常',
+        variant: 'default' as const,
+        color: 'text-green-600',
+      };
     }
-  }
+  };
 
   // 库存状态标签渲染
   const getStockBadge = (quantity: number, minStock?: number) => {
-    const { label, variant } = getStockStatus(quantity, minStock)
-    return <Badge variant={variant}>{label}</Badge>
-  }
+    const { label, variant } = getStockStatus(quantity, minStock);
+    return <Badge variant={variant}>{label}</Badge>;
+  };
 
   // 库存进度条
   const getStockProgress = (quantity: number, maxStock: number = 100) => {
-    const percentage = Math.min((quantity / maxStock) * 100, 100)
+    const percentage = Math.min((quantity / maxStock) * 100, 100);
     return (
       <div className="flex items-center gap-2">
         <Progress value={percentage} className="flex-1" />
-        <span className="text-sm text-muted-foreground min-w-[3rem]">
+        <span className="min-w-[3rem] text-sm text-muted-foreground">
           {percentage.toFixed(0)}%
         </span>
       </div>
-    )
-  }
+    );
+  };
 
   // 移动端表格列配置
   const mobileColumns = [
@@ -93,24 +144,25 @@ export default function InventoryPage() {
       key: 'product',
       title: '产品',
       mobilePrimary: true,
-      render: (item: Inventory) => item.product?.name || '-'
+      render: (item: Inventory) => item.product?.name || '-',
     },
     {
       key: 'quantity',
       title: '库存数量',
-      render: (item: Inventory) => `${item.quantity} ${item.product?.unit || ''}`
+      render: (item: Inventory) =>
+        `${item.quantity} ${item.product?.unit || ''}`,
     },
     {
       key: 'status',
       title: '状态',
-      render: (item: Inventory) => getStockBadge(item.quantity, 10)
+      render: (item: Inventory) => getStockBadge(item.quantity, 10),
     },
     {
       key: 'reservedQuantity',
       title: '预留',
-      render: (item: Inventory) => `${item.reservedQuantity || 0}`
+      render: (item: Inventory) => `${item.reservedQuantity || 0}`,
     },
-  ]
+  ];
 
   if (error) {
     return (
@@ -127,7 +179,7 @@ export default function InventoryPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   return (
@@ -139,11 +191,17 @@ export default function InventoryPage() {
           <p className="text-muted-foreground">查看和管理所有产品的库存信息</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => router.push('/inventory/inbound')}>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/inventory/inbound')}
+          >
             <TrendingUp className="mr-2 h-4 w-4" />
             入库记录
           </Button>
-          <Button variant="outline" onClick={() => router.push('/inventory/outbound')}>
+          <Button
+            variant="outline"
+            onClick={() => router.push('/inventory/outbound')}
+          >
             <TrendingDown className="mr-2 h-4 w-4" />
             出库记录
           </Button>
@@ -164,14 +222,14 @@ export default function InventoryPage() {
                 <Input
                   placeholder="搜索产品名称或编码..."
                   value={queryParams.search}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={e => handleSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
             <div className="flex gap-2">
               <Button
-                variant={queryParams.lowStock ? "default" : "outline"}
+                variant={queryParams.lowStock ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleFilter('lowStock', !queryParams.lowStock)}
               >
@@ -180,7 +238,7 @@ export default function InventoryPage() {
               </Button>
               <Select
                 value={queryParams.sortBy || 'updatedAt'}
-                onValueChange={(value) => handleFilter('sortBy', value)}
+                onValueChange={value => handleFilter('sortBy', value)}
               >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="排序" />
@@ -201,7 +259,9 @@ export default function InventoryPage() {
         <CardHeader>
           <CardTitle>库存列表</CardTitle>
           <CardDescription>
-            {data?.pagination ? `共 ${data.pagination.total} 个产品库存` : '加载中...'}
+            {data?.pagination
+              ? `共 ${data.pagination.total} 个产品库存`
+              : '加载中...'}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -234,15 +294,18 @@ export default function InventoryPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {data?.data?.map((inventory) => {
-                      const availableQuantity = inventory.quantity - (inventory.reservedQuantity || 0)
+                    {data?.data?.map(inventory => {
+                      const availableQuantity =
+                        inventory.quantity - (inventory.reservedQuantity || 0);
                       return (
                         <TableRow key={inventory.id}>
                           <TableCell>
                             <div className="flex items-center gap-2">
                               <Package className="h-4 w-4 text-muted-foreground" />
                               <div>
-                                <div className="font-medium">{inventory.product?.name || '-'}</div>
+                                <div className="font-medium">
+                                  {inventory.product?.name || '-'}
+                                </div>
                                 <div className="text-sm text-muted-foreground">
                                   {inventory.product?.code || '-'}
                                 </div>
@@ -251,17 +314,20 @@ export default function InventoryPage() {
                           </TableCell>
                           <TableCell>
                             <div className="font-medium">
-                              {inventory.quantity} {inventory.product?.unit || ''}
+                              {inventory.quantity}{' '}
+                              {inventory.product?.unit || ''}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="text-muted-foreground">
-                              {inventory.reservedQuantity || 0} {inventory.product?.unit || ''}
+                              {inventory.reservedQuantity || 0}{' '}
+                              {inventory.product?.unit || ''}
                             </div>
                           </TableCell>
                           <TableCell>
                             <div className="font-medium">
-                              {availableQuantity} {inventory.product?.unit || ''}
+                              {availableQuantity}{' '}
+                              {inventory.product?.unit || ''}
                             </div>
                           </TableCell>
                           <TableCell>
@@ -278,15 +344,31 @@ export default function InventoryPage() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem onClick={() => router.push(`/inventory/${inventory.id}`)}>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    router.push(`/inventory/${inventory.id}`)
+                                  }
+                                >
                                   <Eye className="mr-2 h-4 w-4" />
                                   查看详情
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push(`/inventory/${inventory.id}/adjust`)}>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    router.push(
+                                      `/inventory/${inventory.id}/adjust`
+                                    )
+                                  }
+                                >
                                   <Edit className="mr-2 h-4 w-4" />
                                   库存调整
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => router.push(`/inventory/${inventory.id}/history`)}>
+                                <DropdownMenuItem
+                                  onClick={() =>
+                                    router.push(
+                                      `/inventory/${inventory.id}/history`
+                                    )
+                                  }
+                                >
                                   <Package className="mr-2 h-4 w-4" />
                                   变动记录
                                 </DropdownMenuItem>
@@ -294,7 +376,7 @@ export default function InventoryPage() {
                             </DropdownMenu>
                           </TableCell>
                         </TableRow>
-                      )
+                      );
                     })}
                   </TableBody>
                 </Table>
@@ -305,8 +387,8 @@ export default function InventoryPage() {
                 <MobileDataTable
                   data={data?.data || []}
                   columns={mobileColumns}
-                  onItemClick={(item) => router.push(`/inventory/${item.id}`)}
-                  renderActions={(item) => (
+                  onItemClick={item => router.push(`/inventory/${item.id}`)}
+                  renderActions={item => (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
@@ -314,15 +396,25 @@ export default function InventoryPage() {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => router.push(`/inventory/${item.id}`)}>
+                        <DropdownMenuItem
+                          onClick={() => router.push(`/inventory/${item.id}`)}
+                        >
                           <Eye className="mr-2 h-4 w-4" />
                           查看详情
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/inventory/${item.id}/adjust`)}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            router.push(`/inventory/${item.id}/adjust`)
+                          }
+                        >
                           <Edit className="mr-2 h-4 w-4" />
                           库存调整
                         </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => router.push(`/inventory/${item.id}/history`)}>
+                        <DropdownMenuItem
+                          onClick={() =>
+                            router.push(`/inventory/${item.id}/history`)
+                          }
+                        >
                           <Package className="mr-2 h-4 w-4" />
                           变动记录
                         </DropdownMenuItem>
@@ -336,7 +428,13 @@ export default function InventoryPage() {
               {data?.pagination && data.pagination.totalPages > 1 && (
                 <div className="flex items-center justify-between pt-4">
                   <div className="text-sm text-muted-foreground">
-                    显示第 {((data.pagination.page - 1) * data.pagination.limit) + 1} - {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} 条，共 {data.pagination.total} 条
+                    显示第{' '}
+                    {(data.pagination.page - 1) * data.pagination.limit + 1} -{' '}
+                    {Math.min(
+                      data.pagination.page * data.pagination.limit,
+                      data.pagination.total
+                    )}{' '}
+                    条，共 {data.pagination.total} 条
                   </div>
                   <div className="flex items-center space-x-2">
                     <Button
@@ -348,13 +446,16 @@ export default function InventoryPage() {
                       上一页
                     </Button>
                     <div className="text-sm">
-                      第 {data.pagination.page} / {data.pagination.totalPages} 页
+                      第 {data.pagination.page} / {data.pagination.totalPages}{' '}
+                      页
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handlePageChange(data.pagination.page + 1)}
-                      disabled={data.pagination.page >= data.pagination.totalPages}
+                      disabled={
+                        data.pagination.page >= data.pagination.totalPages
+                      }
                     >
                       下一页
                     </Button>
@@ -366,5 +467,5 @@ export default function InventoryPage() {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }

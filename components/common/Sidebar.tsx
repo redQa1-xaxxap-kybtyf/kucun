@@ -1,14 +1,5 @@
-'use client'
+'use client';
 
-import * as React from 'react'
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useSession } from 'next-auth/react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
 import {
   ChevronLeft,
   ChevronRight,
@@ -21,11 +12,21 @@ import {
   CreditCard,
   Warehouse,
   Settings,
-  HelpCircle
-} from 'lucide-react'
-import type { NavigationItem, SidebarState } from '@/lib/types/layout'
-import { getAccessibleNavItems } from '@/lib/utils/permissions'
-import { useNavigationBadges } from '@/hooks/use-navigation-badges'
+  HelpCircle,
+} from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import * as React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Separator } from '@/components/ui/separator';
+import { useNavigationBadges } from '@/hooks/use-navigation-badges';
+import type { NavigationItem, SidebarState } from '@/lib/types/layout';
+import { cn } from '@/lib/utils';
+import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
 /**
  * 主要功能模块导航配置
@@ -80,7 +81,7 @@ const navigationItems: NavigationItem[] = [
     href: '/payments',
     icon: CreditCard,
   },
-]
+];
 
 /**
  * 底部辅助功能导航
@@ -99,13 +100,13 @@ const bottomNavigationItems: NavigationItem[] = [
     href: '/help',
     icon: HelpCircle,
   },
-]
+];
 
 interface SidebarProps {
   /** 侧边栏状态 */
-  state: SidebarState
+  state: SidebarState;
   /** 自定义样式类名 */
-  className?: string
+  className?: string;
 }
 
 /**
@@ -114,69 +115,82 @@ interface SidebarProps {
  * 集成权限控制、徽章显示、键盘导航等功能
  */
 export function Sidebar({ state, className }: SidebarProps) {
-  const pathname = usePathname()
-  const { data: session } = useSession()
-  const { addBadgesToNavItems, isLoading: badgesLoading } = useNavigationBadges()
+  const pathname = usePathname();
+  const { data: session } = useSession();
+  const { addBadgesToNavItems, isLoading: badgesLoading } =
+    useNavigationBadges();
 
   // 键盘导航状态
-  const [focusedIndex, setFocusedIndex] = React.useState(-1)
-  const navItemsRef = React.useRef<(HTMLAnchorElement | null)[]>([])
+  const [focusedIndex, setFocusedIndex] = React.useState(-1);
+  const navItemsRef = React.useRef<(HTMLAnchorElement | null)[]>([]);
 
   // 根据用户权限过滤导航项
   const accessibleNavItems = React.useMemo(() => {
-    if (!session?.user?.role) return []
+    if (!session?.user?.role) return [];
 
-    const filteredItems = getAccessibleNavItems(navigationItems, session.user.role)
-    return addBadgesToNavItems(filteredItems)
-  }, [session?.user?.role, addBadgesToNavItems])
+    const filteredItems = getAccessibleNavItems(
+      navigationItems,
+      session.user.role
+    );
+    return addBadgesToNavItems(filteredItems);
+  }, [session?.user?.role, addBadgesToNavItems]);
 
   const accessibleBottomNavItems = React.useMemo(() => {
-    if (!session?.user?.role) return []
+    if (!session?.user?.role) return [];
 
-    const filteredItems = getAccessibleNavItems(bottomNavigationItems, session.user.role)
-    return addBadgesToNavItems(filteredItems)
-  }, [session?.user?.role, addBadgesToNavItems])
+    const filteredItems = getAccessibleNavItems(
+      bottomNavigationItems,
+      session.user.role
+    );
+    return addBadgesToNavItems(filteredItems);
+  }, [session?.user?.role, addBadgesToNavItems]);
 
   // 键盘导航处理
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!state.isOpen) return
+      if (!state.isOpen) return;
 
-      const totalItems = accessibleNavItems.length + accessibleBottomNavItems.length
+      const totalItems =
+        accessibleNavItems.length + accessibleBottomNavItems.length;
 
       switch (event.key) {
         case 'ArrowDown':
-          event.preventDefault()
-          setFocusedIndex(prev => (prev + 1) % totalItems)
-          break
+          event.preventDefault();
+          setFocusedIndex(prev => (prev + 1) % totalItems);
+          break;
         case 'ArrowUp':
-          event.preventDefault()
-          setFocusedIndex(prev => (prev - 1 + totalItems) % totalItems)
-          break
+          event.preventDefault();
+          setFocusedIndex(prev => (prev - 1 + totalItems) % totalItems);
+          break;
         case 'Enter':
         case ' ':
-          event.preventDefault()
+          event.preventDefault();
           if (focusedIndex >= 0 && navItemsRef.current[focusedIndex]) {
-            navItemsRef.current[focusedIndex]?.click()
+            navItemsRef.current[focusedIndex]?.click();
           }
-          break
+          break;
         case 'Escape':
-          setFocusedIndex(-1)
-          break
+          setFocusedIndex(-1);
+          break;
       }
-    }
+    };
 
-    document.addEventListener('keydown', handleKeyDown)
-    return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [state.isOpen, accessibleNavItems.length, accessibleBottomNavItems.length, focusedIndex])
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [
+    state.isOpen,
+    accessibleNavItems.length,
+    accessibleBottomNavItems.length,
+    focusedIndex,
+  ]);
 
   // 检查路径是否匹配（支持子路由）
   const isPathActive = (href: string) => {
     if (href === '/dashboard') {
-      return pathname === '/dashboard'
+      return pathname === '/dashboard';
     }
-    return pathname.startsWith(href)
-  }
+    return pathname.startsWith(href);
+  };
 
   return (
     <div
@@ -187,16 +201,16 @@ export function Sidebar({ state, className }: SidebarProps) {
       )}
     >
       {/* 侧边栏头部 */}
-      <div className="flex h-16 items-center justify-between px-4 border-b">
+      <div className="flex h-16 items-center justify-between border-b px-4">
         {!state.isCollapsed && (
           <div className="flex items-center space-x-2">
-            <div className="h-8 w-8 rounded bg-primary flex items-center justify-center">
+            <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
               <Package className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-lg">库存管理</span>
+            <span className="text-lg font-semibold">库存管理</span>
           </div>
         )}
-        
+
         <Button
           variant="ghost"
           size="sm"
@@ -221,7 +235,7 @@ export function Sidebar({ state, className }: SidebarProps) {
               isActive={isPathActive(item.href)}
               isCollapsed={state.isCollapsed}
               isFocused={focusedIndex === index}
-              ref={(el) => (navItemsRef.current[index] = el)}
+              ref={el => (navItemsRef.current[index] = el)}
               tabIndex={focusedIndex === index ? 0 : -1}
             />
           ))}
@@ -234,7 +248,7 @@ export function Sidebar({ state, className }: SidebarProps) {
             {/* 底部辅助导航 */}
             <nav className="space-y-2" role="navigation" aria-label="辅助导航">
               {accessibleBottomNavItems.map((item, index) => {
-                const globalIndex = accessibleNavItems.length + index
+                const globalIndex = accessibleNavItems.length + index;
                 return (
                   <SidebarNavItem
                     key={item.id}
@@ -242,25 +256,25 @@ export function Sidebar({ state, className }: SidebarProps) {
                     isActive={isPathActive(item.href)}
                     isCollapsed={state.isCollapsed}
                     isFocused={focusedIndex === globalIndex}
-                    ref={(el) => (navItemsRef.current[globalIndex] = el)}
+                    ref={el => (navItemsRef.current[globalIndex] = el)}
                     tabIndex={focusedIndex === globalIndex ? 0 : -1}
                   />
-                )
+                );
               })}
             </nav>
           </>
         )}
       </ScrollArea>
     </div>
-  )
+  );
 }
 
 interface SidebarNavItemProps {
-  item: NavigationItem
-  isActive: boolean
-  isCollapsed: boolean
-  isFocused?: boolean
-  tabIndex?: number
+  item: NavigationItem;
+  isActive: boolean;
+  isCollapsed: boolean;
+  isFocused?: boolean;
+  tabIndex?: number;
 }
 
 /**
@@ -269,8 +283,8 @@ interface SidebarNavItemProps {
  */
 const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
   ({ item, isActive, isCollapsed, isFocused = false, tabIndex }, ref) => {
-    const Icon = item.icon
-    const [isHovered, setIsHovered] = React.useState(false)
+    const Icon = item.icon;
+    const [isHovered, setIsHovered] = React.useState(false);
 
     return (
       <Link
@@ -289,7 +303,7 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
         <Button
           variant={isActive ? 'secondary' : 'ghost'}
           className={cn(
-            'w-full justify-start h-10 transition-all duration-200',
+            'h-10 w-full justify-start transition-all duration-200',
             isCollapsed ? 'px-2' : 'px-3',
             isActive && 'bg-secondary font-medium shadow-sm',
             isHovered && !isActive && 'bg-accent/50',
@@ -299,11 +313,13 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
           asChild
         >
           <div>
-            <Icon className={cn(
-              'h-4 w-4 transition-transform duration-200',
-              !isCollapsed && 'mr-3',
-              isHovered && 'scale-110'
-            )} />
+            <Icon
+              className={cn(
+                'h-4 w-4 transition-transform duration-200',
+                !isCollapsed && 'mr-3',
+                isHovered && 'scale-110'
+              )}
+            />
             {!isCollapsed && (
               <>
                 <span className="flex-1 text-left">{item.title}</span>
@@ -324,16 +340,18 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
             {isCollapsed && item.badge && (
               <Badge
                 variant={item.badgeVariant || 'secondary'}
-                className="absolute -top-1 -right-1 h-4 w-4 p-0 text-xs flex items-center justify-center"
+                className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center p-0 text-xs"
               >
-                {typeof item.badge === 'number' && item.badge > 9 ? '9+' : item.badge}
+                {typeof item.badge === 'number' && item.badge > 9
+                  ? '9+'
+                  : item.badge}
               </Badge>
             )}
           </div>
         </Button>
       </Link>
-    )
+    );
   }
-)
+);
 
-SidebarNavItem.displayName = 'SidebarNavItem'
+SidebarNavItem.displayName = 'SidebarNavItem';

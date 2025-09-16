@@ -1,59 +1,92 @@
-'use client'
+'use client';
 
-import { useState } from 'react'
-import { Control, useFieldArray, useWatch } from 'react-hook-form'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query';
+import {
+  Plus,
+  Trash2,
+  Package,
+  Calculator,
+  AlertCircle,
+  Calendar,
+} from 'lucide-react';
+import { useState } from 'react';
+import type { Control } from 'react-hook-form';
+import { useFieldArray, useWatch } from 'react-hook-form';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Badge } from '@/components/ui/badge'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
 
 // Icons
-import { Plus, Trash2, Package, Calculator, AlertCircle, Calendar } from 'lucide-react'
 
 // Custom Components
-import { ProductSelector } from '@/components/products/product-selector'
+import { getProducts, productQueryKeys } from '@/lib/api/products';
+import type { Product } from '@/lib/types/product';
+import { COMMON_COLOR_CODES } from '@/lib/types/sales-order';
+import type {
+  SalesOrderItemCreateFormData,
+  SalesOrderItemUpdateFormData } from '@/lib/validations/sales-order';
+import {
+  calculateItemSubtotal,
+  calculateOrderTotal,
+} from '@/lib/validations/sales-order';
+
+import { ProductSelector } from '@/components/products/product-selector';
 
 // API and Types
-import { getProducts, productQueryKeys } from '@/lib/api/products'
-import { Product } from '@/lib/types/product'
-import {
-  SalesOrderItemCreateFormData,
-  SalesOrderItemUpdateFormData,
-  calculateItemSubtotal,
-  calculateOrderTotal
-} from '@/lib/validations/sales-order'
-import { COMMON_COLOR_CODES } from '@/lib/types/sales-order'
 
 // 订单明细编辑器属性
 interface OrderItemsEditorProps {
-  control: Control<any>
-  name: string
-  disabled?: boolean
-  mode?: 'create' | 'edit'
+  control: Control<any>;
+  name: string;
+  disabled?: boolean;
+  mode?: 'create' | 'edit';
 }
 
 // 订单明细编辑器组件
-export function OrderItemsEditor({ control, name, disabled = false, mode = 'create' }: OrderItemsEditorProps) {
+export function OrderItemsEditor({
+  control,
+  name,
+  disabled = false,
+  mode = 'create',
+}: OrderItemsEditorProps) {
   const { fields, append, remove, update } = useFieldArray({
     control,
     name,
-  })
+  });
 
   // 监听订单明细变化以计算总金额
   const watchedItems = useWatch({
     control,
     name,
-  }) as (SalesOrderItemCreateFormData | SalesOrderItemUpdateFormData)[]
+  }) as (SalesOrderItemCreateFormData | SalesOrderItemUpdateFormData)[];
 
   // 计算订单总金额
-  const orderTotal = calculateOrderTotal(watchedItems || [])
+  const orderTotal = calculateOrderTotal(watchedItems || []);
 
   // 添加新明细
   const addNewItem = () => {
@@ -63,8 +96,8 @@ export function OrderItemsEditor({ control, name, disabled = false, mode = 'crea
       productionDate: '',
       quantity: 1,
       unitPrice: 0,
-    })
-  }
+    });
+  };
 
   // 删除明细
   const removeItem = (index: number) => {
@@ -72,35 +105,41 @@ export function OrderItemsEditor({ control, name, disabled = false, mode = 'crea
       // 编辑模式下，标记为删除而不是直接移除
       update(index, {
         ...fields[index],
-        _action: 'delete'
-      })
+        _action: 'delete',
+      });
     } else {
-      remove(index)
+      remove(index);
     }
-  }
+  };
 
   // 恢复已删除的明细
   const restoreItem = (index: number) => {
     update(index, {
       ...fields[index],
-      _action: undefined
-    })
-  }
+      _action: undefined,
+    });
+  };
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span className="flex items-center">
-            <Package className="h-5 w-5 mr-2" />
+            <Package className="mr-2 h-5 w-5" />
             订单明细
           </span>
           <div className="flex items-center space-x-4">
             <div className="text-sm text-muted-foreground">
-              共 {fields.filter(field => !field._action || field._action !== 'delete').length} 项
+              共{' '}
+              {
+                fields.filter(
+                  field => !field._action || field._action !== 'delete'
+                ).length
+              }{' '}
+              项
             </div>
             <Badge variant="outline" className="text-base font-medium">
-              <Calculator className="h-4 w-4 mr-1" />
+              <Calculator className="mr-1 h-4 w-4" />
               总计：¥{orderTotal.toLocaleString()}
             </Badge>
           </div>
@@ -111,11 +150,11 @@ export function OrderItemsEditor({ control, name, disabled = false, mode = 'crea
       </CardHeader>
       <CardContent className="space-y-4">
         {fields.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <div className="py-8 text-center text-muted-foreground">
+            <Package className="mx-auto mb-4 h-12 w-12 opacity-50" />
             <p className="mb-4">还没有添加任何产品</p>
             <Button onClick={addNewItem} disabled={disabled}>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="mr-2 h-4 w-4" />
               添加产品
             </Button>
           </div>
@@ -124,8 +163,8 @@ export function OrderItemsEditor({ control, name, disabled = false, mode = 'crea
             {/* 明细列表 */}
             <div className="space-y-4">
               {fields.map((field, index) => {
-                const isDeleted = field._action === 'delete'
-                
+                const isDeleted = field._action === 'delete';
+
                 return (
                   <OrderItemRow
                     key={field.id}
@@ -138,26 +177,28 @@ export function OrderItemsEditor({ control, name, disabled = false, mode = 'crea
                     isDeleted={isDeleted}
                     mode={mode}
                   />
-                )
+                );
               })}
             </div>
 
             <Separator />
 
             {/* 操作按钮 */}
-            <div className="flex justify-between items-center">
+            <div className="flex items-center justify-between">
               <Button
                 type="button"
                 variant="outline"
                 onClick={addNewItem}
                 disabled={disabled}
               >
-                <Plus className="h-4 w-4 mr-2" />
+                <Plus className="mr-2 h-4 w-4" />
                 添加产品
               </Button>
 
               <div className="text-right">
-                <div className="text-sm text-muted-foreground mb-1">订单总金额</div>
+                <div className="mb-1 text-sm text-muted-foreground">
+                  订单总金额
+                </div>
                 <div className="text-2xl font-bold text-primary">
                   ¥{orderTotal.toLocaleString()}
                 </div>
@@ -167,59 +208,64 @@ export function OrderItemsEditor({ control, name, disabled = false, mode = 'crea
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // 订单明细行组件属性
 interface OrderItemRowProps {
-  control: Control<any>
-  name: string
-  index: number
-  onRemove: () => void
-  onRestore: () => void
-  disabled?: boolean
-  isDeleted?: boolean
-  mode?: 'create' | 'edit'
+  control: Control<any>;
+  name: string;
+  index: number;
+  onRemove: () => void;
+  onRestore: () => void;
+  disabled?: boolean;
+  isDeleted?: boolean;
+  mode?: 'create' | 'edit';
 }
 
 // 订单明细行组件
-function OrderItemRow({ 
-  control, 
-  name, 
-  index, 
-  onRemove, 
-  onRestore, 
-  disabled = false, 
+function OrderItemRow({
+  control,
+  name,
+  index,
+  onRemove,
+  onRestore,
+  disabled = false,
   isDeleted = false,
-  mode = 'create'
+  mode = 'create',
 }: OrderItemRowProps) {
   // 监听当前行的数据变化
   const watchedItem = useWatch({
     control,
     name,
-  }) as SalesOrderItemCreateFormData | SalesOrderItemUpdateFormData
+  }) as SalesOrderItemCreateFormData | SalesOrderItemUpdateFormData;
 
   // 获取选中产品的信息
   const { data: productData } = useQuery({
     queryKey: ['products', 'detail', watchedItem?.productId],
     queryFn: async () => {
-      if (!watchedItem?.productId) return null
-      const response = await fetch(`/api/products/${watchedItem.productId}`)
-      if (!response.ok) return null
-      const result = await response.json()
-      return result.data as Product
+      if (!watchedItem?.productId) return null;
+      const response = await fetch(`/api/products/${watchedItem.productId}`);
+      if (!response.ok) return null;
+      const result = await response.json();
+      return result.data as Product;
     },
     enabled: !!watchedItem?.productId,
-  })
+  });
 
   // 计算小计
-  const subtotal = watchedItem ? calculateItemSubtotal(watchedItem.quantity || 0, watchedItem.unitPrice || 0) : 0
+  const subtotal = watchedItem
+    ? calculateItemSubtotal(
+        watchedItem.quantity || 0,
+        watchedItem.unitPrice || 0
+      )
+    : 0;
 
   // 自动设置产品单价
   const handleProductChange = (productId: string) => {
     // 这里可以根据产品信息自动设置单价
     // 实际应用中可能需要根据客户、产品等因素动态计算价格
-  }
+  };
 
   if (isDeleted) {
     return (
@@ -244,13 +290,13 @@ function OrderItemRow({
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
     <Card className="border-muted">
       <CardContent className="p-4">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-end">
+        <div className="grid grid-cols-1 items-end gap-4 lg:grid-cols-12">
           {/* 产品选择 */}
           <div className="lg:col-span-4">
             <ProductSelector
@@ -271,7 +317,11 @@ function OrderItemRow({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>色号</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value} disabled={disabled}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value}
+                    disabled={disabled}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="选择色号" />
@@ -300,15 +350,11 @@ function OrderItemRow({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel className="flex items-center">
-                    <Calendar className="h-4 w-4 mr-1" />
+                    <Calendar className="mr-1 h-4 w-4" />
                     生产日期
                   </FormLabel>
                   <FormControl>
-                    <Input
-                      type="date"
-                      disabled={disabled}
-                      {...field}
-                    />
+                    <Input type="date" disabled={disabled} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -332,9 +378,9 @@ function OrderItemRow({
                       max="999999.99"
                       disabled={disabled}
                       {...field}
-                      onChange={(e) => {
-                        const value = e.target.value
-                        field.onChange(value ? parseFloat(value) : 0)
+                      onChange={e => {
+                        const value = e.target.value;
+                        field.onChange(value ? parseFloat(value) : 0);
                       }}
                     />
                   </FormControl>
@@ -360,9 +406,9 @@ function OrderItemRow({
                       max="999999.99"
                       disabled={disabled}
                       {...field}
-                      onChange={(e) => {
-                        const value = e.target.value
-                        field.onChange(value ? parseFloat(value) : 0)
+                      onChange={e => {
+                        const value = e.target.value;
+                        field.onChange(value ? parseFloat(value) : 0);
                       }}
                     />
                   </FormControl>
@@ -373,7 +419,7 @@ function OrderItemRow({
           </div>
 
           {/* 小计和操作 */}
-          <div className="lg:col-span-1 flex items-center justify-between">
+          <div className="flex items-center justify-between lg:col-span-1">
             <div className="text-right">
               <div className="text-xs text-muted-foreground">小计</div>
               <div className="font-medium">¥{subtotal.toLocaleString()}</div>
@@ -393,14 +439,22 @@ function OrderItemRow({
 
         {/* 产品信息显示 */}
         {productData && (
-          <div className="mt-3 p-3 bg-muted/50 rounded-md">
+          <div className="mt-3 rounded-md bg-muted/50 p-3">
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center space-x-4">
-                <span><strong>产品编码:</strong> {productData.code}</span>
-                <span><strong>规格:</strong> {productData.specification || '无'}</span>
-                <span><strong>单位:</strong> {productData.unit}</span>
+                <span>
+                  <strong>产品编码:</strong> {productData.code}
+                </span>
+                <span>
+                  <strong>规格:</strong> {productData.specification || '无'}
+                </span>
+                <span>
+                  <strong>单位:</strong> {productData.unit}
+                </span>
                 {productData.piecesPerUnit > 1 && (
-                  <span><strong>每件片数:</strong> {productData.piecesPerUnit}</span>
+                  <span>
+                    <strong>每件片数:</strong> {productData.piecesPerUnit}
+                  </span>
                 )}
               </div>
               {productData.status === 'inactive' && (
@@ -411,17 +465,17 @@ function OrderItemRow({
         )}
       </CardContent>
     </Card>
-  )
+  );
 }
 
 // 产品选择器组件（简化版，实际应该从产品管理模块导入）
 interface ProductSelectorProps {
-  control: Control<any>
-  name: string
-  label?: string
-  placeholder?: string
-  disabled?: boolean
-  onProductChange?: (productId: string) => void
+  control: Control<any>;
+  name: string;
+  label?: string;
+  placeholder?: string;
+  disabled?: boolean;
+  onProductChange?: (productId: string) => void;
 }
 
 function ProductSelector({
@@ -430,9 +484,9 @@ function ProductSelector({
   label = '选择产品',
   placeholder = '搜索产品...',
   disabled = false,
-  onProductChange
+  onProductChange,
 }: ProductSelectorProps) {
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState('');
 
   // 搜索产品
   const { data: searchResults, isLoading } = useQuery({
@@ -440,7 +494,7 @@ function ProductSelector({
     queryFn: () => getProducts({ search: searchQuery, limit: 20 }),
     enabled: searchQuery.length > 0,
     staleTime: 30000,
-  })
+  });
 
   return (
     <FormField
@@ -449,12 +503,12 @@ function ProductSelector({
       render={({ field }) => (
         <FormItem>
           <FormLabel>{label}</FormLabel>
-          <Select 
-            onValueChange={(value) => {
-              field.onChange(value)
-              onProductChange?.(value)
-            }} 
-            value={field.value} 
+          <Select
+            onValueChange={value => {
+              field.onChange(value);
+              onProductChange?.(value);
+            }}
+            value={field.value}
             disabled={disabled}
           >
             <FormControl>
@@ -473,5 +527,5 @@ function ProductSelector({
         </FormItem>
       )}
     />
-  )
+  );
 }

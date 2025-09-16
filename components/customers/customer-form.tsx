@@ -1,175 +1,227 @@
-'use client'
+'use client';
 
-import { useForm } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+    AlertCircle,
+    ArrowLeft,
+    Building2,
+    Loader2,
+    Plus,
+    Save,
+    X,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 // UI Components
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Separator } from '@/components/ui/separator'
-import { Badge } from '@/components/ui/badge'
+import { CustomerSelector } from '@/components/customers/customer-hierarchy';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from '@/components/ui/card';
+import {
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 
 // Icons
-import { Save, ArrowLeft, Building2, AlertCircle, Loader2, Plus, X } from 'lucide-react'
 
 // Custom Components
-import { CustomerSelector } from '@/components/customers/customer-hierarchy'
 
 // API and Types
-import { createCustomer, updateCustomer, customerQueryKeys } from '@/lib/api/customers'
-import { Customer, CustomerCreateInput, CustomerUpdateInput } from '@/lib/types/customer'
-import { 
-  customerCreateSchema, 
-  customerUpdateSchema, 
-  CustomerCreateFormData, 
-  CustomerUpdateFormData,
-  customerCreateDefaults,
-  processExtendedInfo,
-  parseExtendedInfo
-} from '@/lib/validations/customer'
-import { 
-  CUSTOMER_TYPE_LABELS, 
-  CUSTOMER_LEVEL_LABELS,
-  CUSTOMER_FIELD_LABELS 
-} from '@/lib/types/customer'
+import {
+    createCustomer,
+    customerQueryKeys,
+    updateCustomer,
+} from '@/lib/api/customers';
+import type {
+    Customer,
+    CustomerCreateInput,
+    CustomerUpdateInput,
+} from '@/lib/types/customer';
+import {
+    CUSTOMER_LEVEL_LABELS,
+    CUSTOMER_TYPE_LABELS
+} from '@/lib/types/customer';
+import type {
+    CustomerCreateFormData,
+    CustomerUpdateFormData
+} from '@/lib/validations/customer';
+import {
+    customerCreateDefaults,
+    customerCreateSchema,
+    customerUpdateSchema,
+    parseExtendedInfo,
+    processExtendedInfo,
+} from '@/lib/validations/customer';
 
 interface CustomerFormProps {
-  mode: 'create' | 'edit'
-  initialData?: Customer
-  onSuccess?: (customer: Customer) => void
-  onCancel?: () => void
+  mode: 'create' | 'edit';
+  initialData?: Customer;
+  onSuccess?: (customer: Customer) => void;
+  onCancel?: () => void;
 }
 
-export function CustomerForm({ mode, initialData, onSuccess, onCancel }: CustomerFormProps) {
-  const router = useRouter()
-  const queryClient = useQueryClient()
-  const [submitError, setSubmitError] = useState<string>('')
+export function CustomerForm({
+  mode,
+  initialData,
+  onSuccess,
+  onCancel,
+}: CustomerFormProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [submitError, setSubmitError] = useState<string>('');
 
   // 表单配置
-  const isEdit = mode === 'edit'
-  const schema = isEdit ? customerUpdateSchema : customerCreateSchema
-  
+  const isEdit = mode === 'edit';
+  const schema = isEdit ? customerUpdateSchema : customerCreateSchema;
+
   // 解析初始数据的扩展信息
-  const initialExtendedInfo = initialData?.extendedInfo 
+  const initialExtendedInfo = initialData?.extendedInfo
     ? parseExtendedInfo(initialData.extendedInfo)
-    : customerCreateDefaults.extendedInfo
+    : customerCreateDefaults.extendedInfo;
 
   const form = useForm<CustomerCreateFormData | CustomerUpdateFormData>({
     resolver: zodResolver(schema),
-    defaultValues: isEdit && initialData ? {
-      id: initialData.id,
-      name: initialData.name,
-      phone: initialData.phone || '',
-      address: initialData.address || '',
-      parentCustomerId: initialData.parentCustomerId || '',
-      extendedInfo: {
-        ...customerCreateDefaults.extendedInfo,
-        ...initialExtendedInfo,
-      },
-    } : {
-      ...customerCreateDefaults,
-      name: '',
-    }
-  })
+    defaultValues:
+      isEdit && initialData
+        ? {
+            id: initialData.id,
+            name: initialData.name,
+            phone: initialData.phone || '',
+            address: initialData.address || '',
+            parentCustomerId: initialData.parentCustomerId || '',
+            extendedInfo: {
+              ...customerCreateDefaults.extendedInfo,
+              ...initialExtendedInfo,
+            },
+          }
+        : {
+            ...customerCreateDefaults,
+            name: '',
+          },
+  });
 
   // 创建客户 Mutation
   const createMutation = useMutation({
     mutationFn: createCustomer,
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() })
+    onSuccess: response => {
+      queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
       if (onSuccess) {
-        onSuccess(response.data)
+        onSuccess(response);
       } else {
-        router.push('/customers')
+        router.push('/customers');
       }
     },
-    onError: (error) => {
-      setSubmitError(error instanceof Error ? error.message : '创建客户失败')
-    }
-  })
+    onError: error => {
+      setSubmitError(error instanceof Error ? error.message : '创建客户失败');
+    },
+  });
 
   // 更新客户 Mutation
   const updateMutation = useMutation({
-    mutationFn: updateCustomer,
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() })
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.detail(response.data.id) })
+    mutationFn: (data: CustomerUpdateInput) => updateCustomer(initialData!.id, data),
+    onSuccess: response => {
+      queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: customerQueryKeys.detail(response.id),
+      });
       if (onSuccess) {
-        onSuccess(response.data)
+        onSuccess(response);
       } else {
-        router.push('/customers')
+        router.push('/customers');
       }
     },
-    onError: (error) => {
-      setSubmitError(error instanceof Error ? error.message : '更新客户失败')
-    }
-  })
+    onError: error => {
+      setSubmitError(error instanceof Error ? error.message : '更新客户失败');
+    },
+  });
 
-  const isLoading = createMutation.isPending || updateMutation.isPending
+  const isLoading = createMutation.isPending || updateMutation.isPending;
 
   // 表单提交
-  const onSubmit = async (data: CustomerCreateFormData | CustomerUpdateFormData) => {
-    setSubmitError('')
-    
+  const onSubmit = async (
+    data: CustomerCreateFormData | CustomerUpdateFormData
+  ) => {
+    setSubmitError('');
+
     try {
       // 处理扩展信息
       const processedData = {
         ...data,
-        extendedInfo: processExtendedInfo(data.extendedInfo)
-      }
+        extendedInfo: processExtendedInfo(data.extendedInfo),
+      };
 
       if (isEdit) {
-        await updateMutation.mutateAsync(processedData as CustomerUpdateInput)
+        await updateMutation.mutateAsync(processedData as CustomerUpdateInput);
       } else {
-        await createMutation.mutateAsync(processedData as CustomerCreateInput)
+        await createMutation.mutateAsync(processedData as CustomerCreateInput);
       }
     } catch (error) {
       // 错误已在 mutation 的 onError 中处理
     }
-  }
+  };
 
   // 取消操作
   const handleCancel = () => {
     if (onCancel) {
-      onCancel()
+      onCancel();
     } else {
-      router.push('/customers')
+      router.push('/customers');
     }
-  }
+  };
 
   // 标签管理
-  const [newTag, setNewTag] = useState('')
-  
+  const [newTag, setNewTag] = useState('');
+
   const addTag = () => {
-    if (!newTag.trim()) return
-    
-    const currentTags = form.getValues('extendedInfo.tags') || []
-    if (currentTags.includes(newTag.trim())) return
-    
-    form.setValue('extendedInfo.tags', [...currentTags, newTag.trim()])
-    setNewTag('')
-  }
+    if (!newTag.trim()) return;
+
+    const currentTags = form.getValues('extendedInfo.tags') || [];
+    if (currentTags.includes(newTag.trim())) return;
+
+    form.setValue('extendedInfo.tags', [...currentTags, newTag.trim()]);
+    setNewTag('');
+  };
 
   const removeTag = (tagToRemove: string) => {
-    const currentTags = form.getValues('extendedInfo.tags') || []
-    form.setValue('extendedInfo.tags', currentTags.filter(tag => tag !== tagToRemove))
-  }
+    const currentTags = form.getValues('extendedInfo.tags') || [];
+    form.setValue(
+      'extendedInfo.tags',
+      currentTags.filter(tag => tag !== tagToRemove)
+    );
+  };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto space-y-6 py-6">
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
           <Button variant="outline" size="sm" onClick={handleCancel}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+            <ArrowLeft className="mr-2 h-4 w-4" />
             返回
           </Button>
           <div>
@@ -197,7 +249,7 @@ export function CustomerForm({ mode, initialData, onSuccess, onCancel }: Custome
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
-                <Building2 className="h-5 w-5 mr-2" />
+                <Building2 className="mr-2 h-5 w-5" />
                 基础信息
               </CardTitle>
               <CardDescription>
@@ -205,7 +257,7 @@ export function CustomerForm({ mode, initialData, onSuccess, onCancel }: Custome
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="name"
@@ -240,9 +292,7 @@ export function CustomerForm({ mode, initialData, onSuccess, onCancel }: Custome
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        主要联系电话
-                      </FormDescription>
+                      <FormDescription>主要联系电话</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -263,9 +313,7 @@ export function CustomerForm({ mode, initialData, onSuccess, onCancel }: Custome
                         {...field}
                       />
                     </FormControl>
-                    <FormDescription>
-                      客户的详细地址信息
-                    </FormDescription>
+                    <FormDescription>客户的详细地址信息</FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -288,15 +336,13 @@ export function CustomerForm({ mode, initialData, onSuccess, onCancel }: Custome
           <Card>
             <CardHeader>
               <CardTitle>扩展信息</CardTitle>
-              <CardDescription>
-                客户的详细资料和业务信息
-              </CardDescription>
+              <CardDescription>客户的详细资料和业务信息</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* 联系信息 */}
               <div>
-                <h4 className="text-sm font-medium mb-3">联系信息</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h4 className="mb-3 text-sm font-medium">联系信息</h4>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="extendedInfo.email"
@@ -359,26 +405,32 @@ export function CustomerForm({ mode, initialData, onSuccess, onCancel }: Custome
 
               {/* 业务信息 */}
               <div>
-                <h4 className="text-sm font-medium mb-3">业务信息</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <h4 className="mb-3 text-sm font-medium">业务信息</h4>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <FormField
                     control={form.control}
                     name="extendedInfo.customerType"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>客户类型</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={isLoading}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="选择客户类型" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(CUSTOMER_TYPE_LABELS).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
-                              </SelectItem>
-                            ))}
+                            {Object.entries(CUSTOMER_TYPE_LABELS).map(
+                              ([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                  {label}
+                                </SelectItem>
+                              )
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -392,18 +444,24 @@ export function CustomerForm({ mode, initialData, onSuccess, onCancel }: Custome
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>客户等级</FormLabel>
-                        <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value}
+                          disabled={isLoading}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="选择客户等级" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {Object.entries(CUSTOMER_LEVEL_LABELS).map(([value, label]) => (
-                              <SelectItem key={value} value={value}>
-                                {label}
-                              </SelectItem>
-                            ))}
+                            {Object.entries(CUSTOMER_LEVEL_LABELS).map(
+                              ([value, label]) => (
+                                <SelectItem key={value} value={value}>
+                                  {label}
+                                </SelectItem>
+                              )
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -461,9 +519,11 @@ export function CustomerForm({ mode, initialData, onSuccess, onCancel }: Custome
                             placeholder="如：100000"
                             disabled={isLoading}
                             {...field}
-                            onChange={(e) => {
-                              const value = e.target.value
-                              field.onChange(value ? parseFloat(value) : undefined)
+                            onChange={e => {
+                              const value = e.target.value;
+                              field.onChange(
+                                value ? parseFloat(value) : undefined
+                              );
                             }}
                           />
                         </FormControl>
@@ -496,37 +556,43 @@ export function CustomerForm({ mode, initialData, onSuccess, onCancel }: Custome
 
               {/* 标签管理 */}
               <div>
-                <h4 className="text-sm font-medium mb-3">客户标签</h4>
+                <h4 className="mb-3 text-sm font-medium">客户标签</h4>
                 <div className="space-y-3">
                   {/* 现有标签 */}
                   <div className="flex flex-wrap gap-2">
-                    {(form.watch('extendedInfo.tags') || []).map((tag, index) => (
-                      <Badge key={index} variant="secondary" className="flex items-center gap-1">
-                        {tag}
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          className="h-auto p-0 w-4 h-4"
-                          onClick={() => removeTag(tag)}
-                          disabled={isLoading}
+                    {(form.watch('extendedInfo.tags') || []).map(
+                      (tag, index) => (
+                        <Badge
+                          key={index}
+                          variant="secondary"
+                          className="flex items-center gap-1"
                         >
-                          <X className="h-3 w-3" />
-                        </Button>
-                      </Badge>
-                    ))}
+                          {tag}
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="h-4 h-auto w-4 p-0"
+                            onClick={() => removeTag(tag)}
+                            disabled={isLoading}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </Badge>
+                      )
+                    )}
                   </div>
-                  
+
                   {/* 添加新标签 */}
                   <div className="flex gap-2">
                     <Input
                       placeholder="添加标签..."
                       value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      onKeyPress={(e) => {
+                      onChange={e => setNewTag(e.target.value)}
+                      onKeyPress={e => {
                         if (e.key === 'Enter') {
-                          e.preventDefault()
-                          addTag()
+                          e.preventDefault();
+                          addTag();
                         }
                       }}
                       disabled={isLoading}
@@ -583,13 +649,13 @@ export function CustomerForm({ mode, initialData, onSuccess, onCancel }: Custome
               取消
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              <Save className="h-4 w-4 mr-2" />
+              {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              <Save className="mr-2 h-4 w-4" />
               {isEdit ? '保存修改' : '创建客户'}
             </Button>
           </div>
         </form>
       </Form>
     </div>
-  )
+  );
 }
