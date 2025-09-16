@@ -2,23 +2,22 @@
 // 专门用于瓷砖生产日期的选择和展示，支持批次管理
 
 import {
-  format,
-  parse,
-  isValid,
-  startOfMonth,
-  endOfMonth,
-  eachDayOfInterval,
-  isSameMonth,
-  isSameDay,
-  isToday,
+    eachDayOfInterval,
+    endOfMonth,
+    format as formatDateFn,
+    isSameDay,
+    isSameMonth,
+    isToday,
+    isValid,
+    parse,
+    startOfMonth
 } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import {
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  CalendarDays,
-  Package,
+    CalendarDays,
+    ChevronLeft,
+    ChevronRight,
+    Package
 } from 'lucide-react';
 import * as React from 'react';
 
@@ -27,9 +26,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 
@@ -116,15 +115,15 @@ const ProductionDatePicker = React.forwardRef<
     const formatDate = (date: Date): string => {
       switch (format) {
         case 'YYYY-MM-DD':
-          return format(date, 'yyyy-MM-dd');
+          return formatDateFn(date, 'yyyy-MM-dd');
         case 'YYYY-MM':
-          return format(date, 'yyyy-MM');
+          return formatDateFn(date, 'yyyy-MM');
         case 'YYYYMMDD':
-          return format(date, 'yyyyMMdd');
+          return formatDateFn(date, 'yyyyMMdd');
         case 'YYYY年MM月DD日':
-          return format(date, 'yyyy年MM月dd日');
+          return formatDateFn(date, 'yyyy年MM月dd日');
         default:
-          return format(date, 'yyyy-MM-dd');
+          return formatDateFn(date, 'yyyy-MM-dd');
       }
     };
 
@@ -221,7 +220,7 @@ const ProductionDatePicker = React.forwardRef<
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
                 <div className="font-medium">
-                  {format(currentMonth, 'yyyy年MM月', { locale: zhCN })}
+                  {formatDateFn(currentMonth, 'yyyy年MM月', { locale: zhCN })}
                 </div>
                 <Button
                   variant="outline"
@@ -282,7 +281,7 @@ const ProductionDatePicker = React.forwardRef<
                       onClick={() => isSelectable && handleDateSelect(date)}
                       disabled={!isSelectable}
                     >
-                      <span>{format(date, 'd')}</span>
+                      <span>{formatDateFn(date, 'd')}</span>
                       {batch && (
                         <div className="absolute -right-1 -top-1">
                           <div className="h-2 w-2 rounded-full bg-blue-500"></div>
@@ -479,8 +478,6 @@ const ProductionDateRangePicker = React.forwardRef<
 ProductionDateRangePicker.displayName = 'ProductionDateRangePicker';
 
 export {
-  ProductionDatePicker,
-  ProductionDateRangePicker,
-  type ProductionBatch,
-  type ProductionDateFormat,
+    ProductionDatePicker,
+    ProductionDateRangePicker
 };

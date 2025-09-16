@@ -370,7 +370,9 @@ export function SalesOrderForm({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <CustomerInfoDisplay customerId={form.watch('customerId')} />
+                {form.watch('customerId') && (
+                  <CustomerInfoDisplay customerId={form.watch('customerId')!} />
+                )}
               </CardContent>
             </Card>
           )}

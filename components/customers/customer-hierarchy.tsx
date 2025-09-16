@@ -288,7 +288,7 @@ export function CustomerSelector({
   // 搜索客户
   const { data: searchResults, isLoading } = useQuery({
     queryKey: ['customers', 'search', searchQuery, excludeId],
-    queryFn: () => searchCustomers(searchQuery, excludeId),
+    queryFn: () => searchCustomers(searchQuery, { excludeId }),
     enabled: searchQuery.length > 0,
     staleTime: 30000, // 30秒缓存
   });
@@ -306,9 +306,9 @@ export function CustomerSelector({
     enabled: !!field.value,
   });
 
-  const customers = searchResults?.data || [];
+  const customers = searchResults || [];
   const filteredCustomers = onlyParents
-    ? customers.filter(customer => !customer.parentCustomerId)
+    ? customers.filter((customer: any) => !customer.parentCustomerId)
     : customers;
 
   return (
@@ -388,7 +388,7 @@ export function CustomerSelector({
                     </div>
                   </CommandItem>
 
-                  {filteredCustomers.map(customer => (
+                  {filteredCustomers.map((customer: any) => (
                     <CommandItem
                       key={customer.id}
                       value={customer.id}

@@ -3,18 +3,15 @@
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import {
-  AlertTriangle,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  TrendingUp,
-  TrendingDown,
-  Package,
-  Zap,
+    AlertCircle,
+    AlertTriangle,
+    CheckCircle,
+    Package,
+    TrendingUp,
+    XCircle
 } from 'lucide-react';
 import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
@@ -376,13 +373,5 @@ const QuickStatusToggle = React.forwardRef<
 QuickStatusToggle.displayName = 'QuickStatusToggle';
 
 export {
-  InventoryStatusIndicator,
-  InventoryHealth,
-  QuickStatusToggle,
-  inventoryStatusVariants,
-  STATUS_LABELS,
-  STATUS_ICONS,
-  ALERT_LEVEL_COLORS,
-  type InventoryStatus,
-  type AlertLevel,
+    ALERT_LEVEL_COLORS, InventoryHealth, InventoryStatusIndicator, inventoryStatusVariants, QuickStatusToggle, STATUS_ICONS, STATUS_LABELS
 };

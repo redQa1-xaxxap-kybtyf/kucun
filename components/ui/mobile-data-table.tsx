@@ -65,6 +65,7 @@ export interface MobileDataTableProps<T> {
   showIndex?: boolean;
   stickyHeader?: boolean;
   maxHeight?: string | number;
+  total?: number; // 添加total属性支持
 }
 
 function MobileDataTable<T extends Record<string, any>>({

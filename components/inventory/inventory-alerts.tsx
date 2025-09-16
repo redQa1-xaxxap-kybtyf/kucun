@@ -2,15 +2,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  AlertTriangle,
-  AlertCircle,
-  Package,
-  TrendingUp,
-  RefreshCw,
-  Bell,
-  BellOff,
-  Calendar,
-  Palette,
+    AlertCircle,
+    AlertTriangle,
+    BellOff,
+    Calendar,
+    Palette,
+    RefreshCw,
+    TrendingUp
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -19,30 +17,30 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 
 // Icons
 
 // API and Types
 import { getInventoryAlerts, inventoryQueryKeys } from '@/lib/api/inventory';
-import { InventoryAlert,
-  INVENTORY_ALERT_TYPE_LABELS,
-  INVENTORY_ALERT_TYPE_VARIANTS,
-  formatProductionDate,
+import {
+    INVENTORY_ALERT_TYPE_LABELS,
+    INVENTORY_ALERT_TYPE_VARIANTS,
+    formatProductionDate
 } from '@/lib/types/inventory';
 
 interface InventoryAlertsProps {
@@ -103,13 +101,13 @@ export function InventoryAlerts({
     );
   }
 
-  const alerts = alertsData?.data || [];
+  const alerts = alertsData || [];
   const displayAlerts =
     maxItems && !showAll ? alerts.slice(0, maxItems) : alerts;
 
   // 按类型分组统计
   const alertStats = alerts.reduce(
-    (acc, alert) => {
+    (acc: any, alert: any) => {
       acc[alert.type] = (acc[alert.type] || 0) + 1;
       return acc;
     },
@@ -154,7 +152,7 @@ export function InventoryAlerts({
               {Object.entries(alertStats).map(([type, count]) => (
                 <div key={type} className="text-center">
                   <div className="text-2xl font-bold text-orange-600">
-                    {count}
+                    {count as React.ReactNode}
                   </div>
                   <div className="text-sm text-muted-foreground">
                     {
@@ -184,7 +182,7 @@ export function InventoryAlerts({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayAlerts.map(alert => (
+                  {displayAlerts.map((alert: any) => (
                     <TableRow key={alert.id}>
                       <TableCell>
                         <Badge
@@ -267,7 +265,7 @@ export function InventoryAlerts({
 
             {/* 移动端卡片 */}
             <div className="space-y-4 md:hidden">
-              {displayAlerts.map(alert => (
+              {displayAlerts.map((alert: any) => (
                 <Card
                   key={alert.id}
                   className="border-orange-200 bg-orange-50/50"

@@ -445,11 +445,7 @@ const SpecificationCompare = React.forwardRef<
 SpecificationCompare.displayName = 'SpecificationCompare';
 
 export {
-  SpecificationDisplay,
-  SpecificationCard,
-  SpecificationCompare,
-  specificationDisplayVariants,
-  SURFACE_LABELS,
-  GRADE_LABELS,
-  type TileSpecification,
+    GRADE_LABELS, SpecificationCard,
+    SpecificationCompare, SpecificationDisplay, specificationDisplayVariants,
+    SURFACE_LABELS
 };

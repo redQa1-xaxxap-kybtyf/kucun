@@ -258,26 +258,7 @@ export interface DashboardFilters {
   region?: string;
 }
 
-// 导出类型
-export type {
-  BusinessOverview,
-  InventoryAlert,
-  TodoItem,
-  ChartDataPoint,
-  SalesTrendData,
-  InventoryTrendData,
-  ProductSalesRanking,
-  CustomerSalesRanking,
-  QuickAction,
-  DashboardConfig,
-  DashboardData,
-  DashboardApiResponse,
-  StatCard,
-  ChartConfig,
-  DashboardWidget,
-  TimeRange,
-  DashboardFilters,
-};
+// 导出类型 - 移除重复导出以避免冲突
 
 // 工具函数类型
 export interface DashboardUtils {

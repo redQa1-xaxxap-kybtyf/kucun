@@ -197,7 +197,7 @@ export function InventoryOperationForm({
         queryKey: inventoryQueryKeys.inboundRecords(),
       });
       if (onSuccess) {
-        onSuccess(response.data);
+        onSuccess(response);
       }
     },
     onError: error => {
@@ -214,7 +214,7 @@ export function InventoryOperationForm({
         queryKey: inventoryQueryKeys.outboundRecords(),
       });
       if (onSuccess) {
-        onSuccess(response.data);
+        onSuccess(response);
       }
     },
     onError: error => {
@@ -228,7 +228,7 @@ export function InventoryOperationForm({
     onSuccess: response => {
       queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.lists() });
       if (onSuccess) {
-        onSuccess(response.data);
+        onSuccess(response);
       }
     },
     onError: error => {
@@ -310,15 +310,15 @@ export function InventoryOperationForm({
       )}
 
       {/* 库存可用性检查结果 */}
-      {mode === 'outbound' && availabilityData?.data && (
+      {mode === 'outbound' && availabilityData && (
         <Alert
-          variant={availabilityData.data.available ? 'default' : 'destructive'}
+          variant={availabilityData.available ? 'default' : 'destructive'}
         >
           <Package className="h-4 w-4" />
           <AlertDescription>
-            {availabilityData.data.available
-              ? `库存充足：当前库存 ${availabilityData.data.currentQuantity}，预留 ${availabilityData.data.reservedQuantity}，可用 ${availabilityData.data.availableQuantity}`
-              : availabilityData.data.message || '库存不足，无法完成出库操作'}
+            {availabilityData.available
+              ? `库存充足：当前库存 ${availabilityData.currentStock}`
+              : availabilityData.message || '库存不足，无法完成出库操作'}
           </AlertDescription>
         </Alert>
       )}
@@ -374,7 +374,7 @@ export function InventoryOperationForm({
                 {/* 产品选择 */}
                 <div className={mode === 'adjust' ? 'md:col-span-2' : ''}>
                   <ProductSelector
-                    control={form.control}
+
                     name="productId"
                     label="选择产品 *"
                     placeholder="搜索产品..."
@@ -477,22 +477,22 @@ export function InventoryOperationForm({
               </div>
 
               {/* 产品信息显示 */}
-              {productData?.data && (
+              {productData && (
                 <div className="rounded-md bg-muted/50 p-3">
                   <div className="flex items-center justify-between text-sm">
                     <div className="flex items-center space-x-4">
                       <span>
-                        <strong>产品编码:</strong> {productData.data.code}
+                        <strong>产品编码:</strong> {productData.code}
                       </span>
                       <span>
                         <strong>规格:</strong>{' '}
-                        {productData.data.specification || '无'}
+                        {productData.specification || '无'}
                       </span>
                       <span>
-                        <strong>单位:</strong> {productData.data.unit}
+                        <strong>单位:</strong> {productData.unit}
                       </span>
                     </div>
-                    {productData.data.status === 'inactive' && (
+                    {productData.status === 'inactive' && (
                       <Badge variant="destructive">已停用</Badge>
                     )}
                   </div>

@@ -297,7 +297,7 @@ function OrderItemRow({
           {/* 产品选择 */}
           <div className="lg:col-span-4">
             <ProductSelector
-              control={control}
+
               name={`${name}.productId`}
               label="选择产品"
               placeholder="搜索产品..."

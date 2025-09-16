@@ -424,7 +424,7 @@ export function PurchaseOrderForm({
                             <TableRow key={field.id}>
                               <TableCell>
                                 <ProductSelector
-                                  control={form.control}
+
                                   name={`items.${index}.productId`}
                                   placeholder="选择产品..."
                                   disabled={isLoading}
@@ -572,7 +572,7 @@ export function PurchaseOrderForm({
 
                             <div className="space-y-3">
                               <ProductSelector
-                                control={form.control}
+
                                 name={`items.${index}.productId`}
                                 label="产品"
                                 placeholder="选择产品..."
