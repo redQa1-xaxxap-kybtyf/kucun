@@ -1,0 +1,227 @@
+'use client'
+
+import { useState, useRef } from 'react'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Upload, X, Image as ImageIcon, AlertCircle } from 'lucide-react'
+
+interface ImageUploadProps {
+  value?: string[]
+  onChange: (images: string[]) => void
+  maxFiles?: number
+  maxSize?: number // MB
+  accept?: string
+  disabled?: boolean
+  className?: string
+}
+
+export function ImageUpload({
+  value = [],
+  onChange,
+  maxFiles = 5,
+  maxSize = 5,
+  accept = 'image/*',
+  disabled = false,
+  className = ''
+}: ImageUploadProps) {
+  const [uploading, setUploading] = useState(false)
+  const [error, setError] = useState<string>('')
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileSelect = async (files: FileList) => {
+    setError('')
+    
+    // 检查文件数量限制
+    if (value.length + files.length > maxFiles) {
+      setError(`最多只能上传 ${maxFiles} 张图片`)
+      return
+    }
+
+    const validFiles: File[] = []
+    
+    // 验证每个文件
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i]
+      
+      // 检查文件类型
+      if (!file.type.startsWith('image/')) {
+        setError(`文件 ${file.name} 不是有效的图片格式`)
+        return
+      }
+      
+      // 检查文件大小
+      if (file.size > maxSize * 1024 * 1024) {
+        setError(`文件 ${file.name} 大小超过 ${maxSize}MB`)
+        return
+      }
+      
+      validFiles.push(file)
+    }
+
+    if (validFiles.length === 0) return
+
+    setUploading(true)
+    
+    try {
+      const uploadPromises = validFiles.map(async (file) => {
+        const formData = new FormData()
+        formData.append('file', file)
+        formData.append('type', 'product')
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+        })
+
+        if (!response.ok) {
+          const errorData = await response.json()
+          throw new Error(errorData.error || '上传失败')
+        }
+
+        const result = await response.json()
+        return result.data.url
+      })
+
+      const uploadedUrls = await Promise.all(uploadPromises)
+      onChange([...value, ...uploadedUrls])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '上传失败')
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault()
+    if (disabled || uploading) return
+    
+    const files = e.dataTransfer.files
+    if (files.length > 0) {
+      handleFileSelect(files)
+    }
+  }
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault()
+  }
+
+  const handleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files
+    if (files && files.length > 0) {
+      handleFileSelect(files)
+    }
+    // 清空input值，允许重复选择同一文件
+    e.target.value = ''
+  }
+
+  const removeImage = (index: number) => {
+    const newImages = value.filter((_, i) => i !== index)
+    onChange(newImages)
+  }
+
+  const openFileDialog = () => {
+    fileInputRef.current?.click()
+  }
+
+  return (
+    <div className={className}>
+      {/* 错误提示 */}
+      {error && (
+        <Alert variant="destructive" className="mb-4">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      )}
+
+      {/* 已上传的图片预览 */}
+      {value.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 mb-4">
+          {value.map((url, index) => (
+            <Card key={index} className="relative group">
+              <CardContent className="p-2">
+                <div className="aspect-square relative overflow-hidden rounded-md">
+                  <img
+                    src={url}
+                    alt={`产品图片 ${index + 1}`}
+                    className="w-full h-full object-cover"
+                  />
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    size="sm"
+                    className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                    onClick={() => removeImage(index)}
+                    disabled={disabled || uploading}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      {/* 上传区域 */}
+      {value.length < maxFiles && (
+        <Card
+          className={`border-2 border-dashed transition-colors ${
+            disabled || uploading
+              ? 'border-muted bg-muted/50 cursor-not-allowed'
+              : 'border-muted-foreground/25 hover:border-muted-foreground/50 cursor-pointer'
+          }`}
+          onDrop={handleDrop}
+          onDragOver={handleDragOver}
+          onClick={disabled || uploading ? undefined : openFileDialog}
+        >
+          <CardContent className="flex flex-col items-center justify-center py-8 text-center">
+            <div className="mb-4">
+              {uploading ? (
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+              ) : (
+                <ImageIcon className="h-8 w-8 text-muted-foreground" />
+              )}
+            </div>
+            
+            <div className="space-y-2">
+              <p className="text-sm font-medium">
+                {uploading ? '正在上传...' : '点击或拖拽上传图片'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                支持 JPG、PNG、GIF 格式，单个文件不超过 {maxSize}MB
+              </p>
+              <p className="text-xs text-muted-foreground">
+                最多可上传 {maxFiles} 张图片 ({value.length}/{maxFiles})
+              </p>
+            </div>
+
+            {!uploading && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="mt-4"
+                disabled={disabled}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                选择文件
+              </Button>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 隐藏的文件输入 */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept={accept}
+        multiple
+        className="hidden"
+        onChange={handleFileInputChange}
+        disabled={disabled || uploading}
+      />
+    </div>
+  )
+}

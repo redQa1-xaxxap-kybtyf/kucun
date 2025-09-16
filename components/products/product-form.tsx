@@ -1,0 +1,413 @@
+'use client'
+
+import { useForm } from 'react-hook-form'
+import { zodResolver } from '@hookform/resolvers/zod'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+
+// UI Components
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Separator } from '@/components/ui/separator'
+
+// Icons
+import { Save, ArrowLeft, Package, AlertCircle, Loader2 } from 'lucide-react'
+
+// Custom Components
+import { ImageUpload } from '@/components/common/image-upload'
+import { SpecificationsEditor } from '@/components/products/specifications-editor'
+
+// API and Types
+import { createProduct, updateProduct, productQueryKeys } from '@/lib/api/products'
+import { Product, ProductCreateInput, ProductUpdateInput } from '@/lib/types/product'
+import { 
+  productCreateSchema, 
+  productUpdateSchema, 
+  ProductCreateFormData, 
+  ProductUpdateFormData,
+  productCreateDefaults 
+} from '@/lib/validations/product'
+import { PRODUCT_UNIT_LABELS, PRODUCT_STATUS_LABELS } from '@/lib/types/product'
+
+interface ProductFormProps {
+  mode: 'create' | 'edit'
+  initialData?: Product
+  onSuccess?: (product: Product) => void
+  onCancel?: () => void
+}
+
+export function ProductForm({ mode, initialData, onSuccess, onCancel }: ProductFormProps) {
+  const router = useRouter()
+  const queryClient = useQueryClient()
+  const [submitError, setSubmitError] = useState<string>('')
+
+  // 表单配置
+  const isEdit = mode === 'edit'
+  const schema = isEdit ? productUpdateSchema : productCreateSchema
+  
+  const form = useForm<ProductCreateFormData | ProductUpdateFormData>({
+    resolver: zodResolver(schema),
+    defaultValues: isEdit && initialData ? {
+      id: initialData.id,
+      code: initialData.code,
+      name: initialData.name,
+      specification: initialData.specification || '',
+      unit: initialData.unit,
+      piecesPerUnit: initialData.piecesPerUnit,
+      weight: initialData.weight,
+      status: initialData.status,
+      specifications: initialData.specifications || productCreateDefaults.specifications,
+    } : {
+      ...productCreateDefaults,
+      code: '',
+      name: '',
+    }
+  })
+
+  // 创建产品 Mutation
+  const createMutation = useMutation({
+    mutationFn: createProduct,
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() })
+      if (onSuccess) {
+        onSuccess(response.data)
+      } else {
+        router.push('/products')
+      }
+    },
+    onError: (error) => {
+      setSubmitError(error instanceof Error ? error.message : '创建产品失败')
+    }
+  })
+
+  // 更新产品 Mutation
+  const updateMutation = useMutation({
+    mutationFn: updateProduct,
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() })
+      queryClient.invalidateQueries({ queryKey: productQueryKeys.detail(response.data.id) })
+      if (onSuccess) {
+        onSuccess(response.data)
+      } else {
+        router.push('/products')
+      }
+    },
+    onError: (error) => {
+      setSubmitError(error instanceof Error ? error.message : '更新产品失败')
+    }
+  })
+
+  const isLoading = createMutation.isPending || updateMutation.isPending
+
+  // 表单提交
+  const onSubmit = async (data: ProductCreateFormData | ProductUpdateFormData) => {
+    setSubmitError('')
+    
+    try {
+      if (isEdit) {
+        await updateMutation.mutateAsync(data as ProductUpdateFormData)
+      } else {
+        await createMutation.mutateAsync(data as ProductCreateInput)
+      }
+    } catch (error) {
+      // 错误已在 mutation 的 onError 中处理
+    }
+  }
+
+  // 取消操作
+  const handleCancel = () => {
+    if (onCancel) {
+      onCancel()
+    } else {
+      router.push('/products')
+    }
+  }
+
+  return (
+    <div className="container mx-auto py-6 space-y-6">
+      {/* 页面标题 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button variant="outline" size="sm" onClick={handleCancel}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            返回
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">
+              {isEdit ? '编辑产品' : '新增产品'}
+            </h1>
+            <p className="text-muted-foreground">
+              {isEdit ? '修改产品信息和规格参数' : '创建新的瓷砖产品'}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 错误提示 */}
+      {submitError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{submitError}</AlertDescription>
+        </Alert>
+      )}
+
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {/* 基础信息 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <Package className="h-5 w-5 mr-2" />
+                基础信息
+              </CardTitle>
+              <CardDescription>
+                产品的基本信息，包括编码、名称、规格等
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="code"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>产品编码 *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="如：TC-800-001"
+                          disabled={isLoading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        产品的唯一标识码，建议使用字母和数字组合
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>产品名称 *</FormLabel>
+                      <FormControl>
+                        <Input
+                          placeholder="如：现代简约抛光砖"
+                          disabled={isLoading}
+                          {...field}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        产品的显示名称
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="unit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>计量单位</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="选择计量单位" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {Object.entries(PRODUCT_UNIT_LABELS).map(([value, label]) => (
+                            <SelectItem key={value} value={value}>
+                              {label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        产品的销售计量单位
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="piecesPerUnit"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>每件片数</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="10000"
+                          disabled={isLoading}
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            field.onChange(value ? parseInt(value, 10) : 1)
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        每个销售单位包含的瓷砖片数
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="weight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>重量 (kg)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100000"
+                          placeholder="如：25.5"
+                          disabled={isLoading}
+                          {...field}
+                          onChange={(e) => {
+                            const value = e.target.value
+                            field.onChange(value ? parseFloat(value) : undefined)
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        单个销售单位的重量（可选）
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {isEdit && (
+                  <FormField
+                    control={form.control}
+                    name="status"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>产品状态</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value} disabled={isLoading}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {Object.entries(PRODUCT_STATUS_LABELS).map(([value, label]) => (
+                              <SelectItem key={value} value={value}>
+                                {label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          停用的产品将不能创建新的销售订单
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </div>
+
+              <FormField
+                control={form.control}
+                name="specification"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>规格描述</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="产品的简要规格描述..."
+                        className="min-h-[80px]"
+                        disabled={isLoading}
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      产品规格的简要文字描述（可选）
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 瓷砖规格信息 */}
+          <SpecificationsEditor
+            control={form.control}
+            name="specifications"
+            disabled={isLoading}
+          />
+
+          {/* 产品图片 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>产品图片</CardTitle>
+              <CardDescription>
+                上传产品的展示图片，支持多张图片上传
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FormField
+                control={form.control}
+                name="images"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <ImageUpload
+                        value={field.value || []}
+                        onChange={field.onChange}
+                        maxFiles={5}
+                        maxSize={5}
+                        disabled={isLoading}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 操作按钮 */}
+          <div className="flex items-center justify-end space-x-4">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={isLoading}
+            >
+              取消
+            </Button>
+            <Button type="submit" disabled={isLoading}>
+              {isLoading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              <Save className="h-4 w-4 mr-2" />
+              {isEdit ? '保存修改' : '创建产品'}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
+  )
+}
