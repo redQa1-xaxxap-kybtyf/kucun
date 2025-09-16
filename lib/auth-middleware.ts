@@ -5,6 +5,13 @@ import { env } from './env'
 // 需要认证的路径
 const protectedPaths = [
   '/dashboard',
+  '/customers',
+  '/products',
+  '/inventory',
+  '/sales-orders',
+  '/purchase-orders',
+  '/return-orders',
+  '/payments',
   '/api/users',
   '/api/customers',
   '/api/products',
