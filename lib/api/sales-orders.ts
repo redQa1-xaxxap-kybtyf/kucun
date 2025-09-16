@@ -1,111 +1,106 @@
-// 销售订单管理 API 客户端
-// 使用 TanStack Query 进行服务器状态管理
-// 遵循命名约定：API响应 camelCase
+/**
+ * 销售订单API
+ * 严格遵循全栈项目统一约定规范
+ */
 
-import { 
-  SalesOrder, 
-  SalesOrderQueryParams, 
-  SalesOrderListResponse, 
-  SalesOrderDetailResponse,
+import { ApiResponse, PaginatedResponse } from '@/lib/types/api'
+import {
+  SalesOrder,
+  SalesOrderQueryParams,
   SalesOrderCreateInput,
-  SalesOrderUpdateInput,
-  SalesOrderStats,
-  SalesOrderStatus
+  SalesOrderUpdateInput
 } from '@/lib/types/sales-order'
 
-// API 基础配置
+/**
+ * API基础URL
+ */
 const API_BASE = '/api/sales-orders'
 
-// 查询键工厂 - 用于 TanStack Query 缓存管理
+/**
+ * 查询键工厂
+ */
 export const salesOrderQueryKeys = {
-  all: ['salesOrders'] as const,
+  all: ['sales-orders'] as const,
   lists: () => [...salesOrderQueryKeys.all, 'list'] as const,
   list: (params: SalesOrderQueryParams) => [...salesOrderQueryKeys.lists(), params] as const,
   details: () => [...salesOrderQueryKeys.all, 'detail'] as const,
   detail: (id: string) => [...salesOrderQueryKeys.details(), id] as const,
-  stats: () => [...salesOrderQueryKeys.all, 'stats'] as const,
-  customerOrders: (customerId: string) => [...salesOrderQueryKeys.all, 'customer', customerId] as const,
+  statistics: () => [...salesOrderQueryKeys.all, 'statistics'] as const,
+  customer: (customerId: string) => [...salesOrderQueryKeys.all, 'customer', customerId] as const,
 }
 
-// API 响应类型
-interface ApiResponse<T> {
-  success: boolean
-  data: T
-  message?: string
-}
-
-interface ApiError {
-  success: false
-  error: string
-  details?: any
-}
-
-// 获取销售订单列表
-export async function getSalesOrders(params: SalesOrderQueryParams = {}): Promise<SalesOrderListResponse> {
+/**
+ * 获取销售订单列表
+ */
+export async function getSalesOrders(params: SalesOrderQueryParams): Promise<PaginatedResponse<SalesOrder>> {
   const searchParams = new URLSearchParams()
-  
-  // 构建查询参数
-  if (params.page) searchParams.set('page', params.page.toString())
-  if (params.limit) searchParams.set('limit', params.limit.toString())
-  if (params.search) searchParams.set('search', params.search)
-  if (params.sortBy) searchParams.set('sortBy', params.sortBy)
-  if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder)
-  if (params.status) searchParams.set('status', params.status)
-  if (params.customerId) searchParams.set('customerId', params.customerId)
-  if (params.userId) searchParams.set('userId', params.userId)
-  if (params.startDate) searchParams.set('startDate', params.startDate)
-  if (params.endDate) searchParams.set('endDate', params.endDate)
 
-  const url = `${API_BASE}?${searchParams.toString()}`
-  
-  const response = await fetch(url, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== '') {
+      searchParams.append(key, String(value))
+    }
   })
 
-  if (!response.ok) {
-    const errorData: ApiError = await response.json()
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
-  }
-
-  return response.json()
-}
-
-// 获取销售订单详情
-export async function getSalesOrder(id: string): Promise<SalesOrderDetailResponse> {
-  const response = await fetch(`${API_BASE}/${id}`, {
-    method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  })
+  const response = await fetch(`${API_BASE}?${searchParams.toString()}`)
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json()
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+    throw new Error(`获取销售订单列表失败: ${response.statusText}`)
   }
 
-  return response.json()
+  const data: ApiResponse<PaginatedResponse<SalesOrder>> = await response.json()
+
+  if (!data.success) {
+    throw new Error(data.error || '获取销售订单列表失败')
+  }
+
+  return data.data!
 }
 
-// 创建销售订单
-export async function createSalesOrder(data: SalesOrderCreateInput): Promise<ApiResponse<SalesOrder>> {
+/**
+ * 获取销售订单详情
+ */
+export async function getSalesOrder(id: string): Promise<SalesOrder> {
+  const response = await fetch(`${API_BASE}/${id}`)
+
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('销售订单不存在')
+    }
+    throw new Error(`获取销售订单详情失败: ${response.statusText}`)
+  }
+
+  const data: ApiResponse<SalesOrder> = await response.json()
+
+  if (!data.success) {
+    throw new Error(data.error || '获取销售订单详情失败')
+  }
+
+  return data.data!
+}
+
+/**
+ * 创建销售订单
+ */
+export async function createSalesOrder(orderData: SalesOrderCreateInput): Promise<SalesOrder> {
   const response = await fetch(API_BASE, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify(data),
+    body: JSON.stringify(orderData),
   })
 
   if (!response.ok) {
-    const errorData: ApiError = await response.json()
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`)
+    throw new Error(`创建销售订单失败: ${response.statusText}`)
   }
 
-  return response.json()
+  const data: ApiResponse<SalesOrder> = await response.json()
+
+  if (!data.success) {
+    throw new Error(data.error || '创建销售订单失败')
+  }
+
+  return data.data!
 }
 
 // 更新销售订单

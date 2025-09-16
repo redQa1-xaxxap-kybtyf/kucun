@@ -18,7 +18,7 @@ import { MobileDataTable } from '@/components/ui/mobile-data-table'
 import { Progress } from '@/components/ui/progress'
 
 // API and Types
-import { getInventory, inventoryQueryKeys } from '@/lib/api/inventory'
+import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory'
 import { Inventory, InventoryQueryParams } from '@/lib/types/inventory'
 
 /**
@@ -39,7 +39,7 @@ export default function InventoryPage() {
   // 获取库存列表数据
   const { data, isLoading, error } = useQuery({
     queryKey: inventoryQueryKeys.list(queryParams),
-    queryFn: () => getInventory(queryParams),
+    queryFn: () => getInventories(queryParams),
   })
 
   // 搜索处理
