@@ -7,7 +7,7 @@ export interface Product {
   name: string
   specification?: string
   specifications?: Record<string, any>
-  unit: 'piece' | 'sheet' | 'strip'
+  unit: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter'
   piecesPerUnit: number
   weight?: number
   status: 'active' | 'inactive'
@@ -24,7 +24,7 @@ export interface ProductCreateInput {
   name: string
   specification?: string
   specifications?: Record<string, any>
-  unit?: 'piece' | 'sheet' | 'strip'
+  unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter'
   piecesPerUnit?: number
   weight?: number
 }
@@ -35,7 +35,7 @@ export interface ProductUpdateInput {
   name?: string
   specification?: string
   specifications?: Record<string, any>
-  unit?: 'piece' | 'sheet' | 'strip'
+  unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter'
   piecesPerUnit?: number
   weight?: number
   status?: 'active' | 'inactive'
@@ -48,7 +48,7 @@ export interface ProductQueryParams {
   sortBy?: string
   sortOrder?: 'asc' | 'desc'
   status?: 'active' | 'inactive'
-  unit?: 'piece' | 'sheet' | 'strip'
+  unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter'
 }
 
 export interface ProductListResponse {
@@ -73,6 +73,10 @@ export interface ProductErrorResponse {
   details?: any[]
 }
 
+// 新增类型定义以匹配页面需求
+export type CreateProductData = ProductCreateInput
+export type UpdateProductData = ProductUpdateInput
+
 // 瓷砖行业特有规格信息类型
 export interface TileSpecifications {
   color?: string          // 颜色
@@ -90,14 +94,31 @@ export interface TileSpecifications {
 export const PRODUCT_UNIT_LABELS: Record<string, string> = {
   piece: '件',
   sheet: '片',
-  strip: '条'
+  strip: '条',
+  box: '箱',
+  square_meter: '平方米'
 }
+
+// 产品单位选项（用于表单）
+export const PRODUCT_UNIT_OPTIONS = [
+  { value: 'piece', label: '件' },
+  { value: 'sheet', label: '片' },
+  { value: 'strip', label: '条' },
+  { value: 'box', label: '箱' },
+  { value: 'square_meter', label: '平方米' },
+]
 
 // 产品状态显示名称映射
 export const PRODUCT_STATUS_LABELS: Record<string, string> = {
   active: '启用',
   inactive: '停用'
 }
+
+// 产品状态选项（用于表单）
+export const PRODUCT_STATUS_OPTIONS = [
+  { value: 'active', label: '启用' },
+  { value: 'inactive', label: '停用' },
+]
 
 // 产品状态颜色映射（用于Badge组件）
 export const PRODUCT_STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {

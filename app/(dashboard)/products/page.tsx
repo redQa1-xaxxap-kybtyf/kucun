@@ -1,29 +1,303 @@
-import { Metadata } from 'next'
+'use client'
 
-export const metadata: Metadata = {
-  title: '产品管理',
-  description: '管理产品信息和规格',
-}
+import * as React from 'react'
+import { useRouter } from 'next/navigation'
+import { useQuery } from '@tanstack/react-query'
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye } from 'lucide-react'
+
+// UI Components
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import { Skeleton } from '@/components/ui/skeleton'
+import { MobileDataTable } from '@/components/ui/mobile-data-table'
+
+// API and Types
+import { getProducts, productQueryKeys } from '@/lib/api/products'
+import { Product, ProductQueryParams } from '@/lib/types/product'
+import { PRODUCT_STATUS_LABELS, PRODUCT_UNIT_LABELS } from '@/lib/types/product'
 
 /**
  * 产品管理页面
- * 使用新的认证布局系统
+ * 严格遵循全栈项目统一约定规范
  */
 export default function ProductsPage() {
+  const router = useRouter()
+  const [queryParams, setQueryParams] = React.useState<ProductQueryParams>({
+    page: 1,
+    limit: 20,
+    search: '',
+    status: undefined,
+    unit: undefined,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+  })
+
+  // 获取产品列表数据
+  const { data, isLoading, error } = useQuery({
+    queryKey: productQueryKeys.list(queryParams),
+    queryFn: () => getProducts(queryParams),
+  })
+
+  // 搜索处理
+  const handleSearch = (value: string) => {
+    setQueryParams(prev => ({ ...prev, search: value, page: 1 }))
+  }
+
+  // 筛选处理
+  const handleFilter = (key: keyof ProductQueryParams, value: any) => {
+    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }))
+  }
+
+  // 分页处理
+  const handlePageChange = (page: number) => {
+    setQueryParams(prev => ({ ...prev, page }))
+  }
+
+  // 状态标签渲染
+  const getStatusBadge = (status: string) => {
+    const variant = status === 'active' ? 'default' : 'secondary'
+    return (
+      <Badge variant={variant}>
+        {PRODUCT_STATUS_LABELS[status as keyof typeof PRODUCT_STATUS_LABELS] || status}
+      </Badge>
+    )
+  }
+
+  // 移动端表格列配置
+  const mobileColumns = [
+    { key: 'name', title: '产品名称', mobilePrimary: true },
+    { key: 'code', title: '产品编码', mobileLabel: '编码' },
+    { key: 'status', title: '状态', render: (item: Product) => getStatusBadge(item.status) },
+    { key: 'unit', title: '单位', render: (item: Product) => PRODUCT_UNIT_LABELS[item.unit as keyof typeof PRODUCT_UNIT_LABELS] || item.unit },
+  ]
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">产品管理</h1>
+          <p className="text-muted-foreground">管理所有产品的基本信息和规格</p>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center text-red-600">
+              加载失败: {error instanceof Error ? error.message : '未知错误'}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">产品管理</h1>
-        <p className="text-muted-foreground">
-          管理所有产品的基本信息和规格
-        </p>
+      {/* 页面标题 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">产品管理</h1>
+          <p className="text-muted-foreground">管理所有产品的基本信息和规格</p>
+        </div>
+        <Button onClick={() => router.push('/products/create')}>
+          <Plus className="mr-2 h-4 w-4" />
+          新建产品
+        </Button>
       </div>
-      
-      <div className="text-center py-12">
-        <p className="text-muted-foreground">
-          产品管理功能正在开发中...
-        </p>
-      </div>
+
+      {/* 搜索和筛选 */}
+      <Card>
+        <CardContent className="pt-6">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="搜索产品名称或编码..."
+                  value={queryParams.search}
+                  onChange={(e) => handleSearch(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <Select
+                value={queryParams.status || 'all'}
+                onValueChange={(value) => handleFilter('status', value === 'all' ? undefined : value)}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="状态" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部状态</SelectItem>
+                  <SelectItem value="active">启用</SelectItem>
+                  <SelectItem value="inactive">停用</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select
+                value={queryParams.unit || 'all'}
+                onValueChange={(value) => handleFilter('unit', value === 'all' ? undefined : value)}
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="单位" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部单位</SelectItem>
+                  <SelectItem value="piece">片</SelectItem>
+                  <SelectItem value="box">箱</SelectItem>
+                  <SelectItem value="square_meter">平方米</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 产品列表 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>产品列表</CardTitle>
+          <CardDescription>
+            {data?.pagination ? `共 ${data.pagination.total} 个产品` : '加载中...'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-4">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <div key={i} className="flex items-center space-x-4">
+                  <Skeleton className="h-12 w-12 rounded" />
+                  <div className="space-y-2">
+                    <Skeleton className="h-4 w-[200px]" />
+                    <Skeleton className="h-4 w-[150px]" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <>
+              {/* 桌面端表格 */}
+              <div className="hidden md:block">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>产品编码</TableHead>
+                      <TableHead>产品名称</TableHead>
+                      <TableHead>规格</TableHead>
+                      <TableHead>单位</TableHead>
+                      <TableHead>状态</TableHead>
+                      <TableHead>创建时间</TableHead>
+                      <TableHead className="w-[100px]">操作</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {data?.data?.map((product) => (
+                      <TableRow key={product.id}>
+                        <TableCell className="font-medium">{product.code}</TableCell>
+                        <TableCell>{product.name}</TableCell>
+                        <TableCell>{product.specification || '-'}</TableCell>
+                        <TableCell>
+                          {PRODUCT_UNIT_LABELS[product.unit as keyof typeof PRODUCT_UNIT_LABELS] || product.unit}
+                        </TableCell>
+                        <TableCell>{getStatusBadge(product.status)}</TableCell>
+                        <TableCell>{new Date(product.createdAt).toLocaleDateString()}</TableCell>
+                        <TableCell>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="ghost" className="h-8 w-8 p-0">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => router.push(`/products/${product.id}`)}>
+                                <Eye className="mr-2 h-4 w-4" />
+                                查看详情
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => router.push(`/products/${product.id}/edit`)}>
+                                <Edit className="mr-2 h-4 w-4" />
+                                编辑
+                              </DropdownMenuItem>
+                              <DropdownMenuItem className="text-red-600">
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                删除
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+
+              {/* 移动端卡片 */}
+              <div className="md:hidden">
+                <MobileDataTable
+                  data={data?.data || []}
+                  columns={mobileColumns}
+                  onItemClick={(item) => router.push(`/products/${item.id}`)}
+                  renderActions={(item) => (
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" className="h-8 w-8 p-0">
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => router.push(`/products/${item.id}`)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          查看详情
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => router.push(`/products/${item.id}/edit`)}>
+                          <Edit className="mr-2 h-4 w-4" />
+                          编辑
+                        </DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600">
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          删除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  )}
+                />
+              </div>
+
+              {/* 分页 */}
+              {data?.pagination && data.pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between pt-4">
+                  <div className="text-sm text-muted-foreground">
+                    显示第 {((data.pagination.page - 1) * data.pagination.limit) + 1} - {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} 条，共 {data.pagination.total} 条
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(data.pagination.page - 1)}
+                      disabled={data.pagination.page <= 1}
+                    >
+                      上一页
+                    </Button>
+                    <div className="text-sm">
+                      第 {data.pagination.page} / {data.pagination.totalPages} 页
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handlePageChange(data.pagination.page + 1)}
+                      disabled={data.pagination.page >= data.pagination.totalPages}
+                    >
+                      下一页
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
