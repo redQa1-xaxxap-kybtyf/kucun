@@ -17,6 +17,7 @@ async function main() {
     update: {},
     create: {
       email: 'admin@inventory.com',
+      username: 'admin',
       name: '系统管理员',
       passwordHash: adminPasswordHash,
       role: 'admin',
@@ -29,6 +30,7 @@ async function main() {
     update: {},
     create: {
       email: 'sales@inventory.com',
+      username: 'sales',
       name: '销售员',
       passwordHash: salesPasswordHash,
       role: 'sales',

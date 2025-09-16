@@ -19,11 +19,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { email, name, password } = validationResult.data
+    const { email, username, name, password } = validationResult.data
 
     // 创建用户
     const user = await createUser({
       email,
+      username,
       name,
       password,
       role: 'sales', // 默认注册为销售员
@@ -35,6 +36,7 @@ export async function POST(request: NextRequest) {
       data: {
         id: user.id,
         email: user.email,
+        username: user.username,
         name: user.name,
         role: user.role,
         status: user.status,

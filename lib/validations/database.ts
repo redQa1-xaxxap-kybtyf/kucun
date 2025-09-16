@@ -16,22 +16,37 @@ export const baseValidations = {
 export const userValidations = {
   create: z.object({
     email: baseValidations.email,
+    username: z.string()
+      .min(3, '用户名至少3个字符')
+      .max(20, '用户名最多20个字符')
+      .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字和下划线'),
     name: baseValidations.name,
     password: z.string().min(6, '密码至少6个字符'),
     role: z.enum(['admin', 'sales']).default('sales'),
   }),
-  
+
   update: z.object({
     id: baseValidations.id,
     email: baseValidations.email.optional(),
+    username: z.string()
+      .min(3, '用户名至少3个字符')
+      .max(20, '用户名最多20个字符')
+      .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字和下划线')
+      .optional(),
     name: baseValidations.name.optional(),
     role: z.enum(['admin', 'sales']).optional(),
     status: z.enum(['active', 'inactive']).optional(),
   }),
-  
+
   login: z.object({
-    email: baseValidations.email,
+    username: z.string()
+      .min(1, '用户名不能为空')
+      .max(20, '用户名最多20个字符'),
     password: z.string().min(1, '密码不能为空'),
+    captcha: z.string()
+      .min(4, '验证码不能为空')
+      .max(6, '验证码格式不正确')
+      .regex(/^[A-Z0-9]+$/i, '验证码只能包含字母和数字'),
   }),
 
   // 密码更新验证
@@ -47,6 +62,10 @@ export const userValidations = {
   // 用户注册验证
   register: z.object({
     email: baseValidations.email,
+    username: z.string()
+      .min(3, '用户名至少3个字符')
+      .max(20, '用户名最多20个字符')
+      .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字和下划线'),
     name: baseValidations.name,
     password: z.string().min(6, '密码至少需要6个字符'),
     confirmPassword: z.string().min(1, '确认密码不能为空'),

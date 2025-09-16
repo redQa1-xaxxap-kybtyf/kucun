@@ -17,6 +17,7 @@ datasource db {
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
+  username     String   @unique // 新增用户名字段，用于登录
   name         String
   passwordHash String   @map("password_hash")
   role         String   @default("sales") // admin, sales
@@ -30,6 +31,7 @@ model User {
   paymentRecords PaymentRecord[]
 
   @@index([email])
+  @@index([username])
   @@index([role])
   @@map("users")
 }

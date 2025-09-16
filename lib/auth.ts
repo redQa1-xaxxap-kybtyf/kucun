@@ -12,6 +12,7 @@ declare module 'next-auth' {
     user: {
       id: string
       email: string
+      username: string
       name: string
       role: string
       status: string
@@ -21,6 +22,7 @@ declare module 'next-auth' {
   interface User {
     id: string
     email: string
+    username: string
     name: string
     role: string
     status: string
@@ -30,6 +32,7 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   interface JWT {
     id: string
+    username: string
     role: string
     status: string
   }
@@ -42,31 +45,39 @@ export const authOptions: NextAuthOptions = {
     CredentialsProvider({
       name: 'credentials',
       credentials: {
-        email: { label: '邮箱', type: 'email' },
+        username: { label: '用户名', type: 'text' },
         password: { label: '密码', type: 'password' },
+        captcha: { label: '验证码', type: 'text' },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('邮箱和密码不能为空')
+        if (!credentials?.username || !credentials?.password || !credentials?.captcha) {
+          throw new Error('用户名、密码和验证码不能为空')
         }
 
         // 验证输入格式
         const validationResult = userValidations.login.safeParse({
-          email: credentials.email,
+          username: credentials.username,
           password: credentials.password,
+          captcha: credentials.captcha,
         })
 
         if (!validationResult.success) {
-          throw new Error('邮箱或密码格式不正确')
+          throw new Error('用户名、密码或验证码格式不正确')
         }
 
         try {
-          // 查找用户
-          const user = await prisma.user.findUnique({
-            where: { email: credentials.email },
+          // 查找用户（支持用户名或邮箱登录）
+          const user = await prisma.user.findFirst({
+            where: {
+              OR: [
+                { username: credentials.username },
+                { email: credentials.username }, // 兼容邮箱登录
+              ],
+            },
             select: {
               id: true,
               email: true,
+              username: true,
               name: true,
               passwordHash: true,
               role: true,
@@ -97,6 +108,7 @@ export const authOptions: NextAuthOptions = {
           return {
             id: user.id,
             email: user.email,
+            username: user.username,
             name: user.name,
             role: user.role,
             status: user.status,
@@ -120,6 +132,7 @@ export const authOptions: NextAuthOptions = {
       // 首次登录时，将用户信息添加到 token
       if (user) {
         token.id = user.id
+        token.username = user.username
         token.role = user.role
         token.status = user.status
       }
@@ -129,6 +142,7 @@ export const authOptions: NextAuthOptions = {
       // 将 token 中的信息添加到 session
       if (token) {
         session.user.id = token.id
+        session.user.username = token.username
         session.user.role = token.role
         session.user.status = token.status
       }
@@ -160,6 +174,7 @@ export function isSales(userRole: string): boolean {
 // 用户创建函数（注册）
 export async function createUser(data: {
   email: string
+  username: string
   name: string
   password: string
   role?: string
@@ -171,12 +186,21 @@ export async function createUser(data: {
   }
 
   // 检查邮箱是否已存在
-  const existingUser = await prisma.user.findUnique({
+  const existingEmailUser = await prisma.user.findUnique({
     where: { email: data.email },
   })
 
-  if (existingUser) {
+  if (existingEmailUser) {
     throw new Error('该邮箱已被注册')
+  }
+
+  // 检查用户名是否已存在
+  const existingUsernameUser = await prisma.user.findUnique({
+    where: { username: data.username },
+  })
+
+  if (existingUsernameUser) {
+    throw new Error('该用户名已被使用')
   }
 
   // 加密密码
@@ -186,6 +210,7 @@ export async function createUser(data: {
   const user = await prisma.user.create({
     data: {
       email: data.email,
+      username: data.username,
       name: data.name,
       passwordHash,
       role: data.role || 'sales',
@@ -194,6 +219,7 @@ export async function createUser(data: {
     select: {
       id: true,
       email: true,
+      username: true,
       name: true,
       role: true,
       status: true,
