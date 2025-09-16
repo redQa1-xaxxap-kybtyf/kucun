@@ -387,7 +387,7 @@ export function PurchaseOrderForm({ mode, initialData, onSuccess, onCancel }: Pu
                                         <SelectValue placeholder="色号" />
                                       </SelectTrigger>
                                       <SelectContent>
-                                        <SelectItem value="">无色号</SelectItem>
+                                        <SelectItem value="none">无色号</SelectItem>
                                         {COMMON_COLOR_CODES.map(color => (
                                           <SelectItem key={color.value} value={color.value}>
                                             {color.label}

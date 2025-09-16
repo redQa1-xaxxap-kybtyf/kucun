@@ -57,11 +57,11 @@ import {
   outboundCreateDefaults,
   inventoryAdjustDefaults
 } from '@/lib/validations/inventory'
-import { 
+import {
   INBOUND_TYPE_LABELS,
-  OUTBOUND_TYPE_LABELS,
-  COMMON_COLOR_CODES
+  OUTBOUND_TYPE_LABELS
 } from '@/lib/types/inventory'
+import { COMMON_COLOR_CODES } from '@/lib/types/sales-order'
 
 interface InventoryOperationFormProps {
   mode: 'inbound' | 'outbound' | 'adjust'
@@ -346,7 +346,7 @@ export function InventoryOperationForm({ mode, onSuccess, onCancel }: InventoryO
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">无色号</SelectItem>
+                          <SelectItem value="none">无色号</SelectItem>
                           {COMMON_COLOR_CODES.map(color => (
                             <SelectItem key={color.value} value={color.value}>
                               {color.label}
@@ -490,7 +490,7 @@ export function InventoryOperationForm({ mode, onSuccess, onCancel }: InventoryO
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              <SelectItem value="">无供应商</SelectItem>
+                              <SelectItem value="none">无供应商</SelectItem>
                               {/* 这里应该显示供应商列表，简化处理 */}
                               <SelectItem value="supplier-1">示例供应商 1</SelectItem>
                               <SelectItem value="supplier-2">示例供应商 2</SelectItem>
@@ -526,7 +526,7 @@ export function InventoryOperationForm({ mode, onSuccess, onCancel }: InventoryO
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="">无关联订单</SelectItem>
+                            <SelectItem value="none">无关联订单</SelectItem>
                             {/* 这里应该显示销售订单列表，简化处理 */}
                             <SelectItem value="order-1">SO20250116001</SelectItem>
                             <SelectItem value="order-2">SO20250116002</SelectItem>

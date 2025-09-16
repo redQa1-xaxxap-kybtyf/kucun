@@ -23,13 +23,13 @@ import { ProductSelector } from '@/components/products/product-selector'
 // API and Types
 import { getProducts, productQueryKeys } from '@/lib/api/products'
 import { Product } from '@/lib/types/product'
-import { 
+import {
   SalesOrderItemCreateFormData,
   SalesOrderItemUpdateFormData,
   calculateItemSubtotal,
-  calculateOrderTotal,
-  COMMON_COLOR_CODES
+  calculateOrderTotal
 } from '@/lib/validations/sales-order'
+import { COMMON_COLOR_CODES } from '@/lib/types/sales-order'
 
 // 订单明细编辑器属性
 interface OrderItemsEditorProps {
@@ -278,7 +278,7 @@ function OrderItemRow({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">无色号</SelectItem>
+                      <SelectItem value="none">无色号</SelectItem>
                       {COMMON_COLOR_CODES.map(color => (
                         <SelectItem key={color.value} value={color.value}>
                           {color.label}
