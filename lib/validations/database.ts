@@ -114,6 +114,7 @@ export const productValidations = {
     unit: z.enum(['piece', 'sheet', 'strip']).default('piece'),
     piecesPerUnit: z.number().int().min(1, '每件片数至少为1').default(1),
     weight: z.number().min(0, '重量不能为负数').optional(),
+    categoryId: z.string().optional(),
   }),
 
   update: z.object({
@@ -126,6 +127,7 @@ export const productValidations = {
     piecesPerUnit: z.number().int().min(1, '每件片数至少为1').optional(),
     weight: z.number().min(0, '重量不能为负数').optional(),
     status: z.enum(['active', 'inactive']).optional(),
+    categoryId: z.string().optional(),
   }),
 };
 

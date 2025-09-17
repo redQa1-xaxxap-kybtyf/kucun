@@ -73,6 +73,8 @@ export const productCreateSchema = z.object({
   unit: baseValidations.unit.default('piece'),
   piecesPerUnit: baseValidations.piecesPerUnit.default(1),
   weight: baseValidations.weight,
+  // 产品分类
+  categoryId: z.string().optional(),
   // 瓷砖特有规格信息
   specifications: z.object(tileSpecificationValidations).optional(),
   // 产品图片
@@ -89,6 +91,8 @@ export const productUpdateSchema = z.object({
   piecesPerUnit: baseValidations.piecesPerUnit.optional(),
   weight: baseValidations.weight,
   status: baseValidations.status.optional(),
+  // 产品分类
+  categoryId: z.string().optional(),
   // 瓷砖特有规格信息
   specifications: z.object(tileSpecificationValidations).optional(),
   // 产品图片

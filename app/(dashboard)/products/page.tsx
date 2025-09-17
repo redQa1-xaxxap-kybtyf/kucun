@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import {
     Edit,
     Eye,
@@ -60,7 +60,7 @@ import { useToast } from '@/hooks/use-toast';
 
 // API and Types
 import { getCategories } from '@/lib/api/categories';
-import { getProducts, productQueryKeys } from '@/lib/api/products';
+import { deleteProduct, getProducts, productQueryKeys } from '@/lib/api/products';
 import type { Product, ProductQueryParams } from '@/lib/types/product';
 import {
     PRODUCT_STATUS_LABELS,
@@ -109,7 +109,7 @@ function ProductsPage() {
   const categories = categoriesResponse?.data || [];
 
   // 获取产品列表数据
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error, refetch } = useQuery({
     queryKey: productQueryKeys.list(queryParams),
     queryFn: () => getProducts(queryParams),
   });
@@ -138,14 +138,10 @@ function ProductsPage() {
     });
   };
 
-  // 确认删除产品
-  const confirmDeleteProduct = async () => {
-    if (!deleteDialog.productId) return;
-
-    try {
-      // TODO: 实现删除API调用
-      // await deleteProduct(deleteDialog.productId);
-
+  // 删除产品的mutation
+  const deleteProductMutation = useMutation({
+    mutationFn: deleteProduct,
+    onSuccess: () => {
       toast({
         title: '删除成功',
         description: `产品"${deleteDialog.productName}"已成功删除`,
@@ -154,15 +150,23 @@ function ProductsPage() {
       // 关闭对话框
       setDeleteDialog({ open: false, productId: null, productName: '' });
 
-      // 刷新数据
-      // queryClient.invalidateQueries({ queryKey: productQueryKeys.list(queryParams) });
-    } catch (error) {
+      // 刷新产品列表数据
+      refetch();
+    },
+    onError: (error: Error) => {
+      console.error('删除产品失败:', error);
       toast({
         title: '删除失败',
-        description: error instanceof Error ? error.message : '删除产品时发生错误',
+        description: error.message || '删除产品时发生错误',
         variant: 'destructive',
       });
-    }
+    },
+  });
+
+  // 确认删除产品
+  const confirmDeleteProduct = async () => {
+    if (!deleteDialog.productId) return;
+    deleteProductMutation.mutate(deleteDialog.productId);
   };
 
   // 状态标签渲染

@@ -2,12 +2,11 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Package,
-  Info,
-  BarChart3,
+    ArrowLeft,
+    Edit,
+    Info,
+    Package,
+    Trash2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -16,36 +15,44 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle
 } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // API and Types
 import { getProduct, productQueryKeys } from '@/lib/api/products';
 import {
-  PRODUCT_STATUS_LABELS,
-  PRODUCT_UNIT_LABELS,
+    PRODUCT_STATUS_LABELS,
+    PRODUCT_UNIT_LABELS,
 } from '@/lib/types/product';
 
 interface ProductDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 /**
  * 产品详情页面
  * 严格遵循全栈项目统一约定规范
+ * 兼容Next.js 15.4 async params
  */
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const router = useRouter();
-  const { id } = params;
+  const [id, setId] = React.useState<string | null>(null);
+
+  // 解析async params
+  React.useEffect(() => {
+    const resolveParams = async () => {
+      const resolvedParams = await params;
+      setId(resolvedParams.id);
+    };
+    resolveParams();
+  }, [params]);
 
   // 获取产品详情数据
   const {
@@ -53,8 +60,9 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: productQueryKeys.detail(id),
-    queryFn: () => getProduct(id),
+    queryKey: productQueryKeys.detail(id || ''),
+    queryFn: () => getProduct(id!),
+    enabled: !!id, // 只有在id可用时才执行查询
   });
 
   // 状态标签渲染
@@ -67,6 +75,47 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       </Badge>
     );
   };
+
+  // 如果id还没有解析，显示加载状态
+  if (!id) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            返回
+          </Button>
+          <div>
+            <Skeleton className="h-8 w-32" />
+            <Skeleton className="mt-2 h-4 w-48" />
+          </div>
+        </div>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-24" />
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex justify-between">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-6 w-24" />
+            </CardHeader>
+            <CardContent>
+              <Skeleton className="h-32 w-full" />
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -175,12 +224,13 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
-            onClick={() => router.push(`/products/${id}/edit`)}
+            onClick={() => id && router.push(`/products/${id}/edit`)}
+            disabled={!id}
           >
             <Edit className="mr-2 h-4 w-4" />
             编辑
           </Button>
-          <Button variant="outline" className="text-red-600 hover:text-red-700">
+          <Button variant="outline" className="text-red-600 hover:text-red-700" disabled={!id}>
             <Trash2 className="mr-2 h-4 w-4" />
             删除
           </Button>
