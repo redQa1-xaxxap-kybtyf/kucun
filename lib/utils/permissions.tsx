@@ -69,7 +69,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     // 管理员拥有所有权限
     ...Object.values(PERMISSIONS.PRODUCT),
     ...Object.values(PERMISSIONS.SALES),
-    ...Object.values(PERMISSIONS.PURCHASE),
     ...Object.values(PERMISSIONS.CUSTOMER),
     ...Object.values(PERMISSIONS.INVENTORY),
     ...Object.values(PERMISSIONS.PAYMENT),
@@ -81,8 +80,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, string[]> = {
     PERMISSIONS.SALES.CREATE,
     PERMISSIONS.SALES.READ,
     PERMISSIONS.SALES.UPDATE,
-    PERMISSIONS.PURCHASE.CREATE,
-    PERMISSIONS.PURCHASE.READ,
     PERMISSIONS.CUSTOMER.CREATE,
     PERMISSIONS.CUSTOMER.READ,
     PERMISSIONS.CUSTOMER.UPDATE,

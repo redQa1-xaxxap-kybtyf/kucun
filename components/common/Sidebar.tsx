@@ -8,6 +8,7 @@ import {
     HelpCircle,
     LayoutDashboard,
     Package,
+    Plus,
     RotateCcw,
     Settings,
     ShoppingCart,
@@ -52,6 +53,12 @@ const navigationItems: NavigationItem[] = [
         title: '库存总览',
         href: '/inventory',
         icon: Warehouse,
+      },
+      {
+        id: 'inventory-inbound-create',
+        title: '产品入库',
+        href: '/inventory/inbound/create',
+        icon: Plus,
       },
       {
         id: 'inventory-inbound',

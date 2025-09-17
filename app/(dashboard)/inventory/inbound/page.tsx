@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
@@ -25,12 +24,13 @@ import {
     Calendar,
     FileText,
     Package,
+    Plus,
     TrendingUp,
     User
 } from 'lucide-react';
 
 // API and Types
-import type { InboundRecord } from '@/lib/types/inventory';
+import { useInboundRecords, useInboundStats } from '@/lib/api/inbound';
 
 /**
  * 入库记录页面
@@ -39,17 +39,16 @@ import type { InboundRecord } from '@/lib/types/inventory';
 export default function InboundRecordsPage() {
   const router = useRouter();
 
-  // 获取入库记录数据 - 暂时使用模拟数据
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['inventory-records', { type: 'inbound' }],
-    queryFn: async () => {
-      // 模拟入库记录数据
-      return {
-        data: [] as InboundRecord[],
-        pagination: { page: 1, limit: 50, total: 0, totalPages: 0 }
-      };
-    },
+  // 获取入库记录数据
+  const { data, isLoading, error } = useInboundRecords({
+    page: 1,
+    limit: 50,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
   });
+
+  // 获取统计数据
+  const { data: stats } = useInboundStats();
 
   const inboundRecords = data?.data || [];
 
@@ -59,27 +58,20 @@ export default function InboundRecordsPage() {
   };
 
   // 格式化操作类型
-  const getOperationTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      inbound: '入库',
-      purchase: '采购入库',
-      return: '退货入库',
-      transfer: '调拨入库',
-      adjustment: '盘点调整',
-    };
-    return labels[type] || type;
+  const getOperationTypeLabel = (reason: string) => {
+    return INBOUND_REASON_LABELS[reason as keyof typeof INBOUND_REASON_LABELS] || reason;
   };
 
   // 获取操作类型样式
-  const getOperationTypeVariant = (type: string) => {
+  const getOperationTypeVariant = (reason: string) => {
     const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-      inbound: 'default',
-      purchase: 'secondary',
-      return: 'outline',
-      transfer: 'default',
-      adjustment: 'destructive',
+      purchase: 'default',
+      return: 'secondary',
+      transfer: 'outline',
+      surplus: 'default',
+      other: 'destructive',
     };
-    return variants[type] || 'default';
+    return variants[reason] || 'default';
   };
 
   if (error) {
@@ -121,6 +113,10 @@ export default function InboundRecordsPage() {
           </div>
         </div>
 
+        <Button onClick={() => router.push('/inventory/inbound/create')}>
+          <Plus className="mr-2 h-4 w-4" />
+          产品入库
+        </Button>
       </div>
 
       {/* 统计卡片 */}
@@ -132,9 +128,7 @@ export default function InboundRecordsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {inboundRecords.filter((record: InboundRecord) =>
-                new Date(record.createdAt).toDateString() === new Date().toDateString()
-              ).length}
+              {stats?.todayCount || 0}
             </div>
             <p className="text-xs text-muted-foreground">笔入库记录</p>
           </CardContent>
@@ -146,12 +140,7 @@ export default function InboundRecordsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {inboundRecords.filter(record => {
-                const recordDate = new Date(record.createdAt);
-                const now = new Date();
-                return recordDate.getMonth() === now.getMonth() &&
-                       recordDate.getFullYear() === now.getFullYear();
-              }).length}
+              {stats?.monthCount || 0}
             </div>
             <p className="text-xs text-muted-foreground">笔入库记录</p>
           </CardContent>
@@ -163,7 +152,7 @@ export default function InboundRecordsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {inboundRecords.reduce((sum, record) => sum + record.quantity, 0)}
+              {stats?.totalQuantity || 0}
             </div>
             <p className="text-xs text-muted-foreground">件商品</p>
           </CardContent>
@@ -215,17 +204,17 @@ export default function InboundRecordsPage() {
                             <Package className="h-4 w-4 text-muted-foreground" />
                             <div>
                               <div className="font-medium">
-                                {record.product?.name || '-'}
+                                {record.productName || '-'}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                {record.product?.code || '-'}
+                                编码: {record.productCode || '-'}
                               </div>
                             </div>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getOperationTypeVariant(record.type)}>
-                            {getOperationTypeLabel(record.type)}
+                          <Badge variant={getOperationTypeVariant(record.reason)}>
+                            {getOperationTypeLabel(record.reason)}
                           </Badge>
                         </TableCell>
                         <TableCell className="font-medium">
@@ -264,11 +253,11 @@ export default function InboundRecordsPage() {
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium">
-                              {record.product?.name || '-'}
+                              {record.productName || '-'}
                             </span>
                           </div>
-                          <Badge variant={getOperationTypeVariant(record.type)}>
-                            {getOperationTypeLabel(record.type)}
+                          <Badge variant={getOperationTypeVariant(record.reason)}>
+                            {getOperationTypeLabel(record.reason)}
                           </Badge>
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm">
@@ -278,7 +267,7 @@ export default function InboundRecordsPage() {
                           </div>
                           <div>
                             <span className="text-muted-foreground">操作人：</span>
-                            <span>{record.user?.name || '-'}</span>
+                            <span>{record.userName || '-'}</span>
                           </div>
                         </div>
                         <div className="text-sm">
