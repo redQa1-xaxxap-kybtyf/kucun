@@ -1,6 +1,5 @@
 import { getServerSession } from 'next-auth';
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -64,13 +63,11 @@ export async function GET(request: NextRequest) {
       productionDateStart,
       productionDateEnd,
       lowStock,
-      hasStock,
-      groupByVariant,
-      includeVariants
+      hasStock
     } = validationResult.data;
 
     // 构建查询条件
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (search) {
       where.OR = [
@@ -86,7 +83,6 @@ export async function GET(request: NextRequest) {
     }
 
 
-
     if (batchNumber) {
       where.batchNumber = batchNumber;
     }
@@ -98,10 +94,10 @@ export async function GET(request: NextRequest) {
     if (productionDateStart || productionDateEnd) {
       where.productionDate = {};
       if (productionDateStart) {
-        where.productionDate.gte = productionDateStart;
+        (where.productionDate as Record<string, unknown>).gte = productionDateStart;
       }
       if (productionDateEnd) {
-        where.productionDate.lte = productionDateEnd;
+        (where.productionDate as Record<string, unknown>).lte = productionDateEnd;
       }
     }
 
@@ -122,6 +118,7 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           productId: true,
+
           productionDate: true,
           batchNumber: true,
           quantity: true,
@@ -140,6 +137,7 @@ export async function GET(request: NextRequest) {
               status: true,
             },
           },
+          // 变体功能已移除
         },
         orderBy: { [sortBy as string]: sortOrder },
         skip: (page - 1) * limit,
@@ -327,17 +325,23 @@ export async function POST(request: NextRequest) {
     });
 
     // 转换数据格式
-    const formattedInventory = {
-      id: updatedInventory!.id,
-      productId: updatedInventory!.productId,
+    if (!updatedInventory) {
+      return NextResponse.json(
+        { success: false, error: '获取更新后的库存信息失败' },
+        { status: 500 }
+      );
+    }
 
-      productionDate: updatedInventory!.productionDate,
-      quantity: updatedInventory!.quantity,
-      reservedQuantity: updatedInventory!.reservedQuantity,
+    const formattedInventory = {
+      id: updatedInventory.id,
+      productId: updatedInventory.productId,
+      productionDate: updatedInventory.productionDate,
+      quantity: updatedInventory.quantity,
+      reservedQuantity: updatedInventory.reservedQuantity,
       availableQuantity:
-        updatedInventory!.quantity - updatedInventory!.reservedQuantity,
-      product: updatedInventory!.product,
-      updatedAt: updatedInventory!.updatedAt,
+        updatedInventory.quantity - updatedInventory.reservedQuantity,
+      product: updatedInventory.product,
+      updatedAt: updatedInventory.updatedAt,
     };
 
     return NextResponse.json({

@@ -18,7 +18,6 @@ module.exports = {
   },
   extends: [
     'next/core-web-vitals',
-    '@typescript-eslint/recommended',
     'prettier', // 必须放在最后，禁用与Prettier冲突的规则
   ],
   parser: '@typescript-eslint/parser',
@@ -41,7 +40,7 @@ module.exports = {
       },
     ],
     '@typescript-eslint/no-explicit-any': 'warn',
-    '@typescript-eslint/prefer-const': 'error',
+
     '@typescript-eslint/no-non-null-assertion': 'warn',
     '@typescript-eslint/consistent-type-imports': [
       'error',
