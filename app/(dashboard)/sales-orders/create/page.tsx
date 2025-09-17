@@ -1,8 +1,8 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Save, Loader2, Plus, Trash2 } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Loader2, Plus, Save, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
@@ -11,47 +11,48 @@ import { toast } from 'sonner';
 // UI Components
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
-import { getCustomers, customerQueryKeys } from '@/lib/api/customers';
+import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import type {
-  CreateSalesOrderData } from '@/lib/schemas/sales-order';
+    CreateSalesOrderData
+} from '@/lib/schemas/sales-order';
 import {
-  CreateSalesOrderSchema
+    CreateSalesOrderSchema
 } from '@/lib/schemas/sales-order';
 
 /**
@@ -90,12 +91,20 @@ export default function CreateSalesOrderPage() {
   const createMutation = useMutation({
     mutationFn: createSalesOrder,
     onSuccess: data => {
-      toast.success('销售订单创建成功');
+      toast({
+        title: '创建成功',
+        description: '销售订单创建成功',
+        variant: 'success',
+      });
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
       router.push(`/sales-orders/${data.id}`);
     },
     onError: error => {
-      toast.error(error instanceof Error ? error.message : '创建失败');
+      toast({
+        title: '创建失败',
+        description: error instanceof Error ? error.message : '创建失败',
+        variant: 'destructive',
+      });
     },
   });
 

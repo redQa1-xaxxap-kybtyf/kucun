@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
     Edit,
     Eye,
+    FolderTree,
     MoreHorizontal,
     Plus,
     Search,
@@ -229,10 +230,19 @@ function ProductsPage() {
           <h1 className="text-3xl font-bold tracking-tight">产品管理</h1>
           <p className="text-muted-foreground">管理所有产品的基本信息和规格</p>
         </div>
-        <Button onClick={() => router.push('/products/create')}>
-          <Plus className="mr-2 h-4 w-4" />
-          新建产品
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => router.push('/categories')}
+          >
+            <FolderTree className="mr-2 h-4 w-4" />
+            分类管理
+          </Button>
+          <Button onClick={() => router.push('/products/create')}>
+            <Plus className="mr-2 h-4 w-4" />
+            新建产品
+          </Button>
+        </div>
       </div>
 
       {/* 搜索和筛选 */}

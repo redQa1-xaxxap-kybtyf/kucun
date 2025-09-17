@@ -16,7 +16,7 @@ export interface Category {
   status: 'active' | 'inactive';
   createdAt: string;
   updatedAt: string;
-  
+
   // 关联数据
   parent?: Category;
   children?: Category[];
@@ -37,7 +37,6 @@ export interface CategoryQueryParams {
 // 创建分类数据
 export interface CreateCategoryData {
   name: string;
-  code?: string;
   description?: string;
   parentId?: string;
   sortOrder?: number;
@@ -56,7 +55,7 @@ export async function getCategories(
   params: CategoryQueryParams = {}
 ): Promise<PaginatedResponse<Category>> {
   const searchParams = new URLSearchParams();
-  
+
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       searchParams.append(key, String(value));
@@ -64,7 +63,7 @@ export async function getCategories(
   });
 
   const response = await fetch(`/api/categories?${searchParams.toString()}`);
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
@@ -78,7 +77,7 @@ export async function getCategories(
  */
 export async function getCategory(id: string): Promise<ApiResponse<Category>> {
   const response = await fetch(`/api/categories/${id}`);
-  
+
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
     throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
@@ -90,7 +89,13 @@ export async function getCategory(id: string): Promise<ApiResponse<Category>> {
 /**
  * 创建分类
  */
-export async function createCategory(data: CreateCategoryData): Promise<ApiResponse<Category>> {
+export async function createCategory(data: {
+  name: string;
+  code?: string;
+  description?: string;
+  parentId?: string;
+  sortOrder?: number;
+}): Promise<ApiResponse<Category>> {
   const response = await fetch('/api/categories', {
     method: 'POST',
     headers: {
@@ -110,9 +115,16 @@ export async function createCategory(data: CreateCategoryData): Promise<ApiRespo
 /**
  * 更新分类
  */
-export async function updateCategory(data: UpdateCategoryData): Promise<ApiResponse<Category>> {
+export async function updateCategory(data: {
+  id: string;
+  name?: string;
+  code?: string;
+  description?: string;
+  parentId?: string;
+  sortOrder?: number;
+}): Promise<ApiResponse<Category>> {
   const { id, ...updateData } = data;
-  
+
   const response = await fetch(`/api/categories/${id}`, {
     method: 'PUT',
     headers: {
@@ -135,6 +147,29 @@ export async function updateCategory(data: UpdateCategoryData): Promise<ApiRespo
 export async function deleteCategory(id: string): Promise<ApiResponse<void>> {
   const response = await fetch(`/api/categories/${id}`, {
     method: 'DELETE',
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * 更新分类状态
+ */
+export async function updateCategoryStatus(
+  id: string,
+  status: 'active' | 'inactive'
+): Promise<ApiResponse<Category>> {
+  const response = await fetch(`/api/categories/${id}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ status }),
   });
 
   if (!response.ok) {

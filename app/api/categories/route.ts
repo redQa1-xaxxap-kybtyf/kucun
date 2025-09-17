@@ -9,6 +9,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { CategoryQuerySchema, CreateCategorySchema } from '@/lib/schemas/category';
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
+import { generateCategoryCode } from '@/lib/utils/category-code-generator';
 
 // 分类类型定义
 interface Category {
@@ -168,13 +169,13 @@ export async function POST(request: NextRequest) {
     // 生成分类编码（如果未提供）
     let code = validatedData.code;
     if (!code) {
-      const baseCode = validatedData.name
-        .replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '')
-        .substring(0, 20);
+      // 使用新的编码生成器
+      const baseCode = generateCategoryCode(validatedData.name);
 
       let counter = 1;
       code = baseCode;
 
+      // 确保编码唯一性
       while (await prisma.category.findUnique({ where: { code } })) {
         code = `${baseCode}_${counter}`;
         counter++;

@@ -16,7 +16,6 @@ export const CreateCategorySchema = z.object({
 
   code: z
     .string()
-    .min(1, '分类编码不能为空')
     .max(50, '分类编码不能超过50个字符')
     .regex(/^[A-Za-z0-9_-]+$/, '分类编码只能包含字母、数字、下划线和短横线')
     .optional(),
@@ -113,17 +112,17 @@ export function generateCategoryCodeSuggestion(name: string): string {
  */
 export function validateCategoryDepth(categories: any[], parentId: string | undefined, maxDepth: number = 3): boolean {
   if (!parentId) return true;
-  
+
   let depth = 1;
   let currentParentId = parentId;
-  
+
   while (currentParentId && depth < maxDepth) {
     const parent = categories.find(cat => cat.id === currentParentId);
     if (!parent) break;
     currentParentId = parent.parentId;
     depth++;
   }
-  
+
   return depth <= maxDepth;
 }
 
@@ -132,21 +131,21 @@ export function validateCategoryDepth(categories: any[], parentId: string | unde
  */
 export function checkCircularReference(categories: any[], categoryId: string, parentId: string): boolean {
   if (categoryId === parentId) return true;
-  
+
   let currentParentId = parentId;
   const visited = new Set<string>();
-  
+
   while (currentParentId) {
     if (visited.has(currentParentId) || currentParentId === categoryId) {
       return true; // 发现循环引用
     }
-    
+
     visited.add(currentParentId);
     const parent = categories.find(cat => cat.id === currentParentId);
     if (!parent) break;
     currentParentId = parent.parentId;
   }
-  
+
   return false;
 }
 
@@ -156,16 +155,16 @@ export function checkCircularReference(categories: any[], categoryId: string, pa
 export function buildCategoryTree(categories: any[]): any[] {
   const categoryMap = new Map();
   const rootCategories: any[] = [];
-  
+
   // 创建映射
   categories.forEach(category => {
     categoryMap.set(category.id, { ...category, children: [] });
   });
-  
+
   // 构建树结构
   categories.forEach(category => {
     const categoryNode = categoryMap.get(category.id);
-    
+
     if (category.parentId) {
       const parent = categoryMap.get(category.parentId);
       if (parent) {
@@ -177,7 +176,7 @@ export function buildCategoryTree(categories: any[]): any[] {
       rootCategories.push(categoryNode);
     }
   });
-  
+
   return rootCategories;
 }
 
@@ -186,14 +185,14 @@ export function buildCategoryTree(categories: any[]): any[] {
  */
 export function flattenCategoryTree(tree: any[], level: number = 0): any[] {
   const result: any[] = [];
-  
+
   tree.forEach(category => {
     result.push({ ...category, level });
     if (category.children && category.children.length > 0) {
       result.push(...flattenCategoryTree(category.children, level + 1));
     }
   });
-  
+
   return result;
 }
 
@@ -203,14 +202,14 @@ export function flattenCategoryTree(tree: any[], level: number = 0): any[] {
 export function getCategoryPath(categories: any[], categoryId: string): string[] {
   const path: string[] = [];
   let currentId = categoryId;
-  
+
   while (currentId) {
     const category = categories.find(cat => cat.id === currentId);
     if (!category) break;
-    
+
     path.unshift(category.name);
     currentId = category.parentId;
   }
-  
+
   return path;
 }

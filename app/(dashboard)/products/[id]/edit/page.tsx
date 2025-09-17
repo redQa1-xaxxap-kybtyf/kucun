@@ -130,7 +130,11 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
   const updateProductMutation = useMutation({
     mutationFn: (data: UpdateProductData) => updateProduct(productId, data),
     onSuccess: (updatedProduct) => {
-      toast.success('产品更新成功');
+      toast({
+        title: '更新成功',
+        description: '产品更新成功',
+        variant: 'success',
+      });
 
       // 失效相关查询缓存
       queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
@@ -141,7 +145,11 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
     },
     onError: (error: any) => {
       console.error('更新产品失败:', error);
-      toast.error(error?.message || '更新产品失败，请重试');
+      toast({
+        title: '更新失败',
+        description: error?.message || '更新产品失败，请重试',
+        variant: 'destructive',
+      });
     },
   });
 

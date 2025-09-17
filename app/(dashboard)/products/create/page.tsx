@@ -2,37 +2,36 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 // UI Components
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -41,8 +40,8 @@ import { createProduct, productQueryKeys } from '@/lib/api/products';
 import type { CreateProductData } from '@/lib/schemas/product';
 import { CreateProductSchema } from '@/lib/schemas/product';
 import {
-  PRODUCT_UNIT_OPTIONS,
-  PRODUCT_STATUS_OPTIONS,
+    PRODUCT_STATUS_OPTIONS,
+    PRODUCT_UNIT_OPTIONS,
 } from '@/lib/types/product';
 
 /**
@@ -72,12 +71,20 @@ export default function CreateProductPage() {
   const createMutation = useMutation({
     mutationFn: createProduct,
     onSuccess: data => {
-      toast.success('产品创建成功');
+      toast({
+        title: '创建成功',
+        description: '产品创建成功',
+        variant: 'success',
+      });
       queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() });
       router.push(`/products/${data.id}`);
     },
     onError: error => {
-      toast.error(error instanceof Error ? error.message : '创建失败');
+      toast({
+        title: '创建失败',
+        description: error instanceof Error ? error.message : '创建失败',
+        variant: 'destructive',
+      });
     },
   });
 

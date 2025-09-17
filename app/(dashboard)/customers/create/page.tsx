@@ -2,29 +2,28 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 // UI Components
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -32,9 +31,10 @@ import { Textarea } from '@/components/ui/textarea';
 // API and Types
 import { createCustomer, customerQueryKeys } from '@/lib/api/customers';
 import type {
-  CreateCustomerData } from '@/lib/schemas/customer';
+    CreateCustomerData
+} from '@/lib/schemas/customer';
 import {
-  CreateCustomerSchema
+    CreateCustomerSchema
 } from '@/lib/schemas/customer';
 
 /**
@@ -60,12 +60,20 @@ export default function CreateCustomerPage() {
   const createMutation = useMutation({
     mutationFn: createCustomer,
     onSuccess: data => {
-      toast.success('客户创建成功');
+      toast({
+        title: '创建成功',
+        description: '客户创建成功',
+        variant: 'success',
+      });
       queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
       router.push(`/customers/${data.id}`);
     },
     onError: error => {
-      toast.error(error instanceof Error ? error.message : '创建失败');
+      toast({
+        title: '创建失败',
+        description: error instanceof Error ? error.message : '创建失败',
+        variant: 'destructive',
+      });
     },
   });
 

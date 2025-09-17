@@ -61,6 +61,32 @@ model Customer {
   @@map("customers")
 }
 
+// 分类表 - 产品分类管理，支持层级结构
+model Category {
+  id          String   @id @default(uuid())
+  name        String
+  code        String   @unique
+  description String?
+  parentId    String?  @map("parent_id")
+  sortOrder   Int      @default(0) @map("sort_order")
+  status      String   @default("active") // active, inactive
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 自关联：分类层级关系
+  parent   Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children Category[] @relation("CategoryHierarchy")
+
+  // 关联关系
+  products Product[]
+
+  @@index([name])
+  @@index([code])
+  @@index([parentId], map: "idx_categories_parent")
+  @@index([status])
+  @@map("categories")
+}
+
 // 产品表 - 产品基础信息管理
 model Product {
   id             String   @id @default(uuid())
@@ -71,17 +97,20 @@ model Product {
   unit           String   @default("piece") // piece, sheet, strip
   piecesPerUnit  Int      @default(1) @map("pieces_per_unit")
   weight         Float?
+  categoryId     String?  @map("category_id") // 产品分类ID
   status         String   @default("active") // active, inactive
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // 关联关系
+  category         Category?        @relation(fields: [categoryId], references: [id])
   variants         ProductVariant[]
   inventory        Inventory[]
   salesOrderItems  SalesOrderItem[]
   inboundRecords   InboundRecord[]
 
   @@index([code])
+  @@index([categoryId], map: "idx_products_category")
   @@index([status])
   @@map("products")
 }
