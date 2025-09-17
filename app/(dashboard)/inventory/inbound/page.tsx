@@ -31,6 +31,15 @@ import {
 // API and Types
 import { useInboundRecords, useInboundStats } from '@/lib/api/inbound';
 
+// 入库原因标签映射
+const INBOUND_REASON_LABELS = {
+  purchase: '采购入库',
+  return: '退货入库',
+  transfer: '调拨入库',
+  surplus: '盘盈入库',
+  other: '其他',
+} as const;
+
 /**
  * 入库记录页面
  * 显示所有入库操作的历史记录
@@ -203,10 +212,10 @@ export default function InboundRecordsPage() {
                             <Package className="h-4 w-4 text-muted-foreground" />
                             <div>
                               <div className="font-medium">
-                                {record.productName || '-'}
+                                {record.product?.name || '-'}
                               </div>
                               <div className="text-sm text-muted-foreground">
-                                编码: {record.productCode || '-'}
+                                编码: {record.product?.code || '-'}
                               </div>
                             </div>
                           </div>
@@ -252,7 +261,7 @@ export default function InboundRecordsPage() {
                           <div className="flex items-center gap-2">
                             <Package className="h-4 w-4 text-muted-foreground" />
                             <span className="font-medium">
-                              {record.productName || '-'}
+                              {record.product?.name || '-'}
                             </span>
                           </div>
                           <Badge variant={getOperationTypeVariant(record.reason)}>
@@ -266,7 +275,7 @@ export default function InboundRecordsPage() {
                           </div>
                           <div>
                             <span className="text-muted-foreground">操作人：</span>
-                            <span>{record.userName || '-'}</span>
+                            <span>{record.user?.name || '-'}</span>
                           </div>
                         </div>
                         <div className="text-sm">

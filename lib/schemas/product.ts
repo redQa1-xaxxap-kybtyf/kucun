@@ -54,6 +54,8 @@ export const CreateProductSchema = z.object({
 
   status: ProductStatusEnum.default('active'),
 
+  categoryId: z.string().optional(),
+
   specifications: z.record(z.any()).optional(),
 });
 
@@ -133,6 +135,7 @@ export const productFormDefaults: CreateProductData = {
   piecesPerUnit: undefined,
   weight: undefined,
   status: 'active',
+  categoryId: undefined,
   specifications: {},
 };
 
