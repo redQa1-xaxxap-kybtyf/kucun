@@ -20,14 +20,19 @@ export type OutboundType =
 export interface Inventory {
   id: string;
   productId: string;
-  colorCode?: string;
+  variantId?: string; // 产品变体ID
+  colorCode?: string; // 保留字段，向后兼容
   productionDate?: string; // ISO日期字符串
+  batchNumber?: string; // 生产批次号
   quantity: number;
   reservedQuantity: number; // 预留数量
+  unitCost?: number; // 单位成本
+  location?: string; // 存储位置
   updatedAt: string;
 
   // 关联数据（可选，根据查询需要包含）
   product?: Product;
+  variant?: import('./product').ProductVariant;
 }
 
 // 入库记录类型
@@ -81,11 +86,16 @@ export interface InventoryQueryParams {
   sortBy?: 'productName' | 'quantity' | 'reservedQuantity' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
   productId?: string;
+  variantId?: string; // 产品变体ID筛选
   colorCode?: string;
-  lowStock?: boolean;
-  hasStock?: boolean;
+  batchNumber?: string; // 批次号筛选
   productionDateStart?: string;
   productionDateEnd?: string;
+  location?: string; // 存储位置筛选
+  lowStock?: boolean;
+  hasStock?: boolean;
+  groupByVariant?: boolean; // 是否按变体分组显示
+  includeVariants?: boolean; // 是否包含变体信息
 }
 
 export interface InboundRecordQueryParams {

@@ -17,6 +17,27 @@ export interface Product {
   totalInventory?: number;
   reservedInventory?: number;
   availableInventory?: number;
+  // 产品变体信息
+  variants?: ProductVariant[];
+}
+
+// 产品变体类型定义
+export interface ProductVariant {
+  id: string;
+  productId: string;
+  colorCode: string;
+  colorName?: string;
+  colorValue?: string;
+  sku: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  updatedAt: string;
+  // 关联数据
+  product?: Product;
+  // 库存汇总信息
+  totalInventory?: number;
+  reservedInventory?: number;
+  availableInventory?: number;
 }
 
 export interface ProductCreateInput {
@@ -27,6 +48,26 @@ export interface ProductCreateInput {
   unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
   piecesPerUnit?: number;
   weight?: number;
+  // 初始变体信息（可选）
+  variants?: ProductVariantCreateInput[];
+}
+
+// 产品变体创建输入
+export interface ProductVariantCreateInput {
+  colorCode: string;
+  colorName?: string;
+  colorValue?: string;
+  sku?: string; // 如果不提供，将自动生成
+}
+
+// 产品变体更新输入
+export interface ProductVariantUpdateInput {
+  id: string;
+  colorCode?: string;
+  colorName?: string;
+  colorValue?: string;
+  sku?: string;
+  status?: 'active' | 'inactive';
 }
 
 export interface ProductUpdateInput {

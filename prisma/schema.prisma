@@ -76,6 +76,7 @@ model Product {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // 关联关系
+  variants         ProductVariant[]
   inventory        Inventory[]
   salesOrderItems  SalesOrderItem[]
   inboundRecords   InboundRecord[]
@@ -83,6 +84,29 @@ model Product {
   @@index([code])
   @@index([status])
   @@map("products")
+}
+
+// 产品变体表 - 管理产品的色号变体
+model ProductVariant {
+  id          String   @id @default(uuid())
+  productId   String   @map("product_id")
+  colorCode   String   @map("color_code")
+  colorName   String?  @map("color_name") // 色号的中文名称
+  colorValue  String?  @map("color_value") // 色号对应的颜色值
+  sku         String   @unique // 产品编码+色号的唯一SKU
+  status      String   @default("active") // active, inactive
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory   Inventory[]
+
+  @@unique([productId, colorCode], map: "uk_product_color")
+  @@index([productId])
+  @@index([colorCode])
+  @@index([sku])
+  @@map("product_variants")
 }
 
 // 销售单表 - 销售订单主表
@@ -131,23 +155,30 @@ model SalesOrderItem {
   @@map("sales_order_items")
 }
 
-// 库存表 - 产品库存管理，支持色号和生产日期维度
+// 库存表 - 产品库存管理，支持变体和生产批次维度
 model Inventory {
   id               String    @id @default(uuid())
   productId        String    @map("product_id")
-  colorCode        String?   @map("color_code")
+  variantId        String?   @map("variant_id") // 产品变体ID（可选，兼容无色号产品）
+  colorCode        String?   @map("color_code") // 保留字段，用于向后兼容
   productionDate   DateTime? @map("production_date")
+  batchNumber      String?   @map("batch_number") // 生产批次号
   quantity         Int       @default(0)
   reservedQuantity Int       @default(0) @map("reserved_quantity") // 预留数量
+  unitCost         Float?    @map("unit_cost") // 单位成本
+  location         String?   // 存储位置
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
   // 关联关系
   product Product @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
 
-  @@unique([productId, colorCode, productionDate], map: "uk_inventory")
+  @@unique([productId, variantId, productionDate, batchNumber], map: "uk_inventory_variant_batch")
   @@index([productId], map: "idx_inventory_product")
+  @@index([variantId], map: "idx_inventory_variant")
   @@index([quantity], map: "idx_inventory_quantity")
-  @@index([productId, colorCode], map: "idx_inventory_product_color")
+  @@index([productionDate], map: "idx_inventory_production_date")
+  @@index([batchNumber], map: "idx_inventory_batch")
   @@map("inventory")
 }
 
