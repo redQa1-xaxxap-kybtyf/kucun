@@ -4,13 +4,8 @@
 import { z } from 'zod';
 
 import type {
-  ReturnOrderStatus,
-  ReturnOrderType } from '@/lib/types/return-order';
-import {
-  ReturnProcessType,
-  RETURN_ORDER_STATUS_LABELS,
-  RETURN_ORDER_TYPE_LABELS,
-  RETURN_PROCESS_TYPE_LABELS,
+    ReturnOrderStatus,
+    ReturnOrderType
 } from '@/lib/types/return-order';
 
 // 退货订单明细验证规则
@@ -37,7 +32,7 @@ export const returnOrderItemSchema = z
     }),
   })
   .refine(
-    data => 
+    data =>
       // 退货数量不能超过原始数量
        data.returnQuantity <= data.originalQuantity
     ,
@@ -102,11 +97,16 @@ export const createReturnOrderSchema = z
   );
 
 // 退货订单更新验证规则
-export const updateReturnOrderSchema = createReturnOrderSchema
-  .partial()
-  .extend({
-    id: z.string().min(1, '退货订单ID不能为空'),
-  });
+export const updateReturnOrderSchema = z.object({
+  id: z.string().min(1, '退货订单ID不能为空'),
+  salesOrderId: z.string().optional(),
+  customerId: z.string().optional(),
+  type: z.enum(['quality_issue', 'wrong_product', 'customer_change', 'damage_in_transit', 'other']).optional(),
+  processType: z.enum(['refund', 'exchange', 'repair']).optional(),
+  reason: z.string().optional(),
+  remarks: z.string().optional(),
+  items: z.array(returnOrderItemSchema).optional(),
+});
 
 // 退货状态更新验证规则
 export const updateReturnStatusSchema = z.object({

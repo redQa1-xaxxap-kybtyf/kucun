@@ -374,11 +374,10 @@ export function InventoryOperationForm({
                 {/* 产品选择 */}
                 <div className={mode === 'adjust' ? 'md:col-span-2' : ''}>
                   <ProductSelector
-
-                    name="productId"
                     label="选择产品 *"
                     placeholder="搜索产品..."
                     disabled={isLoading}
+                    onValueChange={() => {}}
                   />
                 </div>
               </div>

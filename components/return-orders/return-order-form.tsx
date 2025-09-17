@@ -181,7 +181,7 @@ export function ReturnOrderForm({
 
   // 计算总金额
   const items = form.watch('items');
-  const totalAmount = calculateReturnItemsTotal(items);
+  const totalAmount = calculateReturnItemsTotal(items as any || []);
 
   // 提交表单
   const onSubmit = (

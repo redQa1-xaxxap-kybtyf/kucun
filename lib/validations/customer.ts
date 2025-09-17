@@ -1,11 +1,7 @@
 import { z } from 'zod';
 
 import type {
-  CustomerExtendedInfo } from '@/lib/types/customer';
-import {
-  CustomerCreateInput,
-  CustomerUpdateInput,
-  CustomerQueryParams
+    CustomerExtendedInfo
 } from '@/lib/types/customer';
 
 // 基础验证规则
@@ -262,7 +258,9 @@ export const generateCustomerPath = (
 
     if (!current.parentCustomerId) break;
 
-    current = allCustomers.find(c => c.id === current.parentCustomerId) || null;
+    const parent = allCustomers.find(c => c.id === current.parentCustomerId);
+    if (!parent) break;
+    current = parent;
   }
 
   return path;

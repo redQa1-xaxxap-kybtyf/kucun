@@ -1,28 +1,26 @@
 'use client';
 
-import { Plus, Minus, Palette, Ruler, Layers } from 'lucide-react';
+import { Layers, Minus, Palette, Plus, Ruler } from 'lucide-react';
 import type { Control } from 'react-hook-form';
 import { useFieldArray } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { TileSpecifications } from '@/lib/types/product';
 
 interface SpecificationsEditorProps {
   control: Control<any>;
@@ -260,7 +258,7 @@ function SpecificationPreview({
                   {labels[key] || key}:
                 </span>
                 <span className="font-medium">
-                  {key === 'thickness' ? `${value}mm` : value}
+                  {key === 'thickness' ? `${value}mm` : String(value)}
                 </span>
               </div>
             );

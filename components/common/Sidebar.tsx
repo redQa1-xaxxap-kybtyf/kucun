@@ -1,22 +1,22 @@
 'use client';
 
 import {
-  ChevronLeft,
-  ChevronRight,
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  ShoppingBag,
-  RotateCcw,
-  Users,
-  CreditCard,
-  Warehouse,
-  Settings,
-  HelpCircle,
+    ChevronLeft,
+    ChevronRight,
+    CreditCard,
+    HelpCircle,
+    LayoutDashboard,
+    Package,
+    RotateCcw,
+    Settings,
+    ShoppingBag,
+    ShoppingCart,
+    Users,
+    Warehouse,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -235,7 +235,9 @@ export function Sidebar({ state, className }: SidebarProps) {
               isActive={isPathActive(item.href)}
               isCollapsed={state.isCollapsed}
               isFocused={focusedIndex === index}
-              ref={el => (navItemsRef.current[index] = el)}
+              ref={el => {
+                navItemsRef.current[index] = el;
+              }}
               tabIndex={focusedIndex === index ? 0 : -1}
             />
           ))}
@@ -256,7 +258,9 @@ export function Sidebar({ state, className }: SidebarProps) {
                     isActive={isPathActive(item.href)}
                     isCollapsed={state.isCollapsed}
                     isFocused={focusedIndex === globalIndex}
-                    ref={el => (navItemsRef.current[globalIndex] = el)}
+                    ref={el => {
+                      navItemsRef.current[globalIndex] = el;
+                    }}
                     tabIndex={focusedIndex === globalIndex ? 0 : -1}
                   />
                 );

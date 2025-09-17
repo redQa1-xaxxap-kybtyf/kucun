@@ -58,10 +58,6 @@ import {
     PRODUCT_STATUS_LABELS,
     PRODUCT_UNIT_LABELS
 } from '@/lib/types/product';
-import type {
-    ProductCreateFormData,
-    ProductUpdateFormData
-} from '@/lib/validations/product';
 import {
     productCreateDefaults,
     productCreateSchema,
@@ -89,7 +85,7 @@ export function ProductForm({
   const isEdit = mode === 'edit';
   const schema = isEdit ? productUpdateSchema : productCreateSchema;
 
-  const form = useForm<ProductCreateFormData | ProductUpdateFormData>({
+  const form = useForm({
     resolver: zodResolver(schema),
     defaultValues:
       isEdit && initialData
@@ -151,14 +147,17 @@ export function ProductForm({
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   // 表单提交
-  const onSubmit = async (
-    data: ProductCreateFormData | ProductUpdateFormData
-  ) => {
+  const onSubmit = async (data: any) => {
     setSubmitError('');
 
     try {
       if (isEdit) {
-        await updateMutation.mutateAsync(data as ProductUpdateFormData);
+        // 处理weight字段的类型转换
+        const updateData = {
+          ...data,
+          weight: data.weight === '' ? undefined : (typeof data.weight === 'string' ? Number(data.weight) : data.weight)
+        };
+        await updateMutation.mutateAsync(updateData as any);
       } else {
         await createMutation.mutateAsync(data as ProductCreateInput);
       }

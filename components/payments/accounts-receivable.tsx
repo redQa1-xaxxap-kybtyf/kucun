@@ -4,24 +4,18 @@
 'use client';
 
 import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import {
-  Search,
-  Filter,
-  MoreHorizontal,
-  Eye,
-  DollarSign,
-  Calendar,
-  User,
-  AlertTriangle,
-  TrendingUp,
-  TrendingDown,
-  Clock,
-  CheckCircle,
-  XCircle,
-  RefreshCw,
-  Download,
-  Plus,
+    AlertTriangle,
+    CheckCircle,
+    Clock,
+    DollarSign,
+    Eye,
+    MoreHorizontal,
+    Plus,
+    RefreshCw,
+    Search,
+    TrendingUp,
+    XCircle
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
@@ -29,36 +23,33 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent
 } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { MobileDataTable } from '@/components/ui/mobile-data-table';
 import { Progress } from '@/components/ui/progress';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { paymentUtils } from '@/lib/api/payments';
 import type {
-  AccountsReceivable,
-  AccountsReceivableQuery,
-  PaymentStatistics,
+    AccountsReceivable,
+    AccountsReceivableQuery,
+    PaymentStatistics,
 } from '@/lib/types/payment';
 import { cn } from '@/lib/utils';
 
@@ -128,7 +119,7 @@ const AccountsReceivableComponent = React.forwardRef<
 
     // 处理排序
     const handleSort = (sortBy: string, sortOrder: 'asc' | 'desc') => {
-      onQueryChange({ sortBy, sortOrder });
+      onQueryChange({ sortBy: sortBy as any, sortOrder });
     };
 
     // 获取付款状态配置

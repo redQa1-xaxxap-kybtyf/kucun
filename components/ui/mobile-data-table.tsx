@@ -66,6 +66,12 @@ export interface MobileDataTableProps<T> {
   stickyHeader?: boolean;
   maxHeight?: string | number;
   total?: number; // 添加total属性支持
+  page?: number; // 添加page属性支持
+  pageSize?: number; // 添加pageSize属性支持
+  onPageChange?: (page: number) => void; // 添加onPageChange属性支持
+  onPageSizeChange?: (pageSize: number) => void; // 添加onPageSizeChange属性支持
+  onSort?: (sortBy: string, sortOrder: 'asc' | 'desc') => void; // 添加onSort属性支持
+  renderMobileCard?: (item: T) => React.ReactNode; // 添加renderMobileCard属性支持
 }
 
 function MobileDataTable<T extends Record<string, any>>({

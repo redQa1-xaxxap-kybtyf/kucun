@@ -4,7 +4,7 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { useCallback, useEffect, useRef, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /**
  * 性能指标类型
@@ -79,7 +79,9 @@ export class LRUCache<K, V> {
     // 如果缓存已满，删除最少使用的项
     if (this.cache.size >= this.maxSize) {
       const firstKey = this.cache.keys().next().value;
-      this.cache.delete(firstKey);
+      if (firstKey !== undefined) {
+        this.cache.delete(firstKey);
+      }
     }
 
     // 添加新项

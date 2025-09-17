@@ -2,16 +2,13 @@
 // 使用 TanStack Query 进行服务器状态管理
 
 import type {
-  PurchaseOrderQueryParams,
-  PurchaseOrderResponse,
-  PurchaseOrderListResponse,
-  PurchaseOrderCreateInput,
-  PurchaseOrderUpdateInput,
-  PurchaseOrderStatsResponse,
-  Supplier } from '@/lib/types/purchase-order';
-import {
-  PurchaseOrder,
-  PurchaseOrderStats
+    PurchaseOrderCreateInput,
+    PurchaseOrderListResponse,
+    PurchaseOrderQueryParams,
+    PurchaseOrderResponse,
+    PurchaseOrderStatsResponse,
+    PurchaseOrderUpdateInput,
+    Supplier
 } from '@/lib/types/purchase-order';
 
 // API 基础配置
@@ -298,7 +295,7 @@ export async function getProductPurchaseHistory(
   searchParams.append('productId', productId);
 
   Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined && value !== null && value !== '') {
+    if (value !== undefined && value !== null && String(value) !== '') {
       searchParams.append(key, String(value));
     }
   });

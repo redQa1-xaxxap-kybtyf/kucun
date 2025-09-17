@@ -26,6 +26,7 @@ async function createTestUser(data: {
   const user = await prisma.user.create({
     data: {
       email: data.email,
+      username: data.email.split('@')[0], // 从邮箱生成用户名
       name: data.name,
       passwordHash,
       role: data.role || 'sales',

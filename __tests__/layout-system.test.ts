@@ -39,7 +39,7 @@ describe('布局系统类型守卫测试', () => {
         id: 'test',
         title: '测试',
         href: '/test',
-        icon: jest.fn(),
+        icon: jest.fn() as any,
         badge: '5',
         disabled: false,
         requiredRoles: ['admin'],

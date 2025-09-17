@@ -30,6 +30,8 @@ interface ProductSelectorProps {
   showCode?: boolean;
   showSpecification?: boolean;
   filterStatus?: 'active' | 'inactive' | 'all';
+  label?: string;
+  onProductChange?: (productId: string) => void;
 }
 
 export function ProductSelector({
@@ -41,6 +43,8 @@ export function ProductSelector({
   showCode = true,
   showSpecification = true,
   filterStatus = 'active',
+  label,
+  onProductChange,
 }: ProductSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchValue, setSearchValue] = useState('');
@@ -64,15 +68,18 @@ export function ProductSelector({
 
   const handleSelect = useCallback((productId: string) => {
     onValueChange(productId);
+    onProductChange?.(productId);
     setOpen(false);
-  }, [onValueChange]);
+  }, [onValueChange, onProductChange]);
 
   const handleSearchChange = useCallback((search: string) => {
     setSearchValue(search);
   }, []);
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <div className="space-y-2">
+      {label && <label className="text-sm font-medium">{label}</label>}
+      <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"
@@ -161,6 +168,7 @@ export function ProductSelector({
         </Command>
       </PopoverContent>
     </Popover>
+    </div>
   );
 }
 

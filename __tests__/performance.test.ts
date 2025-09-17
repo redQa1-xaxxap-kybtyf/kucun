@@ -4,15 +4,15 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import {
-  LRUCache,
-  useDebounce,
-  useThrottle,
-  performanceUtils,
-  globalCache,
+    globalCache,
+    LRUCache,
+    performanceUtils,
+    useDebounce,
+    useThrottle,
 } from '@/lib/utils/performance';
-import { renderHook, act } from '@testing-library/react';
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { act, renderHook } from '@testing-library/react';
 
 describe('性能优化工具测试', () => {
   beforeEach(() => {
@@ -168,9 +168,9 @@ describe('性能优化工具测试', () => {
     it('应该测量函数执行时间', () => {
       // 在开发环境下测试
       const originalEnv = process.env.NODE_ENV;
-      process.env.NODE_ENV = 'development';
+      (process.env as any).NODE_ENV = 'development';
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
       const testFn = (x: number) => x * 2;
       const measuredFn = performanceUtils.measure(testFn, 'testFunction');
@@ -183,7 +183,7 @@ describe('性能优化工具测试', () => {
       );
 
       consoleSpy.mockRestore();
-      process.env.NODE_ENV = originalEnv;
+      (process.env as any).NODE_ENV = originalEnv;
     });
 
     it('应该检测慢设备', () => {

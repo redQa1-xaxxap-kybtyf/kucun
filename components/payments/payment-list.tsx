@@ -4,76 +4,52 @@
 'use client';
 
 import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import {
-  Search,
-  Filter,
-  MoreHorizontal,
-  Eye,
-  Edit,
-  Trash2,
-  Check,
-  X,
-  DollarSign,
-  Calendar,
-  User,
-  Building2,
-  Receipt,
-  AlertCircle,
-  RefreshCw,
-  Plus,
-  Download,
+    Check,
+    DollarSign,
+    Edit,
+    Eye,
+    MoreHorizontal,
+    RefreshCw,
+    Search,
+    Trash2,
+    X
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent
 } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { MobileDataTable } from '@/components/ui/mobile-data-table';
-import { MobileSearchBar } from '@/components/ui/mobile-search-bar';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { paymentUtils } from '@/lib/api/payments';
 import type {
-  PaymentRecordDetail,
-  PaymentRecordQuery,
-  PaymentMethod,
-  PaymentStatus,
+    PaymentRecordDetail,
+    PaymentRecordQuery
 } from '@/lib/types/payment';
 import {
-  DEFAULT_PAYMENT_METHODS,
-  DEFAULT_PAYMENT_STATUSES,
+    DEFAULT_PAYMENT_METHODS,
+    DEFAULT_PAYMENT_STATUSES,
 } from '@/lib/types/payment';
 import { cn } from '@/lib/utils';
 
@@ -144,7 +120,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
 
     // 处理排序
     const handleSort = (sortBy: string, sortOrder: 'asc' | 'desc') => {
-      onQueryChange({ sortBy, sortOrder });
+      onQueryChange({ sortBy: sortBy as any, sortOrder });
     };
 
     // 桌面端表格列定义

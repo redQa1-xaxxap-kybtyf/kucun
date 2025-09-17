@@ -169,6 +169,7 @@ export async function searchCustomers(
   options?: {
     limit?: number;
     includeInactive?: boolean;
+    excludeId?: string;
   }
 ): Promise<Customer[]> {
   const params = new URLSearchParams({
@@ -176,6 +177,10 @@ export async function searchCustomers(
     limit: (options?.limit || 10).toString(),
     includeInactive: (options?.includeInactive || false).toString(),
   });
+
+  if (options?.excludeId) {
+    params.append('excludeId', options.excludeId);
+  }
 
   const response = await fetch(`${API_BASE}/search?${params}`, {
     method: 'GET',

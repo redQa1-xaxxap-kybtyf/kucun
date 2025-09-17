@@ -22,7 +22,7 @@ const baseValidations = {
     .optional()
     .or(z.literal('')),
 
-  unit: z.enum(['piece', 'sheet', 'strip'], {
+  unit: z.enum(['piece', 'sheet', 'strip', 'box', 'square_meter'], {
     errorMap: () => ({ message: '请选择有效的计量单位' }),
   }),
 

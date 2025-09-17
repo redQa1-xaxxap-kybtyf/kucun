@@ -196,14 +196,16 @@ export async function getInventoryAlerts(): Promise<InventoryAlert[]> {
  */
 export async function checkInventoryAvailability(
   productId: string,
-  quantity: number
+  quantity: number,
+  colorCode?: string,
+  productionDate?: string
 ): Promise<{ available: boolean; currentStock: number; message?: string }> {
   const response = await fetch(`${API_BASE}/check-availability`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ productId, quantity }),
+    body: JSON.stringify({ productId, quantity, colorCode, productionDate }),
   });
 
   if (!response.ok) {

@@ -130,7 +130,7 @@ export function OrderItemsEditor({
               共{' '}
               {
                 fields.filter(
-                  field => !field._action || field._action !== 'delete'
+                  field => !(field as any)._action || (field as any)._action !== 'delete'
                 ).length
               }{' '}
               项
@@ -160,7 +160,7 @@ export function OrderItemsEditor({
             {/* 明细列表 */}
             <div className="space-y-4">
               {fields.map((field, index) => {
-                const isDeleted = field._action === 'delete';
+                const isDeleted = (field as any)._action === 'delete';
 
                 return (
                   <OrderItemRow
@@ -297,11 +297,10 @@ function OrderItemRow({
           {/* 产品选择 */}
           <div className="lg:col-span-4">
             <ProductSelector
-
-              name={`${name}.productId`}
               label="选择产品"
               placeholder="搜索产品..."
               disabled={disabled}
+              onValueChange={() => {}}
               onProductChange={handleProductChange}
             />
           </div>

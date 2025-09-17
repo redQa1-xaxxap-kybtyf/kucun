@@ -1,6 +1,6 @@
+import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -17,7 +17,19 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const todos = [];
+    const todos: Array<{
+      id: string;
+      title: string;
+      description: string;
+      priority: 'urgent' | 'high' | 'medium' | 'low';
+      type: string;
+      createdAt: Date | string;
+      dueDate?: Date;
+      url?: string;
+      relatedId?: string;
+      status?: string;
+      assignedTo?: string;
+    }> = [];
 
     // 1. 待确认的销售订单
     const pendingSalesOrders = await prisma.salesOrder.findMany({

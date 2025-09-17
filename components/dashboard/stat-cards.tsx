@@ -4,16 +4,16 @@
 'use client';
 
 import {
-  TrendingUp,
-  TrendingDown,
-  Minus,
-  DollarSign,
-  ShoppingCart,
-  Package,
-  Users,
-  AlertTriangle,
-  RotateCcw,
-  ArrowRight,
+    AlertTriangle,
+    ArrowRight,
+    DollarSign,
+    Minus,
+    Package,
+    RotateCcw,
+    ShoppingCart,
+    TrendingDown,
+    TrendingUp,
+    Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
@@ -129,7 +129,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
     const cardProps = href ? { href } : {};
 
     return (
-      <CardWrapper {...cardProps}>
+      <CardWrapper {...(cardProps as any)}>
         <Card
           className={cn(
             'transition-all duration-200',
@@ -394,4 +394,4 @@ const MobileStatCard = React.forwardRef<HTMLDivElement, MobileStatCardProps>(
 
 MobileStatCard.displayName = 'MobileStatCard';
 
-export { StatCard, StatCardsGrid, MobileStatCard };
+export { MobileStatCard, StatCard, StatCardsGrid };
