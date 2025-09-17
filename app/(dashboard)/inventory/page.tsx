@@ -3,9 +3,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
     AlertTriangle,
-    Edit,
-    Eye,
-    MoreHorizontal,
     Package,
     Plus,
     Search
@@ -23,14 +20,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { MobileDataTable } from '@/components/ui/mobile-data-table';
 import { Progress } from '@/components/ui/progress';
 import {
     Select,
@@ -40,14 +30,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from '@/components/ui/table';
+
+// 新增组件导入
+import { ColorCodeDisplay } from '@/components/ui/color-code-display';
+import { BatchInventoryTable } from '@/components/inventory/BatchInventoryTable';
 
 // API and Types
 import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
@@ -64,9 +50,18 @@ export default function InventoryPage() {
     limit: 20,
     search: '',
     lowStock: false,
+    hasStock: false,
+    groupByVariant: false,
+    includeVariants: true,
     sortBy: 'updatedAt',
     sortOrder: 'desc',
   });
+
+  // 展开的变体组
+  const [expandedVariants, setExpandedVariants] = React.useState<Set<string>>(new Set());
+
+  // 视图模式：table（表格）或 grouped（分组）
+  const [viewMode, setViewMode] = React.useState<'table' | 'grouped'>('table');
 
   // 获取库存列表数据
   const { data, isLoading, error } = useQuery({
@@ -197,27 +192,63 @@ export default function InventoryPage() {
       {/* 搜索和筛选 */}
       <Card>
         <CardContent className="pt-6">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="搜索产品名称或编码..."
-                  value={queryParams.search}
-                  onChange={e => handleSearch(e.target.value)}
-                  className="pl-10"
-                />
+          <div className="space-y-4">
+            {/* 搜索栏 */}
+            <div className="flex flex-col gap-4 md:flex-row md:items-center">
+              <div className="flex-1">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    placeholder="搜索产品名称、编码、色号、批次号..."
+                    value={queryParams.search}
+                    onChange={e => handleSearch(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+              </div>
+
+              {/* 视图模式切换 */}
+              <div className="flex gap-2">
+                <Button
+                  variant={viewMode === 'table' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setViewMode('table')}
+                >
+                  表格视图
+                </Button>
+                <Button
+                  variant={viewMode === 'grouped' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => {
+                    setViewMode('grouped');
+                    handleFilter('groupByVariant', true);
+                  }}
+                >
+                  分组视图
+                </Button>
               </div>
             </div>
-            <div className="flex gap-2">
+
+            {/* 筛选器 */}
+            <div className="flex flex-wrap gap-2">
               <Button
                 variant={queryParams.lowStock ? 'default' : 'outline'}
                 size="sm"
                 onClick={() => handleFilter('lowStock', !queryParams.lowStock)}
               >
                 <AlertTriangle className="mr-2 h-4 w-4" />
-                库存不足
+                库存偏低
               </Button>
+
+              <Button
+                variant={queryParams.hasStock ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => handleFilter('hasStock', !queryParams.hasStock)}
+              >
+                <Package className="mr-2 h-4 w-4" />
+                有库存
+              </Button>
+
               <Select
                 value={queryParams.sortBy || 'updatedAt'}
                 onValueChange={value => handleFilter('sortBy', value)}
@@ -228,7 +259,20 @@ export default function InventoryPage() {
                 <SelectContent>
                   <SelectItem value="updatedAt">更新时间</SelectItem>
                   <SelectItem value="quantity">库存数量</SelectItem>
-                  <SelectItem value="product.name">产品名称</SelectItem>
+                  <SelectItem value="productName">产品名称</SelectItem>
+                </SelectContent>
+              </Select>
+
+              <Select
+                value={queryParams.sortOrder || 'desc'}
+                onValueChange={value => handleFilter('sortOrder', value)}
+              >
+                <SelectTrigger className="w-24">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="desc">降序</SelectItem>
+                  <SelectItem value="asc">升序</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -237,17 +281,13 @@ export default function InventoryPage() {
       </Card>
 
       {/* 库存列表 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>库存列表</CardTitle>
-          <CardDescription>
-            {data?.pagination
-              ? `共 ${data.pagination.total} 个产品库存`
-              : '加载中...'}
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
+      {isLoading ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>库存列表</CardTitle>
+            <CardDescription>加载中...</CardDescription>
+          </CardHeader>
+          <CardContent>
             <div className="space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center space-x-4">
@@ -259,195 +299,75 @@ export default function InventoryPage() {
                 </div>
               ))}
             </div>
-          ) : (
-            <>
-              {/* 桌面端表格 */}
-              <div className="hidden md:block">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>产品信息</TableHead>
-                      <TableHead>当前库存</TableHead>
-                      <TableHead>预留数量</TableHead>
-                      <TableHead>可用库存</TableHead>
-                      <TableHead>库存状态</TableHead>
-                      <TableHead>最后更新</TableHead>
-                      <TableHead className="w-[100px]">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {data?.data?.map(inventory => {
-                      const availableQuantity =
-                        inventory.quantity - (inventory.reservedQuantity || 0);
-                      return (
-                        <TableRow key={inventory.id}>
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Package className="h-4 w-4 text-muted-foreground" />
-                              <div>
-                                <div className="font-medium">
-                                  {inventory.product?.name || '-'}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  {inventory.product?.code || '-'}
-                                </div>
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-medium">
-                              {inventory.quantity}{' '}
-                              {inventory.product?.unit || ''}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-muted-foreground">
-                              {inventory.reservedQuantity || 0}{' '}
-                              {inventory.product?.unit || ''}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <div className="font-medium">
-                              {availableQuantity}{' '}
-                              {inventory.product?.unit || ''}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            {getStockBadge(inventory.quantity, 10)}
-                          </TableCell>
-                          <TableCell>
-                            {new Date(inventory.updatedAt).toLocaleDateString()}
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" className="h-8 w-8 p-0">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    router.push(`/inventory/${inventory.id}`)
-                                  }
-                                >
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  查看详情
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    router.push(
-                                      `/inventory/${inventory.id}/adjust`
-                                    )
-                                  }
-                                >
-                                  <Edit className="mr-2 h-4 w-4" />
-                                  库存调整
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() =>
-                                    router.push(
-                                      `/inventory/${inventory.id}/history`
-                                    )
-                                  }
-                                >
-                                  <Package className="mr-2 h-4 w-4" />
-                                  变动记录
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
-              </div>
+          </CardContent>
+        </Card>
+      ) : data?.data && data.data.length > 0 ? (
+        <div className="space-y-4">
+          {/* 统计信息 */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center justify-between">
+                <span>库存概览</span>
+                <Badge variant="outline">
+                  {data.pagination ? `共 ${data.pagination.total} 条记录` : ''}
+                </Badge>
+              </CardTitle>
+            </CardHeader>
+          </Card>
 
-              {/* 移动端卡片 */}
-              <div className="md:hidden">
-                <MobileDataTable
-                  data={data?.data || []}
-                  columns={mobileColumns}
-                  onItemClick={item => router.push(`/inventory/${item.id}`)}
-                  renderActions={item => (
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={() => router.push(`/inventory/${item.id}`)}
-                        >
-                          <Eye className="mr-2 h-4 w-4" />
-                          查看详情
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            router.push(`/inventory/${item.id}/adjust`)
-                          }
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          库存调整
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            router.push(`/inventory/${item.id}/history`)
-                          }
-                        >
-                          <Package className="mr-2 h-4 w-4" />
-                          变动记录
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  )}
-                />
-              </div>
+          {/* 库存表格 */}
+          <BatchInventoryTable
+            inventoryData={data.data}
+            groupByVariant={viewMode === 'grouped'}
+            showVariantInfo={true}
+            onRowClick={(inventory) => {
+              // 可以添加行点击处理逻辑
+              console.log('点击库存记录:', inventory);
+            }}
+          />
+        </div>
+      ) : (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8 text-muted-foreground">
+              <Package className="mx-auto h-12 w-12 mb-4" />
+              <p>暂无库存数据</p>
+              <p className="text-sm">请检查筛选条件或添加库存记录</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
-              {/* 分页 */}
-              {data?.pagination && data.pagination.totalPages > 1 && (
-                <div className="flex items-center justify-between pt-4">
-                  <div className="text-sm text-muted-foreground">
-                    显示第{' '}
-                    {(data.pagination.page - 1) * data.pagination.limit + 1} -{' '}
-                    {Math.min(
-                      data.pagination.page * data.pagination.limit,
-                      data.pagination.total
-                    )}{' '}
-                    条，共 {data.pagination.total} 条
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(data.pagination.page - 1)}
-                      disabled={data.pagination.page <= 1}
-                    >
-                      上一页
-                    </Button>
-                    <div className="text-sm">
-                      第 {data.pagination.page} / {data.pagination.totalPages}{' '}
-                      页
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handlePageChange(data.pagination.page + 1)}
-                      disabled={
-                        data.pagination.page >= data.pagination.totalPages
-                      }
-                    >
-                      下一页
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-        </CardContent>
-      </Card>
+      {/* 分页 */}
+      {data?.pagination && data.pagination.totalPages > 1 && (
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="text-sm text-muted-foreground">
+                第 {data.pagination.page} 页，共 {data.pagination.totalPages} 页
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(data.pagination.page - 1)}
+                  disabled={data.pagination.page <= 1}
+                >
+                  上一页
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handlePageChange(data.pagination.page + 1)}
+                  disabled={data.pagination.page >= data.pagination.totalPages}
+                >
+                  下一页
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

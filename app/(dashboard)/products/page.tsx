@@ -47,6 +47,10 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
+// 新增组件导入
+import { ProductVariantManager } from '@/components/inventory/ProductVariantManager';
+import { ColorCodeDisplay } from '@/components/ui/color-code-display';
+
 // API and Types
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import type { Product, ProductQueryParams } from '@/lib/types/product';
@@ -70,6 +74,16 @@ function ProductsPage() {
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
+
+  // 产品变体管理状态
+  const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
+  const [showVariantManager, setShowVariantManager] = React.useState(false);
+
+  // 处理产品变体管理
+  const handleManageVariants = (product: Product) => {
+    setSelectedProduct(product);
+    setShowVariantManager(true);
+  };
 
   // 获取产品列表数据
   const { data, isLoading, error } = useQuery({
@@ -240,8 +254,9 @@ function ProductsPage() {
                       <TableHead>规格</TableHead>
                       <TableHead>单位</TableHead>
                       <TableHead>状态</TableHead>
+                      <TableHead>变体数量</TableHead>
                       <TableHead>创建时间</TableHead>
-                      <TableHead className="w-[100px]">操作</TableHead>
+                      <TableHead className="w-[120px]">操作</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -259,6 +274,29 @@ function ProductsPage() {
                         </TableCell>
                         <TableCell>{getStatusBadge(product.status)}</TableCell>
                         <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">
+                              {product.variants?.length || 0} 个变体
+                            </Badge>
+                            {product.variants && product.variants.length > 0 && (
+                              <div className="flex gap-1">
+                                {product.variants.slice(0, 3).map((variant) => (
+                                  <ColorCodeDisplay
+                                    key={variant.id}
+                                    colorCode={variant.colorCode}
+                                    size="sm"
+                                  />
+                                ))}
+                                {product.variants.length > 3 && (
+                                  <Badge variant="secondary" className="text-xs">
+                                    +{product.variants.length - 3}
+                                  </Badge>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
                           {new Date(product.createdAt).toLocaleDateString()}
                         </TableCell>
                         <TableCell>
@@ -269,6 +307,12 @@ function ProductsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleManageVariants(product)}
+                              >
+                                <Plus className="mr-2 h-4 w-4" />
+                                管理变体
+                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
                                   router.push(`/products/${product.id}`)
@@ -378,6 +422,42 @@ function ProductsPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 产品变体管理器 */}
+      {showVariantManager && selectedProduct && (
+        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
+          <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-lg font-semibold">
+                  管理产品变体 - {selectedProduct.name}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  为产品添加和管理不同的色号变体
+                </p>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setShowVariantManager(false);
+                  setSelectedProduct(null);
+                }}
+              >
+                ✕
+              </Button>
+            </div>
+
+            <ProductVariantManager
+              productId={selectedProduct.id}
+              productCode={selectedProduct.code}
+              productName={selectedProduct.name}
+              showInventorySummary={true}
+              allowEdit={true}
+            />
+          </div>
+        </div>
+      )}
     </div>
   );
 }

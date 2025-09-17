@@ -1,6 +1,6 @@
+import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -102,20 +102,20 @@ export async function GET(
 
     // 按生产日期分组统计
     const dateSummary = inventoryRecords.reduce((acc, record) => {
-      const date = record.productionDate || '未指定日期';
-      if (!acc[date]) {
-        acc[date] = {
-          productionDate: date,
+      const dateKey = record.productionDate ? record.productionDate.toString() : '未指定日期';
+      if (!acc[dateKey]) {
+        acc[dateKey] = {
+          productionDate: dateKey,
           quantity: 0,
           reservedQuantity: 0,
           availableQuantity: 0,
           batches: 0,
         };
       }
-      acc[date].quantity += record.quantity;
-      acc[date].reservedQuantity += record.reservedQuantity;
-      acc[date].availableQuantity += (record.quantity - record.reservedQuantity);
-      acc[date].batches += 1;
+      acc[dateKey].quantity += record.quantity;
+      acc[dateKey].reservedQuantity += record.reservedQuantity;
+      acc[dateKey].availableQuantity += (record.quantity - record.reservedQuantity);
+      acc[dateKey].batches += 1;
       return acc;
     }, {} as Record<string, any>);
 
@@ -132,7 +132,7 @@ export async function GET(
     const averageUnitCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
 
     // 最新更新时间
-    const lastUpdated = inventoryRecords.length > 0 
+    const lastUpdated = inventoryRecords.length > 0
       ? inventoryRecords.reduce((latest, record) => {
           return record.updatedAt > latest ? record.updatedAt : latest;
         }, inventoryRecords[0].updatedAt)
@@ -140,8 +140,8 @@ export async function GET(
 
     // 库存预警状态
     const lowStockThreshold = 10; // 可以从配置中获取
-    const stockStatus = totalQuantity <= 0 ? 'out_of_stock' 
-      : totalQuantity <= lowStockThreshold ? 'low_stock' 
+    const stockStatus = totalQuantity <= 0 ? 'out_of_stock'
+      : totalQuantity <= lowStockThreshold ? 'low_stock'
       : 'in_stock';
 
     // 构建响应数据
