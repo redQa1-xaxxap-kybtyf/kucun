@@ -1,12 +1,12 @@
+import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import {
-  productValidations,
-  paginationValidations,
+    paginationValidations,
+    productValidations,
 } from '@/lib/validations/database';
 
 // 获取产品列表
@@ -83,6 +83,21 @@ export async function GET(request: NextRequest) {
           status: true,
           createdAt: true,
           updatedAt: true,
+          variants: {
+            select: {
+              id: true,
+              colorCode: true,
+              colorName: true,
+              sku: true,
+              status: true,
+            },
+            where: {
+              status: 'active',
+            },
+            orderBy: {
+              createdAt: 'asc',
+            },
+          },
           _count: {
             select: {
               inventory: true,
@@ -138,6 +153,13 @@ export async function GET(request: NextRequest) {
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
       status: product.status,
+      variants: product.variants.map(variant => ({
+        id: variant.id,
+        colorCode: variant.colorCode,
+        colorName: variant.colorName,
+        sku: variant.sku,
+        status: variant.status,
+      })),
       inventory: inventoryMap.get(product.id) || {
         totalQuantity: 0,
         reservedQuantity: 0,
