@@ -2,35 +2,30 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowLeft,
-  Edit,
-  Trash2,
-  Package,
-  Info,
-  BarChart3,
+    ArrowLeft,
+    Edit,
+    Info,
+    Package,
+    Trash2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import * as React from 'react';
 
 // UI Components
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle
 } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
 // API and Types
 import { getProduct, productQueryKeys } from '@/lib/api/products';
 import {
-  PRODUCT_STATUS_LABELS,
-  PRODUCT_UNIT_LABELS,
+    PRODUCT_STATUS_LABELS,
+    PRODUCT_UNIT_LABELS,
 } from '@/lib/types/product';
 
 interface ProductDetailPageProps {

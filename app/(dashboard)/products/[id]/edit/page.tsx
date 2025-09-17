@@ -35,12 +35,10 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
 // API and Types
 import { getCategories } from '@/lib/api/categories';
 import { getProduct, productQueryKeys, updateProduct } from '@/lib/api/products';
-import type { UpdateProductData } from '@/lib/schemas/product';
-import { UpdateProductSchema } from '@/lib/schemas/product';
+import { UpdateProductSchema, type UpdateProductData } from '@/lib/schemas/product';
 import {
     PRODUCT_STATUS_OPTIONS,
     PRODUCT_UNIT_OPTIONS,
