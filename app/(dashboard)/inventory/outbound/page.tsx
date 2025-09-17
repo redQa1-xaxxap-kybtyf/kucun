@@ -218,11 +218,7 @@ export default function OutboundRecordsPage() {
             <div className="text-center py-8">
               <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
               <h3 className="text-lg font-medium mb-2">暂无出库记录</h3>
-              <p className="text-muted-foreground mb-4">还没有任何出库操作记录</p>
-              <Button onClick={() => router.push('/inventory')}>
-                <Plus className="mr-2 h-4 w-4" />
-                立即出库
-              </Button>
+              <p className="text-muted-foreground">还没有任何出库操作记录</p>
             </div>
           ) : (
             <Table>

@@ -10,7 +10,7 @@ import {
     Trash2
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import * as React from 'react';
+import React from 'react';
 
 // UI Components
 import { Badge } from '@/components/ui/badge';
@@ -59,7 +59,7 @@ import {
  * 产品管理页面
  * 严格遵循全栈项目统一约定规范
  */
-export default function ProductsPage() {
+function ProductsPage() {
   const router = useRouter();
   const [queryParams, setQueryParams] = React.useState<ProductQueryParams>({
     page: 1,
@@ -381,3 +381,5 @@ export default function ProductsPage() {
     </div>
   );
 }
+
+export default ProductsPage;
