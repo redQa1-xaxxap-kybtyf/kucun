@@ -16,7 +16,6 @@ interface Category {
   id: string;
   name: string;
   code: string;
-  description?: string;
   parentId?: string;
   sortOrder: number;
   status: 'active' | 'inactive';
@@ -59,7 +58,6 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { name: { contains: validatedParams.search } },
         { code: { contains: validatedParams.search } },
-        { description: { contains: validatedParams.search } },
       ];
     }
 
@@ -98,7 +96,6 @@ export async function GET(request: NextRequest) {
       id: category.id,
       name: category.name,
       code: category.code,
-      description: category.description,
       parentId: category.parentId,
       sortOrder: category.sortOrder,
       status: category.status as 'active' | 'inactive',
@@ -217,7 +214,6 @@ export async function POST(request: NextRequest) {
       data: {
         name: validatedData.name,
         code,
-        description: validatedData.description,
         parentId: validatedData.parentId,
         sortOrder: validatedData.sortOrder || 0,
         status: 'active',
@@ -238,7 +234,6 @@ export async function POST(request: NextRequest) {
       id: category.id,
       name: category.name,
       code: category.code,
-      description: category.description,
       parentId: category.parentId,
       sortOrder: category.sortOrder,
       status: category.status as 'active' | 'inactive',

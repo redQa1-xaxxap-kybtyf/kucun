@@ -25,14 +25,7 @@ export interface BusinessOverview {
     stockHealth: number; // 库存健康度 (0-100)
   };
 
-  // 采购数据
-  purchase: {
-    totalPurchaseOrders: number; // 总采购订单数
-    monthlyPurchaseValue: number; // 月采购金额
-    pendingOrders: number; // 待处理订单数
-    receivedOrders: number; // 已收货订单数
-    purchaseGrowth: number; // 采购增长率 (%)
-  };
+
 
   // 退货数据
   returns: {
@@ -73,7 +66,6 @@ export interface TodoItem {
   id: string;
   type:
     | 'sales_order'
-    | 'purchase_order'
     | 'return_order'
     | 'inventory_alert'
     | 'customer_follow_up';

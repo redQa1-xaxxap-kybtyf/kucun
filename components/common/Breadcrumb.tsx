@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronRight, Home } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as React from 'react';
@@ -29,7 +29,6 @@ const PATH_TITLES: Record<string, string> = {
   '/inventory': '库存管理',
   '/products': '产品管理',
   '/sales-orders': '销售订单',
-  '/purchase-orders': '采购订单',
   '/return-orders': '退货订单',
   '/customers': '客户管理',
   '/payments': '支付管理',

@@ -1,6 +1,6 @@
+import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 
 import { env } from './env';
 
@@ -11,7 +11,6 @@ const protectedPaths = [
   '/products',
   '/inventory',
   '/sales-orders',
-  '/purchase-orders',
   '/return-orders',
   '/payments',
   '/api/users',

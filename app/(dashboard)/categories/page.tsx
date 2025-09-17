@@ -275,7 +275,7 @@ function CategoriesPage() {
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
-                  placeholder="搜索分类名称或描述..."
+                  placeholder="搜索分类名称..."
                   value={queryParams.search}
                   onChange={e => handleSearch(e.target.value)}
                   className="pl-10"
@@ -319,7 +319,6 @@ function CategoriesPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>分类名称</TableHead>
-                    <TableHead>描述</TableHead>
                     <TableHead>产品数量</TableHead>
                     <TableHead>状态</TableHead>
                     <TableHead>创建时间</TableHead>
@@ -331,9 +330,6 @@ function CategoriesPage() {
                     <TableRow key={category.id}>
                       <TableCell className="font-medium">
                         {category.name}
-                      </TableCell>
-                      <TableCell>
-                        {category.description || '-'}
                       </TableCell>
                       <TableCell>
                         {category.productCount || 0}

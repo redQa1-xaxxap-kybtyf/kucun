@@ -33,7 +33,6 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
 // API and Types
@@ -93,7 +92,6 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
     defaultValues: {
       id: '',
       name: '',
-      description: '',
       parentId: undefined,
       sortOrder: 0,
     },
@@ -106,7 +104,6 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
       form.reset({
         id: categoryData.id,
         name: categoryData.name,
-        description: categoryData.description || '',
         parentId: categoryData.parentId || 'none',
         sortOrder: categoryData.sortOrder,
       });
@@ -310,27 +307,7 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
                 />
               </div>
 
-              {/* 分类描述 */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>分类描述</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="请输入分类描述"
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      分类的详细描述，最多200个字符
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               {/* 提交按钮 */}
               <div className="flex justify-end gap-4">

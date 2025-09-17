@@ -4,29 +4,26 @@
 'use client';
 
 import {
-  CheckSquare,
-  Clock,
-  AlertCircle,
-  ShoppingCart,
-  Package,
-  RotateCcw,
-  Users,
-  Calendar,
-  ExternalLink,
-  RefreshCw,
-  Plus,
+    AlertCircle,
+    Calendar,
+    CheckSquare,
+    ExternalLink,
+    Plus,
+    RefreshCw,
+    RotateCcw,
+    ShoppingCart,
+    Users
 } from 'lucide-react';
-import Link from 'next/link';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -43,12 +40,7 @@ const TODO_TYPE_CONFIG = {
     color: 'blue',
     href: '/sales-orders',
   },
-  purchase_order: {
-    icon: Package,
-    label: '采购订单',
-    color: 'green',
-    href: '/purchase-orders',
-  },
+
   return_order: {
     icon: RotateCcw,
     label: '退货订单',
@@ -499,4 +491,4 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
 
 TodoList.displayName = 'TodoList';
 
-export { TodoList, TodoItemComponent };
+export { TodoItemComponent, TodoList };

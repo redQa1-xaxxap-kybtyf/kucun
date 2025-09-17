@@ -20,10 +20,7 @@ export const CreateCategorySchema = z.object({
     .regex(/^[A-Za-z0-9_-]+$/, '分类编码只能包含字母、数字、下划线和短横线')
     .optional(),
 
-  description: z
-    .string()
-    .max(200, '分类描述不能超过200个字符')
-    .optional(),
+
 
   parentId: z.string().optional(),
 
@@ -78,7 +75,6 @@ export type BatchDeleteCategoriesData = z.infer<typeof BatchDeleteCategoriesSche
 export const categoryFormDefaults: CreateCategoryData = {
   name: '',
   code: undefined,
-  description: '',
   parentId: undefined,
   sortOrder: 0,
 };

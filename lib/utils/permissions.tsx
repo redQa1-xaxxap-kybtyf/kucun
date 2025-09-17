@@ -3,7 +3,6 @@
  * 严格遵循全栈项目统一约定规范中的类型安全和命名约定
  */
 
-import type { UserInfo } from '@/lib/types/layout';
 
 /**
  * 用户角色枚举
@@ -33,14 +32,6 @@ export const PERMISSIONS = {
     UPDATE: 'sales:update',
     DELETE: 'sales:delete',
     APPROVE: 'sales:approve',
-  },
-  // 采购订单权限
-  PURCHASE: {
-    CREATE: 'purchase:create',
-    READ: 'purchase:read',
-    UPDATE: 'purchase:update',
-    DELETE: 'purchase:delete',
-    APPROVE: 'purchase:approve',
   },
   // 客户管理权限
   CUSTOMER: {

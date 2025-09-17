@@ -1,6 +1,6 @@
+import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
@@ -183,13 +183,7 @@ export async function GET(request: NextRequest) {
           100 - (lowStockProducts + outOfStockProducts * 2) * 10
         ),
       },
-      purchase: {
-        totalPurchaseOrders: 0, // 需要采购订单数据
-        monthlyPurchaseValue: 0,
-        pendingOrders: 0,
-        receivedOrders: 0,
-        purchaseGrowth: 0,
-      },
+
       returns: {
         totalReturns: 0, // 需要退货数据
         monthlyReturns: 0,

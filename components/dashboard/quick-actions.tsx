@@ -4,19 +4,19 @@
 'use client';
 
 import {
-  Plus,
-  ShoppingCart,
-  Package,
-  Users,
-  RotateCcw,
-  Upload,
-  Download,
-  BarChart3,
-  Settings,
-  Search,
-  FileText,
-  Truck,
-  AlertTriangle,
+    AlertTriangle,
+    BarChart3,
+    Download,
+    FileText,
+    Package,
+    Plus,
+    RotateCcw,
+    Search,
+    Settings,
+    ShoppingCart,
+    Truck,
+    Upload,
+    Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
@@ -24,11 +24,11 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { QuickAction } from '@/lib/types/dashboard';
@@ -301,14 +301,7 @@ const QuickActions = React.forwardRef<HTMLDivElement, QuickActionsProps>(
           href: '/inventory/outbound',
           color: 'red',
         },
-        {
-          id: 'create-purchase-order',
-          title: '创建采购订单',
-          description: '新建采购订单',
-          icon: 'truck',
-          href: '/purchase-orders/create',
-          color: 'green',
-        },
+
         {
           id: 'process-returns',
           title: '处理退货',
@@ -483,4 +476,4 @@ const QuickActionButtons = React.forwardRef<
 
 QuickActionButtons.displayName = 'QuickActionButtons';
 
-export { QuickActions, QuickActionItem, QuickActionButtons };
+export { QuickActionButtons, QuickActionItem, QuickActions };

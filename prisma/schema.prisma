@@ -66,7 +66,6 @@ model Category {
   id          String   @id @default(uuid())
   name        String
   code        String   @unique
-  description String?
   parentId    String?  @map("parent_id")
   sortOrder   Int      @default(0) @map("sort_order")
   status      String   @default("active") // active, inactive

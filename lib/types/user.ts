@@ -127,7 +127,6 @@ export function canAccessPage(user: User, page: string): boolean {
     '/sales-orders': ['admin', 'sales'],
     '/inventory': ['admin', 'sales'],
     '/payments': ['admin', 'sales'],
-    '/purchase-orders': ['admin'],
     '/return-orders': ['admin'],
     '/users': ['admin'],
     '/settings': ['admin'],

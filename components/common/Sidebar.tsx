@@ -10,7 +10,6 @@ import {
     Package,
     RotateCcw,
     Settings,
-    ShoppingBag,
     ShoppingCart,
     TrendingDown,
     TrendingUp,
@@ -79,12 +78,6 @@ const navigationItems: NavigationItem[] = [
     title: '销售订单',
     href: '/sales-orders',
     icon: ShoppingCart,
-  },
-  {
-    id: 'purchase-orders',
-    title: '采购订单',
-    href: '/purchase-orders',
-    icon: ShoppingBag,
   },
   {
     id: 'return-orders',

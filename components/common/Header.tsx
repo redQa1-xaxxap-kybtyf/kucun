@@ -1,38 +1,38 @@
 'use client';
 
 import {
-  Bell,
-  Settings,
-  User,
-  LogOut,
-  Menu,
-  Search,
-  Plus,
-  Sun,
-  Moon,
-  Monitor,
-  Keyboard,
-  HelpCircle,
-  RefreshCw,
+    Bell,
+    HelpCircle,
+    Keyboard,
+    LogOut,
+    Menu,
+    Monitor,
+    Moon,
+    Plus,
+    RefreshCw,
+    Search,
+    Settings,
+    Sun,
+    User,
 } from 'lucide-react';
+import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
 import * as React from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useNavigationBadges } from '@/hooks/use-navigation-badges';
-import type { UserInfo, NotificationItem } from '@/lib/types/layout';
+import type { NotificationItem } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 import { usePermissions } from '@/lib/utils/permissions';
 
@@ -251,11 +251,6 @@ export function Header({
                 onClick={() => router.push('/sales-orders/create')}
               >
                 新建销售订单
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => router.push('/purchase-orders/create')}
-              >
-                新建采购订单
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() => router.push('/customers/create')}

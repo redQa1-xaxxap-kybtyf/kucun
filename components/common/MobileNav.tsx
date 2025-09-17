@@ -1,21 +1,19 @@
 'use client';
 
 import {
-  LayoutDashboard,
-  Package,
-  ShoppingCart,
-  ShoppingBag,
-  RotateCcw,
-  Users,
-  CreditCard,
-  Warehouse,
-  Settings,
-  HelpCircle,
-  X,
+    CreditCard,
+    HelpCircle,
+    LayoutDashboard,
+    Package,
+    RotateCcw,
+    Settings,
+    ShoppingCart,
+    Users,
+    Warehouse
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -23,11 +21,11 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetTrigger,
 } from '@/components/ui/sheet';
 import { useNavigationBadges } from '@/hooks/use-navigation-badges';
 import type { NavigationItem } from '@/lib/types/layout';
@@ -62,12 +60,6 @@ const mobileNavigationItems: NavigationItem[] = [
     title: '销售订单',
     href: '/sales-orders',
     icon: ShoppingCart,
-  },
-  {
-    id: 'purchase-orders',
-    title: '采购订单',
-    href: '/purchase-orders',
-    icon: ShoppingBag,
   },
   {
     id: 'return-orders',

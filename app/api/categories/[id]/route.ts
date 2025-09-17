@@ -15,7 +15,7 @@ interface Category {
   id: string;
   name: string;
   code: string;
-  description?: string;
+
   parentId?: string;
   sortOrder: number;
   status: 'active' | 'inactive';
@@ -78,7 +78,6 @@ export async function GET(
       id: category.id,
       name: category.name,
       code: category.code,
-      description: category.description,
       parentId: category.parentId,
       sortOrder: category.sortOrder,
       status: category.status as 'active' | 'inactive',
@@ -212,7 +211,6 @@ export async function PUT(
       data: {
         name: validatedData.name,
         // code 字段不允许修改，保持原值
-        description: validatedData.description,
         parentId: validatedData.parentId,
         sortOrder: validatedData.sortOrder,
       },
@@ -232,7 +230,6 @@ export async function PUT(
       id: updatedCategory.id,
       name: updatedCategory.name,
       code: updatedCategory.code,
-      description: updatedCategory.description,
       parentId: updatedCategory.parentId,
       sortOrder: updatedCategory.sortOrder,
       status: updatedCategory.status as 'active' | 'inactive',
