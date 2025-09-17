@@ -172,16 +172,8 @@ async function main() {
 
   const inventoryRecords = await Promise.all([
     // TC001 抛光砖库存
-    prisma.inventory.upsert({
-      where: {
-        productId_colorCode_productionDate: {
-          productId: products[0].id,
-          colorCode: 'white',
-          productionDate: new Date('2024-01-15'),
-        },
-      },
-      update: {},
-      create: {
+    prisma.inventory.create({
+      data: {
         productId: products[0].id,
         colorCode: 'white',
         productionDate: new Date('2024-01-15'),
@@ -189,34 +181,18 @@ async function main() {
         reservedQuantity: 0,
       },
     }),
-    prisma.inventory.upsert({
-      where: {
-        productId_colorCode_productionDate: {
-          productId: products[0].id,
-          colorCode: 'grey',
-          productionDate: new Date('2024-01-15'),
-        },
-      },
-      update: {},
-      create: {
+    prisma.inventory.create({
+      data: {
         productId: products[0].id,
         colorCode: 'grey',
-        productionDate: new Date('2024-01-15'),
+        productionDate: new Date('2024-01-16'),
         quantity: 80,
         reservedQuantity: 0,
       },
     }),
     // TC002 仿古砖库存
-    prisma.inventory.upsert({
-      where: {
-        productId_colorCode_productionDate: {
-          productId: products[1].id,
-          colorCode: 'brown',
-          productionDate: new Date('2024-01-20'),
-        },
-      },
-      update: {},
-      create: {
+    prisma.inventory.create({
+      data: {
         productId: products[1].id,
         colorCode: 'brown',
         productionDate: new Date('2024-01-20'),
@@ -225,16 +201,8 @@ async function main() {
       },
     }),
     // TC003 马赛克库存
-    prisma.inventory.upsert({
-      where: {
-        productId_colorCode_productionDate: {
-          productId: products[2].id,
-          colorCode: 'blue',
-          productionDate: new Date('2024-01-25'),
-        },
-      },
-      update: {},
-      create: {
+    prisma.inventory.create({
+      data: {
         productId: products[2].id,
         colorCode: 'blue',
         productionDate: new Date('2024-01-25'),

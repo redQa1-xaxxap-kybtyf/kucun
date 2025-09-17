@@ -34,6 +34,7 @@ declare module 'next-auth' {
 declare module 'next-auth/jwt' {
   interface JWT {
     id: string;
+    email: string;
     username: string;
     role: string;
     status: string;
@@ -141,16 +142,17 @@ export const authOptions: NextAuthOptions = {
         token.username = user.username;
         token.role = user.role;
         token.status = user.status;
+        token.email = user.email;
       }
       return token;
     },
     async session({ session, token }) {
       // 将 token 中的信息添加到 session
-      if (token) {
-        session.user.id = token.id;
-        session.user.username = token.username;
-        session.user.role = token.role;
-        session.user.status = token.status;
+      if (token && token.id) {
+        session.user.id = token.id as string;
+        session.user.username = token.username as string;
+        session.user.role = token.role as string;
+        session.user.status = token.status as string;
       }
       return session;
     },
