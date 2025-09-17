@@ -5,10 +5,10 @@
 
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
-  Product,
-  ProductCreateInput,
-  ProductUpdateInput,
-  ProductQueryParams,
+    Product,
+    ProductCreateInput,
+    ProductQueryParams,
+    ProductUpdateInput,
 } from '@/lib/types/product';
 
 const API_BASE = '/api/products';
@@ -51,13 +51,9 @@ export async function getProducts(
     throw new Error(`获取产品列表失败: ${response.statusText}`);
   }
 
-  const data: ApiResponse<PaginatedResponse<Product>> = await response.json();
+  const data: PaginatedResponse<Product> = await response.json();
 
-  if (!data.success) {
-    throw new Error(data.error || '获取产品列表失败');
-  }
-
-  return data.data!;
+  return data;
 }
 
 /**

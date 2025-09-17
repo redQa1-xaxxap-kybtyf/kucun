@@ -29,6 +29,7 @@ export async function GET(request: NextRequest) {
       sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
       status: searchParams.get('status') || undefined,
       unit: searchParams.get('unit') || undefined,
+      categoryId: searchParams.get('categoryId') || undefined,
     };
 
     // 验证查询参数
@@ -45,7 +46,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { page, limit, search, sortBy, sortOrder } = validationResult.data;
-    const { status, unit } = queryParams;
+    const { status, unit, categoryId } = queryParams;
 
     // 构建查询条件
     const where: Record<string, unknown> = {};
@@ -66,6 +67,10 @@ export async function GET(request: NextRequest) {
       where.unit = unit;
     }
 
+    if (categoryId) {
+      where.categoryId = categoryId;
+    }
+
     // 查询产品列表
     const [products, total] = await Promise.all([
       prisma.product.findMany({
@@ -80,6 +85,14 @@ export async function GET(request: NextRequest) {
           piecesPerUnit: true,
           weight: true,
           status: true,
+          categoryId: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
           createdAt: true,
           updatedAt: true,
           _count: {
@@ -137,6 +150,12 @@ export async function GET(request: NextRequest) {
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
       status: product.status,
+      categoryId: product.categoryId,
+      category: product.category ? {
+        id: product.category.id,
+        name: product.category.name,
+        code: product.category.code,
+      } : null,
       inventory: inventoryMap.get(product.id) || {
         totalQuantity: 0,
         reservedQuantity: 0,

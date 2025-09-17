@@ -11,14 +11,25 @@ export interface Product {
   piecesPerUnit: number;
   weight?: number;
   status: 'active' | 'inactive';
+  categoryId?: string;
+  category?: {
+    id: string;
+    name: string;
+    code: string;
+  };
   createdAt: string;
   updatedAt: string;
   // 库存汇总信息（来自API响应）
-  totalInventory?: number;
-  reservedInventory?: number;
-  availableInventory?: number;
-  // 产品变体信息
-  variants?: ProductVariant[];
+  inventory?: {
+    totalQuantity: number;
+    reservedQuantity: number;
+    availableQuantity: number;
+  };
+  statistics?: {
+    inventoryRecordsCount: number;
+    salesOrderItemsCount: number;
+    inboundRecordsCount: number;
+  };
 }
 
 // 产品变体类型定义
@@ -90,6 +101,7 @@ export interface ProductQueryParams {
   sortOrder?: 'asc' | 'desc';
   status?: 'active' | 'inactive';
   unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
+  categoryId?: string;
 }
 
 export interface ProductListResponse {

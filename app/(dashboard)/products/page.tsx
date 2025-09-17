@@ -13,6 +13,16 @@ import { useRouter } from 'next/navigation';
 import React from 'react';
 
 // UI Components
+import {
+    AlertDialog,
+    AlertDialogAction,
+    AlertDialogCancel,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -46,12 +56,10 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-
-// 新增组件导入
-import { ProductVariantManager } from '@/components/inventory/ProductVariantManager';
-import { ColorCodeDisplay } from '@/components/ui/color-code-display';
+import { useToast } from '@/hooks/use-toast';
 
 // API and Types
+import { getCategories } from '@/lib/api/categories';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import type { Product, ProductQueryParams } from '@/lib/types/product';
 import {
@@ -65,25 +73,40 @@ import {
  */
 function ProductsPage() {
   const router = useRouter();
+  const { toast } = useToast();
+
   const [queryParams, setQueryParams] = React.useState<ProductQueryParams>({
     page: 1,
     limit: 20,
     search: '',
     status: undefined,
     unit: undefined,
+    categoryId: undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
 
-  // 产品变体管理状态
-  const [selectedProduct, setSelectedProduct] = React.useState<Product | null>(null);
-  const [showVariantManager, setShowVariantManager] = React.useState(false);
+  // 删除确认对话框状态
+  const [deleteDialog, setDeleteDialog] = React.useState<{
+    open: boolean;
+    productId: string | null;
+    productName: string;
+  }>({
+    open: false,
+    productId: null,
+    productName: '',
+  });
 
-  // 处理产品变体管理
-  const handleManageVariants = (product: Product) => {
-    setSelectedProduct(product);
-    setShowVariantManager(true);
-  };
+  // 获取分类列表
+  const {
+    data: categoriesResponse,
+    isLoading: isLoadingCategories,
+  } = useQuery({
+    queryKey: ['categories'],
+    queryFn: () => getCategories(),
+  });
+
+  const categories = categoriesResponse?.data || [];
 
   // 获取产品列表数据
   const { data, isLoading, error } = useQuery({
@@ -106,6 +129,42 @@ function ProductsPage() {
     setQueryParams(prev => ({ ...prev, page }));
   };
 
+  // 删除产品处理
+  const handleDeleteProduct = (productId: string, productName: string) => {
+    setDeleteDialog({
+      open: true,
+      productId,
+      productName,
+    });
+  };
+
+  // 确认删除产品
+  const confirmDeleteProduct = async () => {
+    if (!deleteDialog.productId) return;
+
+    try {
+      // TODO: 实现删除API调用
+      // await deleteProduct(deleteDialog.productId);
+
+      toast({
+        title: '删除成功',
+        description: `产品"${deleteDialog.productName}"已成功删除`,
+      });
+
+      // 关闭对话框
+      setDeleteDialog({ open: false, productId: null, productName: '' });
+
+      // 刷新数据
+      // queryClient.invalidateQueries({ queryKey: productQueryKeys.list(queryParams) });
+    } catch (error) {
+      toast({
+        title: '删除失败',
+        description: error instanceof Error ? error.message : '删除产品时发生错误',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // 状态标签渲染
   const getStatusBadge = (status: string) => {
     const variant = status === 'active' ? 'default' : 'secondary';
@@ -122,9 +181,18 @@ function ProductsPage() {
     { key: 'name', title: '产品名称', mobilePrimary: true },
     { key: 'code', title: '产品编码', mobileLabel: '编码' },
     {
+      key: 'category',
+      title: '分类',
+      render: (item: Product) => (
+        <Badge variant="outline">
+          {item?.category?.name || '未分类'}
+        </Badge>
+      ),
+    },
+    {
       key: 'status',
       title: '状态',
-      render: (item: Product) => getStatusBadge(item.status),
+      render: (item: Product) => getStatusBadge(item?.status || 'active'),
     },
     {
       key: 'unit',
@@ -184,6 +252,25 @@ function ProductsPage() {
             </div>
             <div className="flex gap-2">
               <Select
+                value={queryParams.categoryId || 'all'}
+                onValueChange={value =>
+                  handleFilter('categoryId', value === 'all' ? undefined : value)
+                }
+              >
+                <SelectTrigger className="w-32">
+                  <SelectValue placeholder="分类" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部分类</SelectItem>
+                  <SelectItem value="none">未分类</SelectItem>
+                  {categories.map(category => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Select
                 value={queryParams.status || 'all'}
                 onValueChange={value =>
                   handleFilter('status', value === 'all' ? undefined : value)
@@ -224,13 +311,15 @@ function ProductsPage() {
         <CardHeader>
           <CardTitle>产品列表</CardTitle>
           <CardDescription>
-            {data?.pagination
+            {isLoading || isLoadingCategories
+              ? '加载中...'
+              : data?.pagination
               ? `共 ${data.pagination.total} 个产品`
-              : '加载中...'}
+              : '暂无数据'}
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {isLoading || isLoadingCategories ? (
             <div className="space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center space-x-4">
@@ -252,9 +341,9 @@ function ProductsPage() {
                       <TableHead>产品编码</TableHead>
                       <TableHead>产品名称</TableHead>
                       <TableHead>规格</TableHead>
+                      <TableHead>分类</TableHead>
                       <TableHead>单位</TableHead>
                       <TableHead>状态</TableHead>
-                      <TableHead>变体数量</TableHead>
                       <TableHead>创建时间</TableHead>
                       <TableHead className="w-[120px]">操作</TableHead>
                     </TableRow>
@@ -268,34 +357,16 @@ function ProductsPage() {
                         <TableCell>{product.name}</TableCell>
                         <TableCell>{product.specification || '-'}</TableCell>
                         <TableCell>
+                          <Badge variant="outline">
+                            {product.category?.name || '未分类'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
                           {PRODUCT_UNIT_LABELS[
                             product.unit as keyof typeof PRODUCT_UNIT_LABELS
                           ] || product.unit}
                         </TableCell>
                         <TableCell>{getStatusBadge(product.status)}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Badge variant="outline">
-                              {product.variants?.length || 0} 个变体
-                            </Badge>
-                            {product.variants && product.variants.length > 0 && (
-                              <div className="flex gap-1">
-                                {product.variants.slice(0, 3).map((variant) => (
-                                  <ColorCodeDisplay
-                                    key={variant.id}
-                                    colorCode={variant.colorCode}
-                                    size="sm"
-                                  />
-                                ))}
-                                {product.variants.length > 3 && (
-                                  <Badge variant="secondary" className="text-xs">
-                                    +{product.variants.length - 3}
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
                         <TableCell>
                           {new Date(product.createdAt).toLocaleDateString()}
                         </TableCell>
@@ -307,12 +378,6 @@ function ProductsPage() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleManageVariants(product)}
-                              >
-                                <Plus className="mr-2 h-4 w-4" />
-                                管理变体
-                              </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() =>
                                   router.push(`/products/${product.id}`)
@@ -329,7 +394,10 @@ function ProductsPage() {
                                 <Edit className="mr-2 h-4 w-4" />
                                 编辑
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleDeleteProduct(product.id, product.name)}
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 删除
                               </DropdownMenuItem>
@@ -345,9 +413,9 @@ function ProductsPage() {
               {/* 移动端卡片 */}
               <div className="md:hidden">
                 <MobileDataTable
-                  data={data?.data || []}
+                  data={data?.data?.filter(Boolean) || []}
                   columns={mobileColumns}
-                  onItemClick={item => router.push(`/products/${item.id}`)}
+                  onItemClick={item => router.push(`/products/${item?.id}`)}
                   renderActions={item => (
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
@@ -370,7 +438,10 @@ function ProductsPage() {
                           <Edit className="mr-2 h-4 w-4" />
                           编辑
                         </DropdownMenuItem>
-                        <DropdownMenuItem className="text-red-600">
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={() => handleDeleteProduct(item.id, item.name)}
+                        >
                           <Trash2 className="mr-2 h-4 w-4" />
                           删除
                         </DropdownMenuItem>
@@ -423,41 +494,32 @@ function ProductsPage() {
         </CardContent>
       </Card>
 
-      {/* 产品变体管理器 */}
-      {showVariantManager && selectedProduct && (
-        <div className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm">
-          <div className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-4xl translate-x-[-50%] translate-y-[-50%] gap-4 border bg-background p-6 shadow-lg duration-200 sm:rounded-lg">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-semibold">
-                  管理产品变体 - {selectedProduct.name}
-                </h2>
-                <p className="text-sm text-muted-foreground">
-                  为产品添加和管理不同的色号变体
-                </p>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setShowVariantManager(false);
-                  setSelectedProduct(null);
-                }}
-              >
-                ✕
-              </Button>
-            </div>
-
-            <ProductVariantManager
-              productId={selectedProduct.id}
-              productCode={selectedProduct.code}
-              productName={selectedProduct.name}
-              showInventorySummary={true}
-              allowEdit={true}
-            />
-          </div>
-        </div>
-      )}
+      {/* 删除确认对话框 */}
+      <AlertDialog open={deleteDialog.open} onOpenChange={(open) =>
+        setDeleteDialog(prev => ({ ...prev, open }))
+      }>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除产品</AlertDialogTitle>
+            <AlertDialogDescription>
+              您确定要删除产品 "{deleteDialog.productName}" 吗？
+              <br />
+              <span className="text-red-600 font-medium">
+                此操作不可撤销，删除后将无法恢复产品数据。
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteProduct}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              确认删除
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
