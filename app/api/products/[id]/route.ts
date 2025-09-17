@@ -1,6 +1,6 @@
-import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -9,7 +9,7 @@ import { productValidations } from '@/lib/validations/database';
 // 获取单个产品信息
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     // 验证用户权限
@@ -21,11 +21,8 @@ export async function GET(
       );
     }
 
-    // 解析async params
-    const { id } = await params;
-
     const product = await prisma.product.findUnique({
-      where: { id },
+      where: { id: params.id },
       select: {
         id: true,
         code: true,
@@ -38,10 +35,74 @@ export async function GET(
         status: true,
         createdAt: true,
         updatedAt: true,
-        // 暂时移除复杂的关联查询，简化产品详情
+        inventory: {
+          select: {
+            id: true,
+            colorCode: true,
+            productionDate: true,
+            quantity: true,
+            reservedQuantity: true,
+            updatedAt: true,
+          },
+          orderBy: [{ colorCode: 'asc' }, { productionDate: 'desc' }],
+        },
+        salesOrderItems: {
+          select: {
+            id: true,
+            colorCode: true,
+            productionDate: true,
+            quantity: true,
+            unitPrice: true,
+            subtotal: true,
+            salesOrder: {
+              select: {
+                id: true,
+                orderNumber: true,
+                status: true,
+                createdAt: true,
+                customer: {
+                  select: {
+                    id: true,
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+          orderBy: {
+            salesOrder: {
+              createdAt: 'desc',
+            },
+          },
+          take: 10, // 最近10个销售记录
+        },
+        inboundRecords: {
+          select: {
+            id: true,
+            recordNumber: true,
+            type: true,
+            colorCode: true,
+            productionDate: true,
+            quantity: true,
+            remarks: true,
+            createdAt: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+          take: 10, // 最近10个入库记录
+        },
         _count: {
           select: {
             inventory: true,
+            salesOrderItems: true,
+            inboundRecords: true,
           },
         },
       },
@@ -54,7 +115,47 @@ export async function GET(
       );
     }
 
-    // 转换数据格式 - 简化版本
+    // 计算库存汇总
+    const inventorySummary = product.inventory.reduce(
+      (acc, inv) => {
+        acc.totalQuantity += inv.quantity;
+        acc.reservedQuantity += inv.reservedQuantity;
+        acc.availableQuantity += inv.quantity - inv.reservedQuantity;
+        return acc;
+      },
+      { totalQuantity: 0, reservedQuantity: 0, availableQuantity: 0 }
+    );
+
+    // 按色号分组库存
+    const inventoryByColor = product.inventory.reduce(
+      (acc, inv) => {
+        const colorKey = inv.colorCode || '无色号';
+        if (!acc[colorKey]) {
+          acc[colorKey] = {
+            colorCode: inv.colorCode,
+            totalQuantity: 0,
+            reservedQuantity: 0,
+            availableQuantity: 0,
+            records: [],
+          };
+        }
+        acc[colorKey].totalQuantity += inv.quantity;
+        acc[colorKey].reservedQuantity += inv.reservedQuantity;
+        acc[colorKey].availableQuantity += inv.quantity - inv.reservedQuantity;
+        acc[colorKey].records.push({
+          id: inv.id,
+          productionDate: inv.productionDate,
+          quantity: inv.quantity,
+          reservedQuantity: inv.reservedQuantity,
+          availableQuantity: inv.quantity - inv.reservedQuantity,
+          updatedAt: inv.updatedAt,
+        });
+        return acc;
+      },
+      {} as Record<string, any>
+    );
+
+    // 转换数据格式
     const formattedProduct = {
       id: product.id,
       code: product.code,
@@ -67,8 +168,38 @@ export async function GET(
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
       status: product.status,
+      inventorySummary,
+      inventoryByColor: Object.values(inventoryByColor),
+      recentSalesOrderItems: product.salesOrderItems.map(item => ({
+        id: item.id,
+        colorCode: item.colorCode,
+        productionDate: item.productionDate,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        subtotal: item.subtotal,
+        salesOrder: {
+          id: item.salesOrder.id,
+          orderNumber: item.salesOrder.orderNumber,
+          status: item.salesOrder.status,
+          createdAt: item.salesOrder.createdAt,
+          customer: item.salesOrder.customer,
+        },
+      })),
+      recentInboundRecords: product.inboundRecords.map(record => ({
+        id: record.id,
+        recordNumber: record.recordNumber,
+        type: record.type,
+        colorCode: record.colorCode,
+        productionDate: record.productionDate,
+        quantity: record.quantity,
+        remarks: record.remarks,
+        createdAt: record.createdAt,
+        user: record.user,
+      })),
       statistics: {
         inventoryRecordsCount: product._count.inventory,
+        salesOrderItemsCount: product._count.salesOrderItems,
+        inboundRecordsCount: product._count.inboundRecords,
       },
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
@@ -94,7 +225,7 @@ export async function GET(
 // 更新产品信息
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     // 验证用户权限
@@ -106,14 +237,11 @@ export async function PUT(
       );
     }
 
-    // 解析async params
-    const { id } = await params;
-
     const body = await request.json();
 
     // 验证输入数据
     const validationResult = productValidations.update.safeParse({
-      id,
+      id: params.id,
       ...body,
     });
     if (!validationResult.success) {
@@ -140,7 +268,7 @@ export async function PUT(
 
     // 检查产品是否存在
     const existingProduct = await prisma.product.findUnique({
-      where: { id },
+      where: { id: params.id },
     });
 
     if (!existingProduct) {
@@ -166,7 +294,7 @@ export async function PUT(
 
     // 更新产品信息
     const updatedProduct = await prisma.product.update({
-      where: { id },
+      where: { id: params.id },
       data: {
         ...(code && { code }),
         ...(name && { name }),
@@ -234,7 +362,7 @@ export async function PUT(
 // 删除产品（检查关联后禁止删除）
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     // 验证用户权限
@@ -246,12 +374,9 @@ export async function DELETE(
       );
     }
 
-    // 解析async params
-    const { id } = await params;
-
     // 检查产品是否存在
     const existingProduct = await prisma.product.findUnique({
-      where: { id },
+      where: { id: params.id },
       include: {
         inventory: true,
         salesOrderItems: true,
@@ -299,7 +424,7 @@ export async function DELETE(
 
     // 删除产品
     await prisma.product.delete({
-      where: { id },
+      where: { id: params.id },
     });
 
     return NextResponse.json({

@@ -207,14 +207,9 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    // 调试信息
-    console.log('API接收到的请求体:', body);
-    console.log('请求体中的categoryId:', body.categoryId);
-
     // 验证输入数据
     const validationResult = productValidations.create.safeParse(body);
     if (!validationResult.success) {
-      console.log('数据验证失败:', validationResult.error.errors);
       return NextResponse.json(
         {
           success: false,
@@ -233,11 +228,7 @@ export async function POST(request: NextRequest) {
       unit,
       piecesPerUnit,
       weight,
-      categoryId,
     } = validationResult.data;
-
-    console.log('验证后的数据:', validationResult.data);
-    console.log('提取的categoryId:', categoryId);
 
     // 检查产品编码是否已存在
     const existingProduct = await prisma.product.findUnique({
@@ -251,24 +242,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 准备创建数据
-    const createData = {
-      code,
-      name,
-      specification,
-      specifications: specifications ? JSON.stringify(specifications) : null,
-      unit,
-      piecesPerUnit,
-      weight,
-      status: 'active' as const,
-      categoryId,
-    };
-
-    console.log('准备创建的数据:', createData);
-
     // 创建产品
     const product = await prisma.product.create({
-      data: createData,
+      data: {
+        code,
+        name,
+        specification,
+        specifications: specifications ? JSON.stringify(specifications) : null,
+        unit,
+        piecesPerUnit,
+        weight,
+        status: 'active',
+      },
       select: {
         id: true,
         code: true,
@@ -279,14 +264,6 @@ export async function POST(request: NextRequest) {
         piecesPerUnit: true,
         weight: true,
         status: true,
-        categoryId: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
         createdAt: true,
         updatedAt: true,
       },
@@ -305,12 +282,6 @@ export async function POST(request: NextRequest) {
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
       status: product.status,
-      categoryId: product.categoryId,
-      category: product.category ? {
-        id: product.category.id,
-        name: product.category.name,
-        code: product.category.code,
-      } : null,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };

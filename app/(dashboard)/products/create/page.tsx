@@ -1,48 +1,48 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Save, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 
 // UI Components
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
-import { getCategories } from '@/lib/api/categories';
 import { createProduct, productQueryKeys } from '@/lib/api/products';
 import type { CreateProductData } from '@/lib/schemas/product';
-import { CreateProductSchema, productFormDefaults } from '@/lib/schemas/product';
+import { CreateProductSchema } from '@/lib/schemas/product';
 import {
-    PRODUCT_STATUS_OPTIONS,
-    PRODUCT_UNIT_OPTIONS,
+  PRODUCT_UNIT_OPTIONS,
+  PRODUCT_STATUS_OPTIONS,
 } from '@/lib/types/product';
 
 /**
@@ -53,21 +53,19 @@ export default function CreateProductPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // 获取分类数据
-  const {
-    data: categoriesResponse,
-    isLoading: isLoadingCategories,
-  } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => getCategories(),
-  });
-
-  const categories = categoriesResponse?.data || [];
-
   // 表单配置
   const form = useForm<CreateProductData>({
     resolver: zodResolver(CreateProductSchema),
-    defaultValues: productFormDefaults,
+    defaultValues: {
+      code: '',
+      name: '',
+      specification: '',
+      unit: 'piece',
+      piecesPerUnit: undefined,
+      weight: undefined,
+      status: 'active',
+      specifications: {},
+    },
   });
 
   // 创建产品Mutation
@@ -85,30 +83,7 @@ export default function CreateProductPage() {
 
   // 表单提交处理
   const onSubmit = (data: CreateProductData) => {
-    // 手动获取所有表单值，确保包含categoryId
-    const allFormValues = form.getValues();
-    const categoryId = form.getValues('categoryId');
-
-    // 构建完整的提交数据
-    const completeData = {
-      ...data,
-      categoryId: categoryId,
-    };
-
-    // 处理分类ID：如果选择了"未分类"或为空，则设置为undefined
-    const processedData = {
-      ...completeData,
-      categoryId: (completeData.categoryId === 'uncategorized' || completeData.categoryId === '') ? undefined : completeData.categoryId,
-    };
-
-    // 调试信息
-    console.log('表单提交数据:', data);
-    console.log('表单当前值:', allFormValues);
-    console.log('categoryId字段值:', categoryId);
-    console.log('完整数据:', completeData);
-    console.log('处理后数据:', processedData);
-
-    createMutation.mutate(processedData);
+    createMutation.mutate(data);
   };
 
   return (
@@ -235,42 +210,6 @@ export default function CreateProductPage() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="categoryId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>产品分类</FormLabel>
-                      <Select
-                        onValueChange={(value) => {
-                          console.log('分类选择器值变化:', value);
-                          field.onChange(value);
-                        }}
-                        value={field.value}
-                        disabled={isLoadingCategories}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择产品分类（可选）" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="uncategorized">未分类</SelectItem>
-                          {categories.map(category => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        选择产品所属的分类，留空则为未分类
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
