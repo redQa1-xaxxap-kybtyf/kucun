@@ -1,6 +1,5 @@
 import { getServerSession } from 'next-auth';
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -49,7 +48,7 @@ export async function GET(request: NextRequest) {
     const { status, unit } = queryParams;
 
     // 构建查询条件
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (search) {
       where.OR = [
@@ -83,21 +82,6 @@ export async function GET(request: NextRequest) {
           status: true,
           createdAt: true,
           updatedAt: true,
-          variants: {
-            select: {
-              id: true,
-              colorCode: true,
-              colorName: true,
-              sku: true,
-              status: true,
-            },
-            where: {
-              status: 'active',
-            },
-            orderBy: {
-              createdAt: 'asc',
-            },
-          },
           _count: {
             select: {
               inventory: true,
@@ -153,13 +137,6 @@ export async function GET(request: NextRequest) {
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
       status: product.status,
-      variants: product.variants.map(variant => ({
-        id: variant.id,
-        colorCode: variant.colorCode,
-        colorName: variant.colorName,
-        sku: variant.sku,
-        status: variant.status,
-      })),
       inventory: inventoryMap.get(product.id) || {
         totalQuantity: 0,
         reservedQuantity: 0,
