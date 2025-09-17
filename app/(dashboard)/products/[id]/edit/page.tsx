@@ -56,16 +56,9 @@ interface ProductEditPageProps {
 export default function ProductEditPage({ params }: ProductEditPageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [productId, setProductId] = React.useState<string>('');
 
   // 解析动态路由参数 (Next.js 15.4 要求)
-  React.useEffect(() => {
-    const resolveParams = async () => {
-      const resolvedParams = await params;
-      setProductId(resolvedParams.id);
-    };
-    resolveParams();
-  }, [params]);
+  const { id: productId } = React.use(params);
 
   // 获取产品数据
   const {
@@ -75,7 +68,6 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
   } = useQuery({
     queryKey: productQueryKeys.detail(productId),
     queryFn: () => getProduct(productId),
-    enabled: !!productId,
   });
 
   // 获取分类数据

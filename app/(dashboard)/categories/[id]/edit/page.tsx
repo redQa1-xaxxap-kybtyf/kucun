@@ -51,16 +51,9 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [categoryId, setCategoryId] = React.useState<string>('');
 
   // 解析动态路由参数 (Next.js 15.4 要求)
-  React.useEffect(() => {
-    const resolveParams = async () => {
-      const resolvedParams = await params;
-      setCategoryId(resolvedParams.id);
-    };
-    resolveParams();
-  }, [params]);
+  const { id: categoryId } = React.use(params);
 
   // 获取分类数据
   const {
@@ -70,7 +63,6 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
   } = useQuery({
     queryKey: ['categories', categoryId],
     queryFn: () => getCategory(categoryId),
-    enabled: !!categoryId,
   });
 
   // 获取父级分类列表（排除当前分类）

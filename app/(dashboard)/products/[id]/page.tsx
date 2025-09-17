@@ -29,9 +29,9 @@ import {
 } from '@/lib/types/product';
 
 interface ProductDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 /**
@@ -40,7 +40,7 @@ interface ProductDetailPageProps {
  */
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const router = useRouter();
-  const { id } = params;
+  const { id } = React.use(params);
 
   // 获取产品详情数据
   const {
