@@ -160,7 +160,6 @@ export const salesOrderValidations = {
 export const inventoryValidations = {
   create: z.object({
     productId: baseValidations.id,
-    colorCode: z.string().max(50, '色号不能超过50个字符').optional(),
     productionDate: z.date().optional(),
     quantity: z.number().int().min(0, '库存数量不能为负数'),
   }),
@@ -173,7 +172,6 @@ export const inventoryValidations = {
 
   adjust: z.object({
     productId: baseValidations.id,
-    colorCode: z.string().max(50, '色号不能超过50个字符').optional(),
     productionDate: z.string().optional(),
     adjustmentType: z.enum(['increase', 'decrease']),
     quantity: z.number().int().min(1, '调整数量必须大于0'),

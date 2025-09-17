@@ -29,8 +29,6 @@ export async function GET(request: NextRequest) {
       sortBy: searchParams.get('sortBy') || 'updatedAt',
       sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
       productId: searchParams.get('productId') || undefined,
-      variantId: searchParams.get('variantId') || undefined,
-      colorCode: searchParams.get('colorCode') || undefined,
       batchNumber: searchParams.get('batchNumber') || undefined,
       location: searchParams.get('location') || undefined,
       productionDateStart: searchParams.get('productionDateStart') || undefined,
@@ -61,8 +59,6 @@ export async function GET(request: NextRequest) {
       sortBy,
       sortOrder,
       productId,
-      variantId,
-      colorCode,
       batchNumber,
       location,
       productionDateStart,
@@ -80,7 +76,6 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { product: { code: { contains: search } } },
         { product: { name: { contains: search } } },
-        { colorCode: { contains: search } },
         { batchNumber: { contains: search } },
         { location: { contains: search } },
       ];
@@ -90,13 +85,7 @@ export async function GET(request: NextRequest) {
       where.productId = productId;
     }
 
-    if (variantId) {
-      where.variantId = variantId;
-    }
 
-    if (colorCode) {
-      where.colorCode = colorCode;
-    }
 
     if (batchNumber) {
       where.batchNumber = batchNumber;
@@ -133,8 +122,6 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           productId: true,
-          variantId: true,
-          colorCode: true,
           productionDate: true,
           batchNumber: true,
           quantity: true,
@@ -153,18 +140,6 @@ export async function GET(request: NextRequest) {
               status: true,
             },
           },
-          ...(includeVariants && {
-            variant: {
-              select: {
-                id: true,
-                colorCode: true,
-                colorName: true,
-                colorValue: true,
-                sku: true,
-                status: true,
-              },
-            },
-          }),
         },
         orderBy: { [sortBy as string]: sortOrder },
         skip: (page - 1) * limit,
@@ -179,8 +154,6 @@ export async function GET(request: NextRequest) {
     const formattedInventory = inventoryRecords.map(record => ({
       id: record.id,
       productId: record.productId,
-      variantId: record.variantId,
-      colorCode: record.colorCode,
       productionDate: record.productionDate,
       batchNumber: record.batchNumber,
       quantity: record.quantity,
@@ -189,7 +162,6 @@ export async function GET(request: NextRequest) {
       location: record.location,
       unitCost: record.unitCost,
       product: record.product,
-      variant: (record as any).variant,
       updatedAt: record.updatedAt,
     }));
 
@@ -245,7 +217,6 @@ export async function POST(request: NextRequest) {
 
     const {
       productId,
-      colorCode,
       productionDate,
       adjustmentType,
       quantity,
@@ -268,7 +239,6 @@ export async function POST(request: NextRequest) {
     let inventory = await prisma.inventory.findFirst({
       where: {
         productId,
-        colorCode,
         productionDate: productionDate ? new Date(productionDate) : null,
       },
     });
@@ -286,7 +256,6 @@ export async function POST(request: NextRequest) {
       inventory = await prisma.inventory.create({
         data: {
           productId,
-          colorCode,
           productionDate: productionDate ? new Date(productionDate) : null,
           quantity: adjustmentType === 'increase' ? quantity : 0,
           reservedQuantity: 0,
@@ -331,7 +300,7 @@ export async function POST(request: NextRequest) {
 
     // 记录库存调整日志（可选，这里简化处理）
     console.log(
-      `库存调整: 产品${productId}, 色号${colorCode}, ${adjustmentType} ${quantity}, 原因: ${reason}`
+      `库存调整: 产品${productId}, ${adjustmentType} ${quantity}, 原因: ${reason}`
     );
 
     // 获取更新后的库存信息
@@ -340,7 +309,6 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         productId: true,
-        colorCode: true,
         productionDate: true,
         quantity: true,
         reservedQuantity: true,
@@ -362,7 +330,7 @@ export async function POST(request: NextRequest) {
     const formattedInventory = {
       id: updatedInventory!.id,
       productId: updatedInventory!.productId,
-      colorCode: updatedInventory!.colorCode,
+
       productionDate: updatedInventory!.productionDate,
       quantity: updatedInventory!.quantity,
       reservedQuantity: updatedInventory!.reservedQuantity,
