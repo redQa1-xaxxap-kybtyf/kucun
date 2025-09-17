@@ -1,6 +1,7 @@
 'use client';
 
 import {
+    ChevronDown,
     ChevronLeft,
     ChevronRight,
     CreditCard,
@@ -11,8 +12,10 @@ import {
     Settings,
     ShoppingBag,
     ShoppingCart,
+    TrendingDown,
+    TrendingUp,
     Users,
-    Warehouse,
+    Warehouse
 } from 'lucide-react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
@@ -44,6 +47,26 @@ const navigationItems: NavigationItem[] = [
     title: '库存管理',
     href: '/inventory',
     icon: Warehouse,
+    children: [
+      {
+        id: 'inventory-overview',
+        title: '库存总览',
+        href: '/inventory',
+        icon: Warehouse,
+      },
+      {
+        id: 'inventory-inbound',
+        title: '入库记录',
+        href: '/inventory/inbound',
+        icon: TrendingUp,
+      },
+      {
+        id: 'inventory-outbound',
+        title: '出库记录',
+        href: '/inventory/outbound',
+        icon: TrendingDown,
+      },
+    ],
   },
   {
     id: 'products',
@@ -283,77 +306,208 @@ interface SidebarNavItemProps {
 
 /**
  * 侧边栏导航项组件
- * 支持键盘导航、hover效果、徽章显示等功能
+ * 支持键盘导航、hover效果、徽章显示、子菜单展开等功能
  */
 const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
   ({ item, isActive, isCollapsed, isFocused = false, tabIndex }, ref) => {
     const Icon = item.icon;
     const [isHovered, setIsHovered] = React.useState(false);
+    const [isExpanded, setIsExpanded] = React.useState(false);
+    const pathname = usePathname();
 
+    // 检查是否有子菜单项处于激活状态
+    const hasActiveChild = item.children?.some(child =>
+      pathname.startsWith(child.href) && child.href !== item.href
+    );
+
+    // 如果有激活的子菜单项，自动展开
+    React.useEffect(() => {
+      if (hasActiveChild && !isCollapsed) {
+        setIsExpanded(true);
+      }
+    }, [hasActiveChild, isCollapsed]);
+
+    // 如果没有子菜单，渲染普通导航项
+    if (!item.children || item.children.length === 0) {
+      return (
+        <Link
+          href={item.href}
+          ref={ref}
+          tabIndex={tabIndex}
+          className={cn(
+            'block rounded-md transition-all duration-200',
+            isFocused && 'ring-2 ring-ring ring-offset-2'
+          )}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          aria-label={item.title}
+          title={isCollapsed ? item.title : undefined}
+        >
+          <Button
+            variant={isActive ? 'secondary' : 'ghost'}
+            className={cn(
+              'h-10 w-full justify-start transition-all duration-200',
+              isCollapsed ? 'px-2' : 'px-3',
+              isActive && 'bg-secondary font-medium shadow-sm',
+              isHovered && !isActive && 'bg-accent/50',
+              isFocused && 'ring-0'
+            )}
+            disabled={item.disabled}
+            asChild
+          >
+            <div>
+              <Icon
+                className={cn(
+                  'h-4 w-4 transition-transform duration-200',
+                  !isCollapsed && 'mr-3',
+                  isHovered && 'scale-110'
+                )}
+              />
+              {!isCollapsed && (
+                <>
+                  <span className="flex-1 text-left">{item.title}</span>
+                  {item.badge && (
+                    <Badge
+                      variant={item.badgeVariant || 'secondary'}
+                      className={cn(
+                        'ml-auto h-5 px-1.5 text-xs transition-all duration-200',
+                        isHovered && 'scale-105'
+                      )}
+                    >
+                      {item.badge}
+                    </Badge>
+                  )}
+                </>
+              )}
+              {isCollapsed && item.badge && (
+                <Badge
+                  variant={item.badgeVariant || 'secondary'}
+                  className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center p-0 text-xs"
+                >
+                  {typeof item.badge === 'number' && item.badge > 9
+                    ? '9+'
+                    : item.badge}
+                </Badge>
+              )}
+            </div>
+          </Button>
+        </Link>
+      );
+    }
+
+    // 渲染带子菜单的导航项
     return (
-      <Link
-        href={item.href}
-        ref={ref}
-        tabIndex={tabIndex}
-        className={cn(
-          'block rounded-md transition-all duration-200',
-          isFocused && 'ring-2 ring-ring ring-offset-2'
-        )}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
-        aria-label={item.title}
-        title={isCollapsed ? item.title : undefined}
-      >
+      <div className="space-y-1">
         <Button
-          variant={isActive ? 'secondary' : 'ghost'}
+          variant={isActive || hasActiveChild ? 'secondary' : 'ghost'}
           className={cn(
             'h-10 w-full justify-start transition-all duration-200',
             isCollapsed ? 'px-2' : 'px-3',
-            isActive && 'bg-secondary font-medium shadow-sm',
-            isHovered && !isActive && 'bg-accent/50',
-            isFocused && 'ring-0' // 移除Button的默认focus ring，使用Link的ring
+            (isActive || hasActiveChild) && 'bg-secondary font-medium shadow-sm',
+            isHovered && !isActive && !hasActiveChild && 'bg-accent/50',
+            isFocused && 'ring-2 ring-ring ring-offset-2'
           )}
           disabled={item.disabled}
-          asChild
+          onClick={() => {
+            if (isCollapsed) {
+              // 折叠状态下直接跳转到主页面
+              window.location.href = item.href;
+            } else {
+              // 展开状态下切换子菜单
+              setIsExpanded(!isExpanded);
+            }
+          }}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
+          aria-label={item.title}
+          title={isCollapsed ? item.title : undefined}
+          tabIndex={tabIndex}
         >
-          <div>
-            <Icon
-              className={cn(
-                'h-4 w-4 transition-transform duration-200',
-                !isCollapsed && 'mr-3',
-                isHovered && 'scale-110'
-              )}
-            />
-            {!isCollapsed && (
-              <>
-                <span className="flex-1 text-left">{item.title}</span>
-                {item.badge && (
-                  <Badge
-                    variant={item.badgeVariant || 'secondary'}
-                    className={cn(
-                      'ml-auto h-5 px-1.5 text-xs transition-all duration-200',
-                      isHovered && 'scale-105'
-                    )}
-                  >
-                    {item.badge}
-                  </Badge>
+          <Icon
+            className={cn(
+              'h-4 w-4 transition-transform duration-200',
+              !isCollapsed && 'mr-3',
+              isHovered && 'scale-110'
+            )}
+          />
+          {!isCollapsed && (
+            <>
+              <span className="flex-1 text-left">{item.title}</span>
+              <ChevronDown
+                className={cn(
+                  'h-4 w-4 transition-transform duration-200',
+                  isExpanded && 'rotate-180'
                 )}
-              </>
-            )}
-            {/* 折叠状态下的徽章显示 */}
-            {isCollapsed && item.badge && (
-              <Badge
-                variant={item.badgeVariant || 'secondary'}
-                className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center p-0 text-xs"
-              >
-                {typeof item.badge === 'number' && item.badge > 9
-                  ? '9+'
-                  : item.badge}
-              </Badge>
-            )}
-          </div>
+              />
+              {item.badge && (
+                <Badge
+                  variant={item.badgeVariant || 'secondary'}
+                  className={cn(
+                    'ml-2 h-5 px-1.5 text-xs transition-all duration-200',
+                    isHovered && 'scale-105'
+                  )}
+                >
+                  {item.badge}
+                </Badge>
+              )}
+            </>
+          )}
+          {isCollapsed && item.badge && (
+            <Badge
+              variant={item.badgeVariant || 'secondary'}
+              className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center p-0 text-xs"
+            >
+              {typeof item.badge === 'number' && item.badge > 9
+                ? '9+'
+                : item.badge}
+            </Badge>
+          )}
         </Button>
-      </Link>
+
+        {/* 子菜单 */}
+        {!isCollapsed && isExpanded && (
+          <div className="ml-4 space-y-1 border-l border-border pl-4">
+            {item.children.map((child) => {
+              const ChildIcon = child.icon;
+              const isChildActive = pathname.startsWith(child.href);
+
+              return (
+                <Link
+                  key={child.id}
+                  href={child.href}
+                  className={cn(
+                    'block rounded-md transition-all duration-200'
+                  )}
+                >
+                  <Button
+                    variant={isChildActive ? 'secondary' : 'ghost'}
+                    className={cn(
+                      'h-9 w-full justify-start text-sm transition-all duration-200',
+                      'px-3',
+                      isChildActive && 'bg-secondary font-medium shadow-sm'
+                    )}
+                    disabled={child.disabled}
+                    asChild
+                  >
+                    <div>
+                      <ChildIcon className="mr-3 h-3.5 w-3.5" />
+                      <span className="flex-1 text-left">{child.title}</span>
+                      {child.badge && (
+                        <Badge
+                          variant={child.badgeVariant || 'secondary'}
+                          className="ml-auto h-4 px-1 text-xs"
+                        >
+                          {child.badge}
+                        </Badge>
+                      )}
+                    </div>
+                  </Button>
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
     );
   }
 );

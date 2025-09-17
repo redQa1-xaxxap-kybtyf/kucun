@@ -2,17 +2,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  Plus,
-  Search,
-  Filter,
-  MoreHorizontal,
-  Edit,
-  Trash2,
-  Eye,
-  Package,
-  AlertTriangle,
-  TrendingUp,
-  TrendingDown,
+    AlertTriangle,
+    Edit,
+    Eye,
+    MoreHorizontal,
+    Package,
+    Plus,
+    Search
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -21,36 +17,36 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { MobileDataTable } from '@/components/ui/mobile-data-table';
 import { Progress } from '@/components/ui/progress';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
 } from '@/components/ui/table';
 
 // API and Types
@@ -191,20 +187,6 @@ export default function InventoryPage() {
           <p className="text-muted-foreground">查看和管理所有产品的库存信息</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => router.push('/inventory/inbound')}
-          >
-            <TrendingUp className="mr-2 h-4 w-4" />
-            入库记录
-          </Button>
-          <Button
-            variant="outline"
-            onClick={() => router.push('/inventory/outbound')}
-          >
-            <TrendingDown className="mr-2 h-4 w-4" />
-            出库记录
-          </Button>
           <Button onClick={() => router.push('/inventory/adjust')}>
             <Plus className="mr-2 h-4 w-4" />
             库存调整

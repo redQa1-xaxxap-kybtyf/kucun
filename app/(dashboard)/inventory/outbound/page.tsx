@@ -25,7 +25,6 @@ import {
     Calendar,
     FileText,
     Package,
-    Plus,
     TrendingDown,
     User
 } from 'lucide-react';
@@ -157,10 +156,7 @@ export default function OutboundRecordsPage() {
             <p className="text-muted-foreground">查看所有出库操作的历史记录</p>
           </div>
         </div>
-        <Button onClick={() => router.push('/inventory')}>
-          <Plus className="mr-2 h-4 w-4" />
-          新增出库
-        </Button>
+
       </div>
 
       {/* 统计卡片 */}
