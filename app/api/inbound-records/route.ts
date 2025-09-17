@@ -1,12 +1,11 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma, withTransaction } from '@/lib/db';
 import {
-  inboundRecordValidations,
-  paginationValidations,
+    inboundRecordValidations,
+    paginationValidations,
 } from '@/lib/validations/database';
 
 // 生成入库单号
