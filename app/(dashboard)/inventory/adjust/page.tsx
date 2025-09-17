@@ -24,24 +24,18 @@ import {
 // Icons
 import {
     ArrowLeft,
-    Calendar,
     Edit,
-    FileText,
     Package,
     Plus,
     TrendingDown,
-    TrendingUp,
-    User
+    TrendingUp
 } from 'lucide-react';
-
 // Components
 import { InventoryOperationForm } from '@/components/inventory/inventory-operation-form';
 
 // API and Types
-import type { InboundRecord, OutboundRecord } from '@/lib/types/inventory';
-
-// 定义调整记录类型
-type AdjustRecord = InboundRecord | OutboundRecord;
+import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
+import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 
 /**
  * 库存调整页面
@@ -51,68 +45,70 @@ export default function InventoryAdjustPage() {
   const router = useRouter();
   const [showAdjustDialog, setShowAdjustDialog] = React.useState(false);
 
-  // 获取库存调整记录数据 - 暂时使用模拟数据
+  // 获取库存数据 - 用于显示当前库存状态
+  const queryParams: InventoryQueryParams = {
+    page: 1,
+    limit: 50,
+    hasStock: true, // 只显示有库存的记录
+    sortBy: 'updatedAt',
+    sortOrder: 'desc',
+  };
+
   const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['inventory-records', { type: 'adjust' }],
-    queryFn: async () => {
-      // 模拟调整记录数据
-      return {
-        data: [] as AdjustRecord[],
-        pagination: { page: 1, limit: 50, total: 0, totalPages: 0 }
-      };
-    },
+    queryKey: inventoryQueryKeys.list(queryParams),
+    queryFn: () => getInventories(queryParams),
   });
 
-  const adjustRecords = data?.data || [];
+  const inventoryRecords = data?.data || [];
 
   // 格式化日期
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
+  const formatDate = (dateString: string | Date) => {
+    if (!dateString) return null;
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return format(date, 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
   };
 
-  // 格式化调整类型
-  const getAdjustmentTypeLabel = (type: string) => {
-    const labels: Record<string, string> = {
-      adjust: '库存调整',
-      inventory_check: '盘点调整',
-      damage: '损耗调整',
-      loss: '丢失调整',
-      found: '盘盈调整',
-    };
-    return labels[type] || type;
-  };
 
-  // 获取调整类型颜色
-  const getAdjustmentTypeColor = (type: string) => {
-    const colors: Record<string, string> = {
-      adjust: 'default',
-      inventory_check: 'secondary',
-      damage: 'destructive',
-      loss: 'destructive',
-      found: 'default',
-    };
-    return colors[type] || 'default';
-  };
 
-  // 获取数量变化显示
-  const getQuantityChange = (record: AdjustRecord) => {
-    const quantity = record.quantity || 0;
-    if (quantity > 0) {
-      return (
-        <span className="text-green-600 font-medium">
-          <TrendingUp className="inline h-4 w-4 mr-1" />
-          +{quantity}
-        </span>
-      );
-    } else if (quantity < 0) {
-      return (
-        <span className="text-red-600 font-medium">
-          <TrendingDown className="inline h-4 w-4 mr-1" />
-          {quantity}
-        </span>
-      );
+  // 获取库存状态标签
+  const getStockStatusLabel = (quantity: number, reservedQuantity: number = 0) => {
+    const availableQuantity = quantity - reservedQuantity;
+    if (availableQuantity <= 0) {
+      return '缺货';
+    } else if (availableQuantity <= 10) {
+      return '库存不足';
+    } else {
+      return '库存充足';
     }
-    return <span className="text-muted-foreground">0</span>;
+  };
+
+  // 获取库存状态颜色
+  const getStockStatusColor = (quantity: number, reservedQuantity: number = 0) => {
+    const availableQuantity = quantity - reservedQuantity;
+    if (availableQuantity <= 0) {
+      return 'destructive';
+    } else if (availableQuantity <= 10) {
+      return 'secondary';
+    } else {
+      return 'default';
+    }
+  };
+
+  // 获取库存数量显示
+  const getStockDisplay = (record: Inventory) => {
+    const availableQuantity = record.quantity - (record.reservedQuantity || 0);
+    return (
+      <div className="flex flex-col">
+        <span className="font-medium">
+          {availableQuantity} {record.product?.unit || '件'}
+        </span>
+        {record.reservedQuantity > 0 && (
+          <span className="text-xs text-muted-foreground">
+            预留: {record.reservedQuantity}
+          </span>
+        )}
+      </div>
+    );
   };
 
   // 处理调整成功
@@ -219,65 +215,68 @@ export default function InventoryAdjustPage() {
       <div className="grid gap-4 md:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">今日调整</CardTitle>
-            <Edit className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">库存充足</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {adjustRecords.filter(record => {
-                const today = new Date().toDateString();
-                return new Date(record.createdAt).toDateString() === today;
+            <div className="text-2xl font-bold text-green-600">
+              {inventoryRecords.filter((record: Inventory) => {
+                const availableQuantity = record.quantity - (record.reservedQuantity || 0);
+                return availableQuantity > 10;
               }).length}
             </div>
-            <p className="text-xs text-muted-foreground">笔调整记录</p>
+            <p className="text-xs text-muted-foreground">个产品库存充足</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">本月调整</CardTitle>
-            <Calendar className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">库存不足</CardTitle>
+            <TrendingDown className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {adjustRecords.filter(record => {
-                const thisMonth = new Date().getMonth();
-                const thisYear = new Date().getFullYear();
-                const recordDate = new Date(record.createdAt);
-                return recordDate.getMonth() === thisMonth && recordDate.getFullYear() === thisYear;
+            <div className="text-2xl font-bold text-orange-600">
+              {inventoryRecords.filter((record: Inventory) => {
+                const availableQuantity = record.quantity - (record.reservedQuantity || 0);
+                return availableQuantity > 0 && availableQuantity <= 10;
               }).length}
             </div>
-            <p className="text-xs text-muted-foreground">笔调整记录</p>
+            <p className="text-xs text-muted-foreground">个产品库存不足</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">总调整记录</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">缺货产品</CardTitle>
+            <Package className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{adjustRecords.length}</div>
-            <p className="text-xs text-muted-foreground">笔调整记录</p>
+            <div className="text-2xl font-bold text-red-600">
+              {inventoryRecords.filter((record: Inventory) => {
+                const availableQuantity = record.quantity - (record.reservedQuantity || 0);
+                return availableQuantity <= 0;
+              }).length}
+            </div>
+            <p className="text-xs text-muted-foreground">个产品缺货</p>
           </CardContent>
         </Card>
       </div>
 
-      {/* 库存调整记录列表 */}
+      {/* 当前库存列表 */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Edit className="h-5 w-5" />
-            库存调整记录
+            <Package className="h-5 w-5" />
+            当前库存状态
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {adjustRecords.length === 0 ? (
+          {inventoryRecords.length === 0 ? (
             <div className="text-center py-8">
               <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">暂无调整记录</h3>
-              <p className="text-muted-foreground mb-4">还没有任何库存调整操作记录</p>
+              <h3 className="text-lg font-medium mb-2">暂无库存记录</h3>
+              <p className="text-muted-foreground mb-4">还没有任何库存数据</p>
               <Button onClick={() => setShowAdjustDialog(true)}>
                 <Plus className="mr-2 h-4 w-4" />
-                立即调整
+                添加库存
               </Button>
             </div>
           ) : (
@@ -285,15 +284,15 @@ export default function InventoryAdjustPage() {
               <TableHeader>
                 <TableRow>
                   <TableHead>产品信息</TableHead>
-                  <TableHead>调整类型</TableHead>
-                  <TableHead>数量变化</TableHead>
-                  <TableHead>操作人员</TableHead>
-                  <TableHead>操作时间</TableHead>
-                  <TableHead>备注</TableHead>
+                  <TableHead>产品详情</TableHead>
+                  <TableHead>库存状态</TableHead>
+                  <TableHead>当前库存</TableHead>
+                  <TableHead>最后更新</TableHead>
+                  <TableHead>操作</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {adjustRecords.map((record) => (
+                {inventoryRecords.map((record: Inventory) => (
                   <TableRow key={record.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -303,35 +302,57 @@ export default function InventoryAdjustPage() {
                             {record.product?.name || '-'}
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            {record.product?.code || '-'}
+                            编码: {record.product?.code || '-'}
                           </div>
                         </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getAdjustmentTypeColor(record.type) as any}>
-                        {getAdjustmentTypeLabel(record.type)}
+                      <div className="space-y-1">
+                        {/* 显示产品规格 */}
+                        {record.product?.specification && (
+                          <div className="text-sm text-muted-foreground">
+                            {record.product.specification}
+                          </div>
+                        )}
+                        {/* 显示批次号（如果有） */}
+                        {record.batchNumber && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">批次: </span>
+                            <span>{record.batchNumber}</span>
+                          </div>
+                        )}
+                        {/* 显示库存位置（如果有） */}
+                        {record.location && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">位置: </span>
+                            <span>{record.location}</span>
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={getStockStatusColor(record.quantity, record.reservedQuantity) as 'default' | 'secondary' | 'destructive' | 'outline'}>
+                        {getStockStatusLabel(record.quantity, record.reservedQuantity)}
                       </Badge>
                     </TableCell>
                     <TableCell>
-                      {getQuantityChange(record)}
-                      <span className="ml-1 text-muted-foreground">
-                        {record.product?.unit || '件'}
-                      </span>
+                      {getStockDisplay(record)}
                     </TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <User className="h-4 w-4 text-muted-foreground" />
-                        {record.user?.name || '-'}
+                      <div className="text-sm">
+                        {formatDate(record.updatedAt)}
                       </div>
                     </TableCell>
                     <TableCell>
-                      {formatDate(record.createdAt)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="max-w-[200px] truncate">
-                        {record.remarks || '-'}
-                      </div>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAdjustDialog(true)}
+                      >
+                        <Edit className="mr-1 h-3 w-3" />
+                        调整
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
