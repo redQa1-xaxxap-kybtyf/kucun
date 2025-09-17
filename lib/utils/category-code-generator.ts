@@ -15,14 +15,14 @@ const CATEGORY_NAME_MAPPING: Record<string, string> = {
   '釉面砖': 'GLAZED_TILES',
   '马赛克': 'MOSAIC_TILES',
   '文化砖': 'CULTURE_TILES',
-  
+
   // 石材相关
   '石材': 'STONE_MATERIALS',
   '大理石': 'MARBLE',
   '花岗岩': 'GRANITE',
   '人造石': 'ARTIFICIAL_STONE',
   '天然石': 'NATURAL_STONE',
-  
+
   // 辅材相关
   '辅材': 'AUXILIARY_MATERIALS',
   '水泥': 'CEMENT',
@@ -30,13 +30,13 @@ const CATEGORY_NAME_MAPPING: Record<string, string> = {
   '胶水': 'ADHESIVE',
   '填缝剂': 'GROUT',
   '防水材料': 'WATERPROOF_MATERIALS',
-  
+
   // 工具相关
   '工具': 'TOOLS',
   '切割工具': 'CUTTING_TOOLS',
   '测量工具': 'MEASURING_TOOLS',
   '安装工具': 'INSTALLATION_TOOLS',
-  
+
   // 通用词汇
   '产品': 'PRODUCTS',
   '材料': 'MATERIALS',
@@ -74,7 +74,7 @@ const PINYIN_INITIAL_MAPPING: Record<string, string> = {
   '外': 'W', '完': 'W', '万': 'W', '王': 'W', '网': 'W', '往': 'W', '为': 'W', '位': 'W', '文': 'W', '问': 'W', '我': 'W', '无': 'W', '五': 'W', '物': 'W',
   '西': 'X', '系': 'X', '下': 'X', '先': 'X', '现': 'X', '线': 'X', '相': 'X', '想': 'X', '向': 'X', '项': 'X', '小': 'X', '新': 'X', '信': 'X', '行': 'X', '形': 'X', '性': 'X', '修': 'X', '需': 'X', '学': 'X', '选': 'X',
   '压': 'Y', '研': 'Y', '眼': 'Y', '样': 'Y', '要': 'Y', '也': 'Y', '业': 'Y', '一': 'Y', '以': 'Y', '已': 'Y', '意': 'Y', '因': 'Y', '应': 'Y', '用': 'Y', '由': 'Y', '有': 'Y', '又': 'Y', '于': 'Y', '与': 'Y', '元': 'Y', '原': 'Y', '员': 'Y', '月': 'Y', '越': 'Y', '运': 'Y',
-  '在': 'Z', '再': 'Z', '造': 'Z', '则': 'Z', '增': 'Z', '展': 'Z', '站': 'Z', '张': 'Z', '长': 'Z', '找': 'Z', '这': 'Z', '真': 'Z', '正': 'Z', '政': 'Z', '之': 'Z', '知': 'Z', '直': 'Z', '只': 'Z', '制': 'Z', '中': 'Z', '种': 'Z', '重': 'Z', '主': 'Z', '住': 'Z', '注': 'Z', '专': 'Z', '转': 'Z', '装': 'Z', '状': 'Z', '准': 'Z', '资': 'Z', '自': 'Z', '总': 'Z', '组': 'Z', '作': 'Z', '做': 'Z',
+  '在': 'Z', '再': 'Z', '造': 'Z', '则': 'Z', '增': 'Z', '展': 'Z', '站': 'Z', '张': 'Z', '找': 'Z', '这': 'Z', '真': 'Z', '正': 'Z', '政': 'Z', '之': 'Z', '知': 'Z', '直': 'Z', '只': 'Z', '制': 'Z', '中': 'Z', '种': 'Z', '重': 'Z', '主': 'Z', '住': 'Z', '注': 'Z', '专': 'Z', '转': 'Z', '装': 'Z', '状': 'Z', '准': 'Z', '资': 'Z', '自': 'Z', '总': 'Z', '组': 'Z', '作': 'Z', '做': 'Z',
 };
 
 /**
@@ -89,7 +89,7 @@ export function generateCategoryCode(name: string): string {
 
   // 去除首尾空格
   const cleanName = name.trim();
-  
+
   // 1. 首先检查是否有直接的映射
   if (CATEGORY_NAME_MAPPING[cleanName]) {
     return CATEGORY_NAME_MAPPING[cleanName];
@@ -133,12 +133,12 @@ export function generateCategoryCode(name: string): string {
 function processRemainingText(text: string): string {
   // 移除特殊字符
   const cleaned = text.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '');
-  
+
   if (/^[a-zA-Z0-9]+$/.test(cleaned)) {
     // 纯英文数字
     return cleaned.toUpperCase().substring(0, 15);
   }
-  
+
   // 中文转拼音首字母
   return convertToPinyinInitials(cleaned);
 }
@@ -148,7 +148,7 @@ function processRemainingText(text: string): string {
  */
 function convertToPinyinInitials(text: string): string {
   let result = '';
-  
+
   for (const char of text) {
     if (/[a-zA-Z0-9]/.test(char)) {
       // 英文数字直接添加
@@ -160,7 +160,7 @@ function convertToPinyinInitials(text: string): string {
     }
     // 其他字符忽略
   }
-  
+
   return result.substring(0, 20) || 'CATEGORY';
 }
 
@@ -169,7 +169,7 @@ function convertToPinyinInitials(text: string): string {
  */
 function getCharacterInitial(char: string): string {
   const code = char.charCodeAt(0);
-  
+
   // 基于Unicode编码范围的简单映射
   if (code >= 0x4e00 && code <= 0x4fff) return 'A';
   if (code >= 0x5000 && code <= 0x51ff) return 'B';
@@ -193,7 +193,7 @@ function getCharacterInitial(char: string): string {
   if (code >= 0x7400 && code <= 0x75ff) return 'X';
   if (code >= 0x7600 && code <= 0x77ff) return 'Y';
   if (code >= 0x7800 && code <= 0x9fff) return 'Z';
-  
+
   return 'X'; // 默认返回X
 }
 
@@ -206,12 +206,12 @@ function getCharacterInitial(char: string): string {
 export function ensureUniqueCode(baseCode: string, existingCodes: string[]): string {
   let code = baseCode;
   let counter = 1;
-  
+
   while (existingCodes.includes(code)) {
     code = `${baseCode}_${counter}`;
     counter++;
   }
-  
+
   return code;
 }
 
