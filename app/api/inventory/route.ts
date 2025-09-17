@@ -1,12 +1,12 @@
+import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import {
-  inventoryValidations,
-  paginationValidations,
+    inventoryValidations,
+    paginationValidations,
 } from '@/lib/validations/database';
 
 // 获取库存列表
@@ -29,8 +29,16 @@ export async function GET(request: NextRequest) {
       sortBy: searchParams.get('sortBy') || 'updatedAt',
       sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
       productId: searchParams.get('productId') || undefined,
+      variantId: searchParams.get('variantId') || undefined,
       colorCode: searchParams.get('colorCode') || undefined,
+      batchNumber: searchParams.get('batchNumber') || undefined,
+      location: searchParams.get('location') || undefined,
+      productionDateStart: searchParams.get('productionDateStart') || undefined,
+      productionDateEnd: searchParams.get('productionDateEnd') || undefined,
       lowStock: searchParams.get('lowStock') === 'true',
+      hasStock: searchParams.get('hasStock') === 'true',
+      groupByVariant: searchParams.get('groupByVariant') === 'true',
+      includeVariants: searchParams.get('includeVariants') === 'true',
     };
 
     // 验证查询参数
@@ -47,7 +55,19 @@ export async function GET(request: NextRequest) {
     }
 
     const { page, limit, search, sortBy, sortOrder } = validationResult.data;
-    const { productId, colorCode, lowStock } = queryParams;
+    const {
+      productId,
+      variantId,
+      colorCode,
+      batchNumber,
+      location,
+      productionDateStart,
+      productionDateEnd,
+      lowStock,
+      hasStock,
+      groupByVariant,
+      includeVariants
+    } = queryParams;
 
     // 构建查询条件
     const where: any = {};
@@ -57,6 +77,8 @@ export async function GET(request: NextRequest) {
         { product: { code: { contains: search } } },
         { product: { name: { contains: search } } },
         { colorCode: { contains: search } },
+        { batchNumber: { contains: search } },
+        { location: { contains: search } },
       ];
     }
 
@@ -64,13 +86,40 @@ export async function GET(request: NextRequest) {
       where.productId = productId;
     }
 
+    if (variantId) {
+      where.variantId = variantId;
+    }
+
     if (colorCode) {
       where.colorCode = colorCode;
+    }
+
+    if (batchNumber) {
+      where.batchNumber = batchNumber;
+    }
+
+    if (location) {
+      where.location = location;
+    }
+
+    if (productionDateStart || productionDateEnd) {
+      where.productionDate = {};
+      if (productionDateStart) {
+        where.productionDate.gte = productionDateStart;
+      }
+      if (productionDateEnd) {
+        where.productionDate.lte = productionDateEnd;
+      }
     }
 
     if (lowStock) {
       // 低库存：可用库存 <= 10
       where.quantity = { lte: 10 };
+    }
+
+    if (hasStock) {
+      // 有库存：数量 > 0
+      where.quantity = { gt: 0 };
     }
 
     // 查询库存列表
@@ -80,10 +129,14 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           productId: true,
+          variantId: true,
           colorCode: true,
           productionDate: true,
+          batchNumber: true,
           quantity: true,
           reservedQuantity: true,
+          location: true,
+          unitCost: true,
           updatedAt: true,
           product: {
             select: {
@@ -96,6 +149,18 @@ export async function GET(request: NextRequest) {
               status: true,
             },
           },
+          ...(includeVariants && {
+            variant: {
+              select: {
+                id: true,
+                colorCode: true,
+                colorName: true,
+                colorValue: true,
+                sku: true,
+                status: true,
+              },
+            },
+          }),
         },
         orderBy: { [sortBy as string]: sortOrder },
         skip: (page - 1) * limit,
@@ -110,12 +175,17 @@ export async function GET(request: NextRequest) {
     const formattedInventory = inventoryRecords.map(record => ({
       id: record.id,
       productId: record.productId,
+      variantId: record.variantId,
       colorCode: record.colorCode,
       productionDate: record.productionDate,
+      batchNumber: record.batchNumber,
       quantity: record.quantity,
       reservedQuantity: record.reservedQuantity,
       availableQuantity: record.quantity - record.reservedQuantity,
+      location: record.location,
+      unitCost: record.unitCost,
       product: record.product,
+      variant: (record as any).variant,
       updatedAt: record.updatedAt,
     }));
 
