@@ -208,6 +208,18 @@ export const paginationValidations = {
     sortBy: z.string().optional(),
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
     search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
+    // 新增库存查询参数
+    productId: z.string().optional(),
+    variantId: z.string().optional(),
+    colorCode: z.string().optional(),
+    batchNumber: z.string().optional(),
+    location: z.string().optional(),
+    productionDateStart: z.string().optional(),
+    productionDateEnd: z.string().optional(),
+    lowStock: z.boolean().optional(),
+    hasStock: z.boolean().optional(),
+    groupByVariant: z.boolean().optional(),
+    includeVariants: z.boolean().optional(),
   }),
 };
 
