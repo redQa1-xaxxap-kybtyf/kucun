@@ -52,6 +52,12 @@ export const CreateProductSchema = z.object({
     .max(10000, '重量不能超过10000kg')
     .optional(),
 
+  thickness: z
+    .number()
+    .min(0, '厚度不能为负数')
+    .max(100, '厚度不能超过100mm')
+    .optional(),
+
   status: ProductStatusEnum.default('active'),
 
   categoryId: z.string().optional(),
@@ -132,8 +138,9 @@ export const productFormDefaults: CreateProductData = {
   name: '',
   specification: '',
   unit: 'piece',
-  piecesPerUnit: undefined,
-  weight: undefined,
+  piecesPerUnit: 1,
+  weight: 0,
+  thickness: 0,
   status: 'active',
   categoryId: undefined,
   specifications: {},
