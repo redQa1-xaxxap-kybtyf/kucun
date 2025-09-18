@@ -47,6 +47,7 @@ export async function getProducts(
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // 包含cookies以传递会话信息
   });
 
   if (!response.ok) {
@@ -97,6 +98,7 @@ export async function createProduct(
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // 包含cookies以传递会话信息
     body: JSON.stringify(productData),
   });
 
@@ -125,6 +127,7 @@ export async function updateProduct(
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // 包含cookies以传递会话信息
     body: JSON.stringify(productData),
   });
 
@@ -153,6 +156,7 @@ export async function deleteProduct(id: string): Promise<void> {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // 包含cookies以传递会话信息
   });
 
   if (!response.ok) {
@@ -180,6 +184,7 @@ export async function batchDeleteProducts(
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // 包含cookies以传递会话信息
     body: JSON.stringify(input),
   });
 
