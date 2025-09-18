@@ -319,8 +319,11 @@ export type PaymentStatisticsQueryInput = z.infer<
   typeof paymentStatisticsQuerySchema
 >;
 
-// 导入统一的验证函数
-export { validatePaymentAmount } from '@/lib/utils/validation-helpers';
+// 验证工具函数
+export const validatePaymentAmount = (
+  amount: number,
+  maxAmount: number
+): boolean => amount > 0 && amount <= maxAmount;
 
 export const validatePaymentDate = (date: string): boolean => {
   const parsedDate = new Date(date);

@@ -1,6 +1,4 @@
-import { API_ERROR_MESSAGES } from '@/lib/constants/error-messages';
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { createUser } from '@/lib/auth';
 import { userValidations } from '@/lib/validations/database';
@@ -15,7 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: API_ERROR_MESSAGES.INVALID_INPUT,
+          error: '输入数据格式不正确',
           details: validationResult.error.errors,
         },
         { status: 400 }

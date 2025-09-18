@@ -19,6 +19,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/customers/customer-hierarchy';
+import { ProductSelector } from '@/components/products/product-selector';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -84,7 +85,6 @@ import {
     outboundCreateSchema,
 } from '@/lib/validations/inventory';
 
-import { ProductSelector } from '@/components/products/product-selector';
 
 interface InventoryOperationFormProps {
   mode: 'inbound' | 'outbound' | 'adjust';

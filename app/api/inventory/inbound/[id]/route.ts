@@ -1,38 +1,41 @@
 // 单个入库记录API路由
 // 提供单个入库记录的查询、更新、删除操作
 
+import { getServerSession } from 'next-auth';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import {
-    cleanRemarks,
-    formatQuantity,
-    inboundIdSchema,
-    updateInboundSchema
+  cleanRemarks,
+  formatQuantity,
+  inboundIdSchema,
+  updateInboundSchema,
 } from '@/lib/validations/inbound';
-import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/inventory/inbound/[id] - 获取单个入库记录
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // 验证用户身份
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
 
     // 验证参数
-    const { id } = inboundIdSchema.parse({ id: params.id });
+    const validatedId = inboundIdSchema.parse({ id });
 
     // 查询入库记录
     const record = await prisma.inboundRecord.findUnique({
-      where: { id },
+      where: { id: validatedId.id },
       include: {
         product: {
           select: {
@@ -77,7 +80,6 @@ export async function GET(
         user: record.user,
       },
     });
-
   } catch (error) {
     console.error('获取入库记录失败:', error);
     return NextResponse.json(
@@ -90,20 +92,22 @@ export async function GET(
 // PUT /api/inventory/inbound/[id] - 更新入库记录
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // 验证用户身份
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
 
     // 验证参数
-    const { id } = inboundIdSchema.parse({ id: params.id });
+    const validatedId = inboundIdSchema.parse({ id });
+    const recordId = validatedId.id;
 
     // 解析请求数据
     const body = await request.json();
@@ -111,7 +115,7 @@ export async function PUT(
 
     // 检查记录是否存在
     const existingRecord = await prisma.inboundRecord.findUnique({
-      where: { id },
+      where: { id: recordId },
       select: { id: true, quantity: true, productId: true },
     });
 
@@ -139,7 +143,7 @@ export async function PUT(
 
     // 更新入库记录
     const updatedRecord = await prisma.inboundRecord.update({
-      where: { id },
+      where: { id: recordId },
       data: updateData,
       include: {
         product: {
@@ -162,38 +166,32 @@ export async function PUT(
     });
 
     // 如果数量发生变化，需要更新库存
-    if (validatedData.quantity !== undefined && validatedData.quantity !== existingRecord.quantity) {
-      const quantityDiff = formatQuantity(validatedData.quantity) - existingRecord.quantity;
+    if (
+      validatedData.quantity !== undefined &&
+      validatedData.quantity !== existingRecord.quantity
+    ) {
+      const quantityDiff =
+        formatQuantity(validatedData.quantity) - existingRecord.quantity;
 
-      // 查找现有库存记录
-      const existingInventory = await prisma.inventory.findFirst({
+      await prisma.inventory.upsert({
         where: {
+          productId_variantId_colorCode_productionDate: {
+            productId: existingRecord.productId,
+            variantId: null,
+            colorCode: null,
+            productionDate: null,
+          },
+        },
+        update: {
+          quantity: {
+            increment: quantityDiff,
+          },
+        },
+        create: {
           productId: existingRecord.productId,
-          variantId: null,
-          productionDate: null,
-          batchNumber: null,
+          quantity: Math.max(0, quantityDiff),
         },
       });
-
-      if (existingInventory) {
-        // 更新现有记录
-        await prisma.inventory.update({
-          where: { id: existingInventory.id },
-          data: {
-            quantity: {
-              increment: quantityDiff,
-            },
-          },
-        });
-      } else {
-        // 创建新记录
-        await prisma.inventory.create({
-          data: {
-            productId: existingRecord.productId,
-            quantity: Math.max(0, quantityDiff),
-          },
-        });
-      }
     }
 
     return NextResponse.json({
@@ -211,9 +209,8 @@ export async function PUT(
         product: updatedRecord.product,
         user: updatedRecord.user,
       },
-      message: SUCCESS_MESSAGES.UPDATED,
+      message: '更新成功',
     });
-
   } catch (error) {
     console.error('更新入库记录失败:', error);
     return NextResponse.json(
@@ -226,24 +223,26 @@ export async function PUT(
 // DELETE /api/inventory/inbound/[id] - 删除入库记录
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // 验证用户身份
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
 
     // 验证参数
-    const { id } = inboundIdSchema.parse({ id: params.id });
+    const validatedId = inboundIdSchema.parse({ id });
+    const recordId = validatedId.id;
 
     // 查询要删除的记录
     const record = await prisma.inboundRecord.findUnique({
-      where: { id },
+      where: { id: recordId },
       select: { id: true, quantity: true, productId: true },
     });
 
@@ -256,7 +255,7 @@ export async function DELETE(
 
     // 删除入库记录
     await prisma.inboundRecord.delete({
-      where: { id },
+      where: { id: recordId },
     });
 
     // 从库存中减去相应数量
@@ -276,9 +275,8 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: SUCCESS_MESSAGES.DELETED,
+      message: '删除成功',
     });
-
   } catch (error) {
     console.error('删除入库记录失败:', error);
     return NextResponse.json(

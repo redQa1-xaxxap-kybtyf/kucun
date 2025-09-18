@@ -1,12 +1,11 @@
 import { getServerSession } from 'next-auth';
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { authOptions, createUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import {
-    paginationValidations,
-    userValidations,
+  paginationValidations,
+  userValidations,
 } from '@/lib/validations/database';
 
 // 获取用户列表 (仅管理员)
@@ -16,7 +15,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.FORBIDDEN },
+        { success: false, error: '权限不足' },
         { status: 403 }
       );
     }
@@ -104,7 +103,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.FORBIDDEN },
+        { success: false, error: '权限不足' },
         { status: 403 }
       );
     }
@@ -117,7 +116,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: API_ERROR_MESSAGES.INVALID_INPUT,
+          error: '输入数据格式不正确',
           details: validationResult.error.errors,
         },
         { status: 400 }

@@ -1,30 +1,30 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { ArrowLeft, Package, Save, Loader2 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 
 // UI Components
+import { ProductSelector } from '@/components/inventory/product-selector';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
 // Icons
-import { ArrowLeft, Package, Save, Loader2 } from 'lucide-react';
 
 // API and Types
 import { useCreateInboundRecord, useProductSearch } from '@/lib/api/inbound';
-import { createInboundSchema } from '@/lib/validations/inbound';
 import { INBOUND_REASON_OPTIONS } from '@/lib/types/inbound';
 import type { InboundFormData } from '@/lib/types/inbound';
+import { createInboundSchema } from '@/lib/validations/inbound';
 
 // Components
-import { ProductSelector } from '@/components/inventory/product-selector';
 
 /**
  * 产品入库页面

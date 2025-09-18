@@ -1,5 +1,6 @@
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma, withTransaction } from '@/lib/db';
@@ -25,7 +26,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
@@ -170,7 +171,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
@@ -183,7 +184,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: API_ERROR_MESSAGES.INVALID_INPUT,
+          error: '输入数据格式不正确',
           details: validationResult.error.errors,
         },
         { status: 400 }

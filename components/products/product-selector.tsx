@@ -1,5 +1,9 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { Check, ChevronsUpDown } from 'lucide-react';
+import { useCallback, useState } from 'react';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -17,9 +21,6 @@ import {
 } from '@/components/ui/popover';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { cn } from '@/lib/utils';
-import { useQuery } from '@tanstack/react-query';
-import { Check, ChevronsUpDown } from 'lucide-react';
-import { useCallback, useState } from 'react';
 
 interface ProductSelectorProps {
   value?: string;

@@ -1,12 +1,14 @@
 // 产品搜索API路由
 // 为入库表单提供产品搜索功能
 
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
+
 import { authOptions } from '@/lib/auth';
-import { productSearchSchema } from '@/lib/validations/inbound';
+import { prisma } from '@/lib/db';
 import type { ProductOption } from '@/lib/types/inbound';
+import { productSearchSchema } from '@/lib/validations/inbound';
 
 // GET /api/products/search - 搜索产品
 export async function GET(request: NextRequest) {
@@ -15,7 +17,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }

@@ -1,6 +1,5 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma, withTransaction } from '@/lib/db';
@@ -9,20 +8,21 @@ import { salesOrderValidations } from '@/lib/validations/database';
 // 获取单个销售订单信息
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // 验证用户权限
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
 
     const salesOrder = await prisma.salesOrder.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         orderNumber: true,
@@ -127,14 +127,15 @@ export async function GET(
 // 更新销售订单状态
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
+  const { id } = await params;
   try {
     // 验证用户权限
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
@@ -143,14 +144,14 @@ export async function PUT(
 
     // 验证输入数据
     const validationResult = salesOrderValidations.update.safeParse({
-      id: params.id,
+      id,
       ...body,
     });
     if (!validationResult.success) {
       return NextResponse.json(
         {
           success: false,
-          error: API_ERROR_MESSAGES.INVALID_INPUT,
+          error: '输入数据格式不正确',
           details: validationResult.error.errors,
         },
         { status: 400 }
@@ -161,7 +162,7 @@ export async function PUT(
 
     // 检查订单是否存在
     const existingOrder = await prisma.salesOrder.findUnique({
-      where: { id: params.id },
+      where: { id },
       include: {
         items: {
           include: {
@@ -207,13 +208,13 @@ export async function PUT(
       ['shipped', 'completed'].includes(status) &&
       existingOrder.status === 'confirmed';
 
-    let updatedOrder;
+    let _updatedOrder;
     if (shouldUpdateInventory) {
       // 使用事务处理库存更新
-      updatedOrder = await withTransaction(async tx => {
+      _updatedOrder = await withTransaction(async tx => {
         // 更新订单状态
         const order = await tx.salesOrder.update({
-          where: { id: params.id },
+          where: { id },
           data: {
             ...(status && { status }),
             ...(remarks !== undefined && { remarks }),
@@ -261,8 +262,8 @@ export async function PUT(
       });
     } else {
       // 普通状态更新，不涉及库存
-      updatedOrder = await prisma.salesOrder.update({
-        where: { id: params.id },
+      _updatedOrder = await prisma.salesOrder.update({
+        where: { id },
         data: {
           ...(status && { status }),
           ...(remarks !== undefined && { remarks }),
@@ -272,7 +273,7 @@ export async function PUT(
 
     // 获取更新后的完整订单信息
     const fullOrder = await prisma.salesOrder.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         orderNumber: true,

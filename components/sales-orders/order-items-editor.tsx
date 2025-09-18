@@ -11,6 +11,7 @@ import type { Control } from 'react-hook-form';
 import { useFieldArray, useWatch } from 'react-hook-form';
 
 // UI Components
+import { ProductSelector } from '@/components/products/product-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -43,7 +44,6 @@ import {
     calculateOrderTotal,
 } from '@/lib/validations/sales-order';
 
-import { ProductSelector } from '@/components/products/product-selector';
 
 // API and Types
 
@@ -293,7 +293,6 @@ function OrderItemRow({
               onProductChange={handleProductChange}
             />
           </div>
-
 
 
           {/* 数量 */}

@@ -1,7 +1,16 @@
 'use client';
 
-import { formatDateTime } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import {
+    ArrowLeft,
+    Calendar,
+    FileText,
+    Package,
+    TrendingDown,
+    User
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // UI Components
@@ -19,14 +28,6 @@ import {
 } from '@/components/ui/table';
 
 // Icons
-import {
-    ArrowLeft,
-    Calendar,
-    FileText,
-    Package,
-    TrendingDown,
-    User
-} from 'lucide-react';
 
 // API and Types
 import type { OutboundRecord } from '@/lib/types/inventory';
@@ -41,18 +42,19 @@ export default function OutboundRecordsPage() {
   // 获取出库记录数据 - 暂时使用模拟数据
   const { data, isLoading, error } = useQuery({
     queryKey: ['inventory-records', { type: 'outbound' }],
-    queryFn: async () => {
+    queryFn: async () => 
       // 模拟出库记录数据
-      return {
+       ({
         data: [] as OutboundRecord[],
         pagination: { page: 1, limit: 50, total: 0, totalPages: 0 }
-      };
-    },
+      })
+    ,
   });
 
   const outboundRecords = data?.data || [];
 
-  // 使用统一的日期格式化函数
+  // 格式化日期
+  const formatDate = (dateString: string) => format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
 
   // 格式化操作类型
   const getOperationTypeLabel = (type: string) => {
@@ -259,7 +261,7 @@ export default function OutboundRecordsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      {formatDateTime(record.createdAt)}
+                      {formatDate(record.createdAt)}
                     </TableCell>
                     <TableCell>
                       <div className="max-w-[200px] truncate">

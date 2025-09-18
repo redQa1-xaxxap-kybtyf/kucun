@@ -15,8 +15,8 @@ import {
     Sun,
     User,
 } from 'lucide-react';
-import { signOut, useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { signOut, useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';

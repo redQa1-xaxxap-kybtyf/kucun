@@ -22,7 +22,8 @@ interface Category {
   id: string;
   name: string;
   code: string;
-  parentId: string | null | undefined;
+  description?: string;
+  parentId?: string;
   sortOrder: number;
   status: 'active' | 'inactive';
   createdAt: string;
@@ -116,30 +117,23 @@ export async function PUT(
       id: updatedCategory.id,
       name: updatedCategory.name,
       code: updatedCategory.code,
-      parentId: updatedCategory.parentId || undefined,
+      description: updatedCategory.description,
+      parentId: updatedCategory.parentId,
       sortOrder: updatedCategory.sortOrder,
       status: updatedCategory.status as 'active' | 'inactive',
       createdAt: updatedCategory.createdAt.toISOString(),
       updatedAt: updatedCategory.updatedAt.toISOString(),
-      parent: updatedCategory.parent ? {
-        id: updatedCategory.parent.id,
-        name: updatedCategory.parent.name,
-        code: updatedCategory.parent.code,
-        parentId: updatedCategory.parent.parentId || undefined,
-        sortOrder: updatedCategory.parent.sortOrder,
-        status: updatedCategory.parent.status as 'active' | 'inactive',
-        createdAt: updatedCategory.parent.createdAt.toISOString(),
-        updatedAt: updatedCategory.parent.updatedAt.toISOString(),
-      } : undefined,
+      parent: updatedCategory.parent
+        ? {
+            id: updatedCategory.parent.id,
+            name: updatedCategory.parent.name,
+            code: updatedCategory.parent.code,
+          }
+        : undefined,
       children: updatedCategory.children.map(child => ({
         id: child.id,
         name: child.name,
         code: child.code,
-        parentId: child.parentId || undefined,
-        sortOrder: child.sortOrder,
-        status: child.status as 'active' | 'inactive',
-        createdAt: child.createdAt.toISOString(),
-        updatedAt: child.updatedAt.toISOString(),
       })),
       productCount: updatedCategory._count.products,
     };

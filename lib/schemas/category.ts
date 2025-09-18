@@ -21,7 +21,6 @@ export const CreateCategorySchema = z.object({
     .optional(),
 
 
-
   parentId: z.string().optional(),
 
   sortOrder: z.number().int().min(0).default(0),

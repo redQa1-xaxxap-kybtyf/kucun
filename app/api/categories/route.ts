@@ -7,7 +7,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
-import { CategoryQuerySchema, CreateCategorySchema } from '@/lib/schemas/category';
+import {
+  CategoryQuerySchema,
+  CreateCategorySchema,
+} from '@/lib/schemas/category';
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import { generateCategoryCode } from '@/lib/utils/category-code-generator';
 
@@ -16,7 +19,7 @@ interface Category {
   id: string;
   name: string;
   code: string;
-  parentId: string | null | undefined;
+  parentId?: string;
   sortOrder: number;
   status: 'active' | 'inactive';
   createdAt: string;
@@ -96,30 +99,22 @@ export async function GET(request: NextRequest) {
       id: category.id,
       name: category.name,
       code: category.code,
-      parentId: category.parentId || undefined,
+      parentId: category.parentId,
       sortOrder: category.sortOrder,
       status: category.status as 'active' | 'inactive',
       createdAt: category.createdAt.toISOString(),
       updatedAt: category.updatedAt.toISOString(),
-      parent: category.parent ? {
-        id: category.parent.id,
-        name: category.parent.name,
-        code: category.parent.code,
-        parentId: category.parent.parentId || undefined,
-        sortOrder: category.parent.sortOrder,
-        status: category.parent.status as 'active' | 'inactive',
-        createdAt: category.parent.createdAt.toISOString(),
-        updatedAt: category.parent.updatedAt.toISOString(),
-      } : undefined,
+      parent: category.parent
+        ? {
+            id: category.parent.id,
+            name: category.parent.name,
+            code: category.parent.code,
+          }
+        : undefined,
       children: category.children.map(child => ({
         id: child.id,
         name: child.name,
         code: child.code,
-        parentId: child.parentId || undefined,
-        sortOrder: child.sortOrder,
-        status: child.status as 'active' | 'inactive',
-        createdAt: child.createdAt.toISOString(),
-        updatedAt: child.updatedAt.toISOString(),
       })),
       productCount: category._count.products,
     }));
@@ -128,6 +123,7 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(total / validatedParams.limit);
 
     const response: PaginatedResponse<Category> = {
+      success: true,
       data: transformedCategories,
       pagination: {
         page: validatedParams.page,
@@ -243,30 +239,22 @@ export async function POST(request: NextRequest) {
       id: category.id,
       name: category.name,
       code: category.code,
-      parentId: category.parentId || undefined,
+      parentId: category.parentId,
       sortOrder: category.sortOrder,
       status: category.status as 'active' | 'inactive',
       createdAt: category.createdAt.toISOString(),
       updatedAt: category.updatedAt.toISOString(),
-      parent: category.parent ? {
-        id: category.parent.id,
-        name: category.parent.name,
-        code: category.parent.code,
-        parentId: category.parent.parentId || undefined,
-        sortOrder: category.parent.sortOrder,
-        status: category.parent.status as 'active' | 'inactive',
-        createdAt: category.parent.createdAt.toISOString(),
-        updatedAt: category.parent.updatedAt.toISOString(),
-      } : undefined,
+      parent: category.parent
+        ? {
+            id: category.parent.id,
+            name: category.parent.name,
+            code: category.parent.code,
+          }
+        : undefined,
       children: category.children.map(child => ({
         id: child.id,
         name: child.name,
         code: child.code,
-        parentId: child.parentId || undefined,
-        sortOrder: child.sortOrder,
-        status: child.status as 'active' | 'inactive',
-        createdAt: child.createdAt.toISOString(),
-        updatedAt: child.updatedAt.toISOString(),
       })),
       productCount: category._count.products,
     };

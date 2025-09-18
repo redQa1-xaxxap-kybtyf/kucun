@@ -5,43 +5,47 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
+
+// Hooks
+import { useToast } from '@/hooks/use-toast';
 
 // UI Components
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
 import { createProduct, productQueryKeys } from '@/lib/api/products';
-import type { CreateProductData } from '@/lib/schemas/product';
-import { CreateProductSchema } from '@/lib/schemas/product';
 import {
-    PRODUCT_STATUS_OPTIONS,
-    PRODUCT_UNIT_OPTIONS,
+  CreateProductSchema,
+  type CreateProductData,
+} from '@/lib/schemas/product';
+import {
+  PRODUCT_STATUS_OPTIONS,
+  PRODUCT_UNIT_OPTIONS,
 } from '@/lib/types/product';
 
 /**
@@ -51,6 +55,7 @@ import {
 export default function CreateProductPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // 表单配置
   const form = useForm<CreateProductData>({
@@ -60,9 +65,9 @@ export default function CreateProductPage() {
       name: '',
       specification: '',
       unit: 'piece',
-      piecesPerUnit: '',
-      weight: '',
-      thickness: '',
+      piecesPerUnit: undefined, // 修复：使用 undefined 而不是空字符串
+      weight: undefined, // 修复：使用 undefined 而不是空字符串
+      thickness: undefined, // 修复：使用 undefined 而不是空字符串
       status: 'active',
       specifications: {},
     },
@@ -72,18 +77,27 @@ export default function CreateProductPage() {
   const createMutation = useMutation({
     mutationFn: createProduct,
     onSuccess: data => {
+      // 显示成功提示
       toast({
         title: '创建成功',
-        description: '产品创建成功',
+        description: `产品 "${data.name}" 创建成功！`,
         variant: 'success',
       });
+
+      // 刷新缓存
       queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() });
-      router.push(`/products/${data.id}`);
+
+      // 延迟跳转到产品列表页，让用户看到成功提示
+      setTimeout(() => {
+        router.push('/products');
+      }, 1500);
     },
     onError: error => {
+      const errorMessage =
+        error instanceof Error ? error.message : '创建产品失败';
       toast({
         title: '创建失败',
-        description: error instanceof Error ? error.message : '创建失败',
+        description: `创建产品失败：${errorMessage}。请检查输入信息是否正确。`,
         variant: 'destructive',
       });
     },
@@ -242,14 +256,15 @@ export default function CreateProductPage() {
                         <Input
                           type="number"
                           placeholder="请输入每单位片数"
-                          {...field}
-                          onChange={e =>
+                          value={field.value ?? ''} // 修复：确保显示值正确
+                          onChange={e => {
+                            const value = e.target.value.trim();
                             field.onChange(
-                              e.target.value
-                                ? Number(e.target.value)
+                              value && !isNaN(Number(value))
+                                ? Number(value)
                                 : undefined
-                            )
-                          }
+                            );
+                          }}
                         />
                       </FormControl>
                       <FormDescription>每个计量单位包含的片数</FormDescription>
@@ -269,14 +284,15 @@ export default function CreateProductPage() {
                           type="number"
                           step="0.01"
                           placeholder="请输入重量"
-                          {...field}
-                          onChange={e =>
+                          value={field.value ?? ''} // 修复：确保显示值正确
+                          onChange={e => {
+                            const value = e.target.value.trim();
                             field.onChange(
-                              e.target.value
-                                ? Number(e.target.value)
+                              value && !isNaN(Number(value))
+                                ? Number(value)
                                 : undefined
-                            )
-                          }
+                            );
+                          }}
                         />
                       </FormControl>
                       <FormDescription>单个产品的重量（千克）</FormDescription>
@@ -298,14 +314,15 @@ export default function CreateProductPage() {
                           min="0"
                           max="100"
                           placeholder="请输入厚度"
-                          {...field}
-                          onChange={e =>
+                          value={field.value ?? ''} // 修复：确保显示值正确
+                          onChange={e => {
+                            const value = e.target.value.trim();
                             field.onChange(
-                              e.target.value
-                                ? Number(e.target.value)
+                              value && !isNaN(Number(value))
+                                ? Number(value)
                                 : undefined
-                            )
-                          }
+                            );
+                          }}
                         />
                       </FormControl>
                       <FormDescription>瓷砖产品的厚度（毫米）</FormDescription>

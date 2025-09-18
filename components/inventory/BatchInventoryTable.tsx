@@ -1,12 +1,11 @@
 'use client';
 
-import { ChevronDown, ChevronRight, Package } from 'lucide-react';
+import { ChevronDown, ChevronRight, DollarSign, MapPin, Package } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-
 import {
     Table,
     TableBody,
@@ -15,7 +14,6 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-
 import type { Inventory } from '@/lib/types/inventory';
 
 interface BatchInventoryTableProps {
@@ -101,7 +99,10 @@ export function BatchInventoryTable({
     return new Date(dateString).toLocaleDateString('zh-CN');
   };
 
-
+  const formatCurrency = (amount?: number) => {
+    if (!amount) return '-';
+    return `¥${amount.toFixed(2)}`;
+  };
 
   const getStockStatusBadge = (available: number, total: number) => {
     if (total === 0) {
@@ -175,9 +176,11 @@ export function BatchInventoryTable({
                         <TableHeader>
                           <TableRow>
                             <TableHead>批次号</TableHead>
+                            <TableHead>存储位置</TableHead>
                             <TableHead className="text-right">库存数量</TableHead>
                             <TableHead className="text-right">预留数量</TableHead>
                             <TableHead className="text-right">可用数量</TableHead>
+                            <TableHead className="text-right">单位成本</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -190,6 +193,12 @@ export function BatchInventoryTable({
                               <TableCell>
                                 {batch.batchNumber || '-'}
                               </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  <MapPin className="h-4 w-4 text-muted-foreground" />
+                                  {batch.location || '未指定'}
+                                </div>
+                              </TableCell>
                               <TableCell className="text-right font-medium">
                                 {batch.quantity}
                               </TableCell>
@@ -198,6 +207,12 @@ export function BatchInventoryTable({
                               </TableCell>
                               <TableCell className="text-right text-green-600">
                                 {batch.quantity - batch.reservedQuantity}
+                              </TableCell>
+                              <TableCell className="text-right">
+                                <div className="flex items-center justify-end gap-1">
+                                  <DollarSign className="h-3 w-3 text-muted-foreground" />
+                                  {formatCurrency(batch.unitCost)}
+                                </div>
                               </TableCell>
                             </TableRow>
                           ))}
@@ -230,9 +245,11 @@ export function BatchInventoryTable({
               {showVariantInfo && <TableHead>产品变体</TableHead>}
               <TableHead>生产日期</TableHead>
               <TableHead>批次号</TableHead>
+              <TableHead>存储位置</TableHead>
               <TableHead className="text-right">库存数量</TableHead>
               <TableHead className="text-right">预留数量</TableHead>
               <TableHead className="text-right">可用数量</TableHead>
+              <TableHead className="text-right">单位成本</TableHead>
               <TableHead>状态</TableHead>
             </TableRow>
           </TableHeader>
@@ -257,8 +274,13 @@ export function BatchInventoryTable({
                     </div>
                   </TableCell>
                 )}
-                <TableCell>{formatDate(inventory.productionDate)}</TableCell>
                 <TableCell>{inventory.batchNumber || '-'}</TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="h-4 w-4 text-muted-foreground" />
+                    {inventory.location || '未指定'}
+                  </div>
+                </TableCell>
                 <TableCell className="text-right font-medium">
                   {inventory.quantity}
                 </TableCell>
@@ -267,6 +289,12 @@ export function BatchInventoryTable({
                 </TableCell>
                 <TableCell className="text-right text-green-600">
                   {inventory.quantity - inventory.reservedQuantity}
+                </TableCell>
+                <TableCell className="text-right">
+                  <div className="flex items-center justify-end gap-1">
+                    <DollarSign className="h-3 w-3 text-muted-foreground" />
+                    {formatCurrency(inventory.unitCost)}
+                  </div>
                 </TableCell>
                 <TableCell>
                   {getStockStatusBadge(

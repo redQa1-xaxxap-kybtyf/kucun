@@ -1,6 +1,6 @@
-import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -15,7 +15,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
@@ -126,16 +126,12 @@ export async function GET(
     });
 
     // 计算平均成本
-    const totalCost = inventoryRecords.reduce((sum, record) => {
-      return sum + (record.unitCost || 0) * record.quantity;
-    }, 0);
+    const totalCost = inventoryRecords.reduce((sum, record) => sum + (record.unitCost || 0) * record.quantity, 0);
     const averageUnitCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
 
     // 最新更新时间
     const lastUpdated = inventoryRecords.length > 0
-      ? inventoryRecords.reduce((latest, record) => {
-          return record.updatedAt > latest ? record.updatedAt : latest;
-        }, inventoryRecords[0].updatedAt)
+      ? inventoryRecords.reduce((latest, record) => record.updatedAt > latest ? record.updatedAt : latest, inventoryRecords[0].updatedAt)
       : null;
 
     // 库存预警状态

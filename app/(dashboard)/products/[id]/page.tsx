@@ -1,32 +1,21 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-    ArrowLeft,
-    Edit,
-    Info,
-    Package,
-    Trash2
-} from 'lucide-react';
+import { ArrowLeft, Edit, Info, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import React from 'react';
+import { use } from 'react';
 
 // UI Components
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // API and Types
 import { getProduct, productQueryKeys } from '@/lib/api/products';
 import {
-    PRODUCT_STATUS_LABELS,
-    PRODUCT_UNIT_LABELS,
+  PRODUCT_STATUS_LABELS,
+  PRODUCT_UNIT_LABELS,
 } from '@/lib/types/product';
 
 interface ProductDetailPageProps {
@@ -41,7 +30,7 @@ interface ProductDetailPageProps {
  */
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const router = useRouter();
-  const { id } = React.use(params);
+  const { id } = use(params);
 
   // 获取产品详情数据
   const {
@@ -101,29 +90,21 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
             <Skeleton className="mt-2 h-4 w-48" />
           </div>
         </div>
-        <div className="grid gap-6 md:grid-cols-2">
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-24" />
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {Array.from({ length: 6 }).map((_, i) => (
-                <div key={i} className="flex justify-between">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-24" />
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+              {Array.from({ length: 11 }).map((_, i) => (
+                <div key={i} className="space-y-2">
                   <Skeleton className="h-4 w-20" />
                   <Skeleton className="h-4 w-32" />
                 </div>
               ))}
-            </CardContent>
-          </Card>
-          <Card>
-            <CardHeader>
-              <Skeleton className="h-6 w-24" />
-            </CardHeader>
-            <CardContent>
-              <Skeleton className="h-32 w-full" />
-            </CardContent>
-          </Card>
-        </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -184,109 +165,94 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
       </div>
 
       {/* 产品信息 */}
-      <div className="grid gap-6 md:grid-cols-2">
-        {/* 基本信息 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Info className="h-5 w-5" />
-              基本信息
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">
-                  产品编码
-                </div>
-                <div className="mt-1">{product.code}</div>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5" />
+            基本信息
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">
+                产品编码
               </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">
-                  产品名称
-                </div>
-                <div className="mt-1">{product.name}</div>
+              <div className="mt-1">{product.code}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">
+                产品名称
               </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">
-                  规格
-                </div>
-                <div className="mt-1">{product.specification || '-'}</div>
+              <div className="mt-1">{product.name}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">
+                规格
               </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">
-                  计量单位
-                </div>
-                <div className="mt-1">
-                  {PRODUCT_UNIT_LABELS[
-                    product.unit as keyof typeof PRODUCT_UNIT_LABELS
-                  ] || product.unit}
-                </div>
+              <div className="mt-1">{product.specification || '-'}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">
+                计量单位
               </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">
-                  每单位片数
-                </div>
-                <div className="mt-1">{product.piecesPerUnit || '-'}</div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">
-                  重量(kg)
-                </div>
-                <div className="mt-1">{product.weight || '-'}</div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">
-                  厚度(mm)
-                </div>
-                <div className="mt-1">{product.thickness || '-'}</div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">
-                  状态
-                </div>
-                <div className="mt-1">{getStatusBadge(product.status)}</div>
-              </div>
-              <div>
-                <div className="text-sm font-medium text-muted-foreground">
-                  创建时间
-                </div>
-                <div className="mt-1">
-                  {new Date(product.createdAt).toLocaleString()}
-                </div>
+              <div className="mt-1">
+                {PRODUCT_UNIT_LABELS[
+                  product.unit as keyof typeof PRODUCT_UNIT_LABELS
+                ] || product.unit}
               </div>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* 规格信息 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Package className="h-5 w-5" />
-              规格信息
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {product.specifications ? (
-              <div className="space-y-2">
-                {Object.entries(product.specifications).map(([key, value]) => (
-                  <div key={key} className="flex justify-between">
-                    <span className="text-sm font-medium text-muted-foreground">
-                      {key}:
-                    </span>
-                    <span className="text-sm">{String(value)}</span>
-                  </div>
-                ))}
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">
+                每单位片数
               </div>
-            ) : (
-              <div className="py-8 text-center text-muted-foreground">
-                暂无规格信息
+              <div className="mt-1">{product.piecesPerUnit || '-'}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">
+                重量(kg)
               </div>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+              <div className="mt-1">{product.weight || '-'}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">
+                厚度(mm)
+              </div>
+              <div className="mt-1">{product.thickness || '-'}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">
+                产品分类
+              </div>
+              <div className="mt-1">
+                {product.category ? product.category.name : '未分类'}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">
+                状态
+              </div>
+              <div className="mt-1">{getStatusBadge(product.status)}</div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">
+                创建时间
+              </div>
+              <div className="mt-1">
+                {new Date(product.createdAt).toLocaleString()}
+              </div>
+            </div>
+            <div>
+              <div className="text-sm font-medium text-muted-foreground">
+                更新时间
+              </div>
+              <div className="mt-1">
+                {new Date(product.updatedAt).toLocaleString()}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 详细信息标签页 */}
       <Card>

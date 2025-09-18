@@ -1,11 +1,21 @@
 'use client';
 
-import { formatDateTime } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import {
+    ArrowLeft,
+    Edit,
+    Package,
+    Plus,
+    TrendingDown,
+    TrendingUp
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 
 // UI Components
+import { InventoryOperationForm } from '@/components/inventory/inventory-operation-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,16 +31,7 @@ import {
 } from '@/components/ui/table';
 
 // Icons
-import {
-    ArrowLeft,
-    Edit,
-    Package,
-    Plus,
-    TrendingDown,
-    TrendingUp
-} from 'lucide-react';
 // Components
-import { InventoryOperationForm } from '@/components/inventory/inventory-operation-form';
 
 // API and Types
 import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
@@ -60,8 +61,12 @@ export default function InventoryAdjustPage() {
 
   const inventoryRecords = data?.data || [];
 
-  // 使用统一的日期格式化函数
-
+  // 格式化日期
+  const formatDate = (dateString: string | Date) => {
+    if (!dateString) return null;
+    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
+    return format(date, 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
+  };
 
 
   // 获取库存状态标签
@@ -335,7 +340,7 @@ export default function InventoryAdjustPage() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {formatDateTime(record.updatedAt)}
+                        {formatDate(record.updatedAt)}
                       </div>
                     </TableCell>
                     <TableCell>

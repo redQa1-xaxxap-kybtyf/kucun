@@ -5,38 +5,46 @@
 'use client';
 
 import {
-    AlertCircle,
-    BarChart3,
-    CreditCard,
-    Eye,
-    Package,
-    Plus,
-    RefreshCw,
-    ShoppingCart,
-    Users
+  RefreshCw,
+  Calendar,
+  TrendingUp,
+  BarChart3,
+  AlertCircle,
+  CheckSquare,
+  Zap,
+  Package,
+  ShoppingCart,
+  Users,
+  CreditCard,
+  ArrowUpRight,
+  ArrowDownRight,
+  Eye,
+  Plus,
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { cn, formatCurrency } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { cn } from '@/lib/utils';
 
 
 /**
@@ -153,6 +161,12 @@ export default function DashboardPage() {
   React.useEffect(() => {
     loadDashboardData();
   }, [loadDashboardData, selectedPeriod]);
+
+  // 格式化货币
+  const formatCurrency = (amount: number) => new Intl.NumberFormat('zh-CN', {
+      style: 'currency',
+      currency: 'CNY',
+    }).format(amount);
 
   // 格式化时间
   const formatTime = (date: Date) => new Intl.RelativeTimeFormat('zh-CN', { numeric: 'auto' }).format(

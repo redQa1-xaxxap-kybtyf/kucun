@@ -1,6 +1,5 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
@@ -9,20 +8,32 @@ import { prisma } from '@/lib/db';
 // 批量创建产品变体输入验证
 const BatchCreateVariantsSchema = z.object({
   productId: z.string().uuid('产品ID格式不正确'),
-  variants: z.array(
-    z.object({
-      colorCode: z.string().min(1, '色号不能为空').max(20, '色号不能超过20个字符'),
-      colorName: z.string().max(50, '色号名称不能超过50个字符').optional(),
-      colorValue: z.string().regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确').optional(),
-      sku: z.string().max(50, 'SKU不能超过50个字符').optional(),
-    })
-  ).min(1, '至少需要一个变体').max(50, '批量创建最多支持50个变体'),
+  variants: z
+    .array(
+      z.object({
+        colorCode: z
+          .string()
+          .min(1, '色号不能为空')
+          .max(20, '色号不能超过20个字符'),
+        colorName: z.string().max(50, '色号名称不能超过50个字符').optional(),
+        colorValue: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确')
+          .optional(),
+        sku: z.string().max(50, 'SKU不能超过50个字符').optional(),
+      })
+    )
+    .min(1, '至少需要一个变体')
+    .max(50, '批量创建最多支持50个变体'),
 });
 
 // 批量操作输入验证
 const BatchOperationSchema = z.object({
   operation: z.enum(['delete', 'activate', 'deactivate']),
-  variantIds: z.array(z.string().uuid('变体ID格式不正确')).min(1, '至少需要选择一个变体').max(100, '批量操作最多支持100个变体'),
+  variantIds: z
+    .array(z.string().uuid('变体ID格式不正确'))
+    .min(1, '至少需要选择一个变体')
+    .max(100, '批量操作最多支持100个变体'),
 });
 
 // 批量创建产品变体
@@ -32,7 +43,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
@@ -50,7 +61,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: API_ERROR_MESSAGES.INVALID_INPUT,
+          error: '输入数据格式不正确',
           details: validationResult.error.errors,
         },
         { status: 400 }
@@ -144,9 +155,9 @@ export async function POST(request: NextRequest) {
     }
 
     // 使用事务批量创建变体
-    const createdVariants = await prisma.$transaction(async (tx) => {
+    const createdVariants = await prisma.$transaction(async tx => {
       const results = [];
-      
+
       for (const variant of variantsWithSku) {
         const created = await tx.productVariant.create({
           data: {
@@ -169,10 +180,10 @@ export async function POST(request: NextRequest) {
             },
           },
         });
-        
+
         results.push(created);
       }
-      
+
       return results;
     });
 
@@ -220,7 +231,7 @@ async function handleBatchOperation(body: any) {
       return NextResponse.json(
         {
           success: false,
-          error: API_ERROR_MESSAGES.INVALID_INPUT,
+          error: '输入数据格式不正确',
           details: validationResult.error.errors,
         },
         { status: 400 }
@@ -263,7 +274,7 @@ async function handleBatchOperation(body: any) {
         }
 
         // 使用事务删除
-        await prisma.$transaction(async (tx) => {
+        await prisma.$transaction(async tx => {
           // 删除库存记录
           await tx.inventory.deleteMany({
             where: { variantId: { in: variantIds } },

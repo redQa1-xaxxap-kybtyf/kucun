@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import type { BreadcrumbItem } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 
-
 interface BreadcrumbProps {
   /** 自定义面包屑项 */
   items?: BreadcrumbItem[];
@@ -29,17 +28,22 @@ const PATH_TITLES: Record<string, string> = {
   '/dashboard': '仪表盘',
   '/inventory': '库存管理',
   '/products': '产品管理',
+  '/products/create': '新建产品',
   '/sales-orders': '销售订单',
+  '/sales-orders/create': '新建订单',
   '/return-orders': '退货订单',
   '/customers': '客户管理',
+  '/customers/create': '新建客户',
   '/payments': '支付管理',
   '/categories': '分类管理',
+  '/categories/create': '新建分类',
   '/settings': '系统设置',
   '/help': '帮助中心',
   '/profile': '个人资料',
   '/create': '新建',
   '/edit': '编辑',
   '/inbound': '入库管理',
+  '/inbound/create': '新建入库',
   '/outbound': '出库管理',
   '/adjust': '库存调整',
   '/test-api': '接口测试',

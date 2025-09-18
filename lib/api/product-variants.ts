@@ -3,7 +3,8 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
+import type { ApiResponse } from '@/lib/types/api';
+// import type { PaginatedResponse } from '@/lib/types/api'; // 将在未来版本中使用
 import type {
   ProductVariant,
   ProductVariantCreateInput,
@@ -48,9 +49,7 @@ export async function getProductVariants(
 /**
  * 获取单个产品变体详情
  */
-export async function getProductVariant(
-  id: string
-): Promise<ProductVariant> {
+export async function getProductVariant(id: string): Promise<ProductVariant> {
   const response = await fetch(`${API_BASE}/${id}`);
 
   if (!response.ok) {
@@ -226,9 +225,7 @@ export async function checkSKUAvailability(
 /**
  * 获取产品变体的库存汇总
  */
-export async function getVariantInventorySummary(
-  variantId: string
-): Promise<{
+export async function getVariantInventorySummary(variantId: string): Promise<{
   totalQuantity: number;
   reservedQuantity: number;
   availableQuantity: number;

@@ -1,24 +1,27 @@
 // 产品入库API路由
 // 提供入库记录的CRUD操作接口
 
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
+
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import type { InboundListResponse } from '@/lib/types/inbound';
 import {
-    cleanRemarks,
-    createInboundSchema,
-    formatQuantity,
-    inboundQuerySchema
+  cleanRemarks,
+  createInboundSchema,
+  formatQuantity,
+  inboundQuerySchema,
 } from '@/lib/validations/inbound';
-import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
 
 // 生成入库记录编号
 function generateRecordNumber(): string {
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
   const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
-  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  const random = Math.floor(Math.random() * 1000)
+    .toString()
+    .padStart(3, '0');
   return `IN${dateStr}${timeStr}${random}`;
 }
 
@@ -29,7 +32,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
@@ -49,10 +52,21 @@ export async function GET(request: NextRequest) {
       sortOrder: searchParams.get('sortOrder'),
     });
 
-    const { page, limit, search, productId, reason, userId, startDate, endDate, sortBy, sortOrder } = queryData;
+    const {
+      page,
+      limit,
+      search,
+      productId,
+      reason,
+      userId,
+      startDate,
+      endDate,
+      sortBy,
+      sortOrder,
+    } = queryData;
 
     // 构建查询条件
-    const where: any = {};
+    const where: Record<string, any> = {};
 
     if (productId) {
       where.productId = productId;
@@ -104,11 +118,6 @@ export async function GET(request: NextRequest) {
               id: true,
               name: true,
               username: true,
-              email: true,
-              role: true,
-              status: true,
-              createdAt: true,
-              updatedAt: true,
             },
           },
         },
@@ -130,22 +139,8 @@ export async function GET(request: NextRequest) {
         userId: record.userId,
         createdAt: record.createdAt.toISOString(),
         updatedAt: record.updatedAt.toISOString(),
-        product: record.product ? {
-          ...record.product,
-          specification: record.product.specification || undefined,
-          unit: record.product.unit as 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter',
-          piecesPerUnit: 1, // 默认值，因为查询中没有包含
-          status: 'active' as const, // 默认值
-          createdAt: new Date().toISOString(), // 默认值
-          updatedAt: new Date().toISOString(), // 默认值
-        } : undefined,
-        user: record.user ? {
-          ...record.user,
-          role: record.user.role as 'admin' | 'sales',
-          status: record.user.status as 'active' | 'inactive' | 'pending',
-          createdAt: record.user.createdAt.toISOString(),
-          updatedAt: record.user.updatedAt.toISOString(),
-        } : undefined,
+        product: record.product,
+        user: record.user,
       })),
       pagination: {
         page,
@@ -160,7 +155,6 @@ export async function GET(request: NextRequest) {
       data: response.data,
       pagination: response.pagination,
     });
-
   } catch (error) {
     console.error('获取入库记录失败:', error);
     return NextResponse.json(
@@ -177,7 +171,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
@@ -243,35 +237,25 @@ export async function POST(request: NextRequest) {
 
     // 更新库存（这里需要根据实际业务逻辑调整）
     // 暂时简化处理，实际应该考虑批次、变体等
-    // 查找现有库存记录
-    const existingInventory = await prisma.inventory.findFirst({
+    await prisma.inventory.upsert({
       where: {
+        productId_variantId_colorCode_productionDate: {
+          productId,
+          variantId: null,
+          colorCode: null,
+          productionDate: null,
+        },
+      },
+      update: {
+        quantity: {
+          increment: formatQuantity(quantity),
+        },
+      },
+      create: {
         productId,
-        variantId: null,
-        productionDate: null,
-        batchNumber: null,
+        quantity: formatQuantity(quantity),
       },
     });
-
-    if (existingInventory) {
-      // 更新现有记录
-      await prisma.inventory.update({
-        where: { id: existingInventory.id },
-        data: {
-          quantity: {
-            increment: formatQuantity(quantity),
-          },
-        },
-      });
-    } else {
-      // 创建新记录
-      await prisma.inventory.create({
-        data: {
-          productId,
-          quantity: formatQuantity(quantity),
-        },
-      });
-    }
 
     return NextResponse.json({
       success: true,
@@ -290,7 +274,6 @@ export async function POST(request: NextRequest) {
       },
       message: '入库成功',
     });
-
   } catch (error) {
     console.error('创建入库记录失败:', error);
 

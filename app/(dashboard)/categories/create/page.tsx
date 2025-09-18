@@ -12,6 +12,8 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
 // UI Components
+import type { z } from 'zod';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -36,7 +38,6 @@ import { useToast } from '@/hooks/use-toast';
 // API and Types
 import { createCategory, getCategories } from '@/lib/api/categories';
 import { CreateCategorySchema } from '@/lib/schemas/category';
-import type { z } from 'zod';
 
 type CreateCategoryData = z.infer<typeof CreateCategorySchema>;
 
@@ -73,7 +74,7 @@ export default function CreateCategoryPage() {
       // 先显示成功提示
       toast({
         title: '创建成功',
-        description: `分类 "${data.data?.name || '未知'}" 创建成功！系统已自动生成编码：${data.data?.code || '未知'}`,
+        description: `分类 "${data.data.name}" 创建成功！系统已自动生成编码：${data.data.code}`,
         variant: 'success',
       });
 
@@ -104,7 +105,6 @@ export default function CreateCategoryPage() {
     };
     createMutation.mutate(submitData);
   };
-
 
 
   return (
@@ -153,7 +153,6 @@ export default function CreateCategoryPage() {
                     </FormItem>
                   )}
                 />
-
 
 
                 {/* 父级分类 */}
@@ -213,7 +212,6 @@ export default function CreateCategoryPage() {
                   )}
                 />
               </div>
-
 
 
               {/* 提交按钮 */}

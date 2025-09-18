@@ -45,7 +45,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { formatDateTime } from '@/lib/utils';
 
 // API and Types
 import type { Category, CategoryQueryParams } from '@/lib/api/categories';
@@ -141,7 +140,7 @@ function CategoriesPage() {
       setTimeout(() => {
         toast({
           title: '状态更新成功',
-          description: `分类 "${data.data?.name || '未知'}" 已成功${statusText}！`,
+          description: `分类 "${data.data.name}" 已成功${statusText}！`,
           variant: 'success',
         });
       }, 200);
@@ -197,7 +196,14 @@ function CategoriesPage() {
     updateStatusMutation.mutate({ id: category.id, status: newStatus });
   };
 
-  // 使用统一的日期格式化函数
+  // 格式化日期
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+    });
 
   // 加载状态
   if (isLoading) {
@@ -338,7 +344,7 @@ function CategoriesPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {formatDateTime(category.createdAt)}
+                        {formatDate(category.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>

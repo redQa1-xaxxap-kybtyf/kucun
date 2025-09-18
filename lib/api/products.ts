@@ -5,10 +5,12 @@
 
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
-    Product,
-    ProductCreateInput,
-    ProductQueryParams,
-    ProductUpdateInput,
+  BatchDeleteProductsInput,
+  BatchDeleteResult,
+  Product,
+  ProductCreateInput,
+  ProductQueryParams,
+  ProductUpdateInput,
 } from '@/lib/types/product';
 
 const API_BASE = '/api/products';
@@ -65,6 +67,7 @@ export async function getProduct(id: string): Promise<Product> {
     headers: {
       'Content-Type': 'application/json',
     },
+    credentials: 'include', // 包含cookies以传递会话信息
   });
 
   if (!response.ok) {
@@ -164,4 +167,31 @@ export async function deleteProduct(id: string): Promise<void> {
   if (!data.success) {
     throw new Error(data.error || '删除产品失败');
   }
+}
+
+/**
+ * 批量删除产品
+ */
+export async function batchDeleteProducts(
+  input: BatchDeleteProductsInput
+): Promise<BatchDeleteResult> {
+  const response = await fetch(`${API_BASE}/batch`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    throw new Error(`批量删除产品失败: ${response.statusText}`);
+  }
+
+  const data: ApiResponse<BatchDeleteResult> = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || '批量删除产品失败');
+  }
+
+  return data.data!;
 }

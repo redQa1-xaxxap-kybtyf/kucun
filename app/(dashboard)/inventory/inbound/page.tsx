@@ -1,6 +1,16 @@
 'use client';
 
-import { formatDateTime } from '@/lib/utils';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import {
+    ArrowLeft,
+    Calendar,
+    FileText,
+    Package,
+    Plus,
+    TrendingUp,
+    User
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 // UI Components
@@ -17,15 +27,6 @@ import {
     TableRow,
 } from '@/components/ui/table';
 // Icons
-import {
-    ArrowLeft,
-    Calendar,
-    FileText,
-    Package,
-    Plus,
-    TrendingUp,
-    User
-} from 'lucide-react';
 
 // API and Types
 import { useInboundRecords, useInboundStats } from '@/lib/api/inbound';
@@ -59,12 +60,11 @@ export default function InboundRecordsPage() {
 
   const inboundRecords = data?.data || [];
 
-  // 使用统一的日期格式化函数
+  // 格式化日期
+  const formatDate = (dateString: string) => format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
 
   // 格式化操作类型
-  const getOperationTypeLabel = (reason: string) => {
-    return INBOUND_REASON_LABELS[reason as keyof typeof INBOUND_REASON_LABELS] || reason;
-  };
+  const getOperationTypeLabel = (reason: string) => INBOUND_REASON_LABELS[reason as keyof typeof INBOUND_REASON_LABELS] || reason;
 
   // 获取操作类型样式
   const getOperationTypeVariant = (reason: string) => {
@@ -233,7 +233,7 @@ export default function InboundRecordsPage() {
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-muted-foreground" />
-                            {formatDateTime(record.createdAt)}
+                            {formatDate(record.createdAt)}
                           </div>
                         </TableCell>
                         <TableCell>
@@ -276,7 +276,7 @@ export default function InboundRecordsPage() {
                         </div>
                         <div className="text-sm">
                           <span className="text-muted-foreground">时间：</span>
-                          <span>{formatDateTime(record.createdAt)}</span>
+                          <span>{formatDate(record.createdAt)}</span>
                         </div>
                         {record.remarks && (
                           <div className="text-sm">

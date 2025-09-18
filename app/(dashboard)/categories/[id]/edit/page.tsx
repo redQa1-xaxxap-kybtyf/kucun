@@ -11,7 +11,10 @@ import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import { useForm } from 'react-hook-form';
+
 // UI Components
+import type { z } from 'zod';
+
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -36,7 +39,6 @@ import { useToast } from '@/hooks/use-toast';
 // API and Types
 import { getCategories, getCategory, updateCategory } from '@/lib/api/categories';
 import { UpdateCategorySchema } from '@/lib/schemas/category';
-import type { z } from 'zod';
 
 type UpdateCategoryData = z.infer<typeof UpdateCategorySchema>;
 
@@ -107,7 +109,7 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
       // 先显示成功提示
       toast({
         title: '更新成功',
-        description: `分类 "${data.data?.name || '未知'}" 更新成功！所有修改已保存。`,
+        description: `分类 "${data.data.name}" 更新成功！所有修改已保存。`,
         variant: 'success',
       });
 
@@ -238,7 +240,6 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
                 />
 
 
-
                 {/* 父级分类 */}
                 <FormField
                   control={form.control}
@@ -296,7 +297,6 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
                   )}
                 />
               </div>
-
 
 
               {/* 提交按钮 */}

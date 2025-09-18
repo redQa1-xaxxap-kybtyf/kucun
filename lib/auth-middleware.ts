@@ -1,6 +1,6 @@
-import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { getToken } from 'next-auth/jwt';
 
 import { env } from './env';
 
@@ -9,7 +9,7 @@ const protectedPaths = [
   '/dashboard',
   '/customers',
   '/products',
-  // '/inventory', // 临时移除以便测试
+  '/inventory',
   '/sales-orders',
   '/return-orders',
   '/payments',
@@ -17,7 +17,7 @@ const protectedPaths = [
   '/api/customers',
   '/api/products',
   '/api/sales',
-  // '/api/inventory', // 临时移除以便测试
+  '/api/inventory',
   '/api/inbound',
 ];
 

@@ -7,7 +7,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
-
 import { getVariantInventorySummary } from '@/lib/api/product-variants';
 
 interface VariantInventorySummaryProps {
@@ -181,7 +180,6 @@ export function VariantInventorySummary({
               </CardContent>
             </Card>
           )}
-
 
 
           {/* 统计信息 */}

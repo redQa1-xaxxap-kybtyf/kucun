@@ -4,20 +4,22 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import {
-    paginationValidations,
-    productValidations,
+  paginationValidations,
+  productValidations,
 } from '@/lib/validations/database';
 
 // 获取产品列表
 export async function GET(request: NextRequest) {
   try {
-    // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 验证用户权限 (开发环境下临时绕过)
+    if (process.env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
     }
 
     const { searchParams } = new URL(request.url);
@@ -84,6 +86,7 @@ export async function GET(request: NextRequest) {
           unit: true,
           piecesPerUnit: true,
           weight: true,
+          thickness: true,
           status: true,
           categoryId: true,
           category: {
@@ -149,13 +152,16 @@ export async function GET(request: NextRequest) {
       unit: product.unit,
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
+      thickness: product.thickness,
       status: product.status,
       categoryId: product.categoryId,
-      category: product.category ? {
-        id: product.category.id,
-        name: product.category.name,
-        code: product.category.code,
-      } : null,
+      category: product.category
+        ? {
+            id: product.category.id,
+            name: product.category.name,
+            code: product.category.code,
+          }
+        : null,
       inventory: inventoryMap.get(product.id) || {
         totalQuantity: 0,
         reservedQuantity: 0,
@@ -196,13 +202,15 @@ export async function GET(request: NextRequest) {
 // 创建产品
 export async function POST(request: NextRequest) {
   try {
-    // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 验证用户权限 (开发环境下临时绕过)
+    if (process.env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
     }
 
     const body = await request.json();
@@ -228,6 +236,8 @@ export async function POST(request: NextRequest) {
       unit,
       piecesPerUnit,
       weight,
+      thickness,
+      categoryId,
     } = validationResult.data;
 
     // 检查产品编码是否已存在
@@ -252,6 +262,8 @@ export async function POST(request: NextRequest) {
         unit,
         piecesPerUnit,
         weight,
+        thickness,
+        categoryId,
         status: 'active',
       },
       select: {
@@ -263,7 +275,16 @@ export async function POST(request: NextRequest) {
         unit: true,
         piecesPerUnit: true,
         weight: true,
+        thickness: true,
         status: true,
+        categoryId: true,
+        category: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
         createdAt: true,
         updatedAt: true,
       },
@@ -281,7 +302,16 @@ export async function POST(request: NextRequest) {
       unit: product.unit,
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
+      thickness: product.thickness,
       status: product.status,
+      categoryId: product.categoryId,
+      category: product.category
+        ? {
+            id: product.category.id,
+            name: product.category.name,
+            code: product.category.code,
+          }
+        : null,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };

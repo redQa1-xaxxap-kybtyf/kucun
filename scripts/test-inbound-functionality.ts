@@ -183,7 +183,7 @@ async function testNavigationMenu(): Promise<TestResult> {
   }
 }
 
-async function runInboundTests() {
+async function runTests() {
   console.log('🚀 开始测试产品入库功能...\n');
 
   const results: TestResult[] = [];
@@ -241,4 +241,4 @@ async function runInboundTests() {
 }
 
 // 运行测试
-runInboundTests().catch(console.error);
+runTests().catch(console.error);

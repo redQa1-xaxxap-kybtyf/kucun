@@ -60,6 +60,7 @@ export interface ProductCreateInput {
   unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
   piecesPerUnit?: number;
   weight?: number;
+  thickness?: number; // 产品厚度(mm)，可选字段
   // 初始变体信息（可选）
   variants?: ProductVariantCreateInput[];
 }
@@ -91,6 +92,7 @@ export interface ProductUpdateInput {
   unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
   piecesPerUnit?: number;
   weight?: number;
+  thickness?: number; // 产品厚度(mm)，可选字段
   status?: 'active' | 'inactive';
 }
 
@@ -125,6 +127,23 @@ export interface ProductErrorResponse {
   success: false;
   error: string;
   details?: any[];
+}
+
+// 批量删除相关类型
+export interface BatchDeleteProductsInput {
+  productIds: string[];
+}
+
+export interface BatchDeleteResult {
+  success: boolean;
+  deletedCount: number;
+  failedCount: number;
+  failedProducts?: {
+    id: string;
+    name: string;
+    reason: string;
+  }[];
+  message: string;
 }
 
 // 新增类型定义以匹配页面需求

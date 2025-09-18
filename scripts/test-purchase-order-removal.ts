@@ -14,9 +14,9 @@ interface TestResult {
 async function testPurchaseOrderPageNotFound(): Promise<TestResult> {
   try {
     console.log('🧪 测试采购订单页面不可访问...');
-
+    
     const response = await fetch('http://localhost:3005/purchase-orders');
-
+    
     if (response.status === 404) {
       return {
         success: true,
@@ -39,9 +39,9 @@ async function testPurchaseOrderPageNotFound(): Promise<TestResult> {
 async function testPurchaseOrderAPINotFound(): Promise<TestResult> {
   try {
     console.log('🧪 测试采购订单API不可访问...');
-
+    
     const response = await fetch('http://localhost:3005/api/purchase-orders');
-
+    
     if (response.status === 404) {
       return {
         success: true,
@@ -64,13 +64,13 @@ async function testPurchaseOrderAPINotFound(): Promise<TestResult> {
 async function testNavigationNoPurchaseOrder(): Promise<TestResult> {
   try {
     console.log('🧪 测试导航菜单不包含采购订单...');
-
+    
     const response = await fetch('http://localhost:3005/categories');
     const html = await response.text();
-
+    
     // 检查页面HTML中是否包含采购订单相关内容
     const hasPurchaseOrderText = html.includes('采购订单') || html.includes('purchase-orders');
-
+    
     if (!hasPurchaseOrderText) {
       return {
         success: true,
@@ -93,7 +93,7 @@ async function testNavigationNoPurchaseOrder(): Promise<TestResult> {
 async function testOtherFunctionsStillWork(): Promise<TestResult> {
   try {
     console.log('🧪 测试其他功能仍正常工作...');
-
+    
     // 测试分类管理功能
     const categoriesResponse = await fetch('http://localhost:3005/api/categories');
     if (!categoriesResponse.ok) {
@@ -102,7 +102,7 @@ async function testOtherFunctionsStillWork(): Promise<TestResult> {
         message: '分类管理API不可访问',
       };
     }
-
+    
     // 测试销售订单功能
     const salesOrdersResponse = await fetch('http://localhost:3005/api/sales-orders');
     if (!salesOrdersResponse.ok) {
@@ -111,7 +111,7 @@ async function testOtherFunctionsStillWork(): Promise<TestResult> {
         message: '销售订单API不可访问',
       };
     }
-
+    
     return {
       success: true,
       message: '其他核心功能正常工作',
@@ -124,7 +124,7 @@ async function testOtherFunctionsStillWork(): Promise<TestResult> {
   }
 }
 
-async function runPurchaseOrderRemovalTests() {
+async function runTests() {
   console.log('🚀 开始验证采购订单功能移除...\n');
 
   const results: TestResult[] = [];
@@ -152,11 +152,11 @@ async function runPurchaseOrderRemovalTests() {
   // 输出测试总结
   const successCount = results.filter(r => r.success).length;
   const totalCount = results.length;
-
+  
   console.log('📊 测试总结:');
   console.log(`   ✅ 成功: ${successCount}/${totalCount}`);
   console.log(`   ❌ 失败: ${totalCount - successCount}/${totalCount}`);
-
+  
   if (successCount === totalCount) {
     console.log('\n🎉 所有测试通过！采购订单功能已成功移除！');
     console.log('\n✨ 验证结果:');
@@ -170,4 +170,4 @@ async function runPurchaseOrderRemovalTests() {
 }
 
 // 运行测试
-runPurchaseOrderRemovalTests().catch(console.error);
+runTests().catch(console.error);

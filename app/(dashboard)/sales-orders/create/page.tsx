@@ -6,41 +6,43 @@ import { ArrowLeft, Loader2, Plus, Save, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
+
+// Hooks
+import { useToast } from '@/hooks/use-toast';
 
 // UI Components
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -48,12 +50,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import type {
-    CreateSalesOrderData
-} from '@/lib/schemas/sales-order';
-import {
-    CreateSalesOrderSchema
-} from '@/lib/schemas/sales-order';
+import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
+import { CreateSalesOrderSchema } from '@/lib/schemas/sales-order';
 
 /**
  * 新建销售订单页面
@@ -62,6 +60,7 @@ import {
 export default function CreateSalesOrderPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // 表单配置
   const form = useForm<CreateSalesOrderData>({
@@ -91,12 +90,24 @@ export default function CreateSalesOrderPage() {
   const createMutation = useMutation({
     mutationFn: createSalesOrder,
     onSuccess: data => {
-      toast.success('销售订单创建成功');
+      toast({
+        title: '创建成功',
+        description: `销售订单 "${data.orderNumber}" 创建成功！`,
+        variant: 'success',
+      });
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
-      router.push(`/sales-orders/${data.id}`);
+
+      // 延迟跳转到销售订单列表页，让用户看到成功提示
+      setTimeout(() => {
+        router.push('/sales-orders');
+      }, 1500);
     },
     onError: error => {
-      toast.error(error instanceof Error ? error.message : '创建失败');
+      toast({
+        title: '创建失败',
+        description: error instanceof Error ? error.message : '创建失败',
+        variant: 'destructive',
+      });
     },
   });
 

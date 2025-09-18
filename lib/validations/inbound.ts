@@ -2,6 +2,7 @@
 // 使用 Zod 定义完整的验证规则，确保前后端统一的类型安全验证
 
 import { z } from 'zod';
+
 import type { InboundReason } from '@/lib/types/inbound';
 
 // 入库原因验证
@@ -155,14 +156,10 @@ export type InboundIdData = z.infer<typeof inboundIdSchema>;
 export type ProductSearchData = z.infer<typeof productSearchSchema>;
 
 // 验证辅助函数
-export const validateInboundReason = (reason: string): reason is InboundReason => {
-  return ['purchase', 'return', 'transfer', 'surplus', 'other'].includes(reason);
-};
+export const validateInboundReason = (reason: string): reason is InboundReason => ['purchase', 'return', 'transfer', 'surplus', 'other'].includes(reason);
 
 // 数量格式化辅助函数
-export const formatQuantity = (quantity: number): number => {
-  return Math.round(quantity * 100) / 100;
-};
+export const formatQuantity = (quantity: number): number => Math.round(quantity * 100) / 100;
 
 // 备注清理辅助函数
 export const cleanRemarks = (remarks?: string): string | undefined => {

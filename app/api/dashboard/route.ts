@@ -1,6 +1,6 @@
+import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
+        { success: false, error: '未授权访问' },
         { status: 401 }
       );
     }
@@ -43,8 +43,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { timeRange, productCategory, customerType, salesChannel, region } =
-      validationResult.data;
+    const {
+      timeRange,
+      productCategory: _productCategory,
+      customerType: _customerType,
+      salesChannel: _salesChannel,
+      region: _region,
+    } = validationResult.data;
 
     // 计算时间范围
     const now = new Date();
@@ -66,7 +71,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 构建过滤条件
-    const whereConditions: any = {
+    const whereConditions: Record<string, any> = {
       createdAt: {
         gte: startDate,
         lte: now,

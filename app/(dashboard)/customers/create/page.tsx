@@ -5,37 +5,35 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
+
+// Hooks
+import { useToast } from '@/hooks/use-toast';
 
 // UI Components
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
 import { createCustomer, customerQueryKeys } from '@/lib/api/customers';
-import type {
-    CreateCustomerData
-} from '@/lib/schemas/customer';
-import {
-    CreateCustomerSchema
-} from '@/lib/schemas/customer';
+import type { CreateCustomerData } from '@/lib/schemas/customer';
+import { CreateCustomerSchema } from '@/lib/schemas/customer';
 
 /**
  * 新建客户页面
@@ -44,6 +42,7 @@ import {
 export default function CreateCustomerPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // 表单配置
   const form = useForm<CreateCustomerData>({
@@ -60,12 +59,24 @@ export default function CreateCustomerPage() {
   const createMutation = useMutation({
     mutationFn: createCustomer,
     onSuccess: data => {
-      toast.success('客户创建成功');
+      toast({
+        title: '创建成功',
+        description: `客户 "${data.name}" 创建成功！`,
+        variant: 'success',
+      });
       queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
-      router.push(`/customers/${data.id}`);
+
+      // 延迟跳转到客户列表页，让用户看到成功提示
+      setTimeout(() => {
+        router.push('/customers');
+      }, 1500);
     },
     onError: error => {
-      toast.error(error instanceof Error ? error.message : '创建失败');
+      toast({
+        title: '创建失败',
+        description: error instanceof Error ? error.message : '创建失败',
+        variant: 'destructive',
+      });
     },
   });
 

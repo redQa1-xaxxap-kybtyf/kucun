@@ -114,7 +114,12 @@ export const productValidations = {
     unit: z.enum(['piece', 'sheet', 'strip']).default('piece'),
     piecesPerUnit: z.number().int().min(1, '每件片数至少为1').default(1),
     weight: z.number().min(0, '重量不能为负数').optional(),
-    thickness: z.number().min(0, '厚度不能为负数').max(100, '厚度不能超过100mm').optional(),
+    thickness: z
+      .number()
+      .min(0, '厚度不能为负数')
+      .max(100, '厚度不能超过100mm')
+      .optional(),
+    categoryId: baseValidations.id.optional(),
   }),
 
   update: z.object({
@@ -126,8 +131,13 @@ export const productValidations = {
     unit: z.enum(['piece', 'sheet', 'strip']).optional(),
     piecesPerUnit: z.number().int().min(1, '每件片数至少为1').optional(),
     weight: z.number().min(0, '重量不能为负数').optional(),
-    thickness: z.number().min(0, '厚度不能为负数').max(100, '厚度不能超过100mm').optional(),
+    thickness: z
+      .number()
+      .min(0, '厚度不能为负数')
+      .max(100, '厚度不能超过100mm')
+      .optional(),
     status: z.enum(['active', 'inactive']).optional(),
+    categoryId: baseValidations.id.optional(),
   }),
 };
 

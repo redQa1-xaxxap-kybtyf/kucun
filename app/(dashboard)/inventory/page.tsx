@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 // UI Components
+import { BatchInventoryTable } from '@/components/inventory/BatchInventoryTable';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,6 +21,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
+import { ColorCodeDisplay } from '@/components/ui/color-code-display';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import {
@@ -32,8 +34,6 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 
 // 新增组件导入
-import { ColorCodeDisplay } from '@/components/ui/color-code-display';
-import { BatchInventoryTable } from '@/components/inventory/BatchInventoryTable';
 
 // API and Types
 import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
