@@ -6,7 +6,6 @@ import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
-
 // Hooks
 import { useToast } from '@/hooks/use-toast';
 
@@ -62,7 +61,7 @@ interface ProductEditPageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function ProductEditPage({ params }: ProductEditPageProps) {
+function ProductEditPage({ params }: ProductEditPageProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -149,11 +148,13 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
         router.push('/products');
       }, 1500);
     },
-    onError: (error: any) => {
+    onError: (error: Error | unknown) => {
       console.error('更新产品失败:', error);
+      const errorMessage =
+        error instanceof Error ? error.message : '更新产品失败，请重试';
       toast({
         title: '更新失败',
-        description: error?.message || '更新产品失败，请重试',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -493,3 +494,6 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
     </div>
   );
 }
+
+// 修复：使用React.memo优化组件性能，避免不必要的重渲染
+export default React.memo(ProductEditPage);

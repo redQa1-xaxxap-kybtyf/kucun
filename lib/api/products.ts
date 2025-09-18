@@ -16,6 +16,16 @@ import type {
 const API_BASE = '/api/products';
 
 /**
+ * 统一API配置
+ */
+const API_CONFIG = {
+  headers: {
+    'Content-Type': 'application/json',
+  },
+  credentials: 'include' as RequestCredentials,
+};
+
+/**
  * 查询键工厂
  */
 export const productQueryKeys = {
@@ -44,9 +54,7 @@ export async function getProducts(
   const url = `${API_BASE}?${searchParams.toString()}`;
   const response = await fetch(url, {
     method: 'GET',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    ...API_CONFIG,
   });
 
   if (!response.ok) {
@@ -94,9 +102,7 @@ export async function createProduct(
 ): Promise<Product> {
   const response = await fetch(API_BASE, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    ...API_CONFIG,
     body: JSON.stringify(productData),
   });
 
@@ -122,9 +128,7 @@ export async function updateProduct(
 ): Promise<Product> {
   const response = await fetch(`${API_BASE}/${id}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    ...API_CONFIG,
     body: JSON.stringify(productData),
   });
 
@@ -150,9 +154,7 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<void> {
   const response = await fetch(`${API_BASE}/${id}`, {
     method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    ...API_CONFIG,
   });
 
   if (!response.ok) {
@@ -177,9 +179,7 @@ export async function batchDeleteProducts(
 ): Promise<BatchDeleteResult> {
   const response = await fetch(`${API_BASE}/batch`, {
     method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    },
+    ...API_CONFIG,
     body: JSON.stringify(input),
   });
 
