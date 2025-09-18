@@ -86,7 +86,7 @@ function ProductsPage() {
 
   const [queryParams, setQueryParams] = React.useState<ProductQueryParams>({
     page: 1,
-    limit: 20,
+    limit: 10,
     search: '',
     status: undefined,
     unit: undefined,
