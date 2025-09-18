@@ -78,6 +78,9 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
   } = useQuery({
     queryKey: productQueryKeys.detail(productId),
     queryFn: () => getProduct(productId),
+    // 确保每次进入编辑页面都获取最新数据
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // 获取分类数据
@@ -128,20 +131,32 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
   // 更新产品 Mutation
   const updateProductMutation = useMutation({
     mutationFn: (data: UpdateProductData) => updateProduct(productId, data),
-    onSuccess: updatedProduct => {
+    onSuccess: async updatedProduct => {
       toast({
         title: '更新成功',
         description: `产品 "${updatedProduct.name}" 更新成功！`,
         variant: 'success',
       });
 
-      // 失效相关查询缓存
-      queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
-      queryClient.invalidateQueries({
+      // 彻底失效所有相关查询缓存
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: productQueryKeys.all }),
+        queryClient.invalidateQueries({
+          queryKey: productQueryKeys.detail(productId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: productQueryKeys.lists(),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: productQueryKeys.details(),
+        }),
+        // 同时失效分类查询缓存，因为产品分类可能发生变化
+        queryClient.invalidateQueries({ queryKey: ['categories'] }),
+      ]);
+
+      // 强制重新获取当前产品数据，确保表单显示最新数据
+      await queryClient.refetchQueries({
         queryKey: productQueryKeys.detail(productId),
-      });
-      queryClient.invalidateQueries({
-        queryKey: productQueryKeys.lists(),
       });
 
       // 延迟跳转到产品列表页，让用户看到成功提示

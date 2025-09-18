@@ -14,28 +14,28 @@ import { SpecificationsEditor } from '@/components/products/specifications-edito
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -45,23 +45,23 @@ import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
 import {
-    createProduct,
-    productQueryKeys,
-    updateProduct,
+  createProduct,
+  productQueryKeys,
+  updateProduct,
 } from '@/lib/api/products';
 import type {
-    Product,
-    ProductCreateInput,
-    ProductUpdateInput
+  Product,
+  ProductCreateInput,
+  ProductUpdateInput,
 } from '@/lib/types/product';
 import {
-    PRODUCT_STATUS_LABELS,
-    PRODUCT_UNIT_LABELS
+  PRODUCT_STATUS_LABELS,
+  PRODUCT_UNIT_LABELS,
 } from '@/lib/types/product';
 import {
-    productCreateDefaults,
-    productCreateSchema,
-    productUpdateSchema,
+  productCreateDefaults,
+  productCreateSchema,
+  productUpdateSchema,
 } from '@/lib/validations/product';
 
 interface ProductFormProps {
@@ -128,12 +128,28 @@ export function ProductForm({
 
   // 更新产品 Mutation
   const updateMutation = useMutation({
-    mutationFn: (data: ProductUpdateInput) => updateProduct(initialData!.id, data),
-    onSuccess: response => {
-      queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() });
-      queryClient.invalidateQueries({
+    mutationFn: (data: ProductUpdateInput) =>
+      updateProduct(initialData!.id, data),
+    onSuccess: async response => {
+      // 彻底失效所有相关查询缓存
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: productQueryKeys.all }),
+        queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() }),
+        queryClient.invalidateQueries({
+          queryKey: productQueryKeys.detail(response.id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: productQueryKeys.details(),
+        }),
+        // 同时失效分类查询缓存，因为产品分类可能发生变化
+        queryClient.invalidateQueries({ queryKey: ['categories'] }),
+      ]);
+
+      // 强制重新获取更新后的产品数据
+      await queryClient.refetchQueries({
         queryKey: productQueryKeys.detail(response.id),
       });
+
       if (onSuccess) {
         onSuccess(response);
       } else {
@@ -156,8 +172,18 @@ export function ProductForm({
         // 处理weight和thickness字段的类型转换
         const updateData = {
           ...data,
-          weight: data.weight === '' ? undefined : (typeof data.weight === 'string' ? Number(data.weight) : data.weight),
-          thickness: data.thickness === '' ? undefined : (typeof data.thickness === 'string' ? Number(data.thickness) : data.thickness)
+          weight:
+            data.weight === ''
+              ? undefined
+              : typeof data.weight === 'string'
+                ? Number(data.weight)
+                : data.weight,
+          thickness:
+            data.thickness === ''
+              ? undefined
+              : typeof data.thickness === 'string'
+                ? Number(data.thickness)
+                : data.thickness,
         };
         await updateMutation.mutateAsync(updateData as any);
       } else {
@@ -373,9 +399,7 @@ export function ProductForm({
                           }}
                         />
                       </FormControl>
-                      <FormDescription>
-                        瓷砖产品的厚度（可选）
-                      </FormDescription>
+                      <FormDescription>瓷砖产品的厚度（可选）</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
