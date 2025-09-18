@@ -23,9 +23,9 @@ interface BreadcrumbProps {
 
 /**
  * 路径到标题的映射
+ * 严格遵循代码质量规范，统一使用中文标题
  */
 const PATH_TITLES: Record<string, string> = {
-  // 主要页面
   '/dashboard': '仪表盘',
   '/inventory': '库存管理',
   '/products': '产品管理',
@@ -33,63 +33,16 @@ const PATH_TITLES: Record<string, string> = {
   '/return-orders': '退货订单',
   '/customers': '客户管理',
   '/payments': '支付管理',
+  '/categories': '分类管理',
   '/settings': '系统设置',
   '/help': '帮助中心',
   '/profile': '个人资料',
-  '/categories': '分类管理',
-
-  // 库存管理子页面
-  '/inventory/inbound': '入库管理',
-  '/inventory/inbound/create': '产品入库',
-  '/inventory/outbound': '出库管理',
-  '/inventory/adjust': '库存调整',
-
-  // 产品管理子页面
-  '/products/create': '新建产品',
-  '/products/categories': '产品分类',
-
-  // 客户管理子页面
-  '/customers/create': '新建客户',
-
-  // 销售订单子页面
-  '/sales-orders/create': '新建订单',
-
-  // 退货订单子页面
-  '/return-orders/create': '新建退货',
-
-  // 认证相关页面
-  '/auth': '认证',
-  '/auth/signin': '登录',
-  '/auth/register': '注册',
-  '/auth/error': '认证错误',
-
-  // 通用操作
   '/create': '新建',
   '/edit': '编辑',
-  '/view': '查看',
-  '/details': '详情',
-
-  // 路径段映射（用于处理单独的路径段）
-  'dashboard': '仪表盘',
-  'inventory': '库存管理',
-  'products': '产品管理',
-  'sales-orders': '销售订单',
-  'return-orders': '退货订单',
-  'customers': '客户管理',
-  'payments': '支付管理',
-  'settings': '系统设置',
-  'categories': '分类管理',
-  'inbound': '入库管理',
-  'outbound': '出库管理',
-  'adjust': '库存调整',
-  'create': '新建',
-  'edit': '编辑',
-  'view': '查看',
-  'details': '详情',
-  'auth': '认证',
-  'signin': '登录',
-  'register': '注册',
-  'error': '错误',
+  '/inbound': '入库管理',
+  '/outbound': '出库管理',
+  '/adjust': '库存调整',
+  '/test-api': '接口测试',
 };
 
 /**
@@ -120,19 +73,14 @@ export function Breadcrumb({
       });
     }
 
-    // 如果当前就在仪表盘页面，不需要添加额外的路径段
-    if (pathname === '/dashboard') {
-      return breadcrumbItems;
-    }
-
     // 构建路径面包屑
     let currentPath = '';
     segments.forEach((segment, index) => {
       currentPath += `/${segment}`;
       const isLast = index === segments.length - 1;
 
-      // 获取标题 - 优先使用完整路径映射，然后使用路径段映射
-      let title = PATH_TITLES[currentPath] || PATH_TITLES[segment] || segment;
+      // 获取标题
+      let title = PATH_TITLES[currentPath] || segment;
 
       // 如果是ID（纯数字或UUID格式），尝试获取更友好的名称
       if (/^[0-9a-f-]{36}$|^\d+$/.test(segment)) {
@@ -213,9 +161,8 @@ export function CompactBreadcrumb({
     // 只显示当前页面和上一级
     if (segments.length > 1) {
       const parentPath = `/${segments.slice(0, -1).join('/')}`;
-      const parentSegment = segments[segments.length - 2];
       const parentTitle =
-        PATH_TITLES[parentPath] || PATH_TITLES[parentSegment] || parentSegment;
+        PATH_TITLES[parentPath] || segments[segments.length - 2];
 
       breadcrumbItems.push({
         title: parentTitle,
@@ -225,8 +172,7 @@ export function CompactBreadcrumb({
     }
 
     // 当前页面
-    const currentSegment = segments[segments.length - 1];
-    const currentTitle = PATH_TITLES[pathname] || PATH_TITLES[currentSegment] || currentSegment;
+    const currentTitle = PATH_TITLES[pathname] || segments[segments.length - 1];
     breadcrumbItems.push({
       title: currentTitle,
       isCurrent: true,
