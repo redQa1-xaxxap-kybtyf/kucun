@@ -42,6 +42,9 @@ const PATH_TITLES: Record<string, string> = {
   '/profile': '个人资料',
   '/create': '新建',
   '/edit': '编辑',
+  '/products/edit': '编辑产品',
+  '/categories/edit': '编辑分类',
+  '/customers/edit': '编辑客户',
   '/inbound': '入库管理',
   '/inbound/create': '新建入库',
   '/outbound': '出库管理',
@@ -86,9 +89,45 @@ export function Breadcrumb({
       // 获取标题
       let title = PATH_TITLES[currentPath] || segment;
 
-      // 如果是ID（纯数字或UUID格式），尝试获取更友好的名称
+      // 如果是ID（纯数字或UUID格式），根据上级路径生成更友好的名称
       if (/^[0-9a-f-]{36}$|^\d+$/.test(segment)) {
-        title = `详情 #${segment.slice(0, 8)}`;
+        const parentPath = `/${segments.slice(0, index).join('/')}`;
+        const parentTitle = PATH_TITLES[parentPath];
+
+        // 检查是否是编辑页面（下一个segment是edit）
+        const nextSegment = segments[index + 1];
+        const isEditPage = nextSegment === 'edit';
+
+        // 根据父级路径确定详情页面的标题
+        if (parentTitle === '产品管理') {
+          title = isEditPage ? '产品详情' : '产品详情';
+        } else if (parentTitle === '分类管理') {
+          title = isEditPage ? '分类详情' : '分类详情';
+        } else if (parentTitle === '客户管理') {
+          title = isEditPage ? '客户详情' : '客户详情';
+        } else if (parentTitle === '销售订单') {
+          title = isEditPage ? '订单详情' : '订单详情';
+        } else if (parentTitle === '退货订单') {
+          title = isEditPage ? '退货详情' : '退货详情';
+        } else {
+          title = `详情 #${segment.slice(0, 8)}`;
+        }
+      }
+
+      // 如果是edit段，根据上上级路径生成编辑标题
+      if (segment === 'edit' && index >= 2) {
+        const grandParentPath = `/${segments.slice(0, index - 1).join('/')}`;
+        const grandParentTitle = PATH_TITLES[grandParentPath];
+
+        if (grandParentTitle === '产品管理') {
+          title = '编辑产品';
+        } else if (grandParentTitle === '分类管理') {
+          title = '编辑分类';
+        } else if (grandParentTitle === '客户管理') {
+          title = '编辑客户';
+        } else {
+          title = '编辑';
+        }
       }
 
       breadcrumbItems.push({
