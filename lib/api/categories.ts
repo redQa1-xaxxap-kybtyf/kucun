@@ -48,6 +48,24 @@ export interface UpdateCategoryData extends Partial<CreateCategoryData> {
   status?: 'active' | 'inactive';
 }
 
+// 批量删除分类输入
+export interface BatchDeleteCategoriesInput {
+  categoryIds: string[];
+}
+
+// 批量删除结果
+export interface BatchDeleteResult {
+  success: boolean;
+  deletedCount: number;
+  failedCount: number;
+  failedCategories?: {
+    id: string;
+    name: string;
+    reason: string;
+  }[];
+  message: string;
+}
+
 /**
  * 获取分类列表
  */
@@ -178,6 +196,31 @@ export async function updateCategoryStatus(
   }
 
   return response.json();
+}
+
+/**
+ * 批量删除分类
+ */
+export async function batchDeleteCategories(
+  input: BatchDeleteCategoriesInput
+): Promise<BatchDeleteResult> {
+  const response = await fetch('/api/categories/batch', {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}));
+    throw new Error(
+      errorData.error || `HTTP error! status: ${response.status}`
+    );
+  }
+
+  const result = await response.json();
+  return result.data;
 }
 
 /**
