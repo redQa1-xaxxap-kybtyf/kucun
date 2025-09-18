@@ -62,6 +62,7 @@ export default function CreateProductPage() {
       unit: 'piece',
       piecesPerUnit: undefined,
       weight: undefined,
+      thickness: undefined,
       status: 'active',
       specifications: {},
     },
@@ -71,12 +72,20 @@ export default function CreateProductPage() {
   const createMutation = useMutation({
     mutationFn: createProduct,
     onSuccess: data => {
-      toast.success('产品创建成功');
+      toast({
+        title: '创建成功',
+        description: '产品创建成功',
+        variant: 'success',
+      });
       queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() });
       router.push(`/products/${data.id}`);
     },
     onError: error => {
-      toast.error(error instanceof Error ? error.message : '创建失败');
+      toast({
+        title: '创建失败',
+        description: error instanceof Error ? error.message : '创建失败',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -271,6 +280,35 @@ export default function CreateProductPage() {
                         />
                       </FormControl>
                       <FormDescription>单个产品的重量（千克）</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="thickness"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>厚度 (mm)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          placeholder="请输入厚度"
+                          {...field}
+                          onChange={e =>
+                            field.onChange(
+                              e.target.value
+                                ? Number(e.target.value)
+                                : undefined
+                            )
+                          }
+                        />
+                      </FormControl>
+                      <FormDescription>瓷砖产品的厚度（毫米）</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
