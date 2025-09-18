@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, Edit, Info, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import React, { use } from 'react';
+import { use } from 'react';
 
 // UI Components
 import { Badge } from '@/components/ui/badge';
@@ -28,7 +28,7 @@ interface ProductDetailPageProps {
  * 产品详情页面
  * 严格遵循全栈项目统一约定规范
  */
-function ProductDetailPage({ params }: ProductDetailPageProps) {
+export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const router = useRouter();
   const { id } = use(params);
 
@@ -284,6 +284,3 @@ function ProductDetailPage({ params }: ProductDetailPageProps) {
     </div>
   );
 }
-
-// 修复：使用React.memo优化组件性能，避免不必要的重渲染
-export default React.memo(ProductDetailPage);

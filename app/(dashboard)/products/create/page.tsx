@@ -4,8 +4,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import React from 'react';
 import { useForm } from 'react-hook-form';
+
 // Hooks
 import { useToast } from '@/hooks/use-toast';
 
@@ -36,7 +36,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
 // API and Types
 import { createProduct, productQueryKeys } from '@/lib/api/products';
 import {
@@ -52,7 +51,7 @@ import {
  * 新建产品页面
  * 严格遵循全栈项目统一约定规范
  */
-function CreateProductPage() {
+export default function CreateProductPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
@@ -102,22 +101,6 @@ function CreateProductPage() {
       });
     },
   });
-
-  // 数字输入处理Hook - 修复：使用统一的数字输入处理逻辑
-  const handlePiecesPerUnitChange = useNumberInput(
-    value => form.setValue('piecesPerUnit', value),
-    NumberInputPresets.piecesPerUnit
-  );
-
-  const handleWeightChange = useNumberInput(
-    value => form.setValue('weight', value),
-    NumberInputPresets.weight
-  );
-
-  const handleThicknessChange = useNumberInput(
-    value => form.setValue('thickness', value),
-    NumberInputPresets.thickness
-  );
 
   // 表单提交处理
   const onSubmit = (data: CreateProductData) => {
@@ -272,8 +255,15 @@ function CreateProductPage() {
                         <Input
                           type="number"
                           placeholder="请输入每单位片数"
-                          value={field.value ?? ''}
-                          onChange={handlePiecesPerUnitChange}
+                          value={field.value ?? ''} // 修复：确保显示值正确
+                          onChange={e => {
+                            const value = e.target.value.trim();
+                            field.onChange(
+                              value && !isNaN(Number(value))
+                                ? Number(value)
+                                : undefined
+                            );
+                          }}
                         />
                       </FormControl>
                       <FormDescription>每个计量单位包含的片数</FormDescription>
@@ -293,8 +283,15 @@ function CreateProductPage() {
                           type="number"
                           step="0.01"
                           placeholder="请输入重量"
-                          value={field.value ?? ''}
-                          onChange={handleWeightChange}
+                          value={field.value ?? ''} // 修复：确保显示值正确
+                          onChange={e => {
+                            const value = e.target.value.trim();
+                            field.onChange(
+                              value && !isNaN(Number(value))
+                                ? Number(value)
+                                : undefined
+                            );
+                          }}
                         />
                       </FormControl>
                       <FormDescription>单个产品的重量（千克）</FormDescription>
@@ -316,8 +313,15 @@ function CreateProductPage() {
                           min="0"
                           max="100"
                           placeholder="请输入厚度"
-                          value={field.value ?? ''}
-                          onChange={handleThicknessChange}
+                          value={field.value ?? ''} // 修复：确保显示值正确
+                          onChange={e => {
+                            const value = e.target.value.trim();
+                            field.onChange(
+                              value && !isNaN(Number(value))
+                                ? Number(value)
+                                : undefined
+                            );
+                          }}
                         />
                       </FormControl>
                       <FormDescription>瓷砖产品的厚度（毫米）</FormDescription>
@@ -369,6 +373,3 @@ function CreateProductPage() {
     </div>
   );
 }
-
-// 修复：使用React.memo优化组件性能，避免不必要的重渲染
-export default React.memo(CreateProductPage);

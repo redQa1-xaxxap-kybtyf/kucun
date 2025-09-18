@@ -184,11 +184,8 @@ export function calculateTotalWeight(
 
 /**
  * 验证产品规格JSON
- * 修复：使用unknown类型替代any，提高类型安全性
  */
-export function validateProductSpecifications(
-  specifications: unknown
-): boolean {
+export function validateProductSpecifications(specifications: any): boolean {
   try {
     if (!specifications) return true;
     if (typeof specifications !== 'object') return false;

@@ -25,7 +25,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const queryParams = {
       page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '10'), // 修复：统一默认值为10
+      limit: parseInt(searchParams.get('limit') || '20'),
       search: searchParams.get('search') || undefined,
       sortBy: searchParams.get('sortBy') || 'createdAt',
       sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
@@ -73,11 +73,22 @@ export async function GET(request: NextRequest) {
       where.categoryId = categoryId;
     }
 
-    // 查询产品列表 - 修复：优化查询性能，使用include替代嵌套select
+    // 查询产品列表
     const [products, total] = await Promise.all([
       prisma.product.findMany({
         where,
-        include: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          specification: true,
+          specifications: true,
+          unit: true,
+          piecesPerUnit: true,
+          weight: true,
+          thickness: true,
+          status: true,
+          categoryId: true,
           category: {
             select: {
               id: true,
@@ -85,6 +96,8 @@ export async function GET(request: NextRequest) {
               code: true,
             },
           },
+          createdAt: true,
+          updatedAt: true,
           _count: {
             select: {
               inventory: true,

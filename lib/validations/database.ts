@@ -111,7 +111,7 @@ export const productValidations = {
     name: baseValidations.name,
     specification: z.string().max(200, '规格描述不能超过200个字符').optional(),
     specifications: z.record(z.any()).optional(),
-    unit: z.enum(['piece', 'box', 'square_meter']).default('piece'),
+    unit: z.enum(['piece', 'sheet', 'strip']).default('piece'),
     piecesPerUnit: z.number().int().min(1, '每件片数至少为1').default(1),
     weight: z.number().min(0, '重量不能为负数').optional(),
     thickness: z
@@ -128,7 +128,7 @@ export const productValidations = {
     name: baseValidations.name.optional(),
     specification: z.string().max(200, '规格描述不能超过200个字符').optional(),
     specifications: z.record(z.any()).optional(),
-    unit: z.enum(['piece', 'box', 'square_meter']).optional(),
+    unit: z.enum(['piece', 'sheet', 'strip']).optional(),
     piecesPerUnit: z.number().int().min(1, '每件片数至少为1').optional(),
     weight: z.number().min(0, '重量不能为负数').optional(),
     thickness: z

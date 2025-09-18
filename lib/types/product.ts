@@ -126,14 +126,7 @@ export interface ProductResponse {
 export interface ProductErrorResponse {
   success: false;
   error: string;
-  details?: ValidationError[]; // 修复：使用具体类型替代any
-}
-
-// 验证错误类型定义
-export interface ValidationError {
-  field: string;
-  message: string;
-  code?: string;
+  details?: any[];
 }
 
 // 批量删除相关类型
@@ -167,7 +160,7 @@ export interface TileSpecifications {
   grade?: string; // 等级
   origin?: string; // 产地
   series?: string; // 系列
-  [key: string]: string | number | boolean | undefined; // 修复：使用联合类型替代any
+  [key: string]: any; // 允许扩展字段
 }
 
 // 产品单位显示名称映射
@@ -179,14 +172,14 @@ export const PRODUCT_UNIT_LABELS: Record<string, string> = {
   square_meter: '平方米',
 };
 
-// 产品单位选项（用于表单）- 修复：使用as const确保类型安全和性能
+// 产品单位选项（用于表单）
 export const PRODUCT_UNIT_OPTIONS = [
   { value: 'piece', label: '件' },
   { value: 'sheet', label: '片' },
   { value: 'strip', label: '条' },
   { value: 'box', label: '箱' },
   { value: 'square_meter', label: '平方米' },
-] as const;
+];
 
 // 产品状态显示名称映射
 export const PRODUCT_STATUS_LABELS: Record<string, string> = {
@@ -194,11 +187,11 @@ export const PRODUCT_STATUS_LABELS: Record<string, string> = {
   inactive: '停用',
 };
 
-// 产品状态选项（用于表单）- 修复：使用as const确保类型安全和性能
+// 产品状态选项（用于表单）
 export const PRODUCT_STATUS_OPTIONS = [
   { value: 'active', label: '启用' },
   { value: 'inactive', label: '停用' },
-] as const;
+];
 
 // 产品状态颜色映射（用于Badge组件）
 export const PRODUCT_STATUS_VARIANTS: Record<

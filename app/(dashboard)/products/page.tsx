@@ -60,6 +60,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
+
 // API and Types
 import { getCategories } from '@/lib/api/categories';
 import {
@@ -179,35 +180,29 @@ function ProductsPage() {
     },
   });
 
-  // 搜索处理 - 修复：使用useCallback优化性能
-  const handleSearch = React.useCallback((value: string) => {
+  // 搜索处理
+  const handleSearch = (value: string) => {
     setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
-  }, []);
+  };
 
-  // 筛选处理 - 修复：使用useCallback优化性能，改进类型安全
-  const handleFilter = React.useCallback(
-    (key: keyof ProductQueryParams, value: string | undefined) => {
-      setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
-    },
-    []
-  );
+  // 筛选处理
+  const handleFilter = (key: keyof ProductQueryParams, value: any) => {
+    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
+  };
 
-  // 分页处理 - 修复：使用useCallback优化性能
-  const handlePageChange = React.useCallback((page: number) => {
+  // 分页处理
+  const handlePageChange = (page: number) => {
     setQueryParams(prev => ({ ...prev, page }));
-  }, []);
+  };
 
-  // 删除产品处理 - 修复：使用useCallback优化性能
-  const handleDeleteProduct = React.useCallback(
-    (productId: string, productName: string) => {
-      setDeleteDialog({
-        open: true,
-        productId,
-        productName,
-      });
-    },
-    []
-  );
+  // 删除产品处理
+  const handleDeleteProduct = (productId: string, productName: string) => {
+    setDeleteDialog({
+      open: true,
+      productId,
+      productName,
+    });
+  };
 
   // 确认删除产品
   const confirmDeleteProduct = async () => {
@@ -240,34 +235,28 @@ function ProductsPage() {
     }
   };
 
-  // 批量选择处理 - 修复：使用useCallback优化性能
-  const handleSelectProduct = React.useCallback(
-    (productId: string, checked: boolean) => {
-      setSelectedProductIds(prev => {
-        if (checked) {
-          return [...prev, productId];
-        } else {
-          return prev.filter(id => id !== productId);
-        }
-      });
-    },
-    []
-  );
-
-  // 全选/取消全选处理 - 修复：使用useCallback优化性能
-  const handleSelectAll = React.useCallback(
-    (checked: boolean) => {
-      if (checked && data?.data) {
-        setSelectedProductIds(data.data.map(product => product.id));
+  // 批量选择处理
+  const handleSelectProduct = (productId: string, checked: boolean) => {
+    setSelectedProductIds(prev => {
+      if (checked) {
+        return [...prev, productId];
       } else {
-        setSelectedProductIds([]);
+        return prev.filter(id => id !== productId);
       }
-    },
-    [data?.data]
-  );
+    });
+  };
 
-  // 批量删除处理 - 修复：使用useCallback优化性能
-  const handleBatchDelete = React.useCallback(() => {
+  // 全选/取消全选处理
+  const handleSelectAll = (checked: boolean) => {
+    if (checked && data?.data) {
+      setSelectedProductIds(data.data.map(product => product.id));
+    } else {
+      setSelectedProductIds([]);
+    }
+  };
+
+  // 批量删除处理
+  const handleBatchDelete = () => {
     if (selectedProductIds.length === 0) return;
 
     const selectedProducts =
@@ -278,7 +267,7 @@ function ProductsPage() {
       open: true,
       products: selectedProducts,
     });
-  }, [selectedProductIds, data?.data]);
+  };
 
   // 确认批量删除
   const confirmBatchDelete = () => {
@@ -289,9 +278,9 @@ function ProductsPage() {
     });
   };
 
-  // 键盘快捷键处理 - 修复：使用useCallback优化性能
-  const handleKeyDown = React.useCallback(
-    (event: KeyboardEvent) => {
+  // 键盘快捷键处理
+  React.useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       // Ctrl+A 全选
       if (event.ctrlKey && event.key === 'a' && data?.data) {
         event.preventDefault();
@@ -302,22 +291,19 @@ function ProductsPage() {
         event.preventDefault();
         handleBatchDelete();
       }
-    },
-    [data?.data, selectedProductIds, handleSelectAll, handleBatchDelete]
-  );
+    };
 
-  React.useEffect(() => {
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
+  }, [data?.data, selectedProductIds]);
 
   // 清空选择当数据变化时
   React.useEffect(() => {
     setSelectedProductIds([]);
   }, [queryParams]);
 
-  // 状态标签渲染 - 修复：使用useCallback优化性能
-  const getStatusBadge = React.useCallback((status: string) => {
+  // 状态标签渲染
+  const getStatusBadge = (status: string) => {
     const variant = status === 'active' ? 'default' : 'secondary';
     return (
       <Badge variant={variant}>
@@ -325,46 +311,43 @@ function ProductsPage() {
           status}
       </Badge>
     );
-  }, []);
+  };
 
-  // 移动端表格列配置 - 修复：使用useMemo缓存配置，避免每次渲染重新创建
-  const mobileColumns = React.useMemo(
-    () => [
-      { key: 'name', title: '产品名称', mobilePrimary: true },
-      { key: 'code', title: '产品编码', mobileLabel: '编码' },
-      {
-        key: 'category',
-        title: '分类',
-        render: (item: Product) => (
-          <Badge variant="outline">{item?.category?.name || '未分类'}</Badge>
-        ),
-      },
-      {
-        key: 'thickness',
-        title: '厚度',
-        render: (item: Product) =>
-          item?.thickness ? `${item.thickness}mm` : '-',
-      },
-      {
-        key: 'weight',
-        title: '重量',
-        render: (item: Product) => (item?.weight ? `${item.weight}kg` : '-'),
-      },
-      {
-        key: 'status',
-        title: '状态',
-        render: (item: Product) => getStatusBadge(item?.status || 'active'),
-      },
-      {
-        key: 'unit',
-        title: '单位',
-        render: (item: Product) =>
-          PRODUCT_UNIT_LABELS[item.unit as keyof typeof PRODUCT_UNIT_LABELS] ||
-          item.unit,
-      },
-    ],
-    [getStatusBadge]
-  );
+  // 移动端表格列配置
+  const mobileColumns = [
+    { key: 'name', title: '产品名称', mobilePrimary: true },
+    { key: 'code', title: '产品编码', mobileLabel: '编码' },
+    {
+      key: 'category',
+      title: '分类',
+      render: (item: Product) => (
+        <Badge variant="outline">{item?.category?.name || '未分类'}</Badge>
+      ),
+    },
+    {
+      key: 'thickness',
+      title: '厚度',
+      render: (item: Product) =>
+        item?.thickness ? `${item.thickness}mm` : '-',
+    },
+    {
+      key: 'weight',
+      title: '重量',
+      render: (item: Product) => (item?.weight ? `${item.weight}kg` : '-'),
+    },
+    {
+      key: 'status',
+      title: '状态',
+      render: (item: Product) => getStatusBadge(item?.status || 'active'),
+    },
+    {
+      key: 'unit',
+      title: '单位',
+      render: (item: Product) =>
+        PRODUCT_UNIT_LABELS[item.unit as keyof typeof PRODUCT_UNIT_LABELS] ||
+        item.unit,
+    },
+  ];
 
   if (error) {
     return (
@@ -735,7 +718,7 @@ function ProductsPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除产品</AlertDialogTitle>
             <AlertDialogDescription>
-              您确定要删除产品 &ldquo;{deleteDialog.productName}&rdquo; 吗？
+              您确定要删除产品 "{deleteDialog.productName}" 吗？
               <br />
               <span className="font-medium text-red-600">
                 此操作不可撤销，删除后将无法恢复产品数据。
@@ -811,7 +794,7 @@ function ProductsPage() {
                   删除中...
                 </>
               ) : (
-                <>确认删除 {batchDeleteDialog.products.length} 个产品</>
+                `确认删除 ${batchDeleteDialog.products.length} 个产品`
               )}
             </AlertDialogAction>
           </AlertDialogFooter>
@@ -821,5 +804,4 @@ function ProductsPage() {
   );
 }
 
-// 修复：使用React.memo优化组件性能，避免不必要的重渲染
-export default React.memo(ProductsPage);
+export default ProductsPage;
