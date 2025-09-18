@@ -10,6 +10,7 @@ export interface Product {
   unit: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
   piecesPerUnit: number;
   weight?: number;
+  thickness?: number; // 产品厚度(mm)
   status: 'active' | 'inactive';
   categoryId?: string;
   category?: {
