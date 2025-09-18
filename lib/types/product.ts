@@ -10,7 +10,6 @@ export interface Product {
   unit: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
   piecesPerUnit: number;
   weight?: number;
-  thickness?: number; // 产品厚度(mm)
   status: 'active' | 'inactive';
   categoryId?: string;
   category?: {
@@ -60,7 +59,6 @@ export interface ProductCreateInput {
   unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
   piecesPerUnit?: number;
   weight?: number;
-  thickness?: number; // 产品厚度(mm)
   // 初始变体信息（可选）
   variants?: ProductVariantCreateInput[];
 }
@@ -92,7 +90,6 @@ export interface ProductUpdateInput {
   unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
   piecesPerUnit?: number;
   weight?: number;
-  thickness?: number; // 产品厚度(mm)
   status?: 'active' | 'inactive';
 }
 
