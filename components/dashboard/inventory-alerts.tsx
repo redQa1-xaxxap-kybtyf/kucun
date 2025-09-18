@@ -24,8 +24,7 @@ import {
     CardHeader,
     CardTitle,
 } from '@/components/ui/card';
-import { ColorCodeDisplay } from '@/components/ui/color-code-display';
-import { InventoryStatusIndicator } from '@/components/ui/inventory-status-indicator';
+
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { dashboardUtils, useDismissAlert } from '@/lib/api/dashboard';
@@ -128,13 +127,6 @@ const InventoryAlertItem = React.forwardRef<
                 <p className="truncate text-sm font-medium">
                   {alert.productName}
                 </p>
-                {alert.colorCode && (
-                  <ColorCodeDisplay
-                    colorCode={alert.colorCode}
-                    size="sm"
-                    className="flex-shrink-0"
-                  />
-                )}
               </div>
               <p className="text-xs text-muted-foreground">
                 库存: {alert.currentStock} / 安全: {alert.safetyStock}
@@ -183,9 +175,6 @@ const InventoryAlertItem = React.forwardRef<
             <div className="min-w-0 flex-1 space-y-2">
               <div className="flex items-center space-x-2">
                 <h4 className="text-sm font-medium">{alert.productName}</h4>
-                {alert.colorCode && (
-                  <ColorCodeDisplay colorCode={alert.colorCode} size="sm" />
-                )}
                 <Badge
                   variant="outline"
                   className={cn('text-xs', levelConfig.badge)}

@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, Calendar, MapPin, Package, TrendingUp } from 'lucide-react';
+import { AlertTriangle, MapPin, Package, TrendingUp } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -100,7 +100,7 @@ export function VariantInventorySummary({
             库存概览
           </CardTitle>
           <CardDescription>
-            {variant.product.name} - {variant.colorCode} ({variant.sku})
+            {variant.product.name} ({variant.sku})
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -182,45 +182,7 @@ export function VariantInventorySummary({
             </Card>
           )}
 
-          {/* 生产日期分布 */}
-          {breakdown.productionDates.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
-                  <Calendar className="h-4 w-4" />
-                  生产日期分布
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {breakdown.productionDates.slice(0, 5).map((dateInfo: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-blue-500 rounded-full" />
-                        <span className="font-medium">
-                          {dateInfo.productionDate === '未指定日期'
-                            ? '未指定日期'
-                            : new Date(dateInfo.productionDate).toLocaleDateString('zh-CN')
-                          }
-                        </span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{dateInfo.quantity}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {dateInfo.batches} 批次
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                  {breakdown.productionDates.length > 5 && (
-                    <div className="text-center text-sm text-muted-foreground">
-                      还有 {breakdown.productionDates.length - 5} 个日期...
-                    </div>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+
 
           {/* 统计信息 */}
           <Card>

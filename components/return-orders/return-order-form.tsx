@@ -16,7 +16,6 @@ import { useFieldArray, useForm } from 'react-hook-form';
 
 // UI Components
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
     Card,
@@ -109,8 +108,6 @@ export function ReturnOrderForm({
                 id: item.id,
                 salesOrderItemId: item.salesOrderItemId,
                 productId: item.productId,
-                colorCode: item.colorCode,
-                productionDate: item.productionDate,
                 returnQuantity: item.returnQuantity,
                 originalQuantity: item.originalQuantity,
                 unitPrice: item.unitPrice,
@@ -160,8 +157,6 @@ export function ReturnOrderForm({
     const newItem = {
       salesOrderItemId: salesOrderItem.id,
       productId: salesOrderItem.productId,
-      colorCode: salesOrderItem.colorCode,
-      productionDate: salesOrderItem.productionDate,
       returnQuantity: 1,
       originalQuantity: salesOrderItem.quantity,
       unitPrice: salesOrderItem.unitPrice,
@@ -425,11 +420,7 @@ export function ReturnOrderForm({
                                 </div>
                                 <div className="text-sm text-muted-foreground">
                                   数量: {item.quantity} {item.product?.unit} |
-                                  单价: {formatReturnAmount(item.unitPrice)} |
-                                  {item.colorCode &&
-                                    ` 色号: ${item.colorCode} |`}
-                                  {item.productionDate &&
-                                    ` 生产日期: ${item.productionDate}`}
+                                  单价: {formatReturnAmount(item.unitPrice)}
                                 </div>
                               </div>
                               <Button
@@ -484,15 +475,9 @@ export function ReturnOrderForm({
                                       </div>
                                     </TableCell>
                                     <TableCell>
-                                      {field.colorCode ? (
-                                        <Badge variant="outline">
-                                          {field.colorCode}
-                                        </Badge>
-                                      ) : (
-                                        <span className="text-muted-foreground">
-                                          无
-                                        </span>
-                                      )}
+                                      <span className="text-muted-foreground">
+                                        -
+                                      </span>
                                     </TableCell>
                                     <TableCell>
                                       <FormField

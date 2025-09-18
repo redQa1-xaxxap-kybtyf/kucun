@@ -5,54 +5,46 @@
 
 import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 
 // 瓷砖行业特色组件
 import {
-  ColorCodeDisplay,
-  ColorCodeSelector,
-  ColorCodeGrid,
+    ColorCodeDisplay,
+    ColorCodeGrid,
+    ColorCodeSelector,
 } from '@/components/ui/color-code-display';
 import {
-  InventoryStatusIndicator,
-  InventoryHealth,
-  QuickStatusToggle,
-  type InventoryStatus,
+    InventoryHealth,
+    InventoryStatusIndicator,
+    QuickStatusToggle,
+    type InventoryStatus,
 } from '@/components/ui/inventory-status-indicator';
 
 // 移动端优化组件
 import {
-  MobileDataTable,
-  createTextColumn,
-  createBadgeColumn,
-  createDateColumn,
-  type ColumnDef,
+    MobileDataTable,
+    createDateColumn,
+    createTextColumn,
+    type ColumnDef
 } from '@/components/ui/mobile-data-table';
 import {
-  MobileSearchBar,
-  type SearchState,
-  type FilterOption,
-  type SortOption,
+    MobileSearchBar,
+    type FilterOption,
+    type SearchState,
+    type SortOption,
 } from '@/components/ui/mobile-search-bar';
-import {
-  ProductionDatePicker,
-  ProductionDateRangePicker,
-  type ProductionBatch,
-} from '@/components/ui/production-date-picker';
+
 import { Separator } from '@/components/ui/separator';
 import {
-  SpecificationDisplay,
-  SpecificationCard,
-  SpecificationCompare,
-  type TileSpecification,
+    SpecificationDisplay,
+    type TileSpecification
 } from '@/components/ui/specification-display';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -293,37 +285,7 @@ export default function UIComponentsShowcase() {
             </CardContent>
           </Card>
 
-          {/* 生产日期选择器 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>生产日期选择器</CardTitle>
-              <CardDescription>
-                专门用于瓷砖生产日期的选择，支持批次管理
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                <div>
-                  <h4 className="mb-2 font-medium">基础日期选择</h4>
-                  <ProductionDatePicker
-                    value={productionDate}
-                    onValueChange={setProductionDate}
-                    format="YYYY-MM-DD"
-                  />
-                </div>
-                <div>
-                  <h4 className="mb-2 font-medium">带批次信息</h4>
-                  <ProductionDatePicker
-                    value={productionDate}
-                    onValueChange={setProductionDate}
-                    format="YYYY-MM-DD"
-                    showBatchInfo
-                    batches={sampleBatches}
-                  />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+
 
           {/* 库存状态指示器 */}
           <Card>

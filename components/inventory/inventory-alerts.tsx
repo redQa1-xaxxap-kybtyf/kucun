@@ -5,8 +5,6 @@ import {
     AlertCircle,
     AlertTriangle,
     BellOff,
-    Calendar,
-    Palette,
     RefreshCw,
     TrendingUp
 } from 'lucide-react';
@@ -39,8 +37,7 @@ import {
 import { getInventoryAlerts, inventoryQueryKeys } from '@/lib/api/inventory';
 import {
     INVENTORY_ALERT_TYPE_LABELS,
-    INVENTORY_ALERT_TYPE_VARIANTS,
-    formatProductionDate
+    INVENTORY_ALERT_TYPE_VARIANTS
 } from '@/lib/types/inventory';
 
 interface InventoryAlertsProps {
@@ -201,32 +198,7 @@ export function InventoryAlerts({
                           </div>
                         </div>
                       </TableCell>
-                      <TableCell>
-                        {alert.inventory?.colorCode ? (
-                          <Badge variant="outline" className="text-xs">
-                            <Palette className="mr-1 h-3 w-3" />
-                            {alert.inventory.colorCode}
-                          </Badge>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            无
-                          </span>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {alert.inventory?.productionDate ? (
-                          <div className="flex items-center text-sm">
-                            <Calendar className="mr-1 h-3 w-3" />
-                            {formatProductionDate(
-                              alert.inventory.productionDate
-                            )}
-                          </div>
-                        ) : (
-                          <span className="text-sm text-muted-foreground">
-                            无
-                          </span>
-                        )}
-                      </TableCell>
+
                       <TableCell>
                         <span className="font-medium text-orange-600">
                           {alert.inventory?.quantity || 0}{' '}
@@ -301,20 +273,7 @@ export function InventoryAlerts({
                         <span className="text-muted-foreground">产品编码:</span>
                         <span>{alert.inventory?.product?.code || '无'}</span>
                       </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">色号:</span>
-                        <span>{alert.inventory?.colorCode || '无'}</span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-muted-foreground">生产日期:</span>
-                        <span>
-                          {alert.inventory?.productionDate
-                            ? formatProductionDate(
-                                alert.inventory.productionDate
-                              )
-                            : '无'}
-                        </span>
-                      </div>
+
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">当前库存:</span>
                         <span className="font-medium text-orange-600">

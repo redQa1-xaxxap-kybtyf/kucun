@@ -3,7 +3,6 @@
 import { useQuery } from '@tanstack/react-query';
 import {
     Calculator,
-    Calendar,
     Package,
     Plus,
     Trash2
@@ -29,20 +28,12 @@ import {
     FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 
 // Icons
 
 // Custom Components
 import type { Product } from '@/lib/types/product';
-import { COMMON_COLOR_CODES } from '@/lib/types/sales-order';
 import type {
     SalesOrderItemCreateFormData,
     SalesOrderItemUpdateFormData
@@ -89,8 +80,6 @@ export function OrderItemsEditor({
   const addNewItem = () => {
     append({
       productId: '',
-      colorCode: '',
-      productionDate: '',
       quantity: 1,
       unitPrice: 0,
     });
@@ -305,58 +294,7 @@ function OrderItemRow({
             />
           </div>
 
-          {/* 色号 */}
-          <div className="lg:col-span-2">
-            <FormField
-              control={control}
-              name={`${name}.colorCode`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>色号</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={disabled}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择色号" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="none">无色号</SelectItem>
-                      {COMMON_COLOR_CODES.map(color => (
-                        <SelectItem key={color.value} value={color.value}>
-                          {color.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
 
-          {/* 生产日期 */}
-          <div className="lg:col-span-2">
-            <FormField
-              control={control}
-              name={`${name}.productionDate`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="flex items-center">
-                    <Calendar className="mr-1 h-4 w-4" />
-                    生产日期
-                  </FormLabel>
-                  <FormControl>
-                    <Input type="date" disabled={disabled} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
 
           {/* 数量 */}
           <div className="lg:col-span-1">

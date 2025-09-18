@@ -111,8 +111,6 @@ export function SalesOrderForm({
               initialData.items?.map(item => ({
                 id: item.id,
                 productId: item.productId,
-                colorCode: item.colorCode || '',
-                productionDate: item.productionDate || '',
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
               })) || [],

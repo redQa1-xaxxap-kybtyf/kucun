@@ -7,10 +7,8 @@ import {
     ArrowLeft,
     Building2,
     Calculator,
-    Calendar,
     Loader2,
     Package,
-    Palette,
     Save,
     TrendingDown,
     TrendingUp
@@ -72,7 +70,6 @@ import {
     INBOUND_TYPE_LABELS,
     OUTBOUND_TYPE_LABELS,
 } from '@/lib/types/inventory';
-import { COMMON_COLOR_CODES } from '@/lib/types/sales-order';
 import type {
     InboundCreateFormData,
     InventoryAdjustFormData,
@@ -152,8 +149,6 @@ export function InventoryOperationForm({
 
   // 监听产品变化
   const watchedProductId = form.watch('productId');
-  const watchedColorCode = form.watch('colorCode');
-  const watchedProductionDate = form.watch('productionDate');
   const watchedQuantity = form.watch('quantity' as any);
 
   // 获取产品信息
@@ -169,16 +164,12 @@ export function InventoryOperationForm({
       'inventory',
       'availability',
       watchedProductId,
-      watchedColorCode,
-      watchedProductionDate,
       watchedQuantity,
     ],
     queryFn: () =>
       checkInventoryAvailability(
         watchedProductId,
-        watchedQuantity || 0,
-        watchedColorCode || undefined,
-        watchedProductionDate || undefined
+        watchedQuantity || 0
       ),
     enabled:
       mode === 'outbound' &&
@@ -383,59 +374,7 @@ export function InventoryOperationForm({
               </div>
 
               {/* 产品规格 */}
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                {/* 色号 */}
-                <FormField
-                  control={form.control}
-                  name="colorCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center">
-                        <Palette className="mr-1 h-4 w-4" />
-                        色号
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value}
-                        disabled={isLoading}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择色号" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">无色号</SelectItem>
-                          {COMMON_COLOR_CODES.map(color => (
-                            <SelectItem key={color.value} value={color.value}>
-                              {color.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* 生产日期 */}
-                <FormField
-                  control={form.control}
-                  name="productionDate"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center">
-                        <Calendar className="mr-1 h-4 w-4" />
-                        生产日期
-                      </FormLabel>
-                      <FormControl>
-                        <Input type="date" disabled={isLoading} {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-1">
                 {/* 数量 */}
                 <FormField
                   control={form.control}

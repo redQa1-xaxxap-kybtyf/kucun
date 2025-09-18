@@ -1,12 +1,12 @@
 'use client';
 
-import { Calendar, ChevronDown, ChevronRight, DollarSign, MapPin, Package } from 'lucide-react';
+import { ChevronDown, ChevronRight, DollarSign, MapPin, Package } from 'lucide-react';
 import React, { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { ColorCodeDisplay } from '@/components/ui/color-code-display';
+
 import {
     Table,
     TableBody,
@@ -28,9 +28,6 @@ interface BatchInventoryTableProps {
 interface GroupedInventory {
   variant: {
     id: string;
-    colorCode: string;
-    colorName?: string;
-    colorValue?: string;
     sku: string;
   };
   product: {
@@ -59,16 +56,13 @@ export function BatchInventoryTable({
     const groups = new Map<string, GroupedInventory>();
 
     inventoryData.forEach((inventory) => {
-      const variantKey = inventory.variantId || `${inventory.productId}-${inventory.colorCode}`;
+      const variantKey = inventory.variantId || `${inventory.productId}-${inventory.id}`;
 
       if (!groups.has(variantKey)) {
         groups.set(variantKey, {
           variant: {
             id: inventory.variantId || '',
-            colorCode: inventory.colorCode || '',
-            colorName: inventory.variant?.colorName,
-            colorValue: inventory.variant?.colorValue,
-            sku: inventory.variant?.sku || '',
+            sku: inventory.variant?.sku || inventory.product?.code || '',
           },
           product: {
             id: inventory.productId,
@@ -137,7 +131,7 @@ export function BatchInventoryTable({
         <CardContent>
           <div className="space-y-2">
             {groupedData.map((group) => {
-              const variantKey = group.variant.id || `${group.product.id}-${group.variant.colorCode}`;
+              const variantKey = group.variant.id || `${group.product.id}-${group.variant.sku}`;
               const isExpanded = expandedGroups.has(variantKey);
 
               return (
@@ -156,15 +150,9 @@ export function BatchInventoryTable({
                         )}
                       </Button>
 
-                      <ColorCodeDisplay
-                        colorCode={group.variant.colorCode}
-                        label={group.variant.colorName || group.variant.colorCode}
-                        size="default"
-                      />
-
                       <div>
                         <div className="font-medium">
-                          {group.product.name} - {group.variant.colorCode}
+                          {group.product.name}
                         </div>
                         <div className="text-sm text-muted-foreground">
                           SKU: {group.variant.sku} | {group.batches.length} 个批次
@@ -189,7 +177,6 @@ export function BatchInventoryTable({
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>生产日期</TableHead>
                             <TableHead>批次号</TableHead>
                             <TableHead>存储位置</TableHead>
                             <TableHead className="text-right">库存数量</TableHead>
@@ -205,12 +192,6 @@ export function BatchInventoryTable({
                               className="cursor-pointer hover:bg-muted/50"
                               onClick={() => onRowClick?.(batch)}
                             >
-                              <TableCell>
-                                <div className="flex items-center gap-2">
-                                  <Calendar className="h-4 w-4 text-muted-foreground" />
-                                  {formatDate(batch.productionDate)}
-                                </div>
-                              </TableCell>
                               <TableCell>
                                 {batch.batchNumber || '-'}
                               </TableCell>
@@ -284,28 +265,17 @@ export function BatchInventoryTable({
                 {showVariantInfo && (
                   <TableCell>
                     <div className="flex items-center gap-3">
-                      <ColorCodeDisplay
-                        colorCode={inventory.colorCode || ''}
-                        label={inventory.variant?.colorName || inventory.colorCode}
-                        size="sm"
-                      />
                       <div>
                         <div className="font-medium">
                           {inventory.product?.name}
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          {inventory.variant?.sku || inventory.colorCode}
+                          {inventory.variant?.sku || inventory.product?.code}
                         </div>
                       </div>
                     </div>
                   </TableCell>
                 )}
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    {formatDate(inventory.productionDate)}
-                  </div>
-                </TableCell>
                 <TableCell>{inventory.batchNumber || '-'}</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-2">
