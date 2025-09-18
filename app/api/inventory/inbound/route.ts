@@ -1,17 +1,17 @@
 // 产品入库API路由
 // 提供入库记录的CRUD操作接口
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
 import { authOptions } from '@/lib/auth';
-import { 
-  createInboundSchema, 
-  inboundQuerySchema,
-  formatQuantity,
-  cleanRemarks
+import { prisma } from '@/lib/db';
+import type { InboundListResponse } from '@/lib/types/inbound';
+import {
+    cleanRemarks,
+    createInboundSchema,
+    formatQuantity,
+    inboundQuerySchema
 } from '@/lib/validations/inbound';
-import type { InboundListResponse, InboundStats } from '@/lib/types/inbound';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // 生成入库记录编号
 function generateRecordNumber(): string {
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
         { status: 401 }
       );
     }
@@ -104,6 +104,11 @@ export async function GET(request: NextRequest) {
               id: true,
               name: true,
               username: true,
+              email: true,
+              role: true,
+              status: true,
+              createdAt: true,
+              updatedAt: true,
             },
           },
         },
@@ -125,8 +130,22 @@ export async function GET(request: NextRequest) {
         userId: record.userId,
         createdAt: record.createdAt.toISOString(),
         updatedAt: record.updatedAt.toISOString(),
-        product: record.product,
-        user: record.user,
+        product: record.product ? {
+          ...record.product,
+          specification: record.product.specification || undefined,
+          unit: record.product.unit as 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter',
+          piecesPerUnit: 1, // 默认值，因为查询中没有包含
+          status: 'active' as const, // 默认值
+          createdAt: new Date().toISOString(), // 默认值
+          updatedAt: new Date().toISOString(), // 默认值
+        } : undefined,
+        user: record.user ? {
+          ...record.user,
+          role: record.user.role as 'admin' | 'sales',
+          status: record.user.status as 'active' | 'inactive' | 'pending',
+          createdAt: record.user.createdAt.toISOString(),
+          updatedAt: record.user.updatedAt.toISOString(),
+        } : undefined,
       })),
       pagination: {
         page,
@@ -158,7 +177,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
         { status: 401 }
       );
     }
@@ -224,25 +243,35 @@ export async function POST(request: NextRequest) {
 
     // 更新库存（这里需要根据实际业务逻辑调整）
     // 暂时简化处理，实际应该考虑批次、变体等
-    await prisma.inventory.upsert({
+    // 查找现有库存记录
+    const existingInventory = await prisma.inventory.findFirst({
       where: {
-        productId_variantId_colorCode_productionDate: {
-          productId,
-          variantId: null,
-          colorCode: null,
-          productionDate: null,
-        },
-      },
-      update: {
-        quantity: {
-          increment: formatQuantity(quantity),
-        },
-      },
-      create: {
         productId,
-        quantity: formatQuantity(quantity),
+        variantId: null,
+        productionDate: null,
+        batchNumber: null,
       },
     });
+
+    if (existingInventory) {
+      // 更新现有记录
+      await prisma.inventory.update({
+        where: { id: existingInventory.id },
+        data: {
+          quantity: {
+            increment: formatQuantity(quantity),
+          },
+        },
+      });
+    } else {
+      // 创建新记录
+      await prisma.inventory.create({
+        data: {
+          productId,
+          quantity: formatQuantity(quantity),
+        },
+      });
+    }
 
     return NextResponse.json({
       success: true,
@@ -264,7 +293,7 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('创建入库记录失败:', error);
-    
+
     if (error instanceof Error && error.message.includes('Unique constraint')) {
       return NextResponse.json(
         { success: false, error: '记录编号重复，请重试' },

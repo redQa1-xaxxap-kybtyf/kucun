@@ -34,7 +34,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 // API and Types
 import { getCategories } from '@/lib/api/categories';
 import { getProduct, productQueryKeys, updateProduct } from '@/lib/api/products';
@@ -94,7 +93,6 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
       weight: 0,
       status: 'active',
       categoryId: '',
-      description: '',
     },
   });
 
@@ -111,7 +109,6 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
         weight: product.weight || 0,
         status: product.status,
         categoryId: product.categoryId || 'uncategorized',
-        description: product.specifications?.description || '',
       });
     }
   }, [product, form]);
@@ -120,11 +117,7 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
   const updateProductMutation = useMutation({
     mutationFn: (data: UpdateProductData) => updateProduct(productId, data),
     onSuccess: (updatedProduct) => {
-      toast({
-        title: '更新成功',
-        description: '产品更新成功',
-        variant: 'success',
-      });
+      toast.success('产品更新成功');
 
       // 失效相关查询缓存
       queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
@@ -135,20 +128,16 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
     },
     onError: (error: any) => {
       console.error('更新产品失败:', error);
-      toast({
-        title: '更新失败',
-        description: error?.message || '更新产品失败，请重试',
-        variant: 'destructive',
-      });
+      toast.error(error?.message || '更新产品失败，请重试');
     },
   });
 
   // 表单提交处理
   const onSubmit = (data: UpdateProductData) => {
-    // 处理分类ID：如果选择了"未分类"，则设置为null
+    // 处理分类ID：如果选择了"未分类"，则设置为undefined
     const processedData = {
       ...data,
-      categoryId: data.categoryId === 'uncategorized' ? null : data.categoryId,
+      categoryId: data.categoryId === 'uncategorized' ? undefined : data.categoryId,
     };
     updateProductMutation.mutate(processedData);
   };
@@ -446,27 +435,7 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                 />
               </div>
 
-              {/* 产品描述 */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>产品描述</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="请输入产品描述"
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      详细描述产品的特点、用途等信息
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+
 
               {/* 提交按钮 */}
               <div className="flex items-center justify-end gap-4">

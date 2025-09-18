@@ -44,6 +44,15 @@ const baseValidations = {
     .optional()
     .or(z.literal('')),
 
+  thickness: z
+    .number({
+      invalid_type_error: '厚度必须是数字',
+    })
+    .min(0, '厚度不能为负数')
+    .max(100, '厚度不能超过100mm')
+    .optional()
+    .or(z.literal('')),
+
   status: z.enum(['active', 'inactive'], {
     errorMap: () => ({ message: '请选择有效的产品状态' }),
   }),
@@ -73,6 +82,7 @@ export const productCreateSchema = z.object({
   unit: baseValidations.unit.default('piece'),
   piecesPerUnit: baseValidations.piecesPerUnit.default(1),
   weight: baseValidations.weight,
+  thickness: baseValidations.thickness,
   // 瓷砖特有规格信息
   specifications: z.object(tileSpecificationValidations).optional(),
   // 产品图片
@@ -88,6 +98,7 @@ export const productUpdateSchema = z.object({
   unit: baseValidations.unit.optional(),
   piecesPerUnit: baseValidations.piecesPerUnit.optional(),
   weight: baseValidations.weight,
+  thickness: baseValidations.thickness,
   status: baseValidations.status.optional(),
   // 瓷砖特有规格信息
   specifications: z.object(tileSpecificationValidations).optional(),
@@ -117,6 +128,7 @@ export const productCreateDefaults: Partial<ProductCreateFormData> = {
   piecesPerUnit: 1,
   specification: '',
   weight: 0, // 修复：使用 0 而不是 undefined，避免受控/非受控组件错误
+  thickness: 0, // 产品厚度默认值
   images: [],
   specifications: {
     color: '',

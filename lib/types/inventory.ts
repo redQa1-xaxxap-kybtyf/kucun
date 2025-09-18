@@ -373,17 +373,14 @@ export const formatInventoryQuantity = (
   }
 };
 
+// 导入统一的日期格式化函数
+import { formatDate } from '@/lib/utils';
+
 // 生产日期格式化函数
 export const formatProductionDate = (dateString?: string): string => {
   if (!dateString) return '';
-
   try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
+    return formatDate(dateString);
   } catch {
     return dateString;
   }

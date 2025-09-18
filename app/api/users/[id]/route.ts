@@ -16,7 +16,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
         { status: 401 }
       );
     }
@@ -24,7 +24,7 @@ export async function GET(
     // 用户只能查看自己的信息，管理员可以查看所有用户
     if (session.user.role !== 'admin' && session.user.id !== params.id) {
       return NextResponse.json(
-        { success: false, error: '权限不足' },
+        { success: false, error: API_ERROR_MESSAGES.FORBIDDEN },
         { status: 403 }
       );
     }
@@ -76,7 +76,7 @@ export async function PUT(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: '权限不足' },
+        { success: false, error: API_ERROR_MESSAGES.FORBIDDEN },
         { status: 403 }
       );
     }
@@ -92,7 +92,7 @@ export async function PUT(
       return NextResponse.json(
         {
           success: false,
-          error: '输入数据格式不正确',
+          error: API_ERROR_MESSAGES.INVALID_INPUT,
           details: validationResult.error.errors,
         },
         { status: 400 }
@@ -160,7 +160,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: '权限不足' },
+        { success: false, error: API_ERROR_MESSAGES.FORBIDDEN },
         { status: 403 }
       );
     }

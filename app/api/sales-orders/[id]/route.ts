@@ -16,7 +16,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
         { status: 401 }
       );
     }
@@ -134,7 +134,7 @@ export async function PUT(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
         { status: 401 }
       );
     }
@@ -150,7 +150,7 @@ export async function PUT(
       return NextResponse.json(
         {
           success: false,
-          error: '输入数据格式不正确',
+          error: API_ERROR_MESSAGES.INVALID_INPUT,
           details: validationResult.error.errors,
         },
         { status: 400 }

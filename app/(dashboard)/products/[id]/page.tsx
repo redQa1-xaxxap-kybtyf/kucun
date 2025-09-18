@@ -237,6 +237,12 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
               </div>
               <div>
                 <div className="text-sm font-medium text-muted-foreground">
+                  厚度(mm)
+                </div>
+                <div className="mt-1">{product.thickness || '-'}</div>
+              </div>
+              <div>
+                <div className="text-sm font-medium text-muted-foreground">
                   状态
                 </div>
                 <div className="mt-1">{getStatusBadge(product.status)}</div>

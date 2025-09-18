@@ -64,22 +64,7 @@ const sampleSpecification: TileSpecification = {
   coverageArea: 1.44,
 };
 
-const sampleBatches: ProductionBatch[] = [
-  {
-    date: '2024-01-15',
-    batchNumber: 'B20240115001',
-    quantity: 1000,
-    quality: 'AAA',
-    notes: '优质批次，质量稳定',
-  },
-  {
-    date: '2024-01-16',
-    batchNumber: 'B20240116001',
-    quantity: 800,
-    quality: 'AA',
-    notes: '少量色差，整体良好',
-  },
-];
+
 
 const sampleProducts = [
   {

@@ -16,7 +16,6 @@ async function seedCategories() {
       data: {
         name: '瓷砖',
         code: 'CERAMIC_TILES',
-        description: '各种类型的瓷砖产品',
         sortOrder: 1,
         status: 'active',
       },
@@ -26,7 +25,6 @@ async function seedCategories() {
       data: {
         name: '地砖',
         code: 'FLOOR_TILES',
-        description: '用于地面铺设的瓷砖',
         parentId: ceramicTiles.id,
         sortOrder: 1,
         status: 'active',
@@ -37,7 +35,6 @@ async function seedCategories() {
       data: {
         name: '墙砖',
         code: 'WALL_TILES',
-        description: '用于墙面装饰的瓷砖',
         parentId: ceramicTiles.id,
         sortOrder: 2,
         status: 'active',
@@ -50,7 +47,6 @@ async function seedCategories() {
         {
           name: '抛光砖',
           code: 'POLISHED_TILES',
-          description: '表面经过抛光处理的地砖',
           parentId: floorTiles.id,
           sortOrder: 1,
           status: 'active',
@@ -58,7 +54,6 @@ async function seedCategories() {
         {
           name: '仿古砖',
           code: 'ANTIQUE_TILES',
-          description: '具有仿古效果的地砖',
           parentId: floorTiles.id,
           sortOrder: 2,
           status: 'active',
@@ -66,7 +61,6 @@ async function seedCategories() {
         {
           name: '木纹砖',
           code: 'WOOD_GRAIN_TILES',
-          description: '模仿木纹效果的地砖',
           parentId: floorTiles.id,
           sortOrder: 3,
           status: 'active',
@@ -80,7 +74,6 @@ async function seedCategories() {
         {
           name: '釉面砖',
           code: 'GLAZED_TILES',
-          description: '表面有釉层的墙砖',
           parentId: wallTiles.id,
           sortOrder: 1,
           status: 'active',
@@ -88,7 +81,6 @@ async function seedCategories() {
         {
           name: '马赛克',
           code: 'MOSAIC_TILES',
-          description: '小块拼接的装饰墙砖',
           parentId: wallTiles.id,
           sortOrder: 2,
           status: 'active',
@@ -96,7 +88,6 @@ async function seedCategories() {
         {
           name: '文化砖',
           code: 'CULTURE_TILES',
-          description: '具有文化特色的装饰墙砖',
           parentId: wallTiles.id,
           sortOrder: 3,
           status: 'active',
@@ -110,21 +101,18 @@ async function seedCategories() {
         {
           name: '石材',
           code: 'STONE_MATERIALS',
-          description: '天然石材和人造石材',
           sortOrder: 2,
           status: 'active',
         },
         {
           name: '辅材',
           code: 'AUXILIARY_MATERIALS',
-          description: '瓷砖铺设辅助材料',
           sortOrder: 3,
           status: 'active',
         },
         {
           name: '工具',
           code: 'TOOLS',
-          description: '施工工具和设备',
           sortOrder: 4,
           status: 'inactive', // 测试禁用状态
         },

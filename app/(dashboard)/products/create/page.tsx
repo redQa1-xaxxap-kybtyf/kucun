@@ -71,20 +71,12 @@ export default function CreateProductPage() {
   const createMutation = useMutation({
     mutationFn: createProduct,
     onSuccess: data => {
-      toast({
-        title: '创建成功',
-        description: '产品创建成功',
-        variant: 'success',
-      });
+      toast.success('产品创建成功');
       queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() });
       router.push(`/products/${data.id}`);
     },
     onError: error => {
-      toast({
-        title: '创建失败',
-        description: error instanceof Error ? error.message : '创建失败',
-        variant: 'destructive',
-      });
+      toast.error(error instanceof Error ? error.message : '创建失败');
     },
   });
 

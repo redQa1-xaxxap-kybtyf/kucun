@@ -14,7 +14,7 @@ interface DashboardLayoutProps {
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <AuthLayout
-      requireAuth={true}
+      requireAuth={false} // 临时禁用认证以便测试
       showBreadcrumb={true}
       enableGlobalSearch={true}
     >

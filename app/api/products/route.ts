@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
+import { API_ERROR_MESSAGES } from '@/lib/constants/error-messages';
 import { prisma } from '@/lib/db';
 import {
     paginationValidations,
@@ -15,7 +16,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
         { status: 401 }
       );
     }
@@ -84,6 +85,7 @@ export async function GET(request: NextRequest) {
           unit: true,
           piecesPerUnit: true,
           weight: true,
+          thickness: true,
           status: true,
           categoryId: true,
           category: {
@@ -149,6 +151,7 @@ export async function GET(request: NextRequest) {
       unit: product.unit,
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
+      thickness: product.thickness,
       status: product.status,
       categoryId: product.categoryId,
       category: product.category ? {
@@ -200,7 +203,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
         { status: 401 }
       );
     }
@@ -213,7 +216,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: '输入数据格式不正确',
+          error: API_ERROR_MESSAGES.INVALID_INPUT,
           details: validationResult.error.errors,
         },
         { status: 400 }
@@ -228,6 +231,7 @@ export async function POST(request: NextRequest) {
       unit,
       piecesPerUnit,
       weight,
+      thickness,
     } = validationResult.data;
 
     // 检查产品编码是否已存在
@@ -252,6 +256,7 @@ export async function POST(request: NextRequest) {
         unit,
         piecesPerUnit,
         weight,
+        thickness,
         status: 'active',
       },
       select: {
@@ -263,6 +268,7 @@ export async function POST(request: NextRequest) {
         unit: true,
         piecesPerUnit: true,
         weight: true,
+        thickness: true,
         status: true,
         createdAt: true,
         updatedAt: true,
@@ -281,6 +287,7 @@ export async function POST(request: NextRequest) {
       unit: product.unit,
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
+      thickness: product.thickness,
       status: product.status,
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,

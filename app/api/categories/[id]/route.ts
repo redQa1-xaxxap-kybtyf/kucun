@@ -15,8 +15,7 @@ interface Category {
   id: string;
   name: string;
   code: string;
-
-  parentId?: string;
+  parentId: string | null | undefined;
   sortOrder: number;
   status: 'active' | 'inactive';
   createdAt: string;
@@ -78,7 +77,7 @@ export async function GET(
       id: category.id,
       name: category.name,
       code: category.code,
-      parentId: category.parentId,
+      parentId: category.parentId || undefined,
       sortOrder: category.sortOrder,
       status: category.status as 'active' | 'inactive',
       createdAt: category.createdAt.toISOString(),
@@ -87,11 +86,21 @@ export async function GET(
         id: category.parent.id,
         name: category.parent.name,
         code: category.parent.code,
+        parentId: category.parent.parentId || undefined,
+        sortOrder: category.parent.sortOrder,
+        status: category.parent.status as 'active' | 'inactive',
+        createdAt: category.parent.createdAt.toISOString(),
+        updatedAt: category.parent.updatedAt.toISOString(),
       } : undefined,
       children: category.children.map(child => ({
         id: child.id,
         name: child.name,
         code: child.code,
+        parentId: child.parentId || undefined,
+        sortOrder: child.sortOrder,
+        status: child.status as 'active' | 'inactive',
+        createdAt: child.createdAt.toISOString(),
+        updatedAt: child.updatedAt.toISOString(),
       })),
       productCount: category._count.products,
     };
@@ -230,7 +239,7 @@ export async function PUT(
       id: updatedCategory.id,
       name: updatedCategory.name,
       code: updatedCategory.code,
-      parentId: updatedCategory.parentId,
+      parentId: updatedCategory.parentId || undefined,
       sortOrder: updatedCategory.sortOrder,
       status: updatedCategory.status as 'active' | 'inactive',
       createdAt: updatedCategory.createdAt.toISOString(),
@@ -239,11 +248,21 @@ export async function PUT(
         id: updatedCategory.parent.id,
         name: updatedCategory.parent.name,
         code: updatedCategory.parent.code,
+        parentId: updatedCategory.parent.parentId || undefined,
+        sortOrder: updatedCategory.parent.sortOrder,
+        status: updatedCategory.parent.status as 'active' | 'inactive',
+        createdAt: updatedCategory.parent.createdAt.toISOString(),
+        updatedAt: updatedCategory.parent.updatedAt.toISOString(),
       } : undefined,
       children: updatedCategory.children.map(child => ({
         id: child.id,
         name: child.name,
         code: child.code,
+        parentId: child.parentId || undefined,
+        sortOrder: child.sortOrder,
+        status: child.status as 'active' | 'inactive',
+        createdAt: child.createdAt.toISOString(),
+        updatedAt: child.updatedAt.toISOString(),
       })),
       productCount: updatedCategory._count.products,
     };

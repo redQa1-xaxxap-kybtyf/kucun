@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
         { status: 401 }
       );
     }

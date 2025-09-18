@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: '权限不足' },
+        { success: false, error: API_ERROR_MESSAGES.FORBIDDEN },
         { status: 403 }
       );
     }
@@ -104,7 +104,7 @@ export async function POST(request: NextRequest) {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id || session.user.role !== 'admin') {
       return NextResponse.json(
-        { success: false, error: '权限不足' },
+        { success: false, error: API_ERROR_MESSAGES.FORBIDDEN },
         { status: 403 }
       );
     }
@@ -117,7 +117,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: '输入数据格式不正确',
+          error: API_ERROR_MESSAGES.INVALID_INPUT,
           details: validationResult.error.errors,
         },
         { status: 400 }

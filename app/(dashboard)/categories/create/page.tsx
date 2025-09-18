@@ -73,7 +73,7 @@ export default function CreateCategoryPage() {
       // 先显示成功提示
       toast({
         title: '创建成功',
-        description: `分类 "${data.data.name}" 创建成功！系统已自动生成编码：${data.data.code}`,
+        description: `分类 "${data.data?.name || '未知'}" 创建成功！系统已自动生成编码：${data.data?.code || '未知'}`,
         variant: 'success',
       });
 

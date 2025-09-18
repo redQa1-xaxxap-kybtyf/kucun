@@ -96,6 +96,7 @@ model Product {
   unit           String   @default("piece") // piece, sheet, strip
   piecesPerUnit  Int      @default(1) @map("pieces_per_unit")
   weight         Float?
+  thickness      Float?   // 产品厚度(mm)，瓷砖行业重要参数
   categoryId     String?  @map("category_id") // 产品分类ID
   status         String   @default("active") // active, inactive
   createdAt      DateTime @default(now()) @map("created_at")

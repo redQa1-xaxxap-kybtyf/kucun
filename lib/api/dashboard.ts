@@ -1,21 +1,21 @@
 // 仪表盘API客户端
 // 基于TanStack Query的仪表盘数据获取和管理
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type {
-  DashboardData,
-  DashboardApiResponse,
-  BusinessOverview,
-  InventoryAlert,
-  TodoItem,
-  SalesTrendData,
-  InventoryTrendData,
-  ProductSalesRanking,
-  CustomerSalesRanking,
-  QuickAction,
-  DashboardFilters,
-  TimeRange,
+    BusinessOverview,
+    CustomerSalesRanking,
+    DashboardApiResponse,
+    DashboardData,
+    DashboardFilters,
+    InventoryAlert,
+    InventoryTrendData,
+    ProductSalesRanking,
+    QuickAction,
+    SalesTrendData,
+    TimeRange,
+    TodoItem,
 } from '@/lib/types/dashboard';
 
 // API基础URL
@@ -326,10 +326,7 @@ export const useDismissAlert = () => {
 
 // 工具函数
 export const dashboardUtils = {
-  formatCurrency: (amount: number): string => new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-    }).format(amount),
+  formatCurrency,
 
   formatNumber: (num: number): string => {
     if (num >= 1000000) {

@@ -1,8 +1,7 @@
 'use client';
 
+import { formatDateTime } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 
@@ -61,12 +60,7 @@ export default function InventoryAdjustPage() {
 
   const inventoryRecords = data?.data || [];
 
-  // 格式化日期
-  const formatDate = (dateString: string | Date) => {
-    if (!dateString) return null;
-    const date = typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return format(date, 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
-  };
+  // 使用统一的日期格式化函数
 
 
 
@@ -341,7 +335,7 @@ export default function InventoryAdjustPage() {
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
-                        {formatDate(record.updatedAt)}
+                        {formatDateTime(record.updatedAt)}
                       </div>
                     </TableCell>
                     <TableCell>

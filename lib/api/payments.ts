@@ -1,25 +1,21 @@
 // 收款管理API客户端
 // 基于TanStack Query实现收款记录CRUD、应收账款查询、收款统计等API调用函数
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type {
-  PaymentRecord,
-  PaymentRecordDetail,
-  AccountsReceivable,
-  PaymentStatistics,
-  PaymentMethodStatistics,
-  CustomerPaymentStatistics,
-  CreatePaymentRecordData,
-  UpdatePaymentRecordData,
-  PaymentRecordQuery,
-  AccountsReceivableQuery,
-  PaymentRecordResponse,
-  PaymentRecordListResponse,
-  AccountsReceivableResponse,
-  PaymentStatisticsResponse,
-  PaymentMethod,
-  PaymentStatus,
+    AccountsReceivableQuery,
+    AccountsReceivableResponse,
+    CreatePaymentRecordData,
+    PaymentMethod,
+    PaymentRecord,
+    PaymentRecordDetail,
+    PaymentRecordListResponse,
+    PaymentRecordQuery,
+    PaymentRecordResponse,
+    PaymentStatisticsResponse,
+    PaymentStatus,
+    UpdatePaymentRecordData
 } from '@/lib/types/payment';
 
 // API基础URL
@@ -497,7 +493,7 @@ export const paymentUtils = {
     return `PAY-${year}${month}${day}-${timestamp}`;
   },
 
-  validatePaymentAmount: (amount: number, maxAmount: number): boolean => amount > 0 && amount <= maxAmount,
+  validatePaymentAmount,
 
   formatTimeAgo: (date: string): string => {
     const now = new Date();

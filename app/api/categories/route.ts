@@ -16,7 +16,7 @@ interface Category {
   id: string;
   name: string;
   code: string;
-  parentId?: string;
+  parentId: string | null | undefined;
   sortOrder: number;
   status: 'active' | 'inactive';
   createdAt: string;
@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
       id: category.id,
       name: category.name,
       code: category.code,
-      parentId: category.parentId,
+      parentId: category.parentId || undefined,
       sortOrder: category.sortOrder,
       status: category.status as 'active' | 'inactive',
       createdAt: category.createdAt.toISOString(),
@@ -105,11 +105,21 @@ export async function GET(request: NextRequest) {
         id: category.parent.id,
         name: category.parent.name,
         code: category.parent.code,
+        parentId: category.parent.parentId || undefined,
+        sortOrder: category.parent.sortOrder,
+        status: category.parent.status as 'active' | 'inactive',
+        createdAt: category.parent.createdAt.toISOString(),
+        updatedAt: category.parent.updatedAt.toISOString(),
       } : undefined,
       children: category.children.map(child => ({
         id: child.id,
         name: child.name,
         code: child.code,
+        parentId: child.parentId || undefined,
+        sortOrder: child.sortOrder,
+        status: child.status as 'active' | 'inactive',
+        createdAt: child.createdAt.toISOString(),
+        updatedAt: child.updatedAt.toISOString(),
       })),
       productCount: category._count.products,
     }));
@@ -118,7 +128,6 @@ export async function GET(request: NextRequest) {
     const totalPages = Math.ceil(total / validatedParams.limit);
 
     const response: PaginatedResponse<Category> = {
-      success: true,
       data: transformedCategories,
       pagination: {
         page: validatedParams.page,
@@ -234,7 +243,7 @@ export async function POST(request: NextRequest) {
       id: category.id,
       name: category.name,
       code: category.code,
-      parentId: category.parentId,
+      parentId: category.parentId || undefined,
       sortOrder: category.sortOrder,
       status: category.status as 'active' | 'inactive',
       createdAt: category.createdAt.toISOString(),
@@ -243,11 +252,21 @@ export async function POST(request: NextRequest) {
         id: category.parent.id,
         name: category.parent.name,
         code: category.parent.code,
+        parentId: category.parent.parentId || undefined,
+        sortOrder: category.parent.sortOrder,
+        status: category.parent.status as 'active' | 'inactive',
+        createdAt: category.parent.createdAt.toISOString(),
+        updatedAt: category.parent.updatedAt.toISOString(),
       } : undefined,
       children: category.children.map(child => ({
         id: child.id,
         name: child.name,
         code: child.code,
+        parentId: child.parentId || undefined,
+        sortOrder: child.sortOrder,
+        status: child.status as 'active' | 'inactive',
+        createdAt: child.createdAt.toISOString(),
+        updatedAt: child.updatedAt.toISOString(),
       })),
       productCount: category._count.products,
     };

@@ -1,16 +1,16 @@
 // 单个入库记录API路由
 // 提供单个入库记录的查询、更新、删除操作
 
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/db';
 import { authOptions } from '@/lib/auth';
-import { 
-  updateInboundSchema,
-  inboundIdSchema,
-  formatQuantity,
-  cleanRemarks
+import { prisma } from '@/lib/db';
+import {
+    cleanRemarks,
+    formatQuantity,
+    inboundIdSchema,
+    updateInboundSchema
 } from '@/lib/validations/inbound';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 // GET /api/inventory/inbound/[id] - 获取单个入库记录
 export async function GET(
@@ -22,7 +22,7 @@ export async function GET(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
         { status: 401 }
       );
     }
@@ -97,7 +97,7 @@ export async function PUT(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
         { status: 401 }
       );
     }
@@ -124,15 +124,15 @@ export async function PUT(
 
     // 准备更新数据
     const updateData: any = {};
-    
+
     if (validatedData.quantity !== undefined) {
       updateData.quantity = formatQuantity(validatedData.quantity);
     }
-    
+
     if (validatedData.reason !== undefined) {
       updateData.reason = validatedData.reason;
     }
-    
+
     if (validatedData.remarks !== undefined) {
       updateData.remarks = cleanRemarks(validatedData.remarks);
     }
@@ -164,26 +164,36 @@ export async function PUT(
     // 如果数量发生变化，需要更新库存
     if (validatedData.quantity !== undefined && validatedData.quantity !== existingRecord.quantity) {
       const quantityDiff = formatQuantity(validatedData.quantity) - existingRecord.quantity;
-      
-      await prisma.inventory.upsert({
+
+      // 查找现有库存记录
+      const existingInventory = await prisma.inventory.findFirst({
         where: {
-          productId_variantId_colorCode_productionDate: {
-            productId: existingRecord.productId,
-            variantId: null,
-            colorCode: null,
-            productionDate: null,
-          },
-        },
-        update: {
-          quantity: {
-            increment: quantityDiff,
-          },
-        },
-        create: {
           productId: existingRecord.productId,
-          quantity: Math.max(0, quantityDiff),
+          variantId: null,
+          productionDate: null,
+          batchNumber: null,
         },
       });
+
+      if (existingInventory) {
+        // 更新现有记录
+        await prisma.inventory.update({
+          where: { id: existingInventory.id },
+          data: {
+            quantity: {
+              increment: quantityDiff,
+            },
+          },
+        });
+      } else {
+        // 创建新记录
+        await prisma.inventory.create({
+          data: {
+            productId: existingRecord.productId,
+            quantity: Math.max(0, quantityDiff),
+          },
+        });
+      }
     }
 
     return NextResponse.json({
@@ -201,7 +211,7 @@ export async function PUT(
         product: updatedRecord.product,
         user: updatedRecord.user,
       },
-      message: '更新成功',
+      message: SUCCESS_MESSAGES.UPDATED,
     });
 
   } catch (error) {
@@ -223,7 +233,7 @@ export async function DELETE(
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
+        { success: false, error: API_ERROR_MESSAGES.UNAUTHORIZED },
         { status: 401 }
       );
     }
@@ -266,7 +276,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: '删除成功',
+      message: SUCCESS_MESSAGES.DELETED,
     });
 
   } catch (error) {

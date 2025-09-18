@@ -97,6 +97,7 @@ export function ProductForm({
             unit: initialData.unit,
             piecesPerUnit: initialData.piecesPerUnit,
             weight: initialData.weight,
+            thickness: initialData.thickness,
             status: initialData.status,
             specifications:
               initialData.specifications ||
@@ -152,10 +153,11 @@ export function ProductForm({
 
     try {
       if (isEdit) {
-        // 处理weight字段的类型转换
+        // 处理weight和thickness字段的类型转换
         const updateData = {
           ...data,
-          weight: data.weight === '' ? undefined : (typeof data.weight === 'string' ? Number(data.weight) : data.weight)
+          weight: data.weight === '' ? undefined : (typeof data.weight === 'string' ? Number(data.weight) : data.weight),
+          thickness: data.thickness === '' ? undefined : (typeof data.thickness === 'string' ? Number(data.thickness) : data.thickness)
         };
         await updateMutation.mutateAsync(updateData as any);
       } else {
@@ -342,6 +344,37 @@ export function ProductForm({
                       </FormControl>
                       <FormDescription>
                         单个销售单位的重量（可选）
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="thickness"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>厚度 (mm)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          min="0"
+                          max="100"
+                          placeholder="如：8.5"
+                          disabled={isLoading}
+                          {...field}
+                          onChange={e => {
+                            const value = e.target.value;
+                            field.onChange(
+                              value ? parseFloat(value) : undefined
+                            );
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        瓷砖产品的厚度（可选）
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
