@@ -7,9 +7,6 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 
-// Hooks
-import { useToast } from '@/hooks/use-toast';
-
 // UI Components
 import { Button } from '@/components/ui/button';
 import {
@@ -36,7 +33,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+// Hooks
+import { useToast } from '@/hooks/use-toast';
 // API and Types
 import { getCategories } from '@/lib/api/categories';
 import {
@@ -91,9 +89,38 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
     }
   );
 
-  const categories = categoriesResponse?.data || [];
+  // 扁平化分类数据，包含所有子分类，避免重复 - 使用useMemo避免重复计算
+  const allCategories = React.useMemo(() => {
+    const categories = categoriesResponse?.data || [];
 
-  // 表单配置
+    const flattenCategories = (cats: typeof categories): typeof categories => {
+      const result: typeof categories = [];
+      const seenIds = new Set<string>();
+
+      const addCategory = (category: (typeof categories)[0]) => {
+        if (!seenIds.has(category.id)) {
+          seenIds.add(category.id);
+          result.push(category);
+        }
+      };
+
+      const processCategories = (categories: typeof cats) => {
+        categories.forEach(category => {
+          addCategory(category);
+          if (category.children && category.children.length > 0) {
+            processCategories(category.children);
+          }
+        });
+      };
+
+      processCategories(cats);
+      return result;
+    };
+
+    return flattenCategories(categories);
+  }, [categoriesResponse?.data]);
+
+  // 表单配置 - 使用固定的默认值，数据加载后通过useEffect设置
   const form = useForm<UpdateProductData>({
     resolver: zodResolver(UpdateProductSchema),
     defaultValues: {
@@ -104,15 +131,29 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
       unit: 'piece',
       piecesPerUnit: 1,
       weight: 0,
+      thickness: 0,
       status: 'active',
-      categoryId: '',
-      description: '',
+      categoryId: 'uncategorized',
     },
   });
 
   // 当产品数据加载完成时，填充表单
   React.useEffect(() => {
-    if (product) {
+    if (product && !isProductLoading && allCategories.length > 0) {
+      // 验证分类ID是否存在于分类列表中
+      // 如果product.categoryId为null，表示未分类，应该设置为'uncategorized'
+      // 如果product.categoryId有值，检查是否在分类列表中存在
+      const categoryExists =
+        product.categoryId &&
+        allCategories.some(cat => cat.id === product.categoryId);
+
+      const categoryIdToSet = product.categoryId
+        ? categoryExists
+          ? product.categoryId
+          : 'uncategorized'
+        : 'uncategorized';
+
+      // 使用 reset 方法一次性设置所有字段
       form.reset({
         id: product.id,
         code: product.code,
@@ -121,12 +162,12 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
         unit: product.unit,
         piecesPerUnit: product.piecesPerUnit,
         weight: product.weight || 0,
+        thickness: product.thickness || 0,
         status: product.status,
-        categoryId: product.categoryId || 'uncategorized',
-        description: product.specifications?.description || '',
+        categoryId: categoryIdToSet,
       });
     }
-  }, [product, form]);
+  }, [product, isProductLoading, allCategories]);
 
   // 更新产品 Mutation
   const updateProductMutation = useMutation({
@@ -164,8 +205,7 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
         router.push('/products');
       }, 1500);
     },
-    onError: (error: any) => {
-      console.error('更新产品失败:', error);
+    onError: (error: Error) => {
       toast({
         title: '更新失败',
         description: error?.message || '更新产品失败，请重试',
@@ -390,6 +430,29 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                   )}
                 />
 
+                {/* 厚度 */}
+                <FormField
+                  control={form.control}
+                  name="thickness"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>厚度 (mm)</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.1"
+                          placeholder="请输入厚度"
+                          {...field}
+                          onChange={e => field.onChange(Number(e.target.value))}
+                        />
+                      </FormControl>
+                      <FormDescription>产品的厚度（毫米）</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 {/* 产品状态 */}
                 <FormField
                   control={form.control}
@@ -427,6 +490,7 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                     <FormItem>
                       <FormLabel>产品分类</FormLabel>
                       <Select
+                        key={`category-select-${product?.id}-${field.value}`}
                         onValueChange={field.onChange}
                         value={field.value}
                         disabled={isCategoriesLoading}
@@ -438,9 +502,11 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="uncategorized">未分类</SelectItem>
-                          {categories.map(category => (
+                          {allCategories.map(category => (
                             <SelectItem key={category.id} value={category.id}>
-                              {category.name}
+                              {category.parent
+                                ? `${category.parent.name} > ${category.name}`
+                                : category.name}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -451,28 +517,6 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                   )}
                 />
               </div>
-
-              {/* 产品描述 */}
-              <FormField
-                control={form.control}
-                name="description"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>产品描述</FormLabel>
-                    <FormControl>
-                      <Textarea
-                        placeholder="请输入产品描述"
-                        className="min-h-[100px]"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      详细描述产品的特点、用途等信息
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
 
               {/* 提交按钮 */}
               <div className="flex items-center justify-end gap-4">

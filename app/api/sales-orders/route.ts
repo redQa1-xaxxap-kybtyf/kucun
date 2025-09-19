@@ -1,12 +1,11 @@
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import {
-  paginationValidations,
-  salesOrderValidations,
-} from '@/lib/validations/database';
+
+import { paginationValidations } from '@/lib/validations/base';
 
 // 生成订单号
 function generateOrderNumber(): string {
@@ -206,7 +205,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = salesOrderValidations.create.safeParse(body);
+    const validationResult = salesOrderCreateSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {

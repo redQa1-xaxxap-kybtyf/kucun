@@ -2,9 +2,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/db';
-import {
-    paginationValidations,
-} from '@/lib/validations/database';
+import { paginationValidations } from '@/lib/validations/base';
 
 // 获取库存列表（无需身份验证，用于测试）
 export async function GET(request: NextRequest) {
@@ -58,7 +56,7 @@ export async function GET(request: NextRequest) {
       lowStock,
       hasStock,
       groupByVariant,
-      includeVariants
+      includeVariants,
     } = validationResult.data;
 
     // 构建查询条件

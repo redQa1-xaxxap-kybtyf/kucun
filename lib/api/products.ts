@@ -10,7 +10,6 @@ import type {
   Product,
   ProductCreateInput,
   ProductQueryParams,
-  ProductUpdateInput,
 } from '@/lib/types/product';
 
 const API_BASE = '/api/products';
@@ -84,7 +83,11 @@ export async function getProduct(id: string): Promise<Product> {
     throw new Error(data.error || '获取产品详情失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('服务器返回数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -112,7 +115,11 @@ export async function createProduct(
     throw new Error(data.error || '创建产品失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('服务器返回数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -120,15 +127,21 @@ export async function createProduct(
  */
 export async function updateProduct(
   id: string,
-  productData: ProductUpdateInput
+  productData: UpdateProductData
 ): Promise<Product> {
+  // 确保包含id字段用于后端验证
+  const dataWithId = {
+    id,
+    ...productData,
+  };
+
   const response = await fetch(`${API_BASE}/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
     credentials: 'include', // 包含cookies以传递会话信息
-    body: JSON.stringify(productData),
+    body: JSON.stringify(dataWithId),
   });
 
   if (!response.ok) {
@@ -144,7 +157,11 @@ export async function updateProduct(
     throw new Error(data.error || '更新产品失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('服务器返回数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -198,5 +215,9 @@ export async function batchDeleteProducts(
     throw new Error(data.error || '批量删除产品失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('服务器返回数据为空');
+  }
+
+  return data.data;
 }

@@ -1,9 +1,9 @@
+import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { productValidations } from '@/lib/validations/database';
+import { UpdateProductSchema } from '@/lib/schemas/product';
 
 // 获取单个产品信息
 export async function GET(
@@ -161,7 +161,23 @@ export async function GET(
         });
         return acc;
       },
-      {} as Record<string, any>
+      {} as Record<
+        string,
+        {
+          colorCode: string | null;
+          totalQuantity: number;
+          reservedQuantity: number;
+          availableQuantity: number;
+          records: Array<{
+            id: string;
+            productionDate: string | null;
+            quantity: number;
+            reservedQuantity: number;
+            availableQuantity: number;
+            updatedAt: Date;
+          }>;
+        }
+      >
     );
 
     // 转换数据格式
@@ -280,7 +296,7 @@ export async function PUT(
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = productValidations.update.safeParse({
+    const validationResult = UpdateProductSchema.safeParse({
       id,
       ...body,
     });

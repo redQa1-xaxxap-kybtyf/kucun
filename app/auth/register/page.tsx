@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, User, Mail, Lock, ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2, Lock, Mail, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -28,8 +28,7 @@ import { Input } from '@/components/ui/input';
 import {
   userValidations,
   type UserRegisterInput,
-} from '@/lib/validations/database';
-
+} from '@/lib/validations/base';
 
 export default function RegisterPage() {
   const router = useRouter();

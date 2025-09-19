@@ -1,9 +1,9 @@
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { customerValidations } from '@/lib/validations/database';
 
 // 获取单个客户信息
 export async function GET(
@@ -127,7 +127,7 @@ export async function PUT(
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = customerValidations.update.safeParse({
+    const validationResult = customerUpdateSchema.safeParse({
       id: params.id,
       ...body,
     });

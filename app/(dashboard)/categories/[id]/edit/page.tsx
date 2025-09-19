@@ -18,26 +18,30 @@ import type { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 // API and Types
-import { getCategories, getCategory, updateCategory } from '@/lib/api/categories';
+import {
+  getCategories,
+  getCategory,
+  updateCategory,
+} from '@/lib/api/categories';
 import { UpdateCategorySchema } from '@/lib/schemas/category';
 
 type UpdateCategoryData = z.infer<typeof UpdateCategorySchema>;
@@ -68,14 +72,16 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
   });
 
   // 获取父级分类列表（排除当前分类）
-  const { data: categoriesResponse, isLoading: isCategoriesLoading } = useQuery({
-    queryKey: ['categories', { status: 'active', exclude: categoryId }],
-    queryFn: () => getCategories({ status: 'active', limit: 100 }),
-    enabled: !!categoryId,
-  });
+  const { data: categoriesResponse, isLoading: isCategoriesLoading } = useQuery(
+    {
+      queryKey: ['categories', { status: 'active', exclude: categoryId }],
+      queryFn: () => getCategories({ status: 'active', limit: 100 }),
+      enabled: !!categoryId,
+    }
+  );
 
   const parentCategories = (categoriesResponse?.data || []).filter(
-    (cat) => cat.id !== categoryId
+    cat => cat.id !== categoryId
   );
 
   // 表单配置
@@ -96,7 +102,7 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
       form.reset({
         id: categoryData.id,
         name: categoryData.name,
-        parentId: categoryData.parentId || 'none',
+        parentId: categoryData.parentId ?? 'none',
         sortOrder: categoryData.sortOrder,
       });
     }
@@ -105,7 +111,7 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
   // 更新分类Mutation
   const updateMutation = useMutation({
     mutationFn: updateCategory,
-    onSuccess: (data) => {
+    onSuccess: async data => {
       // 先显示成功提示
       toast({
         title: '更新成功',
@@ -113,15 +119,20 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
         variant: 'success',
       });
 
-      // 刷新缓存
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      // 精确刷新缓存
+      await Promise.all([
+        // 失效所有分类列表查询
+        queryClient.invalidateQueries({ queryKey: ['categories'] }),
+        // 强制重新获取当前分类的详情数据
+        queryClient.refetchQueries({ queryKey: ['categories', categoryId] }),
+      ]);
 
       // 延迟跳转，让用户看到成功提示
       setTimeout(() => {
         router.push('/categories');
       }, 1500);
     },
-    onError: (error) => {
+    onError: error => {
       const errorMessage = error instanceof Error ? error.message : '更新失败';
       toast({
         title: '更新失败',
@@ -149,7 +160,7 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
           <Skeleton className="h-8 w-8" />
           <div>
             <Skeleton className="h-8 w-32" />
-            <Skeleton className="h-4 w-48 mt-2" />
+            <Skeleton className="mt-2 h-4 w-48" />
           </div>
         </div>
         <Card>
@@ -187,7 +198,10 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
         <Card>
           <CardContent className="pt-6">
             <div className="text-center text-red-600">
-              加载失败: {categoryError instanceof Error ? categoryError.message : '未知错误'}
+              加载失败:{' '}
+              {categoryError instanceof Error
+                ? categoryError.message
+                : '未知错误'}
             </div>
           </CardContent>
         </Card>
@@ -220,7 +234,7 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* 分类名称 */}
                 <FormField
                   control={form.control}
@@ -239,7 +253,6 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
                   )}
                 />
 
-
                 {/* 父级分类 */}
                 <FormField
                   control={form.control}
@@ -249,7 +262,7 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
                       <FormLabel>父级分类</FormLabel>
                       <Select
                         onValueChange={field.onChange}
-                        value={field.value || ''}
+                        value={field.value || 'none'}
                         disabled={isCategoriesLoading}
                       >
                         <FormControl>
@@ -259,7 +272,7 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="none">无（顶级分类）</SelectItem>
-                          {parentCategories.map((category) => (
+                          {parentCategories.map(category => (
                             <SelectItem key={category.id} value={category.id}>
                               {category.name}
                             </SelectItem>
@@ -286,28 +299,33 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
                           type="number"
                           placeholder="0"
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={e =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
                         />
                       </FormControl>
-                      <FormDescription>
-                        数字越小排序越靠前
-                      </FormDescription>
+                      <FormDescription>数字越小排序越靠前</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
 
-
               {/* 提交按钮 */}
               <div className="flex justify-end gap-4">
-                <Button type="button" variant="outline" onClick={() => router.back()}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => router.back()}
+                >
                   取消
                 </Button>
                 <Button
                   type="submit"
                   disabled={updateMutation.isPending}
-                  className={updateMutation.isPending ? 'cursor-not-allowed' : ''}
+                  className={
+                    updateMutation.isPending ? 'cursor-not-allowed' : ''
+                  }
                 >
                   {updateMutation.isPending ? (
                     <>

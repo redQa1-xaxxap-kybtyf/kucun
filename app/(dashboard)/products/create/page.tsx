@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
 // Hooks
-import { useToast } from '@/hooks/use-toast';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -36,6 +35,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 // API and Types
 import { createProduct, productQueryKeys } from '@/lib/api/products';
 import {

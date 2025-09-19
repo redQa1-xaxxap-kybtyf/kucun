@@ -1,10 +1,10 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Loader2, User, Lock, Shield, CheckCircle } from 'lucide-react';
+import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn, getSession } from 'next-auth/react';
+import { getSession, signIn } from 'next-auth/react';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -27,13 +27,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import {
-  userValidations,
-  type UserLoginInput,
-} from '@/lib/validations/database';
-
+import { userValidations, type UserLoginInput } from '@/lib/validations/base';
 
 export default function SignInPage() {
   const router = useRouter();

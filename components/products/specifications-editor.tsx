@@ -1,29 +1,28 @@
 'use client';
 
 import { Layers, Minus, Palette, Plus, Ruler } from 'lucide-react';
-import type { Control } from 'react-hook-form';
-import { useFieldArray } from 'react-hook-form';
+import { useFieldArray, type Control } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 
 interface SpecificationsEditorProps {
-  control: Control<any>;
+  control: Control<Record<string, unknown>>;
   name: string;
   disabled?: boolean;
 }
@@ -218,7 +217,7 @@ function SpecificationPreview({
   control,
   name,
 }: {
-  control: Control<any>;
+  control: Control<Record<string, unknown>>;
   name: string;
 }) {
   const watchedSpecs =
@@ -271,7 +270,7 @@ function SpecificationPreview({
 
 // 自定义规格字段组件（用于扩展字段）
 interface CustomSpecificationFieldProps {
-  control: Control<any>;
+  control: Control<Record<string, unknown>>;
   name: string;
   onRemove: () => void;
   disabled?: boolean;

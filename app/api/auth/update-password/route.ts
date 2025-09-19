@@ -1,10 +1,24 @@
 import bcrypt from 'bcryptjs';
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { authOptions, updatePassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { userValidations } from '@/lib/validations/database';
+import { baseValidations } from '@/lib/validations/base';
+import { z } from 'zod';
+
+// 更新密码验证规则
+const updatePasswordSchema = z
+  .object({
+    currentPassword: baseValidations.password,
+    newPassword: baseValidations.password,
+    confirmPassword: baseValidations.password,
+  })
+  .refine(data => data.newPassword === data.confirmPassword, {
+    message: '新密码和确认密码不匹配',
+    path: ['confirmPassword'],
+  });
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,7 +34,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = userValidations.updatePassword.safeParse(body);
+    const validationResult = updatePasswordSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {

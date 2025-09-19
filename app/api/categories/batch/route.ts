@@ -1,10 +1,11 @@
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 
+import type { BatchDeleteResult } from '@/lib/api/categories';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import type { BatchDeleteResult } from '@/lib/api/categories';
 
 // 批量删除分类的验证Schema
 const BatchDeleteCategoriesSchema = z.object({

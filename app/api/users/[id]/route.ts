@@ -1,9 +1,18 @@
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { authOptions, updateUserStatus } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { userValidations } from '@/lib/validations/database';
+
+import { z } from 'zod';
+
+// 用户状态更新验证规则
+const updateUserStatusSchema = z.object({
+  status: z.enum(['active', 'inactive'], {
+    errorMap: () => ({ message: '请选择有效的用户状态' }),
+  }),
+});
 
 // 获取单个用户信息
 export async function GET(
@@ -83,10 +92,7 @@ export async function PUT(
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = userValidations.update.safeParse({
-      id: params.id,
-      ...body,
-    });
+    const validationResult = updateUserStatusSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {

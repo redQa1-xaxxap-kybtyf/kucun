@@ -1,14 +1,25 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { createUser } from '@/lib/auth';
-import { userValidations } from '@/lib/validations/database';
+
+import { baseValidations } from '@/lib/validations/base';
+import { z } from 'zod';
+
+// 用户注册验证规则
+const registerSchema = z.object({
+  username: baseValidations.username,
+  email: baseValidations.email,
+  password: baseValidations.password,
+  name: baseValidations.name,
+});
 
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = userValidations.register.safeParse(body);
+    const validationResult = registerSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {

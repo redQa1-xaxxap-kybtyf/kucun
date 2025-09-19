@@ -1,12 +1,13 @@
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import {
   customerValidations,
   paginationValidations,
-} from '@/lib/validations/database';
+} from '@/lib/validations/base';
 
 // 获取客户列表
 export async function GET(request: NextRequest) {

@@ -1,9 +1,9 @@
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma, withTransaction } from '@/lib/db';
-import { salesOrderValidations } from '@/lib/validations/database';
 
 // 获取单个销售订单信息
 export async function GET(
@@ -143,7 +143,7 @@ export async function PUT(
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = salesOrderValidations.update.safeParse({
+    const validationResult = salesOrderUpdateSchema.safeParse({
       id,
       ...body,
     });

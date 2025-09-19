@@ -60,9 +60,9 @@ export const CreateProductSchema = z.object({
 
   status: ProductStatusEnum.default('active'),
 
-  categoryId: z.string().optional(),
+  categoryId: z.string().nullable().optional(),
 
-  specifications: z.record(z.any()).optional(),
+  specifications: z.record(z.union([z.string(), z.number()])).optional(),
 });
 
 /**
@@ -185,7 +185,9 @@ export function calculateTotalWeight(
 /**
  * 验证产品规格JSON
  */
-export function validateProductSpecifications(specifications: any): boolean {
+export function validateProductSpecifications(
+  specifications: Record<string, unknown>
+): boolean {
   try {
     if (!specifications) return true;
     if (typeof specifications !== 'object') return false;

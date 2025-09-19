@@ -5,7 +5,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { prisma } from './db';
 import { env } from './env';
-import { userValidations } from './validations/database';
+import { userValidations } from './validations/base';
 
 // 扩展 NextAuth 类型定义
 declare module 'next-auth' {
@@ -189,7 +189,7 @@ export async function createUser(data: {
   role?: string;
 }) {
   // 验证输入数据
-  const validationResult = userValidations.create.safeParse(data);
+  const validationResult = userValidations.register.safeParse(data);
   if (!validationResult.success) {
     throw new Error('输入数据格式不正确');
   }

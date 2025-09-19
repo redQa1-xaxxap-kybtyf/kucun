@@ -1,12 +1,10 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import {
-  paginationValidations,
-  productValidations,
-} from '@/lib/validations/database';
+import { CreateProductSchema } from '@/lib/schemas/product';
+import { paginationValidations } from '@/lib/validations/base';
 
 // 获取产品列表
 export async function GET(request: NextRequest) {
@@ -24,11 +22,11 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const queryParams = {
-      page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '20'),
+      page: searchParams.get('page') || '1',
+      limit: searchParams.get('limit') || '20',
       search: searchParams.get('search') || undefined,
       sortBy: searchParams.get('sortBy') || 'createdAt',
-      sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
+      sortOrder: searchParams.get('sortOrder') || 'desc',
       status: searchParams.get('status') || undefined,
       unit: searchParams.get('unit') || undefined,
       categoryId: searchParams.get('categoryId') || undefined,
@@ -216,7 +214,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = productValidations.create.safeParse(body);
+    const validationResult = CreateProductSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -252,6 +250,10 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 处理分类ID：如果是"uncategorized"则设置为null
+    const processedCategoryId =
+      categoryId === 'uncategorized' ? null : categoryId;
+
     // 创建产品
     const product = await prisma.product.create({
       data: {
@@ -263,7 +265,7 @@ export async function POST(request: NextRequest) {
         piecesPerUnit,
         weight,
         thickness,
-        categoryId,
+        categoryId: processedCategoryId,
         status: 'active',
       },
       select: {

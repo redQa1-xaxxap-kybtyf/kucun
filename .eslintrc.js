@@ -39,15 +39,27 @@ module.exports = {
         caughtErrorsIgnorePattern: '^_',
       },
     ],
-    '@typescript-eslint/no-explicit-any': 'warn',
-
-    '@typescript-eslint/no-non-null-assertion': 'warn',
+    '@typescript-eslint/no-explicit-any': 'error', // 严格禁止any类型
+    '@typescript-eslint/no-non-null-assertion': 'error', // 严格禁止非空断言
+    // '@typescript-eslint/prefer-const': 'error', // 使用内置prefer-const规则
     '@typescript-eslint/consistent-type-imports': [
       'error',
       {
         prefer: 'type-imports',
         disallowTypeAnnotations: false,
       },
+    ],
+    // 新增：强制使用严格相等比较
+    eqeqeq: ['error', 'always'],
+    // 新增：限制文件长度
+    'max-lines': [
+      'warn',
+      { max: 300, skipBlankLines: true, skipComments: true },
+    ],
+    // 新增：限制函数长度
+    'max-lines-per-function': [
+      'warn',
+      { max: 50, skipBlankLines: true, skipComments: true },
     ],
 
     // React规则

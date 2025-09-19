@@ -8,7 +8,6 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 
 // Hooks
-import { useToast } from '@/hooks/use-toast';
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -45,6 +44,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/hooks/use-toast';
 
 // API and Types
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';

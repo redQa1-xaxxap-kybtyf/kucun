@@ -1,12 +1,10 @@
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { NextRequest, NextResponse } from 'next/server';
 
 import { authOptions, createUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import {
-  paginationValidations,
-  userValidations,
-} from '@/lib/validations/database';
+import { paginationValidations, userValidations } from '@/lib/validations/base';
 
 // 获取用户列表 (仅管理员)
 export async function GET(request: NextRequest) {

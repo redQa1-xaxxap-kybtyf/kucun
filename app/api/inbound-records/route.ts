@@ -5,9 +5,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma, withTransaction } from '@/lib/db';
 import {
-    inboundRecordValidations,
-    paginationValidations,
-} from '@/lib/validations/database';
+  inboundRecordValidations,
+  paginationValidations,
+} from '@/lib/validations/base';
 
 // 生成入库单号
 function generateRecordNumber(): string {

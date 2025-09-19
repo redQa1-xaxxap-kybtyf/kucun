@@ -1,12 +1,11 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import {
-    inventoryValidations,
-    paginationValidations,
-} from '@/lib/validations/database';
+
+import { paginationValidations } from '@/lib/validations/base';
+import { inventoryAdjustSchema } from '@/lib/validations/inventory';
 
 // 获取库存列表
 export async function GET(request: NextRequest) {
@@ -63,7 +62,7 @@ export async function GET(request: NextRequest) {
       productionDateStart,
       productionDateEnd,
       lowStock,
-      hasStock
+      hasStock,
     } = validationResult.data;
 
     // 构建查询条件
@@ -82,7 +81,6 @@ export async function GET(request: NextRequest) {
       where.productId = productId;
     }
 
-
     if (batchNumber) {
       where.batchNumber = batchNumber;
     }
@@ -94,10 +92,12 @@ export async function GET(request: NextRequest) {
     if (productionDateStart || productionDateEnd) {
       where.productionDate = {};
       if (productionDateStart) {
-        (where.productionDate as Record<string, unknown>).gte = productionDateStart;
+        (where.productionDate as Record<string, unknown>).gte =
+          productionDateStart;
       }
       if (productionDateEnd) {
-        (where.productionDate as Record<string, unknown>).lte = productionDateEnd;
+        (where.productionDate as Record<string, unknown>).lte =
+          productionDateEnd;
       }
     }
 
@@ -201,7 +201,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = inventoryValidations.adjust.safeParse(body);
+    const validationResult = inventoryAdjustSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -213,13 +213,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const {
-      productId,
-      productionDate,
-      adjustmentType,
-      quantity,
-      reason,
-    } = validationResult.data;
+    const { productId, productionDate, adjustmentType, quantity, reason } =
+      validationResult.data;
 
     // 验证产品是否存在
     const product = await prisma.product.findUnique({

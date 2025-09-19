@@ -1,14 +1,16 @@
 'use client';
 
+// React相关
+
+// 第三方库
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { AlertCircle, ArrowLeft, Loader2, Package, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-
-// UI Components
 import { useForm } from 'react-hook-form';
 
+// UI组件
 import { ImageUpload } from '@/components/common/image-upload';
 import { SpecificationsEditor } from '@/components/products/specifications-editor';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -39,30 +41,40 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
-// Icons
+// 业务组件
 
-// Custom Components
-
-// API and Types
+// API和类型
 import {
   createProduct,
   productQueryKeys,
   updateProduct,
 } from '@/lib/api/products';
-import type {
-  Product,
-  ProductCreateInput,
-  ProductUpdateInput,
-} from '@/lib/types/product';
+import {
+  CreateProductSchema,
+  UpdateProductSchema,
+  productFormDefaults,
+} from '@/lib/schemas/product';
 import {
   PRODUCT_STATUS_LABELS,
   PRODUCT_UNIT_LABELS,
+  type Product,
 } from '@/lib/types/product';
-import {
-  productCreateDefaults,
-  productCreateSchema,
-  productUpdateSchema,
-} from '@/lib/validations/product';
+
+// 表单数据类型定义
+interface ProductFormData {
+  id: string;
+  code: string;
+  name: string;
+  specification?: string;
+  specifications?: Record<string, string | number | undefined>;
+  unit: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
+  piecesPerUnit: number;
+  weight?: number;
+  thickness?: number;
+  status?: 'active' | 'inactive';
+  categoryId?: string;
+  images?: string[];
+}
 
 interface ProductFormProps {
   mode: 'create' | 'edit';
@@ -83,7 +95,7 @@ export function ProductForm({
 
   // 表单配置
   const isEdit = mode === 'edit';
-  const schema = isEdit ? productUpdateSchema : productCreateSchema;
+  const schema = isEdit ? UpdateProductSchema : CreateProductSchema;
 
   const form = useForm({
     resolver: zodResolver(schema),
@@ -100,11 +112,10 @@ export function ProductForm({
             thickness: initialData.thickness,
             status: initialData.status,
             specifications:
-              initialData.specifications ||
-              productCreateDefaults.specifications,
+              initialData.specifications || productFormDefaults.specifications,
           }
         : {
-            ...productCreateDefaults,
+            ...productFormDefaults,
             code: '',
             name: '',
           },
@@ -128,8 +139,12 @@ export function ProductForm({
 
   // 更新产品 Mutation
   const updateMutation = useMutation({
-    mutationFn: (data: ProductUpdateInput) =>
-      updateProduct(initialData!.id, data),
+    mutationFn: (data: ProductUpdateInput) => {
+      if (!initialData?.id) {
+        throw new Error('产品ID不能为空');
+      }
+      return updateProduct(initialData.id, data);
+    },
     onSuccess: async response => {
       // 彻底失效所有相关查询缓存
       await Promise.all([
@@ -164,30 +179,29 @@ export function ProductForm({
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   // 表单提交
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: ProductFormData) => {
     setSubmitError('');
 
     try {
       if (isEdit) {
+        if (!initialData?.id) {
+          throw new Error('产品ID不能为空');
+        }
+
         // 处理weight和thickness字段的类型转换
-        const updateData = {
+        const updateData: ProductUpdateInput = {
           ...data,
-          weight:
-            data.weight === ''
-              ? undefined
-              : typeof data.weight === 'string'
-                ? Number(data.weight)
-                : data.weight,
-          thickness:
-            data.thickness === ''
-              ? undefined
-              : typeof data.thickness === 'string'
-                ? Number(data.thickness)
-                : data.thickness,
+          weight: data.weight === 0 ? undefined : data.weight,
+          thickness: data.thickness === 0 ? undefined : data.thickness,
         };
-        await updateMutation.mutateAsync(updateData as any);
+        await updateMutation.mutateAsync(updateData);
       } else {
-        await createMutation.mutateAsync(data as ProductCreateInput);
+        const createData: ProductCreateInput = {
+          ...data,
+          weight: data.weight === 0 ? undefined : data.weight,
+          thickness: data.thickness === 0 ? undefined : data.thickness,
+        };
+        await createMutation.mutateAsync(createData);
       }
     } catch (error) {
       // 错误已在 mutation 的 onError 中处理

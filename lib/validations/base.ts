@@ -1,0 +1,171 @@
+/**
+ * 基础验证规则
+ * 严格遵循全栈项目统一约定规范
+ */
+
+import { z } from 'zod';
+
+// 基础验证规则
+export const baseValidations = {
+  // ID验证
+  id: z.string().min(1, 'ID不能为空').uuid('ID格式不正确'),
+
+  // 用户名验证
+  username: z
+    .string()
+    .min(3, '用户名至少3个字符')
+    .max(20, '用户名不能超过20个字符')
+    .regex(/^[a-zA-Z0-9_]+$/, '用户名只能包含字母、数字和下划线'),
+
+  // 密码验证
+  password: z
+    .string()
+    .min(6, '密码至少6个字符')
+    .max(50, '密码不能超过50个字符'),
+
+  // 邮箱验证
+  email: z.string().email('邮箱格式不正确'),
+
+  // 手机号验证
+  phone: z
+    .string()
+    .regex(/^1[3-9]\d{9}$/, '手机号格式不正确')
+    .optional(),
+
+  // 姓名验证
+  name: z.string().min(1, '姓名不能为空').max(50, '姓名不能超过50个字符'),
+
+  // 地址验证
+  address: z.string().max(200, '地址不能超过200个字符').optional(),
+
+  // 备注验证
+  remarks: z.string().max(500, '备注不能超过500个字符').optional(),
+
+  // 状态验证
+  status: z.enum(['active', 'inactive']).default('active'),
+
+  // 客户ID验证
+  customerId: z.string().min(1, '请选择客户').uuid('客户ID格式不正确'),
+};
+
+// 分页验证
+export const paginationValidations = {
+  query: z.object({
+    page: z
+      .string()
+      .optional()
+      .transform(val => (val ? parseInt(val) : 1))
+      .refine(val => val > 0, '页码必须大于0'),
+
+    limit: z
+      .string()
+      .optional()
+      .transform(val => (val ? parseInt(val) : 20))
+      .refine(val => val > 0 && val <= 100, '每页数量必须在1-100之间'),
+
+    search: z
+      .string()
+      .optional()
+      .transform(val => val?.trim() || undefined),
+
+    categoryId: z.string().uuid('分类ID格式不正确').optional(),
+
+    status: z.enum(['active', 'inactive']).optional(),
+
+    sortBy: z
+      .enum(['createdAt', 'updatedAt', 'name', 'code'])
+      .default('createdAt'),
+
+    sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  }),
+};
+
+// 用户相关验证
+export const userValidations = {
+  login: z.object({
+    username: baseValidations.username,
+    password: baseValidations.password,
+    captcha: z.string().min(1, '请输入验证码'),
+  }),
+
+  register: z.object({
+    username: baseValidations.username,
+    email: baseValidations.email,
+    password: baseValidations.password,
+    name: baseValidations.name,
+  }),
+
+  update: z.object({
+    id: baseValidations.id,
+    username: baseValidations.username.optional(),
+    email: baseValidations.email.optional(),
+    name: baseValidations.name.optional(),
+    phone: baseValidations.phone,
+    status: baseValidations.status.optional(),
+  }),
+
+  updatePassword: z.object({
+    id: baseValidations.id,
+    currentPassword: baseValidations.password,
+    newPassword: baseValidations.password,
+  }),
+};
+
+// 客户相关验证
+export const customerValidations = {
+  create: z.object({
+    name: baseValidations.name,
+    phone: baseValidations.phone,
+    email: baseValidations.email.optional(),
+    address: baseValidations.address,
+    remarks: baseValidations.remarks,
+  }),
+
+  update: z.object({
+    id: baseValidations.id,
+    name: baseValidations.name.optional(),
+    phone: baseValidations.phone,
+    email: baseValidations.email.optional(),
+    address: baseValidations.address,
+    remarks: baseValidations.remarks,
+    status: baseValidations.status.optional(),
+  }),
+};
+
+// 入库记录验证
+export const inboundRecordValidations = {
+  create: z.object({
+    productId: baseValidations.id,
+    quantity: z.number().min(0.01, '数量必须大于0'),
+    reason: z.enum(['purchase', 'return', 'transfer', 'surplus', 'other']),
+    remarks: baseValidations.remarks,
+  }),
+
+  update: z.object({
+    id: baseValidations.id,
+    quantity: z.number().min(0.01, '数量必须大于0').optional(),
+    reason: z
+      .enum(['purchase', 'return', 'transfer', 'surplus', 'other'])
+      .optional(),
+    remarks: baseValidations.remarks,
+  }),
+};
+
+// 导出所有验证类型
+export type UserCreateInput = z.infer<typeof userValidations.register>;
+export type UserUpdateInput = z.infer<typeof userValidations.update>;
+export type UserLoginInput = z.infer<typeof userValidations.login>;
+export type UserUpdatePasswordInput = z.infer<
+  typeof userValidations.updatePassword
+>;
+export type UserRegisterInput = z.infer<typeof userValidations.register>;
+
+export type CustomerCreateInput = z.infer<typeof customerValidations.create>;
+export type CustomerUpdateInput = z.infer<typeof customerValidations.update>;
+
+export type InboundRecordCreateInput = z.infer<
+  typeof inboundRecordValidations.create
+>;
+export type InboundRecordUpdateInput = z.infer<
+  typeof inboundRecordValidations.update
+>;

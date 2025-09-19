@@ -1,36 +1,64 @@
 // 产品相关类型定义
 // 遵循命名约定：前端使用 camelCase
 
+// 瓷砖行业特有规格信息类型
+export interface TileSpecifications {
+  color?: string; // 颜色
+  surface?: string; // 表面处理
+  size?: string; // 尺寸规格
+  thickness?: number; // 厚度(mm)
+  pattern?: string; // 花纹
+  grade?: string; // 等级
+  origin?: string; // 产地
+  series?: string; // 系列
+  [key: string]: string | number | undefined; // 允许扩展字段
+}
+
+// 产品单位类型
+export type ProductUnit = 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
+
+// 产品状态类型
+export type ProductStatus = 'active' | 'inactive';
+
+// 产品分类信息
+export interface ProductCategory {
+  id: string;
+  name: string;
+  code: string;
+}
+
+// 产品库存汇总信息
+export interface ProductInventory {
+  totalQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+}
+
+// 产品统计信息
+export interface ProductStatistics {
+  inventoryRecordsCount: number;
+  salesOrderItemsCount: number;
+  inboundRecordsCount: number;
+}
+
 export interface Product {
   id: string;
   code: string;
   name: string;
   specification?: string;
-  specifications?: Record<string, any>;
-  unit: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
+  specifications?: TileSpecifications;
+  unit: ProductUnit;
   piecesPerUnit: number;
   weight?: number;
   thickness?: number; // 产品厚度(mm)
-  status: 'active' | 'inactive';
+  status: ProductStatus;
   categoryId?: string;
-  category?: {
-    id: string;
-    name: string;
-    code: string;
-  };
+  category?: ProductCategory;
   createdAt: string;
   updatedAt: string;
   // 库存汇总信息（来自API响应）
-  inventory?: {
-    totalQuantity: number;
-    reservedQuantity: number;
-    availableQuantity: number;
-  };
-  statistics?: {
-    inventoryRecordsCount: number;
-    salesOrderItemsCount: number;
-    inboundRecordsCount: number;
-  };
+  inventory?: ProductInventory;
+  statistics?: ProductStatistics;
 }
 
 // 产品变体类型定义
@@ -56,8 +84,8 @@ export interface ProductCreateInput {
   code: string;
   name: string;
   specification?: string;
-  specifications?: Record<string, any>;
-  unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
+  specifications?: TileSpecifications;
+  unit?: ProductUnit;
   piecesPerUnit?: number;
   weight?: number;
   thickness?: number; // 产品厚度(mm)，可选字段
@@ -80,21 +108,10 @@ export interface ProductVariantUpdateInput {
   colorName?: string;
   colorValue?: string;
   sku?: string;
-  status?: 'active' | 'inactive';
+  status?: ProductStatus;
 }
 
-export interface ProductUpdateInput {
-  id: string;
-  code?: string;
-  name?: string;
-  specification?: string;
-  specifications?: Record<string, any>;
-  unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
-  piecesPerUnit?: number;
-  weight?: number;
-  thickness?: number; // 产品厚度(mm)，可选字段
-  status?: 'active' | 'inactive';
-}
+// ProductUpdateInput 已移除 - 使用 lib/schemas/product.ts 中的 UpdateProductData 作为唯一真理源
 
 export interface ProductQueryParams {
   page?: number;
@@ -102,8 +119,8 @@ export interface ProductQueryParams {
   search?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
-  status?: 'active' | 'inactive';
-  unit?: 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
+  status?: ProductStatus;
+  unit?: ProductUnit;
   categoryId?: string;
 }
 
@@ -126,7 +143,7 @@ export interface ProductResponse {
 export interface ProductErrorResponse {
   success: false;
   error: string;
-  details?: any[];
+  details?: string[];
 }
 
 // 批量删除相关类型
@@ -148,20 +165,7 @@ export interface BatchDeleteResult {
 
 // 新增类型定义以匹配页面需求
 export type CreateProductData = ProductCreateInput;
-export type UpdateProductData = ProductUpdateInput;
-
-// 瓷砖行业特有规格信息类型
-export interface TileSpecifications {
-  color?: string; // 颜色
-  surface?: string; // 表面处理
-  thickness?: number; // 厚度(mm)
-  size?: string; // 尺寸规格
-  pattern?: string; // 花纹
-  grade?: string; // 等级
-  origin?: string; // 产地
-  series?: string; // 系列
-  [key: string]: any; // 允许扩展字段
-}
+// UpdateProductData 现在从 lib/schemas/product.ts 导入，遵循唯一真理源原则
 
 // 产品单位显示名称映射
 export const PRODUCT_UNIT_LABELS: Record<string, string> = {
