@@ -23,9 +23,9 @@ export const createInboundSchema = z.object({
       required_error: '请输入入库数量',
       invalid_type_error: '数量必须是数字',
     })
-    .min(0.01, '数量必须大于0.01')
-    .max(999999.99, '数量不能超过999999.99')
-    .refine(val => Number(val.toFixed(2)) === val, '数量最多支持2位小数'),
+    .min(1, '数量必须大于等于1片')
+    .max(999999, '数量不能超过999999片')
+    .int('数量必须是整数'),
 
   reason: inboundReasonSchema.default('purchase'),
 
@@ -40,9 +40,9 @@ export const createInboundSchema = z.object({
 export const updateInboundSchema = z.object({
   quantity: z
     .number()
-    .min(0.01, '数量必须大于0.01')
-    .max(999999.99, '数量不能超过999999.99')
-    .refine(val => Number(val.toFixed(2)) === val, '数量最多支持2位小数')
+    .min(1, '数量必须大于等于1片')
+    .max(999999, '数量不能超过999999片')
+    .int('数量必须是整数')
     .optional(),
 
   reason: inboundReasonSchema.optional(),

@@ -332,7 +332,7 @@ export default function CreateInboundPage() {
             <h4 className="font-medium text-foreground">操作说明：</h4>
             <ul className="list-inside list-disc space-y-1">
               <li>产品选择支持按名称、编码搜索</li>
-              <li>数量支持小数点，最小值为0.01</li>
+              <li>数量以片为单位，最小值为1片</li>
               <li>入库成功后会自动更新库存数量</li>
               <li>备注信息可选，最多支持500个字符</li>
             </ul>
