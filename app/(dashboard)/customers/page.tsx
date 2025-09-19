@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Edit,
   Eye,
-  MapPin,
   MoreHorizontal,
   Phone,
   Plus,
@@ -16,6 +15,10 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 // UI Components
+import { CustomerDeleteDialog } from '@/components/customers/customer-delete-dialog';
+import { CustomerDetailDialog } from '@/components/customers/customer-detail-dialog';
+import { CustomerEditDialog } from '@/components/customers/customer-edit-dialog';
+import { AddressDisplay } from '@/components/ui/address-display';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -49,6 +52,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useToast } from '@/components/ui/use-toast';
 
 // API and Types
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
@@ -60,6 +64,8 @@ import type { Customer, CustomerQueryParams } from '@/lib/types/customer';
  */
 export default function CustomersPage() {
   const router = useRouter();
+  const { toast } = useToast();
+
   const [queryParams, setQueryParams] = React.useState<CustomerQueryParams>({
     page: 1,
     limit: 20,
@@ -67,6 +73,16 @@ export default function CustomersPage() {
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
+
+  // 对话框状态管理
+  const [detailDialogOpen, setDetailDialogOpen] = React.useState(false);
+  const [editDialogOpen, setEditDialogOpen] = React.useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = React.useState(false);
+  const [selectedCustomerId, setSelectedCustomerId] = React.useState<
+    string | null
+  >(null);
+  const [selectedCustomer, setSelectedCustomer] =
+    React.useState<Customer | null>(null);
 
   // 获取客户列表数据
   const { data, isLoading, error } = useQuery({
@@ -89,6 +105,22 @@ export default function CustomersPage() {
     setQueryParams(prev => ({ ...prev, page }));
   };
 
+  // 操作处理函数
+  const handleViewDetail = (customer: Customer) => {
+    setSelectedCustomerId(customer.id);
+    setDetailDialogOpen(true);
+  };
+
+  const handleEdit = (customer: Customer) => {
+    setSelectedCustomerId(customer.id);
+    setEditDialogOpen(true);
+  };
+
+  const handleDelete = (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setDeleteDialogOpen(true);
+  };
+
   // 移动端表格列配置
   const mobileColumns = [
     { key: 'name', title: '客户名称', mobilePrimary: true },
@@ -96,7 +128,13 @@ export default function CustomersPage() {
     {
       key: 'address',
       title: '地址',
-      render: (item: Customer) => item.address || '-',
+      render: (item: Customer) => (
+        <AddressDisplay
+          address={item.address}
+          maxWidth="max-w-[150px]"
+          showIcon={false}
+        />
+      ),
     },
     {
       key: 'transactionCount',
@@ -247,12 +285,10 @@ export default function CustomersPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-2">
-                            <MapPin className="h-4 w-4 text-muted-foreground" />
-                            <span className="max-w-[200px] truncate">
-                              {customer.address || '-'}
-                            </span>
-                          </div>
+                          <AddressDisplay
+                            address={customer.address}
+                            maxWidth="max-w-[200px]"
+                          />
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
@@ -296,22 +332,21 @@ export default function CustomersPage() {
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem
-                                onClick={() =>
-                                  router.push(`/customers/${customer.id}`)
-                                }
+                                onClick={() => handleViewDetail(customer)}
                               >
                                 <Eye className="mr-2 h-4 w-4" />
                                 查看详情
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() =>
-                                  router.push(`/customers/${customer.id}/edit`)
-                                }
+                                onClick={() => handleEdit(customer)}
                               >
                                 <Edit className="mr-2 h-4 w-4" />
                                 编辑
                               </DropdownMenuItem>
-                              <DropdownMenuItem className="text-red-600">
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleDelete(customer)}
+                              >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 删除
                               </DropdownMenuItem>
@@ -404,6 +439,25 @@ export default function CustomersPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* 对话框组件 */}
+      <CustomerDetailDialog
+        customerId={selectedCustomerId}
+        open={detailDialogOpen}
+        onOpenChange={setDetailDialogOpen}
+      />
+
+      <CustomerEditDialog
+        customerId={selectedCustomerId}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+      />
+
+      <CustomerDeleteDialog
+        customer={selectedCustomer}
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+      />
     </div>
   );
 }
