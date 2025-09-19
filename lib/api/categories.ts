@@ -97,8 +97,7 @@ export async function getCategories(
  */
 export async function getCategoryOptions(): Promise<Category[]> {
   const response = await getCategories({
-    status: 'active',
-    limit: 1000, // 获取所有分类
+    limit: 100, // 获取所有分类（最大100个）
     sortBy: 'name',
     sortOrder: 'asc',
   });
@@ -261,15 +260,3 @@ export async function batchDeleteCategories(
   const result = await response.json();
   return result.data;
 }
-
-/**
- * 分类查询键工厂
- */
-export const categoryQueryKeys = {
-  all: ['categories'] as const,
-  lists: () => [...categoryQueryKeys.all, 'list'] as const,
-  list: (params: CategoryQueryParams) =>
-    [...categoryQueryKeys.lists(), params] as const,
-  details: () => [...categoryQueryKeys.all, 'detail'] as const,
-  detail: (id: string) => [...categoryQueryKeys.details(), id] as const,
-};

@@ -30,6 +30,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 // 新增组件导入
 
 // API and Types
+import { categoryQueryKeys, getCategoryOptions } from '@/lib/api/categories';
 import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
@@ -268,16 +269,19 @@ export default function InventoryPage() {
 
               {/* 分类筛选器 */}
               <Select
-                value={queryParams.categoryId || ''}
+                value={queryParams.categoryId || 'all'}
                 onValueChange={value =>
-                  handleFilter('categoryId', value || undefined)
+                  handleFilter(
+                    'categoryId',
+                    value === 'all' ? undefined : value
+                  )
                 }
               >
                 <SelectTrigger className="w-40">
                   <SelectValue placeholder="产品分类" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">全部分类</SelectItem>
+                  <SelectItem value="all">全部分类</SelectItem>
                   {categoryOptions.map(category => (
                     <SelectItem key={category.id} value={category.id}>
                       {category.name}
