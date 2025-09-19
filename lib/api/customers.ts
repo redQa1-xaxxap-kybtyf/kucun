@@ -50,13 +50,17 @@ export async function getCustomers(
     throw new Error(`获取客户列表失败: ${response.statusText}`);
   }
 
-  const data: ApiResponse<PaginatedResponse<Customer>> = await response.json();
+  const result = await response.json();
 
-  if (!data.success) {
-    throw new Error(data.error || '获取客户列表失败');
+  if (!result.success) {
+    throw new Error(result.error || '获取客户列表失败');
   }
 
-  return data.data!;
+  // 返回符合 PaginatedResponse 格式的数据
+  return {
+    data: result.data,
+    pagination: result.pagination,
+  };
 }
 
 /**

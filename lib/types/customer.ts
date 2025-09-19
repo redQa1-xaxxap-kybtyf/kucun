@@ -20,6 +20,11 @@ export interface Customer {
   totalOrders?: number;
   totalAmount?: number;
   lastOrderDate?: string;
+
+  // 新增统计字段
+  transactionCount?: number; // 交易次数（历史订单总数）
+  cooperationDays?: number; // 合作天数（从首次下单到当前的天数）
+  returnOrderCount?: number; // 退货次数
 }
 
 // 客户扩展信息类型
@@ -61,7 +66,15 @@ export interface CustomerQueryParams {
   page?: number;
   limit?: number;
   search?: string;
-  sortBy?: 'name' | 'createdAt' | 'updatedAt' | 'totalOrders' | 'totalAmount';
+  sortBy?:
+    | 'name'
+    | 'createdAt'
+    | 'updatedAt'
+    | 'totalOrders'
+    | 'totalAmount'
+    | 'transactionCount'
+    | 'cooperationDays'
+    | 'returnOrderCount';
   sortOrder?: 'asc' | 'desc';
   parentCustomerId?: string;
   customerType?: string;
@@ -167,6 +180,9 @@ export const CUSTOMER_SORT_OPTIONS = [
   { value: 'name', label: '客户名称' },
   { value: 'totalOrders', label: '订单数量' },
   { value: 'totalAmount', label: '交易金额' },
+  { value: 'transactionCount', label: '交易次数' },
+  { value: 'cooperationDays', label: '合作天数' },
+  { value: 'returnOrderCount', label: '退货次数' },
 ] as const;
 
 // 客户字段标签映射
@@ -192,6 +208,9 @@ export const CUSTOMER_FIELD_LABELS = {
   totalOrders: '订单总数',
   totalAmount: '交易总额',
   lastOrderDate: '最后下单',
+  transactionCount: '交易次数',
+  cooperationDays: '合作天数',
+  returnOrderCount: '退货次数',
   createdAt: '创建时间',
   updatedAt: '更新时间',
 } as const;

@@ -1,6 +1,6 @@
+import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const queryParams = {
-      page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '20'),
+      page: searchParams.get('page') || '1',
+      limit: searchParams.get('limit') || '20',
       search: searchParams.get('search') || undefined,
       sortBy: searchParams.get('sortBy') || 'createdAt',
       sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
@@ -47,6 +47,9 @@ export async function GET(request: NextRequest) {
     const { page, limit, search, sortBy, sortOrder } = validationResult.data;
     const { parentCustomerId } = queryParams;
 
+    // 检查是否需要应用层排序（合作天数）
+    const needsApplicationSort = sortBy === 'cooperationDays';
+
     // 构建查询条件
     const where: any = {};
 
@@ -63,55 +66,146 @@ export async function GET(request: NextRequest) {
     }
 
     // 查询客户列表
-    const [customers, total] = await Promise.all([
-      prisma.customer.findMany({
-        where,
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-          address: true,
-          extendedInfo: true,
-          parentCustomerId: true,
-          createdAt: true,
-          updatedAt: true,
-          parentCustomer: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          _count: {
-            select: {
-              salesOrders: true,
-            },
-          },
-        },
-        orderBy: { [sortBy as string]: sortOrder },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.customer.count({ where }),
-    ]);
+    let customers, total;
 
-    const totalPages = Math.ceil(total / limit);
+    if (needsApplicationSort) {
+      // 对于需要应用层排序的字段，先获取所有数据
+      [customers, total] = await Promise.all([
+        prisma.customer.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            address: true,
+            extendedInfo: true,
+            parentCustomerId: true,
+            createdAt: true,
+            updatedAt: true,
+            parentCustomer: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            _count: {
+              select: {
+                salesOrders: true,
+              },
+            },
+            salesOrders: {
+              select: {
+                id: true,
+                createdAt: true,
+              },
+              orderBy: {
+                createdAt: 'asc',
+              },
+              take: 1, // 只取第一个订单用于计算合作天数
+            },
+          },
+        }),
+        prisma.customer.count({ where }),
+      ]);
+    } else {
+      // 对于数据库字段，直接在数据库层排序和分页
+      [customers, total] = await Promise.all([
+        prisma.customer.findMany({
+          where,
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            address: true,
+            extendedInfo: true,
+            parentCustomerId: true,
+            createdAt: true,
+            updatedAt: true,
+            parentCustomer: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+            _count: {
+              select: {
+                salesOrders: true,
+              },
+            },
+            salesOrders: {
+              select: {
+                id: true,
+                createdAt: true,
+              },
+              orderBy: {
+                createdAt: 'asc',
+              },
+              take: 1, // 只取第一个订单用于计算合作天数
+            },
+          },
+          orderBy:
+            sortBy === 'transactionCount'
+              ? { salesOrders: { _count: sortOrder } }
+              : { [sortBy as string]: sortOrder },
+          skip: (page - 1) * limit,
+          take: limit,
+        }),
+        prisma.customer.count({ where }),
+      ]);
+    }
 
     // 转换数据格式（snake_case -> camelCase）
-    const formattedCustomers = customers.map(customer => ({
-      id: customer.id,
-      name: customer.name,
-      phone: customer.phone,
-      address: customer.address,
-      extendedInfo: customer.extendedInfo
-        ? JSON.parse(customer.extendedInfo as string)
-        : null,
-      parentCustomerId: customer.parentCustomerId,
-      parentCustomer: customer.parentCustomer,
-      subCustomersCount: 0, // 暂时设为0，后续可以通过单独查询获取
-      salesOrdersCount: customer._count.salesOrders,
-      createdAt: customer.createdAt,
-      updatedAt: customer.updatedAt,
-    }));
+    let formattedCustomers = customers.map(customer => {
+      // 计算合作天数
+      let cooperationDays: number | undefined;
+      if (customer.salesOrders.length > 0) {
+        const firstOrderDate = new Date(customer.salesOrders[0].createdAt);
+        const currentDate = new Date();
+        const timeDiff = currentDate.getTime() - firstOrderDate.getTime();
+        cooperationDays = Math.floor(timeDiff / (1000 * 3600 * 24));
+      }
+
+      return {
+        id: customer.id,
+        name: customer.name,
+        phone: customer.phone,
+        address: customer.address,
+        extendedInfo: customer.extendedInfo
+          ? JSON.parse(customer.extendedInfo as string)
+          : null,
+        parentCustomerId: customer.parentCustomerId,
+        parentCustomer: customer.parentCustomer,
+        subCustomersCount: 0, // 暂时设为0，后续可以通过单独查询获取
+        salesOrdersCount: customer._count.salesOrders,
+        // 新增统计字段
+        transactionCount: customer._count.salesOrders, // 交易次数（历史订单总数）
+        cooperationDays, // 合作天数
+        returnOrderCount: 0, // 退货次数（暂时设为0，待退货模块完善后更新）
+        createdAt: customer.createdAt,
+        updatedAt: customer.updatedAt,
+      };
+    });
+
+    // 如果需要应用层排序，在这里处理
+    if (needsApplicationSort) {
+      formattedCustomers.sort((a, b) => {
+        if (sortBy === 'cooperationDays') {
+          const aValue = a.cooperationDays ?? -1; // 未下单的排在最后
+          const bValue = b.cooperationDays ?? -1;
+          return sortOrder === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+        return 0;
+      });
+
+      // 应用层分页
+      const startIndex = (page - 1) * limit;
+      formattedCustomers = formattedCustomers.slice(
+        startIndex,
+        startIndex + limit
+      );
+    }
+
+    const totalPages = Math.ceil(total / limit);
 
     return NextResponse.json({
       success: true,

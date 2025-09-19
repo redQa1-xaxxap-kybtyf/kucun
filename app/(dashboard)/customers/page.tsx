@@ -99,9 +99,22 @@ export default function CustomersPage() {
       render: (item: Customer) => item.address || '-',
     },
     {
-      key: 'salesOrdersCount',
-      title: '订单数',
-      render: (item: Customer) => `${item.totalOrders || 0}个订单`,
+      key: 'transactionCount',
+      title: '交易次数',
+      render: (item: Customer) => `${item.transactionCount || 0}次`,
+    },
+    {
+      key: 'cooperationDays',
+      title: '合作天数',
+      render: (item: Customer) =>
+        item && item.cooperationDays !== undefined
+          ? `${item.cooperationDays}天`
+          : '未下单',
+    },
+    {
+      key: 'returnOrderCount',
+      title: '退货次数',
+      render: (item: Customer) => `${item.returnOrderCount || 0}次`,
     },
   ];
 
@@ -168,6 +181,9 @@ export default function CustomersPage() {
                   <SelectItem value="createdAt">创建时间</SelectItem>
                   <SelectItem value="name">客户名称</SelectItem>
                   <SelectItem value="updatedAt">更新时间</SelectItem>
+                  <SelectItem value="transactionCount">交易次数</SelectItem>
+                  <SelectItem value="cooperationDays">合作天数</SelectItem>
+                  <SelectItem value="returnOrderCount">退货次数</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -208,7 +224,9 @@ export default function CustomersPage() {
                       <TableHead>客户名称</TableHead>
                       <TableHead>联系电话</TableHead>
                       <TableHead>地址</TableHead>
-                      <TableHead>订单数量</TableHead>
+                      <TableHead>交易次数</TableHead>
+                      <TableHead>合作天数</TableHead>
+                      <TableHead>退货次数</TableHead>
                       <TableHead>创建时间</TableHead>
                       <TableHead className="w-[100px]">操作</TableHead>
                     </TableRow>
@@ -238,7 +256,32 @@ export default function CustomersPage() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">
-                            {customer.totalOrders || 0} 个订单
+                            {customer.transactionCount || 0}次
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              customer.cooperationDays !== undefined
+                                ? 'default'
+                                : 'secondary'
+                            }
+                          >
+                            {customer.cooperationDays !== undefined
+                              ? `${customer.cooperationDays}天`
+                              : '未下单'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              customer.returnOrderCount &&
+                              customer.returnOrderCount > 0
+                                ? 'destructive'
+                                : 'outline'
+                            }
+                          >
+                            {customer.returnOrderCount || 0}次
                           </Badge>
                         </TableCell>
                         <TableCell>
