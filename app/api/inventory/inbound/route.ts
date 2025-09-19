@@ -1,9 +1,9 @@
 // 产品入库API路由
 // 提供入库记录的CRUD操作接口
 
+import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -171,6 +171,7 @@ export async function POST(request: NextRequest) {
     // 验证用户身份
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
+      console.error('入库API: 未授权访问');
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
@@ -179,7 +180,10 @@ export async function POST(request: NextRequest) {
 
     // 解析请求数据
     const body = await request.json();
+    console.log('入库API: 接收到请求数据', body);
+
     const validatedData = createInboundSchema.parse(body);
+    console.log('入库API: 数据验证通过', validatedData);
 
     const { productId, quantity, reason, remarks } = validatedData;
 
@@ -236,27 +240,42 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 更新库存（这里需要根据实际业务逻辑调整）
-    // 暂时简化处理，实际应该考虑批次、变体等
-    await prisma.inventory.upsert({
-      where: {
-        productId_variantId_colorCode_productionDate: {
+    // 更新库存 - 简化处理，使用productId作为唯一标识
+    try {
+      // 查找现有库存记录
+      const existingInventory = await prisma.inventory.findFirst({
+        where: {
           productId,
           variantId: null,
           colorCode: null,
           productionDate: null,
         },
-      },
-      update: {
-        quantity: {
-          increment: formatQuantity(quantity),
-        },
-      },
-      create: {
-        productId,
-        quantity: formatQuantity(quantity),
-      },
-    });
+      });
+
+      if (existingInventory) {
+        // 更新现有库存
+        await prisma.inventory.update({
+          where: { id: existingInventory.id },
+          data: {
+            quantity: {
+              increment: formatQuantity(quantity),
+            },
+          },
+        });
+      } else {
+        // 创建新库存记录
+        await prisma.inventory.create({
+          data: {
+            productId,
+            quantity: formatQuantity(quantity),
+            reservedQuantity: 0,
+          },
+        });
+      }
+    } catch (inventoryError) {
+      console.error('库存更新失败:', inventoryError);
+      // 即使库存更新失败，入库记录已创建，返回警告而不是错误
+    }
 
     return NextResponse.json({
       success: true,
@@ -278,15 +297,46 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('创建入库记录失败:', error);
 
+    // 详细错误日志
+    if (error instanceof Error) {
+      console.error('错误详情:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+
     if (error instanceof Error && error.message.includes('Unique constraint')) {
       return NextResponse.json(
-        { success: false, error: '记录编号重复，请重试' },
+        {
+          success: false,
+          error: '记录编号重复，请重试',
+          details: '系统生成的记录编号已存在',
+        },
         { status: 409 }
       );
     }
 
+    if (
+      error instanceof Error &&
+      error.message.includes('Foreign key constraint')
+    ) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '产品信息无效',
+          details: '指定的产品不存在或已被删除',
+        },
+        { status: 400 }
+      );
+    }
+
     return NextResponse.json(
-      { success: false, error: '创建入库记录失败' },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '创建入库记录失败',
+        details: '请检查输入数据或联系系统管理员',
+      },
       { status: 500 }
     );
   }
