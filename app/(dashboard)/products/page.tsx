@@ -73,6 +73,7 @@ import type { Product, ProductQueryParams } from '@/lib/types/product';
 import {
   PRODUCT_STATUS_LABELS,
   PRODUCT_UNIT_LABELS,
+  PRODUCT_UNIT_OPTIONS,
 } from '@/lib/types/product';
 
 /**
@@ -477,9 +478,11 @@ function ProductsPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">全部单位</SelectItem>
-                  <SelectItem value="piece">片</SelectItem>
-                  <SelectItem value="box">箱</SelectItem>
-                  <SelectItem value="square_meter">平方米</SelectItem>
+                  {PRODUCT_UNIT_OPTIONS.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
