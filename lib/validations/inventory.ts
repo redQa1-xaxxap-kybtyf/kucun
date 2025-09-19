@@ -159,6 +159,95 @@ export const inventoryCountSchema = z
     }
   );
 
+// 库存查询API验证规则
+export const inventoryQuerySchema = z.object({
+  page: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val ? parseInt(val) : 1))
+    .refine(val => val > 0, '页码必须大于0'),
+
+  limit: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val ? parseInt(val) : 20))
+    .refine(val => val > 0 && val <= 100, '每页数量必须在1-100之间'),
+
+  search: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val?.trim() || undefined),
+
+  sortBy: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || 'updatedAt'),
+
+  sortOrder: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val === 'asc' ? 'asc' : 'desc')),
+
+  productId: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val?.trim() || undefined),
+
+  batchNumber: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val?.trim() || undefined),
+
+  location: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val?.trim() || undefined),
+
+  productionDateStart: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val?.trim() || undefined),
+
+  productionDateEnd: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val?.trim() || undefined),
+
+  lowStock: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val === 'true'),
+
+  hasStock: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val === 'true'),
+
+  groupByVariant: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val === 'true'),
+
+  includeVariants: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val === 'true'),
+});
+
 // 库存搜索表单验证
 export const inventorySearchSchema = z
   .object({

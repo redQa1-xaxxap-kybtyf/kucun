@@ -1,11 +1,12 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-
-import { paginationValidations } from '@/lib/validations/base';
-import { inventoryAdjustSchema } from '@/lib/validations/inventory';
+import {
+  inventoryAdjustSchema,
+  inventoryQuerySchema,
+} from '@/lib/validations/inventory';
 
 // 获取库存列表
 export async function GET(request: NextRequest) {
@@ -20,25 +21,27 @@ export async function GET(request: NextRequest) {
     // }
 
     const { searchParams } = new URL(request.url);
+
+    // 直接传递字符串参数给验证器，让验证器自己转换
     const queryParams = {
-      page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '20'),
-      search: searchParams.get('search') || undefined,
-      sortBy: searchParams.get('sortBy') || 'updatedAt',
-      sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
-      productId: searchParams.get('productId') || undefined,
-      batchNumber: searchParams.get('batchNumber') || undefined,
-      location: searchParams.get('location') || undefined,
-      productionDateStart: searchParams.get('productionDateStart') || undefined,
-      productionDateEnd: searchParams.get('productionDateEnd') || undefined,
-      lowStock: searchParams.get('lowStock') === 'true',
-      hasStock: searchParams.get('hasStock') === 'true',
-      groupByVariant: searchParams.get('groupByVariant') === 'true',
-      includeVariants: searchParams.get('includeVariants') === 'true',
+      page: searchParams.get('page'),
+      limit: searchParams.get('limit'),
+      search: searchParams.get('search'),
+      sortBy: searchParams.get('sortBy'),
+      sortOrder: searchParams.get('sortOrder'),
+      productId: searchParams.get('productId'),
+      batchNumber: searchParams.get('batchNumber'),
+      location: searchParams.get('location'),
+      productionDateStart: searchParams.get('productionDateStart'),
+      productionDateEnd: searchParams.get('productionDateEnd'),
+      lowStock: searchParams.get('lowStock'),
+      hasStock: searchParams.get('hasStock'),
+      groupByVariant: searchParams.get('groupByVariant'),
+      includeVariants: searchParams.get('includeVariants'),
     };
 
-    // 验证查询参数
-    const validationResult = paginationValidations.query.safeParse(queryParams);
+    // 验证查询参数 - 使用专门的库存查询验证规则
+    const validationResult = inventoryQuerySchema.safeParse(queryParams);
     if (!validationResult.success) {
       return NextResponse.json(
         {
