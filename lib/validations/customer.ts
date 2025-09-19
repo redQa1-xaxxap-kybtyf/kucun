@@ -1,8 +1,6 @@
 import { z } from 'zod';
 
-import type {
-    CustomerExtendedInfo
-} from '@/lib/types/customer';
+import type { CustomerExtendedInfo } from '@/lib/types/customer';
 
 // 基础验证规则
 const baseValidations = {

@@ -245,57 +245,66 @@ export const dashboardApi = {
 };
 
 // React Query Hooks
-export const useDashboardData = (filters: DashboardFilters) => useQuery({
+export const useDashboardData = (filters: DashboardFilters) =>
+  useQuery({
     queryKey: dashboardQueryKeys.complete(filters),
     queryFn: () => dashboardApi.getDashboardData(filters),
     staleTime: 5 * 60 * 1000, // 5分钟
     refetchInterval: 30 * 1000, // 30秒自动刷新
   });
 
-export const useBusinessOverview = (timeRange: TimeRange) => useQuery({
+export const useBusinessOverview = (timeRange: TimeRange) =>
+  useQuery({
     queryKey: dashboardQueryKeys.overview(),
     queryFn: () => dashboardApi.getBusinessOverview(timeRange),
     staleTime: 5 * 60 * 1000,
   });
 
-export const useInventoryAlerts = () => useQuery({
+export const useInventoryAlerts = () =>
+  useQuery({
     queryKey: dashboardQueryKeys.alerts(),
     queryFn: dashboardApi.getInventoryAlerts,
     staleTime: 2 * 60 * 1000, // 2分钟
     refetchInterval: 60 * 1000, // 1分钟自动刷新
   });
 
-export const useTodoItems = () => useQuery({
+export const useTodoItems = () =>
+  useQuery({
     queryKey: dashboardQueryKeys.todos(),
     queryFn: dashboardApi.getTodoItems,
     staleTime: 5 * 60 * 1000,
   });
 
-export const useSalesTrend = (timeRange: TimeRange) => useQuery({
+export const useSalesTrend = (timeRange: TimeRange) =>
+  useQuery({
     queryKey: dashboardQueryKeys.salesTrend(timeRange),
     queryFn: () => dashboardApi.getSalesTrend(timeRange),
     staleTime: 10 * 60 * 1000, // 10分钟
   });
 
-export const useInventoryTrend = (timeRange: TimeRange) => useQuery({
+export const useInventoryTrend = (timeRange: TimeRange) =>
+  useQuery({
     queryKey: dashboardQueryKeys.inventoryTrend(timeRange),
     queryFn: () => dashboardApi.getInventoryTrend(timeRange),
     staleTime: 10 * 60 * 1000,
   });
 
-export const useProductRanking = (timeRange: TimeRange) => useQuery({
+export const useProductRanking = (timeRange: TimeRange) =>
+  useQuery({
     queryKey: dashboardQueryKeys.productRanking(timeRange),
     queryFn: () => dashboardApi.getProductRanking(timeRange),
     staleTime: 15 * 60 * 1000, // 15分钟
   });
 
-export const useCustomerRanking = (timeRange: TimeRange) => useQuery({
+export const useCustomerRanking = (timeRange: TimeRange) =>
+  useQuery({
     queryKey: dashboardQueryKeys.customerRanking(timeRange),
     queryFn: () => dashboardApi.getCustomerRanking(timeRange),
     staleTime: 15 * 60 * 1000,
   });
 
-export const useQuickActions = () => useQuery({
+export const useQuickActions = () =>
+  useQuery({
     queryKey: dashboardQueryKeys.quickActions(),
     queryFn: dashboardApi.getQuickActions,
     staleTime: 60 * 60 * 1000, // 1小时
@@ -326,7 +335,8 @@ export const useDismissAlert = () => {
 
 // 工具函数
 export const dashboardUtils = {
-  formatCurrency: (amount: number): string => new Intl.NumberFormat('zh-CN', {
+  formatCurrency: (amount: number): string =>
+    new Intl.NumberFormat('zh-CN', {
       style: 'currency',
       currency: 'CNY',
     }).format(amount),
@@ -341,7 +351,8 @@ export const dashboardUtils = {
     return num.toString();
   },
 
-  formatPercentage: (percent: number): string => `${percent >= 0 ? '+' : ''}${percent.toFixed(1)}%`,
+  formatPercentage: (percent: number): string =>
+    `${percent >= 0 ? '+' : ''}${percent.toFixed(1)}%`,
 
   calculateGrowth: (current: number, previous: number): number => {
     if (previous === 0) return current > 0 ? 100 : 0;

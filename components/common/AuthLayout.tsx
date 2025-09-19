@@ -252,10 +252,10 @@ export function withAuthLayout<P extends object>(
   layoutProps?: Omit<AuthLayoutProps, 'children'>
 ) {
   const WrappedComponent = (props: P) => (
-      <AuthLayout {...layoutProps}>
-        <Component {...props} />
-      </AuthLayout>
-    );
+    <AuthLayout {...layoutProps}>
+      <Component {...props} />
+    </AuthLayout>
+  );
 
   WrappedComponent.displayName = `withAuthLayout(${Component.displayName || Component.name})`;
 

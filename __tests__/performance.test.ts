@@ -5,11 +5,11 @@
  */
 
 import {
-    globalCache,
-    LRUCache,
-    performanceUtils,
-    useDebounce,
-    useThrottle,
+  globalCache,
+  LRUCache,
+  performanceUtils,
+  useDebounce,
+  useThrottle,
 } from '@/lib/utils/performance';
 import { beforeEach, describe, expect, it, jest } from '@jest/globals';
 import { act, renderHook } from '@testing-library/react';
@@ -170,7 +170,9 @@ describe('性能优化工具测试', () => {
       const originalEnv = process.env.NODE_ENV;
       (process.env as any).NODE_ENV = 'development';
 
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
+      const consoleSpy = jest
+        .spyOn(console, 'log')
+        .mockImplementation(() => {});
 
       const testFn = (x: number) => x * 2;
       const measuredFn = performanceUtils.measure(testFn, 'testFunction');

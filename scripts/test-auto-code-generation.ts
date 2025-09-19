@@ -5,13 +5,16 @@
 
 async function testAutoCodeGeneration() {
   const baseUrl = 'http://localhost:3003';
-  
+
   console.log('开始测试分类编码自动生成功能...\n');
 
   const testCategories: Array<{ name: string; expectedCodePattern: RegExp }> = [
     { name: '测试分类', expectedCodePattern: /^测试分类(_\d+)?$/ },
     { name: 'Test Category', expectedCodePattern: /^TESTCATEGORY(_\d+)?$/ },
-    { name: '混合Test分类123', expectedCodePattern: /^混合TEST分类123(_\d+)?$/ },
+    {
+      name: '混合Test分类123',
+      expectedCodePattern: /^混合TEST分类123(_\d+)?$/,
+    },
     { name: '特殊@#$符号', expectedCodePattern: /^特殊符号(_\d+)?$/ },
   ];
 
@@ -43,8 +46,10 @@ async function testAutoCodeGeneration() {
         const generatedCode = createResult.data.code;
         console.log(`   ✅ 创建成功`);
         console.log(`   📝 生成的编码: "${generatedCode}"`);
-        console.log(`   🔍 编码格式检查: ${testCase.expectedCodePattern.test(generatedCode) ? '✅ 通过' : '❌ 失败'}`);
-        
+        console.log(
+          `   🔍 编码格式检查: ${testCase.expectedCodePattern.test(generatedCode) ? '✅ 通过' : '❌ 失败'}`
+        );
+
         createdCategoryIds.push(createResult.data.id);
 
         // 验证编码唯一性 - 创建同名分类
@@ -64,7 +69,9 @@ async function testAutoCodeGeneration() {
         if (duplicateResult.success) {
           const duplicateCode = duplicateResult.data.code;
           console.log(`   📝 重复分类编码: "${duplicateCode}"`);
-          console.log(`   🔍 编码唯一性检查: ${generatedCode !== duplicateCode ? '✅ 通过' : '❌ 失败'}`);
+          console.log(
+            `   🔍 编码唯一性检查: ${generatedCode !== duplicateCode ? '✅ 通过' : '❌ 失败'}`
+          );
           createdCategoryIds.push(duplicateResult.data.id);
         } else {
           console.log(`   ❌ 创建重复分类失败: ${duplicateResult.error}`);
@@ -80,14 +87,19 @@ async function testAutoCodeGeneration() {
     console.log('🧹 清理测试数据...');
     for (const categoryId of createdCategoryIds) {
       try {
-        const deleteResponse = await fetch(`${baseUrl}/api/categories/${categoryId}`, {
-          method: 'DELETE',
-        });
+        const deleteResponse = await fetch(
+          `${baseUrl}/api/categories/${categoryId}`,
+          {
+            method: 'DELETE',
+          }
+        );
         const deleteResult = await deleteResponse.json();
         if (deleteResult.success) {
           console.log(`   ✅ 删除分类成功: ${categoryId}`);
         } else {
-          console.log(`   ❌ 删除分类失败: ${categoryId} - ${deleteResult.error}`);
+          console.log(
+            `   ❌ 删除分类失败: ${categoryId} - ${deleteResult.error}`
+          );
         }
       } catch (error) {
         console.log(`   ❌ 删除分类异常: ${categoryId} - ${error}`);
@@ -95,10 +107,9 @@ async function testAutoCodeGeneration() {
     }
 
     console.log('\n🎉 分类编码自动生成功能测试完成！');
-
   } catch (error) {
     console.error('❌ 测试过程中发生错误:', error);
-    
+
     // 尝试清理已创建的分类
     if (createdCategoryIds.length > 0) {
       console.log('🧹 尝试清理已创建的测试数据...');

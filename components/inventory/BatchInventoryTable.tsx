@@ -1,20 +1,27 @@
 'use client';
 
-import { ChevronDown, ChevronRight, DollarSign, MapPin, Package } from 'lucide-react';
+import {
+  ChevronDown,
+  ChevronRight,
+  DollarSign,
+  MapPin,
+  Package,
+} from 'lucide-react';
 import React, { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import type { Inventory } from '@/lib/types/inventory';
+import { formatInventoryQuantity } from '@/lib/utils/piece-calculation';
 
 interface BatchInventoryTableProps {
   inventoryData: Inventory[];
@@ -53,8 +60,9 @@ export function BatchInventoryTable({
 
     const groups = new Map<string, GroupedInventory>();
 
-    inventoryData.forEach((inventory) => {
-      const variantKey = inventory.variantId || `${inventory.productId}-${inventory.id}`;
+    inventoryData.forEach(inventory => {
+      const variantKey =
+        inventory.variantId || `${inventory.productId}-${inventory.id}`;
 
       if (!groups.has(variantKey)) {
         groups.set(variantKey, {
@@ -128,19 +136,20 @@ export function BatchInventoryTable({
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {groupedData.map((group) => {
-              const variantKey = group.variant.id || `${group.product.id}-${group.variant.sku}`;
+            {groupedData.map(group => {
+              const variantKey =
+                group.variant.id || `${group.product.id}-${group.variant.sku}`;
               const isExpanded = expandedGroups.has(variantKey);
 
               return (
-                <div key={variantKey} className="border rounded-lg">
+                <div key={variantKey} className="rounded-lg border">
                   {/* 分组头部 */}
                   <div
-                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-muted/50"
+                    className="flex cursor-pointer items-center justify-between p-4 hover:bg-muted/50"
                     onClick={() => toggleGroup(variantKey)}
                   >
                     <div className="flex items-center gap-4">
-                      <Button variant="ghost" size="sm" className="p-0 h-auto">
+                      <Button variant="ghost" size="sm" className="h-auto p-0">
                         {isExpanded ? (
                           <ChevronDown className="h-4 w-4" />
                         ) : (
@@ -149,23 +158,42 @@ export function BatchInventoryTable({
                       </Button>
 
                       <div>
-                        <div className="font-medium">
-                          {group.product.name}
-                        </div>
+                        <div className="font-medium">{group.product.name}</div>
                         <div className="text-sm text-muted-foreground">
-                          SKU: {group.variant.sku} | {group.batches.length} 个批次
+                          SKU: {group.variant.sku} | {group.batches.length}{' '}
+                          个批次
                         </div>
                       </div>
                     </div>
 
                     <div className="flex items-center gap-4">
                       <div className="text-right">
-                        <div className="font-medium">总库存: {group.totalQuantity}</div>
+                        <div className="font-medium">
+                          总库存:{' '}
+                          {group.batches[0]?.product?.piecesPerUnit
+                            ? formatInventoryQuantity(
+                                group.totalQuantity,
+                                group.batches[0].product,
+                                true
+                              )
+                            : group.totalQuantity}
+                        </div>
                         <div className="text-sm text-muted-foreground">
-                          可用: {group.totalAvailable} | 预留: {group.totalReserved}
+                          可用:{' '}
+                          {group.batches[0]?.product?.piecesPerUnit
+                            ? formatInventoryQuantity(
+                                group.totalAvailable,
+                                group.batches[0].product,
+                                false
+                              )
+                            : group.totalAvailable}{' '}
+                          | 预留: {group.totalReserved}
                         </div>
                       </div>
-                      {getStockStatusBadge(group.totalAvailable, group.totalQuantity)}
+                      {getStockStatusBadge(
+                        group.totalAvailable,
+                        group.totalQuantity
+                      )}
                     </div>
                   </div>
 
@@ -177,22 +205,28 @@ export function BatchInventoryTable({
                           <TableRow>
                             <TableHead>批次号</TableHead>
                             <TableHead>存储位置</TableHead>
-                            <TableHead className="text-right">库存数量</TableHead>
-                            <TableHead className="text-right">预留数量</TableHead>
-                            <TableHead className="text-right">可用数量</TableHead>
-                            <TableHead className="text-right">单位成本</TableHead>
+                            <TableHead className="text-right">
+                              库存数量
+                            </TableHead>
+                            <TableHead className="text-right">
+                              预留数量
+                            </TableHead>
+                            <TableHead className="text-right">
+                              可用数量
+                            </TableHead>
+                            <TableHead className="text-right">
+                              单位成本
+                            </TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
-                          {group.batches.map((batch) => (
+                          {group.batches.map(batch => (
                             <TableRow
                               key={batch.id}
                               className="cursor-pointer hover:bg-muted/50"
                               onClick={() => onRowClick?.(batch)}
                             >
-                              <TableCell>
-                                {batch.batchNumber || '-'}
-                              </TableCell>
+                              <TableCell>{batch.batchNumber || '-'}</TableCell>
                               <TableCell>
                                 <div className="flex items-center gap-2">
                                   <MapPin className="h-4 w-4 text-muted-foreground" />
@@ -200,7 +234,13 @@ export function BatchInventoryTable({
                                 </div>
                               </TableCell>
                               <TableCell className="text-right font-medium">
-                                {batch.quantity}
+                                {batch.product?.piecesPerUnit
+                                  ? formatInventoryQuantity(
+                                      batch.quantity,
+                                      batch.product,
+                                      true
+                                    )
+                                  : batch.quantity}
                               </TableCell>
                               <TableCell className="text-right text-orange-600">
                                 {batch.reservedQuantity}
@@ -254,7 +294,7 @@ export function BatchInventoryTable({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {inventoryData.map((inventory) => (
+            {inventoryData.map(inventory => (
               <TableRow
                 key={inventory.id}
                 className="cursor-pointer hover:bg-muted/50"
@@ -282,7 +322,13 @@ export function BatchInventoryTable({
                   </div>
                 </TableCell>
                 <TableCell className="text-right font-medium">
-                  {inventory.quantity}
+                  {inventory.product?.piecesPerUnit
+                    ? formatInventoryQuantity(
+                        inventory.quantity,
+                        inventory.product,
+                        true
+                      )
+                    : inventory.quantity}
                 </TableCell>
                 <TableCell className="text-right text-orange-600">
                   {inventory.reservedQuantity}

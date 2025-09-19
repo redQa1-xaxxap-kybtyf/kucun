@@ -279,7 +279,10 @@ export function useVirtualScroll<T>(
     return { startIndex, endIndex };
   }, [scrollTop, itemHeight, containerHeight, items.length]);
 
-  const visibleItems = useMemo(() => items.slice(visibleRange.startIndex, visibleRange.endIndex), [items, visibleRange]);
+  const visibleItems = useMemo(
+    () => items.slice(visibleRange.startIndex, visibleRange.endIndex),
+    [items, visibleRange]
+  );
 
   const totalHeight = items.length * itemHeight;
   const offsetY = visibleRange.startIndex * itemHeight;
@@ -352,7 +355,9 @@ export function useBatchUpdate<T>(initialItems: T[], batchSize: number = 50) {
           const operations = queueRef.current.splice(0, batchSize);
 
           if (operations.length > 0) {
-            setItems(currentItems => operations.reduce((acc, op) => op(acc), currentItems));
+            setItems(currentItems =>
+              operations.reduce((acc, op) => op(acc), currentItems)
+            );
 
             if (queueRef.current.length > 0) {
               setTimeout(processBatch, 0);
@@ -388,7 +393,8 @@ export const performanceUtils = {
   /**
    * 测量函数执行时间
    */
-  measure: <T extends (...args: any[]) => any>(fn: T, name?: string): T => ((...args: Parameters<T>) => {
+  measure: <T extends (...args: any[]) => any>(fn: T, name?: string): T =>
+    ((...args: Parameters<T>) => {
       const start = performance.now();
       const result = fn(...args);
       const end = performance.now();

@@ -1,19 +1,19 @@
 'use client';
 
 import {
-    Bell,
-    HelpCircle,
-    Keyboard,
-    LogOut,
-    Menu,
-    Monitor,
-    Moon,
-    Plus,
-    RefreshCw,
-    Search,
-    Settings,
-    Sun,
-    User,
+  Bell,
+  HelpCircle,
+  Keyboard,
+  LogOut,
+  Menu,
+  Monitor,
+  Moon,
+  Plus,
+  RefreshCw,
+  Search,
+  Settings,
+  Sun,
+  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
@@ -23,12 +23,12 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { useNavigationBadges } from '@/hooks/use-navigation-badges';
@@ -143,7 +143,8 @@ export function Header({
   };
 
   // 获取用户姓名首字母作为头像占位符
-  const getUserInitials = (name: string) => name
+  const getUserInitials = (name: string) =>
+    name
       .split(' ')
       .map(n => n[0])
       .join('')

@@ -4,12 +4,12 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import {
-    ArrowLeft,
-    Calendar,
-    FileText,
-    Package,
-    TrendingDown,
-    User
+  ArrowLeft,
+  Calendar,
+  FileText,
+  Package,
+  TrendingDown,
+  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -19,12 +19,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 
 // Icons
@@ -42,19 +42,19 @@ export default function OutboundRecordsPage() {
   // 获取出库记录数据 - 暂时使用模拟数据
   const { data, isLoading, error } = useQuery({
     queryKey: ['inventory-records', { type: 'outbound' }],
-    queryFn: async () => 
+    queryFn: async () =>
       // 模拟出库记录数据
-       ({
+      ({
         data: [] as OutboundRecord[],
-        pagination: { page: 1, limit: 50, total: 0, totalPages: 0 }
-      })
-    ,
+        pagination: { page: 1, limit: 50, total: 0, totalPages: 0 },
+      }),
   });
 
   const outboundRecords = data?.data || [];
 
   // 格式化日期
-  const formatDate = (dateString: string) => format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
+  const formatDate = (dateString: string) =>
+    format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
 
   // 格式化操作类型
   const getOperationTypeLabel = (type: string) => {
@@ -88,7 +88,7 @@ export default function OutboundRecordsPage() {
           <div className="flex items-center gap-4">
             <Skeleton className="h-10 w-20" />
             <div>
-              <Skeleton className="h-8 w-32 mb-2" />
+              <Skeleton className="mb-2 h-8 w-32" />
               <Skeleton className="h-4 w-48" />
             </div>
           </div>
@@ -122,16 +122,18 @@ export default function OutboundRecordsPage() {
             </Button>
             <div>
               <h1 className="text-3xl font-bold tracking-tight">出库记录</h1>
-              <p className="text-muted-foreground">查看所有出库操作的历史记录</p>
+              <p className="text-muted-foreground">
+                查看所有出库操作的历史记录
+              </p>
             </div>
           </div>
         </div>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">加载失败</h3>
-              <p className="text-muted-foreground mb-4">无法加载出库记录数据</p>
+            <div className="py-8 text-center">
+              <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+              <h3 className="mb-2 text-lg font-medium">加载失败</h3>
+              <p className="mb-4 text-muted-foreground">无法加载出库记录数据</p>
               <Button onClick={() => window.location.reload()}>重试</Button>
             </div>
           </CardContent>
@@ -154,7 +156,6 @@ export default function OutboundRecordsPage() {
             <p className="text-muted-foreground">查看所有出库操作的历史记录</p>
           </div>
         </div>
-
       </div>
 
       {/* 统计卡片 */}
@@ -166,10 +167,12 @@ export default function OutboundRecordsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {outboundRecords.filter(record => {
-                const today = new Date().toDateString();
-                return new Date(record.createdAt).toDateString() === today;
-              }).length}
+              {
+                outboundRecords.filter(record => {
+                  const today = new Date().toDateString();
+                  return new Date(record.createdAt).toDateString() === today;
+                }).length
+              }
             </div>
             <p className="text-xs text-muted-foreground">笔出库记录</p>
           </CardContent>
@@ -181,12 +184,17 @@ export default function OutboundRecordsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {outboundRecords.filter(record => {
-                const thisMonth = new Date().getMonth();
-                const thisYear = new Date().getFullYear();
-                const recordDate = new Date(record.createdAt);
-                return recordDate.getMonth() === thisMonth && recordDate.getFullYear() === thisYear;
-              }).length}
+              {
+                outboundRecords.filter(record => {
+                  const thisMonth = new Date().getMonth();
+                  const thisYear = new Date().getFullYear();
+                  const recordDate = new Date(record.createdAt);
+                  return (
+                    recordDate.getMonth() === thisMonth &&
+                    recordDate.getFullYear() === thisYear
+                  );
+                }).length
+              }
             </div>
             <p className="text-xs text-muted-foreground">笔出库记录</p>
           </CardContent>
@@ -213,9 +221,9 @@ export default function OutboundRecordsPage() {
         </CardHeader>
         <CardContent>
           {outboundRecords.length === 0 ? (
-            <div className="text-center py-8">
-              <Package className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-              <h3 className="text-lg font-medium mb-2">暂无出库记录</h3>
+            <div className="py-8 text-center">
+              <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+              <h3 className="mb-2 text-lg font-medium">暂无出库记录</h3>
               <p className="text-muted-foreground">还没有任何出库操作记录</p>
             </div>
           ) : (
@@ -231,7 +239,7 @@ export default function OutboundRecordsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {outboundRecords.map((record) => (
+                {outboundRecords.map(record => (
                   <TableRow key={record.id}>
                     <TableCell>
                       <div className="flex items-center gap-2">
@@ -247,7 +255,9 @@ export default function OutboundRecordsPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getOperationTypeColor(record.type) as any}>
+                      <Badge
+                        variant={getOperationTypeColor(record.type) as any}
+                      >
                         {getOperationTypeLabel(record.type)}
                       </Badge>
                     </TableCell>
@@ -260,9 +270,7 @@ export default function OutboundRecordsPage() {
                         {record.user?.name || '-'}
                       </div>
                     </TableCell>
-                    <TableCell>
-                      {formatDate(record.createdAt)}
-                    </TableCell>
+                    <TableCell>{formatDate(record.createdAt)}</TableCell>
                     <TableCell>
                       <div className="max-w-[200px] truncate">
                         {record.remarks || '-'}

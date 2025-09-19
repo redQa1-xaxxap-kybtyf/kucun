@@ -5,12 +5,12 @@ import type { Product } from './product';
 import type { User } from './user';
 
 // 入库原因枚举
-export type InboundReason = 
-  | 'purchase'    // 采购入库
-  | 'return'      // 退货入库
-  | 'transfer'    // 调拨入库
-  | 'surplus'     // 盘盈入库
-  | 'other';      // 其他
+export type InboundReason =
+  | 'purchase' // 采购入库
+  | 'return' // 退货入库
+  | 'transfer' // 调拨入库
+  | 'surplus' // 盘盈入库
+  | 'other'; // 其他
 
 // 入库原因标签映射
 export const INBOUND_REASON_LABELS: Record<InboundReason, string> = {
@@ -97,6 +97,7 @@ export interface ProductOption {
   label: string;
   code: string;
   unit: string;
+  piecesPerUnit: number;
   currentStock?: number;
 }
 

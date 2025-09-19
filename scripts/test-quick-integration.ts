@@ -4,7 +4,7 @@
 
 async function testQuickIntegration() {
   const baseUrl = 'http://localhost:3004';
-  
+
   console.log('🚀 开始快速集成测试...\n');
 
   const timestamp = Date.now();
@@ -26,7 +26,9 @@ async function testQuickIntegration() {
     });
 
     if (!createResponse.ok) {
-      throw new Error(`HTTP ${createResponse.status}: ${createResponse.statusText}`);
+      throw new Error(
+        `HTTP ${createResponse.status}: ${createResponse.statusText}`
+      );
     }
 
     const createResult = await createResponse.json();
@@ -41,7 +43,7 @@ async function testQuickIntegration() {
     // 2. 测试查询分类
     console.log('\n🔍 2. 测试分类查询...');
     const getResponse = await fetch(`${baseUrl}/api/categories/${categoryId}`);
-    
+
     if (!getResponse.ok) {
       throw new Error(`HTTP ${getResponse.status}: ${getResponse.statusText}`);
     }
@@ -55,21 +57,26 @@ async function testQuickIntegration() {
 
     // 3. 测试更新分类
     console.log('\n✏️ 3. 测试分类更新...');
-    const updateResponse = await fetch(`${baseUrl}/api/categories/${categoryId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        id: categoryId,
-        name: `更新后的分类_${timestamp}`,
-        description: '这是更新后的描述',
-        sortOrder: 2,
-      }),
-    });
+    const updateResponse = await fetch(
+      `${baseUrl}/api/categories/${categoryId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: categoryId,
+          name: `更新后的分类_${timestamp}`,
+          description: '这是更新后的描述',
+          sortOrder: 2,
+        }),
+      }
+    );
 
     if (!updateResponse.ok) {
-      throw new Error(`HTTP ${updateResponse.status}: ${updateResponse.statusText}`);
+      throw new Error(
+        `HTTP ${updateResponse.status}: ${updateResponse.statusText}`
+      );
     }
 
     const updateResult = await updateResponse.json();
@@ -81,18 +88,23 @@ async function testQuickIntegration() {
 
     // 4. 测试状态管理
     console.log('\n🔄 4. 测试状态管理...');
-    const statusResponse = await fetch(`${baseUrl}/api/categories/${categoryId}/status`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        status: 'inactive',
-      }),
-    });
+    const statusResponse = await fetch(
+      `${baseUrl}/api/categories/${categoryId}/status`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'inactive',
+        }),
+      }
+    );
 
     if (!statusResponse.ok) {
-      throw new Error(`HTTP ${statusResponse.status}: ${statusResponse.statusText}`);
+      throw new Error(
+        `HTTP ${statusResponse.status}: ${statusResponse.statusText}`
+      );
     }
 
     const statusResult = await statusResponse.json();
@@ -104,12 +116,17 @@ async function testQuickIntegration() {
 
     // 5. 测试删除分类
     console.log('\n🗑️ 5. 测试分类删除...');
-    const deleteResponse = await fetch(`${baseUrl}/api/categories/${categoryId}`, {
-      method: 'DELETE',
-    });
+    const deleteResponse = await fetch(
+      `${baseUrl}/api/categories/${categoryId}`,
+      {
+        method: 'DELETE',
+      }
+    );
 
     if (!deleteResponse.ok) {
-      throw new Error(`HTTP ${deleteResponse.status}: ${deleteResponse.statusText}`);
+      throw new Error(
+        `HTTP ${deleteResponse.status}: ${deleteResponse.statusText}`
+      );
     }
 
     const deleteResult = await deleteResponse.json();
@@ -128,10 +145,9 @@ async function testQuickIntegration() {
     console.log('   ✅ 状态管理 - 通过');
     console.log('   ✅ 分类删除 - 通过');
     console.log('\n🚀 分类管理功能运行正常！');
-
   } catch (error) {
     console.error('\n❌ 测试失败:', error);
-    
+
     // 清理测试数据
     if (categoryId) {
       console.log('\n🧹 清理测试数据...');

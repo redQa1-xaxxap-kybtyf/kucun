@@ -23,8 +23,11 @@ async function testProductDetailFixes() {
   try {
     // 1. 检查产品详情页面的分类信息显示
     console.log('📝 1. 检查产品详情页面分类信息显示...');
-    
-    const detailPagePath = join(process.cwd(), 'app/(dashboard)/products/[id]/page.tsx');
+
+    const detailPagePath = join(
+      process.cwd(),
+      'app/(dashboard)/products/[id]/page.tsx'
+    );
     if (!existsSync(detailPagePath)) {
       results.push({
         name: '详情页面文件存在性',
@@ -35,16 +38,21 @@ async function testProductDetailFixes() {
       const detailContent = readFileSync(detailPagePath, 'utf8');
 
       // 检查是否有分类信息显示
-      const hasCategoryDisplay = detailContent.includes('产品分类') && 
-                                 detailContent.includes('product.category');
+      const hasCategoryDisplay =
+        detailContent.includes('产品分类') &&
+        detailContent.includes('product.category');
       results.push({
         name: '详情页面分类信息显示',
         success: hasCategoryDisplay,
-        message: hasCategoryDisplay ? '正确显示产品分类信息' : '缺少产品分类信息显示',
+        message: hasCategoryDisplay
+          ? '正确显示产品分类信息'
+          : '缺少产品分类信息显示',
       });
 
       // 检查分类信息的显示逻辑
-      const hasCategoryLogic = detailContent.includes('product.category ? product.category.name : \'未分类\'');
+      const hasCategoryLogic = detailContent.includes(
+        "product.category ? product.category.name : '未分类'"
+      );
       results.push({
         name: '详情页面分类显示逻辑',
         success: hasCategoryLogic,
@@ -52,18 +60,22 @@ async function testProductDetailFixes() {
       });
 
       // 检查是否移除了瓷砖规格信息
-      const hasRemovedTileSpecs = !detailContent.includes('瓷砖规格信息') &&
-                                  !detailContent.includes('product.specifications.color') &&
-                                  !detailContent.includes('product.specifications.surface');
+      const hasRemovedTileSpecs =
+        !detailContent.includes('瓷砖规格信息') &&
+        !detailContent.includes('product.specifications.color') &&
+        !detailContent.includes('product.specifications.surface');
       results.push({
         name: '移除瓷砖规格信息',
         success: hasRemovedTileSpecs,
-        message: hasRemovedTileSpecs ? '已成功移除瓷砖规格信息' : '瓷砖规格信息仍然存在',
+        message: hasRemovedTileSpecs
+          ? '已成功移除瓷砖规格信息'
+          : '瓷砖规格信息仍然存在',
       });
 
       // 检查是否改为单列布局
-      const hasSingleColumnLayout = !detailContent.includes('md:grid-cols-2') ||
-                                    !detailContent.includes('grid gap-6 md:grid-cols-2');
+      const hasSingleColumnLayout =
+        !detailContent.includes('md:grid-cols-2') ||
+        !detailContent.includes('grid gap-6 md:grid-cols-2');
       results.push({
         name: '单列布局改进',
         success: hasSingleColumnLayout,
@@ -73,7 +85,7 @@ async function testProductDetailFixes() {
       // 检查基本信息字段完整性
       const basicFields = [
         '产品编码',
-        '产品名称', 
+        '产品名称',
         '规格',
         '厚度',
         '重量',
@@ -82,7 +94,7 @@ async function testProductDetailFixes() {
         '产品分类',
         '状态',
         '创建时间',
-        '更新时间'
+        '更新时间',
       ];
 
       basicFields.forEach(field => {
@@ -95,8 +107,9 @@ async function testProductDetailFixes() {
       });
 
       // 检查响应式布局
-      const hasResponsiveLayout = detailContent.includes('md:grid-cols-3') &&
-                                  detailContent.includes('lg:grid-cols-4');
+      const hasResponsiveLayout =
+        detailContent.includes('md:grid-cols-3') &&
+        detailContent.includes('lg:grid-cols-4');
       results.push({
         name: '响应式布局优化',
         success: hasResponsiveLayout,
@@ -106,7 +119,7 @@ async function testProductDetailFixes() {
 
     // 2. 检查产品API的分类信息查询
     console.log('\n🔍 2. 检查产品API分类信息查询...');
-    
+
     const apiPath = join(process.cwd(), 'app/api/products/[id]/route.ts');
     if (!existsSync(apiPath)) {
       results.push({
@@ -118,18 +131,22 @@ async function testProductDetailFixes() {
       const apiContent = readFileSync(apiPath, 'utf8');
 
       // 检查是否包含分类查询
-      const hasCategoryQuery = apiContent.includes('categoryId: true') &&
-                              apiContent.includes('category: {');
+      const hasCategoryQuery =
+        apiContent.includes('categoryId: true') &&
+        apiContent.includes('category: {');
       results.push({
         name: 'API分类信息查询',
         success: hasCategoryQuery,
-        message: hasCategoryQuery ? 'API正确查询分类信息' : 'API缺少分类信息查询',
+        message: hasCategoryQuery
+          ? 'API正确查询分类信息'
+          : 'API缺少分类信息查询',
       });
 
       // 检查分类查询的字段
-      const hasCategoryFields = apiContent.includes('id: true') &&
-                               apiContent.includes('name: true') &&
-                               apiContent.includes('code: true');
+      const hasCategoryFields =
+        apiContent.includes('id: true') &&
+        apiContent.includes('name: true') &&
+        apiContent.includes('code: true');
       results.push({
         name: 'API分类字段查询',
         success: hasCategoryFields,
@@ -139,7 +156,7 @@ async function testProductDetailFixes() {
 
     // 输出结果
     console.log('\n📊 测试结果汇总:\n');
-    
+
     let successCount = 0;
     let totalCount = results.length;
 
@@ -163,7 +180,7 @@ async function testProductDetailFixes() {
       console.log('   ✅ 保留了所有基本信息字段');
       console.log('   ✅ API正确查询和返回分类信息');
       console.log('   ✅ 响应式布局优化');
-      
+
       console.log('\n🎯 用户体验改进:');
       console.log('   📋 分类信息清晰显示，便于产品管理');
       console.log('   🎨 简化的界面设计，减少视觉干扰');
@@ -174,7 +191,6 @@ async function testProductDetailFixes() {
       console.log('\n⚠️  部分检查未通过，请查看上述详情进行修复。');
       process.exit(1);
     }
-
   } catch (error) {
     console.error('\n❌ 测试失败:', error);
     process.exit(1);

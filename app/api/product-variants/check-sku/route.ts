@@ -127,12 +127,18 @@ export async function POST(request: NextRequest) {
 
     // 批量检查输入验证
     const BatchCheckSkuSchema = z.object({
-      skus: z.array(
-        z.object({
-          sku: z.string().min(1, 'SKU不能为空').max(50, 'SKU不能超过50个字符'),
-          excludeId: z.string().uuid('排除的变体ID格式不正确').optional(),
-        })
-      ).min(1, '至少需要一个SKU').max(100, '批量检查最多支持100个SKU'),
+      skus: z
+        .array(
+          z.object({
+            sku: z
+              .string()
+              .min(1, 'SKU不能为空')
+              .max(50, 'SKU不能超过50个字符'),
+            excludeId: z.string().uuid('排除的变体ID格式不正确').optional(),
+          })
+        )
+        .min(1, '至少需要一个SKU')
+        .max(100, '批量检查最多支持100个SKU'),
     });
 
     const validationResult = BatchCheckSkuSchema.safeParse(body);
@@ -177,13 +183,14 @@ export async function POST(request: NextRequest) {
 
     // 检查每个SKU的可用性
     const results = await Promise.all(
-      skus.map(async (item) => {
+      skus.map(async item => {
         const { sku, excludeId } = item;
         const existingVariant = skuToVariantMap.get(sku);
-        
+
         // 如果存在变体且不是被排除的变体，则不可用
-        const available = !existingVariant || (excludeId && existingVariant.id === excludeId);
-        
+        const available =
+          !existingVariant || (excludeId && existingVariant.id === excludeId);
+
         let conflictInfo = null;
         if (!available && existingVariant) {
           conflictInfo = {
@@ -238,7 +245,7 @@ export async function POST(request: NextRequest) {
 // 生成SKU建议的辅助函数
 async function generateSkuSuggestions(baseSku: string): Promise<string[]> {
   const suggestions: string[] = [];
-  
+
   try {
     // 查找相似的SKU模式
     const existingSkus = await prisma.productVariant.findMany({

@@ -10,7 +10,6 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 
-
 // 文件上传验证
 const uploadValidation = z.object({
   type: z.enum(['product', 'avatar', 'document']).default('product'),

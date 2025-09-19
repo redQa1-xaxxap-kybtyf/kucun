@@ -290,28 +290,28 @@ const ColorCodeGrid = React.forwardRef<HTMLDivElement, ColorCodeGridProps>(
     },
     ref
   ) => (
-      <div
-        className={cn('grid gap-2', className)}
-        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
-        ref={ref}
-        {...props}
-      >
-        {colorCodes.map(code => (
-          <ColorCodeDisplay
-            key={code}
-            colorCode={code}
-            variant={selectedColorCode === code ? 'default' : 'outline'}
-            size="sm"
-            interactive
-            onColorCodeClick={onColorCodeSelect}
-            className={cn(
-              'justify-center',
-              selectedColorCode === code && 'ring-2 ring-primary ring-offset-2'
-            )}
-          />
-        ))}
-      </div>
-    )
+    <div
+      className={cn('grid gap-2', className)}
+      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      ref={ref}
+      {...props}
+    >
+      {colorCodes.map(code => (
+        <ColorCodeDisplay
+          key={code}
+          colorCode={code}
+          variant={selectedColorCode === code ? 'default' : 'outline'}
+          size="sm"
+          interactive
+          onColorCodeClick={onColorCodeSelect}
+          className={cn(
+            'justify-center',
+            selectedColorCode === code && 'ring-2 ring-primary ring-offset-2'
+          )}
+        />
+      ))}
+    </div>
+  )
 );
 
 ColorCodeGrid.displayName = 'ColorCodeGrid';

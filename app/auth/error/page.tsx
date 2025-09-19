@@ -14,7 +14,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-
 export default function AuthErrorPage() {
   const searchParams = useSearchParams();
   const error = searchParams.get('error');

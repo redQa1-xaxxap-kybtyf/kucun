@@ -1,8 +1,8 @@
 // 产品搜索API路由
 // 为入库表单提供产品搜索功能
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -70,6 +70,7 @@ async function searchProducts(search: string, limit: number) {
       name: true,
       specification: true,
       unit: true,
+      piecesPerUnit: true,
       inventory: {
         select: {
           quantity: true,
@@ -89,6 +90,7 @@ function transformToOptions(
     name: string;
     specification: string | null;
     unit: string;
+    piecesPerUnit: number;
     inventory: Array<{ quantity: number }>;
   }>
 ): ProductOption[] {
@@ -103,6 +105,7 @@ function transformToOptions(
       label: `${product.name}${product.specification ? ` (${product.specification})` : ''}`,
       code: product.code,
       unit: product.unit,
+      piecesPerUnit: product.piecesPerUnit,
       currentStock,
     };
   });

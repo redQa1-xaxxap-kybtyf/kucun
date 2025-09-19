@@ -206,20 +206,18 @@ export const COMMON_COLOR_CODES = [
 export const calculateOrderItemSubtotal = (
   quantity: number,
   unitPrice: number
-): number => 
-   Math.round(quantity * unitPrice * 100) / 100 // 保留两位小数
-;
+): number => Math.round(quantity * unitPrice * 100) / 100; // 保留两位小数
 
-export const calculateOrderTotal = (items: SalesOrderItem[]): number => (
-    Math.round(items.reduce((total, item) => total + item.subtotal, 0) * 100) /
-    100
-  );
+export const calculateOrderTotal = (items: SalesOrderItem[]): number =>
+  Math.round(items.reduce((total, item) => total + item.subtotal, 0) * 100) /
+  100;
 
 // 订单状态检查函数
 export const canTransitionToStatus = (
   currentStatus: SalesOrderStatus,
   targetStatus: SalesOrderStatus
-): boolean => SALES_ORDER_STATUS_TRANSITIONS[currentStatus].includes(targetStatus);
+): boolean =>
+  SALES_ORDER_STATUS_TRANSITIONS[currentStatus].includes(targetStatus);
 
 // 订单状态颜色映射
 export const getStatusColor = (status: SalesOrderStatus): string => {

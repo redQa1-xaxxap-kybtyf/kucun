@@ -3,18 +3,17 @@
 
 import { cva, type VariantProps } from 'class-variance-authority';
 import {
-    AlertCircle,
-    AlertTriangle,
-    CheckCircle,
-    Package,
-    TrendingUp,
-    XCircle
+  AlertCircle,
+  AlertTriangle,
+  CheckCircle,
+  Package,
+  TrendingUp,
+  XCircle,
 } from 'lucide-react';
 import * as React from 'react';
 
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-
 
 // 库存状态枚举
 export type InventoryStatus =
@@ -338,40 +337,42 @@ const QuickStatusToggle = React.forwardRef<
     },
     ref
   ) => (
-      <div
-        className={cn('flex flex-wrap gap-2', className)}
-        ref={ref}
-        {...props}
-      >
-        {availableStatuses.map(status => {
-          const StatusIcon = STATUS_ICONS[status];
-          const isActive = currentStatus === status;
+    <div className={cn('flex flex-wrap gap-2', className)} ref={ref} {...props}>
+      {availableStatuses.map(status => {
+        const StatusIcon = STATUS_ICONS[status];
+        const isActive = currentStatus === status;
 
-          return (
-            <button
-              key={status}
-              type="button"
-              onClick={() => onStatusChange(status)}
-              className={cn(
-                'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors',
-                'hover:bg-accent hover:text-accent-foreground',
-                'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
-                isActive
-                  ? inventoryStatusVariants({ status })
-                  : 'border border-border bg-background'
-              )}
-            >
-              <StatusIcon className="h-3 w-3" />
-              <span>{STATUS_LABELS[status]}</span>
-            </button>
-          );
-        })}
-      </div>
-    )
+        return (
+          <button
+            key={status}
+            type="button"
+            onClick={() => onStatusChange(status)}
+            className={cn(
+              'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors',
+              'hover:bg-accent hover:text-accent-foreground',
+              'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+              isActive
+                ? inventoryStatusVariants({ status })
+                : 'border border-border bg-background'
+            )}
+          >
+            <StatusIcon className="h-3 w-3" />
+            <span>{STATUS_LABELS[status]}</span>
+          </button>
+        );
+      })}
+    </div>
+  )
 );
 
 QuickStatusToggle.displayName = 'QuickStatusToggle';
 
 export {
-    ALERT_LEVEL_COLORS, InventoryHealth, InventoryStatusIndicator, inventoryStatusVariants, QuickStatusToggle, STATUS_ICONS, STATUS_LABELS
+  ALERT_LEVEL_COLORS,
+  InventoryHealth,
+  InventoryStatusIndicator,
+  inventoryStatusVariants,
+  QuickStatusToggle,
+  STATUS_ICONS,
+  STATUS_LABELS,
 };

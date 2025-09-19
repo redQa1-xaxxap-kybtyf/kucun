@@ -8,9 +8,16 @@ import { prisma } from '@/lib/db';
 
 // 产品变体更新输入验证
 const ProductVariantUpdateSchema = z.object({
-  colorCode: z.string().min(1, '色号不能为空').max(20, '色号不能超过20个字符').optional(),
+  colorCode: z
+    .string()
+    .min(1, '色号不能为空')
+    .max(20, '色号不能超过20个字符')
+    .optional(),
   colorName: z.string().max(50, '色号名称不能超过50个字符').optional(),
-  colorValue: z.string().regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确').optional(),
+  colorValue: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确')
+    .optional(),
   sku: z.string().max(50, 'SKU不能超过50个字符').optional(),
   status: z.enum(['active', 'inactive']).optional(),
 });
@@ -81,8 +88,14 @@ export async function GET(
     }
 
     // 计算库存汇总
-    const totalInventory = variant.inventory.reduce((sum, inv) => sum + inv.quantity, 0);
-    const reservedInventory = variant.inventory.reduce((sum, inv) => sum + inv.reservedQuantity, 0);
+    const totalInventory = variant.inventory.reduce(
+      (sum, inv) => sum + inv.quantity,
+      0
+    );
+    const reservedInventory = variant.inventory.reduce(
+      (sum, inv) => sum + inv.reservedQuantity,
+      0
+    );
 
     // 转换数据格式
     const formattedVariant = {
@@ -188,7 +201,10 @@ export async function PUT(
     }
 
     // 如果更新色号，检查同一产品下是否已存在该色号
-    if (updateData.colorCode && updateData.colorCode !== existingVariant.colorCode) {
+    if (
+      updateData.colorCode &&
+      updateData.colorCode !== existingVariant.colorCode
+    ) {
       const duplicateVariant = await prisma.productVariant.findFirst({
         where: {
           productId: existingVariant.productId,
@@ -243,8 +259,14 @@ export async function PUT(
     });
 
     // 计算库存汇总
-    const totalInventory = updatedVariant.inventory.reduce((sum, inv) => sum + inv.quantity, 0);
-    const reservedInventory = updatedVariant.inventory.reduce((sum, inv) => sum + inv.reservedQuantity, 0);
+    const totalInventory = updatedVariant.inventory.reduce(
+      (sum, inv) => sum + inv.quantity,
+      0
+    );
+    const reservedInventory = updatedVariant.inventory.reduce(
+      (sum, inv) => sum + inv.reservedQuantity,
+      0
+    );
 
     // 转换数据格式
     const formattedVariant = {
@@ -323,7 +345,9 @@ export async function DELETE(
     }
 
     // 检查是否有库存记录
-    const hasInventory = existingVariant.inventory.some(inv => inv.quantity > 0);
+    const hasInventory = existingVariant.inventory.some(
+      inv => inv.quantity > 0
+    );
     if (hasInventory) {
       return NextResponse.json(
         { success: false, error: '该变体仍有库存，无法删除' },
@@ -332,7 +356,7 @@ export async function DELETE(
     }
 
     // 使用事务删除变体及其相关数据
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       // 删除库存记录（如果有零库存记录）
       await tx.inventory.deleteMany({
         where: { variantId: id },

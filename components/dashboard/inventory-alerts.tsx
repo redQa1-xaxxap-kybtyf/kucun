@@ -4,13 +4,13 @@
 'use client';
 
 import {
-    AlertTriangle,
-    Clock,
-    ExternalLink,
-    Package,
-    RefreshCw,
-    X,
-    XCircle
+  AlertTriangle,
+  Clock,
+  ExternalLink,
+  Package,
+  RefreshCw,
+  X,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
@@ -18,18 +18,17 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { dashboardUtils, useDismissAlert } from '@/lib/api/dashboard';
 import type { InventoryAlert } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
-
 
 // 使用T11组件库
 
@@ -287,10 +286,14 @@ const InventoryAlerts = React.forwardRef<HTMLDivElement, InventoryAlertsProps>(
     };
 
     // 按预警级别排序
-    const sortedAlerts = React.useMemo(() => [...alerts].sort((a, b) => {
-        const levelOrder = { critical: 3, danger: 2, warning: 1 };
-        return levelOrder[b.alertLevel] - levelOrder[a.alertLevel];
-      }), [alerts]);
+    const sortedAlerts = React.useMemo(
+      () =>
+        [...alerts].sort((a, b) => {
+          const levelOrder = { critical: 3, danger: 2, warning: 1 };
+          return levelOrder[b.alertLevel] - levelOrder[a.alertLevel];
+        }),
+      [alerts]
+    );
 
     // 统计信息
     const alertStats = React.useMemo(() => {

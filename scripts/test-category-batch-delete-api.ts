@@ -20,28 +20,39 @@ async function testCategoryBatchDeleteAPI() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ categoryIds: [] }),
         });
-        
+
         const result = await response.json();
-        return response.status === 400 && 
-               result.error === '输入数据无效' &&
-               result.details?.some((d: any) => d.message?.includes('至少需要选择一个分类'));
-      }
+        return (
+          response.status === 400 &&
+          result.error === '输入数据无效' &&
+          result.details?.some((d: any) =>
+            d.message?.includes('至少需要选择一个分类')
+          )
+        );
+      },
     },
     {
       name: '测试超过限制的输入验证',
       test: async () => {
-        const categoryIds = Array.from({ length: 101 }, (_, i) => `test-id-${i}`);
+        const categoryIds = Array.from(
+          { length: 101 },
+          (_, i) => `test-id-${i}`
+        );
         const response = await fetch(apiUrl, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ categoryIds }),
         });
-        
+
         const result = await response.json();
-        return response.status === 400 && 
-               result.error === '输入数据无效' &&
-               result.details?.some((d: any) => d.message?.includes('一次最多只能删除100个分类'));
-      }
+        return (
+          response.status === 400 &&
+          result.error === '输入数据无效' &&
+          result.details?.some((d: any) =>
+            d.message?.includes('一次最多只能删除100个分类')
+          )
+        );
+      },
     },
     {
       name: '测试无效分类ID格式',
@@ -51,10 +62,10 @@ async function testCategoryBatchDeleteAPI() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ categoryIds: ['', '   ', null] }),
         });
-        
+
         const result = await response.json();
         return response.status === 400 && result.error === '输入数据无效';
-      }
+      },
     },
     {
       name: '测试不存在的分类ID',
@@ -62,20 +73,24 @@ async function testCategoryBatchDeleteAPI() {
         const response = await fetch(apiUrl, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ categoryIds: ['non-existent-id-1', 'non-existent-id-2'] }),
+          body: JSON.stringify({
+            categoryIds: ['non-existent-id-1', 'non-existent-id-2'],
+          }),
         });
-        
+
         if (response.status === 401) {
           console.log('     ℹ️  需要身份验证，跳过此测试');
           return true;
         }
-        
+
         const result = await response.json();
-        return response.status === 200 && 
-               result.success === true &&
-               result.data?.deletedCount === 0 &&
-               result.data?.failedCount === 2;
-      }
+        return (
+          response.status === 200 &&
+          result.success === true &&
+          result.data?.deletedCount === 0 &&
+          result.data?.failedCount === 2
+        );
+      },
     },
     {
       name: '测试API端点响应格式',
@@ -85,19 +100,21 @@ async function testCategoryBatchDeleteAPI() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ categoryIds: ['test-id'] }),
         });
-        
+
         if (response.status === 401) {
           console.log('     ℹ️  需要身份验证，跳过此测试');
           return true;
         }
-        
+
         const result = await response.json();
-        return result.hasOwnProperty('success') && 
-               result.hasOwnProperty('data') &&
-               result.data?.hasOwnProperty('deletedCount') &&
-               result.data?.hasOwnProperty('failedCount') &&
-               result.data?.hasOwnProperty('message');
-      }
+        return (
+          result.hasOwnProperty('success') &&
+          result.hasOwnProperty('data') &&
+          result.data?.hasOwnProperty('deletedCount') &&
+          result.data?.hasOwnProperty('failedCount') &&
+          result.data?.hasOwnProperty('message')
+        );
+      },
     },
     {
       name: '测试API端点可访问性',
@@ -108,15 +125,15 @@ async function testCategoryBatchDeleteAPI() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ categoryIds: ['test'] }),
           });
-          
+
           // 只要能连接到API端点就算成功（不管是401还是其他状态）
           return response.status !== undefined;
         } catch (error) {
           console.log(`     ❌ API端点不可访问: ${error}`);
           return false;
         }
-      }
-    }
+      },
+    },
   ];
 
   let passedTests = 0;
@@ -142,20 +159,21 @@ async function testCategoryBatchDeleteAPI() {
 
   if (passedTests === totalTests) {
     console.log('🎉 分类批量删除API功能测试全部通过！');
-    
+
     console.log('\n✅ 验证的功能:');
     console.log('   🔒 输入验证（空数组、超限、无效格式）');
     console.log('   🛡️  安全检查（不存在的分类ID处理）');
     console.log('   📋 响应格式标准化');
     console.log('   🌐 API端点可访问性');
-    
+
     console.log('\n💡 API使用说明:');
     console.log('   📍 端点: DELETE /api/categories/batch');
     console.log('   📝 请求体: { "categoryIds": ["id1", "id2", ...] }');
-    console.log('   📊 响应: { "success": boolean, "data": BatchDeleteResult }');
+    console.log(
+      '   📊 响应: { "success": boolean, "data": BatchDeleteResult }'
+    );
     console.log('   🔢 限制: 1-100个分类ID');
     console.log('   🔐 需要: 用户身份验证');
-    
   } else {
     console.log('❌ 部分API功能测试失败');
     console.log('\n🔧 可能的问题:');

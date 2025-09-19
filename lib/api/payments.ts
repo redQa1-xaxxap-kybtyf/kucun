@@ -299,39 +299,45 @@ export const paymentsApi = {
 };
 
 // React Query Hooks
-export const usePaymentRecords = (query: PaymentRecordQuery) => useQuery({
+export const usePaymentRecords = (query: PaymentRecordQuery) =>
+  useQuery({
     queryKey: paymentQueryKeys.list(query),
     queryFn: () => paymentsApi.getPaymentRecords(query),
     staleTime: 5 * 60 * 1000, // 5分钟
   });
 
-export const usePaymentRecord = (id: string) => useQuery({
+export const usePaymentRecord = (id: string) =>
+  useQuery({
     queryKey: paymentQueryKeys.detail(id),
     queryFn: () => paymentsApi.getPaymentRecord(id),
     enabled: !!id,
     staleTime: 5 * 60 * 1000,
   });
 
-export const useAccountsReceivable = (query: AccountsReceivableQuery) => useQuery({
+export const useAccountsReceivable = (query: AccountsReceivableQuery) =>
+  useQuery({
     queryKey: paymentQueryKeys.accountsReceivableList(query),
     queryFn: () => paymentsApi.getAccountsReceivable(query),
     staleTime: 5 * 60 * 1000,
   });
 
-export const usePaymentStatistics = (query: any = {}) => useQuery({
+export const usePaymentStatistics = (query: any = {}) =>
+  useQuery({
     queryKey: paymentQueryKeys.statisticsData(query),
     queryFn: () => paymentsApi.getPaymentStatistics(query),
     staleTime: 10 * 60 * 1000, // 10分钟
   });
 
-export const useSalesOrderPayments = (salesOrderId: string) => useQuery({
+export const useSalesOrderPayments = (salesOrderId: string) =>
+  useQuery({
     queryKey: paymentQueryKeys.salesOrderPayments(salesOrderId),
     queryFn: () => paymentsApi.getSalesOrderPayments(salesOrderId),
     enabled: !!salesOrderId,
     staleTime: 5 * 60 * 1000,
   });
 
-export const useCustomerPayments = (customerId: string) => useQuery({
+export const useCustomerPayments = (customerId: string) =>
+  useQuery({
     queryKey: paymentQueryKeys.customerPayments(customerId),
     queryFn: () => paymentsApi.getCustomerPayments(customerId),
     enabled: !!customerId,
@@ -432,7 +438,8 @@ export const useCancelPayment = () => {
 
 // 工具函数
 export const paymentUtils = {
-  formatAmount: (amount: number): string => new Intl.NumberFormat('zh-CN', {
+  formatAmount: (amount: number): string =>
+    new Intl.NumberFormat('zh-CN', {
       style: 'currency',
       currency: 'CNY',
     }).format(amount),
@@ -497,7 +504,8 @@ export const paymentUtils = {
     return `PAY-${year}${month}${day}-${timestamp}`;
   },
 
-  validatePaymentAmount: (amount: number, maxAmount: number): boolean => amount > 0 && amount <= maxAmount,
+  validatePaymentAmount: (amount: number, maxAmount: number): boolean =>
+    amount > 0 && amount <= maxAmount,
 
   formatTimeAgo: (date: string): string => {
     const now = new Date();

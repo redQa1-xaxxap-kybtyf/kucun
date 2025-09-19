@@ -9,12 +9,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
@@ -233,7 +233,8 @@ function MobileDataTable<T extends Record<string, any>>({
                 <TableRow
                   key={getRowKey(record, index)}
                   className={cn(
-                    (onRowClick || onItemClick) && 'cursor-pointer hover:bg-muted/50'
+                    (onRowClick || onItemClick) &&
+                      'cursor-pointer hover:bg-muted/50'
                   )}
                   onClick={() => handleRowClick(record, index)}
                 >
@@ -360,7 +361,7 @@ function MobileDataTable<T extends Record<string, any>>({
 }
 
 // 预设的列类型
-export const createTextColumn = <T, >(
+export const createTextColumn = <T,>(
   key: string,
   title: string,
   options?: Partial<ColumnDef<T>>
@@ -370,7 +371,7 @@ export const createTextColumn = <T, >(
   ...options,
 });
 
-export const createBadgeColumn = <T, >(
+export const createBadgeColumn = <T,>(
   key: string,
   title: string,
   badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'default',
@@ -383,7 +384,7 @@ export const createBadgeColumn = <T, >(
   ...options,
 });
 
-export const createDateColumn = <T, >(
+export const createDateColumn = <T,>(
   key: string,
   title: string,
   format: (date: string | Date) => string = date =>
@@ -396,7 +397,7 @@ export const createDateColumn = <T, >(
   ...options,
 });
 
-export const createNumberColumn = <T, >(
+export const createNumberColumn = <T,>(
   key: string,
   title: string,
   formatter?: (value: number) => string,

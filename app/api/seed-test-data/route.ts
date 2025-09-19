@@ -9,26 +9,26 @@ export async function POST() {
       where: {
         product: {
           code: {
-            startsWith: 'TEST'
-          }
-        }
-      }
+            startsWith: 'TEST',
+          },
+        },
+      },
     });
     await prisma.productVariant.deleteMany({
       where: {
         product: {
           code: {
-            startsWith: 'TEST'
-          }
-        }
-      }
+            startsWith: 'TEST',
+          },
+        },
+      },
     });
     await prisma.product.deleteMany({
       where: {
         code: {
-          startsWith: 'TEST'
-        }
-      }
+          startsWith: 'TEST',
+        },
+      },
     });
 
     // 场景1：同产品多色号场景 - 高端瓷砖系列
@@ -270,7 +270,7 @@ export async function POST() {
         batchNumber: 'LUX-W001-001',
         quantity: 150,
         reservedQuantity: 20,
-        unitCost: 45.50,
+        unitCost: 45.5,
         location: '仓库A-01-A',
       },
       // 第二批次 - 同色号不同批次
@@ -282,7 +282,7 @@ export async function POST() {
         batchNumber: 'LUX-W001-002',
         quantity: 80,
         reservedQuantity: 5,
-        unitCost: 46.00,
+        unitCost: 46.0,
         location: '仓库A-01-B',
       }
     );
@@ -296,7 +296,7 @@ export async function POST() {
       batchNumber: 'LUX-G001-001',
       quantity: 100,
       reservedQuantity: 85, // 高预留库存
-      unitCost: 47.00,
+      unitCost: 47.0,
       location: '仓库A-02-A',
     });
 
@@ -309,7 +309,7 @@ export async function POST() {
       batchNumber: 'LUX-B001-001',
       quantity: 8, // 低库存
       reservedQuantity: 2,
-      unitCost: 48.50,
+      unitCost: 48.5,
       location: '仓库A-03-A',
     });
 
@@ -322,7 +322,7 @@ export async function POST() {
       batchNumber: 'LUX-Y001-001',
       quantity: 0, // 零库存
       reservedQuantity: 0,
-      unitCost: 52.00,
+      unitCost: 52.0,
       location: '仓库A-04-A',
     });
 
@@ -335,7 +335,7 @@ export async function POST() {
       batchNumber: 'LUX-R001-001',
       quantity: 60,
       reservedQuantity: 10,
-      unitCost: 50.00,
+      unitCost: 50.0,
       location: '仓库B-01-A',
     });
 
@@ -351,7 +351,7 @@ export async function POST() {
       batchNumber: 'CLS-600-A001-001',
       quantity: 200,
       reservedQuantity: 30,
-      unitCost: 28.50,
+      unitCost: 28.5,
       location: '仓库B-02-A',
     });
 
@@ -364,7 +364,7 @@ export async function POST() {
       batchNumber: 'CLS-800-A001-001',
       quantity: 120,
       reservedQuantity: 15,
-      unitCost: 35.00,
+      unitCost: 35.0,
       location: '仓库B-02-B',
     });
 
@@ -378,7 +378,7 @@ export async function POST() {
         batchNumber: 'CLS-600-A002-001',
         quantity: 90,
         reservedQuantity: 12,
-        unitCost: 29.00,
+        unitCost: 29.0,
         location: '仓库B-03-A',
       },
       {
@@ -389,7 +389,7 @@ export async function POST() {
         batchNumber: 'CLS-600-A002-002',
         quantity: 110,
         reservedQuantity: 8,
-        unitCost: 29.50,
+        unitCost: 29.5,
         location: '仓库B-03-B',
       }
     );
@@ -403,7 +403,7 @@ export async function POST() {
       batchNumber: 'CLS-600-A003-001',
       quantity: 10, // 刚好库存预警线
       reservedQuantity: 0,
-      unitCost: 27.50,
+      unitCost: 27.5,
       location: '仓库B-04-A',
     });
 
@@ -419,7 +419,7 @@ export async function POST() {
         batchNumber: 'MOD-M001-001',
         quantity: 75,
         reservedQuantity: 5,
-        unitCost: 32.00,
+        unitCost: 32.0,
         location: '仓库C-01-A',
       },
       {
@@ -430,7 +430,7 @@ export async function POST() {
         batchNumber: 'MOD-M002-001',
         quantity: 65,
         reservedQuantity: 10,
-        unitCost: 33.50,
+        unitCost: 33.5,
         location: '仓库C-02-A',
       }
     );
@@ -447,7 +447,7 @@ export async function POST() {
         batchNumber: 'IND-I001-001',
         quantity: 500, // 大批量
         reservedQuantity: 50,
-        unitCost: 15.00,
+        unitCost: 15.0,
         location: '仓库D-01-A',
       },
       {
@@ -458,7 +458,7 @@ export async function POST() {
         batchNumber: 'IND-I002-001',
         quantity: 300,
         reservedQuantity: 25,
-        unitCost: 16.50,
+        unitCost: 16.5,
         location: '仓库D-02-A',
       }
     );
@@ -474,7 +474,7 @@ export async function POST() {
         batchNumber: 'CLS-800-A002-HIGH',
         quantity: 1000, // 超高库存
         reservedQuantity: 100,
-        unitCost: 36.00,
+        unitCost: 36.0,
         location: '仓库E-01-A',
       },
       // 库存等于预留（边界情况）
@@ -486,7 +486,7 @@ export async function POST() {
         batchNumber: 'MOD-M001-EDGE',
         quantity: 25,
         reservedQuantity: 25, // 库存等于预留
-        unitCost: 32.50,
+        unitCost: 32.5,
         location: '仓库E-02-A',
       }
     );
@@ -499,7 +499,12 @@ export async function POST() {
     // 统计创建的数据
     const stats = {
       products: 5,
-      variants: luxuryVariants.length + classic600Variants.length + classic800Variants.length + modernVariants.length + industrialVariants.length,
+      variants:
+        luxuryVariants.length +
+        classic600Variants.length +
+        classic800Variants.length +
+        modernVariants.length +
+        industrialVariants.length,
       inventory: createdInventory.length,
       scenarios: {
         multiColorSameProduct: luxuryVariants.length,
@@ -510,7 +515,7 @@ export async function POST() {
         highReservedItems: 2, // 卡拉拉灰、库存等于预留
         locations: ['仓库A', '仓库B', '仓库C', '仓库D', '仓库E'],
         productionDateRange: '2024-01-15 到 2024-03-25',
-      }
+      },
     };
 
     return NextResponse.json({

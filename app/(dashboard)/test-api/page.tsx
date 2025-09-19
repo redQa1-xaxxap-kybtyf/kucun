@@ -14,7 +14,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 
-
 // API imports
 import { getCustomers, customerQueryKeys } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';

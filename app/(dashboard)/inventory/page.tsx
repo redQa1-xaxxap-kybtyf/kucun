@@ -1,12 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-    AlertTriangle,
-    Package,
-    Plus,
-    Search
-} from 'lucide-react';
+import { AlertTriangle, Package, Plus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
@@ -15,21 +10,20 @@ import { BatchInventoryTable } from '@/components/inventory/BatchInventoryTable'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
-import { ColorCodeDisplay } from '@/components/ui/color-code-display';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 
@@ -38,6 +32,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 // API and Types
 import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
+import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
+import { formatInventoryQuantity } from '@/lib/utils/piece-calculation';
 
 /**
  * 库存管理页面
@@ -58,7 +54,9 @@ export default function InventoryPage() {
   });
 
   // 展开的变体组
-  const [expandedVariants, setExpandedVariants] = React.useState<Set<string>>(new Set());
+  const [expandedVariants, setExpandedVariants] = React.useState<Set<string>>(
+    new Set()
+  );
 
   // 视图模式：table（表格）或 grouped（分组）
   const [viewMode, setViewMode] = React.useState<'table' | 'grouped'>('table');
@@ -140,8 +138,20 @@ export default function InventoryPage() {
     {
       key: 'quantity',
       title: '库存数量',
-      render: (item: Inventory) =>
-        `${item.quantity} ${item.product?.unit || ''}`,
+      render: (item: Inventory) => {
+        if (!item.product?.piecesPerUnit) {
+          // 如果没有每件片数信息，使用原有显示方式
+          const unit = item.product?.unit
+            ? PRODUCT_UNIT_LABELS[
+                item.product.unit as keyof typeof PRODUCT_UNIT_LABELS
+              ] || item.product.unit
+            : '件';
+          return `${item.quantity} ${unit}`;
+        }
+
+        // 使用片数计算显示
+        return formatInventoryQuantity(item.quantity, item.product, true);
+      },
     },
     {
       key: 'status',
@@ -320,7 +330,7 @@ export default function InventoryPage() {
             inventoryData={data.data}
             groupByVariant={viewMode === 'grouped'}
             showVariantInfo={true}
-            onRowClick={(inventory) => {
+            onRowClick={inventory => {
               // 可以添加行点击处理逻辑
               console.log('点击库存记录:', inventory);
             }}
@@ -329,8 +339,8 @@ export default function InventoryPage() {
       ) : (
         <Card>
           <CardContent className="pt-6">
-            <div className="text-center py-8 text-muted-foreground">
-              <Package className="mx-auto h-12 w-12 mb-4" />
+            <div className="py-8 text-center text-muted-foreground">
+              <Package className="mx-auto mb-4 h-12 w-12" />
               <p>暂无库存数据</p>
               <p className="text-sm">请检查筛选条件或添加库存记录</p>
             </div>

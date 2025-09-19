@@ -76,7 +76,9 @@ async function testGetCategories(): Promise<TestResult> {
     }
 
     // 验证返回的数据不包含描述字段
-    const hasDescription = data.data.some((category: any) => 'description' in category);
+    const hasDescription = data.data.some(
+      (category: any) => 'description' in category
+    );
     if (hasDescription) {
       return {
         success: false,
@@ -101,16 +103,19 @@ async function testUpdateCategory(categoryId: string): Promise<TestResult> {
   try {
     console.log('🧪 测试更新分类（无描述字段）...');
 
-    const response = await fetch(`http://localhost:3005/api/categories/${categoryId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        name: '更新后的分类名称',
-        sortOrder: 1,
-      }),
-    });
+    const response = await fetch(
+      `http://localhost:3005/api/categories/${categoryId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: '更新后的分类名称',
+          sortOrder: 1,
+        }),
+      }
+    );
 
     const data = await response.json();
 
@@ -183,7 +188,9 @@ async function runTests() {
   // 1. 测试数据库Schema
   const schemaResult = await testDatabaseSchema();
   results.push(schemaResult);
-  console.log(`${schemaResult.success ? '✅' : '❌'} ${schemaResult.message}\n`);
+  console.log(
+    `${schemaResult.success ? '✅' : '❌'} ${schemaResult.message}\n`
+  );
 
   // 2. 测试创建分类
   const createResult = await testCreateCategory();
@@ -204,7 +211,9 @@ async function runTests() {
   if (createdCategoryId) {
     const updateResult = await testUpdateCategory(createdCategoryId);
     results.push(updateResult);
-    console.log(`${updateResult.success ? '✅' : '❌'} ${updateResult.message}\n`);
+    console.log(
+      `${updateResult.success ? '✅' : '❌'} ${updateResult.message}\n`
+    );
   }
 
   // 输出测试总结

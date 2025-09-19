@@ -72,7 +72,7 @@ import type {
   Category,
   CategoryQueryParams,
   BatchDeleteCategoriesInput,
-  BatchDeleteResult
+  BatchDeleteResult,
 } from '@/lib/api/categories';
 import {
   batchDeleteCategories,
@@ -99,9 +99,9 @@ function CategoriesPage() {
   });
 
   // 批量选择状态
-  const [selectedCategoryIds, setSelectedCategoryIds] = React.useState<string[]>(
-    []
-  );
+  const [selectedCategoryIds, setSelectedCategoryIds] = React.useState<
+    string[]
+  >([]);
 
   // 删除确认对话框状态
   const [deleteDialog, setDeleteDialog] = React.useState<{
@@ -314,8 +314,9 @@ function CategoriesPage() {
     if (selectedCategoryIds.length === 0) return;
 
     const selectedCategories =
-      data?.data?.filter(category => selectedCategoryIds.includes(category.id)) ||
-      [];
+      data?.data?.filter(category =>
+        selectedCategoryIds.includes(category.id)
+      ) || [];
 
     setBatchDeleteDialog({
       open: true,
@@ -724,7 +725,9 @@ function CategoriesPage() {
                     </div>
                   </div>
                   <Badge
-                    variant={category.status === 'active' ? 'default' : 'secondary'}
+                    variant={
+                      category.status === 'active' ? 'default' : 'secondary'
+                    }
                   >
                     {category.status === 'active' ? '启用' : '禁用'}
                   </Badge>

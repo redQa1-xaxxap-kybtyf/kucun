@@ -24,7 +24,6 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
 
-
 /**
  * 搜索结果项类型
  */

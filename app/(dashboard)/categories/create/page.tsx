@@ -17,21 +17,21 @@ import type { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 
@@ -60,17 +60,19 @@ export default function CreateCategoryPage() {
   });
 
   // 获取父级分类列表
-  const { data: categoriesResponse, isLoading: isCategoriesLoading } = useQuery({
-    queryKey: ['categories', { status: 'active' }],
-    queryFn: () => getCategories({ status: 'active', limit: 100 }),
-  });
+  const { data: categoriesResponse, isLoading: isCategoriesLoading } = useQuery(
+    {
+      queryKey: ['categories', { status: 'active' }],
+      queryFn: () => getCategories({ status: 'active', limit: 100 }),
+    }
+  );
 
   const parentCategories = categoriesResponse?.data || [];
 
   // 创建分类Mutation
   const createMutation = useMutation({
     mutationFn: createCategory,
-    onSuccess: (data) => {
+    onSuccess: data => {
       // 先显示成功提示
       toast({
         title: '创建成功',
@@ -86,7 +88,7 @@ export default function CreateCategoryPage() {
         router.push('/categories');
       }, 1500);
     },
-    onError: (error) => {
+    onError: error => {
       const errorMessage = error instanceof Error ? error.message : '创建失败';
       toast({
         title: '创建失败',
@@ -106,16 +108,11 @@ export default function CreateCategoryPage() {
     createMutation.mutate(submitData);
   };
 
-
   return (
     <div className="space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center gap-4">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-        >
+        <Button variant="ghost" size="sm" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
@@ -132,7 +129,7 @@ export default function CreateCategoryPage() {
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* 分类名称 */}
                 <FormField
                   control={form.control}
@@ -141,10 +138,7 @@ export default function CreateCategoryPage() {
                     <FormItem>
                       <FormLabel>分类名称 *</FormLabel>
                       <FormControl>
-                        <Input
-                          placeholder="请输入分类名称"
-                          {...field}
-                        />
+                        <Input placeholder="请输入分类名称" {...field} />
                       </FormControl>
                       <FormDescription>
                         分类的显示名称，最多50个字符
@@ -153,7 +147,6 @@ export default function CreateCategoryPage() {
                     </FormItem>
                   )}
                 />
-
 
                 {/* 父级分类 */}
                 <FormField
@@ -174,7 +167,7 @@ export default function CreateCategoryPage() {
                         </FormControl>
                         <SelectContent>
                           <SelectItem value="none">无（顶级分类）</SelectItem>
-                          {parentCategories.map((category) => (
+                          {parentCategories.map(category => (
                             <SelectItem key={category.id} value={category.id}>
                               {category.name}
                             </SelectItem>
@@ -201,18 +194,17 @@ export default function CreateCategoryPage() {
                           type="number"
                           placeholder="0"
                           {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          onChange={e =>
+                            field.onChange(parseInt(e.target.value) || 0)
+                          }
                         />
                       </FormControl>
-                      <FormDescription>
-                        数字越小排序越靠前
-                      </FormDescription>
+                      <FormDescription>数字越小排序越靠前</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-
 
               {/* 提交按钮 */}
               <div className="flex justify-end gap-4">
@@ -226,7 +218,9 @@ export default function CreateCategoryPage() {
                 <Button
                   type="submit"
                   disabled={createMutation.isPending}
-                  className={createMutation.isPending ? 'cursor-not-allowed' : ''}
+                  className={
+                    createMutation.isPending ? 'cursor-not-allowed' : ''
+                  }
                 >
                   {createMutation.isPending ? (
                     <>

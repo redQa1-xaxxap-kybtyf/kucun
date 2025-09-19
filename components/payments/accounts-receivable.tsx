@@ -5,54 +5,50 @@
 
 import { format } from 'date-fns';
 import {
-    AlertTriangle,
-    CheckCircle,
-    Clock,
-    DollarSign,
-    Eye,
-    MoreHorizontal,
-    Plus,
-    RefreshCw,
-    Search,
-    TrendingUp,
-    XCircle
+  AlertTriangle,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Eye,
+  MoreHorizontal,
+  Plus,
+  RefreshCw,
+  Search,
+  TrendingUp,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
-    Card,
-    CardContent
-} from '@/components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { MobileDataTable } from '@/components/ui/mobile-data-table';
 import { Progress } from '@/components/ui/progress';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { paymentUtils } from '@/lib/api/payments';
 import type {
-    AccountsReceivable,
-    AccountsReceivableQuery,
-    PaymentStatistics,
+  AccountsReceivable,
+  AccountsReceivableQuery,
+  PaymentStatistics,
 } from '@/lib/types/payment';
 import { cn } from '@/lib/utils';
-
 
 // 使用T11移动端组件
 

@@ -144,20 +144,16 @@ async function seedCategories() {
           },
         },
       },
-      orderBy: [
-        { parentId: 'asc' },
-        { sortOrder: 'asc' },
-      ],
+      orderBy: [{ parentId: 'asc' }, { sortOrder: 'asc' }],
     });
 
     console.log('\n创建的分类列表：');
-    categories.forEach((category) => {
+    categories.forEach(category => {
       const level = category.parentId ? '  └─ ' : '';
       console.log(
         `${level}${category.name} (${category.code}) - ${category.status} - 产品数: ${category._count.products}`
       );
     });
-
   } catch (error) {
     console.error('创建分类数据失败:', error);
     throw error;

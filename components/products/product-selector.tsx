@@ -7,17 +7,17 @@ import { useCallback, useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
 } from '@/components/ui/command';
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from '@/components/ui/popover';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { cn } from '@/lib/utils';
@@ -57,21 +57,25 @@ export function ProductSelector({
       status: filterStatus === 'all' ? undefined : filterStatus,
       limit: 100,
     }),
-    queryFn: () => getProducts({
-      search: searchValue,
-      status: filterStatus === 'all' ? undefined : filterStatus,
-      limit: 100,
-    }),
+    queryFn: () =>
+      getProducts({
+        search: searchValue,
+        status: filterStatus === 'all' ? undefined : filterStatus,
+        limit: 100,
+      }),
   });
 
   const products = productsResponse?.data || [];
   const selectedProduct = products.find(product => product.id === value);
 
-  const handleSelect = useCallback((productId: string) => {
-    onValueChange(productId);
-    onProductChange?.(productId);
-    setOpen(false);
-  }, [onValueChange, onProductChange]);
+  const handleSelect = useCallback(
+    (productId: string) => {
+      onValueChange(productId);
+      onProductChange?.(productId);
+      setOpen(false);
+    },
+    [onValueChange, onProductChange]
+  );
 
   const handleSearchChange = useCallback((search: string) => {
     setSearchValue(search);
@@ -81,94 +85,96 @@ export function ProductSelector({
     <div className="space-y-2">
       {label && <label className="text-sm font-medium">{label}</label>}
       <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          className={cn(
-            'w-full justify-between',
-            !value && 'text-muted-foreground',
-            className
-          )}
-          disabled={disabled}
-        >
-          {selectedProduct ? (
-            <div className="flex items-center gap-2 truncate">
-              <span className="truncate">
-                {showCode && selectedProduct.code && (
-                  <span className="font-mono text-sm text-muted-foreground">
-                    {selectedProduct.code}
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              'w-full justify-between',
+              !value && 'text-muted-foreground',
+              className
+            )}
+            disabled={disabled}
+          >
+            {selectedProduct ? (
+              <div className="flex items-center gap-2 truncate">
+                <span className="truncate">
+                  {showCode && selectedProduct.code && (
+                    <span className="font-mono text-sm text-muted-foreground">
+                      {selectedProduct.code}
+                    </span>
+                  )}
+                  <span
+                    className={showCode && selectedProduct.code ? 'ml-2' : ''}
+                  >
+                    {selectedProduct.name}
                   </span>
-                )}
-                <span className={showCode && selectedProduct.code ? 'ml-2' : ''}>
-                  {selectedProduct.name}
                 </span>
-              </span>
-              {selectedProduct.status === 'inactive' && (
-                <Badge variant="secondary" className="text-xs">
-                  停用
-                </Badge>
-              )}
-            </div>
-          ) : (
-            placeholder
-          )}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-full p-0" align="start">
-        <Command>
-          <CommandInput
-            placeholder="搜索产品..."
-            value={searchValue}
-            onValueChange={handleSearchChange}
-          />
-          <CommandList>
-            <CommandEmpty>
-              {isLoading ? '加载中...' : '未找到产品'}
-            </CommandEmpty>
-            <CommandGroup>
-              {products.map((product) => (
-                <CommandItem
-                  key={product.id}
-                  value={product.id}
-                  onSelect={() => handleSelect(product.id)}
-                  className="flex items-center justify-between"
-                >
-                  <div className="flex flex-col gap-1 flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      {showCode && product.code && (
-                        <span className="font-mono text-sm text-muted-foreground">
-                          {product.code}
+                {selectedProduct.status === 'inactive' && (
+                  <Badge variant="secondary" className="text-xs">
+                    停用
+                  </Badge>
+                )}
+              </div>
+            ) : (
+              placeholder
+            )}
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-full p-0" align="start">
+          <Command>
+            <CommandInput
+              placeholder="搜索产品..."
+              value={searchValue}
+              onValueChange={handleSearchChange}
+            />
+            <CommandList>
+              <CommandEmpty>
+                {isLoading ? '加载中...' : '未找到产品'}
+              </CommandEmpty>
+              <CommandGroup>
+                {products.map(product => (
+                  <CommandItem
+                    key={product.id}
+                    value={product.id}
+                    onSelect={() => handleSelect(product.id)}
+                    className="flex items-center justify-between"
+                  >
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        {showCode && product.code && (
+                          <span className="font-mono text-sm text-muted-foreground">
+                            {product.code}
+                          </span>
+                        )}
+                        <span className="truncate">{product.name}</span>
+                        {product.status === 'inactive' && (
+                          <Badge variant="secondary" className="text-xs">
+                            停用
+                          </Badge>
+                        )}
+                      </div>
+                      {showSpecification && product.specification && (
+                        <span className="truncate text-sm text-muted-foreground">
+                          {product.specification}
                         </span>
                       )}
-                      <span className="truncate">{product.name}</span>
-                      {product.status === 'inactive' && (
-                        <Badge variant="secondary" className="text-xs">
-                          停用
-                        </Badge>
-                      )}
                     </div>
-                    {showSpecification && product.specification && (
-                      <span className="text-sm text-muted-foreground truncate">
-                        {product.specification}
-                      </span>
-                    )}
-                  </div>
-                  <Check
-                    className={cn(
-                      'ml-2 h-4 w-4',
-                      value === product.id ? 'opacity-100' : 'opacity-0'
-                    )}
-                  />
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
+                    <Check
+                      className={cn(
+                        'ml-2 h-4 w-4',
+                        value === product.id ? 'opacity-100' : 'opacity-0'
+                      )}
+                    />
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
     </div>
   );
 }
@@ -205,43 +211,48 @@ export function MultiProductSelector({
       status: filterStatus === 'all' ? undefined : filterStatus,
       limit: 100,
     }),
-    queryFn: () => getProducts({
-      search: searchValue,
-      status: filterStatus === 'all' ? undefined : filterStatus,
-      limit: 100,
-    }),
+    queryFn: () =>
+      getProducts({
+        search: searchValue,
+        status: filterStatus === 'all' ? undefined : filterStatus,
+        limit: 100,
+      }),
   });
 
   const products = productsResponse?.data || [];
-  const selectedProducts = products.filter(product => value.includes(product.id));
+  const selectedProducts = products.filter(product =>
+    value.includes(product.id)
+  );
 
-  const handleSelect = useCallback((productId: string) => {
-    const newValue = value.includes(productId)
-      ? value.filter(id => id !== productId)
-      : maxItems && value.length >= maxItems
-      ? value
-      : [...value, productId];
+  const handleSelect = useCallback(
+    (productId: string) => {
+      const newValue = value.includes(productId)
+        ? value.filter(id => id !== productId)
+        : maxItems && value.length >= maxItems
+          ? value
+          : [...value, productId];
 
-    onValueChange(newValue);
-  }, [value, onValueChange, maxItems]);
+      onValueChange(newValue);
+    },
+    [value, onValueChange, maxItems]
+  );
 
-  const handleRemove = useCallback((productId: string) => {
-    onValueChange(value.filter(id => id !== productId));
-  }, [value, onValueChange]);
+  const handleRemove = useCallback(
+    (productId: string) => {
+      onValueChange(value.filter(id => id !== productId));
+    },
+    [value, onValueChange]
+  );
 
   return (
     <div className={cn('space-y-2', className)}>
       {/* 已选择的产品 */}
       {selectedProducts.length > 0 && (
         <div className="flex flex-wrap gap-1">
-          {selectedProducts.map((product) => (
-            <Badge
-              key={product.id}
-              variant="secondary"
-              className="text-xs"
-            >
+          {selectedProducts.map(product => (
+            <Badge key={product.id} variant="secondary" className="text-xs">
               {showCode && product.code && (
-                <span className="font-mono mr-1">{product.code}</span>
+                <span className="mr-1 font-mono">{product.code}</span>
               )}
               {product.name}
               <button
@@ -283,14 +294,14 @@ export function MultiProductSelector({
                 {isLoading ? '加载中...' : '未找到产品'}
               </CommandEmpty>
               <CommandGroup>
-                {products.map((product) => (
+                {products.map(product => (
                   <CommandItem
                     key={product.id}
                     value={product.id}
                     onSelect={() => handleSelect(product.id)}
                     className="flex items-center justify-between"
                   >
-                    <div className="flex flex-col gap-1 flex-1 min-w-0">
+                    <div className="flex min-w-0 flex-1 flex-col gap-1">
                       <div className="flex items-center gap-2">
                         {showCode && product.code && (
                           <span className="font-mono text-sm text-muted-foreground">

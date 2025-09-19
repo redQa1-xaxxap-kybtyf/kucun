@@ -84,7 +84,9 @@ export async function getCategories(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    throw new Error(
+      errorData.error || `HTTP error! status: ${response.status}`
+    );
   }
 
   return response.json();
@@ -98,7 +100,9 @@ export async function getCategory(id: string): Promise<ApiResponse<Category>> {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    throw new Error(
+      errorData.error || `HTTP error! status: ${response.status}`
+    );
   }
 
   return response.json();
@@ -124,7 +128,9 @@ export async function createCategory(data: {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    throw new Error(
+      errorData.error || `HTTP error! status: ${response.status}`
+    );
   }
 
   return response.json();
@@ -153,7 +159,9 @@ export async function updateCategory(data: {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    throw new Error(
+      errorData.error || `HTTP error! status: ${response.status}`
+    );
   }
 
   return response.json();
@@ -169,7 +177,9 @@ export async function deleteCategory(id: string): Promise<ApiResponse<void>> {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    throw new Error(
+      errorData.error || `HTTP error! status: ${response.status}`
+    );
   }
 
   return response.json();
@@ -192,7 +202,9 @@ export async function updateCategoryStatus(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
+    throw new Error(
+      errorData.error || `HTTP error! status: ${response.status}`
+    );
   }
 
   return response.json();
@@ -229,7 +241,8 @@ export async function batchDeleteCategories(
 export const categoryQueryKeys = {
   all: ['categories'] as const,
   lists: () => [...categoryQueryKeys.all, 'list'] as const,
-  list: (params: CategoryQueryParams) => [...categoryQueryKeys.lists(), params] as const,
+  list: (params: CategoryQueryParams) =>
+    [...categoryQueryKeys.lists(), params] as const,
   details: () => [...categoryQueryKeys.all, 'detail'] as const,
   detail: (id: string) => [...categoryQueryKeys.details(), id] as const,
 };

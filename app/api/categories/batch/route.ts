@@ -32,7 +32,7 @@ export async function DELETE(request: NextRequest) {
 
     // 解析请求体
     const body = await request.json();
-    
+
     // 验证输入数据
     const validationResult = BatchDeleteCategoriesSchema.safeParse(body);
     if (!validationResult.success) {
@@ -71,8 +71,7 @@ export async function DELETE(request: NextRequest) {
 
     // 检查哪些分类有关联数据，不能删除
     const categoriesWithReferences = categoriesToDelete.filter(
-      category =>
-        category._count.products > 0 || category._count.children > 0
+      category => category._count.products > 0 || category._count.children > 0
     );
 
     // 可以安全删除的分类
@@ -134,7 +133,8 @@ export async function DELETE(request: NextRequest) {
       success: deletedCount > 0,
       deletedCount,
       failedCount,
-      failedCategories: failedCategories.length > 0 ? failedCategories : undefined,
+      failedCategories:
+        failedCategories.length > 0 ? failedCategories : undefined,
       message,
     };
 

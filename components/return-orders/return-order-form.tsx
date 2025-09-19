@@ -2,14 +2,14 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
-    AlertCircle,
-    ArrowLeft,
-    Calculator,
-    Package,
-    Plus,
-    Search,
-    ShoppingCart,
-    Trash2
+  AlertCircle,
+  ArrowLeft,
+  Calculator,
+  Package,
+  Plus,
+  Search,
+  ShoppingCart,
+  Trash2,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -18,37 +18,37 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -56,26 +56,26 @@ import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
 import {
-    useCreateReturnOrder,
-    useSalesOrderReturnableItems,
-    useUpdateReturnOrder,
+  useCreateReturnOrder,
+  useSalesOrderReturnableItems,
+  useUpdateReturnOrder,
 } from '@/lib/api/return-orders';
 import type { ReturnOrder } from '@/lib/types/return-order';
 import {
-    RETURN_ORDER_TYPE_LABELS,
-    RETURN_PROCESS_TYPE_LABELS,
-    calculateReturnItemsTotal,
-    formatReturnAmount,
+  RETURN_ORDER_TYPE_LABELS,
+  RETURN_PROCESS_TYPE_LABELS,
+  calculateReturnItemsTotal,
+  formatReturnAmount,
 } from '@/lib/types/return-order';
 import type {
-    CreateReturnOrderFormData,
-    UpdateReturnOrderFormData
+  CreateReturnOrderFormData,
+  UpdateReturnOrderFormData,
 } from '@/lib/validations/return-order';
 import {
-    calculateReturnItemSubtotal,
-    createReturnOrderDefaults,
-    createReturnOrderSchema,
-    updateReturnOrderSchema,
+  calculateReturnItemSubtotal,
+  createReturnOrderDefaults,
+  createReturnOrderSchema,
+  updateReturnOrderSchema,
 } from '@/lib/validations/return-order';
 
 interface ReturnOrderFormProps {
@@ -176,7 +176,7 @@ export function ReturnOrderForm({
 
   // 计算总金额
   const items = form.watch('items');
-  const totalAmount = calculateReturnItemsTotal(items as any || []);
+  const totalAmount = calculateReturnItemsTotal((items as any) || []);
 
   // 提交表单
   const onSubmit = (

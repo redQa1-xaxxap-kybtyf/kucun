@@ -23,21 +23,26 @@ for (const filePath of dynamicRouteFiles) {
     const content = fs.readFileSync(fullPath, 'utf-8');
 
     // 检查是否有正确的类型定义
-    const hasPromiseParamsType = content.includes('params: Promise<{') || content.includes('params: Promise<{ id: string }');
+    const hasPromiseParamsType =
+      content.includes('params: Promise<{') ||
+      content.includes('params: Promise<{ id: string }');
 
     // 检查是否使用了 React.use()
     const usesReactUse = content.includes('React.use(params)');
 
     // 检查是否还有直接访问 params 的情况（应该没有）
-    const hasDirectParamsAccess = content.match(/const\s+{\s*\w+\s*}\s*=\s+params[^.]/) && !content.includes('React.use(params)');
+    const hasDirectParamsAccess =
+      content.match(/const\s+{\s*\w+\s*}\s*=\s+params[^.]/) &&
+      !content.includes('React.use(params)');
 
     // 输出调试信息
-    process.stdout.write(`${filePath}: Promise=${hasPromiseParamsType}, ReactUse=${usesReactUse}, DirectAccess=${!!hasDirectParamsAccess}\n`);
+    process.stdout.write(
+      `${filePath}: Promise=${hasPromiseParamsType}, ReactUse=${usesReactUse}, DirectAccess=${!!hasDirectParamsAccess}\n`
+    );
 
     if (!hasPromiseParamsType || !usesReactUse || hasDirectParamsAccess) {
       allTestsPassed = false;
     }
-
   } catch (error) {
     process.stdout.write(`${filePath}: Error reading file\n`);
     allTestsPassed = false;

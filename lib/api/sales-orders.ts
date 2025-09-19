@@ -3,14 +3,18 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import type { ApiResponse, ErrorResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
-    SalesOrder,
-    SalesOrderCreateInput,
-    SalesOrderQueryParams,
-    SalesOrderStats,
-    SalesOrderStatus,
-    SalesOrderUpdateInput,
+  ApiResponse,
+  ErrorResponse,
+  PaginatedResponse,
+} from '@/lib/types/api';
+import type {
+  SalesOrder,
+  SalesOrderCreateInput,
+  SalesOrderQueryParams,
+  SalesOrderStats,
+  SalesOrderStatus,
+  SalesOrderUpdateInput,
 } from '@/lib/types/sales-order';
 
 // API错误类型

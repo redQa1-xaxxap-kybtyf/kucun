@@ -23,11 +23,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 // API and Types
 import { useProductSearch } from '@/lib/api/inbound';
 import type { ProductOption } from '@/lib/types/inbound';
+import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
 
 interface ProductSelectorProps {
   value: string;
-  onChange: (value: string) => void;
+  onChange: (value: string, product?: ProductOption) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
@@ -86,14 +87,14 @@ export function ProductSelector({
   // 处理产品选择
   const handleSelect = (product: ProductOption) => {
     setSelectedProduct(product);
-    onChange(product.value);
+    onChange(product.value, product);
     setOpen(false);
   };
 
   // 清除选择
   const handleClear = () => {
     setSelectedProduct(null);
-    onChange('');
+    onChange('', undefined);
     setSearchQuery('');
   };
 
@@ -110,7 +111,10 @@ export function ProductSelector({
           <div className="min-w-0">
             <div className="truncate font-medium">{selectedProduct.label}</div>
             <div className="text-sm text-muted-foreground">
-              编码: {selectedProduct.code} | 单位: {selectedProduct.unit}
+              编码: {selectedProduct.code} | 单位:{' '}
+              {PRODUCT_UNIT_LABELS[
+                selectedProduct.unit as keyof typeof PRODUCT_UNIT_LABELS
+              ] || selectedProduct.unit}
             </div>
           </div>
         </div>

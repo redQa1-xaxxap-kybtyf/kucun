@@ -1,21 +1,21 @@
 'use client';
 
 import {
-    ChevronDown,
-    ChevronLeft,
-    ChevronRight,
-    CreditCard,
-    HelpCircle,
-    LayoutDashboard,
-    Package,
-    Plus,
-    RotateCcw,
-    Settings,
-    ShoppingCart,
-    TrendingDown,
-    TrendingUp,
-    Users,
-    Warehouse
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  CreditCard,
+  HelpCircle,
+  LayoutDashboard,
+  Package,
+  Plus,
+  RotateCcw,
+  Settings,
+  ShoppingCart,
+  TrendingDown,
+  TrendingUp,
+  Users,
+  Warehouse,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -316,8 +316,8 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
     const pathname = usePathname();
 
     // 检查是否有子菜单项处于激活状态
-    const hasActiveChild = item.children?.some(child =>
-      pathname.startsWith(child.href) && child.href !== item.href
+    const hasActiveChild = item.children?.some(
+      child => pathname.startsWith(child.href) && child.href !== item.href
     );
 
     // 如果有激活的子菜单项，自动展开
@@ -403,7 +403,8 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
           className={cn(
             'h-10 w-full justify-start transition-all duration-200',
             isCollapsed ? 'px-2' : 'px-3',
-            (isActive || hasActiveChild) && 'bg-secondary font-medium shadow-sm',
+            (isActive || hasActiveChild) &&
+              'bg-secondary font-medium shadow-sm',
             isHovered && !isActive && !hasActiveChild && 'bg-accent/50',
             isFocused && 'ring-2 ring-ring ring-offset-2'
           )}
@@ -467,7 +468,7 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
         {/* 子菜单 */}
         {!isCollapsed && isExpanded && (
           <div className="ml-4 space-y-1 border-l border-border pl-4">
-            {item.children.map((child) => {
+            {item.children.map(child => {
               const ChildIcon = child.icon;
               const isChildActive = pathname.startsWith(child.href);
 
@@ -475,9 +476,7 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
                 <Link
                   key={child.id}
                   href={child.href}
-                  className={cn(
-                    'block rounded-md transition-all duration-200'
-                  )}
+                  className={cn('block rounded-md transition-all duration-200')}
                 >
                   <Button
                     variant={isChildActive ? 'secondary' : 'ghost'}

@@ -22,7 +22,10 @@ const ProductVariantCreateSchema = z.object({
   productId: z.string().uuid('产品ID格式不正确'),
   colorCode: z.string().min(1, '色号不能为空').max(20, '色号不能超过20个字符'),
   colorName: z.string().max(50, '色号名称不能超过50个字符').optional(),
-  colorValue: z.string().regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确').optional(),
+  colorValue: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确')
+    .optional(),
   sku: z.string().max(50, 'SKU不能超过50个字符').optional(),
 });
 
@@ -62,7 +65,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { productId, colorCode, status, page, limit, sortBy, sortOrder } = validationResult.data;
+    const { productId, colorCode, status, page, limit, sortBy, sortOrder } =
+      validationResult.data;
 
     // 构建查询条件
     const where: any = {};
@@ -112,9 +116,15 @@ export async function GET(request: NextRequest) {
 
     // 转换数据格式并计算库存汇总
     const formattedVariants = variants.map(variant => {
-      const totalInventory = variant.inventory.reduce((sum, inv) => sum + inv.quantity, 0);
-      const reservedInventory = variant.inventory.reduce((sum, inv) => sum + inv.reservedQuantity, 0);
-      
+      const totalInventory = variant.inventory.reduce(
+        (sum, inv) => sum + inv.quantity,
+        0
+      );
+      const reservedInventory = variant.inventory.reduce(
+        (sum, inv) => sum + inv.reservedQuantity,
+        0
+      );
+
       return {
         id: variant.id,
         productId: variant.productId,
@@ -182,7 +192,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { productId, colorCode, colorName, colorValue, sku } = validationResult.data;
+    const { productId, colorCode, colorName, colorValue, sku } =
+      validationResult.data;
 
     // 验证产品是否存在
     const product = await prisma.product.findUnique({

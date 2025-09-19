@@ -5,7 +5,7 @@
 
 async function testCategoriesAPI() {
   const baseUrl = 'http://localhost:3003';
-  
+
   console.log('开始测试分类API...\n');
 
   try {
@@ -13,10 +13,14 @@ async function testCategoriesAPI() {
     console.log('1. 测试获取分类列表');
     const listResponse = await fetch(`${baseUrl}/api/categories?limit=5`);
     const listData = await listResponse.json();
-    
+
     if (listData.success) {
-      console.log(`✅ 获取分类列表成功，共 ${listData.pagination.total} 条记录`);
-      console.log(`   前5条分类: ${listData.data.map((c: any) => c.name).join(', ')}`);
+      console.log(
+        `✅ 获取分类列表成功，共 ${listData.pagination.total} 条记录`
+      );
+      console.log(
+        `   前5条分类: ${listData.data.map((c: any) => c.name).join(', ')}`
+      );
     } else {
       console.log(`❌ 获取分类列表失败: ${listData.error}`);
     }
@@ -42,7 +46,9 @@ async function testCategoriesAPI() {
     let testCategoryId = '';
     if (createResult.success) {
       testCategoryId = createResult.data.id;
-      console.log(`✅ 创建分类成功: ${createResult.data.name} (ID: ${testCategoryId})`);
+      console.log(
+        `✅ 创建分类成功: ${createResult.data.name} (ID: ${testCategoryId})`
+      );
     } else {
       console.log(`❌ 创建分类失败: ${createResult.error}`);
       return;
@@ -50,7 +56,9 @@ async function testCategoriesAPI() {
 
     // 3. 测试获取单个分类
     console.log('\n3. 测试获取单个分类');
-    const getResponse = await fetch(`${baseUrl}/api/categories/${testCategoryId}`);
+    const getResponse = await fetch(
+      `${baseUrl}/api/categories/${testCategoryId}`
+    );
     const getData = await getResponse.json();
 
     if (getData.success) {
@@ -66,13 +74,16 @@ async function testCategoriesAPI() {
       description: '通过API测试更新的分类',
     };
 
-    const updateResponse = await fetch(`${baseUrl}/api/categories/${testCategoryId}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updateData),
-    });
+    const updateResponse = await fetch(
+      `${baseUrl}/api/categories/${testCategoryId}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      }
+    );
     const updateResult = await updateResponse.json();
 
     if (updateResult.success) {
@@ -83,13 +94,16 @@ async function testCategoriesAPI() {
 
     // 5. 测试更新分类状态
     console.log('\n5. 测试更新分类状态');
-    const statusResponse = await fetch(`${baseUrl}/api/categories/${testCategoryId}/status`, {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ status: 'inactive' }),
-    });
+    const statusResponse = await fetch(
+      `${baseUrl}/api/categories/${testCategoryId}/status`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: 'inactive' }),
+      }
+    );
     const statusResult = await statusResponse.json();
 
     if (statusResult.success) {
@@ -100,9 +114,12 @@ async function testCategoriesAPI() {
 
     // 6. 测试删除分类
     console.log('\n6. 测试删除分类');
-    const deleteResponse = await fetch(`${baseUrl}/api/categories/${testCategoryId}`, {
-      method: 'DELETE',
-    });
+    const deleteResponse = await fetch(
+      `${baseUrl}/api/categories/${testCategoryId}`,
+      {
+        method: 'DELETE',
+      }
+    );
     const deleteResult = await deleteResponse.json();
 
     if (deleteResult.success) {
@@ -113,18 +130,21 @@ async function testCategoriesAPI() {
 
     // 7. 测试搜索功能
     console.log('\n7. 测试搜索功能');
-    const searchResponse = await fetch(`${baseUrl}/api/categories?search=瓷砖&limit=3`);
+    const searchResponse = await fetch(
+      `${baseUrl}/api/categories?search=瓷砖&limit=3`
+    );
     const searchData = await searchResponse.json();
 
     if (searchData.success) {
       console.log(`✅ 搜索功能正常，找到 ${searchData.data.length} 条匹配记录`);
-      console.log(`   搜索结果: ${searchData.data.map((c: any) => c.name).join(', ')}`);
+      console.log(
+        `   搜索结果: ${searchData.data.map((c: any) => c.name).join(', ')}`
+      );
     } else {
       console.log(`❌ 搜索功能失败: ${searchData.error}`);
     }
 
     console.log('\n🎉 所有API测试完成！');
-
   } catch (error) {
     console.error('❌ API测试过程中发生错误:', error);
   }

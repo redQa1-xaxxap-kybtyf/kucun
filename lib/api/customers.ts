@@ -5,10 +5,10 @@
 
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
-    Customer,
-    CustomerCreateInput,
-    CustomerQueryParams,
-    CustomerUpdateInput,
+  Customer,
+  CustomerCreateInput,
+  CustomerQueryParams,
+  CustomerUpdateInput,
 } from '@/lib/types/customer';
 
 /**

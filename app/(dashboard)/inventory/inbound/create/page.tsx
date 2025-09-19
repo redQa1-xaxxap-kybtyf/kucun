@@ -1,7 +1,7 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { ArrowLeft, Package, Save, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Package, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -10,18 +10,33 @@ import { useForm } from 'react-hook-form';
 import { ProductSelector } from '@/components/inventory/product-selector';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 
 // Icons
 
 // API and Types
-import { useCreateInboundRecord, useProductSearch } from '@/lib/api/inbound';
-import { INBOUND_REASON_OPTIONS } from '@/lib/types/inbound';
+import { useCreateInboundRecord } from '@/lib/api/inbound';
 import type { InboundFormData } from '@/lib/types/inbound';
+import { INBOUND_REASON_OPTIONS } from '@/lib/types/inbound';
+import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
 import { createInboundSchema } from '@/lib/validations/inbound';
 
 // Components
@@ -35,12 +50,19 @@ export default function CreateInboundPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // 状态管理
+  const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(
+    null
+  );
+  const [quantityInput, setQuantityInput] = useState<string>('');
+  const [calculatedPieces, setCalculatedPieces] = useState<number | null>(null);
+
   // 表单配置
   const form = useForm<InboundFormData>({
     resolver: zodResolver(createInboundSchema),
     defaultValues: {
       productId: '',
-      quantity: 0,
+      quantity: undefined, // 修改为undefined，避免默认值0无法删除的问题
       reason: 'purchase',
       remarks: '',
     },
@@ -48,6 +70,45 @@ export default function CreateInboundPage() {
 
   // API Hooks
   const createMutation = useCreateInboundRecord();
+
+  // 处理产品选择
+  const handleProductSelect = (product: ProductOption) => {
+    setSelectedProduct(product);
+    form.setValue('productId', product.value);
+
+    // 重置数量相关状态
+    setQuantityInput('');
+    setCalculatedPieces(null);
+    form.setValue('quantity', undefined);
+  };
+
+  // 处理数量输入变化
+  const handleQuantityChange = (value: string) => {
+    setQuantityInput(value);
+
+    if (!selectedProduct || !value.trim()) {
+      setCalculatedPieces(null);
+      form.setValue('quantity', undefined);
+      return;
+    }
+
+    try {
+      // 解析输入的数量（支持多种格式）
+      const totalPieces = parseInt(value, 10);
+
+      if (isNaN(totalPieces) || totalPieces <= 0) {
+        setCalculatedPieces(null);
+        form.setValue('quantity', undefined);
+        return;
+      }
+
+      setCalculatedPieces(totalPieces);
+      form.setValue('quantity', totalPieces);
+    } catch (error) {
+      setCalculatedPieces(null);
+      form.setValue('quantity', undefined);
+    }
+  };
 
   // 表单提交处理
   const onSubmit = async (data: InboundFormData) => {
@@ -70,7 +131,6 @@ export default function CreateInboundPage() {
       setTimeout(() => {
         router.push('/inventory/inbound');
       }, 1500);
-
     } catch (error) {
       console.error('入库失败:', error);
       toast({
@@ -123,10 +183,21 @@ export default function CreateInboundPage() {
                     <FormControl>
                       <ProductSelector
                         value={field.value}
-                        onChange={field.onChange}
+                        onChange={(value, product) => {
+                          field.onChange(value);
+                          if (product) {
+                            handleProductSelect(product);
+                          }
+                        }}
                         placeholder="搜索并选择产品..."
                       />
                     </FormControl>
+                    {selectedProduct && (
+                      <div className="mt-2 text-sm text-muted-foreground">
+                        已选择：{selectedProduct.label} | 每件片数：
+                        {selectedProduct.piecesPerUnit}片
+                      </div>
+                    )}
                     <FormMessage />
                   </FormItem>
                 )}
@@ -138,18 +209,34 @@ export default function CreateInboundPage() {
                 name="quantity"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>入库数量 *</FormLabel>
+                    <FormLabel>入库数量（片数） *</FormLabel>
                     <FormControl>
                       <Input
                         type="number"
-                        step="0.01"
-                        min="0.01"
-                        max="999999.99"
-                        placeholder="请输入入库数量"
-                        {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        value={quantityInput}
+                        onChange={e => handleQuantityChange(e.target.value)}
+                        min={1}
+                        step={1}
+                        placeholder="请输入入库片数"
+                        disabled={!selectedProduct}
                       />
                     </FormControl>
+                    {selectedProduct && calculatedPieces && (
+                      <div className="mt-2 text-sm text-muted-foreground">
+                        {(() => {
+                          const result = calculatePieceDisplay(
+                            calculatedPieces,
+                            selectedProduct.piecesPerUnit
+                          );
+                          return `换算结果：${result.displayText}`;
+                        })()}
+                      </div>
+                    )}
+                    <FormDescription>
+                      {selectedProduct
+                        ? `请输入总片数，系统将自动换算为件数显示（每件${selectedProduct.piecesPerUnit}片）`
+                        : '请先选择产品'}
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -162,14 +249,17 @@ export default function CreateInboundPage() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>入库原因 *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger>
                           <SelectValue placeholder="请选择入库原因" />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {INBOUND_REASON_OPTIONS.map((option) => (
+                        {INBOUND_REASON_OPTIONS.map(option => (
                           <SelectItem key={option.value} value={option.value}>
                             {option.label}
                           </SelectItem>
@@ -220,7 +310,7 @@ export default function CreateInboundPage() {
                     </>
                   )}
                 </Button>
-                
+
                 <Button
                   type="button"
                   variant="outline"
@@ -238,9 +328,9 @@ export default function CreateInboundPage() {
       {/* 操作提示 */}
       <Card>
         <CardContent className="pt-6">
-          <div className="text-sm text-muted-foreground space-y-2">
+          <div className="space-y-2 text-sm text-muted-foreground">
             <h4 className="font-medium text-foreground">操作说明：</h4>
-            <ul className="list-disc list-inside space-y-1">
+            <ul className="list-inside list-disc space-y-1">
               <li>产品选择支持按名称、编码搜索</li>
               <li>数量支持小数点，最小值为0.01</li>
               <li>入库成功后会自动更新库存数量</li>

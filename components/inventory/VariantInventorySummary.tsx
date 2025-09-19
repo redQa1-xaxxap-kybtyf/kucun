@@ -4,7 +4,13 @@ import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, MapPin, Package, TrendingUp } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { getVariantInventorySummary } from '@/lib/api/product-variants';
@@ -50,7 +56,7 @@ export function VariantInventorySummary({
       <Card>
         <CardContent className="pt-6">
           <div className="text-center text-muted-foreground">
-            <Package className="mx-auto h-8 w-8 mb-2" />
+            <Package className="mx-auto mb-2 h-8 w-8" />
             <p className="text-sm">加载库存汇总失败</p>
           </div>
         </CardContent>
@@ -59,9 +65,10 @@ export function VariantInventorySummary({
   }
 
   const { variant, inventory, breakdown } = summary as any;
-  const stockPercentage = inventory.totalQuantity > 0
-    ? (inventory.availableQuantity / inventory.totalQuantity) * 100
-    : 0;
+  const stockPercentage =
+    inventory.totalQuantity > 0
+      ? (inventory.availableQuantity / inventory.totalQuantity) * 100
+      : 0;
 
   const getStockStatusColor = (status: string) => {
     switch (status) {
@@ -94,7 +101,7 @@ export function VariantInventorySummary({
       {/* 库存概览 */}
       <Card>
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg flex items-center gap-2">
+          <CardTitle className="flex items-center gap-2 text-lg">
             <Package className="h-5 w-5" />
             库存概览
           </CardTitle>
@@ -103,7 +110,7 @@ export function VariantInventorySummary({
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-primary">
                 {inventory.totalQuantity}
@@ -135,7 +142,7 @@ export function VariantInventorySummary({
               <span className="text-sm font-medium">库存状态</span>
               <Badge
                 variant="outline"
-                className={`${getStockStatusColor(inventory.stockStatus)} text-white border-0`}
+                className={`${getStockStatusColor(inventory.stockStatus)} border-0 text-white`}
               >
                 {getStockStatusText(inventory.stockStatus)}
               </Badge>
@@ -155,7 +162,7 @@ export function VariantInventorySummary({
           {breakdown.locations.length > 0 && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base flex items-center gap-2">
+                <CardTitle className="flex items-center gap-2 text-base">
                   <MapPin className="h-4 w-4" />
                   存储位置分布
                 </CardTitle>
@@ -163,9 +170,12 @@ export function VariantInventorySummary({
               <CardContent>
                 <div className="space-y-3">
                   {breakdown.locations.map((location: any, index: number) => (
-                    <div key={index} className="flex items-center justify-between">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between"
+                    >
                       <div className="flex items-center gap-2">
-                        <div className="w-2 h-2 bg-primary rounded-full" />
+                        <div className="h-2 w-2 rounded-full bg-primary" />
                         <span className="font-medium">{location.location}</span>
                       </div>
                       <div className="text-right">
@@ -181,31 +191,35 @@ export function VariantInventorySummary({
             </Card>
           )}
 
-
           {/* 统计信息 */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base flex items-center gap-2">
+              <CardTitle className="flex items-center gap-2 text-base">
                 <TrendingUp className="h-4 w-4" />
                 统计信息
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <div className="text-lg font-bold">{breakdown.totalBatches}</div>
+                <div className="rounded-lg bg-muted/50 p-3 text-center">
+                  <div className="text-lg font-bold">
+                    {breakdown.totalBatches}
+                  </div>
                   <div className="text-sm text-muted-foreground">总批次数</div>
                 </div>
-                <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <div className="text-lg font-bold">{breakdown.totalLocations}</div>
+                <div className="rounded-lg bg-muted/50 p-3 text-center">
+                  <div className="text-lg font-bold">
+                    {breakdown.totalLocations}
+                  </div>
                   <div className="text-sm text-muted-foreground">存储位置</div>
                 </div>
               </div>
 
               {inventory.lastUpdated && (
-                <div className="mt-4 pt-4 border-t">
-                  <div className="text-sm text-muted-foreground text-center">
-                    最后更新: {new Date(inventory.lastUpdated).toLocaleString('zh-CN')}
+                <div className="mt-4 border-t pt-4">
+                  <div className="text-center text-sm text-muted-foreground">
+                    最后更新:{' '}
+                    {new Date(inventory.lastUpdated).toLocaleString('zh-CN')}
                   </div>
                 </div>
               )}
@@ -220,13 +234,14 @@ export function VariantInventorySummary({
                   <AlertTriangle className="h-5 w-5 text-orange-600" />
                   <div>
                     <div className="font-medium text-orange-800">
-                      {inventory.stockStatus === 'low_stock' ? '库存预警' : '缺货警告'}
+                      {inventory.stockStatus === 'low_stock'
+                        ? '库存预警'
+                        : '缺货警告'}
                     </div>
                     <div className="text-sm text-orange-700">
                       {inventory.stockStatus === 'low_stock'
                         ? '当前库存偏低，建议及时补货'
-                        : '当前已无可用库存，请尽快补货'
-                      }
+                        : '当前已无可用库存，请尽快补货'}
                     </div>
                   </div>
                 </div>

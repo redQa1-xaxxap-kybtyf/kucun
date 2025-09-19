@@ -3,13 +3,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    AlertCircle,
-    ArrowLeft,
-    FileText,
-    Loader2,
-    Save,
-    ShoppingCart,
-    User,
+  AlertCircle,
+  ArrowLeft,
+  FileText,
+  Loader2,
+  Save,
+  ShoppingCart,
+  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -23,27 +23,27 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 
 // Icons
@@ -53,28 +53,28 @@ import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
 import {
-    createSalesOrder,
-    salesOrderQueryKeys,
-    updateSalesOrder,
+  createSalesOrder,
+  salesOrderQueryKeys,
+  updateSalesOrder,
 } from '@/lib/api/sales-orders';
 import type {
-    SalesOrder,
-    SalesOrderCreateInput,
-    SalesOrderUpdateInput,
+  SalesOrder,
+  SalesOrderCreateInput,
+  SalesOrderUpdateInput,
 } from '@/lib/types/sales-order';
 import {
-    SALES_ORDER_STATUS_LABELS,
-    SALES_ORDER_STATUS_TRANSITIONS,
-    SALES_ORDER_STATUS_VARIANTS
+  SALES_ORDER_STATUS_LABELS,
+  SALES_ORDER_STATUS_TRANSITIONS,
+  SALES_ORDER_STATUS_VARIANTS,
 } from '@/lib/types/sales-order';
 import type {
-    SalesOrderCreateFormData,
-    SalesOrderUpdateFormData
+  SalesOrderCreateFormData,
+  SalesOrderUpdateFormData,
 } from '@/lib/validations/sales-order';
 import {
-    salesOrderCreateDefaults,
-    salesOrderCreateSchema,
-    salesOrderUpdateSchema
+  salesOrderCreateDefaults,
+  salesOrderCreateSchema,
+  salesOrderUpdateSchema,
 } from '@/lib/validations/sales-order';
 
 interface SalesOrderFormProps {
@@ -141,7 +141,8 @@ export function SalesOrderForm({
 
   // 更新销售订单 Mutation
   const updateMutation = useMutation({
-    mutationFn: (data: SalesOrderUpdateInput) => updateSalesOrder({ ...data, id: initialData!.id }),
+    mutationFn: (data: SalesOrderUpdateInput) =>
+      updateSalesOrder({ ...data, id: initialData!.id }),
     onSuccess: response => {
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
       queryClient.invalidateQueries({

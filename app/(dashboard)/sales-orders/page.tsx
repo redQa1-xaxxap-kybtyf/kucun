@@ -2,16 +2,16 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-    Calendar,
-    DollarSign,
-    Edit,
-    Eye,
-    MoreHorizontal,
-    Plus,
-    Search,
-    ShoppingCart,
-    Trash2,
-    User
+  Calendar,
+  DollarSign,
+  Edit,
+  Eye,
+  MoreHorizontal,
+  Plus,
+  Search,
+  ShoppingCart,
+  Trash2,
+  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -20,43 +20,47 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { MobileDataTable } from '@/components/ui/mobile-data-table';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 
 // API and Types
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import type { SalesOrder, SalesOrderQueryParams, SalesOrderStatus } from '@/lib/types/sales-order';
+import type {
+  SalesOrder,
+  SalesOrderQueryParams,
+  SalesOrderStatus,
+} from '@/lib/types/sales-order';
 import {
-    SALES_ORDER_STATUS_LABELS,
-    SALES_ORDER_STATUS_VARIANTS,
+  SALES_ORDER_STATUS_LABELS,
+  SALES_ORDER_STATUS_VARIANTS,
 } from '@/lib/types/sales-order';
 
 /**
@@ -97,7 +101,8 @@ export default function SalesOrdersPage() {
 
   // 状态标签渲染
   const getStatusBadge = (status: string) => {
-    const variant = SALES_ORDER_STATUS_VARIANTS[status as SalesOrderStatus] || 'outline';
+    const variant =
+      SALES_ORDER_STATUS_VARIANTS[status as SalesOrderStatus] || 'outline';
     return (
       <Badge variant={variant}>
         {SALES_ORDER_STATUS_LABELS[status as SalesOrderStatus] || status}

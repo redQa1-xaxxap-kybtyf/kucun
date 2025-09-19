@@ -47,7 +47,7 @@ async function testCreatePageNavigation() {
   try {
     for (const page of createPages) {
       const fullPath = join(process.cwd(), page.file);
-      
+
       if (!existsSync(fullPath)) {
         results.push({
           name: `文件存在性检查 - ${page.module}`,
@@ -68,17 +68,20 @@ async function testCreatePageNavigation() {
       });
 
       // 检查2：是否有成功toast提示
-      const hasSuccessToast = content.includes('variant: \'success\'') && 
-                             content.includes('title: \'创建成功\'');
+      const hasSuccessToast =
+        content.includes("variant: 'success'") &&
+        content.includes("title: '创建成功'");
       results.push({
         name: `成功Toast检查 - ${page.module}`,
         success: hasSuccessToast,
-        message: hasSuccessToast ? '有正确的成功toast提示' : '缺少成功toast提示',
+        message: hasSuccessToast
+          ? '有正确的成功toast提示'
+          : '缺少成功toast提示',
       });
 
       // 检查3：是否有延迟跳转
-      const hasDelayedNavigation = content.includes('setTimeout') && 
-                                   content.includes('router.push');
+      const hasDelayedNavigation =
+        content.includes('setTimeout') && content.includes('router.push');
       results.push({
         name: `延迟跳转检查 - ${page.module}`,
         success: hasDelayedNavigation,
@@ -86,17 +89,25 @@ async function testCreatePageNavigation() {
       });
 
       // 检查4：是否跳转到正确的列表页
-      const correctRoutePattern = new RegExp(`router\\.push\\(['"\`]${page.expectedRoute}['"\`]\\)`);
+      const correctRoutePattern = new RegExp(
+        `router\\.push\\(['"\`]${page.expectedRoute}['"\`]\\)`
+      );
       const hasCorrectRoute = correctRoutePattern.test(content);
       results.push({
         name: `正确路由检查 - ${page.module}`,
         success: hasCorrectRoute,
-        message: hasCorrectRoute ? `正确跳转到${page.expectedRoute}` : `未跳转到${page.expectedRoute}`,
-        details: hasCorrectRoute ? `发现: router.push('${page.expectedRoute}')` : undefined,
+        message: hasCorrectRoute
+          ? `正确跳转到${page.expectedRoute}`
+          : `未跳转到${page.expectedRoute}`,
+        details: hasCorrectRoute
+          ? `发现: router.push('${page.expectedRoute}')`
+          : undefined,
       });
 
       // 检查5：是否避免跳转到详情页
-      const detailRoutePattern = new RegExp(`router\\.push\\(\`${page.expectedRoute}/\\$\\{.*\\}\`\\)`);
+      const detailRoutePattern = new RegExp(
+        `router\\.push\\(\`${page.expectedRoute}/\\$\\{.*\\}\`\\)`
+      );
       const hasDetailRoute = detailRoutePattern.test(content);
       results.push({
         name: `避免详情页跳转检查 - ${page.module}`,
@@ -106,7 +117,9 @@ async function testCreatePageNavigation() {
       });
 
       // 检查6：是否有缓存刷新
-      const hasCacheInvalidation = content.includes('queryClient.invalidateQueries');
+      const hasCacheInvalidation = content.includes(
+        'queryClient.invalidateQueries'
+      );
       results.push({
         name: `缓存刷新检查 - ${page.module}`,
         success: hasCacheInvalidation,
@@ -124,7 +137,7 @@ async function testCreatePageNavigation() {
 
     // 输出结果
     console.log('📊 测试结果汇总:\n');
-    
+
     let successCount = 0;
     let totalCount = results.length;
 
@@ -149,7 +162,7 @@ async function testCreatePageNavigation() {
       console.log('   ✅ 所有页面都有1.5秒延迟，让用户看到成功反馈');
       console.log('   ✅ 所有页面都有详细的成功toast提示');
       console.log('   ✅ 所有页面都正确刷新列表缓存');
-      
+
       console.log('\n🎯 用户体验优势:');
       console.log('   📋 用户创建后可以立即在列表中看到新项目');
       console.log('   🔄 符合用户"创建后查看列表"的使用习惯');
@@ -159,7 +172,6 @@ async function testCreatePageNavigation() {
       console.log('\n⚠️  部分检查未通过，请查看上述详情进行修复。');
       process.exit(1);
     }
-
   } catch (error) {
     console.error('\n❌ 测试失败:', error);
     process.exit(1);

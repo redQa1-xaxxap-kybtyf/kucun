@@ -199,38 +199,53 @@ export const ErrorInfoSchema = z.object({
 /**
  * 验证工具函数
  */
-export const validateNavigationItem = (data: unknown) => NavigationItemSchema.safeParse(data);
+export const validateNavigationItem = (data: unknown) =>
+  NavigationItemSchema.safeParse(data);
 
-export const validateUserInfo = (data: unknown) => UserInfoSchema.safeParse(data);
+export const validateUserInfo = (data: unknown) =>
+  UserInfoSchema.safeParse(data);
 
-export const validateNotificationItem = (data: unknown) => NotificationItemSchema.safeParse(data);
+export const validateNotificationItem = (data: unknown) =>
+  NotificationItemSchema.safeParse(data);
 
-export const validateSidebarState = (data: unknown) => SidebarStateSchema.safeParse(data);
+export const validateSidebarState = (data: unknown) =>
+  SidebarStateSchema.safeParse(data);
 
-export const validateBreadcrumbItem = (data: unknown) => BreadcrumbItemSchema.safeParse(data);
+export const validateBreadcrumbItem = (data: unknown) =>
+  BreadcrumbItemSchema.safeParse(data);
 
-export const validatePageMetadata = (data: unknown) => PageMetadataSchema.safeParse(data);
+export const validatePageMetadata = (data: unknown) =>
+  PageMetadataSchema.safeParse(data);
 
-export const validateRouteConfig = (data: unknown) => RouteConfigSchema.safeParse(data);
+export const validateRouteConfig = (data: unknown) =>
+  RouteConfigSchema.safeParse(data);
 
-export const validateLayoutConfig = (data: unknown) => LayoutConfigSchema.safeParse(data);
+export const validateLayoutConfig = (data: unknown) =>
+  LayoutConfigSchema.safeParse(data);
 
-export const validateFormData = (data: unknown) => FormDataSchema.safeParse(data);
+export const validateFormData = (data: unknown) =>
+  FormDataSchema.safeParse(data);
 
-export const validateApiResponse = (data: unknown) => ApiResponseSchema.safeParse(data);
+export const validateApiResponse = (data: unknown) =>
+  ApiResponseSchema.safeParse(data);
 
 /**
  * 批量验证工具函数
  */
-export const validateNavigationItems = (data: unknown) => NavigationItemsSchema.safeParse(data);
+export const validateNavigationItems = (data: unknown) =>
+  NavigationItemsSchema.safeParse(data);
 
-export const validateNotificationItems = (data: unknown) => NotificationItemsSchema.safeParse(data);
+export const validateNotificationItems = (data: unknown) =>
+  NotificationItemsSchema.safeParse(data);
 
-export const validateBreadcrumbItems = (data: unknown) => BreadcrumbItemsSchema.safeParse(data);
+export const validateBreadcrumbItems = (data: unknown) =>
+  BreadcrumbItemsSchema.safeParse(data);
 
-export const validateRouteConfigs = (data: unknown) => RouteConfigsSchema.safeParse(data);
+export const validateRouteConfigs = (data: unknown) =>
+  RouteConfigsSchema.safeParse(data);
 
-export const validateQuickActions = (data: unknown) => QuickActionsSchema.safeParse(data);
+export const validateQuickActions = (data: unknown) =>
+  QuickActionsSchema.safeParse(data);
 
 /**
  * 类型推断

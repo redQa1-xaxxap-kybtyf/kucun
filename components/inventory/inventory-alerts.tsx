@@ -2,11 +2,11 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-    AlertCircle,
-    AlertTriangle,
-    BellOff,
-    RefreshCw,
-    TrendingUp
+  AlertCircle,
+  AlertTriangle,
+  BellOff,
+  RefreshCw,
+  TrendingUp,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -15,20 +15,20 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 
 // Icons
@@ -36,8 +36,8 @@ import {
 // API and Types
 import { getInventoryAlerts, inventoryQueryKeys } from '@/lib/api/inventory';
 import {
-    INVENTORY_ALERT_TYPE_LABELS,
-    INVENTORY_ALERT_TYPE_VARIANTS
+  INVENTORY_ALERT_TYPE_LABELS,
+  INVENTORY_ALERT_TYPE_VARIANTS,
 } from '@/lib/types/inventory';
 
 interface InventoryAlertsProps {

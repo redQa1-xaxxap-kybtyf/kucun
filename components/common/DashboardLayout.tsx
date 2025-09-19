@@ -12,7 +12,6 @@ import { Header } from './Header';
 import { MobileNav } from './MobileNav';
 import { Sidebar } from './Sidebar';
 
-
 interface DashboardLayoutProps {
   /** 子组件 */
   children: React.ReactNode;

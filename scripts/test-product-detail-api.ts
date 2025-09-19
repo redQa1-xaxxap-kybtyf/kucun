@@ -11,12 +11,15 @@ async function testProductDetailAPI() {
   // 首先获取产品列表，找到一个现有的产品ID
   try {
     console.log('📋 获取产品列表...');
-    const listResponse = await fetch('http://localhost:3005/api/products?limit=1', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const listResponse = await fetch(
+      'http://localhost:3005/api/products?limit=1',
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
     const listResult = await listResponse.json();
     console.log('📄 产品列表响应:', JSON.stringify(listResult, null, 2));
@@ -27,15 +30,18 @@ async function testProductDetailAPI() {
 
       // 测试产品详情API
       console.log('\n📋 获取产品详情...');
-      const detailResponse = await fetch(`http://localhost:3005/api/products/${productId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const detailResponse = await fetch(
+        `http://localhost:3005/api/products/${productId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       const detailResult = await detailResponse.json();
-      
+
       if (detailResponse.ok && detailResult.success) {
         console.log('✅ 产品详情API测试通过');
         console.log('📄 产品详情数据:');
@@ -65,15 +71,18 @@ async function testInvalidProductId() {
   console.log('\n🧪 测试无效产品ID\n');
 
   try {
-    const response = await fetch('http://localhost:3005/api/products/invalid-id-123', {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
+    const response = await fetch(
+      'http://localhost:3005/api/products/invalid-id-123',
+      {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
     const result = await response.json();
-    
+
     if (response.status === 404 && !result.success) {
       console.log('✅ 无效ID测试通过 - 正确返回404');
       console.log('📄 错误信息:', result.error);

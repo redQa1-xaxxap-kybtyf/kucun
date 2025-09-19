@@ -21,7 +21,8 @@ const PRODUCTS_API = '/api/products/search';
 export const inboundKeys = {
   all: ['inbound'] as const,
   lists: () => [...inboundKeys.all, 'list'] as const,
-  list: (params: InboundQueryParams) => [...inboundKeys.lists(), params] as const,
+  list: (params: InboundQueryParams) =>
+    [...inboundKeys.lists(), params] as const,
   details: () => [...inboundKeys.all, 'detail'] as const,
   detail: (id: string) => [...inboundKeys.details(), id] as const,
   stats: () => [...inboundKeys.all, 'stats'] as const,
@@ -39,7 +40,7 @@ export function useInboundRecords(params: InboundQueryParams = {}) {
     queryKey: inboundKeys.list(params),
     queryFn: async (): Promise<InboundListResponse> => {
       const searchParams = new URLSearchParams();
-      
+
       Object.entries(params).forEach(([key, value]) => {
         if (value !== undefined && value !== null && value !== '') {
           searchParams.append(key, String(value));
@@ -50,7 +51,7 @@ export function useInboundRecords(params: InboundQueryParams = {}) {
       if (!response.ok) {
         throw new Error('获取入库记录失败');
       }
-      
+
       const result = await response.json();
       if (!result.success) {
         throw new Error(result.error || '获取入库记录失败');
@@ -74,7 +75,7 @@ export function useInboundRecord(id: string) {
       if (!response.ok) {
         throw new Error('获取入库记录失败');
       }
-      
+
       const result = await response.json();
       if (!result.success) {
         throw new Error(result.error || '获取入库记录失败');
@@ -126,7 +127,13 @@ export function useUpdateInboundRecord() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: UpdateInboundRequest }): Promise<InboundRecord> => {
+    mutationFn: async ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateInboundRequest;
+    }): Promise<InboundRecord> => {
       const response = await fetch(`${API_BASE}/${id}`, {
         method: 'PUT',
         headers: {
@@ -207,7 +214,7 @@ export function useProductSearch(query: string) {
       if (!response.ok) {
         throw new Error('搜索产品失败');
       }
-      
+
       const result = await response.json();
       if (!result.success) {
         throw new Error(result.error || '搜索产品失败');
@@ -228,14 +235,20 @@ export function useInboundStats() {
       // 这里可以创建专门的统计API，暂时使用列表API模拟
       const today = new Date();
       const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-      
+
       const [todayRecords, monthRecords, recentRecords] = await Promise.all([
         // 今日记录
-        fetch(`${API_BASE}?startDate=${today.toISOString().split('T')[0]}&limit=1000`).then(r => r.json()),
+        fetch(
+          `${API_BASE}?startDate=${today.toISOString().split('T')[0]}&limit=1000`
+        ).then(r => r.json()),
         // 本月记录
-        fetch(`${API_BASE}?startDate=${startOfMonth.toISOString().split('T')[0]}&limit=1000`).then(r => r.json()),
+        fetch(
+          `${API_BASE}?startDate=${startOfMonth.toISOString().split('T')[0]}&limit=1000`
+        ).then(r => r.json()),
         // 最近记录
-        fetch(`${API_BASE}?limit=5&sortBy=createdAt&sortOrder=desc`).then(r => r.json()),
+        fetch(`${API_BASE}?limit=5&sortBy=createdAt&sortOrder=desc`).then(r =>
+          r.json()
+        ),
       ]);
 
       const todayData = todayRecords.success ? todayRecords.data : [];
@@ -245,7 +258,10 @@ export function useInboundStats() {
       return {
         todayCount: todayData.length,
         monthCount: monthData.length,
-        totalQuantity: monthData.reduce((sum: number, record: any) => sum + record.quantity, 0),
+        totalQuantity: monthData.reduce(
+          (sum: number, record: any) => sum + record.quantity,
+          0
+        ),
         recentRecords: recentData,
       };
     },

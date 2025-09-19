@@ -31,9 +31,9 @@ async function testThicknessField() {
           pattern: '石纹',
           grade: '优等品',
           origin: '广东佛山',
-          series: '现代简约系列'
-        })
-      }
+          series: '现代简约系列',
+        }),
+      },
     });
 
     console.log('✅ 创建成功:', {
@@ -41,7 +41,7 @@ async function testThicknessField() {
       code: productWithThickness.code,
       name: productWithThickness.name,
       thickness: productWithThickness.thickness,
-      weight: productWithThickness.weight
+      weight: productWithThickness.weight,
     });
 
     // 2. 测试创建不带厚度的产品（可选字段）
@@ -55,8 +55,8 @@ async function testThicknessField() {
         piecesPerUnit: 1,
         weight: 20.0,
         // thickness 字段省略，应该为 null
-        status: 'active'
-      }
+        status: 'active',
+      },
     });
 
     console.log('✅ 创建成功:', {
@@ -64,7 +64,7 @@ async function testThicknessField() {
       code: productWithoutThickness.code,
       name: productWithoutThickness.name,
       thickness: productWithoutThickness.thickness, // 应该是 null
-      weight: productWithoutThickness.weight
+      weight: productWithoutThickness.weight,
     });
 
     // 3. 测试更新产品厚度
@@ -72,14 +72,14 @@ async function testThicknessField() {
     const updatedProduct = await prisma.product.update({
       where: { id: productWithoutThickness.id },
       data: {
-        thickness: 10.0 // 添加厚度
-      }
+        thickness: 10.0, // 添加厚度
+      },
     });
 
     console.log('✅ 更新成功:', {
       id: updatedProduct.id,
       code: updatedProduct.code,
-      thickness: updatedProduct.thickness // 应该是 10.0
+      thickness: updatedProduct.thickness, // 应该是 10.0
     });
 
     // 4. 测试查询产品列表（包含厚度字段）
@@ -87,8 +87,8 @@ async function testThicknessField() {
     const products = await prisma.product.findMany({
       where: {
         code: {
-          startsWith: 'TEST-'
-        }
+          startsWith: 'TEST-',
+        },
       },
       select: {
         id: true,
@@ -96,18 +96,20 @@ async function testThicknessField() {
         name: true,
         thickness: true,
         weight: true,
-        specifications: true
-      }
+        specifications: true,
+      },
     });
 
     console.log('✅ 查询成功，找到产品数量:', products.length);
     products.forEach(product => {
-      console.log(`  - ${product.code}: 厚度=${product.thickness}mm, 重量=${product.weight}kg`);
+      console.log(
+        `  - ${product.code}: 厚度=${product.thickness}mm, 重量=${product.weight}kg`
+      );
     });
 
     // 5. 测试厚度字段的边界值
     console.log('\n5. 测试厚度字段的边界值');
-    
+
     // 测试最小值 0
     const productMinThickness = await prisma.product.create({
       data: {
@@ -116,8 +118,8 @@ async function testThicknessField() {
         thickness: 0,
         unit: 'piece',
         piecesPerUnit: 1,
-        status: 'active'
-      }
+        status: 'active',
+      },
     });
     console.log('✅ 最小厚度测试成功:', productMinThickness.thickness);
 
@@ -129,8 +131,8 @@ async function testThicknessField() {
         thickness: 100,
         unit: 'piece',
         piecesPerUnit: 1,
-        status: 'active'
-      }
+        status: 'active',
+      },
     });
     console.log('✅ 最大厚度测试成功:', productMaxThickness.thickness);
 
@@ -139,25 +141,24 @@ async function testThicknessField() {
     const deleteResult = await prisma.product.deleteMany({
       where: {
         code: {
-          startsWith: 'TEST-'
-        }
-      }
+          startsWith: 'TEST-',
+        },
+      },
     });
     console.log('✅ 清理完成，删除产品数量:', deleteResult.count);
 
     console.log('\n🎉 所有测试通过！厚度字段功能正常。');
-
   } catch (error) {
     console.error('❌ 测试失败:', error);
-    
+
     // 清理可能创建的测试数据
     try {
       await prisma.product.deleteMany({
         where: {
           code: {
-            startsWith: 'TEST-'
-          }
-        }
+            startsWith: 'TEST-',
+          },
+        },
       });
       console.log('🧹 已清理测试数据');
     } catch (cleanupError) {

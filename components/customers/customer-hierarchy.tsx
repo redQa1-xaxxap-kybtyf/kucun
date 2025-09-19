@@ -2,13 +2,13 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-    Building2,
-    Check,
-    ChevronDown,
-    ChevronRight,
-    ChevronsUpDown,
-    Store,
-    User
+  Building2,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  ChevronsUpDown,
+  Store,
+  User,
 } from 'lucide-react';
 import { useState } from 'react';
 import type { Control } from 'react-hook-form';
@@ -18,18 +18,18 @@ import { useController } from 'react-hook-form';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Command,
-    CommandEmpty,
-    CommandGroup,
-    CommandInput,
-    CommandItem,
-    CommandList,
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
 } from '@/components/ui/command';
 import { Label } from '@/components/ui/label';
 import {
-    Popover,
-    PopoverContent,
-    PopoverTrigger,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -37,13 +37,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 // Icons
 
 // API and Types
-import {
-    searchCustomers
-} from '@/lib/api/customers';
+import { searchCustomers } from '@/lib/api/customers';
 import type { Customer } from '@/lib/types/customer';
 import {
-    CUSTOMER_TYPE_LABELS,
-    CUSTOMER_TYPE_VARIANTS,
+  CUSTOMER_TYPE_LABELS,
+  CUSTOMER_TYPE_VARIANTS,
 } from '@/lib/types/customer';
 
 // 客户层级树节点类型

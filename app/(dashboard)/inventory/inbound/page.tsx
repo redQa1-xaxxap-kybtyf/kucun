@@ -3,13 +3,13 @@
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import {
-    ArrowLeft,
-    Calendar,
-    FileText,
-    Package,
-    Plus,
-    TrendingUp,
-    User
+  ArrowLeft,
+  Calendar,
+  FileText,
+  Package,
+  Plus,
+  TrendingUp,
+  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
@@ -19,12 +19,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 // Icons
 
@@ -61,14 +61,20 @@ export default function InboundRecordsPage() {
   const inboundRecords = data?.data || [];
 
   // 格式化日期
-  const formatDate = (dateString: string) => format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
+  const formatDate = (dateString: string) =>
+    format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
 
   // 格式化操作类型
-  const getOperationTypeLabel = (reason: string) => INBOUND_REASON_LABELS[reason as keyof typeof INBOUND_REASON_LABELS] || reason;
+  const getOperationTypeLabel = (reason: string) =>
+    INBOUND_REASON_LABELS[reason as keyof typeof INBOUND_REASON_LABELS] ||
+    reason;
 
   // 获取操作类型样式
   const getOperationTypeVariant = (reason: string) => {
-    const variants: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+    const variants: Record<
+      string,
+      'default' | 'secondary' | 'destructive' | 'outline'
+    > = {
       purchase: 'default',
       return: 'secondary',
       transfer: 'outline',
@@ -131,9 +137,7 @@ export default function InboundRecordsPage() {
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {stats?.todayCount || 0}
-            </div>
+            <div className="text-2xl font-bold">{stats?.todayCount || 0}</div>
             <p className="text-xs text-muted-foreground">笔入库记录</p>
           </CardContent>
         </Card>
@@ -143,9 +147,7 @@ export default function InboundRecordsPage() {
             <Package className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {stats?.monthCount || 0}
-            </div>
+            <div className="text-2xl font-bold">{stats?.monthCount || 0}</div>
             <p className="text-xs text-muted-foreground">笔入库记录</p>
           </CardContent>
         </Card>
@@ -182,7 +184,7 @@ export default function InboundRecordsPage() {
               ))}
             </div>
           ) : inboundRecords.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
+            <div className="py-8 text-center text-muted-foreground">
               暂无入库记录
             </div>
           ) : (
@@ -201,7 +203,7 @@ export default function InboundRecordsPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {inboundRecords.map((record) => (
+                    {inboundRecords.map(record => (
                       <TableRow key={record.id}>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -217,7 +219,9 @@ export default function InboundRecordsPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={getOperationTypeVariant(record.reason)}>
+                          <Badge
+                            variant={getOperationTypeVariant(record.reason)}
+                          >
                             {getOperationTypeLabel(record.reason)}
                           </Badge>
                         </TableCell>
@@ -248,8 +252,8 @@ export default function InboundRecordsPage() {
               </div>
 
               {/* 移动端卡片 */}
-              <div className="md:hidden space-y-4">
-                {inboundRecords.map((record) => (
+              <div className="space-y-4 md:hidden">
+                {inboundRecords.map(record => (
                   <Card key={record.id}>
                     <CardContent className="pt-4">
                       <div className="space-y-3">
@@ -260,17 +264,25 @@ export default function InboundRecordsPage() {
                               {record.product?.name || '-'}
                             </span>
                           </div>
-                          <Badge variant={getOperationTypeVariant(record.reason)}>
+                          <Badge
+                            variant={getOperationTypeVariant(record.reason)}
+                          >
                             {getOperationTypeLabel(record.reason)}
                           </Badge>
                         </div>
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div>
-                            <span className="text-muted-foreground">数量：</span>
-                            <span className="font-medium">+{record.quantity}</span>
+                            <span className="text-muted-foreground">
+                              数量：
+                            </span>
+                            <span className="font-medium">
+                              +{record.quantity}
+                            </span>
                           </div>
                           <div>
-                            <span className="text-muted-foreground">操作人：</span>
+                            <span className="text-muted-foreground">
+                              操作人：
+                            </span>
                             <span>{record.user?.name || '-'}</span>
                           </div>
                         </div>
@@ -280,7 +292,9 @@ export default function InboundRecordsPage() {
                         </div>
                         {record.remarks && (
                           <div className="text-sm">
-                            <span className="text-muted-foreground">备注：</span>
+                            <span className="text-muted-foreground">
+                              备注：
+                            </span>
                             <span>{record.remarks}</span>
                           </div>
                         )}

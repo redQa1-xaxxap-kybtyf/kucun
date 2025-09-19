@@ -33,7 +33,9 @@ async function testBatchDeleteProducts() {
     const categoryResult = await categoryResponse.json();
     if (categoryResult.success) {
       createdCategoryId = categoryResult.data.id;
-      console.log(`   ✅ 分类创建成功: ${categoryResult.data.name} (${createdCategoryId})`);
+      console.log(
+        `   ✅ 分类创建成功: ${categoryResult.data.name} (${createdCategoryId})`
+      );
     } else {
       throw new Error(`分类创建失败: ${categoryResult.error}`);
     }
@@ -83,7 +85,7 @@ async function testBatchDeleteProducts() {
     // 3. 测试批量删除API - 删除部分产品
     console.log('\n🗑️  3. 测试批量删除API（删除前3个产品）...');
     const deleteProductIds = createdProductIds.slice(0, 3);
-    
+
     const batchDeleteResponse = await fetch(`${baseUrl}/api/products/batch`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -104,8 +106,10 @@ async function testBatchDeleteProducts() {
     if (batchDeleteResult.success && batchDeleteResult.data) {
       const result = batchDeleteResult.data;
       console.log(`   ✅ 批量删除成功: ${result.message}`);
-      console.log(`   📊 删除统计: 成功 ${result.deletedCount} 个，失败 ${result.failedCount} 个`);
-      
+      console.log(
+        `   📊 删除统计: 成功 ${result.deletedCount} 个，失败 ${result.failedCount} 个`
+      );
+
       if (result.failedProducts && result.failedProducts.length > 0) {
         console.log('   ❌ 删除失败的产品:');
         result.failedProducts.forEach(p => {
@@ -131,7 +135,7 @@ async function testBatchDeleteProducts() {
     console.log('\n🚫 5. 测试删除不存在的产品...');
     const nonExistentIds = ['non-existent-1', 'non-existent-2'];
     const remainingIds = createdProductIds.slice(3);
-    
+
     const mixedDeleteResponse = await fetch(`${baseUrl}/api/products/batch`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
@@ -145,8 +149,10 @@ async function testBatchDeleteProducts() {
       if (mixedResult.success && mixedResult.data) {
         const result = mixedResult.data;
         console.log(`   ✅ 混合删除完成: ${result.message}`);
-        console.log(`   📊 删除统计: 成功 ${result.deletedCount} 个，失败 ${result.failedCount} 个`);
-        
+        console.log(
+          `   📊 删除统计: 成功 ${result.deletedCount} 个，失败 ${result.failedCount} 个`
+        );
+
         if (result.failedProducts && result.failedProducts.length > 0) {
           console.log('   ❌ 删除失败的产品:');
           result.failedProducts.forEach(p => {
@@ -169,7 +175,9 @@ async function testBatchDeleteProducts() {
     if (emptyDeleteResponse.status === 400) {
       console.log('   ✅ 空数组删除正确返回400错误');
     } else {
-      console.log(`   ❌ 空数组删除返回了意外的状态码: ${emptyDeleteResponse.status}`);
+      console.log(
+        `   ❌ 空数组删除返回了意外的状态码: ${emptyDeleteResponse.status}`
+      );
     }
 
     // 7. 测试超大数组删除
@@ -186,7 +194,9 @@ async function testBatchDeleteProducts() {
     if (largeDeleteResponse.status === 400) {
       console.log('   ✅ 超大数组删除正确返回400错误');
     } else {
-      console.log(`   ❌ 超大数组删除返回了意外的状态码: ${largeDeleteResponse.status}`);
+      console.log(
+        `   ❌ 超大数组删除返回了意外的状态码: ${largeDeleteResponse.status}`
+      );
     }
 
     console.log('\n🎉 产品批量删除功能测试完成！');
@@ -197,35 +207,38 @@ async function testBatchDeleteProducts() {
     console.log('   ✅ 正确处理混合删除场景');
     console.log('   ✅ 正确验证输入参数');
     console.log('   ✅ 返回详细的删除结果和失败信息');
-    
+
     console.log('\n🎯 功能验证:');
     console.log('   📋 批量删除API支持删除多个产品');
     console.log('   🔍 正确检查产品是否存在');
     console.log('   🛡️  正确验证用户权限和输入参数');
     console.log('   📊 返回详细的删除统计信息');
     console.log('   ⚡ 支持部分成功的删除场景');
-
   } catch (error) {
     console.error('\n❌ 测试失败:', error);
     process.exit(1);
   } finally {
     // 清理测试数据
     console.log('\n🧹 清理测试数据...');
-    
+
     // 清理剩余的产品
     for (const productId of createdProductIds) {
       try {
-        await fetch(`${baseUrl}/api/products/${productId}`, { method: 'DELETE' });
+        await fetch(`${baseUrl}/api/products/${productId}`, {
+          method: 'DELETE',
+        });
         console.log(`   ✅ 已清理产品: ${productId}`);
       } catch (cleanupError) {
         console.log(`   ⚠️  清理产品失败: ${productId}`);
       }
     }
-    
+
     // 清理分类
     if (createdCategoryId) {
       try {
-        await fetch(`${baseUrl}/api/categories/${createdCategoryId}`, { method: 'DELETE' });
+        await fetch(`${baseUrl}/api/categories/${createdCategoryId}`, {
+          method: 'DELETE',
+        });
         console.log(`   ✅ 已清理分类: ${createdCategoryId}`);
       } catch (cleanupError) {
         console.log(`   ⚠️  清理分类失败: ${createdCategoryId}`);

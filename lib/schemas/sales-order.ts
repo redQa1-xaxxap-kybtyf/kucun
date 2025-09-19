@@ -166,12 +166,13 @@ export function calculateOrderTotal(items: SalesOrderItemData[]): number {
 export function validateOrderItems(items: SalesOrderItemData[]): boolean {
   if (items.length === 0) return false;
 
-  return items.every(item => (
+  return items.every(
+    item =>
       item.productId &&
       item.quantity > 0 &&
       item.unitPrice >= 0 &&
       item.subtotal >= 0
-    ));
+  );
 }
 
 /**

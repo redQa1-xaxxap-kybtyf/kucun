@@ -1,15 +1,15 @@
 'use client';
 
 import {
-    CreditCard,
-    HelpCircle,
-    LayoutDashboard,
-    Package,
-    RotateCcw,
-    Settings,
-    ShoppingCart,
-    Users,
-    Warehouse
+  CreditCard,
+  HelpCircle,
+  LayoutDashboard,
+  Package,
+  RotateCcw,
+  Settings,
+  ShoppingCart,
+  Users,
+  Warehouse,
 } from 'lucide-react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -21,11 +21,11 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import {
-    Sheet,
-    SheetContent,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
 } from '@/components/ui/sheet';
 import { useNavigationBadges } from '@/hooks/use-navigation-badges';
 import type { NavigationItem } from '@/lib/types/layout';

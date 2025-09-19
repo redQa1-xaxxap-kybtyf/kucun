@@ -61,9 +61,11 @@ function fixFileIssues(filePath: string): void {
     }
 
     // 4. 修复重复导入（基础版本）
-    const importLines = content.split('\n').filter(line => line.trim().startsWith('import'));
+    const importLines = content
+      .split('\n')
+      .filter(line => line.trim().startsWith('import'));
     const importMap = new Map<string, string[]>();
-    
+
     importLines.forEach(line => {
       const match = line.match(/import\s+{([^}]+)}\s+from\s+['"]([^'"]+)['"]/);
       if (match) {
@@ -71,7 +73,10 @@ function fixFileIssues(filePath: string): void {
         if (importMap.has(module)) {
           importMap.get(module)!.push(...imports.split(',').map(s => s.trim()));
         } else {
-          importMap.set(module, imports.split(',').map(s => s.trim()));
+          importMap.set(
+            module,
+            imports.split(',').map(s => s.trim())
+          );
         }
       }
     });
@@ -103,10 +108,15 @@ function processDirectory(dirPath: string): void {
 
     if (stat.isDirectory()) {
       // 跳过node_modules和.next等目录
-      if (!['node_modules', '.next', 'dist', 'build', 'coverage'].includes(item)) {
+      if (
+        !['node_modules', '.next', 'dist', 'build', 'coverage'].includes(item)
+      ) {
         processDirectory(fullPath);
       }
-    } else if (stat.isFile() && (item.endsWith('.ts') || item.endsWith('.tsx'))) {
+    } else if (
+      stat.isFile() &&
+      (item.endsWith('.ts') || item.endsWith('.tsx'))
+    ) {
       fixFileIssues(fullPath);
     }
   }

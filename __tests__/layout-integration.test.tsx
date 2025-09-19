@@ -9,12 +9,7 @@ import { DashboardLayout } from '@/components/common/DashboardLayout';
 import { GlobalSearch } from '@/components/common/GlobalSearch';
 import { Header } from '@/components/common/Header';
 import { MobileNav } from '@/components/common/MobileNav';
-import {
-    fireEvent,
-    render,
-    screen,
-    waitFor
-} from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { SessionProvider } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import React from 'react';

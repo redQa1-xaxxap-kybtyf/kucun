@@ -5,29 +5,29 @@
  */
 
 import {
-    NavigationItemSchema,
-    validateNavigationItem,
-    validateUserInfo
+  NavigationItemSchema,
+  validateNavigationItem,
+  validateUserInfo,
 } from '@/lib/schemas/layout';
 import type {
-    LayoutConfig,
-    NavigationItem,
-    NotificationItem,
-    UserInfo
+  LayoutConfig,
+  NavigationItem,
+  NotificationItem,
+  UserInfo,
 } from '@/lib/types/layout';
 import {
-    canAccessPath,
-    getAccessibleNavItems,
-    hasPermission,
-    hasRole
+  canAccessPath,
+  getAccessibleNavItems,
+  hasPermission,
+  hasRole,
 } from '@/lib/utils/permissions';
 import {
-    isLayoutConfig,
-    isNavigationItem,
-    isNotificationItem,
-    isUserInfo,
-    TypeAssert,
-    TypeSafeConverter
+  isLayoutConfig,
+  isNavigationItem,
+  isNotificationItem,
+  isUserInfo,
+  TypeAssert,
+  TypeSafeConverter,
 } from '@/lib/utils/type-guards';
 import { describe, expect, it, jest } from '@jest/globals';
 import { Home } from 'lucide-react';

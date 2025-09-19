@@ -5,51 +5,48 @@
 
 import { format } from 'date-fns';
 import {
-    Check,
-    DollarSign,
-    Edit,
-    Eye,
-    MoreHorizontal,
-    RefreshCw,
-    Search,
-    Trash2,
-    X
+  Check,
+  DollarSign,
+  Edit,
+  Eye,
+  MoreHorizontal,
+  RefreshCw,
+  Search,
+  Trash2,
+  X,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
-    Card,
-    CardContent
-} from '@/components/ui/card';
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { MobileDataTable } from '@/components/ui/mobile-data-table';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { paymentUtils } from '@/lib/api/payments';
 import type {
-    PaymentRecordDetail,
-    PaymentRecordQuery
+  PaymentRecordDetail,
+  PaymentRecordQuery,
 } from '@/lib/types/payment';
 import {
-    DEFAULT_PAYMENT_METHODS,
-    DEFAULT_PAYMENT_STATUSES,
+  DEFAULT_PAYMENT_METHODS,
+  DEFAULT_PAYMENT_STATUSES,
 } from '@/lib/types/payment';
 import { cn } from '@/lib/utils';
 

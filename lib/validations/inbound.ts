@@ -8,30 +8,27 @@ import type { InboundReason } from '@/lib/types/inbound';
 // 入库原因验证
 export const inboundReasonSchema = z.enum([
   'purchase',
-  'return', 
+  'return',
   'transfer',
   'surplus',
-  'other'
+  'other',
 ] as const);
 
 // 创建入库记录验证规则
 export const createInboundSchema = z.object({
-  productId: z
-    .string()
-    .min(1, '请选择产品')
-    .uuid('产品ID格式不正确'),
-  
+  productId: z.string().min(1, '请选择产品').uuid('产品ID格式不正确'),
+
   quantity: z
-    .number()
+    .number({
+      required_error: '请输入入库数量',
+      invalid_type_error: '数量必须是数字',
+    })
     .min(0.01, '数量必须大于0.01')
     .max(999999.99, '数量不能超过999999.99')
-    .refine(
-      (val) => Number(val.toFixed(2)) === val,
-      '数量最多支持2位小数'
-    ),
-  
+    .refine(val => Number(val.toFixed(2)) === val, '数量最多支持2位小数'),
+
   reason: inboundReasonSchema.default('purchase'),
-  
+
   remarks: z
     .string()
     .max(500, '备注不能超过500个字符')
@@ -45,14 +42,11 @@ export const updateInboundSchema = z.object({
     .number()
     .min(0.01, '数量必须大于0.01')
     .max(999999.99, '数量不能超过999999.99')
-    .refine(
-      (val) => Number(val.toFixed(2)) === val,
-      '数量最多支持2位小数'
-    )
+    .refine(val => Number(val.toFixed(2)) === val, '数量最多支持2位小数')
     .optional(),
-  
+
   reason: inboundReasonSchema.optional(),
-  
+
   remarks: z
     .string()
     .max(500, '备注不能超过500个字符')
@@ -65,55 +59,41 @@ export const inboundQuerySchema = z.object({
   page: z
     .string()
     .optional()
-    .transform(val => val ? parseInt(val) : 1)
+    .transform(val => (val ? parseInt(val) : 1))
     .refine(val => val > 0, '页码必须大于0'),
-  
+
   limit: z
     .string()
     .optional()
-    .transform(val => val ? parseInt(val) : 20)
+    .transform(val => (val ? parseInt(val) : 20))
     .refine(val => val > 0 && val <= 100, '每页数量必须在1-100之间'),
-  
+
   search: z
     .string()
     .optional()
     .transform(val => val?.trim() || undefined),
-  
-  productId: z
-    .string()
-    .uuid('产品ID格式不正确')
-    .optional(),
-  
+
+  productId: z.string().uuid('产品ID格式不正确').optional(),
+
   reason: inboundReasonSchema.optional(),
-  
-  userId: z
-    .string()
-    .uuid('用户ID格式不正确')
-    .optional(),
-  
+
+  userId: z.string().uuid('用户ID格式不正确').optional(),
+
   startDate: z
     .string()
     .optional()
-    .refine(
-      val => !val || !isNaN(Date.parse(val)),
-      '开始日期格式不正确'
-    ),
-  
+    .refine(val => !val || !isNaN(Date.parse(val)), '开始日期格式不正确'),
+
   endDate: z
     .string()
     .optional()
-    .refine(
-      val => !val || !isNaN(Date.parse(val)),
-      '结束日期格式不正确'
-    ),
-  
+    .refine(val => !val || !isNaN(Date.parse(val)), '结束日期格式不正确'),
+
   sortBy: z
     .enum(['createdAt', 'quantity', 'recordNumber'])
     .default('createdAt'),
-  
-  sortOrder: z
-    .enum(['asc', 'desc'])
-    .default('desc'),
+
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
 // 批量入库验证规则
@@ -126,10 +106,7 @@ export const batchInboundSchema = z.object({
 
 // 入库记录ID验证
 export const inboundIdSchema = z.object({
-  id: z
-    .string()
-    .min(1, '入库记录ID不能为空')
-    .uuid('入库记录ID格式不正确'),
+  id: z.string().min(1, '入库记录ID不能为空').uuid('入库记录ID格式不正确'),
 });
 
 // 产品搜索验证
@@ -139,12 +116,8 @@ export const productSearchSchema = z.object({
     .min(1, '搜索关键词不能为空')
     .max(100, '搜索关键词不能超过100个字符')
     .transform(val => val.trim()),
-  
-  limit: z
-    .number()
-    .min(1)
-    .max(50)
-    .default(20),
+
+  limit: z.number().min(1).max(50).default(20),
 });
 
 // 类型导出
@@ -156,10 +129,14 @@ export type InboundIdData = z.infer<typeof inboundIdSchema>;
 export type ProductSearchData = z.infer<typeof productSearchSchema>;
 
 // 验证辅助函数
-export const validateInboundReason = (reason: string): reason is InboundReason => ['purchase', 'return', 'transfer', 'surplus', 'other'].includes(reason);
+export const validateInboundReason = (
+  reason: string
+): reason is InboundReason =>
+  ['purchase', 'return', 'transfer', 'surplus', 'other'].includes(reason);
 
 // 数量格式化辅助函数
-export const formatQuantity = (quantity: number): number => Math.round(quantity * 100) / 100;
+export const formatQuantity = (quantity: number): number =>
+  Math.round(quantity * 100) / 100;
 
 // 备注清理辅助函数
 export const cleanRemarks = (remarks?: string): string | undefined => {

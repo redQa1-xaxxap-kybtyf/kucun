@@ -23,10 +23,15 @@ async function checkPageFileChanges(): Promise<TestResult[]> {
   const results: TestResult[] = [];
 
   try {
-    const pageContent = readFileSync('app/(dashboard)/inventory/adjust/page.tsx', 'utf8');
+    const pageContent = readFileSync(
+      'app/(dashboard)/inventory/adjust/page.tsx',
+      'utf8'
+    );
 
     // 检查1：是否使用了实际的库存API
-    const usesInventoryAPI = pageContent.includes('getInventories') && pageContent.includes('useQuery');
+    const usesInventoryAPI =
+      pageContent.includes('getInventories') &&
+      pageContent.includes('useQuery');
     results.push({
       name: '使用实际库存API',
       success: usesInventoryAPI,
@@ -34,19 +39,26 @@ async function checkPageFileChanges(): Promise<TestResult[]> {
     });
 
     // 检查2：是否移除了色号相关代码
-    const hasNoColorCodeReferences = !pageContent.includes('colorCode') && !pageContent.includes('色号');
+    const hasNoColorCodeReferences =
+      !pageContent.includes('colorCode') && !pageContent.includes('色号');
     results.push({
       name: '移除色号引用',
       success: hasNoColorCodeReferences,
-      message: hasNoColorCodeReferences ? '已移除所有色号相关代码' : '仍存在色号相关代码',
+      message: hasNoColorCodeReferences
+        ? '已移除所有色号相关代码'
+        : '仍存在色号相关代码',
     });
 
     // 检查3：是否移除了生产日期相关代码
-    const hasNoProductionDateReferences = !pageContent.includes('productionDate') && !pageContent.includes('生产日期');
+    const hasNoProductionDateReferences =
+      !pageContent.includes('productionDate') &&
+      !pageContent.includes('生产日期');
     results.push({
       name: '移除生产日期引用',
       success: hasNoProductionDateReferences,
-      message: hasNoProductionDateReferences ? '已移除所有生产日期相关代码' : '仍存在生产日期相关代码',
+      message: hasNoProductionDateReferences
+        ? '已移除所有生产日期相关代码'
+        : '仍存在生产日期相关代码',
     });
 
     // 检查4：是否移除了ColorCodeDisplay组件
@@ -54,29 +66,34 @@ async function checkPageFileChanges(): Promise<TestResult[]> {
     results.push({
       name: '移除ColorCodeDisplay组件',
       success: hasNoColorCodeDisplay,
-      message: hasNoColorCodeDisplay ? '已移除ColorCodeDisplay组件' : '仍使用ColorCodeDisplay组件',
+      message: hasNoColorCodeDisplay
+        ? '已移除ColorCodeDisplay组件'
+        : '仍使用ColorCodeDisplay组件',
     });
 
     // 检查5：是否显示了合适的替代信息
-    const hasAlternativeInfo = pageContent.includes('product?.specification') ||
-                              pageContent.includes('batchNumber') ||
-                              pageContent.includes('location');
+    const hasAlternativeInfo =
+      pageContent.includes('product?.specification') ||
+      pageContent.includes('batchNumber') ||
+      pageContent.includes('location');
     results.push({
       name: '显示替代信息',
       success: hasAlternativeInfo,
-      message: hasAlternativeInfo ? '已显示产品规格、批次或位置等替代信息' : '缺少替代信息显示',
+      message: hasAlternativeInfo
+        ? '已显示产品规格、批次或位置等替代信息'
+        : '缺少替代信息显示',
     });
 
     // 检查7：是否更新了页面标题和描述
-    const hasUpdatedTitle = pageContent.includes('当前库存状态') ||
-                           pageContent.includes('库存充足') ||
-                           pageContent.includes('库存不足');
+    const hasUpdatedTitle =
+      pageContent.includes('当前库存状态') ||
+      pageContent.includes('库存充足') ||
+      pageContent.includes('库存不足');
     results.push({
       name: '页面内容更新',
       success: hasUpdatedTitle,
       message: hasUpdatedTitle ? '页面内容已更新为库存状态' : '页面内容未更新',
     });
-
   } catch (error) {
     results.push({
       name: '文件检查',
@@ -97,7 +114,7 @@ async function checkTypeScriptCompilation(): Promise<TestResult> {
 
     execSync('npx tsc --noEmit --skipLibCheck', {
       encoding: 'utf8',
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
 
     return {
@@ -107,14 +124,16 @@ async function checkTypeScriptCompilation(): Promise<TestResult> {
     };
   } catch (error: any) {
     const errorOutput = error.stdout || error.stderr || error.message;
-    const hasInventoryAdjustErrors = errorOutput.includes('inventory/adjust/page.tsx');
+    const hasInventoryAdjustErrors = errorOutput.includes(
+      'inventory/adjust/page.tsx'
+    );
 
     return {
       name: 'TypeScript编译',
       success: !hasInventoryAdjustErrors,
-      message: hasInventoryAdjustErrors ?
-        '库存调整页面存在TypeScript错误' :
-        'TypeScript编译通过（其他文件可能有错误）',
+      message: hasInventoryAdjustErrors
+        ? '库存调整页面存在TypeScript错误'
+        : 'TypeScript编译通过（其他文件可能有错误）',
     };
   }
 }
@@ -126,18 +145,31 @@ async function checkImportDependencies(): Promise<TestResult[]> {
   const results: TestResult[] = [];
 
   try {
-    const pageContent = readFileSync('app/(dashboard)/inventory/adjust/page.tsx', 'utf8');
+    const pageContent = readFileSync(
+      'app/(dashboard)/inventory/adjust/page.tsx',
+      'utf8'
+    );
 
     // 检查必要的导入
     const requiredImports = [
-      { name: 'getInventories', pattern: /import.*getInventories.*from.*@\/lib\/api\/inventory/ },
-      { name: 'useQuery', pattern: /import.*useQuery.*from.*@tanstack\/react-query/ },
+      {
+        name: 'getInventories',
+        pattern: /import.*getInventories.*from.*@\/lib\/api\/inventory/,
+      },
+      {
+        name: 'useQuery',
+        pattern: /import.*useQuery.*from.*@tanstack\/react-query/,
+      },
       { name: 'format函数', pattern: /import.*format.*from.*date-fns/ },
     ];
 
     // 检查不应该存在的导入
     const forbiddenImports = [
-      { name: 'ColorCodeDisplay', pattern: /import.*ColorCodeDisplay.*from.*@\/components\/ui\/color-code-display/ },
+      {
+        name: 'ColorCodeDisplay',
+        pattern:
+          /import.*ColorCodeDisplay.*from.*@\/components\/ui\/color-code-display/,
+      },
     ];
 
     requiredImports.forEach(({ name, pattern }) => {
@@ -157,7 +189,6 @@ async function checkImportDependencies(): Promise<TestResult[]> {
         message: !hasImport ? `${name}导入已正确移除` : `仍存在${name}导入`,
       });
     });
-
   } catch (error) {
     results.push({
       name: '导入检查',
@@ -178,8 +209,8 @@ async function runTests() {
   const results: TestResult[] = [];
 
   // 运行各项检查
-  results.push(...await checkPageFileChanges());
-  results.push(...await checkImportDependencies());
+  results.push(...(await checkPageFileChanges()));
+  results.push(...(await checkImportDependencies()));
   results.push(await checkTypeScriptCompilation());
 
   // 输出结果

@@ -3,15 +3,15 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
-    AlertCircle,
-    ArrowLeft,
-    Building2,
-    Calculator,
-    Loader2,
-    Package,
-    Save,
-    TrendingDown,
-    TrendingUp
+  AlertCircle,
+  ArrowLeft,
+  Building2,
+  Calculator,
+  Loader2,
+  Package,
+  Save,
+  TrendingDown,
+  TrendingUp,
 } from 'lucide-react';
 import { useState } from 'react';
 
@@ -24,28 +24,28 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
@@ -55,36 +55,35 @@ import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
 import {
-    adjustInventory,
-    checkInventoryAvailability,
-    createInbound,
-    createOutbound,
-    inventoryQueryKeys,
+  adjustInventory,
+  checkInventoryAvailability,
+  createInbound,
+  createOutbound,
+  inventoryQueryKeys,
 } from '@/lib/api/inventory';
 import { getProduct } from '@/lib/api/products';
 import type {
-    InboundRecord,
-    Inventory,
-    OutboundRecord,
+  InboundRecord,
+  Inventory,
+  OutboundRecord,
 } from '@/lib/types/inventory';
 import {
-    INBOUND_TYPE_LABELS,
-    OUTBOUND_TYPE_LABELS,
+  INBOUND_TYPE_LABELS,
+  OUTBOUND_TYPE_LABELS,
 } from '@/lib/types/inventory';
 import type {
-    InboundCreateFormData,
-    InventoryAdjustFormData,
-    OutboundCreateFormData
+  InboundCreateFormData,
+  InventoryAdjustFormData,
+  OutboundCreateFormData,
 } from '@/lib/validations/inventory';
 import {
-    inboundCreateDefaults,
-    inboundCreateSchema,
-    inventoryAdjustDefaults,
-    inventoryAdjustSchema,
-    outboundCreateDefaults,
-    outboundCreateSchema,
+  inboundCreateDefaults,
+  inboundCreateSchema,
+  inventoryAdjustDefaults,
+  inventoryAdjustSchema,
+  outboundCreateDefaults,
+  outboundCreateSchema,
 } from '@/lib/validations/inventory';
-
 
 interface InventoryOperationFormProps {
   mode: 'inbound' | 'outbound' | 'adjust';
@@ -160,17 +159,9 @@ export function InventoryOperationForm({
 
   // 检查库存可用性（仅出库时）
   const { data: availabilityData, refetch: checkAvailability } = useQuery({
-    queryKey: [
-      'inventory',
-      'availability',
-      watchedProductId,
-      watchedQuantity,
-    ],
+    queryKey: ['inventory', 'availability', watchedProductId, watchedQuantity],
     queryFn: () =>
-      checkInventoryAvailability(
-        watchedProductId,
-        watchedQuantity || 0
-      ),
+      checkInventoryAvailability(watchedProductId, watchedQuantity || 0),
     enabled:
       mode === 'outbound' &&
       !!watchedProductId &&
@@ -302,9 +293,7 @@ export function InventoryOperationForm({
 
       {/* 库存可用性检查结果 */}
       {mode === 'outbound' && availabilityData && (
-        <Alert
-          variant={availabilityData.available ? 'default' : 'destructive'}
-        >
+        <Alert variant={availabilityData.available ? 'default' : 'destructive'}>
           <Package className="h-4 w-4" />
           <AlertDescription>
             {availabilityData.available

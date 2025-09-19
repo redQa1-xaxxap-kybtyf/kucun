@@ -4,16 +4,16 @@
 'use client';
 
 import {
-    AlertTriangle,
-    ArrowRight,
-    DollarSign,
-    Minus,
-    Package,
-    RotateCcw,
-    ShoppingCart,
-    TrendingDown,
-    TrendingUp,
-    Users,
+  AlertTriangle,
+  ArrowRight,
+  DollarSign,
+  Minus,
+  Package,
+  RotateCcw,
+  ShoppingCart,
+  TrendingDown,
+  TrendingUp,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';

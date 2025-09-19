@@ -8,7 +8,10 @@ import { prisma } from '@/lib/db';
 
 // SKU生成输入验证
 const GenerateSkuSchema = z.object({
-  productCode: z.string().min(1, '产品编码不能为空').max(50, '产品编码不能超过50个字符'),
+  productCode: z
+    .string()
+    .min(1, '产品编码不能为空')
+    .max(50, '产品编码不能超过50个字符'),
   colorCode: z.string().min(1, '色号不能为空').max(20, '色号不能超过20个字符'),
   customSuffix: z.string().max(10, '自定义后缀不能超过10个字符').optional(),
 });
@@ -87,11 +90,11 @@ export async function POST(request: NextRequest) {
     for (let i = 1; i <= 99; i++) {
       const numberedSku = `${baseSku}-${i.toString().padStart(2, '0')}`;
       suggestions.push(numberedSku);
-      
+
       if (!availableSku && !existingSkuSet.has(numberedSku)) {
         availableSku = numberedSku;
       }
-      
+
       // 最多生成10个建议
       if (suggestions.length >= 10) {
         break;
@@ -146,13 +149,25 @@ export async function PUT(request: NextRequest) {
 
     // 批量生成SKU输入验证
     const BatchGenerateSkuSchema = z.object({
-      items: z.array(
-        z.object({
-          productCode: z.string().min(1, '产品编码不能为空').max(50, '产品编码不能超过50个字符'),
-          colorCode: z.string().min(1, '色号不能为空').max(20, '色号不能超过20个字符'),
-          customSuffix: z.string().max(10, '自定义后缀不能超过10个字符').optional(),
-        })
-      ).min(1, '至少需要一个项目').max(100, '批量生成最多支持100个项目'),
+      items: z
+        .array(
+          z.object({
+            productCode: z
+              .string()
+              .min(1, '产品编码不能为空')
+              .max(50, '产品编码不能超过50个字符'),
+            colorCode: z
+              .string()
+              .min(1, '色号不能为空')
+              .max(20, '色号不能超过20个字符'),
+            customSuffix: z
+              .string()
+              .max(10, '自定义后缀不能超过10个字符')
+              .optional(),
+          })
+        )
+        .min(1, '至少需要一个项目')
+        .max(100, '批量生成最多支持100个项目'),
     });
 
     const validationResult = BatchGenerateSkuSchema.safeParse(body);
@@ -205,24 +220,26 @@ export async function PUT(request: NextRequest) {
       const { baseSku } = item;
       const duplicateCount = skuCounts.get(baseSku) || 1;
       const isInternalDuplicate = duplicateCount > 1;
-      
+
       let finalSku = baseSku;
       let isGenerated = false;
-      
+
       // 如果是内部重复或数据库中已存在，生成新的SKU
       if (isInternalDuplicate || existingSkuSet.has(baseSku)) {
         // 为内部重复的项目添加序号
         if (isInternalDuplicate) {
-          const currentIndex = baseSkus.slice(0, index + 1).filter(b => b.baseSku === baseSku).length;
+          const currentIndex = baseSkus
+            .slice(0, index + 1)
+            .filter(b => b.baseSku === baseSku).length;
           finalSku = `${baseSku}-${currentIndex.toString().padStart(2, '0')}`;
         }
-        
+
         // 如果生成的SKU仍然存在，继续生成
         let counter = 1;
         while (existingSkuSet.has(finalSku)) {
           finalSku = `${baseSku}-${counter.toString().padStart(2, '0')}`;
           counter++;
-          
+
           // 防止无限循环
           if (counter > 999) {
             const timestamp = Date.now().toString().slice(-6);
@@ -230,12 +247,12 @@ export async function PUT(request: NextRequest) {
             break;
           }
         }
-        
+
         isGenerated = true;
         // 将生成的SKU添加到已存在集合中，避免后续重复
         existingSkuSet.add(finalSku);
       }
-      
+
       return {
         productCode: item.productCode,
         colorCode: item.colorCode,
@@ -243,9 +260,11 @@ export async function PUT(request: NextRequest) {
         originalSku: baseSku,
         sku: finalSku,
         isGenerated,
-        conflict: isGenerated ? {
-          reason: isInternalDuplicate ? '批量生成中存在重复' : 'SKU已存在',
-        } : undefined,
+        conflict: isGenerated
+          ? {
+              reason: isInternalDuplicate ? '批量生成中存在重复' : 'SKU已存在',
+            }
+          : undefined,
       };
     });
 

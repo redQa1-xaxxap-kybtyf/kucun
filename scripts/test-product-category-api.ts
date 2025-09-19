@@ -76,7 +76,9 @@ async function testProductCategoryAPI() {
 
     // 3. 获取产品详情，验证分类信息
     console.log('\n🔍 3. 获取产品详情，验证分类信息...');
-    const detailResponse = await fetch(`${baseUrl}/api/products/${createdProductId}`);
+    const detailResponse = await fetch(
+      `${baseUrl}/api/products/${createdProductId}`
+    );
 
     if (!detailResponse.ok) {
       throw new Error(`产品详情获取失败: HTTP ${detailResponse.status}`);
@@ -86,10 +88,10 @@ async function testProductCategoryAPI() {
     if (detailResult.success) {
       const product = detailResult.data;
       console.log(`   ✅ 产品详情获取成功`);
-      
+
       // 验证分类信息
       console.log('\n📋 4. 验证分类信息...');
-      
+
       if (product.categoryId) {
         console.log(`   ✅ 产品包含分类ID: ${product.categoryId}`);
       } else {
@@ -101,14 +103,14 @@ async function testProductCategoryAPI() {
         console.log(`      - ID: ${product.category.id}`);
         console.log(`      - 名称: ${product.category.name}`);
         console.log(`      - 编码: ${product.category.code}`);
-        
+
         // 验证分类信息是否正确
         if (product.category.id === createdCategoryId) {
           console.log(`   ✅ 分类ID匹配正确`);
         } else {
           console.log(`   ❌ 分类ID不匹配`);
         }
-        
+
         if (product.category.name === `测试分类_${timestamp}`) {
           console.log(`   ✅ 分类名称匹配正确`);
         } else {
@@ -121,9 +123,17 @@ async function testProductCategoryAPI() {
       // 验证其他基本字段
       console.log('\n📊 5. 验证其他基本字段...');
       const requiredFields = [
-        'id', 'code', 'name', 'specification', 'unit', 
-        'piecesPerUnit', 'weight', 'thickness', 'status', 
-        'createdAt', 'updatedAt'
+        'id',
+        'code',
+        'name',
+        'specification',
+        'unit',
+        'piecesPerUnit',
+        'weight',
+        'thickness',
+        'status',
+        'createdAt',
+        'updatedAt',
       ];
 
       requiredFields.forEach(field => {
@@ -141,36 +151,38 @@ async function testProductCategoryAPI() {
       console.log('   ✅ 产品详情API正确返回分类信息');
       console.log('   ✅ 分类对象包含完整的字段信息');
       console.log('   ✅ 所有基本字段正确返回');
-      
+
       console.log('\n🎯 前端展示效果:');
       console.log('   📋 产品详情页面将正确显示分类名称');
       console.log('   🔗 分类信息与产品关联正确');
       console.log('   💫 用户可以清楚看到产品所属分类');
       console.log('   ⚡ 编辑页面可以正确加载和修改分类');
-
     } else {
       throw new Error(`产品详情获取失败: ${detailResult.error}`);
     }
-
   } catch (error) {
     console.error('\n❌ 测试失败:', error);
     process.exit(1);
   } finally {
     // 清理测试数据
     console.log('\n🧹 清理测试数据...');
-    
+
     if (createdProductId) {
       try {
-        await fetch(`${baseUrl}/api/products/${createdProductId}`, { method: 'DELETE' });
+        await fetch(`${baseUrl}/api/products/${createdProductId}`, {
+          method: 'DELETE',
+        });
         console.log(`   ✅ 已清理测试产品: ${createdProductId}`);
       } catch (cleanupError) {
         console.log(`   ⚠️  清理产品失败: ${cleanupError}`);
       }
     }
-    
+
     if (createdCategoryId) {
       try {
-        await fetch(`${baseUrl}/api/categories/${createdCategoryId}`, { method: 'DELETE' });
+        await fetch(`${baseUrl}/api/categories/${createdCategoryId}`, {
+          method: 'DELETE',
+        });
         console.log(`   ✅ 已清理测试分类: ${createdCategoryId}`);
       } catch (cleanupError) {
         console.log(`   ⚠️  清理分类失败: ${cleanupError}`);

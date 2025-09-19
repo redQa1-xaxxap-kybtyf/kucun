@@ -75,70 +75,102 @@ export async function GET(
     });
 
     // 计算汇总数据
-    const totalQuantity = inventoryRecords.reduce((sum, record) => sum + record.quantity, 0);
-    const reservedQuantity = inventoryRecords.reduce((sum, record) => sum + record.reservedQuantity, 0);
+    const totalQuantity = inventoryRecords.reduce(
+      (sum, record) => sum + record.quantity,
+      0
+    );
+    const reservedQuantity = inventoryRecords.reduce(
+      (sum, record) => sum + record.reservedQuantity,
+      0
+    );
     const availableQuantity = totalQuantity - reservedQuantity;
 
     // 按位置分组统计
-    const locationSummary = inventoryRecords.reduce((acc, record) => {
-      const location = record.location || '未指定位置';
-      if (!acc[location]) {
-        acc[location] = {
-          location,
-          quantity: 0,
-          reservedQuantity: 0,
-          availableQuantity: 0,
-          batches: 0,
-        };
-      }
-      acc[location].quantity += record.quantity;
-      acc[location].reservedQuantity += record.reservedQuantity;
-      acc[location].availableQuantity += (record.quantity - record.reservedQuantity);
-      acc[location].batches += 1;
-      return acc;
-    }, {} as Record<string, any>);
+    const locationSummary = inventoryRecords.reduce(
+      (acc, record) => {
+        const location = record.location || '未指定位置';
+        if (!acc[location]) {
+          acc[location] = {
+            location,
+            quantity: 0,
+            reservedQuantity: 0,
+            availableQuantity: 0,
+            batches: 0,
+          };
+        }
+        acc[location].quantity += record.quantity;
+        acc[location].reservedQuantity += record.reservedQuantity;
+        acc[location].availableQuantity +=
+          record.quantity - record.reservedQuantity;
+        acc[location].batches += 1;
+        return acc;
+      },
+      {} as Record<string, any>
+    );
 
     const locations = Object.values(locationSummary);
 
     // 按生产日期分组统计
-    const dateSummary = inventoryRecords.reduce((acc, record) => {
-      const dateKey = record.productionDate ? record.productionDate.toString() : '未指定日期';
-      if (!acc[dateKey]) {
-        acc[dateKey] = {
-          productionDate: dateKey,
-          quantity: 0,
-          reservedQuantity: 0,
-          availableQuantity: 0,
-          batches: 0,
-        };
-      }
-      acc[dateKey].quantity += record.quantity;
-      acc[dateKey].reservedQuantity += record.reservedQuantity;
-      acc[dateKey].availableQuantity += (record.quantity - record.reservedQuantity);
-      acc[dateKey].batches += 1;
-      return acc;
-    }, {} as Record<string, any>);
+    const dateSummary = inventoryRecords.reduce(
+      (acc, record) => {
+        const dateKey = record.productionDate
+          ? record.productionDate.toString()
+          : '未指定日期';
+        if (!acc[dateKey]) {
+          acc[dateKey] = {
+            productionDate: dateKey,
+            quantity: 0,
+            reservedQuantity: 0,
+            availableQuantity: 0,
+            batches: 0,
+          };
+        }
+        acc[dateKey].quantity += record.quantity;
+        acc[dateKey].reservedQuantity += record.reservedQuantity;
+        acc[dateKey].availableQuantity +=
+          record.quantity - record.reservedQuantity;
+        acc[dateKey].batches += 1;
+        return acc;
+      },
+      {} as Record<string, any>
+    );
 
-    const productionDates = Object.values(dateSummary).sort((a: any, b: any) => {
-      if (a.productionDate === '未指定日期') return 1;
-      if (b.productionDate === '未指定日期') return -1;
-      return new Date(b.productionDate).getTime() - new Date(a.productionDate).getTime();
-    });
+    const productionDates = Object.values(dateSummary).sort(
+      (a: any, b: any) => {
+        if (a.productionDate === '未指定日期') return 1;
+        if (b.productionDate === '未指定日期') return -1;
+        return (
+          new Date(b.productionDate).getTime() -
+          new Date(a.productionDate).getTime()
+        );
+      }
+    );
 
     // 计算平均成本
-    const totalCost = inventoryRecords.reduce((sum, record) => sum + (record.unitCost || 0) * record.quantity, 0);
+    const totalCost = inventoryRecords.reduce(
+      (sum, record) => sum + (record.unitCost || 0) * record.quantity,
+      0
+    );
     const averageUnitCost = totalQuantity > 0 ? totalCost / totalQuantity : 0;
 
     // 最新更新时间
-    const lastUpdated = inventoryRecords.length > 0
-      ? inventoryRecords.reduce((latest, record) => record.updatedAt > latest ? record.updatedAt : latest, inventoryRecords[0].updatedAt)
-      : null;
+    const lastUpdated =
+      inventoryRecords.length > 0
+        ? inventoryRecords.reduce(
+            (latest, record) =>
+              record.updatedAt > latest ? record.updatedAt : latest,
+            inventoryRecords[0].updatedAt
+          )
+        : null;
 
     // 库存预警状态
     const lowStockThreshold = 10; // 可以从配置中获取
-    const stockStatus = totalQuantity <= 0 ? 'out_of_stock'
-      : totalQuantity <= lowStockThreshold ? 'low_stock'
-      : 'in_stock';
+    const stockStatus =
+      totalQuantity <= 0
+        ? 'out_of_stock'
+        : totalQuantity <= lowStockThreshold
+          ? 'low_stock'
+          : 'in_stock';
 
     // 构建响应数据
     const summary = {

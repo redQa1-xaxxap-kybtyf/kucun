@@ -42,9 +42,12 @@ async function testSimpleCreate() {
         console.log('✅ 创建成功');
 
         // 清理测试数据
-        const deleteResponse = await fetch(`${baseUrl}/api/categories/${result.data.id}`, {
-          method: 'DELETE',
-        });
+        const deleteResponse = await fetch(
+          `${baseUrl}/api/categories/${result.data.id}`,
+          {
+            method: 'DELETE',
+          }
+        );
 
         if (deleteResponse.ok) {
           console.log('✅ 清理成功');
@@ -55,7 +58,6 @@ async function testSimpleCreate() {
     } catch (parseError) {
       console.log('❌ JSON解析失败:', parseError);
     }
-
   } catch (error) {
     console.error('❌ 请求失败:', error);
   }

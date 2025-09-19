@@ -5,7 +5,7 @@
 
 async function testCategoryEdit() {
   const baseUrl = 'http://localhost:3003';
-  
+
   console.log('开始测试分类编辑功能...\n');
 
   try {
@@ -13,18 +13,22 @@ async function testCategoryEdit() {
     console.log('1. 获取现有分类列表');
     const listResponse = await fetch(`${baseUrl}/api/categories?limit=1`);
     const listData = await listResponse.json();
-    
+
     if (!listData.success || listData.data.length === 0) {
       console.log('❌ 没有找到可用于测试的分类');
       return;
     }
 
     const testCategory = listData.data[0];
-    console.log(`✅ 找到测试分类: ${testCategory.name} (ID: ${testCategory.id})`);
+    console.log(
+      `✅ 找到测试分类: ${testCategory.name} (ID: ${testCategory.id})`
+    );
 
     // 2. 获取分类详情
     console.log('\n2. 获取分类详情');
-    const detailResponse = await fetch(`${baseUrl}/api/categories/${testCategory.id}`);
+    const detailResponse = await fetch(
+      `${baseUrl}/api/categories/${testCategory.id}`
+    );
     const detailData = await detailResponse.json();
 
     if (detailData.success) {
@@ -49,13 +53,16 @@ async function testCategoryEdit() {
       description: testDescription,
     };
 
-    const updateResponse = await fetch(`${baseUrl}/api/categories/${testCategory.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(updateData),
-    });
+    const updateResponse = await fetch(
+      `${baseUrl}/api/categories/${testCategory.id}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      }
+    );
     const updateResult = await updateResponse.json();
 
     if (updateResult.success) {
@@ -68,7 +75,9 @@ async function testCategoryEdit() {
 
     // 4. 验证更新结果
     console.log('\n4. 验证更新结果');
-    const verifyResponse = await fetch(`${baseUrl}/api/categories/${testCategory.id}`);
+    const verifyResponse = await fetch(
+      `${baseUrl}/api/categories/${testCategory.id}`
+    );
     const verifyData = await verifyResponse.json();
 
     if (verifyData.success && verifyData.data.description === testDescription) {
@@ -84,13 +93,16 @@ async function testCategoryEdit() {
       description: originalDescription,
     };
 
-    const restoreResponse = await fetch(`${baseUrl}/api/categories/${testCategory.id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(restoreData),
-    });
+    const restoreResponse = await fetch(
+      `${baseUrl}/api/categories/${testCategory.id}`,
+      {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(restoreData),
+      }
+    );
     const restoreResult = await restoreResponse.json();
 
     if (restoreResult.success) {
@@ -100,7 +112,6 @@ async function testCategoryEdit() {
     }
 
     console.log('\n🎉 分类编辑功能测试完成！');
-
   } catch (error) {
     console.error('❌ 测试过程中发生错误:', error);
   }

@@ -356,7 +356,8 @@ export const getInventoryStatus = (
 };
 
 // 计算可用库存
-export const calculateAvailableQuantity = (inventory: Inventory): number => Math.max(0, inventory.quantity - inventory.reservedQuantity);
+export const calculateAvailableQuantity = (inventory: Inventory): number =>
+  Math.max(0, inventory.quantity - inventory.reservedQuantity);
 
 // 格式化库存数量显示
 export const formatInventoryQuantity = (
@@ -411,7 +412,10 @@ export const INVENTORY_ALERT_TYPE_LABELS: Record<string, string> = {
 } as const;
 
 // 库存警报类型变体
-export const INVENTORY_ALERT_TYPE_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+export const INVENTORY_ALERT_TYPE_VARIANTS: Record<
+  string,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
   low_stock: 'outline',
   out_of_stock: 'destructive',
   overstock: 'secondary',

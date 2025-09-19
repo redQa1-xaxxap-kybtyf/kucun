@@ -80,13 +80,19 @@ export const USER_STATUS_LABELS: Record<UserStatus, string> = {
 };
 
 // 用户角色变体（用于Badge组件）
-export const USER_ROLE_VARIANTS: Record<UserRole, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+export const USER_ROLE_VARIANTS: Record<
+  UserRole,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
   admin: 'destructive',
   sales: 'default',
 };
 
 // 用户状态变体（用于Badge组件）
-export const USER_STATUS_VARIANTS: Record<UserStatus, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+export const USER_STATUS_VARIANTS: Record<
+  UserStatus,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
   active: 'default',
   inactive: 'secondary',
   pending: 'outline',

@@ -49,10 +49,10 @@ function getFilesWithReferences(): string[] {
 function analyzeFile(filePath: string): FileAnalysis {
   const content = readFileSync(filePath, 'utf8');
   const lines = content.split('\n');
-  
+
   const colorCodeReferences: string[] = [];
   const productionDateReferences: string[] = [];
-  
+
   lines.forEach((line, index) => {
     if (line.includes('colorCode')) {
       colorCodeReferences.push(`Line ${index + 1}: ${line.trim()}`);
@@ -61,7 +61,7 @@ function analyzeFile(filePath: string): FileAnalysis {
       productionDateReferences.push(`Line ${index + 1}: ${line.trim()}`);
     }
   });
-  
+
   // 确定文件类型
   let fileType: FileAnalysis['fileType'] = 'api';
   if (filePath.includes('components/')) {
@@ -73,11 +73,12 @@ function analyzeFile(filePath: string): FileAnalysis {
   } else if (filePath.includes('lib/validations/')) {
     fileType = 'validation';
   }
-  
+
   // 判断是否需要清理（前端相关文件）
-  const needsCleanup = (fileType === 'frontend' || fileType === 'component') && 
-                       (colorCodeReferences.length > 0 || productionDateReferences.length > 0);
-  
+  const needsCleanup =
+    (fileType === 'frontend' || fileType === 'component') &&
+    (colorCodeReferences.length > 0 || productionDateReferences.length > 0);
+
   return {
     filePath,
     colorCodeReferences,
@@ -93,16 +94,16 @@ function analyzeFile(filePath: string): FileAnalysis {
 function shouldPreserveReferences(filePath: string): boolean {
   // API路由文件需要保留，因为它们处理数据库交互
   if (filePath.includes('app/api/')) return true;
-  
+
   // 类型定义文件可能需要保留（向后兼容）
   if (filePath.includes('lib/types/')) return true;
-  
+
   // 验证文件可能需要保留
   if (filePath.includes('lib/validations/')) return true;
-  
+
   // 测试文件保留
   if (filePath.includes('test') || filePath.includes('Test')) return true;
-  
+
   return false;
 }
 
@@ -113,14 +114,15 @@ function cleanupFrontendFile(filePath: string): boolean {
   try {
     let content = readFileSync(filePath, 'utf8');
     let modified = false;
-    
+
     // 移除ColorCodeDisplay导入
-    const colorCodeDisplayImportRegex = /import.*ColorCodeDisplay.*from.*@\/components\/ui\/color-code-display.*;\n?/g;
+    const colorCodeDisplayImportRegex =
+      /import.*ColorCodeDisplay.*from.*@\/components\/ui\/color-code-display.*;\n?/g;
     if (colorCodeDisplayImportRegex.test(content)) {
       content = content.replace(colorCodeDisplayImportRegex, '');
       modified = true;
     }
-    
+
     // 移除colorCode相关的JSX和逻辑
     const colorCodePatterns = [
       // JSX中的colorCode引用
@@ -132,14 +134,14 @@ function cleanupFrontendFile(filePath: string): boolean {
       // colorCode相关的函数调用
       /[a-zA-Z_$][a-zA-Z0-9_$]*\([^)]*colorCode[^)]*\)/g,
     ];
-    
+
     colorCodePatterns.forEach(pattern => {
       if (pattern.test(content)) {
         content = content.replace(pattern, '');
         modified = true;
       }
     });
-    
+
     // 移除productionDate相关的JSX和逻辑
     const productionDatePatterns = [
       // JSX中的productionDate引用
@@ -151,22 +153,22 @@ function cleanupFrontendFile(filePath: string): boolean {
       // productionDate相关的函数调用
       /[a-zA-Z_$][a-zA-Z0-9_$]*\([^)]*productionDate[^)]*\)/g,
     ];
-    
+
     productionDatePatterns.forEach(pattern => {
       if (pattern.test(content)) {
         content = content.replace(pattern, '');
         modified = true;
       }
     });
-    
+
     // 清理空行
     content = content.replace(/\n\s*\n\s*\n/g, '\n\n');
-    
+
     if (modified) {
       writeFileSync(filePath, content, 'utf8');
       return true;
     }
-    
+
     return false;
   } catch (error) {
     console.error(`清理文件失败 ${filePath}:`, error);
@@ -179,7 +181,7 @@ function cleanupFrontendFile(filePath: string): boolean {
  */
 async function runCleanup(): Promise<CleanupResult> {
   console.log('🚀 开始全面检查色号和生产日期字段残留引用...\n');
-  
+
   const files = getFilesWithReferences();
   const result: CleanupResult = {
     totalFiles: files.length,
@@ -188,47 +190,57 @@ async function runCleanup(): Promise<CleanupResult> {
     skippedFiles: 0,
     errors: [],
   };
-  
-  console.log(`📊 发现 ${files.length} 个文件包含 colorCode 或 productionDate 引用\n`);
-  
+
+  console.log(
+    `📊 发现 ${files.length} 个文件包含 colorCode 或 productionDate 引用\n`
+  );
+
   // 分析所有文件
   const analyses: FileAnalysis[] = [];
   for (const filePath of files) {
     try {
       const analysis = analyzeFile(filePath);
       analyses.push(analysis);
-      
-      if (analysis.fileType === 'frontend' || analysis.fileType === 'component') {
+
+      if (
+        analysis.fileType === 'frontend' ||
+        analysis.fileType === 'component'
+      ) {
         result.frontendFiles++;
       }
     } catch (error) {
       result.errors.push(`分析文件失败 ${filePath}: ${error}`);
     }
   }
-  
+
   // 按文件类型分组显示
   console.log('📋 文件分析结果:');
   console.log('='.repeat(80));
-  
-  const groupedByType = analyses.reduce((acc, analysis) => {
-    if (!acc[analysis.fileType]) acc[analysis.fileType] = [];
-    acc[analysis.fileType].push(analysis);
-    return acc;
-  }, {} as Record<string, FileAnalysis[]>);
-  
+
+  const groupedByType = analyses.reduce(
+    (acc, analysis) => {
+      if (!acc[analysis.fileType]) acc[analysis.fileType] = [];
+      acc[analysis.fileType].push(analysis);
+      return acc;
+    },
+    {} as Record<string, FileAnalysis[]>
+  );
+
   Object.entries(groupedByType).forEach(([type, fileAnalyses]) => {
     console.log(`\n${type.toUpperCase()} 文件 (${fileAnalyses.length}个):`);
     fileAnalyses.forEach(analysis => {
       const colorCount = analysis.colorCodeReferences.length;
       const dateCount = analysis.productionDateReferences.length;
       const status = analysis.needsCleanup ? '🔧 需要清理' : '✅ 保留';
-      console.log(`  ${status} ${analysis.filePath} (colorCode: ${colorCount}, productionDate: ${dateCount})`);
+      console.log(
+        `  ${status} ${analysis.filePath} (colorCode: ${colorCount}, productionDate: ${dateCount})`
+      );
     });
   });
-  
+
   console.log('\n' + '='.repeat(80));
   console.log('\n🔧 开始清理前端文件...\n');
-  
+
   // 清理需要清理的文件
   for (const analysis of analyses) {
     if (analysis.needsCleanup && !shouldPreserveReferences(analysis.filePath)) {
@@ -250,7 +262,7 @@ async function runCleanup(): Promise<CleanupResult> {
       result.skippedFiles++;
     }
   }
-  
+
   return result;
 }
 
@@ -259,22 +271,22 @@ async function runCleanup(): Promise<CleanupResult> {
  */
 async function validateCleanup(): Promise<boolean> {
   console.log('\n🔍 验证清理结果...\n');
-  
+
   try {
     // 检查TypeScript编译
     console.log('📝 检查TypeScript编译...');
-    execSync('npx tsc --noEmit --skipLibCheck', { 
+    execSync('npx tsc --noEmit --skipLibCheck', {
       encoding: 'utf8',
-      stdio: 'pipe'
+      stdio: 'pipe',
     });
     console.log('✅ TypeScript编译通过');
-    
+
     // 重新扫描前端文件
     const remainingFiles = execSync(
       'find app components -name "*.tsx" | xargs grep -l "colorCode\\|productionDate" || true',
       { encoding: 'utf8', cwd: process.cwd() }
     ).trim();
-    
+
     if (remainingFiles) {
       console.log('⚠️  仍有前端文件包含引用:');
       remainingFiles.split('\n').forEach(file => {
@@ -285,7 +297,6 @@ async function validateCleanup(): Promise<boolean> {
       console.log('✅ 所有前端文件已清理完成');
       return true;
     }
-    
   } catch (error) {
     console.log('❌ 验证失败:', error);
     return false;
@@ -295,7 +306,7 @@ async function validateCleanup(): Promise<boolean> {
 // 运行清理
 if (require.main === module) {
   runCleanup()
-    .then(async (result) => {
+    .then(async result => {
       console.log('\n📊 清理结果总结:');
       console.log('='.repeat(50));
       console.log(`总文件数: ${result.totalFiles}`);
@@ -303,15 +314,15 @@ if (require.main === module) {
       console.log(`已清理文件: ${result.cleanedFiles}`);
       console.log(`跳过文件: ${result.skippedFiles}`);
       console.log(`错误数: ${result.errors.length}`);
-      
+
       if (result.errors.length > 0) {
         console.log('\n❌ 错误详情:');
         result.errors.forEach(error => console.log(`  - ${error}`));
       }
-      
+
       // 验证清理结果
       const isValid = await validateCleanup();
-      
+
       if (isValid && result.errors.length === 0) {
         console.log('\n🎉 清理任务完成！所有前端文件已成功清理。');
       } else {

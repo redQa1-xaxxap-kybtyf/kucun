@@ -20,7 +20,6 @@ export const CreateCategorySchema = z.object({
     .regex(/^[A-Za-z0-9_-]+$/, '分类编码只能包含字母、数字、下划线和短横线')
     .optional(),
 
-
   parentId: z.string().optional(),
 
   sortOrder: z.number().int().min(0).default(0),
@@ -43,9 +42,7 @@ export const CategoryQuerySchema = z.object({
 
   search: z.string().optional(),
 
-  sortBy: z
-    .enum(['name', 'createdAt', 'updatedAt'])
-    .default('createdAt'),
+  sortBy: z.enum(['name', 'createdAt', 'updatedAt']).default('createdAt'),
 
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 
@@ -66,7 +63,9 @@ export const BatchDeleteCategoriesSchema = z.object({
 export type CreateCategoryData = z.infer<typeof CreateCategorySchema>;
 export type UpdateCategoryData = z.infer<typeof UpdateCategorySchema>;
 export type CategoryQueryParams = z.infer<typeof CategoryQuerySchema>;
-export type BatchDeleteCategoriesData = z.infer<typeof BatchDeleteCategoriesSchema>;
+export type BatchDeleteCategoriesData = z.infer<
+  typeof BatchDeleteCategoriesSchema
+>;
 
 /**
  * 分类表单默认值
@@ -105,7 +104,11 @@ export function generateCategoryCodeSuggestion(name: string): string {
 /**
  * 验证分类层级深度
  */
-export function validateCategoryDepth(categories: any[], parentId: string | undefined, maxDepth: number = 3): boolean {
+export function validateCategoryDepth(
+  categories: any[],
+  parentId: string | undefined,
+  maxDepth: number = 3
+): boolean {
   if (!parentId) return true;
 
   let depth = 1;
@@ -124,7 +127,11 @@ export function validateCategoryDepth(categories: any[], parentId: string | unde
 /**
  * 检查循环引用
  */
-export function checkCircularReference(categories: any[], categoryId: string, parentId: string): boolean {
+export function checkCircularReference(
+  categories: any[],
+  categoryId: string,
+  parentId: string
+): boolean {
   if (categoryId === parentId) return true;
 
   let currentParentId = parentId;
@@ -194,7 +201,10 @@ export function flattenCategoryTree(tree: any[], level: number = 0): any[] {
 /**
  * 获取分类路径
  */
-export function getCategoryPath(categories: any[], categoryId: string): string[] {
+export function getCategoryPath(
+  categories: any[],
+  categoryId: string
+): string[] {
   const path: string[] = [];
   let currentId = categoryId;
 

@@ -98,13 +98,19 @@ async function testProductCreation() {
           console.log(`❌ 测试失败: 应该验证失败但成功了`);
         } else {
           console.log(`✅ 测试通过: 正确验证失败`);
-          console.log(`📄 错误信息:`, validationResult.error.errors[0]?.message);
+          console.log(
+            `📄 错误信息:`,
+            validationResult.error.errors[0]?.message
+          );
           passedTests++;
         }
       } else {
         if (validationResult.success) {
           console.log(`✅ 测试通过: Schema验证成功`);
-          console.log(`📄 验证后数据:`, JSON.stringify(validationResult.data, null, 2));
+          console.log(
+            `📄 验证后数据:`,
+            JSON.stringify(validationResult.data, null, 2)
+          );
           passedTests++;
         } else {
           console.log(`❌ 测试失败: Schema验证失败`);

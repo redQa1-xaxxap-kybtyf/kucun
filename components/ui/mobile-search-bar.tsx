@@ -1,33 +1,26 @@
 // 移动端搜索栏组件 - 优化的移动端搜索体验
 // 支持快速搜索、筛选器和排序功能
 
-import {
-    Filter,
-    RotateCcw,
-    Search,
-    SortAsc,
-    SortDesc,
-    X
-} from 'lucide-react';
+import { Filter, RotateCcw, Search, SortAsc, SortDesc, X } from 'lucide-react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import {
-    Sheet,
-    SheetContent,
-    SheetDescription,
-    SheetHeader,
-    SheetTitle,
-    SheetTrigger,
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
 } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
 
@@ -412,6 +405,4 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
 
 MobileSearchBar.displayName = 'MobileSearchBar';
 
-export {
-    MobileSearchBar
-};
+export { MobileSearchBar };

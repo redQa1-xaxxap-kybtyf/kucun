@@ -27,6 +27,10 @@ interface BreadcrumbProps {
 const PATH_TITLES: Record<string, string> = {
   '/dashboard': '仪表盘',
   '/inventory': '库存管理',
+  '/inventory/inbound': '入库记录',
+  '/inventory/inbound/create': '产品入库',
+  '/inventory/outbound': '出库记录',
+  '/inventory/adjust': '库存调整',
   '/products': '产品管理',
   '/products/create': '新建产品',
   '/sales-orders': '销售订单',

@@ -3,13 +3,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
-    AlertCircle,
-    ArrowLeft,
-    Building2,
-    Loader2,
-    Plus,
-    Save,
-    X,
+  AlertCircle,
+  ArrowLeft,
+  Building2,
+  Loader2,
+  Plus,
+  Save,
+  X,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -21,28 +21,28 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -53,29 +53,29 @@ import { Textarea } from '@/components/ui/textarea';
 
 // API and Types
 import {
-    createCustomer,
-    customerQueryKeys,
-    updateCustomer,
+  createCustomer,
+  customerQueryKeys,
+  updateCustomer,
 } from '@/lib/api/customers';
 import type {
-    Customer,
-    CustomerCreateInput,
-    CustomerUpdateInput,
+  Customer,
+  CustomerCreateInput,
+  CustomerUpdateInput,
 } from '@/lib/types/customer';
 import {
-    CUSTOMER_LEVEL_LABELS,
-    CUSTOMER_TYPE_LABELS
+  CUSTOMER_LEVEL_LABELS,
+  CUSTOMER_TYPE_LABELS,
 } from '@/lib/types/customer';
 import type {
-    CustomerCreateFormData,
-    CustomerUpdateFormData
+  CustomerCreateFormData,
+  CustomerUpdateFormData,
 } from '@/lib/validations/customer';
 import {
-    customerCreateDefaults,
-    customerCreateSchema,
-    customerUpdateSchema,
-    parseExtendedInfo,
-    processExtendedInfo,
+  customerCreateDefaults,
+  customerCreateSchema,
+  customerUpdateSchema,
+  parseExtendedInfo,
+  processExtendedInfo,
 } from '@/lib/validations/customer';
 
 interface CustomerFormProps {
@@ -143,7 +143,8 @@ export function CustomerForm({
 
   // 更新客户 Mutation
   const updateMutation = useMutation({
-    mutationFn: (data: CustomerUpdateInput) => updateCustomer(initialData!.id, data),
+    mutationFn: (data: CustomerUpdateInput) =>
+      updateCustomer(initialData!.id, data),
     onSuccess: response => {
       queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
       queryClient.invalidateQueries({

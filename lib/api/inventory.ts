@@ -5,12 +5,12 @@
 
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
-    InboundCreateInput,
-    Inventory,
-    InventoryAdjustInput,
-    InventoryAlert,
-    InventoryQueryParams,
-    OutboundCreateInput,
+  InboundCreateInput,
+  Inventory,
+  InventoryAdjustInput,
+  InventoryAlert,
+  InventoryQueryParams,
+  OutboundCreateInput,
 } from '@/lib/types/inventory';
 
 /**
@@ -32,7 +32,8 @@ export const inventoryQueryKeys = {
   stats: () => [...inventoryQueryKeys.all, 'stats'] as const,
   alerts: () => [...inventoryQueryKeys.all, 'alerts'] as const,
   inboundRecords: () => [...inventoryQueryKeys.all, 'inbound-records'] as const,
-  outboundRecords: () => [...inventoryQueryKeys.all, 'outbound-records'] as const,
+  outboundRecords: () =>
+    [...inventoryQueryKeys.all, 'outbound-records'] as const,
 };
 
 /**
@@ -212,7 +213,11 @@ export async function checkInventoryAvailability(
     throw new Error(`检查库存可用性失败: ${response.statusText}`);
   }
 
-  const data: ApiResponse<{ available: boolean; currentStock: number; message?: string }> = await response.json();
+  const data: ApiResponse<{
+    available: boolean;
+    currentStock: number;
+    message?: string;
+  }> = await response.json();
 
   if (!data.success) {
     throw new Error(data.error || '检查库存可用性失败');

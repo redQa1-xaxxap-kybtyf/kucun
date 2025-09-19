@@ -4,19 +4,19 @@
 'use client';
 
 import {
-    AlertTriangle,
-    BarChart3,
-    Download,
-    FileText,
-    Package,
-    Plus,
-    RotateCcw,
-    Search,
-    Settings,
-    ShoppingCart,
-    Truck,
-    Upload,
-    Users,
+  AlertTriangle,
+  BarChart3,
+  Download,
+  FileText,
+  Package,
+  Plus,
+  RotateCcw,
+  Search,
+  Settings,
+  ShoppingCart,
+  Truck,
+  Upload,
+  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import * as React from 'react';
@@ -24,16 +24,15 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { QuickAction } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
-
 
 // 图标映射
 const ICON_MAP = {
@@ -113,9 +112,8 @@ const DEFAULT_COLOR_CONFIG = {
 };
 
 // 类型安全的颜色配置获取函数
-const getColorConfig = (color: string) => (
-    COLOR_CONFIG[color as keyof typeof COLOR_CONFIG] || DEFAULT_COLOR_CONFIG
-  );
+const getColorConfig = (color: string) =>
+  COLOR_CONFIG[color as keyof typeof COLOR_CONFIG] || DEFAULT_COLOR_CONFIG;
 
 export interface QuickActionItemProps {
   action: QuickAction;

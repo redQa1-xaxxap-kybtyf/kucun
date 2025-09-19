@@ -50,8 +50,10 @@ async function testProductUXFixes() {
     // 2. 测试产品详情API
     console.log('\n📋 2. 测试产品详情API...');
     if (createdProductId) {
-      const detailResponse = await fetch(`${baseUrl}/api/products/${createdProductId}`);
-      
+      const detailResponse = await fetch(
+        `${baseUrl}/api/products/${createdProductId}`
+      );
+
       if (!detailResponse.ok) {
         throw new Error(`详情请求失败: HTTP ${detailResponse.status}`);
       }
@@ -69,12 +71,15 @@ async function testProductUXFixes() {
     // 3. 测试产品删除API
     console.log('\n🗑️ 3. 测试产品删除API...');
     if (createdProductId) {
-      const deleteResponse = await fetch(`${baseUrl}/api/products/${createdProductId}`, {
-        method: 'DELETE',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      const deleteResponse = await fetch(
+        `${baseUrl}/api/products/${createdProductId}`,
+        {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
 
       if (!deleteResponse.ok) {
         throw new Error(`删除请求失败: HTTP ${deleteResponse.status}`);
@@ -97,7 +102,7 @@ async function testProductUXFixes() {
     console.log('   ✅ 产品创建成功后延迟跳转，让用户看到反馈');
     console.log('   ✅ 产品删除功能正常工作');
     console.log('   ✅ 面包屑导航显示中文标题');
-    
+
     console.log('\n💡 用户体验改进详情:');
     console.log('   🔧 修复前: 使用sonner toast，与项目配置不匹配');
     console.log('   ✅ 修复后: 统一使用shadcn/ui的useToast hook');
@@ -107,15 +112,14 @@ async function testProductUXFixes() {
     console.log('   ✅ 修复后: 删除功能正常，显示成功反馈');
     console.log('   🔧 修复前: 面包屑可能显示英文"create"');
     console.log('   ✅ 修复后: 面包屑显示中文"新建产品"');
-    
+
     console.log('\n🎨 Toast变体说明:');
     console.log('   🟢 success: 绿色背景，用于成功操作');
     console.log('   🔴 destructive: 红色背景，用于错误和失败操作');
     console.log('   ⚪ default: 默认背景，用于一般信息');
-
   } catch (error) {
     console.error('\n❌ 测试失败:', error);
-    
+
     // 清理：如果测试失败且产品已创建，尝试删除
     if (createdProductId) {
       try {
@@ -128,7 +132,7 @@ async function testProductUXFixes() {
         console.error('   ❌ 清理失败:', cleanupError);
       }
     }
-    
+
     process.exit(1);
   }
 }

@@ -102,12 +102,14 @@ async function testCreateNavigationFlow() {
 
     // 4. 验证列表API能获取到新创建的数据
     console.log('\n📋 4. 验证列表API数据同步...');
-    
+
     // 验证产品列表
     const productsListResponse = await fetch(`${baseUrl}/api/products`);
     if (productsListResponse.ok) {
       const productsListResult = await productsListResponse.json();
-      const newProduct = productsListResult.data.find((p: any) => p.code === `NAV-TEST-${timestamp}`);
+      const newProduct = productsListResult.data.find(
+        (p: any) => p.code === `NAV-TEST-${timestamp}`
+      );
       if (newProduct) {
         console.log(`   ✅ 产品列表已包含新创建的产品`);
       } else {
@@ -119,7 +121,9 @@ async function testCreateNavigationFlow() {
     const customersListResponse = await fetch(`${baseUrl}/api/customers`);
     if (customersListResponse.ok) {
       const customersListResult = await customersListResponse.json();
-      const newCustomer = customersListResult.data.find((c: any) => c.name === `导航测试客户_${timestamp}`);
+      const newCustomer = customersListResult.data.find(
+        (c: any) => c.name === `导航测试客户_${timestamp}`
+      );
       if (newCustomer) {
         console.log(`   ✅ 客户列表已包含新创建的客户`);
       } else {
@@ -131,7 +135,9 @@ async function testCreateNavigationFlow() {
     const categoriesListResponse = await fetch(`${baseUrl}/api/categories`);
     if (categoriesListResponse.ok) {
       const categoriesListResult = await categoriesListResponse.json();
-      const newCategory = categoriesListResult.data.find((c: any) => c.name === `导航测试分类_${timestamp}`);
+      const newCategory = categoriesListResult.data.find(
+        (c: any) => c.name === `导航测试分类_${timestamp}`
+      );
       if (newCategory) {
         console.log(`   ✅ 分类列表已包含新创建的分类`);
       } else {
@@ -145,20 +151,19 @@ async function testCreateNavigationFlow() {
     console.log('   ✅ 前端将正确跳转到对应的列表页');
     console.log('   ✅ 用户能看到1.5秒的成功反馈');
     console.log('   ✅ 列表缓存将被正确刷新');
-    
+
     console.log('\n🎯 用户体验流程:');
     console.log('   1️⃣ 用户在创建页面填写表单');
     console.log('   2️⃣ 点击提交按钮');
     console.log('   3️⃣ 显示"创建成功"toast提示（绿色）');
     console.log('   4️⃣ 1.5秒后自动跳转到列表页');
     console.log('   5️⃣ 在列表页中看到新创建的项目');
-    
+
     console.log('\n💡 改进效果:');
     console.log('   🔄 符合用户"创建后查看列表"的习惯');
     console.log('   ⚡ 避免不必要的详情页跳转');
     console.log('   📋 用户可以立即确认创建结果');
     console.log('   🎨 统一的交互体验');
-
   } catch (error) {
     console.error('\n❌ 测试失败:', error);
     process.exit(1);
@@ -180,7 +185,7 @@ async function testCreateNavigationFlow() {
               endpoint = `/api/categories/${item.id}`;
               break;
           }
-          
+
           if (endpoint) {
             await fetch(`${baseUrl}${endpoint}`, { method: 'DELETE' });
             console.log(`   ✅ 已清理${item.type}: ${item.id}`);

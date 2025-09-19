@@ -15,7 +15,9 @@ async function testProductSearch(): Promise<TestResult> {
   try {
     console.log('🧪 测试产品搜索API...');
 
-    const response = await fetch('http://localhost:3001/api/products/search?search=测试');
+    const response = await fetch(
+      'http://localhost:3001/api/products/search?search=测试'
+    );
 
     if (!response.ok) {
       return {
@@ -50,7 +52,9 @@ async function testInboundRecordsList(): Promise<TestResult> {
   try {
     console.log('🧪 测试入库记录列表API...');
 
-    const response = await fetch('http://localhost:3001/api/inventory/inbound?page=1&limit=10');
+    const response = await fetch(
+      'http://localhost:3001/api/inventory/inbound?page=1&limit=10'
+    );
 
     if (!response.ok) {
       return {
@@ -90,7 +94,10 @@ async function testInboundPages(): Promise<TestResult> {
 
     const pages = [
       { name: '入库记录页面', url: 'http://localhost:3001/inventory/inbound' },
-      { name: '产品入库页面', url: 'http://localhost:3001/inventory/inbound/create' },
+      {
+        name: '产品入库页面',
+        url: 'http://localhost:3001/inventory/inbound/create',
+      },
     ];
 
     const results = [];
@@ -140,7 +147,17 @@ async function testDatabaseSchema(): Promise<TestResult> {
       message: '数据库Schema更新成功，InboundRecord模型已正确配置',
       details: {
         model: 'InboundRecord',
-        fields: ['id', 'recordNumber', 'productId', 'quantity', 'reason', 'remarks', 'userId', 'createdAt', 'updatedAt'],
+        fields: [
+          'id',
+          'recordNumber',
+          'productId',
+          'quantity',
+          'reason',
+          'remarks',
+          'userId',
+          'createdAt',
+          'updatedAt',
+        ],
         indexes: ['productId', 'userId', 'reason', 'createdAt'],
       },
     };
@@ -169,11 +186,14 @@ async function testNavigationMenu(): Promise<TestResult> {
     const html = await response.text();
 
     // 检查是否包含产品入库相关内容
-    const hasInboundMenu = html.includes('产品入库') || html.includes('inbound/create');
+    const hasInboundMenu =
+      html.includes('产品入库') || html.includes('inbound/create');
 
     return {
       success: hasInboundMenu,
-      message: hasInboundMenu ? '导航菜单包含产品入库选项' : '导航菜单缺少产品入库选项',
+      message: hasInboundMenu
+        ? '导航菜单包含产品入库选项'
+        : '导航菜单缺少产品入库选项',
     };
   } catch (error) {
     return {
@@ -191,12 +211,16 @@ async function runTests() {
   // 1. 测试数据库Schema
   const schemaResult = await testDatabaseSchema();
   results.push(schemaResult);
-  console.log(`${schemaResult.success ? '✅' : '❌'} ${schemaResult.message}\n`);
+  console.log(
+    `${schemaResult.success ? '✅' : '❌'} ${schemaResult.message}\n`
+  );
 
   // 2. 测试产品搜索API
   const searchResult = await testProductSearch();
   results.push(searchResult);
-  console.log(`${searchResult.success ? '✅' : '❌'} ${searchResult.message}\n`);
+  console.log(
+    `${searchResult.success ? '✅' : '❌'} ${searchResult.message}\n`
+  );
 
   // 3. 测试入库记录列表API
   const listResult = await testInboundRecordsList();

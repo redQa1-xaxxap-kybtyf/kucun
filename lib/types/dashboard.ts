@@ -25,7 +25,6 @@ export interface BusinessOverview {
     stockHealth: number; // 库存健康度 (0-100)
   };
 
-
   // 退货数据
   returns: {
     totalReturns: number; // 总退货数

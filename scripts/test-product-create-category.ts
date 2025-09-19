@@ -9,8 +9,10 @@ async function testProductCreateCategoryField() {
   try {
     // 1. 测试产品创建页面是否可以访问
     console.log('1. 测试产品创建页面访问...');
-    const createPageResponse = await fetch('http://localhost:3000/products/create');
-    
+    const createPageResponse = await fetch(
+      'http://localhost:3000/products/create'
+    );
+
     if (createPageResponse.ok) {
       console.log('✅ 产品创建页面访问正常');
     } else {
@@ -20,12 +22,17 @@ async function testProductCreateCategoryField() {
 
     // 2. 测试分类API是否正常
     console.log('\n2. 测试分类API...');
-    const categoriesResponse = await fetch('http://localhost:3000/api/categories');
-    
+    const categoriesResponse = await fetch(
+      'http://localhost:3000/api/categories'
+    );
+
     if (categoriesResponse.ok) {
       const categoriesData = await categoriesResponse.json();
-      console.log('✅ 分类API正常，分类数量:', categoriesData.data?.length || 0);
-      
+      console.log(
+        '✅ 分类API正常，分类数量:',
+        categoriesData.data?.length || 0
+      );
+
       if (categoriesData.data && categoriesData.data.length > 0) {
         console.log('📋 可用分类:');
         categoriesData.data.slice(0, 3).forEach((cat: any) => {
@@ -43,7 +50,7 @@ async function testProductCreateCategoryField() {
     console.log('\n3. 验证Schema定义...');
     const { CreateProductSchema } = await import('../lib/schemas/product');
     const schemaShape = CreateProductSchema.shape;
-    
+
     if (schemaShape.categoryId) {
       console.log('✅ CreateProductSchema包含categoryId字段');
       console.log('   字段类型:', schemaShape.categoryId._def.typeName);
@@ -55,7 +62,7 @@ async function testProductCreateCategoryField() {
     // 4. 测试表单默认值
     console.log('\n4. 验证表单默认值...');
     const { productFormDefaults } = await import('../lib/schemas/product');
-    
+
     if ('categoryId' in productFormDefaults) {
       console.log('✅ 表单默认值包含categoryId');
       console.log('   默认值:', productFormDefaults.categoryId);
@@ -64,7 +71,6 @@ async function testProductCreateCategoryField() {
     }
 
     console.log('\n🎉 产品创建页面分类字段功能测试完成！');
-    
   } catch (error) {
     console.error('❌ 测试过程中发生错误:', error);
   }

@@ -46,7 +46,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 
-
 /**
  * 仪表盘数据类型定义
  */
@@ -163,13 +162,15 @@ export default function DashboardPage() {
   }, [loadDashboardData, selectedPeriod]);
 
   // 格式化货币
-  const formatCurrency = (amount: number) => new Intl.NumberFormat('zh-CN', {
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat('zh-CN', {
       style: 'currency',
       currency: 'CNY',
     }).format(amount);
 
   // 格式化时间
-  const formatTime = (date: Date) => new Intl.RelativeTimeFormat('zh-CN', { numeric: 'auto' }).format(
+  const formatTime = (date: Date) =>
+    new Intl.RelativeTimeFormat('zh-CN', { numeric: 'auto' }).format(
       Math.floor((date.getTime() - Date.now()) / (1000 * 60)),
       'minute'
     );

@@ -5,15 +5,24 @@
 
 async function testAutoCodeGenerationFinal() {
   const baseUrl = 'http://localhost:3003';
-  
+
   console.log('开始测试分类编码自动生成功能...\n');
 
   const timestamp = Date.now();
   const testCategories = [
     { name: `自动编码测试${timestamp}`, description: '测试中文名称的编码生成' },
-    { name: `Auto Code Test ${timestamp}`, description: '测试英文名称的编码生成' },
-    { name: `混合Test分类${timestamp}`, description: '测试中英文混合名称的编码生成' },
-    { name: `特殊@#$符号${timestamp}`, description: '测试特殊字符过滤的编码生成' },
+    {
+      name: `Auto Code Test ${timestamp}`,
+      description: '测试英文名称的编码生成',
+    },
+    {
+      name: `混合Test分类${timestamp}`,
+      description: '测试中英文混合名称的编码生成',
+    },
+    {
+      name: `特殊@#$符号${timestamp}`,
+      description: '测试特殊字符过滤的编码生成',
+    },
   ];
 
   const createdCategoryIds: string[] = [];
@@ -46,8 +55,10 @@ async function testAutoCodeGenerationFinal() {
         console.log(`   📝 生成的编码: "${generatedCode}"`);
         console.log(`   📋 分类ID: ${createResult.data.id}`);
         console.log(`   🔍 编码长度: ${generatedCode.length} 字符`);
-        console.log(`   🔍 编码格式: ${/^[A-Za-z0-9_-\u4e00-\u9fa5]+$/.test(generatedCode) ? '✅ 有效' : '❌ 无效'}`);
-        
+        console.log(
+          `   🔍 编码格式: ${/^[A-Za-z0-9_-\u4e00-\u9fa5]+$/.test(generatedCode) ? '✅ 有效' : '❌ 无效'}`
+        );
+
         createdCategoryIds.push(createResult.data.id);
       } else {
         console.log(`   ❌ 创建失败: ${createResult.error}`);
@@ -59,7 +70,7 @@ async function testAutoCodeGenerationFinal() {
     // 测试编码唯一性 - 尝试创建可能产生相同编码的分类
     console.log('🔄 测试编码唯一性处理...');
     const baseTestName = `编码唯一性测试${timestamp}`;
-    
+
     // 创建第一个分类
     const firstResponse = await fetch(`${baseUrl}/api/categories`, {
       method: 'POST',
@@ -91,8 +102,12 @@ async function testAutoCodeGenerationFinal() {
 
       const secondResult = await secondResponse.json();
       if (secondResult.success) {
-        console.log(`   ✅ 第二个分类创建成功，编码: "${secondResult.data.code}"`);
-        console.log(`   🔍 编码唯一性: ${firstResult.data.code !== secondResult.data.code ? '✅ 通过' : '❌ 失败'}`);
+        console.log(
+          `   ✅ 第二个分类创建成功，编码: "${secondResult.data.code}"`
+        );
+        console.log(
+          `   🔍 编码唯一性: ${firstResult.data.code !== secondResult.data.code ? '✅ 通过' : '❌ 失败'}`
+        );
         createdCategoryIds.push(secondResult.data.id);
       } else {
         console.log(`   ❌ 第二个分类创建失败: ${secondResult.error}`);
@@ -102,10 +117,14 @@ async function testAutoCodeGenerationFinal() {
     // 验证创建的分类
     console.log('\n📋 验证创建的分类:');
     for (const categoryId of createdCategoryIds) {
-      const verifyResponse = await fetch(`${baseUrl}/api/categories/${categoryId}`);
+      const verifyResponse = await fetch(
+        `${baseUrl}/api/categories/${categoryId}`
+      );
       const verifyResult = await verifyResponse.json();
       if (verifyResult.success) {
-        console.log(`   ✅ ${verifyResult.data.name} (${verifyResult.data.code})`);
+        console.log(
+          `   ✅ ${verifyResult.data.name} (${verifyResult.data.code})`
+        );
       }
     }
 
@@ -113,9 +132,12 @@ async function testAutoCodeGenerationFinal() {
     console.log('\n🧹 清理测试数据...');
     for (const categoryId of createdCategoryIds) {
       try {
-        const deleteResponse = await fetch(`${baseUrl}/api/categories/${categoryId}`, {
-          method: 'DELETE',
-        });
+        const deleteResponse = await fetch(
+          `${baseUrl}/api/categories/${categoryId}`,
+          {
+            method: 'DELETE',
+          }
+        );
         const deleteResult = await deleteResponse.json();
         if (deleteResult.success) {
           console.log(`   ✅ 删除成功: ${categoryId}`);
@@ -133,10 +155,9 @@ async function testAutoCodeGenerationFinal() {
     console.log('   ✅ 特殊字符过滤正常');
     console.log('   ✅ 编码唯一性处理正常');
     console.log('   ✅ 用户界面隐藏编码字段');
-
   } catch (error) {
     console.error('❌ 测试过程中发生错误:', error);
-    
+
     // 尝试清理已创建的分类
     if (createdCategoryIds.length > 0) {
       console.log('🧹 尝试清理已创建的测试数据...');

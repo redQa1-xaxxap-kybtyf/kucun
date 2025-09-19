@@ -1,12 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-    Calculator,
-    Package,
-    Plus,
-    Trash2
-} from 'lucide-react';
+import { Calculator, Package, Plus, Trash2 } from 'lucide-react';
 import type { Control } from 'react-hook-form';
 import { useFieldArray, useWatch } from 'react-hook-form';
 
@@ -15,18 +10,18 @@ import { ProductSelector } from '@/components/products/product-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
@@ -36,14 +31,13 @@ import { Separator } from '@/components/ui/separator';
 // Custom Components
 import type { Product } from '@/lib/types/product';
 import type {
-    SalesOrderItemCreateFormData,
-    SalesOrderItemUpdateFormData
+  SalesOrderItemCreateFormData,
+  SalesOrderItemUpdateFormData,
 } from '@/lib/validations/sales-order';
 import {
-    calculateItemSubtotal,
-    calculateOrderTotal,
+  calculateItemSubtotal,
+  calculateOrderTotal,
 } from '@/lib/validations/sales-order';
-
 
 // API and Types
 
@@ -119,7 +113,9 @@ export function OrderItemsEditor({
               共{' '}
               {
                 fields.filter(
-                  field => !(field as any)._action || (field as any)._action !== 'delete'
+                  field =>
+                    !(field as any)._action ||
+                    (field as any)._action !== 'delete'
                 ).length
               }{' '}
               项
@@ -293,7 +289,6 @@ function OrderItemRow({
               onProductChange={handleProductChange}
             />
           </div>
-
 
           {/* 数量 */}
           <div className="lg:col-span-1">

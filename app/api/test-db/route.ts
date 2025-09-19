@@ -22,7 +22,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error('数据库连接测试失败:', error);
-    
+
     return NextResponse.json(
       {
         success: false,

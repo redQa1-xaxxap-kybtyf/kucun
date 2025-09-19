@@ -194,7 +194,8 @@ async function testAuthenticationSimple() {
     // 7. 测试密码强度
     console.log('\n7. 测试密码强度验证...');
 
-    const validatePasswordStrength = (password: string): boolean => password.length >= 6;
+    const validatePasswordStrength = (password: string): boolean =>
+      password.length >= 6;
 
     if (validatePasswordStrength('admin123456')) {
       console.log('   ✅ 强密码验证成功');

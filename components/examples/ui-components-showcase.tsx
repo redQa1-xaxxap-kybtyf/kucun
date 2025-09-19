@@ -7,43 +7,43 @@ import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 
 // 瓷砖行业特色组件
 import {
-    ColorCodeDisplay,
-    ColorCodeGrid,
-    ColorCodeSelector,
+  ColorCodeDisplay,
+  ColorCodeGrid,
+  ColorCodeSelector,
 } from '@/components/ui/color-code-display';
 import {
-    InventoryHealth,
-    InventoryStatusIndicator,
-    QuickStatusToggle,
-    type InventoryStatus,
+  InventoryHealth,
+  InventoryStatusIndicator,
+  QuickStatusToggle,
+  type InventoryStatus,
 } from '@/components/ui/inventory-status-indicator';
 
 // 移动端优化组件
 import {
-    MobileDataTable,
-    createDateColumn,
-    createTextColumn,
-    type ColumnDef
+  MobileDataTable,
+  createDateColumn,
+  createTextColumn,
+  type ColumnDef,
 } from '@/components/ui/mobile-data-table';
 import {
-    MobileSearchBar,
-    type FilterOption,
-    type SearchState,
-    type SortOption,
+  MobileSearchBar,
+  type FilterOption,
+  type SearchState,
+  type SortOption,
 } from '@/components/ui/mobile-search-bar';
 import { Separator } from '@/components/ui/separator';
 import {
-    SpecificationDisplay,
-    type TileSpecification
+  SpecificationDisplay,
+  type TileSpecification,
 } from '@/components/ui/specification-display';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
@@ -283,7 +283,6 @@ export default function UIComponentsShowcase() {
               </div>
             </CardContent>
           </Card>
-
 
           {/* 库存状态指示器 */}
           <Card>

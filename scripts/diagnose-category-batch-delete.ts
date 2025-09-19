@@ -52,7 +52,10 @@ async function diagnoseCategoryBatchDelete() {
     const schemaContent = fs.readFileSync('prisma/schema.prisma', 'utf8');
     const categoryModel = schemaContent.substring(
       schemaContent.indexOf('model Category'),
-      schemaContent.indexOf('model', schemaContent.indexOf('model Category') + 1)
+      schemaContent.indexOf(
+        'model',
+        schemaContent.indexOf('model Category') + 1
+      )
     );
 
     const requiredFields = ['id', 'name', 'status', 'products', 'children'];
@@ -70,13 +73,16 @@ async function diagnoseCategoryBatchDelete() {
   // 4. 检查前端组件导入
   console.log('\n🎨 检查前端组件导入:');
   try {
-    const pageContent = fs.readFileSync('app/(dashboard)/categories/page.tsx', 'utf8');
+    const pageContent = fs.readFileSync(
+      'app/(dashboard)/categories/page.tsx',
+      'utf8'
+    );
     const requiredImports = [
       'batchDeleteCategories',
       'AlertDialog',
       'Checkbox',
       'Loader2',
-      'useMutation'
+      'useMutation',
     ];
 
     for (const importItem of requiredImports) {
@@ -93,13 +99,16 @@ async function diagnoseCategoryBatchDelete() {
   // 5. 检查状态管理
   console.log('\n📊 检查状态管理:');
   try {
-    const pageContent = fs.readFileSync('app/(dashboard)/categories/page.tsx', 'utf8');
+    const pageContent = fs.readFileSync(
+      'app/(dashboard)/categories/page.tsx',
+      'utf8'
+    );
     const stateItems = [
       'selectedCategoryIds',
       'batchDeleteDialog',
       'batchDeleteMutation',
       'handleBatchDelete',
-      'confirmBatchDelete'
+      'confirmBatchDelete',
     ];
 
     for (const stateItem of stateItems) {
