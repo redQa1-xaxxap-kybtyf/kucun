@@ -1,15 +1,25 @@
 'use client';
 
-import { Check, ChevronDown, Package, Search } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { Check, ChevronDown, Package } from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
 
 // UI Components
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { Skeleton } from '@/components/ui/skeleton';
-
 // API and Types
 import { useProductSearch } from '@/lib/api/inbound';
 import type { ProductOption } from '@/lib/types/inbound';
@@ -36,11 +46,17 @@ export function ProductSelector({
 }: ProductSelectorProps) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(
+    null
+  );
   const searchTimeoutRef = useRef<NodeJS.Timeout>();
 
   // 搜索产品
-  const { data: products = [], isLoading, error } = useProductSearch(searchQuery);
+  const {
+    data: products = [],
+    isLoading,
+    error,
+  } = useProductSearch(searchQuery);
 
   // 当value变化时，更新选中的产品
   useEffect(() => {
@@ -84,21 +100,15 @@ export function ProductSelector({
   // 渲染选中的产品
   const renderSelectedProduct = () => {
     if (!selectedProduct) {
-      return (
-        <span className="text-muted-foreground">
-          {placeholder}
-        </span>
-      );
+      return <span className="text-muted-foreground">{placeholder}</span>;
     }
 
     return (
-      <div className="flex items-center justify-between w-full">
-        <div className="flex items-center gap-2 min-w-0">
-          <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+      <div className="flex w-full items-center justify-between">
+        <div className="flex min-w-0 items-center gap-2">
+          <Package className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
           <div className="min-w-0">
-            <div className="font-medium truncate">
-              {selectedProduct.label}
-            </div>
+            <div className="truncate font-medium">{selectedProduct.label}</div>
             <div className="text-sm text-muted-foreground">
               编码: {selectedProduct.code} | 单位: {selectedProduct.unit}
             </div>
@@ -115,27 +125,21 @@ export function ProductSelector({
 
   // 渲染产品选项
   const renderProductOption = (product: ProductOption) => (
-    <div className="flex items-center justify-between w-full">
-      <div className="flex items-center gap-2 min-w-0">
-        <Package className="h-4 w-4 text-muted-foreground flex-shrink-0" />
+    <div className="flex w-full items-center justify-between">
+      <div className="flex min-w-0 items-center gap-2">
+        <Package className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
         <div className="min-w-0">
-          <div className="font-medium truncate">
-            {product.label}
-          </div>
+          <div className="truncate font-medium">{product.label}</div>
           <div className="text-sm text-muted-foreground">
             编码: {product.code} | 单位: {product.unit}
           </div>
         </div>
       </div>
-      <div className="flex items-center gap-2 flex-shrink-0">
+      <div className="flex flex-shrink-0 items-center gap-2">
         {product.currentStock !== undefined && (
-          <Badge variant="outline">
-            库存: {product.currentStock}
-          </Badge>
+          <Badge variant="outline">库存: {product.currentStock}</Badge>
         )}
-        {value === product.value && (
-          <Check className="h-4 w-4 text-primary" />
-        )}
+        {value === product.value && <Check className="h-4 w-4 text-primary" />}
       </div>
     </div>
   );
@@ -148,7 +152,7 @@ export function ProductSelector({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            'w-full justify-between h-auto min-h-[2.5rem] p-3',
+            'h-auto min-h-[2.5rem] w-full justify-between p-3',
             !selectedProduct && 'text-muted-foreground',
             className
           )}
@@ -159,21 +163,18 @@ export function ProductSelector({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[400px] p-0" align="start">
-        <Command>
-          <div className="flex items-center border-b px-3">
-            <Search className="mr-2 h-4 w-4 shrink-0 opacity-50" />
-            <CommandInput
-              placeholder="搜索产品名称或编码..."
-              onValueChange={handleSearchChange}
-            />
-          </div>
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="搜索产品名称或编码..."
+            onValueChange={handleSearchChange}
+          />
           <CommandList>
             {isLoading ? (
-              <div className="p-4 space-y-2">
+              <div className="space-y-2 p-4">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="flex items-center space-x-2">
                     <Skeleton className="h-4 w-4 rounded" />
-                    <div className="space-y-1 flex-1">
+                    <div className="flex-1 space-y-1">
                       <Skeleton className="h-4 w-3/4" />
                       <Skeleton className="h-3 w-1/2" />
                     </div>
@@ -185,16 +186,14 @@ export function ProductSelector({
                 搜索失败，请重试
               </div>
             ) : products.length === 0 && searchQuery ? (
-              <CommandEmpty>
-                未找到相关产品
-              </CommandEmpty>
+              <CommandEmpty>未找到相关产品</CommandEmpty>
             ) : products.length === 0 ? (
               <div className="p-4 text-center text-sm text-muted-foreground">
                 请输入关键词搜索产品
               </div>
             ) : (
               <CommandGroup>
-                {products.map((product) => (
+                {products.map(product => (
                   <CommandItem
                     key={product.value}
                     value={product.value}
@@ -208,7 +207,7 @@ export function ProductSelector({
             )}
           </CommandList>
         </Command>
-        
+
         {selectedProduct && (
           <div className="border-t p-2">
             <Button
