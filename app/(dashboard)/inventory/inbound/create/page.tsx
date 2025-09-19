@@ -138,6 +138,8 @@ export default function CreateInboundPage() {
 
       console.log('提交入库数据:', {
         productId: data.productId,
+        inputQuantity: data.inputQuantity,
+        inputUnit: data.inputUnit,
         quantity: data.quantity,
         reason: data.reason,
         remarks: data.remarks?.trim() || '',
@@ -145,6 +147,8 @@ export default function CreateInboundPage() {
 
       const requestData = {
         productId: data.productId,
+        inputQuantity: data.inputQuantity,
+        inputUnit: data.inputUnit,
         quantity: data.quantity,
         reason: data.reason,
         ...(data.remarks?.trim() && { remarks: data.remarks.trim() }),
