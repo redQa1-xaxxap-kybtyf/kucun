@@ -135,7 +135,10 @@ export function ProductSelector({
         <div className="min-w-0">
           <div className="truncate font-medium">{product.label}</div>
           <div className="text-sm text-muted-foreground">
-            编码: {product.code} | 单位: {product.unit}
+            编码: {product.code} | 单位:{' '}
+            {PRODUCT_UNIT_LABELS[
+              product.unit as keyof typeof PRODUCT_UNIT_LABELS
+            ] || product.unit}
           </div>
         </div>
       </div>
