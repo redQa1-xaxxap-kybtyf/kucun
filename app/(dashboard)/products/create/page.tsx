@@ -1,9 +1,10 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import * as React from 'react';
 import { useForm } from 'react-hook-form';
 
 // Hooks
@@ -27,6 +28,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import {
   Select,
   SelectContent,
@@ -37,6 +39,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 // API and Types
+import { getCategories } from '@/lib/api/categories';
 import { createProduct, productQueryKeys } from '@/lib/api/products';
 import {
   CreateProductSchema,
@@ -56,6 +59,45 @@ export default function CreateProductPage() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // 获取分类数据
+  const { data: categoriesResponse, isLoading: isCategoriesLoading } = useQuery(
+    {
+      queryKey: ['categories'],
+      queryFn: () => getCategories(),
+    }
+  );
+
+  // 扁平化分类数据，包含所有子分类，避免重复 - 使用useMemo避免重复计算
+  const allCategories = React.useMemo(() => {
+    const categories = categoriesResponse?.data || [];
+
+    const flattenCategories = (cats: typeof categories): typeof categories => {
+      const result: typeof categories = [];
+      const seenIds = new Set<string>();
+
+      const addCategory = (category: (typeof categories)[0]) => {
+        if (!seenIds.has(category.id)) {
+          seenIds.add(category.id);
+          result.push(category);
+        }
+      };
+
+      const processCategories = (categories: typeof cats) => {
+        categories.forEach(category => {
+          addCategory(category);
+          if (category.children && category.children.length > 0) {
+            processCategories(category.children);
+          }
+        });
+      };
+
+      processCategories(cats);
+      return result;
+    };
+
+    return flattenCategories(categories);
+  }, [categoriesResponse?.data]);
+
   // 表单配置
   const form = useForm<CreateProductData>({
     resolver: zodResolver(CreateProductSchema),
@@ -68,6 +110,7 @@ export default function CreateProductPage() {
       weight: undefined, // 修复：使用 undefined 而不是空字符串
       thickness: undefined, // 修复：使用 undefined 而不是空字符串
       status: 'active',
+      categoryId: 'uncategorized', // 添加分类字段，默认为未分类
       specifications: {},
     },
   });
@@ -85,6 +128,8 @@ export default function CreateProductPage() {
 
       // 刷新缓存
       queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() });
+      // 同时失效分类查询缓存，因为产品分类可能发生变化
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
 
       // 延迟跳转到产品列表页，让用户看到成功提示
       setTimeout(() => {
@@ -104,7 +149,12 @@ export default function CreateProductPage() {
 
   // 表单提交处理
   const onSubmit = (data: CreateProductData) => {
-    createMutation.mutate(data);
+    // 处理分类ID：如果选择了"未分类"，则设置为null
+    const processedData = {
+      ...data,
+      categoryId: data.categoryId === 'uncategorized' ? null : data.categoryId,
+    };
+    createMutation.mutate(processedData);
   };
 
   return (
@@ -210,6 +260,39 @@ export default function CreateProductPage() {
 
                 <FormField
                   control={form.control}
+                  name="categoryId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>产品分类</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={isCategoriesLoading}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="请选择产品分类" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="uncategorized">未分类</SelectItem>
+                          {allCategories.map(category => (
+                            <SelectItem key={category.id} value={category.id}>
+                              {category.parent
+                                ? `${category.parent.name} > ${category.name}`
+                                : category.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>选择产品所属的分类</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name="status"
                   render={({ field }) => (
                     <FormItem>
@@ -252,18 +335,13 @@ export default function CreateProductPage() {
                     <FormItem>
                       <FormLabel>每单位片数</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
+                        <NumberInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          min={1}
+                          defaultValue={1}
+                          allowEmpty={true}
                           placeholder="请输入每单位片数"
-                          value={field.value ?? ''} // 修复：确保显示值正确
-                          onChange={e => {
-                            const value = e.target.value.trim();
-                            field.onChange(
-                              value && !isNaN(Number(value))
-                                ? Number(value)
-                                : undefined
-                            );
-                          }}
                         />
                       </FormControl>
                       <FormDescription>每个计量单位包含的片数</FormDescription>
@@ -279,19 +357,14 @@ export default function CreateProductPage() {
                     <FormItem>
                       <FormLabel>重量 (kg)</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          step="0.01"
+                        <NumberInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          min={0}
+                          step={0.01}
+                          precision={2}
+                          allowEmpty={true}
                           placeholder="请输入重量"
-                          value={field.value ?? ''} // 修复：确保显示值正确
-                          onChange={e => {
-                            const value = e.target.value.trim();
-                            field.onChange(
-                              value && !isNaN(Number(value))
-                                ? Number(value)
-                                : undefined
-                            );
-                          }}
                         />
                       </FormControl>
                       <FormDescription>单个产品的重量（千克）</FormDescription>
@@ -307,21 +380,15 @@ export default function CreateProductPage() {
                     <FormItem>
                       <FormLabel>厚度 (mm)</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          min="0"
-                          max="100"
+                        <NumberInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          precision={1}
+                          allowEmpty={true}
                           placeholder="请输入厚度"
-                          value={field.value ?? ''} // 修复：确保显示值正确
-                          onChange={e => {
-                            const value = e.target.value.trim();
-                            field.onChange(
-                              value && !isNaN(Number(value))
-                                ? Number(value)
-                                : undefined
-                            );
-                          }}
                         />
                       </FormControl>
                       <FormDescription>瓷砖产品的厚度（毫米）</FormDescription>
