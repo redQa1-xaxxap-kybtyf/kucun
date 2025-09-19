@@ -26,6 +26,17 @@ export const INBOUND_REASON_OPTIONS = Object.entries(INBOUND_REASON_LABELS).map(
   ([value, label]) => ({ value: value as InboundReason, label })
 );
 
+// 入库单位标签映射
+export const INBOUND_UNIT_LABELS: Record<InboundUnit, string> = {
+  pieces: '片',
+  units: '件',
+};
+
+// 入库单位选项
+export const INBOUND_UNIT_OPTIONS = Object.entries(INBOUND_UNIT_LABELS).map(
+  ([value, label]) => ({ value: value as InboundUnit, label })
+);
+
 // 基础入库记录类型（对应数据库模型）
 export interface InboundRecord {
   id: string;
@@ -101,10 +112,15 @@ export interface ProductOption {
   currentStock?: number;
 }
 
+// 入库单位类型
+export type InboundUnit = 'pieces' | 'units';
+
 // 入库表单数据
 export interface InboundFormData {
   productId: string;
-  quantity: number;
+  inputQuantity: number; // 用户输入的数量
+  inputUnit: InboundUnit; // 用户选择的单位
+  quantity: number; // 最终存储的片数
   reason: InboundReason;
   remarks?: string;
 }

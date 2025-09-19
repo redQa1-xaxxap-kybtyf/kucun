@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ArrowLeft, Loader2, Package, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 // UI Components
@@ -34,9 +34,16 @@ import { useToast } from '@/hooks/use-toast';
 
 // API and Types
 import { useCreateInboundRecord } from '@/lib/api/inbound';
-import type { InboundFormData } from '@/lib/types/inbound';
-import { INBOUND_REASON_OPTIONS } from '@/lib/types/inbound';
-import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+import type {
+  InboundFormData,
+  InboundUnit,
+  ProductOption,
+} from '@/lib/types/inbound';
+import {
+  INBOUND_REASON_OPTIONS,
+  INBOUND_UNIT_OPTIONS,
+} from '@/lib/types/inbound';
+import { calculateTotalPieces } from '@/lib/utils/piece-calculation';
 import { createInboundSchema } from '@/lib/validations/inbound';
 
 // Components
@@ -54,15 +61,15 @@ export default function CreateInboundPage() {
   const [selectedProduct, setSelectedProduct] = useState<ProductOption | null>(
     null
   );
-  const [quantityInput, setQuantityInput] = useState<string>('');
-  const [calculatedPieces, setCalculatedPieces] = useState<number | null>(null);
 
   // 表单配置
   const form = useForm<InboundFormData>({
     resolver: zodResolver(createInboundSchema),
     defaultValues: {
       productId: '',
-      quantity: 1, // 设置默认值为1，符合最小值要求
+      inputQuantity: 1, // 用户输入的数量
+      inputUnit: 'pieces' as InboundUnit, // 默认选择片
+      quantity: 1, // 最终存储的片数
       reason: 'purchase',
       remarks: '',
     },
@@ -71,46 +78,49 @@ export default function CreateInboundPage() {
   // API Hooks
   const createMutation = useCreateInboundRecord();
 
+  // 监听表单变化
+  const watchedInputQuantity = form.watch('inputQuantity');
+  const watchedInputUnit = form.watch('inputUnit');
+
   // 处理产品选择
   const handleProductSelect = (product: ProductOption) => {
     setSelectedProduct(product);
     form.setValue('productId', product.value);
 
-    // 重置数量相关状态
-    setQuantityInput('');
-    setCalculatedPieces(null);
-    form.setValue('quantity', 1); // 重置为默认值1
-    form.clearErrors('quantity');
+    // 重置数量输入
+    form.setValue('inputQuantity', 1);
+    form.setValue('quantity', 1);
+    form.clearErrors(['inputQuantity', 'quantity']);
   };
 
-  // 处理数量输入变化
-  const handleQuantityChange = (value: string) => {
-    setQuantityInput(value);
-
-    if (!selectedProduct || !value.trim()) {
-      setCalculatedPieces(null);
-      form.clearErrors('quantity');
-      return;
-    }
-
+  // 计算最终片数
+  const calculateFinalQuantity = (
+    inputQuantity: number,
+    inputUnit: InboundUnit,
+    piecesPerUnit: number
+  ): number => {
     try {
-      // 解析输入的数量（支持多种格式）
-      const totalPieces = parseInt(value, 10);
-
-      if (isNaN(totalPieces) || totalPieces <= 0) {
-        setCalculatedPieces(null);
-        form.clearErrors('quantity');
-        return;
-      }
-
-      setCalculatedPieces(totalPieces);
-      form.setValue('quantity', totalPieces);
-      form.clearErrors('quantity');
+      return calculateTotalPieces(
+        { value: inputQuantity, unit: inputUnit },
+        piecesPerUnit
+      );
     } catch (error) {
-      setCalculatedPieces(null);
-      form.clearErrors('quantity');
+      console.error('计算片数失败:', error);
+      return inputQuantity; // 默认返回输入值
     }
   };
+
+  // 实时计算并更新最终片数
+  React.useEffect(() => {
+    if (selectedProduct && watchedInputQuantity > 0) {
+      const finalQuantity = calculateFinalQuantity(
+        watchedInputQuantity,
+        watchedInputUnit,
+        selectedProduct.piecesPerUnit
+      );
+      form.setValue('quantity', finalQuantity);
+    }
+  }, [watchedInputQuantity, watchedInputUnit, selectedProduct, form]);
 
   // 表单提交处理
   const onSubmit = async (data: InboundFormData) => {
@@ -130,15 +140,17 @@ export default function CreateInboundPage() {
         productId: data.productId,
         quantity: data.quantity,
         reason: data.reason,
-        remarks: data.remarks?.trim() || undefined,
+        remarks: data.remarks?.trim() || '',
       });
 
-      await createMutation.mutateAsync({
+      const requestData = {
         productId: data.productId,
         quantity: data.quantity,
         reason: data.reason,
-        remarks: data.remarks?.trim() || undefined,
-      });
+        ...(data.remarks?.trim() && { remarks: data.remarks.trim() }),
+      };
+
+      await createMutation.mutateAsync(requestData);
 
       toast({
         title: '入库成功',
@@ -221,38 +233,104 @@ export default function CreateInboundPage() {
                 )}
               />
 
+              {/* 单位选择 */}
+              <FormField
+                control={form.control}
+                name="inputUnit"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>入库单位 *</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      disabled={!selectedProduct}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="请选择入库单位" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {INBOUND_UNIT_OPTIONS.map(option => (
+                          <SelectItem
+                            key={option.value}
+                            value={option.value}
+                            disabled={
+                              option.value === 'units' &&
+                              (!selectedProduct ||
+                                !selectedProduct.piecesPerUnit ||
+                                selectedProduct.piecesPerUnit <= 1)
+                            }
+                          >
+                            {option.label}
+                            {option.value === 'units' &&
+                              selectedProduct &&
+                              selectedProduct.piecesPerUnit > 1 &&
+                              ` (每件${selectedProduct.piecesPerUnit}片)`}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {!selectedProduct && (
+                      <FormDescription>请先选择产品</FormDescription>
+                    )}
+                    {selectedProduct &&
+                      selectedProduct.piecesPerUnit <= 1 &&
+                      watchedInputUnit === 'units' && (
+                        <FormDescription className="text-amber-600">
+                          该产品每件只有{selectedProduct.piecesPerUnit}
+                          片，建议选择"片"作为单位
+                        </FormDescription>
+                      )}
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               {/* 数量输入 */}
               <FormField
                 control={form.control}
-                name="quantity"
+                name="inputQuantity"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>入库数量（片数） *</FormLabel>
+                    <FormLabel>
+                      入库数量（
+                      {watchedInputUnit === 'pieces' ? '片数' : '件数'}） *
+                    </FormLabel>
                     <FormControl>
                       <Input
                         type="number"
-                        value={quantityInput}
-                        onChange={e => handleQuantityChange(e.target.value)}
+                        {...field}
+                        onChange={e => {
+                          const value = e.target.value;
+                          field.onChange(value ? parseInt(value) : 0);
+                        }}
                         min={1}
                         step={1}
-                        placeholder="请输入入库片数"
+                        placeholder={`请输入入库${
+                          watchedInputUnit === 'pieces' ? '片数' : '件数'
+                        }`}
                         disabled={!selectedProduct}
                       />
                     </FormControl>
-                    {selectedProduct && calculatedPieces && (
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        {(() => {
-                          const result = calculatePieceDisplay(
-                            calculatedPieces,
+                    {selectedProduct &&
+                      watchedInputQuantity > 0 &&
+                      watchedInputUnit === 'units' && (
+                        <div className="mt-2 text-sm text-muted-foreground">
+                          转换结果：{watchedInputQuantity}件 ={' '}
+                          {calculateFinalQuantity(
+                            watchedInputQuantity,
+                            watchedInputUnit,
                             selectedProduct.piecesPerUnit
-                          );
-                          return `换算结果：${result.displayText}`;
-                        })()}
-                      </div>
-                    )}
+                          )}
+                          片
+                        </div>
+                      )}
                     <FormDescription>
                       {selectedProduct
-                        ? `请输入总片数，系统将自动换算为件数显示（每件${selectedProduct.piecesPerUnit}片）`
+                        ? watchedInputUnit === 'pieces'
+                          ? '直接输入片数'
+                          : `按件输入，每件${selectedProduct.piecesPerUnit}片`
                         : '请先选择产品'}
                     </FormDescription>
                     <FormMessage />

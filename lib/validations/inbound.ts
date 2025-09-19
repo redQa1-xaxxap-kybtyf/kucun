@@ -14,10 +14,27 @@ export const inboundReasonSchema = z.enum([
   'other',
 ] as const);
 
+// 入库单位类型
+export const inboundUnitSchema = z.enum(['pieces', 'units'] as const);
+
 // 创建入库记录验证规则
 export const createInboundSchema = z.object({
   productId: z.string().min(1, '请选择产品').uuid('产品ID格式不正确'),
 
+  // 用户输入的数量（根据选择的单位）
+  inputQuantity: z
+    .number({
+      required_error: '请输入入库数量',
+      invalid_type_error: '数量必须是数字',
+    })
+    .min(1, '数量必须大于等于1')
+    .max(999999, '数量不能超过999999')
+    .int('数量必须是整数'),
+
+  // 用户选择的单位
+  inputUnit: inboundUnitSchema.default('pieces'),
+
+  // 最终存储的片数（由前端计算后传入）
   quantity: z
     .number({
       required_error: '请输入入库数量',
