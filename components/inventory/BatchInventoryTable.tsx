@@ -111,6 +111,54 @@ export function BatchInventoryTable({
     return <Badge variant="default">库存充足</Badge>;
   };
 
+  // 格式化每件片数显示
+  const formatPiecesPerUnit = (piecesPerUnit?: number) => {
+    if (!piecesPerUnit || piecesPerUnit <= 0) return '-';
+    return `${piecesPerUnit}片/件`;
+  };
+
+  // 格式化产品规格显示
+  const formatSpecifications = (
+    specifications?: Record<string, string | number | undefined>
+  ) => {
+    if (!specifications || Object.keys(specifications).length === 0) return '-';
+
+    const specs = Object.entries(specifications)
+      .filter(
+        ([_, value]) => value !== undefined && value !== null && value !== ''
+      )
+      .map(([key, value]) => {
+        // 处理常见的规格字段显示
+        const displayKey =
+          key === 'size'
+            ? '尺寸'
+            : key === 'color'
+              ? '颜色'
+              : key === 'surface'
+                ? '表面'
+                : key === 'thickness'
+                  ? '厚度'
+                  : key === 'pattern'
+                    ? '花纹'
+                    : key === 'grade'
+                      ? '等级'
+                      : key === 'origin'
+                        ? '产地'
+                        : key === 'series'
+                          ? '系列'
+                          : key;
+
+        const displayValue =
+          typeof value === 'number' && key === 'thickness'
+            ? `${value}mm`
+            : String(value);
+
+        return `${displayKey}:${displayValue}`;
+      });
+
+    return specs.length > 0 ? specs.join(' | ') : '-';
+  };
+
   if (groupByVariant && groupedData) {
     return (
       <Card>
@@ -189,6 +237,8 @@ export function BatchInventoryTable({
                       <Table>
                         <TableHeader>
                           <TableRow>
+                            <TableHead>产品规格</TableHead>
+                            <TableHead>每件片数</TableHead>
                             <TableHead>批次号</TableHead>
                             <TableHead className="text-right">
                               库存数量
@@ -209,6 +259,16 @@ export function BatchInventoryTable({
                               className="cursor-pointer hover:bg-muted/50"
                               onClick={() => onRowClick?.(batch)}
                             >
+                              <TableCell className="max-w-[200px] truncate">
+                                {formatSpecifications(
+                                  batch.product?.specifications
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {formatPiecesPerUnit(
+                                  batch.product?.piecesPerUnit
+                                )}
+                              </TableCell>
                               <TableCell>{batch.batchNumber || '-'}</TableCell>
                               <TableCell className="text-right font-medium">
                                 {batch.product?.piecesPerUnit
@@ -260,6 +320,8 @@ export function BatchInventoryTable({
           <TableHeader>
             <TableRow>
               {showVariantInfo && <TableHead>产品变体</TableHead>}
+              <TableHead>产品规格</TableHead>
+              <TableHead>每件片数</TableHead>
               <TableHead>批次号</TableHead>
               <TableHead className="text-right">库存数量</TableHead>
               <TableHead className="text-right">预留数量</TableHead>
@@ -288,6 +350,12 @@ export function BatchInventoryTable({
                     </div>
                   </TableCell>
                 )}
+                <TableCell className="max-w-[200px] truncate">
+                  {formatSpecifications(inventory.product?.specifications)}
+                </TableCell>
+                <TableCell>
+                  {formatPiecesPerUnit(inventory.product?.piecesPerUnit)}
+                </TableCell>
                 <TableCell>{inventory.batchNumber || '-'}</TableCell>
                 <TableCell className="text-right font-medium">
                   {inventory.product?.piecesPerUnit
