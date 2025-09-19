@@ -158,8 +158,22 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('获取入库记录失败:', error);
+
+    // 详细错误日志
+    if (error instanceof Error) {
+      console.error('错误详情:', {
+        name: error.name,
+        message: error.message,
+        stack: error.stack,
+      });
+    }
+
     return NextResponse.json(
-      { success: false, error: '获取入库记录失败' },
+      {
+        success: false,
+        error: '获取入库记录失败',
+        details: error instanceof Error ? error.message : '未知错误',
+      },
       { status: 500 }
     );
   }

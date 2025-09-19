@@ -191,19 +191,8 @@ export const inventoryValidations = {
   }),
 };
 
-// 入库记录相关验证
-export const inboundRecordValidations = {
-  create: z.object({
-    type: z
-      .enum(['normal_inbound', 'return_inbound', 'adjust_inbound'])
-      .default('normal_inbound'),
-    productId: baseValidations.id,
-    colorCode: z.string().max(50, '色号不能超过50个字符').optional(),
-    productionDate: z.string().optional(),
-    quantity: z.number().min(0.01, '入库数量必须大于0'),
-    remarks: z.string().max(500, '备注不能超过500个字符').optional(),
-  }),
-};
+// 入库记录相关验证 - 已迁移到 lib/validations/inbound.ts
+// 遵循唯一真理源原则，请使用 lib/validations/inbound.ts 中的验证规则
 
 // 分页查询验证
 export const paginationValidations = {

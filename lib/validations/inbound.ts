@@ -58,42 +58,89 @@ export const updateInboundSchema = z.object({
 export const inboundQuerySchema = z.object({
   page: z
     .string()
+    .nullable()
     .optional()
     .transform(val => (val ? parseInt(val) : 1))
     .refine(val => val > 0, '页码必须大于0'),
 
   limit: z
     .string()
+    .nullable()
     .optional()
     .transform(val => (val ? parseInt(val) : 20))
     .refine(val => val > 0 && val <= 100, '每页数量必须在1-100之间'),
 
   search: z
     .string()
+    .nullable()
     .optional()
     .transform(val => val?.trim() || undefined),
 
-  productId: z.string().uuid('产品ID格式不正确').optional(),
+  productId: z
+    .string()
+    .nullable()
+    .optional()
+    .refine(
+      val =>
+        !val ||
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          val
+        ),
+      '产品ID格式不正确'
+    ),
 
-  reason: inboundReasonSchema.optional(),
+  reason: z
+    .string()
+    .nullable()
+    .optional()
+    .refine(
+      val =>
+        !val ||
+        ['purchase', 'return', 'transfer', 'surplus', 'other'].includes(val),
+      '入库原因格式不正确'
+    ),
 
-  userId: z.string().uuid('用户ID格式不正确').optional(),
+  userId: z
+    .string()
+    .nullable()
+    .optional()
+    .refine(
+      val =>
+        !val ||
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          val
+        ),
+      '用户ID格式不正确'
+    ),
 
   startDate: z
     .string()
+    .nullable()
     .optional()
     .refine(val => !val || !isNaN(Date.parse(val)), '开始日期格式不正确'),
 
   endDate: z
     .string()
+    .nullable()
     .optional()
     .refine(val => !val || !isNaN(Date.parse(val)), '结束日期格式不正确'),
 
   sortBy: z
-    .enum(['createdAt', 'quantity', 'recordNumber'])
-    .default('createdAt'),
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || 'createdAt')
+    .refine(
+      val => ['createdAt', 'quantity', 'recordNumber'].includes(val),
+      '排序字段不正确'
+    ),
 
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  sortOrder: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || 'desc')
+    .refine(val => ['asc', 'desc'].includes(val), '排序方向不正确'),
 });
 
 // 批量入库验证规则

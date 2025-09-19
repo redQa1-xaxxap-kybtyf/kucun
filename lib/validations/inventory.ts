@@ -63,49 +63,9 @@ const baseValidations = {
     .or(z.literal('')),
 };
 
-// 入库操作验证
-export const inboundCreateSchema = z
-  .object({
-    type: z.enum(['normal_inbound', 'return_inbound', 'adjust_inbound'], {
-      errorMap: () => ({ message: '请选择正确的入库类型' }),
-    }),
-    productId: baseValidations.productId,
-    colorCode: baseValidations.colorCode,
-    productionDate: baseValidations.productionDate,
-    quantity: baseValidations.quantity,
-    unitCost: baseValidations.unitCost,
-    supplierId: baseValidations.supplierId,
-    remarks: baseValidations.remarks,
-  })
-  .refine(
-    data => {
-      // 正常入库和退货入库需要单位成本
-      if (
-        (data.type === 'normal_inbound' || data.type === 'return_inbound') &&
-        !data.unitCost
-      ) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: '正常入库和退货入库需要填写单位成本',
-      path: ['unitCost'],
-    }
-  )
-  .refine(
-    data => {
-      // 正常入库需要供应商
-      if (data.type === 'normal_inbound' && !data.supplierId) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: '正常入库需要选择供应商',
-      path: ['supplierId'],
-    }
-  );
+// 入库操作验证 - 已迁移到 lib/validations/inbound.ts
+// 遵循唯一真理源原则，删除冗余Schema定义
+// 如需复杂入库验证，请使用 lib/validations/inbound.ts 中的 createInboundSchema
 
 // 出库操作验证
 export const outboundCreateSchema = z

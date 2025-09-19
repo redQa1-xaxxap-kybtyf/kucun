@@ -132,24 +132,8 @@ export const customerValidations = {
   }),
 };
 
-// 入库记录验证
-export const inboundRecordValidations = {
-  create: z.object({
-    productId: baseValidations.id,
-    quantity: z.number().min(0.01, '数量必须大于0'),
-    reason: z.enum(['purchase', 'return', 'transfer', 'surplus', 'other']),
-    remarks: baseValidations.remarks,
-  }),
-
-  update: z.object({
-    id: baseValidations.id,
-    quantity: z.number().min(0.01, '数量必须大于0').optional(),
-    reason: z
-      .enum(['purchase', 'return', 'transfer', 'surplus', 'other'])
-      .optional(),
-    remarks: baseValidations.remarks,
-  }),
-};
+// 入库记录验证 - 已迁移到 lib/validations/inbound.ts
+// 遵循唯一真理源原则，请使用 lib/validations/inbound.ts 中的验证规则
 
 // 导出所有验证类型
 export type UserCreateInput = z.infer<typeof userValidations.register>;
