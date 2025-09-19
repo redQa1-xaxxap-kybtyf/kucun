@@ -26,6 +26,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { NumberInput } from '@/components/ui/number-input';
 import {
   Select,
   SelectContent,
@@ -393,12 +394,13 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                     <FormItem>
                       <FormLabel>每单位片数</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
+                        <NumberInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          min={1}
+                          defaultValue={1}
+                          allowEmpty={false}
                           placeholder="请输入每单位片数"
-                          {...field}
-                          onChange={e => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
                       <FormDescription>每个计量单位包含的片数</FormDescription>
@@ -415,13 +417,15 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                     <FormItem>
                       <FormLabel>重量 (kg)</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.01"
+                        <NumberInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          min={0}
+                          step={0.01}
+                          precision={2}
+                          defaultValue={0}
+                          allowEmpty={true}
                           placeholder="请输入重量"
-                          {...field}
-                          onChange={e => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
                       <FormDescription>单个产品的重量（千克）</FormDescription>
@@ -438,13 +442,16 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
                     <FormItem>
                       <FormLabel>厚度 (mm)</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          min="0"
-                          step="0.1"
+                        <NumberInput
+                          value={field.value}
+                          onChange={field.onChange}
+                          min={0}
+                          max={100}
+                          step={0.1}
+                          precision={1}
+                          defaultValue={0}
+                          allowEmpty={true}
                           placeholder="请输入厚度"
-                          {...field}
-                          onChange={e => field.onChange(Number(e.target.value))}
                         />
                       </FormControl>
                       <FormDescription>产品的厚度（毫米）</FormDescription>
