@@ -62,7 +62,7 @@ export default function CreateInboundPage() {
     resolver: zodResolver(createInboundSchema),
     defaultValues: {
       productId: '',
-      quantity: undefined, // 修改为undefined，避免默认值0无法删除的问题
+      quantity: 1, // 设置默认值为1，符合最小值要求
       reason: 'purchase',
       remarks: '',
     },
@@ -79,7 +79,8 @@ export default function CreateInboundPage() {
     // 重置数量相关状态
     setQuantityInput('');
     setCalculatedPieces(null);
-    form.setValue('quantity', undefined);
+    form.setValue('quantity', 1); // 重置为默认值1
+    form.clearErrors('quantity');
   };
 
   // 处理数量输入变化
@@ -88,7 +89,7 @@ export default function CreateInboundPage() {
 
     if (!selectedProduct || !value.trim()) {
       setCalculatedPieces(null);
-      form.setValue('quantity', undefined);
+      form.clearErrors('quantity');
       return;
     }
 
@@ -98,15 +99,16 @@ export default function CreateInboundPage() {
 
       if (isNaN(totalPieces) || totalPieces <= 0) {
         setCalculatedPieces(null);
-        form.setValue('quantity', undefined);
+        form.clearErrors('quantity');
         return;
       }
 
       setCalculatedPieces(totalPieces);
       form.setValue('quantity', totalPieces);
+      form.clearErrors('quantity');
     } catch (error) {
       setCalculatedPieces(null);
-      form.setValue('quantity', undefined);
+      form.clearErrors('quantity');
     }
   };
 
@@ -114,6 +116,22 @@ export default function CreateInboundPage() {
   const onSubmit = async (data: InboundFormData) => {
     try {
       setIsSubmitting(true);
+
+      // 验证必要字段
+      if (!data.productId) {
+        throw new Error('请选择产品');
+      }
+
+      if (!data.quantity || data.quantity < 1) {
+        throw new Error('请输入有效的入库数量');
+      }
+
+      console.log('提交入库数据:', {
+        productId: data.productId,
+        quantity: data.quantity,
+        reason: data.reason,
+        remarks: data.remarks?.trim() || undefined,
+      });
 
       await createMutation.mutateAsync({
         productId: data.productId,
