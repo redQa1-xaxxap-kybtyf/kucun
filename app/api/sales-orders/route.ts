@@ -217,7 +217,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { customerId, items, remarks } = validationResult.data;
+    const {
+      customerId,
+      items,
+      remarks,
+      orderNumber: providedOrderNumber,
+    } = validationResult.data;
 
     // 验证客户是否存在
     const customer = await prisma.customer.findUnique({
@@ -260,8 +265,8 @@ export async function POST(request: NextRequest) {
       0
     );
 
-    // 生成订单号
-    const orderNumber = generateOrderNumber();
+    // 使用提供的订单号或生成新的订单号
+    const orderNumber = providedOrderNumber || generateOrderNumber();
 
     // 使用事务创建销售订单
     const salesOrder = await prisma.$transaction(async tx => {

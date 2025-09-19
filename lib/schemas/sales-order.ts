@@ -22,11 +22,15 @@ export const SalesOrderStatus = z.enum([
 export const SalesOrderItemSchema = z.object({
   productId: z.string().min(1, '产品ID不能为空'),
 
-  quantity: z.number().int().min(1, '数量必须大于0'),
+  colorCode: z.string().max(20, '色号不能超过20个字符').optional(),
+
+  productionDate: z.string().optional(),
+
+  quantity: z.number().min(0.01, '数量必须大于0'),
 
   unitPrice: z.number().min(0, '单价不能为负数'),
 
-  subtotal: z.number().min(0, '小计不能为负数'),
+  subtotal: z.number().min(0, '小计不能为负数').optional(),
 });
 
 /**
@@ -36,13 +40,14 @@ export const CreateSalesOrderSchema = z.object({
   orderNumber: z
     .string()
     .min(1, '订单号不能为空')
-    .max(50, '订单号不能超过50个字符'),
+    .max(50, '订单号不能超过50个字符')
+    .optional(), // 订单号可选，由后端自动生成
 
   customerId: z.string().min(1, '客户ID不能为空'),
 
   status: SalesOrderStatus.default('draft'),
 
-  notes: z.string().max(1000, '备注不能超过1000个字符').optional(),
+  remarks: z.string().max(1000, '备注不能超过1000个字符').optional(),
 
   items: z.array(SalesOrderItemSchema).min(1, '至少需要一个订单项'),
 
@@ -115,10 +120,9 @@ export type SalesOrderStatusType = z.infer<typeof SalesOrderStatus>;
  * 销售订单表单默认值
  */
 export const salesOrderFormDefaults: CreateSalesOrderData = {
-  orderNumber: '',
   customerId: '',
   status: 'draft',
-  notes: '',
+  remarks: '',
   items: [],
 };
 
