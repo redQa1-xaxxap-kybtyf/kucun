@@ -226,7 +226,7 @@ export default function InboundRecordsPage() {
                           </Badge>
                         </TableCell>
                         <TableCell className="font-medium">
-                          +{record.quantity}
+                          +{record.quantity}片
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center gap-2">
@@ -276,7 +276,7 @@ export default function InboundRecordsPage() {
                               数量：
                             </span>
                             <span className="font-medium">
-                              +{record.quantity}
+                              +{record.quantity}片
                             </span>
                           </div>
                           <div>
