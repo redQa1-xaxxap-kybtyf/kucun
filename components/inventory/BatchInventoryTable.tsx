@@ -118,45 +118,61 @@ export function BatchInventoryTable({
   };
 
   // 格式化产品规格显示
-  const formatSpecifications = (
-    specifications?: Record<string, string | number | undefined>
-  ) => {
-    if (!specifications || Object.keys(specifications).length === 0) return '-';
+  const formatSpecifications = (product?: {
+    specification?: string;
+    specifications?: Record<string, string | number | undefined>;
+  }) => {
+    if (!product) return '-';
 
-    const specs = Object.entries(specifications)
-      .filter(
-        ([_, value]) => value !== undefined && value !== null && value !== ''
-      )
-      .map(([key, value]) => {
-        // 处理常见的规格字段显示
-        const displayKey =
-          key === 'size'
-            ? '尺寸'
-            : key === 'color'
-              ? '颜色'
-              : key === 'surface'
-                ? '表面'
-                : key === 'thickness'
-                  ? '厚度'
-                  : key === 'pattern'
-                    ? '花纹'
-                    : key === 'grade'
-                      ? '等级'
-                      : key === 'origin'
-                        ? '产地'
-                        : key === 'series'
-                          ? '系列'
-                          : key;
+    // 优先显示 specifications 对象
+    if (
+      product.specifications &&
+      Object.keys(product.specifications).length > 0
+    ) {
+      const specs = Object.entries(product.specifications)
+        .filter(
+          ([_, value]) => value !== undefined && value !== null && value !== ''
+        )
+        .map(([key, value]) => {
+          // 处理常见的规格字段显示
+          const displayKey =
+            key === 'size'
+              ? '尺寸'
+              : key === 'color'
+                ? '颜色'
+                : key === 'surface'
+                  ? '表面'
+                  : key === 'thickness'
+                    ? '厚度'
+                    : key === 'pattern'
+                      ? '花纹'
+                      : key === 'grade'
+                        ? '等级'
+                        : key === 'origin'
+                          ? '产地'
+                          : key === 'series'
+                            ? '系列'
+                            : key;
 
-        const displayValue =
-          typeof value === 'number' && key === 'thickness'
-            ? `${value}mm`
-            : String(value);
+          const displayValue =
+            typeof value === 'number' && key === 'thickness'
+              ? `${value}mm`
+              : String(value);
 
-        return `${displayKey}:${displayValue}`;
-      });
+          return `${displayKey}:${displayValue}`;
+        });
 
-    return specs.length > 0 ? specs.join(' | ') : '-';
+      if (specs.length > 0) {
+        return specs.join(' | ');
+      }
+    }
+
+    // 如果没有 specifications 对象，则显示 specification 字符串
+    if (product.specification && product.specification.trim() !== '') {
+      return product.specification;
+    }
+
+    return '-';
   };
 
   if (groupByVariant && groupedData) {
@@ -260,9 +276,7 @@ export function BatchInventoryTable({
                               onClick={() => onRowClick?.(batch)}
                             >
                               <TableCell className="max-w-[200px] truncate">
-                                {formatSpecifications(
-                                  batch.product?.specifications
-                                )}
+                                {formatSpecifications(batch.product)}
                               </TableCell>
                               <TableCell>
                                 {formatPiecesPerUnit(
@@ -351,7 +365,7 @@ export function BatchInventoryTable({
                   </TableCell>
                 )}
                 <TableCell className="max-w-[200px] truncate">
-                  {formatSpecifications(inventory.product?.specifications)}
+                  {formatSpecifications(inventory.product)}
                 </TableCell>
                 <TableCell>
                   {formatPiecesPerUnit(inventory.product?.piecesPerUnit)}

@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -135,6 +135,7 @@ export async function GET(request: NextRequest) {
               code: true,
               name: true,
               specification: true,
+              specifications: true,
               unit: true,
               piecesPerUnit: true,
               status: true,
@@ -162,7 +163,14 @@ export async function GET(request: NextRequest) {
       availableQuantity: record.quantity - record.reservedQuantity,
       location: record.location,
       unitCost: record.unitCost,
-      product: record.product,
+      product: record.product
+        ? {
+            ...record.product,
+            specifications: record.product.specifications
+              ? JSON.parse(record.product.specifications as string)
+              : null,
+          }
+        : null,
       updatedAt: record.updatedAt,
     }));
 
