@@ -5,18 +5,27 @@ import { zhCN } from 'date-fns/locale';
 import {
   ArrowLeft,
   Calendar,
-  FileText,
+  Filter,
   Package,
   Plus,
-  TrendingUp,
+  RotateCcw,
   User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import React from 'react';
 
 // UI Components
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
@@ -26,10 +35,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-// Icons
 
 // API and Types
-import { useInboundRecords, useInboundStats } from '@/lib/api/inbound';
+import { useInboundRecords } from '@/lib/api/inbound';
+import type { InboundQueryParams, InboundReason } from '@/lib/types/inbound';
 
 // 入库原因标签映射
 const INBOUND_REASON_LABELS = {
@@ -42,23 +51,42 @@ const INBOUND_REASON_LABELS = {
 
 /**
  * 入库记录页面
- * 显示所有入库操作的历史记录
+ * 显示所有入库操作的历史记录，支持日期和类型筛选
  */
 export default function InboundRecordsPage() {
   const router = useRouter();
 
-  // 获取入库记录数据
-  const { data, isLoading, error } = useInboundRecords({
+  // 筛选状态
+  const [queryParams, setQueryParams] = React.useState<InboundQueryParams>({
     page: 1,
     limit: 50,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
 
-  // 获取统计数据
-  const { data: stats } = useInboundStats();
+  // 获取入库记录数据
+  const { data, isLoading, error } = useInboundRecords(queryParams);
 
   const inboundRecords = data?.data || [];
+
+  // 处理筛选条件变化
+  const handleFilter = (key: keyof InboundQueryParams, value: any) => {
+    setQueryParams(prev => ({
+      ...prev,
+      [key]: value,
+      page: 1, // 重置到第一页
+    }));
+  };
+
+  // 重置筛选条件
+  const handleResetFilters = () => {
+    setQueryParams({
+      page: 1,
+      limit: 50,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    });
+  };
 
   // 格式化日期
   const formatDate = (dateString: string) =>
@@ -129,41 +157,76 @@ export default function InboundRecordsPage() {
         </Button>
       </div>
 
-      {/* 统计卡片 */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">今日入库</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.todayCount || 0}</div>
-            <p className="text-xs text-muted-foreground">笔入库记录</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">本月入库</CardTitle>
-            <Package className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats?.monthCount || 0}</div>
-            <p className="text-xs text-muted-foreground">笔入库记录</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">总入库量</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">
-              {stats?.totalQuantity || 0}
+      {/* 筛选器 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-4 w-4" />
+            筛选条件
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4 md:flex-row md:items-end">
+            {/* 日期筛选器 */}
+            <div className="flex flex-col gap-2 md:flex-row md:items-center md:gap-4">
+              <div className="space-y-2">
+                <label className="text-sm font-medium">开始日期</label>
+                <Input
+                  type="date"
+                  value={queryParams.startDate || ''}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleFilter('startDate', e.target.value || undefined)
+                  }
+                  className="w-40"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">结束日期</label>
+                <Input
+                  type="date"
+                  value={queryParams.endDate || ''}
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    handleFilter('endDate', e.target.value || undefined)
+                  }
+                  className="w-40"
+                />
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">件商品</p>
-          </CardContent>
-        </Card>
-      </div>
+
+            {/* 入库类型筛选器 */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">入库类型</label>
+              <Select
+                value={queryParams.reason || 'all'}
+                onValueChange={value =>
+                  handleFilter(
+                    'reason',
+                    value === 'all' ? undefined : (value as InboundReason)
+                  )
+                }
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="入库类型" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">全部类型</SelectItem>
+                  <SelectItem value="purchase">采购入库</SelectItem>
+                  <SelectItem value="return">退货入库</SelectItem>
+                  <SelectItem value="transfer">调拨入库</SelectItem>
+                  <SelectItem value="surplus">盘盈入库</SelectItem>
+                  <SelectItem value="other">其他</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* 重置按钮 */}
+            <Button variant="outline" onClick={handleResetFilters}>
+              <RotateCcw className="mr-2 h-4 w-4" />
+              重置
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 入库记录列表 */}
       <Card>
