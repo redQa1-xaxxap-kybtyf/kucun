@@ -1,7 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import type { NavigationItem } from '@/lib/types/layout';
+import { useQuery } from '@tanstack/react-query';
 
 /**
  * 导航徽章数据类型
@@ -16,36 +16,88 @@ interface NavigationBadgeData {
 }
 
 /**
- * 模拟API数据获取函数
- * 实际项目中应该从真实API获取数据
+ * 获取真实的导航徽章数据
+ * 从各个API端点获取实际的统计数据
  */
 async function fetchNavigationBadges(): Promise<NavigationBadgeData[]> {
-  // 模拟API延迟
-  await new Promise(resolve => setTimeout(resolve, 500));
+  try {
+    // 并行获取各种统计数据
+    const [overviewResponse, alertsResponse] = await Promise.all([
+      fetch('/api/dashboard/overview'),
+      fetch('/api/dashboard/alerts'),
+    ]);
 
-  // 模拟返回数据
-  return [
-    {
-      navId: 'sales-orders',
-      badge: 3,
-      badgeVariant: 'destructive', // 待处理订单用红色徽章
-    },
-    {
-      navId: 'inventory',
-      badge: 5,
-      badgeVariant: 'destructive', // 库存预警用红色徽章
-    },
-    {
-      navId: 'return-orders',
-      badge: 1,
-      badgeVariant: 'secondary', // 退货订单用灰色徽章
-    },
-    {
-      navId: 'customers',
-      badge: 2,
-      badgeVariant: 'outline', // 待跟进客户用轮廓徽章
-    },
-  ];
+    const badges: NavigationBadgeData[] = [];
+
+    // 处理业务概览数据
+    if (overviewResponse.ok) {
+      const overviewResult = await overviewResponse.json();
+      if (overviewResult.success) {
+        const data = overviewResult.data;
+
+        // 销售订单徽章 - 待处理订单数量
+        if (data.sales?.pendingOrders > 0) {
+          badges.push({
+            navId: 'sales-orders',
+            badge: data.sales.pendingOrders,
+            badgeVariant: 'destructive',
+          });
+        }
+
+        // 退货订单徽章 - 待处理退货数量
+        if (data.returns?.pendingReturns > 0) {
+          badges.push({
+            navId: 'return-orders',
+            badge: data.returns.pendingReturns,
+            badgeVariant: 'secondary',
+          });
+        }
+
+        // 客户管理徽章 - 新客户数量
+        if (data.customers?.newCustomers > 0) {
+          badges.push({
+            navId: 'customers',
+            badge: data.customers.newCustomers,
+            badgeVariant: 'outline',
+          });
+        }
+      }
+    }
+
+    // 处理库存预警数据
+    if (alertsResponse.ok) {
+      const alertsResult = await alertsResponse.json();
+      if (alertsResult.success && alertsResult.data.length > 0) {
+        // 库存预警徽章 - 所有需要关注的库存预警
+        const totalAlerts = alertsResult.data.length;
+
+        // 根据最高预警级别确定徽章颜色
+        const hasCritical = alertsResult.data.some(
+          (alert: any) => alert.alertLevel === 'critical'
+        );
+        const hasDanger = alertsResult.data.some(
+          (alert: any) => alert.alertLevel === 'danger'
+        );
+
+        let badgeVariant: 'destructive' | 'secondary' = 'secondary';
+        if (hasCritical || hasDanger) {
+          badgeVariant = 'destructive';
+        }
+
+        badges.push({
+          navId: 'inventory',
+          badge: totalAlerts,
+          badgeVariant,
+        });
+      }
+    }
+
+    return badges;
+  } catch (error) {
+    console.error('获取导航徽章数据失败:', error);
+    // 发生错误时返回空数组，不显示徽章
+    return [];
+  }
 }
 
 /**
