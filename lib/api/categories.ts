@@ -93,6 +93,33 @@ export async function getCategories(
 }
 
 /**
+ * 获取所有活跃分类选项（用于筛选器）
+ */
+export async function getCategoryOptions(): Promise<Category[]> {
+  const response = await getCategories({
+    status: 'active',
+    limit: 1000, // 获取所有分类
+    sortBy: 'name',
+    sortOrder: 'asc',
+  });
+
+  return response.data || [];
+}
+
+/**
+ * TanStack Query 查询键
+ */
+export const categoryQueryKeys = {
+  all: ['categories'] as const,
+  lists: () => [...categoryQueryKeys.all, 'list'] as const,
+  list: (params: CategoryQueryParams) =>
+    [...categoryQueryKeys.lists(), params] as const,
+  details: () => [...categoryQueryKeys.all, 'detail'] as const,
+  detail: (id: string) => [...categoryQueryKeys.details(), id] as const,
+  options: () => [...categoryQueryKeys.all, 'options'] as const,
+};
+
+/**
  * 获取单个分类详情
  */
 export async function getCategory(id: string): Promise<ApiResponse<Category>> {

@@ -92,6 +92,7 @@ export interface InventoryQueryParams {
   productionDateStart?: string;
   productionDateEnd?: string;
   location?: string; // 存储位置筛选
+  categoryId?: string; // 产品分类筛选
   lowStock?: boolean;
   hasStock?: boolean;
   groupByVariant?: boolean; // 是否按变体分组显示

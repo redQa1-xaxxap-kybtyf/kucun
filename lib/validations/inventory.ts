@@ -211,6 +211,12 @@ export const inventoryQuerySchema = z.object({
     .optional()
     .transform(val => val?.trim() || undefined),
 
+  categoryId: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val?.trim() || undefined),
+
   productionDateStart: z
     .string()
     .nullable()

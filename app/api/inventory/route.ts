@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
       productId: searchParams.get('productId'),
       batchNumber: searchParams.get('batchNumber'),
       location: searchParams.get('location'),
+      categoryId: searchParams.get('categoryId'),
       productionDateStart: searchParams.get('productionDateStart'),
       productionDateEnd: searchParams.get('productionDateEnd'),
       lowStock: searchParams.get('lowStock'),
@@ -62,6 +63,7 @@ export async function GET(request: NextRequest) {
       productId,
       batchNumber,
       location,
+      categoryId,
       productionDateStart,
       productionDateEnd,
       lowStock,
@@ -90,6 +92,13 @@ export async function GET(request: NextRequest) {
 
     if (location) {
       where.location = location;
+    }
+
+    if (categoryId) {
+      where.product = {
+        ...((where.product as Record<string, unknown>) || {}),
+        categoryId: categoryId,
+      };
     }
 
     if (productionDateStart || productionDateEnd) {
@@ -139,6 +148,14 @@ export async function GET(request: NextRequest) {
               unit: true,
               piecesPerUnit: true,
               status: true,
+              categoryId: true,
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
             },
           },
           // 变体功能已移除

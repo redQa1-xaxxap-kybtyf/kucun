@@ -45,6 +45,7 @@ export default function InventoryPage() {
     page: 1,
     limit: 20,
     search: '',
+    categoryId: '',
     lowStock: false,
     hasStock: false,
     groupByVariant: false,
@@ -65,6 +66,12 @@ export default function InventoryPage() {
   const { data, isLoading, error } = useQuery({
     queryKey: inventoryQueryKeys.list(queryParams),
     queryFn: () => getInventories(queryParams),
+  });
+
+  // 获取分类选项数据
+  const { data: categoryOptions = [] } = useQuery({
+    queryKey: categoryQueryKeys.options(),
+    queryFn: getCategoryOptions,
   });
 
   // 搜索处理
@@ -258,6 +265,26 @@ export default function InventoryPage() {
                 <Package className="mr-2 h-4 w-4" />
                 有库存
               </Button>
+
+              {/* 分类筛选器 */}
+              <Select
+                value={queryParams.categoryId || ''}
+                onValueChange={value =>
+                  handleFilter('categoryId', value || undefined)
+                }
+              >
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="产品分类" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">全部分类</SelectItem>
+                  {categoryOptions.map(category => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
 
               <Select
                 value={queryParams.sortBy || 'updatedAt'}
