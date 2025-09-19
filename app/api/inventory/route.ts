@@ -168,12 +168,14 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: formattedInventory,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
+      data: {
+        data: formattedInventory,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
       },
     });
   } catch (error) {
