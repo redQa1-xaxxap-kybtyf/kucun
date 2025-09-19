@@ -269,7 +269,6 @@ export default function InventoryPage() {
                 <SelectContent>
                   <SelectItem value="updatedAt">更新时间</SelectItem>
                   <SelectItem value="quantity">库存数量</SelectItem>
-                  <SelectItem value="productName">产品名称</SelectItem>
                 </SelectContent>
               </Select>
 

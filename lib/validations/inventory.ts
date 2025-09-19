@@ -271,7 +271,7 @@ export const inventorySearchSchema = z
       .optional()
       .or(z.literal('')),
     sortBy: z
-      .enum(['productName', 'quantity', 'reservedQuantity', 'updatedAt'])
+      .enum(['quantity', 'reservedQuantity', 'updatedAt'])
       .default('updatedAt'),
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
   })

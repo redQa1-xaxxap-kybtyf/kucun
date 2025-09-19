@@ -285,7 +285,6 @@ export const OUTBOUND_TYPE_VARIANTS: Record<
 // 排序选项
 export const INVENTORY_SORT_OPTIONS = [
   { value: 'updatedAt', label: '更新时间' },
-  { value: 'productName', label: '产品名称' },
   { value: 'quantity', label: '库存数量' },
   { value: 'reservedQuantity', label: '预留数量' },
 ] as const;
