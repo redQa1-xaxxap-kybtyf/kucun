@@ -40,10 +40,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
-// 业务组件
-
-// API和类型
 import {
   createProduct,
   productQueryKeys,

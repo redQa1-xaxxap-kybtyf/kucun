@@ -3,14 +3,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import * as React from 'react';
 
-// UI Components
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-
-// API and Types
 import { deleteProduct, productQueryKeys } from '@/lib/api/products';
 import {
   PRODUCT_STATUS_LABELS,
@@ -40,10 +36,10 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
         description: `产品 "${product.name}" 已删除`,
         variant: 'success',
       });
-      
+
       // 失效相关查询缓存
       queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
-      
+
       // 跳转回产品列表
       router.push('/products');
     },
@@ -69,7 +65,9 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
 
   // 删除确认处理
   const handleDelete = () => {
-    if (window.confirm(`确定要删除产品 "${product.name}" 吗？此操作不可撤销。`)) {
+    if (
+      window.confirm(`确定要删除产品 "${product.name}" 吗？此操作不可撤销。`)
+    ) {
       deleteMutation.mutate();
     }
   };
@@ -82,7 +80,12 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">产品详情</h3>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="h-7" onClick={() => router.back()}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7"
+                onClick={() => router.back()}
+              >
                 <ArrowLeft className="mr-1 h-3 w-3" />
                 返回
               </Button>
@@ -94,23 +97,25 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
             <div className="flex items-center gap-3">
               <div>
                 <div className="text-sm font-medium">{product.name}</div>
-                <div className="text-xs text-muted-foreground">编码: {product.code}</div>
+                <div className="text-xs text-muted-foreground">
+                  编码: {product.code}
+                </div>
               </div>
               {getStatusBadge(product.status)}
             </div>
             <div className="flex items-center gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="h-7"
                 onClick={() => router.push(`/products/${product.id}/edit`)}
               >
                 <Edit className="mr-1 h-3 w-3" />
                 编辑
               </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
+              <Button
+                variant="outline"
+                size="sm"
                 className="h-7 text-red-600 hover:text-red-700"
                 onClick={handleDelete}
                 disabled={deleteMutation.isPending}
@@ -131,19 +136,27 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
         <div className="p-4">
           <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <div>
-              <div className="text-xs font-medium text-muted-foreground">产品编码</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                产品编码
+              </div>
               <div className="mt-1 text-sm">{product.code}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">产品名称</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                产品名称
+              </div>
               <div className="mt-1 text-sm">{product.name}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">规格</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                规格
+              </div>
               <div className="mt-1 text-sm">{product.specification || '-'}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">计量单位</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                计量单位
+              </div>
               <div className="mt-1 text-sm">
                 {PRODUCT_UNIT_LABELS[
                   product.unit as keyof typeof PRODUCT_UNIT_LABELS
@@ -151,19 +164,27 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
               </div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">每单位片数</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                每单位片数
+              </div>
               <div className="mt-1 text-sm">{product.piecesPerUnit || '-'}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">重量 (kg)</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                重量 (kg)
+              </div>
               <div className="mt-1 text-sm">{product.weight || '-'}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">厚度 (mm)</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                厚度 (mm)
+              </div>
               <div className="mt-1 text-sm">{product.thickness || '-'}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">产品分类</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                产品分类
+              </div>
               <div className="mt-1 text-sm">
                 {product.category ? product.category.name : '未分类'}
               </div>
@@ -180,17 +201,23 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
         <div className="p-4">
           <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
-              <div className="text-xs font-medium text-muted-foreground">产品状态</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                产品状态
+              </div>
               <div className="mt-1">{getStatusBadge(product.status)}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">创建时间</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                创建时间
+              </div>
               <div className="mt-1 text-sm">
                 {new Date(product.createdAt).toLocaleString('zh-CN')}
               </div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">更新时间</div>
+              <div className="text-xs font-medium text-muted-foreground">
+                更新时间
+              </div>
               <div className="mt-1 text-sm">
                 {new Date(product.updatedAt).toLocaleString('zh-CN')}
               </div>
@@ -208,15 +235,21 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             <div className="rounded border border-dashed border-muted-foreground/25 p-4 text-center">
               <div className="text-xs text-muted-foreground">库存信息</div>
-              <div className="mt-1 text-sm text-muted-foreground">功能开发中</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                功能开发中
+              </div>
             </div>
             <div className="rounded border border-dashed border-muted-foreground/25 p-4 text-center">
               <div className="text-xs text-muted-foreground">销售记录</div>
-              <div className="mt-1 text-sm text-muted-foreground">功能开发中</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                功能开发中
+              </div>
             </div>
             <div className="rounded border border-dashed border-muted-foreground/25 p-4 text-center">
               <div className="text-xs text-muted-foreground">操作历史</div>
-              <div className="mt-1 text-sm text-muted-foreground">功能开发中</div>
+              <div className="mt-1 text-sm text-muted-foreground">
+                功能开发中
+              </div>
             </div>
           </div>
         </div>

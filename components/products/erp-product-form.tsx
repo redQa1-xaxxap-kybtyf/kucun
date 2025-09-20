@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 
-// UI Components
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -28,8 +27,6 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-
-// API and Types
 import { getCategories } from '@/lib/api/categories';
 import {
   createProduct,
@@ -186,9 +183,11 @@ export function ERPProductForm({
       });
 
       queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
-      queryClient.invalidateQueries({
-        queryKey: productQueryKeys.detail(productId!),
-      });
+      if (productId) {
+        queryClient.invalidateQueries({
+          queryKey: productQueryKeys.detail(productId),
+        });
+      }
       queryClient.invalidateQueries({ queryKey: productQueryKeys.lists() });
       queryClient.invalidateQueries({ queryKey: ['categories'] });
 

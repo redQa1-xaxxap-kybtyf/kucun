@@ -52,8 +52,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-
-// API and Types
 import { getCategories } from '@/lib/api/categories';
 import {
   batchDeleteProducts,
@@ -61,11 +59,11 @@ import {
   getProducts,
   productQueryKeys,
 } from '@/lib/api/products';
-import type { Product, ProductQueryParams } from '@/lib/types/product';
 import {
   PRODUCT_STATUS_LABELS,
   PRODUCT_UNIT_LABELS,
-  PRODUCT_UNIT_OPTIONS,
+  type Product,
+  type ProductQueryParams,
 } from '@/lib/types/product';
 
 interface ERPProductListProps {
@@ -183,7 +181,10 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
   };
 
   // 筛选处理
-  const handleFilter = (key: keyof ProductQueryParams, value: any) => {
+  const handleFilter = (
+    key: keyof ProductQueryParams,
+    value: string | number | boolean
+  ) => {
     setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
   };
 
@@ -293,7 +294,7 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
           <h3 className="text-sm font-medium text-red-600">加载失败</h3>
         </div>
         <div className="p-3">
-          <div className="text-center text-red-600 text-sm">
+          <div className="text-center text-sm text-red-600">
             {error instanceof Error ? error.message : '未知错误'}
           </div>
         </div>
@@ -446,16 +447,24 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
                   />
                 </TableHead>
                 <TableHead className="h-8 text-xs font-medium">序号</TableHead>
-                <TableHead className="h-8 text-xs font-medium">产品编码</TableHead>
-                <TableHead className="h-8 text-xs font-medium">产品名称</TableHead>
+                <TableHead className="h-8 text-xs font-medium">
+                  产品编码
+                </TableHead>
+                <TableHead className="h-8 text-xs font-medium">
+                  产品名称
+                </TableHead>
                 <TableHead className="h-8 text-xs font-medium">规格</TableHead>
                 <TableHead className="h-8 text-xs font-medium">分类</TableHead>
                 <TableHead className="h-8 text-xs font-medium">厚度</TableHead>
                 <TableHead className="h-8 text-xs font-medium">重量</TableHead>
                 <TableHead className="h-8 text-xs font-medium">单位</TableHead>
                 <TableHead className="h-8 text-xs font-medium">状态</TableHead>
-                <TableHead className="h-8 text-xs font-medium">创建日期</TableHead>
-                <TableHead className="h-8 w-16 text-xs font-medium">操作</TableHead>
+                <TableHead className="h-8 text-xs font-medium">
+                  创建日期
+                </TableHead>
+                <TableHead className="h-8 w-16 text-xs font-medium">
+                  操作
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -567,8 +576,8 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
           <div className="border-t px-3 py-2">
             <div className="flex items-center justify-between">
               <div className="text-xs text-muted-foreground">
-                显示第{' '}
-                {(data.pagination.page - 1) * data.pagination.limit + 1} -{' '}
+                显示第 {(data.pagination.page - 1) * data.pagination.limit + 1}{' '}
+                -{' '}
                 {Math.min(
                   data.pagination.page * data.pagination.limit,
                   data.pagination.total
@@ -612,7 +621,7 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除产品</AlertDialogTitle>
             <AlertDialogDescription>
-              您确定要删除产品 "{deleteDialog.productName}" 吗？
+              您确定要删除产品 &ldquo;{deleteDialog.productName}&rdquo; 吗？
               <br />
               <span className="font-medium text-red-600">
                 此操作不可撤销，删除后将无法恢复产品数据。
@@ -657,7 +666,7 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
                   className="flex items-center justify-between rounded border p-2"
                 >
                   <div>
-                    <div className="font-medium text-sm">{product.name}</div>
+                    <div className="text-sm font-medium">{product.name}</div>
                     <div className="text-xs text-muted-foreground">
                       编码: {product.code}
                       {product.category && (
