@@ -30,12 +30,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import type {
+import {
   SALES_ORDER_STATUS_LABELS,
   SALES_ORDER_STATUS_VARIANTS,
-  SalesOrder,
-  SalesOrderQueryParams,
-  SalesOrderStatus,
+  type SalesOrder,
+  type SalesOrderQueryParams,
+  type SalesOrderStatus,
 } from '@/lib/types/sales-order';
 
 interface ERPSalesOrderListProps {
