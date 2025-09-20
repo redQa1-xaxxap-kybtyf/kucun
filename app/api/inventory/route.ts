@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
     if (categoryId) {
       where.product = {
         ...((where.product as Record<string, unknown>) || {}),
-        categoryId: categoryId,
+        categoryId,
       };
     }
 

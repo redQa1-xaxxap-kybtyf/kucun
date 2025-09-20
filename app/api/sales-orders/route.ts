@@ -1,11 +1,93 @@
-import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
-import { paginationValidations } from '@/lib/validations/base';
+// 销售订单查询参数验证
+const salesOrderQuerySchema = z.object({
+  page: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val ? parseInt(val) : 1))
+    .refine(val => val > 0, '页码必须大于0'),
+  limit: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val ? parseInt(val) : 20))
+    .refine(val => val > 0 && val <= 100, '每页数量必须在1-100之间'),
+  search: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val?.trim() || undefined),
+  sortBy: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || 'createdAt')
+    .refine(
+      val =>
+        [
+          'orderNumber',
+          'createdAt',
+          'updatedAt',
+          'totalAmount',
+          'status',
+        ].includes(val),
+      '排序字段不正确'
+    ),
+  sortOrder: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || 'desc')
+    .refine(val => ['asc', 'desc'].includes(val), '排序方向不正确'),
+  status: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || undefined)
+    .refine(
+      val =>
+        !val ||
+        ['draft', 'confirmed', 'shipped', 'completed', 'cancelled'].includes(
+          val
+        ),
+      '状态值不正确'
+    ),
+  customerId: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || undefined)
+    .refine(
+      val =>
+        !val ||
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          val
+        ),
+      '客户ID格式不正确'
+    ),
+  userId: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || undefined)
+    .refine(
+      val =>
+        !val ||
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          val
+        ),
+      '用户ID格式不正确'
+    ),
+});
 
 // 生成订单号
 function generateOrderNumber(): string {
@@ -30,19 +112,19 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const queryParams = {
-      page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '20'),
-      search: searchParams.get('search') || undefined,
-      sortBy: searchParams.get('sortBy') || 'createdAt',
-      sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
-      status: searchParams.get('status') || undefined,
-      customerId: searchParams.get('customerId') || undefined,
-      userId: searchParams.get('userId') || undefined,
+    const rawParams = {
+      page: searchParams.get('page'),
+      limit: searchParams.get('limit'),
+      search: searchParams.get('search'),
+      sortBy: searchParams.get('sortBy'),
+      sortOrder: searchParams.get('sortOrder'),
+      status: searchParams.get('status'),
+      customerId: searchParams.get('customerId'),
+      userId: searchParams.get('userId'),
     };
 
     // 验证查询参数
-    const validationResult = paginationValidations.query.safeParse(queryParams);
+    const validationResult = salesOrderQuerySchema.safeParse(rawParams);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -54,8 +136,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const { page, limit, search, sortBy, sortOrder } = validationResult.data;
-    const { status, customerId, userId } = queryParams;
+    const {
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder,
+      status,
+      customerId,
+      userId,
+    } = validationResult.data;
 
     // 构建查询条件
     const where: Record<string, any> = {};

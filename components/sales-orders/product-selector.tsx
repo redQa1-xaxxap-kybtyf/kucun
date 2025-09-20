@@ -1,8 +1,9 @@
 "use client"
 
-import * as React from "react"
 import { Check, ChevronsUpDown, Package, Search } from "lucide-react"
+import * as React from "react"
 
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
   Command,
@@ -17,9 +18,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
-import { Badge } from "@/components/ui/badge"
-import { cn } from "@/lib/utils"
 import type { Product } from "@/lib/types/product"
+import { cn } from "@/lib/utils"
 
 interface ProductSelectorProps {
   products: Product[]

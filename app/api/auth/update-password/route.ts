@@ -1,12 +1,12 @@
 import bcrypt from 'bcryptjs';
-import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { z } from 'zod';
 
 import { authOptions, updatePassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { baseValidations } from '@/lib/validations/base';
-import { z } from 'zod';
 
 // 更新密码验证规则
 const updatePasswordSchema = z

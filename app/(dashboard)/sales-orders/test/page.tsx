@@ -1,8 +1,11 @@
 'use client';
 
-import * as React from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { CheckCircle, XCircle, AlertTriangle, Package } from 'lucide-react';
+import * as React from 'react';
 
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -11,10 +14,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { CheckCircle, XCircle, AlertTriangle, Package } from 'lucide-react';
-
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';

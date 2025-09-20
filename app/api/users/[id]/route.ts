@@ -1,11 +1,11 @@
-import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { z } from 'zod';
 
 import { authOptions, updateUserStatus } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
-import { z } from 'zod';
 
 // 用户状态更新验证规则
 const updateUserStatusSchema = z.object({

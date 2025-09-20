@@ -5,15 +5,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   AlertTriangle,
   ArrowLeft,
-  Calculator,
   FileText,
   Loader2,
-  Package,
   Plus,
   Save,
   Search,
   Trash2,
-  User,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -21,17 +18,10 @@ import { useFieldArray, useForm } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -61,7 +51,6 @@ import {
   InventoryChecker,
   InventoryStatus,
 } from '@/components/sales-orders/inventory-checker';
-import { OrderNumberGenerator } from '@/components/sales-orders/order-number-generator';
 import { ProductSelector } from '@/components/sales-orders/product-selector';
 
 // API and Types
@@ -280,71 +269,121 @@ export function EnhancedSalesOrderForm({
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* 客户信息 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <User className="h-5 w-5" />
-                  客户信息
-                </CardTitle>
-                <CardDescription>选择订单客户</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <FormField
-                  control={form.control}
-                  name="customerId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>客户 *</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                        disabled={customersLoading}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择客户" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {customersData?.data?.map(customer => (
-                            <SelectItem key={customer.id} value={customer.id}>
-                              <div className="flex flex-col">
-                                <span>{customer.name}</span>
-                                {customer.phone && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {customer.phone}
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          {/* ERP标准布局：顶部基本信息区域 */}
+          <div className="rounded border bg-card">
+            <div className="border-b bg-muted/30 px-4 py-2">
+              <h3 className="text-sm font-medium">基本信息</h3>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
+                {/* 订单号 */}
+                <div className="space-y-1">
+                  <FormLabel className="text-xs text-muted-foreground">订单号</FormLabel>
+                  <div className="flex gap-2">
+                    <div className="flex-1 rounded border bg-muted/50 px-2 py-1 text-sm">
+                      {form.watch('orderNumber') || '点击生成'}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        try {
+                          const response = await fetch('/api/sales-orders/generate-order-number?action=generate');
+                          const data = await response.json();
+                          if (data.success) {
+                            form.setValue('orderNumber', data.data.orderNumber);
+                          }
+                        } catch (error) {
+                          console.error('生成订单号失败:', error);
+                        }
+                      }}
+                      disabled={createMutation.isPending}
+                      className="h-7 px-2 text-xs"
+                    >
+                      生成
+                    </Button>
+                  </div>
+                </div>
+
+                {/* 客户名称 */}
+                <div className="space-y-1">
+                  <FormField
+                    control={form.control}
+                    name="customerId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs text-muted-foreground">
+                          客户名称 <span className="text-destructive">*</span>
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                          disabled={customersLoading}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-7 text-sm">
+                              <SelectValue placeholder="请选择客户" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {customersData?.data?.map(customer => (
+                              <SelectItem key={customer.id} value={customer.id}>
+                                <div className="flex flex-col items-start">
+                                  <span className="font-medium">
+                                    {customer.name}
                                   </span>
-                                )}
-                              </div>
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                                  {customer.phone && (
+                                    <span className="text-xs text-muted-foreground">
+                                      {customer.phone}
+                                    </span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage className="text-xs" />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
                 {/* 客户详细信息显示 */}
                 {selectedCustomer && (
-                  <div className="space-y-2 rounded-lg bg-muted/50 p-3">
-                    <div className="text-sm">
-                      <span className="font-medium">联系电话：</span>
-                      {selectedCustomer.phone || '未填写'}
+                  <div className="space-y-3 rounded-lg border border-blue-200/50 bg-blue-50/50 p-4">
+                    <div className="text-sm font-medium text-blue-700">
+                      客户详细信息
                     </div>
-                    <div className="text-sm">
-                      <span className="font-medium">客户地址：</span>
-                      {selectedCustomer.address || '未填写'}
-                    </div>
-                    {selectedCustomer.transactionCount !== undefined && (
-                      <div className="text-sm">
-                        <span className="font-medium">历史交易：</span>
-                        {selectedCustomer.transactionCount}次
+                    <div className="grid gap-2 text-sm">
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">
+                          📞 联系电话：
+                        </span>
+                        <span className="font-medium">
+                          {selectedCustomer.phone || '未填写'}
+                        </span>
                       </div>
-                    )}
+                      <div className="flex items-center justify-between">
+                        <span className="text-muted-foreground">
+                          📍 客户地址：
+                        </span>
+                        <span className="max-w-[200px] truncate text-right font-medium">
+                          {selectedCustomer.address || '未填写'}
+                        </span>
+                      </div>
+                      {selectedCustomer.transactionCount !== undefined && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">
+                            📊 历史交易：
+                          </span>
+                          <span className="font-medium text-primary">
+                            {selectedCustomer.transactionCount}次
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -352,43 +391,74 @@ export function EnhancedSalesOrderForm({
 
             {/* 订单信息 */}
             <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
-                  订单信息
-                </CardTitle>
-                <CardDescription>订单基本信息</CardDescription>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">订单信息</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <OrderNumberGenerator
-                  value={form.watch('orderNumber') || ''}
-                  onChange={orderNumber =>
-                    form.setValue('orderNumber', orderNumber)
-                  }
-                  disabled={createMutation.isPending}
-                />
+                {/* 简化的订单号显示 */}
+                <div className="space-y-2">
+                  <FormLabel className="text-sm font-medium">订单号</FormLabel>
+                  <div className="flex gap-2">
+                    <div className="flex-1 rounded-md border bg-muted/50 px-3 py-2 text-sm">
+                      {form.watch('orderNumber') || '点击生成订单号'}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={async () => {
+                        try {
+                          const response = await fetch(
+                            '/api/sales-orders/generate-order-number?action=generate'
+                          );
+                          const data = await response.json();
+                          if (data.success) {
+                            form.setValue('orderNumber', data.data.orderNumber);
+                          }
+                        } catch (error) {
+                          console.error('生成订单号失败:', error);
+                        }
+                      }}
+                      disabled={createMutation.isPending}
+                      className="shrink-0"
+                    >
+                      生成
+                    </Button>
+                  </div>
+                </div>
 
                 <FormField
                   control={form.control}
                   name="status"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>订单状态</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        订单状态
+                      </FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="选择状态" />
+                          <SelectTrigger className="h-10">
+                            <SelectValue placeholder="请选择订单状态" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="draft">草稿</SelectItem>
-                          <SelectItem value="confirmed">已确认</SelectItem>
+                          <SelectItem value="draft">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                              草稿
+                            </div>
+                          </SelectItem>
+                          <SelectItem value="confirmed">
+                            <div className="flex items-center gap-2">
+                              <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                              已确认
+                            </div>
+                          </SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormMessage />
+                      <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
@@ -398,18 +468,17 @@ export function EnhancedSalesOrderForm({
                   name="remarks"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>备注信息</FormLabel>
+                      <FormLabel className="text-sm font-medium">
+                        备注信息
+                      </FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="请输入订单备注信息"
-                          className="min-h-[80px]"
+                          placeholder="订单备注（选填）"
+                          className="min-h-[60px] resize-none"
                           {...field}
                         />
                       </FormControl>
-                      <FormDescription>
-                        订单的备注信息，将显示在开票单据上
-                      </FormDescription>
-                      <FormMessage />
+                      <FormMessage className="text-xs" />
                     </FormItem>
                   )}
                 />
@@ -417,42 +486,55 @@ export function EnhancedSalesOrderForm({
             </Card>
 
             {/* 订单汇总 */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Calculator className="h-5 w-5" />
-                  订单汇总
-                </CardTitle>
-                <CardDescription>金额统计信息</CardDescription>
+            <Card className="lg:col-span-2 xl:col-span-1">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">订单汇总</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="space-y-3">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">商品种类：</span>
-                    <span className="font-medium">{fields.length} 种</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">总数量：</span>
-                    <span className="font-medium">
-                      {fields.reduce((sum, item) => sum + item.quantity, 0)}
-                    </span>
-                  </div>
-                  <div className="border-t pt-3">
-                    <div className="flex justify-between text-lg font-semibold">
-                      <span>订单总额：</span>
-                      <span className="text-primary">
-                        ¥{totalAmount.toFixed(2)}
-                      </span>
+                {/* 重要金额信息突出显示 */}
+                <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 p-4">
+                  <div className="space-y-2 text-center">
+                    <div className="text-sm text-muted-foreground">
+                      订单总金额
                     </div>
+                    <div className="text-3xl font-bold text-primary">
+                      ¥
+                      {totalAmount.toLocaleString('zh-CN', {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 详细统计信息 */}
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="rounded-lg bg-muted/50 p-3 text-center">
+                    <div className="mb-1 text-muted-foreground">商品种类</div>
+                    <div className="text-xl font-semibold text-blue-600">
+                      {fields.length}
+                    </div>
+                    <div className="text-xs text-muted-foreground">种</div>
+                  </div>
+                  <div className="rounded-lg bg-muted/50 p-3 text-center">
+                    <div className="mb-1 text-muted-foreground">总数量</div>
+                    <div className="text-xl font-semibold text-green-600">
+                      {fields.reduce((sum, item) => sum + item.quantity, 0)}
+                    </div>
+                    <div className="text-xs text-muted-foreground">件</div>
                   </div>
                 </div>
 
                 {/* 库存警告汇总 */}
                 {Object.keys(stockWarnings).length > 0 && (
-                  <Alert variant="destructive">
+                  <Alert
+                    variant="destructive"
+                    className="border-destructive/50"
+                  >
                     <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription>
-                      存在 {Object.keys(stockWarnings).length} 个商品库存不足
+                    <AlertDescription className="text-sm">
+                      ⚠️ 存在 {Object.keys(stockWarnings).length}{' '}
+                      个商品库存不足，请检查库存
                     </AlertDescription>
                   </Alert>
                 )}
@@ -490,15 +572,7 @@ export function EnhancedSalesOrderForm({
           <Card>
             <CardHeader>
               <div className="flex items-center justify-between">
-                <div>
-                  <CardTitle className="flex items-center gap-2">
-                    <Package className="h-5 w-5" />
-                    订单明细
-                  </CardTitle>
-                  <CardDescription>
-                    添加订单商品明细，支持完整的开票信息
-                  </CardDescription>
-                </div>
+                <CardTitle className="text-lg">订单明细</CardTitle>
                 <Button type="button" onClick={addOrderItem}>
                   <Plus className="mr-2 h-4 w-4" />
                   添加商品
@@ -507,10 +581,9 @@ export function EnhancedSalesOrderForm({
             </CardHeader>
             <CardContent>
               {fields.length === 0 ? (
-                <div className="py-12 text-center text-muted-foreground">
-                  <Package className="mx-auto mb-4 h-12 w-12 opacity-50" />
-                  <p className="mb-2 text-lg font-medium">暂无商品明细</p>
-                  <p className="text-sm">点击"添加商品"按钮开始添加订单商品</p>
+                <div className="py-8 text-center text-muted-foreground">
+                  <p className="mb-2 font-medium">暂无商品明细</p>
+                  <p className="text-sm">点击"添加商品"按钮开始添加</p>
                 </div>
               ) : (
                 <div className="space-y-4">
@@ -676,32 +749,83 @@ export function EnhancedSalesOrderForm({
             </CardContent>
           </Card>
 
-          {/* 操作按钮 */}
-          <div className="flex items-center justify-end gap-4">
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => (onCancel ? onCancel() : router.back())}
-              disabled={createMutation.isPending}
-            >
-              取消
-            </Button>
-            <Button
-              type="submit"
-              disabled={createMutation.isPending || fields.length === 0}
-            >
-              {createMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  创建中...
-                </>
-              ) : (
-                <>
-                  <Save className="mr-2 h-4 w-4" />
-                  创建订单
-                </>
-              )}
-            </Button>
+          {/* 操作按钮 - 优化为中国用户习惯 */}
+          <div className="sticky bottom-0 border-t bg-background/95 pt-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="flex items-center justify-between gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => (onCancel ? onCancel() : router.back())}
+                disabled={createMutation.isPending}
+                className="min-w-[100px]"
+              >
+                取消
+              </Button>
+
+              <div className="flex items-center gap-3">
+                {/* 保存草稿按钮 */}
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => {
+                    // 设置状态为草稿并提交
+                    form.setValue('status', 'draft');
+                    form.handleSubmit(onSubmit)();
+                  }}
+                  disabled={
+                    createMutation.isPending || !form.watch('customerId')
+                  }
+                  className="min-w-[120px]"
+                >
+                  {createMutation.isPending &&
+                  form.watch('status') === 'draft' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      保存中...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="mr-2 h-4 w-4" />
+                      保存草稿
+                    </>
+                  )}
+                </Button>
+
+                {/* 提交订单按钮 */}
+                <Button
+                  type="button"
+                  onClick={() => {
+                    // 设置状态为已确认并提交
+                    form.setValue('status', 'confirmed');
+                    form.handleSubmit(onSubmit)();
+                  }}
+                  disabled={
+                    createMutation.isPending ||
+                    fields.length === 0 ||
+                    !form.watch('customerId')
+                  }
+                  className="min-w-[120px] bg-primary hover:bg-primary/90"
+                >
+                  {createMutation.isPending &&
+                  form.watch('status') === 'confirmed' ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      提交中...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="mr-2 h-4 w-4" />
+                      提交订单
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            {/* 提示信息 */}
+            <div className="mt-3 text-center text-xs text-muted-foreground">
+              💡 保存草稿：可随时修改；提交订单：确认后进入处理流程
+            </div>
           </div>
         </form>
       </Form>

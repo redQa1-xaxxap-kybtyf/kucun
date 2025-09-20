@@ -1,22 +1,15 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Edit, Info, Trash2 } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { use } from 'react';
 
 // UI Components
-import { Badge } from '@/components/ui/badge';
+import { ERPProductDetail } from '@/components/products/erp-product-detail';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 // API and Types
 import { getProduct, productQueryKeys } from '@/lib/api/products';
-import {
-  PRODUCT_STATUS_LABELS,
-  PRODUCT_UNIT_LABELS,
-} from '@/lib/types/product';
 
 interface ProductDetailPageProps {
   params: Promise<{
@@ -25,8 +18,8 @@ interface ProductDetailPageProps {
 }
 
 /**
- * 产品详情页面
- * 严格遵循全栈项目统一约定规范
+ * 产品详情页面 - ERP风格
+ * 符合中国ERP系统的界面标准和用户习惯
  */
 export default function ProductDetailPage({ params }: ProductDetailPageProps) {
   const router = useRouter();
@@ -42,245 +35,60 @@ export default function ProductDetailPage({ params }: ProductDetailPageProps) {
     queryFn: () => getProduct(id),
   });
 
-  // 状态标签渲染
-  const getStatusBadge = (status: string) => {
-    const variant = status === 'active' ? 'default' : 'secondary';
-    return (
-      <Badge variant={variant}>
-        {PRODUCT_STATUS_LABELS[status as keyof typeof PRODUCT_STATUS_LABELS] ||
-          status}
-      </Badge>
-    );
-  };
-
+  // 错误状态
   if (error) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">产品详情</h1>
-            <p className="text-muted-foreground">查看产品的详细信息</p>
+      <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="text-center">
+            <h2 className="mb-2 text-lg font-semibold text-red-600">
+              加载产品信息失败
+            </h2>
+            <p className="mb-4 text-gray-600">
+              {error instanceof Error ? error.message : '请检查网络连接后重试'}
+            </p>
+            <Button onClick={() => router.back()}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              返回
+            </Button>
           </div>
         </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-red-600">
-              加载失败: {error instanceof Error ? error.message : '未知错误'}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
 
+  // 加载状态
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回
-          </Button>
-          <div>
-            <Skeleton className="h-8 w-32" />
-            <Skeleton className="mt-2 h-4 w-48" />
+      <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="flex items-center gap-2">
+            <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
+            <span>正在加载产品信息...</span>
           </div>
         </div>
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-24" />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-              {Array.from({ length: 11 }).map((_, i) => (
-                <div key={i} className="space-y-2">
-                  <Skeleton className="h-4 w-20" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
 
   if (!product) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">产品详情</h1>
-            <p className="text-muted-foreground">查看产品的详细信息</p>
+      <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
+        <div className="flex min-h-[400px] items-center justify-center">
+          <div className="text-center">
+            <h2 className="mb-2 text-lg font-semibold text-gray-600">
+              产品不存在
+            </h2>
+            <p className="mb-4 text-gray-500">请检查产品ID是否正确</p>
+            <Button onClick={() => router.back()}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              返回
+            </Button>
           </div>
         </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center text-muted-foreground">
-              产品不存在或已被删除
-            </div>
-          </CardContent>
-        </Card>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* 页面标题和操作 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回
-          </Button>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">
-              {product.name}
-            </h1>
-            <p className="text-muted-foreground">产品编码: {product.code}</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            onClick={() => router.push(`/products/${id}/edit`)}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            编辑
-          </Button>
-          <Button variant="outline" className="text-red-600 hover:text-red-700">
-            <Trash2 className="mr-2 h-4 w-4" />
-            删除
-          </Button>
-        </div>
-      </div>
-
-      {/* 产品信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Info className="h-5 w-5" />
-            基本信息
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                产品编码
-              </div>
-              <div className="mt-1">{product.code}</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                产品名称
-              </div>
-              <div className="mt-1">{product.name}</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                规格
-              </div>
-              <div className="mt-1">{product.specification || '-'}</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                计量单位
-              </div>
-              <div className="mt-1">
-                {PRODUCT_UNIT_LABELS[
-                  product.unit as keyof typeof PRODUCT_UNIT_LABELS
-                ] || product.unit}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                每单位片数
-              </div>
-              <div className="mt-1">{product.piecesPerUnit || '-'}</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                重量(kg)
-              </div>
-              <div className="mt-1">{product.weight || '-'}</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                厚度(mm)
-              </div>
-              <div className="mt-1">{product.thickness || '-'}</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                产品分类
-              </div>
-              <div className="mt-1">
-                {product.category ? product.category.name : '未分类'}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                状态
-              </div>
-              <div className="mt-1">{getStatusBadge(product.status)}</div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                创建时间
-              </div>
-              <div className="mt-1">
-                {new Date(product.createdAt).toLocaleString()}
-              </div>
-            </div>
-            <div>
-              <div className="text-sm font-medium text-muted-foreground">
-                更新时间
-              </div>
-              <div className="mt-1">
-                {new Date(product.updatedAt).toLocaleString()}
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 详细信息标签页 */}
-      <Card>
-        <CardContent className="pt-6">
-          <Tabs defaultValue="inventory" className="w-full">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="inventory">库存信息</TabsTrigger>
-              <TabsTrigger value="sales">销售记录</TabsTrigger>
-              <TabsTrigger value="history">操作历史</TabsTrigger>
-            </TabsList>
-            <TabsContent value="inventory" className="mt-6">
-              <div className="py-8 text-center text-muted-foreground">
-                库存信息功能开发中...
-              </div>
-            </TabsContent>
-            <TabsContent value="sales" className="mt-6">
-              <div className="py-8 text-center text-muted-foreground">
-                销售记录功能开发中...
-              </div>
-            </TabsContent>
-            <TabsContent value="history" className="mt-6">
-              <div className="py-8 text-center text-muted-foreground">
-                操作历史功能开发中...
-              </div>
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  return <ERPProductDetail product={product} />;
 }

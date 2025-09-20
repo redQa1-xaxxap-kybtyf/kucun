@@ -60,14 +60,18 @@ export async function getSalesOrders(
     throw new Error(`获取销售订单列表失败: ${response.statusText}`);
   }
 
-  const data: ApiResponse<PaginatedResponse<SalesOrder>> =
-    await response.json();
+  const result = await response.json();
 
-  if (!data.success) {
-    throw new Error(data.error || '获取销售订单列表失败');
+  if (!result.success) {
+    throw new Error(result.error || '获取销售订单列表失败');
   }
 
-  return data.data!;
+  // API路由返回的数据结构是 { success: true, data: [...], pagination: {...} }
+  // 需要转换为 PaginatedResponse 格式
+  return {
+    data: result.data,
+    pagination: result.pagination,
+  };
 }
 
 /**

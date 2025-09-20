@@ -1,7 +1,7 @@
 "use client"
 
-import * as React from "react"
 import { AlertTriangle, CheckCircle, Package, XCircle } from "lucide-react"
+import * as React from "react"
 
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
@@ -14,8 +14,8 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { cn } from "@/lib/utils"
 import type { Product } from "@/lib/types/product"
+import { cn } from "@/lib/utils"
 
 interface InventoryItem {
   productId: string

@@ -1,10 +1,9 @@
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { z } from 'zod';
 
 import { createUser } from '@/lib/auth';
-
 import { baseValidations } from '@/lib/validations/base';
-import { z } from 'zod';
 
 // 用户注册验证规则
 const registerSchema = z.object({

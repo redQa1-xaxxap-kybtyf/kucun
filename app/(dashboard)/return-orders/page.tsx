@@ -1,28 +1,36 @@
+'use client';
+
+import { ERPReturnOrderList } from '@/components/return-orders/erp-return-order-list';
+import type { ReturnOrder } from '@/lib/types/return-order';
+
 /**
  * 退货订单页面
- * 严格遵循全栈项目统一约定规范
+ * 使用ERP风格的紧凑布局，符合中国用户习惯
  */
-
-import type { Metadata } from 'next';
-
-export const metadata: Metadata = {
-  title: '退货订单 - 库存管理系统',
-  description: '管理客户退货订单',
-};
-
 export default function ReturnOrdersPage() {
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">退货订单</h1>
-        <p className="text-muted-foreground">管理客户退货订单</p>
-      </div>
+  // 操作处理函数
+  const handleViewDetail = (returnOrder: ReturnOrder) => {
+    // 可以在这里添加详情对话框逻辑
+    console.log('查看退货订单详情:', returnOrder);
+  };
 
-      <div className="rounded-lg border bg-card p-6 text-card-foreground shadow-sm">
-        <p className="text-center text-muted-foreground">
-          退货订单功能正在开发中...
-        </p>
-      </div>
+  const handleEdit = (returnOrder: ReturnOrder) => {
+    // 可以在这里添加编辑对话框逻辑
+    console.log('编辑退货订单:', returnOrder);
+  };
+
+  const handleDelete = (returnOrder: ReturnOrder) => {
+    // 可以在这里添加删除确认对话框逻辑
+    console.log('删除退货订单:', returnOrder);
+  };
+
+  return (
+    <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
+      <ERPReturnOrderList
+        onViewDetail={handleViewDetail}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }
