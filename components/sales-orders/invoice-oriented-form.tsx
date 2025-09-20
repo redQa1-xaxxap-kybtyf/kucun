@@ -36,18 +36,17 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-
-// Custom Components
-
 // API and Types
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
-import { CreateSalesOrderSchema } from '@/lib/schemas/sales-order';
+import {
+  CreateSalesOrderSchema,
+  type CreateSalesOrderData,
+} from '@/lib/schemas/sales-order';
 
 interface SalesOrderFormProps {
-  onSuccess?: (order: any) => void;
+  onSuccess?: (order: CreateSalesOrderData) => void;
   onCancel?: () => void;
 }
 
@@ -93,7 +92,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
   });
 
   // 获取产品列表
-  const { data: productsData, isLoading: productsLoading } = useQuery({
+  const { data: productsData } = useQuery({
     queryKey: productQueryKeys.list({ page: 1, limit: 100 }),
     queryFn: () => getProducts({ page: 1, limit: 100 }),
   });
@@ -136,7 +135,10 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
   }, [form.watch('customerId'), customersData?.data]);
 
   // 计算订单总金额
-  const totalAmount = React.useMemo(() => fields.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0), [fields]);
+  const totalAmount = React.useMemo(
+    () => fields.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
+    [fields]
+  );
 
   // 添加订单项
   const addOrderItem = () => {
