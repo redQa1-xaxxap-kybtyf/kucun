@@ -35,18 +35,16 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-
-// Custom Components
-
-// API and Types
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
-import { CreateSalesOrderSchema } from '@/lib/schemas/sales-order';
+import {
+  CreateSalesOrderSchema,
+  type CreateSalesOrderData,
+} from '@/lib/schemas/sales-order';
 
 interface ERPSalesOrderFormProps {
-  onSuccess?: (order: any) => void;
+  onSuccess?: (order: unknown) => void;
   onCancel?: () => void;
 }
 
@@ -85,7 +83,7 @@ export function ERPSalesOrderForm({
     queryFn: () => getCustomers(),
   });
 
-  const { data: productsData, isLoading: productsLoading } = useQuery({
+  const { data: productsData, isLoading: _productsLoading } = useQuery({
     queryKey: productQueryKeys.list(),
     queryFn: () => getProducts(),
   });
@@ -111,7 +109,10 @@ export function ERPSalesOrderForm({
   });
 
   // 计算总金额
-  const totalAmount = fields.reduce((sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0), 0);
+  const totalAmount = fields.reduce(
+    (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
+    0
+  );
 
   // 添加商品
   const addOrderItem = () => {
@@ -334,7 +335,9 @@ export function ERPSalesOrderForm({
             {fields.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
                 <p className="text-sm">暂无商品明细</p>
-                <p className="text-xs">点击"添加商品"按钮开始添加</p>
+                <p className="text-xs">
+                  点击&ldquo;添加商品&rdquo;按钮开始添加
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -353,7 +356,7 @@ export function ERPSalesOrderForm({
                   </TableHeader>
                   <TableBody>
                     {fields.map((field, index) => {
-                      const selectedProduct = productsData?.data?.find(
+                      const _selectedProduct = productsData?.data?.find(
                         p => p.id === field.productId
                       );
                       const itemAmount =

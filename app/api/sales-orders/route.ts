@@ -1,5 +1,4 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
@@ -148,7 +147,7 @@ export async function GET(request: NextRequest) {
     } = validationResult.data;
 
     // 构建查询条件
-    const where: Record<string, any> = {};
+    const where: Record<string, unknown> = {};
 
     if (search) {
       where.OR = [
@@ -441,17 +440,24 @@ export async function POST(request: NextRequest) {
     });
 
     // 转换数据格式
+    if (!fullOrder) {
+      return NextResponse.json(
+        { success: false, error: '订单创建失败' },
+        { status: 500 }
+      );
+    }
+
     const formattedOrder = {
-      id: fullOrder!.id,
-      orderNumber: fullOrder!.orderNumber,
-      customerId: fullOrder!.customerId,
-      userId: fullOrder!.userId,
-      status: fullOrder!.status,
-      totalAmount: fullOrder!.totalAmount,
-      remarks: fullOrder!.remarks,
-      customer: fullOrder!.customer,
-      user: fullOrder!.user,
-      items: fullOrder!.items.map(item => ({
+      id: fullOrder.id,
+      orderNumber: fullOrder.orderNumber,
+      customerId: fullOrder.customerId,
+      userId: fullOrder.userId,
+      status: fullOrder.status,
+      totalAmount: fullOrder.totalAmount,
+      remarks: fullOrder.remarks,
+      customer: fullOrder.customer,
+      user: fullOrder.user,
+      items: fullOrder.items.map(item => ({
         id: item.id,
         productId: item.productId,
         colorCode: item.colorCode,
@@ -461,8 +467,8 @@ export async function POST(request: NextRequest) {
         subtotal: item.subtotal,
         product: item.product,
       })),
-      createdAt: fullOrder!.createdAt,
-      updatedAt: fullOrder!.updatedAt,
+      createdAt: fullOrder.createdAt,
+      updatedAt: fullOrder.updatedAt,
     };
 
     return NextResponse.json({

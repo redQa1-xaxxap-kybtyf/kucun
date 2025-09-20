@@ -2,8 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Calculator, Package, Plus, Trash2 } from 'lucide-react';
-import type { Control } from 'react-hook-form';
-import { useFieldArray, useWatch } from 'react-hook-form';
+import { useFieldArray, useWatch, type Control } from 'react-hook-form';
 
 // UI Components
 import { ProductSelector } from '@/components/products/product-selector';
@@ -25,25 +24,22 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-
-// Icons
-
-// Custom Components
 import type { Product } from '@/lib/types/product';
-import type {
-  SalesOrderItemCreateFormData,
-  SalesOrderItemUpdateFormData,
-} from '@/lib/validations/sales-order';
 import {
   calculateItemSubtotal,
   calculateOrderTotal,
+  type SalesOrderItemCreateFormData,
+  type SalesOrderItemUpdateFormData,
 } from '@/lib/validations/sales-order';
 
 // API and Types
 
 // 订单明细编辑器属性
 interface OrderItemsEditorProps {
-  control: Control<any>;
+  control: Control<{
+    items: SalesOrderItemCreateFormData[];
+    [key: string]: unknown;
+  }>;
   name: string;
   disabled?: boolean;
   mode?: 'create' | 'edit';
@@ -114,8 +110,8 @@ export function OrderItemsEditor({
               {
                 fields.filter(
                   field =>
-                    !(field as any)._action ||
-                    (field as any)._action !== 'delete'
+                    !(field as { _action?: string })._action ||
+                    (field as { _action?: string })._action !== 'delete'
                 ).length
               }{' '}
               项
@@ -145,7 +141,8 @@ export function OrderItemsEditor({
             {/* 明细列表 */}
             <div className="space-y-4">
               {fields.map((field, index) => {
-                const isDeleted = (field as any)._action === 'delete';
+                const isDeleted =
+                  (field as { _action?: string })._action === 'delete';
 
                 return (
                   <OrderItemRow
@@ -195,26 +192,29 @@ export function OrderItemsEditor({
 
 // 订单明细行组件属性
 interface OrderItemRowProps {
-  control: Control<any>;
+  control: Control<{
+    items: SalesOrderItemCreateFormData[];
+    [key: string]: unknown;
+  }>;
   name: string;
   index: number;
   onRemove: () => void;
   onRestore: () => void;
   disabled?: boolean;
   isDeleted?: boolean;
-  mode?: 'create' | 'edit';
+  _mode?: 'create' | 'edit';
 }
 
 // 订单明细行组件
 function OrderItemRow({
   control,
   name,
-  index,
+  _index,
   onRemove,
   onRestore,
   disabled = false,
   isDeleted = false,
-  mode = 'create',
+  _mode = 'create',
 }: OrderItemRowProps) {
   // 监听当前行的数据变化
   const watchedItem = useWatch({
@@ -244,7 +244,7 @@ function OrderItemRow({
     : 0;
 
   // 自动设置产品单价
-  const handleProductChange = (productId: string) => {
+  const handleProductChange = (_productId: string) => {
     // 这里可以根据产品信息自动设置单价
     // 实际应用中可能需要根据客户、产品等因素动态计算价格
   };

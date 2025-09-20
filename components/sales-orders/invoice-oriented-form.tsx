@@ -126,7 +126,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
   const [stockWarnings, setStockWarnings] = React.useState<
     Record<string, string>
   >({});
-  const [isAdvancedOpen, setIsAdvancedOpen] = React.useState(false);
+  const [_isAdvancedOpen, _setIsAdvancedOpen] = React.useState(false);
 
   // 获取选中的客户信息
   const selectedCustomer = React.useMemo(() => {
@@ -155,7 +155,11 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
   };
 
   // 更新订单项
-  const updateOrderItem = (index: number, field: string, value: any) => {
+  const updateOrderItem = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
     const currentItem = fields[index];
     const updatedItem = { ...currentItem, [field]: value };
 
@@ -275,7 +279,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                             placeholder="选择客户"
                             disabled={customersLoading}
                             isLoading={customersLoading}
-                            onCustomerCreated={customer => {
+                            onCustomerCreated={_customer => {
                               // 刷新客户列表
                               queryClient.invalidateQueries({
                                 queryKey: customerQueryKeys.lists(),

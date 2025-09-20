@@ -31,13 +31,11 @@ import {
 } from '@/components/ui/table';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import type {
+  SALES_ORDER_STATUS_LABELS,
+  SALES_ORDER_STATUS_VARIANTS,
   SalesOrder,
   SalesOrderQueryParams,
   SalesOrderStatus,
-} from '@/lib/types/sales-order';
-import {
-  SALES_ORDER_STATUS_LABELS,
-  SALES_ORDER_STATUS_VARIANTS,
 } from '@/lib/types/sales-order';
 
 interface ERPSalesOrderListProps {
@@ -71,7 +69,10 @@ export function ERPSalesOrderList({ onOrderSelect }: ERPSalesOrderListProps) {
   };
 
   // 筛选处理
-  const handleFilter = (key: keyof SalesOrderQueryParams, value: any) => {
+  const handleFilter = (
+    key: keyof SalesOrderQueryParams,
+    value: string | number | boolean
+  ) => {
     setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
   };
 
@@ -98,7 +99,8 @@ export function ERPSalesOrderList({ onOrderSelect }: ERPSalesOrderListProps) {
   };
 
   // 格式化日期
-  const formatDate = (date: string) => new Date(date).toLocaleDateString('zh-CN', {
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -190,12 +192,22 @@ export function ERPSalesOrderList({ onOrderSelect }: ERPSalesOrderListProps) {
             <TableRow className="bg-muted/20">
               <TableHead className="h-8 text-xs font-medium">序号</TableHead>
               <TableHead className="h-8 text-xs font-medium">订单号</TableHead>
-              <TableHead className="h-8 text-xs font-medium">客户名称</TableHead>
+              <TableHead className="h-8 text-xs font-medium">
+                客户名称
+              </TableHead>
               <TableHead className="h-8 text-xs font-medium">状态</TableHead>
-              <TableHead className="h-8 text-xs font-medium text-right">订单金额</TableHead>
-              <TableHead className="h-8 text-xs font-medium">创建日期</TableHead>
-              <TableHead className="h-8 text-xs font-medium">更新日期</TableHead>
-              <TableHead className="h-8 w-16 text-xs font-medium">操作</TableHead>
+              <TableHead className="h-8 text-right text-xs font-medium">
+                订单金额
+              </TableHead>
+              <TableHead className="h-8 text-xs font-medium">
+                创建日期
+              </TableHead>
+              <TableHead className="h-8 text-xs font-medium">
+                更新日期
+              </TableHead>
+              <TableHead className="h-8 w-16 text-xs font-medium">
+                操作
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -232,7 +244,7 @@ export function ERPSalesOrderList({ onOrderSelect }: ERPSalesOrderListProps) {
                   <TableCell className="h-8 text-xs">
                     {getStatusBadge(order.status)}
                   </TableCell>
-                  <TableCell className="h-8 text-xs text-right font-medium">
+                  <TableCell className="h-8 text-right text-xs font-medium">
                     {formatAmount(order.totalAmount)}
                   </TableCell>
                   <TableCell className="h-8 text-xs text-muted-foreground">
@@ -288,7 +300,10 @@ export function ERPSalesOrderList({ onOrderSelect }: ERPSalesOrderListProps) {
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={8} className="h-20 text-center text-xs text-muted-foreground">
+                <TableCell
+                  colSpan={8}
+                  className="h-20 text-center text-xs text-muted-foreground"
+                >
                   暂无数据
                 </TableCell>
               </TableRow>
@@ -301,7 +316,12 @@ export function ERPSalesOrderList({ onOrderSelect }: ERPSalesOrderListProps) {
       {data?.pagination && data.pagination.totalPages > 1 && (
         <div className="flex items-center justify-between text-xs">
           <div className="text-muted-foreground">
-            显示 {(data.pagination.page - 1) * data.pagination.limit + 1} - {Math.min(data.pagination.page * data.pagination.limit, data.pagination.total)} 条，共 {data.pagination.total} 条
+            显示 {(data.pagination.page - 1) * data.pagination.limit + 1} -{' '}
+            {Math.min(
+              data.pagination.page * data.pagination.limit,
+              data.pagination.total
+            )}{' '}
+            条，共 {data.pagination.total} 条
           </div>
           <div className="flex items-center gap-1">
             <Button

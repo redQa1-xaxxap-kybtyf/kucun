@@ -16,6 +16,11 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
+import {
+  InventoryChecker,
+  InventoryStatus,
+} from '@/components/sales-orders/inventory-checker';
+import { ProductSelector } from '@/components/sales-orders/product-selector';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,24 +50,17 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
-
-// Custom Components
-import {
-  InventoryChecker,
-  InventoryStatus,
-} from '@/components/sales-orders/inventory-checker';
-import { ProductSelector } from '@/components/sales-orders/product-selector';
-
-// API and Types
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
-import { CreateSalesOrderSchema } from '@/lib/schemas/sales-order';
+import {
+  CreateSalesOrderSchema,
+  type CreateSalesOrderData,
+} from '@/lib/schemas/sales-order';
 import type { Customer } from '@/lib/types/customer';
 
 interface EnhancedSalesOrderFormProps {
-  onSuccess?: (order: any) => void;
+  onSuccess?: (order: unknown) => void;
   onCancel?: () => void;
 }
 
@@ -103,7 +101,7 @@ export function EnhancedSalesOrderForm({
   });
 
   // 获取产品列表
-  const { data: productsData, isLoading: productsLoading } = useQuery({
+  const { data: productsData, isLoading: _productsLoading } = useQuery({
     queryKey: productQueryKeys.list({ page: 1, limit: 200 }),
     queryFn: () => getProducts({ page: 1, limit: 200 }),
   });
@@ -114,7 +112,7 @@ export function EnhancedSalesOrderForm({
     onSuccess: data => {
       toast({
         title: '创建成功',
-        description: `销售订单 "${data.orderNumber}" 创建成功！`,
+        description: `销售订单 &ldquo;${data.orderNumber}&rdquo; 创建成功！`,
       });
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
 
@@ -167,7 +165,11 @@ export function EnhancedSalesOrderForm({
   };
 
   // 更新订单项并计算小计
-  const updateOrderItem = (index: number, field: string, value: any) => {
+  const updateOrderItem = (
+    index: number,
+    field: string,
+    value: string | number
+  ) => {
     const currentItem = fields[index];
     const updatedItem = { ...currentItem, [field]: value };
 
@@ -217,11 +219,10 @@ export function EnhancedSalesOrderForm({
   };
 
   // 计算订单总金额
-  const totalAmount = React.useMemo(() => {
-    return fields.reduce((sum, item) => {
-      return sum + item.quantity * item.unitPrice;
-    }, 0);
-  }, [fields]);
+  const totalAmount = React.useMemo(
+    () => fields.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
+    [fields]
+  );
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
@@ -279,7 +280,9 @@ export function EnhancedSalesOrderForm({
               <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
                 {/* 订单号 */}
                 <div className="space-y-1">
-                  <FormLabel className="text-xs text-muted-foreground">订单号</FormLabel>
+                  <FormLabel className="text-xs text-muted-foreground">
+                    订单号
+                  </FormLabel>
                   <div className="flex gap-2">
                     <div className="flex-1 rounded border bg-muted/50 px-2 py-1 text-sm">
                       {form.watch('orderNumber') || '点击生成'}
@@ -290,7 +293,9 @@ export function EnhancedSalesOrderForm({
                       size="sm"
                       onClick={async () => {
                         try {
-                          const response = await fetch('/api/sales-orders/generate-order-number?action=generate');
+                          const response = await fetch(
+                            '/api/sales-orders/generate-order-number?action=generate'
+                          );
                           const data = await response.json();
                           if (data.success) {
                             form.setValue('orderNumber', data.data.orderNumber);
@@ -386,161 +391,158 @@ export function EnhancedSalesOrderForm({
                     </div>
                   </div>
                 )}
-              </CardContent>
-            </Card>
-
-            {/* 订单信息 */}
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">订单信息</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* 简化的订单号显示 */}
-                <div className="space-y-2">
-                  <FormLabel className="text-sm font-medium">订单号</FormLabel>
-                  <div className="flex gap-2">
-                    <div className="flex-1 rounded-md border bg-muted/50 px-3 py-2 text-sm">
-                      {form.watch('orderNumber') || '点击生成订单号'}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={async () => {
-                        try {
-                          const response = await fetch(
-                            '/api/sales-orders/generate-order-number?action=generate'
-                          );
-                          const data = await response.json();
-                          if (data.success) {
-                            form.setValue('orderNumber', data.data.orderNumber);
-                          }
-                        } catch (error) {
-                          console.error('生成订单号失败:', error);
-                        }
-                      }}
-                      disabled={createMutation.isPending}
-                      className="shrink-0"
-                    >
-                      生成
-                    </Button>
-                  </div>
-                </div>
-
-                <FormField
-                  control={form.control}
-                  name="status"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">
-                        订单状态
-                      </FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-10">
-                            <SelectValue placeholder="请选择订单状态" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="draft">
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
-                              草稿
-                            </div>
-                          </SelectItem>
-                          <SelectItem value="confirmed">
-                            <div className="flex items-center gap-2">
-                              <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                              已确认
-                            </div>
-                          </SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="remarks"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">
-                        备注信息
-                      </FormLabel>
-                      <FormControl>
-                        <Textarea
-                          placeholder="订单备注（选填）"
-                          className="min-h-[60px] resize-none"
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage className="text-xs" />
-                    </FormItem>
-                  )}
-                />
-              </CardContent>
-            </Card>
-
-            {/* 订单汇总 */}
-            <Card className="lg:col-span-2 xl:col-span-1">
-              <CardHeader className="pb-3">
-                <CardTitle className="text-lg">订单汇总</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* 重要金额信息突出显示 */}
-                <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 p-4">
-                  <div className="space-y-2 text-center">
-                    <div className="text-sm text-muted-foreground">
-                      订单总金额
-                    </div>
-                    <div className="text-3xl font-bold text-primary">
-                      ¥
-                      {totalAmount.toLocaleString('zh-CN', {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </div>
-                  </div>
-                </div>
-
-                {/* 详细统计信息 */}
-                <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div className="rounded-lg bg-muted/50 p-3 text-center">
-                    <div className="mb-1 text-muted-foreground">商品种类</div>
-                    <div className="text-xl font-semibold text-blue-600">
-                      {fields.length}
-                    </div>
-                    <div className="text-xs text-muted-foreground">种</div>
-                  </div>
-                  <div className="rounded-lg bg-muted/50 p-3 text-center">
-                    <div className="mb-1 text-muted-foreground">总数量</div>
-                    <div className="text-xl font-semibold text-green-600">
-                      {fields.reduce((sum, item) => sum + item.quantity, 0)}
-                    </div>
-                    <div className="text-xs text-muted-foreground">件</div>
-                  </div>
-                </div>
-
-                {/* 库存警告汇总 */}
-                {Object.keys(stockWarnings).length > 0 && (
-                  <Alert
-                    variant="destructive"
-                    className="border-destructive/50"
-                  >
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertDescription className="text-sm">
-                      ⚠️ 存在 {Object.keys(stockWarnings).length}{' '}
-                      个商品库存不足，请检查库存
-                    </AlertDescription>
-                  </Alert>
-                )}
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </div>
+
+          {/* 订单信息 */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">订单信息</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 简化的订单号显示 */}
+              <div className="space-y-2">
+                <FormLabel className="text-sm font-medium">订单号</FormLabel>
+                <div className="flex gap-2">
+                  <div className="flex-1 rounded-md border bg-muted/50 px-3 py-2 text-sm">
+                    {form.watch('orderNumber') || '点击生成订单号'}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={async () => {
+                      try {
+                        const response = await fetch(
+                          '/api/sales-orders/generate-order-number?action=generate'
+                        );
+                        const data = await response.json();
+                        if (data.success) {
+                          form.setValue('orderNumber', data.data.orderNumber);
+                        }
+                      } catch (error) {
+                        console.error('生成订单号失败:', error);
+                      }
+                    }}
+                    disabled={createMutation.isPending}
+                    className="shrink-0"
+                  >
+                    生成
+                  </Button>
+                </div>
+              </div>
+
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">
+                      订单状态
+                    </FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="h-10">
+                          <SelectValue placeholder="请选择订单状态" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="draft">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
+                            草稿
+                          </div>
+                        </SelectItem>
+                        <SelectItem value="confirmed">
+                          <div className="flex items-center gap-2">
+                            <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                            已确认
+                          </div>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="remarks"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium">
+                      备注信息
+                    </FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="订单备注（选填）"
+                        className="min-h-[60px] resize-none"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            </CardContent>
+          </Card>
+
+          {/* 订单汇总 */}
+          <Card className="lg:col-span-2 xl:col-span-1">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg">订单汇总</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* 重要金额信息突出显示 */}
+              <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 p-4">
+                <div className="space-y-2 text-center">
+                  <div className="text-sm text-muted-foreground">
+                    订单总金额
+                  </div>
+                  <div className="text-3xl font-bold text-primary">
+                    ¥
+                    {totalAmount.toLocaleString('zh-CN', {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 详细统计信息 */}
+              <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="rounded-lg bg-muted/50 p-3 text-center">
+                  <div className="mb-1 text-muted-foreground">商品种类</div>
+                  <div className="text-xl font-semibold text-blue-600">
+                    {fields.length}
+                  </div>
+                  <div className="text-xs text-muted-foreground">种</div>
+                </div>
+                <div className="rounded-lg bg-muted/50 p-3 text-center">
+                  <div className="mb-1 text-muted-foreground">总数量</div>
+                  <div className="text-xl font-semibold text-green-600">
+                    {fields.reduce((sum, item) => sum + item.quantity, 0)}
+                  </div>
+                  <div className="text-xs text-muted-foreground">件</div>
+                </div>
+              </div>
+
+              {/* 库存警告汇总 */}
+              {Object.keys(stockWarnings).length > 0 && (
+                <Alert variant="destructive" className="border-destructive/50">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription className="text-sm">
+                    ⚠️ 存在 {Object.keys(stockWarnings).length}{' '}
+                    个商品库存不足，请检查库存
+                  </AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+          </Card>
 
           {/* 库存检查 */}
           {fields.length > 0 && (
@@ -583,7 +585,9 @@ export function EnhancedSalesOrderForm({
               {fields.length === 0 ? (
                 <div className="py-8 text-center text-muted-foreground">
                   <p className="mb-2 font-medium">暂无商品明细</p>
-                  <p className="text-sm">点击"添加商品"按钮开始添加</p>
+                  <p className="text-sm">
+                    点击&ldquo;添加商品&rdquo;按钮开始添加
+                  </p>
                 </div>
               ) : (
                 <div className="space-y-4">

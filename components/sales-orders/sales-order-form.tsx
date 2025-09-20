@@ -13,8 +13,6 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-
-// UI Components
 import { useForm } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/customers/customer-hierarchy';
@@ -45,36 +43,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-// Icons
-
-// Custom Components
 import { Textarea } from '@/components/ui/textarea';
-
-// API and Types
 import {
   createSalesOrder,
   salesOrderQueryKeys,
   updateSalesOrder,
 } from '@/lib/api/sales-orders';
-import type {
-  SalesOrder,
-  SalesOrderCreateInput,
-  SalesOrderUpdateInput,
-} from '@/lib/types/sales-order';
 import {
   SALES_ORDER_STATUS_LABELS,
   SALES_ORDER_STATUS_TRANSITIONS,
   SALES_ORDER_STATUS_VARIANTS,
+  type SalesOrder,
+  type SalesOrderCreateInput,
+  type SalesOrderUpdateInput,
 } from '@/lib/types/sales-order';
-import type {
-  SalesOrderCreateFormData,
-  SalesOrderUpdateFormData,
-} from '@/lib/validations/sales-order';
 import {
   salesOrderCreateDefaults,
   salesOrderCreateSchema,
   salesOrderUpdateSchema,
+  type SalesOrderCreateFormData,
+  type SalesOrderUpdateFormData,
 } from '@/lib/validations/sales-order';
 
 interface SalesOrderFormProps {
@@ -141,17 +129,23 @@ export function SalesOrderForm({
 
   // 更新销售订单 Mutation
   const updateMutation = useMutation({
-    mutationFn: (data: SalesOrderUpdateInput) =>
-      updateSalesOrder({ ...data, id: initialData!.id }),
+    mutationFn: (data: SalesOrderUpdateInput) => {
+      if (!initialData?.id) {
+        throw new Error('初始数据缺失，无法更新订单');
+      }
+      return updateSalesOrder({ ...data, id: initialData.id });
+    },
     onSuccess: response => {
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
-      queryClient.invalidateQueries({
-        queryKey: salesOrderQueryKeys.detail(response.data!.id),
-      });
-      if (onSuccess) {
-        onSuccess(response.data!);
-      } else {
-        router.push('/sales-orders');
+      if (response.data) {
+        queryClient.invalidateQueries({
+          queryKey: salesOrderQueryKeys.detail(response.data.id),
+        });
+        if (onSuccess) {
+          onSuccess(response.data);
+        } else {
+          router.push('/sales-orders');
+        }
       }
     },
     onError: error => {
@@ -369,9 +363,12 @@ export function SalesOrderForm({
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {form.watch('customerId') && (
-                  <CustomerInfoDisplay customerId={form.watch('customerId')!} />
-                )}
+                {(() => {
+                  const customerId = form.watch('customerId');
+                  return customerId ? (
+                    <CustomerInfoDisplay customerId={customerId} />
+                  ) : null;
+                })()}
               </CardContent>
             </Card>
           )}
@@ -403,7 +400,9 @@ interface CustomerInfoDisplayProps {
   customerId: string;
 }
 
-function CustomerInfoDisplay({ customerId }: CustomerInfoDisplayProps) {
+function CustomerInfoDisplay({
+  customerId: _customerId,
+}: CustomerInfoDisplayProps) {
   // 这里应该查询客户信息并显示
   // 简化处理，实际应该使用客户API
 

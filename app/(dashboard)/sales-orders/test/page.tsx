@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { CheckCircle, XCircle, AlertTriangle, Package } from 'lucide-react';
+import { AlertTriangle, CheckCircle, Package, XCircle } from 'lucide-react';
 import * as React from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -23,22 +23,36 @@ import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
  * 验证所有相关API和组件是否正常工作
  */
 export default function SalesOrderTestPage() {
-  const [testResults, setTestResults] = React.useState<Record<string, boolean>>({});
+  const [_testResults, _setTestResults] = React.useState<
+    Record<string, boolean>
+  >({});
 
   // 测试客户API
-  const { data: customersData, isLoading: customersLoading, error: customersError } = useQuery({
+  const {
+    data: customersData,
+    isLoading: customersLoading,
+    error: customersError,
+  } = useQuery({
     queryKey: customerQueryKeys.list({ page: 1, limit: 10 }),
     queryFn: () => getCustomers({ page: 1, limit: 10 }),
   });
 
   // 测试产品API
-  const { data: productsData, isLoading: productsLoading, error: productsError } = useQuery({
+  const {
+    data: productsData,
+    isLoading: productsLoading,
+    error: productsError,
+  } = useQuery({
     queryKey: productQueryKeys.list({ page: 1, limit: 10 }),
     queryFn: () => getProducts({ page: 1, limit: 10 }),
   });
 
   // 测试销售订单API
-  const { data: salesOrdersData, isLoading: salesOrdersLoading, error: salesOrdersError } = useQuery({
+  const {
+    data: salesOrdersData,
+    isLoading: salesOrdersLoading,
+    error: salesOrdersError,
+  } = useQuery({
     queryKey: salesOrderQueryKeys.list({ page: 1, limit: 10 }),
     queryFn: () => getSalesOrders({ page: 1, limit: 10 }),
   });
@@ -46,33 +60,39 @@ export default function SalesOrderTestPage() {
   // 测试订单号生成API
   const [orderNumberTest, setOrderNumberTest] = React.useState<{
     loading: boolean;
-    result?: any;
+    result?: unknown;
     error?: string;
   }>({ loading: false });
 
   const testOrderNumberGeneration = async () => {
     setOrderNumberTest({ loading: true });
     try {
-      const response = await fetch('/api/sales-orders/generate-order-number?action=generate');
+      const response = await fetch(
+        '/api/sales-orders/generate-order-number?action=generate'
+      );
       const data = await response.json();
       setOrderNumberTest({ loading: false, result: data });
     } catch (error) {
-      setOrderNumberTest({ 
-        loading: false, 
-        error: error instanceof Error ? error.message : '测试失败' 
+      setOrderNumberTest({
+        loading: false,
+        error: error instanceof Error ? error.message : '测试失败',
       });
     }
   };
 
   // 获取测试状态
-  const getTestStatus = (loading: boolean, error: any, data: any) => {
+  const getTestStatus = (loading: boolean, error: unknown, data: unknown) => {
     if (loading) return 'loading';
     if (error) return 'error';
     if (data) return 'success';
     return 'pending';
   };
 
-  const renderTestResult = (status: string, title: string, description?: string) => {
+  const renderTestResult = (
+    status: string,
+    title: string,
+    description?: string
+  ) => {
     const getIcon = () => {
       switch (status) {
         case 'success':
@@ -80,7 +100,9 @@ export default function SalesOrderTestPage() {
         case 'error':
           return <XCircle className="h-5 w-5 text-red-600" />;
         case 'loading':
-          return <AlertTriangle className="h-5 w-5 text-yellow-600 animate-pulse" />;
+          return (
+            <AlertTriangle className="h-5 w-5 animate-pulse text-yellow-600" />
+          );
         default:
           return <Package className="h-5 w-5 text-gray-400" />;
       }
@@ -100,7 +122,7 @@ export default function SalesOrderTestPage() {
     };
 
     return (
-      <div className="flex items-center justify-between p-4 border rounded-lg">
+      <div className="flex items-center justify-between rounded-lg border p-4">
         <div className="flex items-center gap-3">
           {getIcon()}
           <div>
@@ -111,9 +133,13 @@ export default function SalesOrderTestPage() {
           </div>
         </div>
         <Badge variant={getVariant()}>
-          {status === 'loading' ? '测试中...' : 
-           status === 'success' ? '通过' :
-           status === 'error' ? '失败' : '待测试'}
+          {status === 'loading'
+            ? '测试中...'
+            : status === 'success'
+              ? '通过'
+              : status === 'error'
+                ? '失败'
+                : '待测试'}
         </Badge>
       </div>
     );
@@ -140,34 +166,54 @@ export default function SalesOrderTestPage() {
             {renderTestResult(
               getTestStatus(customersLoading, customersError, customersData),
               '客户管理API',
-              customersData ? `获取到 ${customersData.data?.length || 0} 个客户` : 
-              customersError ? '客户API调用失败' : '正在测试...'
+              customersData
+                ? `获取到 ${customersData.data?.length || 0} 个客户`
+                : customersError
+                  ? '客户API调用失败'
+                  : '正在测试...'
             )}
 
             {renderTestResult(
               getTestStatus(productsLoading, productsError, productsData),
               '产品管理API',
-              productsData ? `获取到 ${productsData.data?.length || 0} 个产品` : 
-              productsError ? '产品API调用失败' : '正在测试...'
+              productsData
+                ? `获取到 ${productsData.data?.length || 0} 个产品`
+                : productsError
+                  ? '产品API调用失败'
+                  : '正在测试...'
             )}
 
             {renderTestResult(
-              getTestStatus(salesOrdersLoading, salesOrdersError, salesOrdersData),
+              getTestStatus(
+                salesOrdersLoading,
+                salesOrdersError,
+                salesOrdersData
+              ),
               '销售订单API',
-              salesOrdersData ? `获取到 ${salesOrdersData.data?.length || 0} 个订单` : 
-              salesOrdersError ? '订单API调用失败' : '正在测试...'
+              salesOrdersData
+                ? `获取到 ${salesOrdersData.data?.length || 0} 个订单`
+                : salesOrdersError
+                  ? '订单API调用失败'
+                  : '正在测试...'
             )}
 
             {renderTestResult(
-              orderNumberTest.loading ? 'loading' : 
-              orderNumberTest.error ? 'error' : 
-              orderNumberTest.result ? 'success' : 'pending',
+              orderNumberTest.loading
+                ? 'loading'
+                : orderNumberTest.error
+                  ? 'error'
+                  : orderNumberTest.result
+                    ? 'success'
+                    : 'pending',
               '订单号生成API',
-              orderNumberTest.result ? `生成订单号: ${orderNumberTest.result.data?.orderNumber}` :
-              orderNumberTest.error ? orderNumberTest.error : '点击按钮测试'
+              orderNumberTest.result
+                ? `生成订单号: ${orderNumberTest.result.data?.orderNumber}`
+                : orderNumberTest.error
+                  ? orderNumberTest.error
+                  : '点击按钮测试'
             )}
 
-            <Button 
+            <Button
               onClick={testOrderNumberGeneration}
               disabled={orderNumberTest.loading}
               className="w-full"
@@ -184,28 +230,28 @@ export default function SalesOrderTestPage() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
-              <div className="text-center p-4 bg-blue-50 rounded-lg">
+              <div className="rounded-lg bg-blue-50 p-4 text-center">
                 <div className="text-2xl font-bold text-blue-600">
                   {customersData?.data?.length || 0}
                 </div>
                 <div className="text-sm text-blue-600">客户总数</div>
               </div>
-              
-              <div className="text-center p-4 bg-green-50 rounded-lg">
+
+              <div className="rounded-lg bg-green-50 p-4 text-center">
                 <div className="text-2xl font-bold text-green-600">
                   {productsData?.data?.length || 0}
                 </div>
                 <div className="text-sm text-green-600">产品总数</div>
               </div>
-              
-              <div className="text-center p-4 bg-purple-50 rounded-lg">
+
+              <div className="rounded-lg bg-purple-50 p-4 text-center">
                 <div className="text-2xl font-bold text-purple-600">
                   {salesOrdersData?.data?.length || 0}
                 </div>
                 <div className="text-sm text-purple-600">订单总数</div>
               </div>
-              
-              <div className="text-center p-4 bg-orange-50 rounded-lg">
+
+              <div className="rounded-lg bg-orange-50 p-4 text-center">
                 <div className="text-2xl font-bold text-orange-600">
                   {salesOrdersData?.pagination?.total || 0}
                 </div>
@@ -215,17 +261,20 @@ export default function SalesOrderTestPage() {
 
             {/* 库存状态统计 */}
             {productsData?.data && (
-              <div className="pt-4 border-t">
-                <h4 className="font-medium mb-2">库存状态统计</h4>
+              <div className="border-t pt-4">
+                <h4 className="mb-2 font-medium">库存状态统计</h4>
                 <div className="space-y-2">
                   {(() => {
                     const products = productsData.data;
                     const totalProducts = products.length;
-                    const inStock = products.filter(p => 
-                      p.inventory && p.inventory.availableInventory > 0
+                    const inStock = products.filter(
+                      p => p.inventory && p.inventory.availableInventory > 0
                     ).length;
-                    const lowStock = products.filter(p => 
-                      p.inventory && p.inventory.availableInventory > 0 && p.inventory.availableInventory <= 10
+                    const lowStock = products.filter(
+                      p =>
+                        p.inventory &&
+                        p.inventory.availableInventory > 0 &&
+                        p.inventory.availableInventory <= 10
                     ).length;
                     const outOfStock = totalProducts - inStock;
 
@@ -233,11 +282,18 @@ export default function SalesOrderTestPage() {
                       <>
                         <div className="flex justify-between text-sm">
                           <span>有库存产品:</span>
-                          <Badge className="bg-green-100 text-green-800">{inStock}</Badge>
+                          <Badge className="bg-green-100 text-green-800">
+                            {inStock}
+                          </Badge>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span>库存预警:</span>
-                          <Badge variant="secondary" className="text-orange-600">{lowStock}</Badge>
+                          <Badge
+                            variant="secondary"
+                            className="text-orange-600"
+                          >
+                            {lowStock}
+                          </Badge>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span>缺货产品:</span>
@@ -262,19 +318,25 @@ export default function SalesOrderTestPage() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <Button asChild className="h-auto p-4">
-              <a href="/sales-orders/create" className="flex flex-col items-center gap-2">
+              <a
+                href="/sales-orders/create"
+                className="flex flex-col items-center gap-2"
+              >
                 <Package className="h-6 w-6" />
                 <span>创建销售订单</span>
               </a>
             </Button>
-            
+
             <Button asChild variant="outline" className="h-auto p-4">
-              <a href="/sales-orders" className="flex flex-col items-center gap-2">
+              <a
+                href="/sales-orders"
+                className="flex flex-col items-center gap-2"
+              >
                 <Package className="h-6 w-6" />
                 <span>订单列表</span>
               </a>
             </Button>
-            
+
             <Button asChild variant="outline" className="h-auto p-4">
               <a href="/customers" className="flex flex-col items-center gap-2">
                 <Package className="h-6 w-6" />
@@ -291,7 +353,7 @@ export default function SalesOrderTestPage() {
           <XCircle className="h-4 w-4" />
           <AlertDescription>
             检测到API错误，请检查网络连接和服务器状态：
-            <ul className="mt-2 list-disc list-inside">
+            <ul className="mt-2 list-inside list-disc">
               {customersError && <li>客户API: {customersError.message}</li>}
               {productsError && <li>产品API: {productsError.message}</li>}
               {salesOrdersError && <li>订单API: {salesOrdersError.message}</li>}
