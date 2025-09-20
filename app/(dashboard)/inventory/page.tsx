@@ -3,10 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 
-// UI Components
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
-
-// API and Types
 import { categoryQueryKeys, getCategoryOptions } from '@/lib/api/categories';
 import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
@@ -47,7 +44,10 @@ export default function InventoryPage() {
   };
 
   // 筛选处理
-  const handleFilter = (key: keyof InventoryQueryParams, value: any) => {
+  const handleFilter = (
+    key: keyof InventoryQueryParams,
+    value: string | number | boolean
+  ) => {
     setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
   };
 

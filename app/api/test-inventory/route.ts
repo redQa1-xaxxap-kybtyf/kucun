@@ -15,7 +15,7 @@ export async function GET() {
     };
 
     // 构建查询条件
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     // 查询库存列表
     const [inventoryRecords, total] = await Promise.all([

@@ -131,7 +131,7 @@ const InventoryStatusIndicator = React.forwardRef<
     }, [currentStock, maxStock]);
 
     // 自动计算预警级别
-    const calculatedAlertLevel = React.useMemo((): AlertLevel => {
+    const _calculatedAlertLevel = React.useMemo((): AlertLevel => {
       if (alertLevel) return alertLevel;
 
       if (!currentStock || !safetyStock) {

@@ -1,8 +1,7 @@
 // 单个入库记录API路由
 // 提供单个入库记录的查询、更新、删除操作
 
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
@@ -127,7 +126,7 @@ export async function PUT(
     }
 
     // 准备更新数据
-    const updateData: any = {};
+    const updateData: Record<string, unknown> = {};
 
     if (validatedData.quantity !== undefined) {
       updateData.quantity = formatQuantity(validatedData.quantity);

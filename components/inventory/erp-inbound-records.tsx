@@ -34,8 +34,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
-// API and Types
 import { useInboundRecords } from '@/lib/api/inbound';
 import type { InboundQueryParams, InboundReason } from '@/lib/types/inbound';
 
@@ -73,7 +71,10 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
   const inboundRecords = data?.data || [];
 
   // 处理筛选条件变化
-  const handleFilter = (key: keyof InboundQueryParams, value: any) => {
+  const handleFilter = (
+    key: keyof InboundQueryParams,
+    value: string | number | boolean
+  ) => {
     setQueryParams(prev => ({
       ...prev,
       [key]: value,
@@ -130,7 +131,12 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">入库记录</h3>
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="h-7" onClick={() => router.back()}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7"
+                onClick={() => router.back()}
+              >
                 <ArrowLeft className="mr-1 h-3 w-3" />
                 返回
               </Button>
@@ -163,7 +169,12 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
         <div className="border-b bg-muted/10 px-3 py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Button variant="ghost" size="sm" className="h-7" onClick={() => router.back()}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7"
+                onClick={() => router.back()}
+              >
                 <ArrowLeft className="mr-1 h-3 w-3" />
                 返回
               </Button>
@@ -179,7 +190,7 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
 
         {/* 筛选条件区域 */}
         <div className="border-b bg-muted/5 px-3 py-2">
-          <div className="flex items-center gap-1 mb-2">
+          <div className="mb-2 flex items-center gap-1">
             <Filter className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs font-medium">筛选条件</span>
           </div>
@@ -231,7 +242,12 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
               </Select>
             </div>
             <div className="flex items-end">
-              <Button variant="outline" size="sm" className="h-7" onClick={handleResetFilters}>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7"
+                onClick={handleResetFilters}
+              >
                 <RotateCcw className="mr-1 h-3 w-3" />
                 重置
               </Button>
@@ -241,7 +257,9 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
 
         {/* 数据表格区域 */}
         <div className="p-3">
-          <div className="text-xs font-medium text-muted-foreground mb-2">入库记录列表</div>
+          <div className="mb-2 text-xs font-medium text-muted-foreground">
+            入库记录列表
+          </div>
           {isLoading ? (
             <div className="space-y-2">
               {[...Array(5)].map((_, i) => (
@@ -300,13 +318,17 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
                     <TableCell className="py-1">
                       <div className="flex items-center gap-1">
                         <User className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs">{record.user?.name || '-'}</span>
+                        <span className="text-xs">
+                          {record.user?.name || '-'}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="py-1">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs">{formatDate(record.createdAt)}</span>
+                        <span className="text-xs">
+                          {formatDate(record.createdAt)}
+                        </span>
                       </div>
                     </TableCell>
                     <TableCell className="py-1">

@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, Edit, Eye, Package, Plus, Search, Trash2 } from 'lucide-react';
+import { AlertTriangle, Edit, Package, Plus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
@@ -39,7 +39,10 @@ interface ERPInventoryListProps {
   categoryOptions: Array<{ id: string; name: string }>;
   queryParams: InventoryQueryParams;
   onSearch: (value: string) => void;
-  onFilter: (key: keyof InventoryQueryParams, value: any) => void;
+  onFilter: (
+    key: keyof InventoryQueryParams,
+    value: string | number | boolean
+  ) => void;
   onPageChange: (page: number) => void;
   isLoading?: boolean;
 }
@@ -58,7 +61,9 @@ export function ERPInventoryList({
   isLoading = false,
 }: ERPInventoryListProps) {
   const router = useRouter();
-  const [selectedInventoryIds, setSelectedInventoryIds] = React.useState<string[]>([]);
+  const [selectedInventoryIds, setSelectedInventoryIds] = React.useState<
+    string[]
+  >([]);
 
   // 库存状态判断
   const getStockStatus = (quantity: number, minStock: number = 10) => {
@@ -89,14 +94,20 @@ export function ERPInventoryList({
   // 库存状态标签渲染
   const getStockBadge = (quantity: number, minStock?: number) => {
     const { label, variant } = getStockStatus(quantity, minStock);
-    return <Badge variant={variant} className="text-xs">{label}</Badge>;
+    return (
+      <Badge variant={variant} className="text-xs">
+        {label}
+      </Badge>
+    );
   };
 
   // 格式化库存数量显示
   const formatQuantityDisplay = (item: Inventory) => {
     if (!item.product?.piecesPerUnit) {
       const unit = item.product?.unit
-        ? PRODUCT_UNIT_LABELS[item.product.unit as keyof typeof PRODUCT_UNIT_LABELS] || item.product.unit
+        ? PRODUCT_UNIT_LABELS[
+            item.product.unit as keyof typeof PRODUCT_UNIT_LABELS
+          ] || item.product.unit
         : '件';
       return `${item.quantity} ${unit}`;
     }
@@ -184,11 +195,21 @@ export function ERPInventoryList({
               <Plus className="mr-1 h-3 w-3" />
               入库
             </Button>
-            <Button size="sm" variant="outline" className="h-7" onClick={handleOutbound}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7"
+              onClick={handleOutbound}
+            >
               <Package className="mr-1 h-3 w-3" />
               出库
             </Button>
-            <Button size="sm" variant="outline" className="h-7" onClick={() => handleAdjust()}>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-7"
+              onClick={() => handleAdjust()}
+            >
               <Edit className="mr-1 h-3 w-3" />
               调整
             </Button>
@@ -196,7 +217,7 @@ export function ERPInventoryList({
             <div className="mx-2 h-4 w-px bg-border" />
 
             {/* 搜索框 */}
-            <div className="relative flex-1 max-w-xs">
+            <div className="relative max-w-xs flex-1">
               <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="搜索产品名称、编码..."
@@ -229,7 +250,9 @@ export function ERPInventoryList({
 
             <Select
               value={queryParams.categoryId || 'all'}
-              onValueChange={value => onFilter('categoryId', value === 'all' ? undefined : value)}
+              onValueChange={value =>
+                onFilter('categoryId', value === 'all' ? undefined : value)
+              }
             >
               <SelectTrigger className="h-7 w-24 text-xs">
                 <SelectValue placeholder="分类" />
@@ -268,7 +291,10 @@ export function ERPInventoryList({
               <TableHead className="w-12 text-xs">
                 <input
                   type="checkbox"
-                  checked={selectedInventoryIds.length === data.data.length && data.data.length > 0}
+                  checked={
+                    selectedInventoryIds.length === data.data.length &&
+                    data.data.length > 0
+                  }
                   onChange={e => handleSelectAll(e.target.checked)}
                   className="rounded border border-input"
                 />
@@ -288,7 +314,10 @@ export function ERPInventoryList({
           <TableBody>
             {data.data.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={11} className="h-24 text-center text-muted-foreground">
+                <TableCell
+                  colSpan={11}
+                  className="h-24 text-center text-muted-foreground"
+                >
                   <div className="flex flex-col items-center gap-2">
                     <Package className="h-8 w-8" />
                     <div>暂无库存数据</div>
@@ -296,7 +325,7 @@ export function ERPInventoryList({
                 </TableCell>
               </TableRow>
             ) : (
-              data.data.map((item) => (
+              data.data.map(item => (
                 <TableRow key={item.id} className="text-xs">
                   <TableCell>
                     <input
@@ -306,15 +335,27 @@ export function ERPInventoryList({
                       className="rounded border border-input"
                     />
                   </TableCell>
-                  <TableCell className="font-mono">{item.product?.code || '-'}</TableCell>
-                  <TableCell className="font-medium">{item.product?.name || '-'}</TableCell>
+                  <TableCell className="font-mono">
+                    {item.product?.code || '-'}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {item.product?.name || '-'}
+                  </TableCell>
                   <TableCell>{item.product?.specification || '-'}</TableCell>
-                  <TableCell className="font-mono">{item.batchNumber || '-'}</TableCell>
-                  <TableCell className="font-medium">{formatQuantityDisplay(item)}</TableCell>
+                  <TableCell className="font-mono">
+                    {item.batchNumber || '-'}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {formatQuantityDisplay(item)}
+                  </TableCell>
                   <TableCell>{item.reservedQuantity || 0}</TableCell>
-                  <TableCell className="font-medium">{item.quantity - (item.reservedQuantity || 0)}</TableCell>
+                  <TableCell className="font-medium">
+                    {item.quantity - (item.reservedQuantity || 0)}
+                  </TableCell>
                   <TableCell>{getStockBadge(item.quantity, 10)}</TableCell>
-                  <TableCell>{new Date(item.updatedAt).toLocaleDateString('zh-CN')}</TableCell>
+                  <TableCell>
+                    {new Date(item.updatedAt).toLocaleDateString('zh-CN')}
+                  </TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button
@@ -345,7 +386,9 @@ export function ERPInventoryList({
               variant="outline"
               size="sm"
               className="h-7"
-              onClick={() => onPageChange(data.pagination!.page - 1)}
+              onClick={() =>
+                data.pagination && onPageChange(data.pagination.page - 1)
+              }
               disabled={data.pagination.page <= 1}
             >
               上一页
@@ -354,7 +397,9 @@ export function ERPInventoryList({
               variant="outline"
               size="sm"
               className="h-7"
-              onClick={() => onPageChange(data.pagination!.page + 1)}
+              onClick={() =>
+                data.pagination && onPageChange(data.pagination.page + 1)
+              }
               disabled={data.pagination.page >= data.pagination.totalPages}
             >
               下一页

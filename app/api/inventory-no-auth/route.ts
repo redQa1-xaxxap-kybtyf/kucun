@@ -1,5 +1,4 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/db';
 import { paginationValidations } from '@/lib/validations/base';
@@ -55,12 +54,12 @@ export async function GET(request: NextRequest) {
       productionDateEnd,
       lowStock,
       hasStock,
-      groupByVariant,
+      groupByVariant: _groupByVariant,
       includeVariants,
     } = validationResult.data;
 
     // 构建查询条件
-    const where: any = {};
+    const where: Record<string, string | number | boolean | object> = {};
 
     if (search) {
       where.OR = [
@@ -175,7 +174,7 @@ export async function GET(request: NextRequest) {
       location: record.location,
       unitCost: record.unitCost,
       product: record.product,
-      variant: (record as any).variant,
+      variant: (record as { variant?: unknown }).variant,
       updatedAt: record.updatedAt,
     }));
 

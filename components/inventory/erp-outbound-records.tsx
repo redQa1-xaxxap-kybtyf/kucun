@@ -33,10 +33,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { OutboundRecord, OutboundType } from '@/lib/types/inventory';
 import {
   OUTBOUND_TYPE_LABELS,
   OUTBOUND_TYPE_VARIANTS,
+  type OutboundRecord,
+  type OutboundType,
 } from '@/lib/types/inventory';
 
 interface ERPOutboundRecordsProps {

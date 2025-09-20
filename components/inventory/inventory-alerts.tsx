@@ -30,14 +30,11 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
-// Icons
-
-// API and Types
 import { getInventoryAlerts, inventoryQueryKeys } from '@/lib/api/inventory';
 import {
   INVENTORY_ALERT_TYPE_LABELS,
   INVENTORY_ALERT_TYPE_VARIANTS,
+  type InventoryAlert,
 } from '@/lib/types/inventory';
 
 interface InventoryAlertsProps {
@@ -104,7 +101,7 @@ export function InventoryAlerts({
 
   // 按类型分组统计
   const alertStats = alerts.reduce(
-    (acc: any, alert: any) => {
+    (acc: Record<string, number>, alert: { type: string }) => {
       acc[alert.type] = (acc[alert.type] || 0) + 1;
       return acc;
     },
@@ -179,7 +176,7 @@ export function InventoryAlerts({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {displayAlerts.map((alert: any) => (
+                  {displayAlerts.map((alert: InventoryAlert) => (
                     <TableRow key={alert.id}>
                       <TableCell>
                         <Badge
@@ -237,7 +234,7 @@ export function InventoryAlerts({
 
             {/* 移动端卡片 */}
             <div className="space-y-4 md:hidden">
-              {displayAlerts.map((alert: any) => (
+              {displayAlerts.map((alert: InventoryAlert) => (
                 <Card
                   key={alert.id}
                   className="border-orange-200 bg-orange-50/50"

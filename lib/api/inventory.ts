@@ -62,7 +62,11 @@ export async function getInventories(
     throw new Error(data.error || '获取库存列表失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('获取库存列表失败：数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -84,7 +88,11 @@ export async function getInventory(productId: string): Promise<Inventory> {
     throw new Error(data.error || '获取库存详情失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('获取库存详情失败：数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -111,7 +119,11 @@ export async function createInbound(
     throw new Error(data.error || '入库操作失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('入库操作失败：数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -138,7 +150,11 @@ export async function createOutbound(
     throw new Error(data.error || '出库操作失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('出库操作失败：数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -165,7 +181,11 @@ export async function adjustInventory(
     throw new Error(data.error || '库存调整失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('库存调整失败：数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -189,7 +209,11 @@ export async function getInventoryAlerts(): Promise<InventoryAlert[]> {
     throw new Error(data.error || '获取库存警报失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('获取库存警报失败：数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -223,5 +247,9 @@ export async function checkInventoryAvailability(
     throw new Error(data.error || '检查库存可用性失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('检查库存可用性失败：数据为空');
+  }
+
+  return data.data;
 }

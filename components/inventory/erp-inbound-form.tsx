@@ -27,15 +27,11 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-
-// API and Types
 import { useCreateInboundRecord } from '@/lib/api/inbound';
-import type {
-  InboundFormData,
-  InboundUnit,
-  ProductOption,
-} from '@/lib/types/inbound';
 import {
+  type InboundFormData,
+  type InboundUnit,
+  type ProductOption,
   INBOUND_REASON_OPTIONS,
   INBOUND_UNIT_OPTIONS,
 } from '@/lib/types/inbound';
@@ -179,7 +175,12 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">产品入库</h3>
           <div className="flex items-center gap-2">
-            <Button variant="ghost" size="sm" className="h-7" onClick={() => router.back()}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7"
+              onClick={() => router.back()}
+            >
               <ArrowLeft className="mr-1 h-3 w-3" />
               返回
             </Button>
@@ -213,7 +214,8 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                     </FormControl>
                     {selectedProduct && (
                       <div className="text-xs text-muted-foreground">
-                        {selectedProduct.label} | 每件{selectedProduct.piecesPerUnit}片
+                        {selectedProduct.label} | 每件
+                        {selectedProduct.piecesPerUnit}片
                       </div>
                     )}
                     <FormMessage />
@@ -227,7 +229,10 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs">入库原因 *</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                    >
                       <FormControl>
                         <SelectTrigger className="h-8">
                           <SelectValue placeholder="请选择入库原因" />
@@ -297,7 +302,8 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel className="text-xs">
-                      入库数量（{watchedInputUnit === 'pieces' ? '片数' : '件数'}） *
+                      入库数量（
+                      {watchedInputUnit === 'pieces' ? '片数' : '件数'}） *
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -318,11 +324,13 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                       watchedInputQuantity > 0 &&
                       watchedInputUnit === 'units' && (
                         <div className="text-xs text-muted-foreground">
-                          转换：{watchedInputQuantity}件 = {calculateFinalQuantity(
+                          转换：{watchedInputQuantity}件 ={' '}
+                          {calculateFinalQuantity(
                             watchedInputQuantity,
                             watchedInputUnit,
                             selectedProduct.piecesPerUnit
-                          )}片
+                          )}
+                          片
                         </div>
                       )}
                     <FormMessage />

@@ -14,8 +14,6 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { useState } from 'react';
-
-// UI Components
 import { useForm } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/customers/customer-hierarchy';
@@ -48,12 +46,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
-// Icons
-
-// Custom Components
-
-// API and Types
 import {
   adjustInventory,
   checkInventoryAvailability,
@@ -62,20 +54,13 @@ import {
   inventoryQueryKeys,
 } from '@/lib/api/inventory';
 import { getProduct } from '@/lib/api/products';
-import type {
-  InboundRecord,
-  Inventory,
-  OutboundRecord,
-} from '@/lib/types/inventory';
 import {
   INBOUND_TYPE_LABELS,
   OUTBOUND_TYPE_LABELS,
+  type InboundRecord,
+  type Inventory,
+  type OutboundRecord,
 } from '@/lib/types/inventory';
-import type {
-  InboundCreateFormData,
-  InventoryAdjustFormData,
-  OutboundCreateFormData,
-} from '@/lib/validations/inventory';
 import {
   inboundCreateDefaults,
   inboundCreateSchema,
@@ -83,6 +68,9 @@ import {
   inventoryAdjustSchema,
   outboundCreateDefaults,
   outboundCreateSchema,
+  type InboundCreateFormData,
+  type InventoryAdjustFormData,
+  type OutboundCreateFormData,
 } from '@/lib/validations/inventory';
 
 interface InventoryOperationFormProps {
@@ -98,7 +86,7 @@ export function InventoryOperationForm({
 }: InventoryOperationFormProps) {
   const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string>('');
-  const [availabilityCheck, setAvailabilityCheck] = useState<{
+  const [_availabilityCheck, _setAvailabilityCheck] = useState<{
     available: boolean;
     currentQuantity: number;
     reservedQuantity: number;
@@ -143,12 +131,15 @@ export function InventoryOperationForm({
     InboundCreateFormData | OutboundCreateFormData | InventoryAdjustFormData
   >({
     resolver: zodResolver(formConfig.schema),
-    defaultValues: formConfig.defaults as any,
+    defaultValues: formConfig.defaults as
+      | InboundCreateFormData
+      | OutboundCreateFormData
+      | InventoryAdjustFormData,
   });
 
   // 监听产品变化
   const watchedProductId = form.watch('productId');
-  const watchedQuantity = form.watch('quantity' as any);
+  const watchedQuantity = form.watch('quantity' as keyof typeof form.getValues);
 
   // 获取产品信息
   const { data: productData } = useQuery({
@@ -158,7 +149,7 @@ export function InventoryOperationForm({
   });
 
   // 检查库存可用性（仅出库时）
-  const { data: availabilityData, refetch: checkAvailability } = useQuery({
+  const { data: availabilityData, refetch: _checkAvailability } = useQuery({
     queryKey: ['inventory', 'availability', watchedProductId, watchedQuantity],
     queryFn: () =>
       checkInventoryAvailability(watchedProductId, watchedQuantity || 0),
@@ -224,7 +215,12 @@ export function InventoryOperationForm({
     adjustMutation.isPending;
 
   // 表单提交
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (
+    data:
+      | InboundCreateFormData
+      | OutboundCreateFormData
+      | InventoryAdjustFormData
+  ) => {
     setSubmitError('');
 
     try {

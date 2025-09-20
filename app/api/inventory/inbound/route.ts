@@ -1,8 +1,7 @@
 // 产品入库API路由
 // 提供入库记录的CRUD操作接口
 
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
@@ -67,7 +66,7 @@ export async function GET(request: NextRequest) {
     } = queryData;
 
     // 构建查询条件
-    const where: Record<string, any> = {};
+    const where: Record<string, string | number | boolean | object> = {};
 
     if (productId) {
       where.productId = productId;
@@ -135,7 +134,7 @@ export async function GET(request: NextRequest) {
         recordNumber: record.recordNumber,
         productId: record.productId,
         quantity: record.quantity,
-        reason: record.reason as any,
+        reason: record.reason as string,
         remarks: record.remarks || undefined,
         userId: record.userId,
         createdAt: record.createdAt.toISOString(),

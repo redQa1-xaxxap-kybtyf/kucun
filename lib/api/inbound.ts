@@ -4,13 +4,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type {
-  InboundRecord,
+  CreateInboundRequest,
   InboundListResponse,
   InboundQueryParams,
-  CreateInboundRequest,
-  UpdateInboundRequest,
+  InboundRecord,
   InboundStats,
   ProductOption,
+  UpdateInboundRequest,
 } from '@/lib/types/inbound';
 
 // API基础URL
@@ -259,7 +259,7 @@ export function useInboundStats() {
         todayCount: todayData.length,
         monthCount: monthData.length,
         totalQuantity: monthData.reduce(
-          (sum: number, record: any) => sum + record.quantity,
+          (sum: number, record: { quantity: number }) => sum + record.quantity,
           0
         ),
         recentRecords: recentData,

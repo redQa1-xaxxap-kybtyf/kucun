@@ -35,11 +35,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
-// Icons
-// Components
-
-// API and Types
 import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';

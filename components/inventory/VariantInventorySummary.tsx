@@ -20,6 +20,43 @@ interface VariantInventorySummaryProps {
   showDetails?: boolean;
 }
 
+interface VariantInventorySummaryData {
+  variant: {
+    id: string;
+    colorCode: string;
+    sku: string;
+    product: {
+      id: string;
+      code: string;
+      name: string;
+    };
+  };
+  inventory: {
+    totalQuantity: number;
+    reservedQuantity: number;
+    availableQuantity: number;
+    averageUnitCost: number;
+    stockStatus: string;
+    lastUpdated: string;
+  };
+  breakdown: {
+    locations: Array<{
+      location: string;
+      quantity: number;
+      reservedQuantity: number;
+      availableQuantity: number;
+      batches: number;
+    }>;
+    productionDates: Array<{
+      productionDate: string;
+      quantity: number;
+      batches: number;
+    }>;
+    totalBatches: number;
+    totalLocations: number;
+  };
+}
+
 export function VariantInventorySummary({
   variantId,
   showDetails = true,
@@ -64,7 +101,8 @@ export function VariantInventorySummary({
     );
   }
 
-  const { variant, inventory, breakdown } = summary as any;
+  const { variant, inventory, breakdown } =
+    summary as VariantInventorySummaryData;
   const stockPercentage =
     inventory.totalQuantity > 0
       ? (inventory.availableQuantity / inventory.totalQuantity) * 100
@@ -169,7 +207,7 @@ export function VariantInventorySummary({
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  {breakdown.locations.map((location: any, index: number) => (
+                  {breakdown.locations.map((location, index: number) => (
                     <div
                       key={index}
                       className="flex items-center justify-between"
