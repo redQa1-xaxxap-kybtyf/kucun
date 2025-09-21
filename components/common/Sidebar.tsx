@@ -4,11 +4,12 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
+  DollarSign,
   HelpCircle,
   LayoutDashboard,
   Package,
   Plus,
+  Receipt,
   RotateCcw,
   Settings,
   ShoppingCart,
@@ -18,9 +19,9 @@ import {
   Users,
   Warehouse,
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -106,10 +107,30 @@ const navigationItems: NavigationItem[] = [
     icon: Truck,
   },
   {
-    id: 'payments',
-    title: '支付管理',
-    href: '/payments',
-    icon: CreditCard,
+    id: 'finance',
+    title: '财务管理',
+    href: '/finance',
+    icon: DollarSign,
+    children: [
+      {
+        id: 'finance-receivables',
+        title: '应收货款',
+        href: '/finance/receivables',
+        icon: TrendingUp,
+      },
+      {
+        id: 'finance-refunds',
+        title: '应退货款',
+        href: '/finance/refunds',
+        icon: TrendingDown,
+      },
+      {
+        id: 'finance-statements',
+        title: '往来账单',
+        href: '/finance/statements',
+        icon: Receipt,
+      },
+    ],
   },
 ];
 
@@ -147,8 +168,7 @@ interface SidebarProps {
 export function Sidebar({ state, className }: SidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const { addBadgesToNavItems, isLoading: badgesLoading } =
-    useNavigationBadges();
+  const { addBadgesToNavItems } = useNavigationBadges();
 
   // 键盘导航状态
   const [focusedIndex, setFocusedIndex] = React.useState(-1);

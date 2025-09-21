@@ -1,7 +1,7 @@
 'use client';
 
 import {
-  CreditCard,
+  DollarSign,
   HelpCircle,
   LayoutDashboard,
   Package,
@@ -74,10 +74,10 @@ const mobileNavigationItems: NavigationItem[] = [
     icon: Users,
   },
   {
-    id: 'payments',
-    title: '支付管理',
-    href: '/payments',
-    icon: CreditCard,
+    id: 'finance',
+    title: '财务管理',
+    href: '/finance',
+    icon: DollarSign,
   },
 ];
 
