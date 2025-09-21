@@ -23,14 +23,6 @@ export default function TestAddressSelectorPage() {
 
   const [stringAddress, setStringAddress] = React.useState<string>('');
 
-  // 创建表单实例用于AddressSelector
-  const form = useForm({
-    defaultValues: {
-      address: address,
-      stringAddress: stringAddress,
-    },
-  });
-
   const handleAddressChange = (newAddress: AddressData | string) => {
     if (typeof newAddress === 'string') {
       setStringAddress(newAddress);

@@ -18,14 +18,14 @@ export async function getProvinces(): Promise<ProvinceData[]> {
   try {
     const response = await fetch('/api/address/provinces');
     const result = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.error || '获取省份数据失败');
     }
-    
+
     return result.data;
   } catch (error) {
-    console.error('获取省份数据失败:', error);
+    // 获取省份数据失败，返回空数组
     return [];
   }
 }
@@ -33,18 +33,22 @@ export async function getProvinces(): Promise<ProvinceData[]> {
 /**
  * 根据省份代码获取城市列表
  */
-export async function getCitiesByProvince(provinceCode: string): Promise<CityData[]> {
+export async function getCitiesByProvince(
+  provinceCode: string
+): Promise<CityData[]> {
   try {
-    const response = await fetch(`/api/address/cities?provinceCode=${encodeURIComponent(provinceCode)}`);
+    const response = await fetch(
+      `/api/address/cities?provinceCode=${encodeURIComponent(provinceCode)}`
+    );
     const result = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.error || '获取城市数据失败');
     }
-    
+
     return result.data;
   } catch (error) {
-    console.error('获取城市数据失败:', error);
+    // 获取城市数据失败，返回空数组
     return [];
   }
 }
@@ -52,18 +56,22 @@ export async function getCitiesByProvince(provinceCode: string): Promise<CityDat
 /**
  * 根据城市代码获取区县列表
  */
-export async function getDistrictsByCity(cityCode: string): Promise<DistrictData[]> {
+export async function getDistrictsByCity(
+  cityCode: string
+): Promise<DistrictData[]> {
   try {
-    const response = await fetch(`/api/address/districts?cityCode=${encodeURIComponent(cityCode)}`);
+    const response = await fetch(
+      `/api/address/districts?cityCode=${encodeURIComponent(cityCode)}`
+    );
     const result = await response.json();
-    
+
     if (!result.success) {
       throw new Error(result.error || '获取区县数据失败');
     }
-    
+
     return result.data;
   } catch (error) {
-    console.error('获取区县数据失败:', error);
+    // 获取区县数据失败，返回空数组
     return [];
   }
 }

@@ -1,4 +1,4 @@
-import { provinces } from '@/lib/data/address-data';
+import { provinces } from '@/lib/data/complete-address-data';
 import { NextResponse } from 'next/server';
 
 export async function GET() {

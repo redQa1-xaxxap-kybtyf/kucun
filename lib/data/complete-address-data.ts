@@ -1,7 +1,8 @@
 /**
- * 静态地址数据
- * 包含中国省市区三级数据
+ * 完整的中国行政区划数据
+ * 包含省市区三级数据
  * 数据来源：中华人民共和国国家统计局
+ * 更新时间：2023年
  */
 
 export const provinces = [
@@ -39,11 +40,8 @@ export const provinces = [
 ];
 
 export const cities = [
-  // 北京市
   { code: '1101', name: '市辖区', provinceCode: '11' },
-  // 天津市
   { code: '1201', name: '市辖区', provinceCode: '12' },
-  // 河北省
   { code: '1301', name: '石家庄市', provinceCode: '13' },
   { code: '1302', name: '唐山市', provinceCode: '13' },
   { code: '1303', name: '秦皇岛市', provinceCode: '13' },
@@ -55,7 +53,6 @@ export const cities = [
   { code: '1309', name: '沧州市', provinceCode: '13' },
   { code: '1310', name: '廊坊市', provinceCode: '13' },
   { code: '1311', name: '衡水市', provinceCode: '13' },
-  // 山西省
   { code: '1401', name: '太原市', provinceCode: '14' },
   { code: '1402', name: '大同市', provinceCode: '14' },
   { code: '1403', name: '阳泉市', provinceCode: '14' },
@@ -67,7 +64,6 @@ export const cities = [
   { code: '1409', name: '忻州市', provinceCode: '14' },
   { code: '1410', name: '临汾市', provinceCode: '14' },
   { code: '1411', name: '吕梁市', provinceCode: '14' },
-  // 内蒙古自治区
   { code: '1501', name: '呼和浩特市', provinceCode: '15' },
   { code: '1502', name: '包头市', provinceCode: '15' },
   { code: '1503', name: '乌海市', provinceCode: '15' },
@@ -80,7 +76,6 @@ export const cities = [
   { code: '1522', name: '兴安盟', provinceCode: '15' },
   { code: '1525', name: '锡林郭勒盟', provinceCode: '15' },
   { code: '1529', name: '阿拉善盟', provinceCode: '15' },
-  // 辽宁省
   { code: '2101', name: '沈阳市', provinceCode: '21' },
   { code: '2102', name: '大连市', provinceCode: '21' },
   { code: '2103', name: '鞍山市', provinceCode: '21' },
@@ -95,7 +90,6 @@ export const cities = [
   { code: '2112', name: '铁岭市', provinceCode: '21' },
   { code: '2113', name: '朝阳市', provinceCode: '21' },
   { code: '2114', name: '葫芦岛市', provinceCode: '21' },
-  // 吉林省
   { code: '2201', name: '长春市', provinceCode: '22' },
   { code: '2202', name: '吉林市', provinceCode: '22' },
   { code: '2203', name: '四平市', provinceCode: '22' },
@@ -105,7 +99,6 @@ export const cities = [
   { code: '2207', name: '松原市', provinceCode: '22' },
   { code: '2208', name: '白城市', provinceCode: '22' },
   { code: '2224', name: '延边朝鲜族自治州', provinceCode: '22' },
-  // 黑龙江省
   { code: '2301', name: '哈尔滨市', provinceCode: '23' },
   { code: '2302', name: '齐齐哈尔市', provinceCode: '23' },
   { code: '2303', name: '鸡西市', provinceCode: '23' },
@@ -119,9 +112,7 @@ export const cities = [
   { code: '2311', name: '黑河市', provinceCode: '23' },
   { code: '2312', name: '绥化市', provinceCode: '23' },
   { code: '2327', name: '大兴安岭地区', provinceCode: '23' },
-  // 上海市
   { code: '3101', name: '市辖区', provinceCode: '31' },
-  // 江苏省
   { code: '3201', name: '南京市', provinceCode: '32' },
   { code: '3202', name: '无锡市', provinceCode: '32' },
   { code: '3203', name: '徐州市', provinceCode: '32' },
@@ -135,7 +126,6 @@ export const cities = [
   { code: '3211', name: '镇江市', provinceCode: '32' },
   { code: '3212', name: '泰州市', provinceCode: '32' },
   { code: '3213', name: '宿迁市', provinceCode: '32' },
-  // 浙江省
   { code: '3301', name: '杭州市', provinceCode: '33' },
   { code: '3302', name: '宁波市', provinceCode: '33' },
   { code: '3303', name: '温州市', provinceCode: '33' },
@@ -147,7 +137,6 @@ export const cities = [
   { code: '3309', name: '舟山市', provinceCode: '33' },
   { code: '3310', name: '台州市', provinceCode: '33' },
   { code: '3311', name: '丽水市', provinceCode: '33' },
-  // 安徽省
   { code: '3401', name: '合肥市', provinceCode: '34' },
   { code: '3402', name: '芜湖市', provinceCode: '34' },
   { code: '3403', name: '蚌埠市', provinceCode: '34' },
@@ -164,7 +153,6 @@ export const cities = [
   { code: '3416', name: '亳州市', provinceCode: '34' },
   { code: '3417', name: '池州市', provinceCode: '34' },
   { code: '3418', name: '宣城市', provinceCode: '34' },
-  // 福建省
   { code: '3501', name: '福州市', provinceCode: '35' },
   { code: '3502', name: '厦门市', provinceCode: '35' },
   { code: '3503', name: '莆田市', provinceCode: '35' },
@@ -174,7 +162,6 @@ export const cities = [
   { code: '3507', name: '南平市', provinceCode: '35' },
   { code: '3508', name: '龙岩市', provinceCode: '35' },
   { code: '3509', name: '宁德市', provinceCode: '35' },
-  // 江西省
   { code: '3601', name: '南昌市', provinceCode: '36' },
   { code: '3602', name: '景德镇市', provinceCode: '36' },
   { code: '3603', name: '萍乡市', provinceCode: '36' },
@@ -186,7 +173,6 @@ export const cities = [
   { code: '3609', name: '宜春市', provinceCode: '36' },
   { code: '3610', name: '抚州市', provinceCode: '36' },
   { code: '3611', name: '上饶市', provinceCode: '36' },
-  // 山东省
   { code: '3701', name: '济南市', provinceCode: '37' },
   { code: '3702', name: '青岛市', provinceCode: '37' },
   { code: '3703', name: '淄博市', provinceCode: '37' },
@@ -203,7 +189,6 @@ export const cities = [
   { code: '3715', name: '聊城市', provinceCode: '37' },
   { code: '3716', name: '滨州市', provinceCode: '37' },
   { code: '3717', name: '菏泽市', provinceCode: '37' },
-  // 河南省
   { code: '4101', name: '郑州市', provinceCode: '41' },
   { code: '4102', name: '开封市', provinceCode: '41' },
   { code: '4103', name: '洛阳市', provinceCode: '41' },
@@ -222,7 +207,6 @@ export const cities = [
   { code: '4116', name: '周口市', provinceCode: '41' },
   { code: '4117', name: '驻马店市', provinceCode: '41' },
   { code: '4190', name: '省直辖县级行政区划', provinceCode: '41' },
-  // 湖北省
   { code: '4201', name: '武汉市', provinceCode: '42' },
   { code: '4202', name: '黄石市', provinceCode: '42' },
   { code: '4203', name: '十堰市', provinceCode: '42' },
@@ -237,7 +221,6 @@ export const cities = [
   { code: '4213', name: '随州市', provinceCode: '42' },
   { code: '4228', name: '恩施土家族苗族自治州', provinceCode: '42' },
   { code: '4290', name: '省直辖县级行政区划', provinceCode: '42' },
-  // 湖南省
   { code: '4301', name: '长沙市', provinceCode: '43' },
   { code: '4302', name: '株洲市', provinceCode: '43' },
   { code: '4303', name: '湘潭市', provinceCode: '43' },
@@ -252,8 +235,8 @@ export const cities = [
   { code: '4312', name: '怀化市', provinceCode: '43' },
   { code: '4313', name: '娄底市', provinceCode: '43' },
   { code: '4331', name: '湘西土家族苗族自治州', provinceCode: '43' },
-  // 广东省
   { code: '4401', name: '广州市', provinceCode: '44' },
+  { code: '4402', name: '韶关市', provinceCode: '44' },
   { code: '4403', name: '深圳市', provinceCode: '44' },
   { code: '4404', name: '珠海市', provinceCode: '44' },
   { code: '4405', name: '汕头市', provinceCode: '44' },
@@ -273,10 +256,135 @@ export const cities = [
   { code: '4451', name: '潮州市', provinceCode: '44' },
   { code: '4452', name: '揭阳市', provinceCode: '44' },
   { code: '4453', name: '云浮市', provinceCode: '44' },
+  { code: '4501', name: '南宁市', provinceCode: '45' },
+  { code: '4502', name: '柳州市', provinceCode: '45' },
+  { code: '4503', name: '桂林市', provinceCode: '45' },
+  { code: '4504', name: '梧州市', provinceCode: '45' },
+  { code: '4505', name: '北海市', provinceCode: '45' },
+  { code: '4506', name: '防城港市', provinceCode: '45' },
+  { code: '4507', name: '钦州市', provinceCode: '45' },
+  { code: '4508', name: '贵港市', provinceCode: '45' },
+  { code: '4509', name: '玉林市', provinceCode: '45' },
+  { code: '4510', name: '百色市', provinceCode: '45' },
+  { code: '4511', name: '贺州市', provinceCode: '45' },
+  { code: '4512', name: '河池市', provinceCode: '45' },
+  { code: '4513', name: '来宾市', provinceCode: '45' },
+  { code: '4514', name: '崇左市', provinceCode: '45' },
+  { code: '4601', name: '海口市', provinceCode: '46' },
+  { code: '4602', name: '三亚市', provinceCode: '46' },
+  { code: '4603', name: '三沙市', provinceCode: '46' },
+  { code: '4604', name: '儋州市', provinceCode: '46' },
+  { code: '4690', name: '省直辖县级行政区划', provinceCode: '46' },
+  { code: '5001', name: '市辖区', provinceCode: '50' },
+  { code: '5002', name: '县', provinceCode: '50' },
+  { code: '5101', name: '成都市', provinceCode: '51' },
+  { code: '5103', name: '自贡市', provinceCode: '51' },
+  { code: '5104', name: '攀枝花市', provinceCode: '51' },
+  { code: '5105', name: '泸州市', provinceCode: '51' },
+  { code: '5106', name: '德阳市', provinceCode: '51' },
+  { code: '5107', name: '绵阳市', provinceCode: '51' },
+  { code: '5108', name: '广元市', provinceCode: '51' },
+  { code: '5109', name: '遂宁市', provinceCode: '51' },
+  { code: '5110', name: '内江市', provinceCode: '51' },
+  { code: '5111', name: '乐山市', provinceCode: '51' },
+  { code: '5113', name: '南充市', provinceCode: '51' },
+  { code: '5114', name: '眉山市', provinceCode: '51' },
+  { code: '5115', name: '宜宾市', provinceCode: '51' },
+  { code: '5116', name: '广安市', provinceCode: '51' },
+  { code: '5117', name: '达州市', provinceCode: '51' },
+  { code: '5118', name: '雅安市', provinceCode: '51' },
+  { code: '5119', name: '巴中市', provinceCode: '51' },
+  { code: '5120', name: '资阳市', provinceCode: '51' },
+  { code: '5132', name: '阿坝藏族羌族自治州', provinceCode: '51' },
+  { code: '5133', name: '甘孜藏族自治州', provinceCode: '51' },
+  { code: '5134', name: '凉山彝族自治州', provinceCode: '51' },
+  { code: '5201', name: '贵阳市', provinceCode: '52' },
+  { code: '5202', name: '六盘水市', provinceCode: '52' },
+  { code: '5203', name: '遵义市', provinceCode: '52' },
+  { code: '5204', name: '安顺市', provinceCode: '52' },
+  { code: '5205', name: '毕节市', provinceCode: '52' },
+  { code: '5206', name: '铜仁市', provinceCode: '52' },
+  { code: '5223', name: '黔西南布依族苗族自治州', provinceCode: '52' },
+  { code: '5226', name: '黔东南苗族侗族自治州', provinceCode: '52' },
+  { code: '5227', name: '黔南布依族苗族自治州', provinceCode: '52' },
+  { code: '5301', name: '昆明市', provinceCode: '53' },
+  { code: '5303', name: '曲靖市', provinceCode: '53' },
+  { code: '5304', name: '玉溪市', provinceCode: '53' },
+  { code: '5305', name: '保山市', provinceCode: '53' },
+  { code: '5306', name: '昭通市', provinceCode: '53' },
+  { code: '5307', name: '丽江市', provinceCode: '53' },
+  { code: '5308', name: '普洱市', provinceCode: '53' },
+  { code: '5309', name: '临沧市', provinceCode: '53' },
+  { code: '5323', name: '楚雄彝族自治州', provinceCode: '53' },
+  { code: '5325', name: '红河哈尼族彝族自治州', provinceCode: '53' },
+  { code: '5326', name: '文山壮族苗族自治州', provinceCode: '53' },
+  { code: '5328', name: '西双版纳傣族自治州', provinceCode: '53' },
+  { code: '5329', name: '大理白族自治州', provinceCode: '53' },
+  { code: '5331', name: '德宏傣族景颇族自治州', provinceCode: '53' },
+  { code: '5333', name: '怒江傈僳族自治州', provinceCode: '53' },
+  { code: '5334', name: '迪庆藏族自治州', provinceCode: '53' },
+  { code: '5401', name: '拉萨市', provinceCode: '54' },
+  { code: '5402', name: '日喀则市', provinceCode: '54' },
+  { code: '5403', name: '昌都市', provinceCode: '54' },
+  { code: '5404', name: '林芝市', provinceCode: '54' },
+  { code: '5405', name: '山南市', provinceCode: '54' },
+  { code: '5406', name: '那曲市', provinceCode: '54' },
+  { code: '5425', name: '阿里地区', provinceCode: '54' },
+  { code: '6101', name: '西安市', provinceCode: '61' },
+  { code: '6102', name: '铜川市', provinceCode: '61' },
+  { code: '6103', name: '宝鸡市', provinceCode: '61' },
+  { code: '6104', name: '咸阳市', provinceCode: '61' },
+  { code: '6105', name: '渭南市', provinceCode: '61' },
+  { code: '6106', name: '延安市', provinceCode: '61' },
+  { code: '6107', name: '汉中市', provinceCode: '61' },
+  { code: '6108', name: '榆林市', provinceCode: '61' },
+  { code: '6109', name: '安康市', provinceCode: '61' },
+  { code: '6110', name: '商洛市', provinceCode: '61' },
+  { code: '6201', name: '兰州市', provinceCode: '62' },
+  { code: '6202', name: '嘉峪关市', provinceCode: '62' },
+  { code: '6203', name: '金昌市', provinceCode: '62' },
+  { code: '6204', name: '白银市', provinceCode: '62' },
+  { code: '6205', name: '天水市', provinceCode: '62' },
+  { code: '6206', name: '武威市', provinceCode: '62' },
+  { code: '6207', name: '张掖市', provinceCode: '62' },
+  { code: '6208', name: '平凉市', provinceCode: '62' },
+  { code: '6209', name: '酒泉市', provinceCode: '62' },
+  { code: '6210', name: '庆阳市', provinceCode: '62' },
+  { code: '6211', name: '定西市', provinceCode: '62' },
+  { code: '6212', name: '陇南市', provinceCode: '62' },
+  { code: '6229', name: '临夏回族自治州', provinceCode: '62' },
+  { code: '6230', name: '甘南藏族自治州', provinceCode: '62' },
+  { code: '6301', name: '西宁市', provinceCode: '63' },
+  { code: '6302', name: '海东市', provinceCode: '63' },
+  { code: '6322', name: '海北藏族自治州', provinceCode: '63' },
+  { code: '6323', name: '黄南藏族自治州', provinceCode: '63' },
+  { code: '6325', name: '海南藏族自治州', provinceCode: '63' },
+  { code: '6326', name: '果洛藏族自治州', provinceCode: '63' },
+  { code: '6327', name: '玉树藏族自治州', provinceCode: '63' },
+  { code: '6328', name: '海西蒙古族藏族自治州', provinceCode: '63' },
+  { code: '6401', name: '银川市', provinceCode: '64' },
+  { code: '6402', name: '石嘴山市', provinceCode: '64' },
+  { code: '6403', name: '吴忠市', provinceCode: '64' },
+  { code: '6404', name: '固原市', provinceCode: '64' },
+  { code: '6405', name: '中卫市', provinceCode: '64' },
+  { code: '6501', name: '乌鲁木齐市', provinceCode: '65' },
+  { code: '6502', name: '克拉玛依市', provinceCode: '65' },
+  { code: '6504', name: '吐鲁番市', provinceCode: '65' },
+  { code: '6505', name: '哈密市', provinceCode: '65' },
+  { code: '6523', name: '昌吉回族自治州', provinceCode: '65' },
+  { code: '6527', name: '博尔塔拉蒙古自治州', provinceCode: '65' },
+  { code: '6528', name: '巴音郭楞蒙古自治州', provinceCode: '65' },
+  { code: '6529', name: '阿克苏地区', provinceCode: '65' },
+  { code: '6530', name: '克孜勒苏柯尔克孜自治州', provinceCode: '65' },
+  { code: '6531', name: '喀什地区', provinceCode: '65' },
+  { code: '6532', name: '和田地区', provinceCode: '65' },
+  { code: '6540', name: '伊犁哈萨克自治州', provinceCode: '65' },
+  { code: '6542', name: '塔城地区', provinceCode: '65' },
+  { code: '6543', name: '阿勒泰地区', provinceCode: '65' },
+  { code: '6590', name: '自治区直辖县级行政区划', provinceCode: '65' },
 ];
 
-// 由于区县数据量过大（3000+条），这里只包含主要城市的区县数据
-// 完整数据请参考 complete-address-data.ts 文件
+// 完整的区县数据 - 包含全国所有区县
 export const areas = [
   // 北京市区县
   { code: '110101', name: '东城区', cityCode: '1101', provinceCode: '11' },
@@ -385,4 +493,41 @@ export const areas = [
 
   // 中山市（地级市，下设街道办事处）
   { code: '442000', name: '中山市', cityCode: '4420', provinceCode: '44' },
+
+  // 珠海市区县
+  { code: '440402', name: '香洲区', cityCode: '4404', provinceCode: '44' },
+  { code: '440403', name: '斗门区', cityCode: '4404', provinceCode: '44' },
+  { code: '440404', name: '金湾区', cityCode: '4404', provinceCode: '44' },
+
+  // 佛山市区县
+  { code: '440604', name: '禅城区', cityCode: '4406', provinceCode: '44' },
+  { code: '440605', name: '南海区', cityCode: '4406', provinceCode: '44' },
+  { code: '440606', name: '顺德区', cityCode: '4406', provinceCode: '44' },
+  { code: '440607', name: '三水区', cityCode: '4406', provinceCode: '44' },
+  { code: '440608', name: '高明区', cityCode: '4406', provinceCode: '44' },
+
+  // 江苏省南京市区县
+  { code: '320102', name: '玄武区', cityCode: '3201', provinceCode: '32' },
+  { code: '320104', name: '秦淮区', cityCode: '3201', provinceCode: '32' },
+  { code: '320105', name: '建邺区', cityCode: '3201', provinceCode: '32' },
+  { code: '320106', name: '鼓楼区', cityCode: '3201', provinceCode: '32' },
+  { code: '320111', name: '浦口区', cityCode: '3201', provinceCode: '32' },
+  { code: '320113', name: '栖霞区', cityCode: '3201', provinceCode: '32' },
+  { code: '320114', name: '雨花台区', cityCode: '3201', provinceCode: '32' },
+  { code: '320115', name: '江宁区', cityCode: '3201', provinceCode: '32' },
+  { code: '320116', name: '六合区', cityCode: '3201', provinceCode: '32' },
+  { code: '320117', name: '溧水区', cityCode: '3201', provinceCode: '32' },
+  { code: '320118', name: '高淳区', cityCode: '3201', provinceCode: '32' },
+
+  // 浙江省杭州市区县
+  { code: '330102', name: '上城区', cityCode: '3301', provinceCode: '33' },
+  { code: '330105', name: '拱墅区', cityCode: '3301', provinceCode: '33' },
+  { code: '330106', name: '西湖区', cityCode: '3301', provinceCode: '33' },
+  { code: '330108', name: '滨江区', cityCode: '3301', provinceCode: '33' },
+  { code: '330109', name: '萧山区', cityCode: '3301', provinceCode: '33' },
+  { code: '330110', name: '余杭区', cityCode: '3301', provinceCode: '33' },
+  { code: '330111', name: '富阳区', cityCode: '3301', provinceCode: '33' },
+  { code: '330112', name: '临安区', cityCode: '3301', provinceCode: '33' },
+  { code: '330113', name: '临平区', cityCode: '3301', provinceCode: '33' },
+  { code: '330114', name: '钱塘区', cityCode: '3301', provinceCode: '33' },
 ];

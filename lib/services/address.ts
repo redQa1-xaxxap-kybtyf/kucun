@@ -4,12 +4,7 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-// 导入china-division包的完整数据
-import {
-  areas as chinaAreas,
-  cities as chinaCities,
-  provinces as chinaProvinces,
-} from 'china-division';
+// 使用完整的地址数据文件
 
 import type {
   AddressData,
@@ -23,7 +18,7 @@ import type {
  * 获取所有省份列表
  */
 export function getProvinces(): ProvinceData[] {
-  return chinaProvinces.map(province => ({
+  return provinces.map(province => ({
     code: province.code,
     name: province.name,
     type: 'province' as const,
@@ -34,7 +29,7 @@ export function getProvinces(): ProvinceData[] {
  * 根据省份代码获取城市列表
  */
 export function getCitiesByProvince(provinceCode: string): CityData[] {
-  return chinaCities
+  return cities
     .filter(city => city.provinceCode === provinceCode)
     .map(city => ({
       code: city.code,
@@ -49,7 +44,7 @@ export function getCitiesByProvince(provinceCode: string): CityData[] {
  * 根据城市代码获取区县列表
  */
 export function getDistrictsByCity(cityCode: string): DistrictData[] {
-  return chinaAreas
+  return areas
     .filter(area => area.cityCode === cityCode)
     .map(area => ({
       code: area.code,
@@ -65,7 +60,7 @@ export function getDistrictsByCity(cityCode: string): DistrictData[] {
  * 根据省份名称获取省份代码
  */
 export function getProvinceCodeByName(provinceName: string): string | null {
-  const province = chinaProvinces.find(p => p.name === provinceName);
+  const province = provinces.find(p => p.name === provinceName);
   return province ? province.code : null;
 }
 
@@ -76,7 +71,7 @@ export function getCityCodeByName(
   cityName: string,
   provinceCode: string
 ): string | null {
-  const city = chinaCities.find(
+  const city = cities.find(
     c => c.name === cityName && c.provinceCode === provinceCode
   );
   return city ? city.code : null;
@@ -89,7 +84,7 @@ export function getDistrictCodeByName(
   districtName: string,
   cityCode: string
 ): string | null {
-  const district = chinaAreas.find(
+  const district = areas.find(
     a => a.name === districtName && a.cityCode === cityCode
   );
   return district ? district.code : null;
@@ -143,7 +138,7 @@ export function searchAddress(keyword: string): AddressSearchResult[] {
   const lowerKeyword = keyword.toLowerCase();
 
   // 搜索省份
-  chinaProvinces.forEach(province => {
+  provinces.forEach(province => {
     if (province.name.toLowerCase().includes(lowerKeyword)) {
       results.push({
         province: {
@@ -158,9 +153,9 @@ export function searchAddress(keyword: string): AddressSearchResult[] {
   });
 
   // 搜索城市
-  chinaCities.forEach(city => {
+  cities.forEach(city => {
     if (city.name.toLowerCase().includes(lowerKeyword)) {
-      const province = chinaProvinces.find(p => p.code === city.provinceCode);
+      const province = provinces.find(p => p.code === city.provinceCode);
       if (province) {
         results.push({
           province: {
@@ -183,10 +178,10 @@ export function searchAddress(keyword: string): AddressSearchResult[] {
   });
 
   // 搜索区县
-  chinaAreas.forEach(area => {
+  areas.forEach(area => {
     if (area.name.toLowerCase().includes(lowerKeyword)) {
-      const city = chinaCities.find(c => c.code === area.cityCode);
-      const province = chinaProvinces.find(p => p.code === area.provinceCode);
+      const city = cities.find(c => c.code === area.cityCode);
+      const province = provinces.find(p => p.code === area.provinceCode);
 
       if (city && province) {
         results.push({
@@ -249,14 +244,14 @@ export function validateAddressData(address: AddressData): boolean {
   }
 
   // 验证省份是否存在
-  const provinceExists = chinaProvinces.some(p => p.name === address.province);
+  const provinceExists = provinces.some(p => p.name === address.province);
   if (!provinceExists) return false;
 
   // 验证城市是否属于该省份
   const provinceCode = getProvinceCodeByName(address.province);
   if (!provinceCode) return false;
 
-  const cityExists = chinaCities.some(
+  const cityExists = cities.some(
     c => c.name === address.city && c.provinceCode === provinceCode
   );
   if (!cityExists) return false;
@@ -265,7 +260,7 @@ export function validateAddressData(address: AddressData): boolean {
   const cityCode = getCityCodeByName(address.city, provinceCode);
   if (!cityCode) return false;
 
-  const districtExists = chinaAreas.some(
+  const districtExists = areas.some(
     a => a.name === address.district && a.cityCode === cityCode
   );
 

@@ -1,5 +1,6 @@
-import { areas } from '@/lib/data/address-data';
 import { NextRequest, NextResponse } from 'next/server';
+
+import { areas } from '@/lib/data/complete-address-data';
 
 export async function GET(request: NextRequest) {
   try {

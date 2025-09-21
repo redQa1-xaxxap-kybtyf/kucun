@@ -15,7 +15,13 @@ import {
   getProvinces,
   parseAddressString,
 } from '@/lib/services/address-client';
-import type { AddressData, AddressSelectorProps } from '@/lib/types/address';
+import type {
+  AddressData,
+  AddressSelectorProps,
+  CityData,
+  DistrictData,
+  ProvinceData,
+} from '@/lib/types/address';
 import { cn } from '@/lib/utils';
 
 import { AddressSelectorContent } from './content';
@@ -54,11 +60,13 @@ export const AddressSelector = React.forwardRef<
     }, [value]);
 
     // 状态管理
-    const [provinces, setProvinces] = React.useState<any[]>([]);
-    const [availableCities, setAvailableCities] = React.useState<any[]>([]);
-    const [availableDistricts, setAvailableDistricts] = React.useState<any[]>(
+    const [provinces, setProvinces] = React.useState<ProvinceData[]>([]);
+    const [availableCities, setAvailableCities] = React.useState<CityData[]>(
       []
     );
+    const [availableDistricts, setAvailableDistricts] = React.useState<
+      DistrictData[]
+    >([]);
     const [loading, setLoading] = React.useState(true);
 
     // 获取所有省份列表
@@ -68,7 +76,7 @@ export const AddressSelector = React.forwardRef<
           const data = await getProvinces();
           setProvinces(data);
         } catch (error) {
-          console.error('加载省份数据失败:', error);
+          // 加载省份数据失败，保持空数组状态
         } finally {
           setLoading(false);
         }
@@ -95,7 +103,7 @@ export const AddressSelector = React.forwardRef<
             setAvailableCities([]);
           }
         } catch (error) {
-          console.error('加载城市数据失败:', error);
+          // 加载城市数据失败，保持空数组状态
           setAvailableCities([]);
         }
       };
@@ -122,7 +130,7 @@ export const AddressSelector = React.forwardRef<
             setAvailableDistricts([]);
           }
         } catch (error) {
-          console.error('加载区县数据失败:', error);
+          // 加载区县数据失败，保持空数组状态
           setAvailableDistricts([]);
         }
       };
