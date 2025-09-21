@@ -61,6 +61,22 @@ model Customer {
   @@map("customers")
 }
 
+// 供应商表 - 供应商信息管理
+model Supplier {
+  id        String   @id @default(uuid())
+  name      String
+  phone     String?
+  address   String?
+  status    String   @default("active") // active, inactive
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@index([name])
+  @@index([phone])
+  @@index([status])
+  @@map("suppliers")
+}
+
 // 分类表 - 产品分类管理，支持层级结构
 model Category {
   id          String   @id @default(uuid())

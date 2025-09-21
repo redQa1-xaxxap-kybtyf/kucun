@@ -14,12 +14,13 @@ import {
   ShoppingCart,
   TrendingDown,
   TrendingUp,
+  Truck,
   Users,
   Warehouse,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -97,6 +98,12 @@ const navigationItems: NavigationItem[] = [
     title: '客户管理',
     href: '/customers',
     icon: Users,
+  },
+  {
+    id: 'suppliers',
+    title: '供应商管理',
+    href: '/suppliers',
+    icon: Truck,
   },
   {
     id: 'payments',
