@@ -8,6 +8,7 @@ import React from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
+import { EnhancedProductSelector } from '@/components/sales-orders/enhanced-product-selector';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,13 +21,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+
 import {
   Table,
   TableBody,
@@ -384,7 +379,9 @@ export function ERPSalesOrderForm({
                               name={`items.${index}.productId`}
                               render={({ field: productField }) => (
                                 <FormItem>
-                                  <Select
+                                  <EnhancedProductSelector
+                                    products={productsData?.data || []}
+                                    value={productField.value}
                                     onValueChange={value => {
                                       productField.onChange(value);
                                       const product = productsData?.data?.find(
@@ -397,31 +394,9 @@ export function ERPSalesOrderForm({
                                         );
                                       }
                                     }}
-                                    defaultValue={productField.value}
-                                  >
-                                    <FormControl>
-                                      <SelectTrigger className="h-7 text-xs">
-                                        <SelectValue placeholder="选择商品" />
-                                      </SelectTrigger>
-                                    </FormControl>
-                                    <SelectContent>
-                                      {productsData?.data?.map(product => (
-                                        <SelectItem
-                                          key={product.id}
-                                          value={product.id}
-                                        >
-                                          <div className="flex flex-col items-start">
-                                            <span className="text-xs font-medium">
-                                              {product.name}
-                                            </span>
-                                            <span className="text-xs text-muted-foreground">
-                                              ¥{product.price}
-                                            </span>
-                                          </div>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
+                                    placeholder="选择商品"
+                                    className="h-7 text-xs"
+                                  />
                                   <FormMessage className="text-xs" />
                                 </FormItem>
                               )}
