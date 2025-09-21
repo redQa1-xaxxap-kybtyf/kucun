@@ -6,6 +6,16 @@
 import { z } from 'zod';
 
 /**
+ * 地址验证Schema
+ */
+export const AddressSchema = z.object({
+  province: z.string().min(1, '请选择省份'),
+  city: z.string().min(1, '请选择城市'),
+  district: z.string().min(1, '请选择区县'),
+  detail: z.string().max(200, '详细地址不能超过200个字符').optional(),
+});
+
+/**
  * 创建客户Schema
  */
 export const CreateCustomerSchema = z.object({
@@ -22,7 +32,9 @@ export const CreateCustomerSchema = z.object({
       return /^1[3-9]\d{9}$/.test(val);
     }, '请输入正确的手机号码'),
 
-  address: z.string().max(500, '地址不能超过500个字符').optional(),
+  address: z
+    .union([AddressSchema, z.string().max(500, '地址不能超过500个字符')])
+    .optional(),
 
   extendedInfo: z.record(z.unknown()).optional(),
 });

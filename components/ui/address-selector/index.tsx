@@ -9,12 +9,16 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import {
+  getCitiesByProvince,
+  getDistrictsByCity,
+  getProvinces,
+  parseAddressString,
+} from '@/lib/services/address';
+import type { AddressData, AddressSelectorProps } from '@/lib/types/address';
 import { cn } from '@/lib/utils';
 
 import { AddressSelectorContent } from './content';
-import { CITIES, DISTRICTS } from './data';
-import type { AddressData, AddressSelectorProps } from './types';
-import { parseAddressString } from './utils';
 
 /**
  * 地址选择器组件
@@ -49,17 +53,22 @@ export const AddressSelector = React.forwardRef<
       return value;
     }, [value]);
 
+    // 获取所有省份列表
+    const provinces = React.useMemo(() => getProvinces(), []);
+
     // 获取可用的城市列表
     const availableCities = React.useMemo(() => {
       if (!currentAddress.province) return [];
-      return CITIES[currentAddress.province] || [];
-    }, [currentAddress.province]);
+      const province = provinces.find(p => p.name === currentAddress.province);
+      return province ? getCitiesByProvince(province.code) : [];
+    }, [currentAddress.province, provinces]);
 
     // 获取可用的区县列表
     const availableDistricts = React.useMemo(() => {
       if (!currentAddress.city) return [];
-      return DISTRICTS[currentAddress.city] || [];
-    }, [currentAddress.city]);
+      const city = availableCities.find(c => c.name === currentAddress.city);
+      return city ? getDistrictsByCity(city.code) : [];
+    }, [currentAddress.city, availableCities]);
 
     // 处理地址变更
     const handleAddressChange = React.useCallback(
@@ -86,6 +95,7 @@ export const AddressSelector = React.forwardRef<
       <div className={cn('space-y-4', className)} ref={ref}>
         <AddressSelectorContent
           currentAddress={currentAddress}
+          provinces={provinces}
           availableCities={availableCities}
           availableDistricts={availableDistricts}
           handleAddressChange={handleAddressChange}

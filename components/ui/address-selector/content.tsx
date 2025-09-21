@@ -8,15 +8,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-
-import { PROVINCES } from './data';
-import type { AddressData } from './types';
-import { formatAddressString } from './utils';
+import { formatAddressString } from '@/lib/services/address';
+import type {
+  AddressData,
+  CityData,
+  DistrictData,
+  ProvinceData,
+} from '@/lib/types/address';
 
 interface AddressSelectorContentProps {
   currentAddress: AddressData;
-  availableCities: string[];
-  availableDistricts: string[];
+  provinces: ProvinceData[];
+  availableCities: CityData[];
+  availableDistricts: DistrictData[];
   handleAddressChange: (field: keyof AddressData, value: string) => void;
   disabled: boolean;
 }
@@ -27,6 +31,7 @@ interface AddressSelectorContentProps {
  */
 export const AddressSelectorContent = ({
   currentAddress,
+  provinces,
   availableCities,
   availableDistricts,
   handleAddressChange,
@@ -47,9 +52,9 @@ export const AddressSelectorContent = ({
             <SelectValue placeholder="选择省份" />
           </SelectTrigger>
           <SelectContent>
-            {PROVINCES.map(province => (
-              <SelectItem key={province} value={province}>
-                {province}
+            {provinces.map(province => (
+              <SelectItem key={province.code} value={province.name}>
+                {province.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -69,8 +74,8 @@ export const AddressSelectorContent = ({
           </SelectTrigger>
           <SelectContent>
             {availableCities.map(city => (
-              <SelectItem key={city} value={city}>
-                {city}
+              <SelectItem key={city.code} value={city.name}>
+                {city.name}
               </SelectItem>
             ))}
           </SelectContent>
@@ -90,8 +95,8 @@ export const AddressSelectorContent = ({
           </SelectTrigger>
           <SelectContent>
             {availableDistricts.map(district => (
-              <SelectItem key={district} value={district}>
-                {district}
+              <SelectItem key={district.code} value={district.name}>
+                {district.name}
               </SelectItem>
             ))}
           </SelectContent>

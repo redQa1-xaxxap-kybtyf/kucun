@@ -6,6 +6,11 @@ import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
+import {
+  AddressSelector,
+  formatAddressString,
+  type AddressData,
+} from '@/components/ui/address-selector';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -135,8 +140,13 @@ export function ERPCustomerForm({
         id: initialData.id,
         name: data.name,
         phone: data.phone || '',
-        address: data.address || '',
-        extendedInfo: data.extendedInfo,
+        address:
+          typeof data.address === 'string'
+            ? data.address
+            : data.address
+              ? formatAddressString(data.address as AddressData)
+              : '',
+        extendedInfo: data.extendedInfo || {},
       };
       updateMutation.mutate(updateData);
     } else {
@@ -144,8 +154,13 @@ export function ERPCustomerForm({
       const createData = {
         name: data.name,
         phone: data.phone || '',
-        address: data.address || '',
-        extendedInfo: data.extendedInfo,
+        address:
+          typeof data.address === 'string'
+            ? data.address
+            : data.address
+              ? formatAddressString(data.address as AddressData)
+              : '',
+        extendedInfo: data.extendedInfo || {},
       };
       createMutation.mutate(createData);
     }
@@ -236,10 +251,15 @@ export function ERPCustomerForm({
                   <FormItem className="space-y-1">
                     <FormLabel className="text-xs">地址</FormLabel>
                     <FormControl>
-                      <Textarea
-                        placeholder="请输入客户地址"
-                        className="min-h-[60px] text-xs"
-                        {...field}
+                      <AddressSelector
+                        value={field.value}
+                        onChange={field.onChange}
+                        placeholder="请选择客户地址"
+                        className="text-xs"
+                        showLabel={false}
+                        disabled={
+                          createMutation.isPending || updateMutation.isPending
+                        }
                       />
                     </FormControl>
                     <FormMessage className="text-xs" />

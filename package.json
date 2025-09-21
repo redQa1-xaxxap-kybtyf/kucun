@@ -53,6 +53,7 @@
     "@tanstack/react-query-devtools": "^5.79.0",
     "@types/bcryptjs": "^2.4.6",
     "bcryptjs": "^3.0.2",
+    "china-division": "^2.7.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^1.1.1",
