@@ -1,36 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2 } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Edit, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { toast } from 'sonner';
 
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -41,15 +17,39 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
-import { 
-  getSuppliers, 
-  deleteSupplier, 
+import {
   batchDeleteSuppliers,
   batchUpdateSupplierStatus,
-  supplierQueryKeys 
+  deleteSupplier,
+  getSuppliers,
+  supplierQueryKeys,
 } from '@/lib/api/suppliers';
 import { formatSupplierStatus } from '@/lib/schemas/supplier';
 import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
@@ -63,17 +63,18 @@ export default function SuppliersPage() {
     page: 1,
     limit: 10,
     search: '',
-    status: undefined,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });
 
   // 选中的供应商
   const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
-  
+
   // 删除确认对话框
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(null);
+  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(
+    null
+  );
 
   // 批量删除确认对话框
   const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
@@ -87,13 +88,13 @@ export default function SuppliersPage() {
   // 删除供应商
   const deleteMutation = useMutation({
     mutationFn: deleteSupplier,
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(data.message || '供应商删除成功');
       queryClient.invalidateQueries({ queryKey: supplierQueryKeys.lists() });
       setDeleteDialogOpen(false);
       setSupplierToDelete(null);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || '删除供应商失败');
     },
   });
@@ -101,13 +102,13 @@ export default function SuppliersPage() {
   // 批量删除供应商
   const batchDeleteMutation = useMutation({
     mutationFn: batchDeleteSuppliers,
-    onSuccess: (result) => {
+    onSuccess: result => {
       toast.success(result.message);
       queryClient.invalidateQueries({ queryKey: supplierQueryKeys.lists() });
       setBatchDeleteDialogOpen(false);
       setSelectedSuppliers([]);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || '批量删除失败');
     },
   });
@@ -115,12 +116,12 @@ export default function SuppliersPage() {
   // 批量更新状态
   const batchUpdateStatusMutation = useMutation({
     mutationFn: batchUpdateSupplierStatus,
-    onSuccess: (result) => {
+    onSuccess: result => {
       toast.success(result.message);
       queryClient.invalidateQueries({ queryKey: supplierQueryKeys.lists() });
       setSelectedSuppliers([]);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || '批量更新状态失败');
     },
   });
@@ -132,10 +133,10 @@ export default function SuppliersPage() {
 
   // 处理状态筛选
   const handleStatusFilter = (status: string) => {
-    setQueryParams(prev => ({ 
-      ...prev, 
-      status: status === 'all' ? undefined : status as 'active' | 'inactive',
-      page: 1 
+    setQueryParams(prev => ({
+      ...prev,
+      status: status === 'all' ? undefined : (status as 'active' | 'inactive'),
+      page: 1,
     }));
   };
 
@@ -183,8 +184,10 @@ export default function SuppliersPage() {
 
   const suppliers = data?.data || [];
   const pagination = data?.pagination;
-  const isAllSelected = selectedSuppliers.length === suppliers.length && suppliers.length > 0;
-  const isPartialSelected = selectedSuppliers.length > 0 && selectedSuppliers.length < suppliers.length;
+  const isAllSelected =
+    selectedSuppliers.length === suppliers.length && suppliers.length > 0;
+  const isPartialSelected =
+    selectedSuppliers.length > 0 && selectedSuppliers.length < suppliers.length;
 
   if (error) {
     return (
@@ -197,7 +200,7 @@ export default function SuppliersPage() {
   }
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto space-y-6 py-6">
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
@@ -222,7 +225,7 @@ export default function SuppliersPage() {
                 <Input
                   placeholder="搜索供应商名称或电话..."
                   value={queryParams.search || ''}
-                  onChange={(e) => handleSearch(e.target.value)}
+                  onChange={e => handleSearch(e.target.value)}
                   className="pl-10"
                 />
               </div>
@@ -312,33 +315,39 @@ export default function SuppliersPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={7} className="py-8 text-center">
                     加载中...
                   </TableCell>
                 </TableRow>
               ) : suppliers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={7} className="py-8 text-center">
                     暂无供应商数据
                   </TableCell>
                 </TableRow>
               ) : (
-                suppliers.map((supplier) => (
+                suppliers.map(supplier => (
                   <TableRow key={supplier.id}>
                     <TableCell>
                       <Checkbox
                         checked={selectedSuppliers.includes(supplier.id)}
-                        onCheckedChange={(checked) => 
+                        onCheckedChange={checked =>
                           handleSelectSupplier(supplier.id, checked as boolean)
                         }
                         aria-label={`选择 ${supplier.name}`}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">{supplier.name}</TableCell>
+                    <TableCell className="font-medium">
+                      {supplier.name}
+                    </TableCell>
                     <TableCell>{supplier.phone || '-'}</TableCell>
                     <TableCell>{supplier.address || '-'}</TableCell>
                     <TableCell>
-                      <Badge variant={supplier.status === 'active' ? 'default' : 'secondary'}>
+                      <Badge
+                        variant={
+                          supplier.status === 'active' ? 'default' : 'secondary'
+                        }
+                      >
                         {formatSupplierStatus(supplier.status)}
                       </Badge>
                     </TableCell>
@@ -377,9 +386,10 @@ export default function SuppliersPage() {
 
           {/* 分页 */}
           {pagination && pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4">
+            <div className="mt-4 flex items-center justify-between">
               <div className="text-sm text-muted-foreground">
-                共 {pagination.total} 条记录，第 {pagination.page} / {pagination.totalPages} 页
+                共 {pagination.total} 条记录，第 {pagination.page} /{' '}
+                {pagination.totalPages} 页
               </div>
               <div className="flex gap-2">
                 <Button
@@ -430,12 +440,16 @@ export default function SuppliersPage() {
       </AlertDialog>
 
       {/* 批量删除确认对话框 */}
-      <AlertDialog open={batchDeleteDialogOpen} onOpenChange={setBatchDeleteDialogOpen}>
+      <AlertDialog
+        open={batchDeleteDialogOpen}
+        onOpenChange={setBatchDeleteDialogOpen}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>确认批量删除</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要删除选中的 {selectedSuppliers.length} 个供应商吗？此操作无法撤销。
+              确定要删除选中的 {selectedSuppliers.length}{' '}
+              个供应商吗？此操作无法撤销。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

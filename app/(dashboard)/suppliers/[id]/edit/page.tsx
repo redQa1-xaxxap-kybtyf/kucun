@@ -1,27 +1,26 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useQuery, useMutation } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
-import { toast } from 'sonner';
 import Link from 'next/link';
-import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { use, useEffect } from 'react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -29,27 +28,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
 
-import { getSupplier, updateSupplier, supplierQueryKeys } from '@/lib/api/suppliers';
-import { 
-  UpdateSupplierSchema, 
+import {
+  getSupplier,
+  supplierQueryKeys,
+  updateSupplier,
+} from '@/lib/api/suppliers';
+import {
+  UpdateSupplierSchema,
   supplierUpdateDefaults,
-  formatSupplierStatus,
-  type SupplierUpdateFormData 
+  type SupplierUpdateFormData,
 } from '@/lib/schemas/supplier';
 
 interface EditSupplierPageProps {
-  params: {
+  params: Promise<{
     id: string;
-  };
+  }>;
 }
 
 export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   const router = useRouter();
-  const { id } = params;
+  const { id } = use(params);
 
   // 获取供应商详情
-  const { data: supplierData, isLoading: isLoadingSupplier, error } = useQuery({
+  const {
+    data: supplierData,
+    isLoading: isLoadingSupplier,
+    error,
+  } = useQuery({
     queryKey: supplierQueryKeys.detail(id),
     queryFn: () => getSupplier(id),
   });
@@ -76,11 +83,11 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   // 更新供应商
   const updateMutation = useMutation({
     mutationFn: (data: SupplierUpdateFormData) => updateSupplier(id, data),
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success(data.message || '供应商更新成功');
       router.push('/suppliers');
     },
-    onError: (error) => {
+    onError: error => {
       toast.error(error.message || '更新供应商失败');
     },
   });
@@ -132,7 +139,7 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   const supplier = supplierData.data;
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto space-y-6 py-6">
       {/* 页面标题和导航 */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
@@ -143,7 +150,9 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
         </Button>
         <div>
           <h1 className="text-2xl font-bold">编辑供应商</h1>
-          <p className="text-muted-foreground">修改供应商 "{supplier.name}" 的信息</p>
+          <p className="text-muted-foreground">
+            修改供应商 "{supplier.name}" 的信息
+          </p>
         </div>
       </div>
 
@@ -155,7 +164,10 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
                 {/* 供应商名称 */}
                 <FormField
                   control={form.control}
@@ -245,9 +257,7 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
                           <SelectItem value="inactive">停用</SelectItem>
                         </SelectContent>
                       </Select>
-                      <FormDescription>
-                        供应商的当前状态
-                      </FormDescription>
+                      <FormDescription>供应商的当前状态</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -255,11 +265,7 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
 
                 {/* 提交按钮 */}
                 <div className="flex gap-4 pt-4">
-                  <Button
-                    type="submit"
-                    disabled={isLoading}
-                    className="flex-1"
-                  >
+                  <Button type="submit" disabled={isLoading} className="flex-1">
                     {isLoading ? '更新中...' : '更新供应商'}
                   </Button>
                   <Button
