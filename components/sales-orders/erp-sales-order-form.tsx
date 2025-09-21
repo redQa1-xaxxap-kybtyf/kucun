@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import React from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
+import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
 import { Button } from '@/components/ui/button';
 import {
@@ -79,8 +80,19 @@ export function ERPSalesOrderForm({
 
   // 数据查询
   const { data: customersData, isLoading: customersLoading } = useQuery({
-    queryKey: customerQueryKeys.list(),
-    queryFn: () => getCustomers(),
+    queryKey: customerQueryKeys.list({
+      page: 1,
+      limit: 100,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    }),
+    queryFn: () =>
+      getCustomers({
+        page: 1,
+        limit: 100,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      }),
   });
 
   const { data: productsData, isLoading: _productsLoading } = useQuery({
@@ -152,6 +164,21 @@ export function ERPSalesOrderForm({
     generateOrderNumber();
   }, []);
 
+  // 处理客户创建成功
+  const handleCustomerCreated = (customer: {
+    id: string;
+    name: string;
+    phone?: string;
+  }) => {
+    // 客户选择器会自动选择新创建的客户
+    // 这里可以添加额外的处理逻辑，比如显示成功提示
+    toast({
+      title: '客户创建成功',
+      description: `客户 "${customer.name}" 已创建并自动选择`,
+      variant: 'success',
+    });
+  };
+
   // 提交表单
   const onSubmit = (data: CreateSalesOrderData) => {
     // 不传递orderNumber，让后端自动生成
@@ -212,33 +239,18 @@ export function ERPSalesOrderForm({
                         <FormLabel className="text-xs text-muted-foreground">
                           客户名称 <span className="text-destructive">*</span>
                         </FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                          disabled={customersLoading}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-6 text-xs">
-                              <SelectValue placeholder="请选择客户" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {customersData?.data?.map(customer => (
-                              <SelectItem key={customer.id} value={customer.id}>
-                                <div className="flex flex-col items-start">
-                                  <span className="text-xs font-medium">
-                                    {customer.name}
-                                  </span>
-                                  {customer.phone && (
-                                    <span className="text-xs text-muted-foreground">
-                                      {customer.phone}
-                                    </span>
-                                  )}
-                                </div>
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
+                        <FormControl>
+                          <CustomerSelector
+                            customers={customersData?.data || []}
+                            value={field.value}
+                            onValueChange={field.onChange}
+                            placeholder="搜索并选择客户"
+                            disabled={customersLoading}
+                            isLoading={customersLoading}
+                            onCustomerCreated={handleCustomerCreated}
+                            className="h-8"
+                          />
+                        </FormControl>
                         <FormMessage className="text-xs" />
                       </FormItem>
                     )}
