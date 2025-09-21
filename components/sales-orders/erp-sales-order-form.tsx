@@ -210,8 +210,9 @@ export function ERPSalesOrderForm({
     },
   });
 
-  // 计算总金额
-  const totalAmount = fields.reduce(
+  // 计算总金额：使用实时的表单值
+  const watchedItems = form.watch('items') || [];
+  const totalAmount = watchedItems.reduce(
     (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
     0
   );
@@ -472,9 +473,15 @@ export function ERPSalesOrderForm({
                       const _selectedProduct = productsData?.data?.find(
                         p => p.id === field.productId
                       );
-                      // 金额计算：使用系统数量（片数）× 单价
+                      // 金额计算：使用实时的表单值
+                      const watchedQuantity = form.watch(
+                        `items.${index}.quantity`
+                      );
+                      const watchedUnitPrice = form.watch(
+                        `items.${index}.unitPrice`
+                      );
                       const itemAmount =
-                        (field.quantity || 0) * (field.unitPrice || 0);
+                        (watchedQuantity || 0) * (watchedUnitPrice || 0);
 
                       return (
                         <TableRow key={field.id} className="h-10">
