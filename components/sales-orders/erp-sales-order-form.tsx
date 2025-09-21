@@ -276,6 +276,28 @@ export function ERPSalesOrderForm({
     return sum + (item.quantity || 0) * piecePriceForCalculation;
   }, 0);
 
+  // 重量格式化工具函数
+  const formatWeight = (totalKg: number): string => {
+    if (totalKg < 1000) {
+      // 小于1吨：显示为kg，整数显示，四舍五入
+      return `${Math.round(totalKg)}kg`;
+    } else {
+      // 大于等于1吨：显示为吨，保留1位小数，四舍五入
+      const tons = totalKg / 1000;
+      return `${Math.round(tons * 10) / 10}吨`;
+    }
+  };
+
+  // 计算总重量：基于系统数量（片数）和产品重量
+  const totalWeight = watchedItems.reduce((sum, item) => {
+    // 查找对应的产品数据
+    const product = productsData?.data?.find(p => p.id === item.productId);
+    if (!product || !product.weight) return sum;
+
+    // 重量 = 系统数量（片数） × 产品重量
+    return sum + (item.quantity || 0) * product.weight;
+  }, 0);
+
   // 添加商品
   const addOrderItem = () => {
     append({
@@ -919,7 +941,7 @@ export function ERPSalesOrderForm({
               <h3 className="text-sm font-medium">汇总信息</h3>
             </div>
             <div className="p-3">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div className="flex items-center justify-between rounded border bg-blue-50/50 px-3 py-2">
                   <span className="text-xs text-muted-foreground">
                     商品种类
@@ -936,6 +958,12 @@ export function ERPSalesOrderForm({
                       0
                     )}{' '}
                     件
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded border bg-purple-50/50 px-3 py-2">
+                  <span className="text-xs text-muted-foreground">总重量</span>
+                  <span className="text-sm font-semibold text-purple-600">
+                    {formatWeight(totalWeight)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded border bg-orange-50/50 px-3 py-2">
