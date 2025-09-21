@@ -88,12 +88,36 @@ export function EnhancedProductSelector({
     }
   };
 
+  // 单位映射表：将英文单位转换为中文
+  const unitMapping: Record<string, string> = {
+    piece: '件',
+    pieces: '件',
+    box: '箱',
+    boxes: '箱',
+    pack: '包',
+    packs: '包',
+    set: '套',
+    sets: '套',
+    unit: '个',
+    units: '个',
+    kg: '公斤',
+    g: '克',
+    m: '米',
+    cm: '厘米',
+    mm: '毫米',
+    m2: '平方米',
+    m3: '立方米',
+    l: '升',
+    ml: '毫升',
+  };
+
   // 格式化库存显示
   const formatInventory = (product: Product) => {
     if (!product.inventory) return '未知';
 
     const available = product.inventory.availableInventory || 0;
-    return `${available}${product.unit}`;
+    const chineseUnit = unitMapping[product.unit.toLowerCase()] || product.unit;
+    return `${available}${chineseUnit}`;
   };
 
   return (
@@ -207,7 +231,10 @@ export function EnhancedProductSelector({
 
                         {product.piecesPerUnit && product.piecesPerUnit > 1 && (
                           <div className="text-muted-foreground">
-                            每{product.unit}：{product.piecesPerUnit}片
+                            每
+                            {unitMapping[product.unit.toLowerCase()] ||
+                              product.unit}
+                            ：{product.piecesPerUnit}片
                           </div>
                         )}
                       </div>
