@@ -3,7 +3,6 @@
 import { Check, ChevronsUpDown, Plus, Search, User } from 'lucide-react';
 import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -79,14 +78,6 @@ export function CustomerSelector({
     onValueChange?.(customerId);
     setOpen(false);
     setSearchValue('');
-  };
-
-  // 获取客户显示信息
-  const getCustomerDisplayInfo = (customer: Customer) => {
-    const info = [];
-    if (customer.phone) info.push(customer.phone);
-    if (customer.email) info.push(customer.email);
-    return info.join(' • ');
   };
 
   // 处理新增客户
@@ -176,7 +167,6 @@ export function CustomerSelector({
               <CommandGroup>
                 {filteredCustomers.map(customer => {
                   const isSelected = value === customer.id;
-                  const displayInfo = getCustomerDisplayInfo(customer);
 
                   return (
                     <CommandItem
@@ -193,27 +183,20 @@ export function CustomerSelector({
                       />
 
                       <div className="flex-1 space-y-1">
-                        {/* 客户基本信息 */}
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{customer.name}</span>
-                          {customer.phone && (
-                            <Badge variant="outline" className="text-xs">
-                              {customer.phone}
-                            </Badge>
-                          )}
-                        </div>
+                        {/* 客户名称 */}
+                        <div className="font-medium">{customer.name}</div>
 
-                        {/* 客户详细信息 */}
-                        {displayInfo && (
+                        {/* 客户电话 */}
+                        {customer.phone && (
                           <div className="text-xs text-muted-foreground">
-                            {displayInfo}
+                            {customer.phone}
                           </div>
                         )}
 
                         {/* 客户地址 */}
                         {customer.address && (
                           <div className="text-xs text-muted-foreground">
-                            地址：{customer.address}
+                            {customer.address}
                           </div>
                         )}
                       </div>
