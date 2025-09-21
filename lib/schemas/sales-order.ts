@@ -64,7 +64,8 @@ export const SalesOrderItemSchema = z.object({
     .number()
     .min(0.01, '单价必须大于0')
     .max(999999.99, '单价不能超过999,999.99')
-    .multipleOf(0.01, '单价最多保留2位小数'),
+    .multipleOf(0.01, '单价最多保留2位小数')
+    .optional(),
 
   piecesPerUnit: z
     .number()
@@ -257,8 +258,9 @@ export function validateOrderNumber(orderNumber: string): boolean {
  */
 export function calculateItemSubtotal(
   quantity: number,
-  unitPrice: number
+  unitPrice: number | undefined
 ): number {
+  if (!unitPrice || unitPrice <= 0) return 0;
   return Math.round(quantity * unitPrice * 100) / 100;
 }
 
@@ -269,7 +271,9 @@ export function calculateOrderTotal(items: SalesOrderItemData[]): number {
   return (
     Math.round(
       items
-        .filter(item => item.quantity > 0 && item.unitPrice > 0)
+        .filter(
+          item => item.quantity > 0 && item.unitPrice && item.unitPrice > 0
+        )
         .reduce(
           (total, item) =>
             total + calculateItemSubtotal(item.quantity, item.unitPrice),
@@ -289,7 +293,7 @@ export function validateOrderItems(items: SalesOrderItemData[]): boolean {
     item =>
       item.productId &&
       item.quantity > 0 &&
-      item.unitPrice >= 0 &&
+      (item.unitPrice === undefined || item.unitPrice >= 0) &&
       item.subtotal >= 0
   );
 }

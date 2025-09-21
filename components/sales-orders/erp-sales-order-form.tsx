@@ -225,7 +225,7 @@ export function ERPSalesOrderForm({
       displayUnit: '片' as const,
       displayQuantity: 1,
       quantity: 1,
-      unitPrice: 0,
+      unitPrice: undefined, // 改为undefined，避免默认显示0
       piecesPerUnit: undefined,
       remarks: '',
     });
@@ -472,6 +472,7 @@ export function ERPSalesOrderForm({
                       const _selectedProduct = productsData?.data?.find(
                         p => p.id === field.productId
                       );
+                      // 金额计算：使用系统数量（片数）× 单价
                       const itemAmount =
                         (field.quantity || 0) * (field.unitPrice || 0);
 
@@ -724,12 +725,16 @@ export function ERPSalesOrderForm({
                                       step="0.01"
                                       placeholder="单价"
                                       className="h-7 text-xs"
-                                      {...priceField}
-                                      onChange={e =>
+                                      value={priceField.value || ''}
+                                      onChange={e => {
+                                        const value = e.target.value;
+                                        // 如果输入为空，设置为undefined；否则转换为数字
                                         priceField.onChange(
-                                          Number(e.target.value)
-                                        )
-                                      }
+                                          value === ''
+                                            ? undefined
+                                            : Number(value)
+                                        );
+                                      }}
                                     />
                                   </FormControl>
                                   <FormMessage className="text-xs" />
