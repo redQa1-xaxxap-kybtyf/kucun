@@ -8,7 +8,6 @@ import { useForm } from 'react-hook-form';
 
 import {
   AddressSelector,
-  formatAddressString,
   type AddressData,
 } from '@/components/ui/address-selector';
 import { Button } from '@/components/ui/button';
@@ -32,6 +31,7 @@ import {
   CreateCustomerSchema,
   type CreateCustomerData,
 } from '@/lib/schemas/customer';
+import { formatAddressString } from '@/lib/services/address-client';
 import type { Customer, CustomerUpdateInput } from '@/lib/types/customer';
 
 interface ERPCustomerFormProps {

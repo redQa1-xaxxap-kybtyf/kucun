@@ -1,10 +1,11 @@
 // 地址选择器组件 - 统一入口文件
-export { AddressSelector } from './address-selector/index';
-export type {
-  AddressData,
-  OptionalAddressData,
-} from './address-selector/types';
 export {
   formatAddressString,
   parseAddressString,
-} from './address-selector/utils';
+} from '@/lib/services/address-client';
+export type {
+  AddressData,
+  AddressSelectorProps,
+  OptionalAddressData,
+} from '@/lib/types/address';
+export { AddressSelector } from './address-selector/index';

@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { formatAddressString } from '@/lib/services/address';
+import { formatAddressString } from '@/lib/services/address-client';
 import type {
   AddressData,
   CityData,

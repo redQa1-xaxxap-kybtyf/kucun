@@ -66,8 +66,11 @@ export function CustomerEditDialog({
 
   // 获取客户详情
   const { data: customer, isLoading: isLoadingCustomer } = useQuery({
-    queryKey: customerQueryKeys.detail(customerId!),
-    queryFn: () => getCustomer(customerId!),
+    queryKey: customerId ? customerQueryKeys.detail(customerId) : [],
+    queryFn: () => {
+      if (!customerId) throw new Error('Customer ID is required');
+      return getCustomer(customerId);
+    },
     enabled: !!customerId && open,
   });
 
@@ -94,8 +97,10 @@ export function CustomerEditDialog({
 
   // 更新客户信息
   const updateMutation = useMutation({
-    mutationFn: (data: CustomerUpdateInput) =>
-      updateCustomer(customerId!, data),
+    mutationFn: (data: CustomerUpdateInput) => {
+      if (!customerId) throw new Error('Customer ID is required');
+      return updateCustomer(customerId, data);
+    },
     onSuccess: () => {
       toast({
         title: '更新成功',
@@ -106,9 +111,11 @@ export function CustomerEditDialog({
       queryClient.invalidateQueries({
         queryKey: customerQueryKeys.lists(),
       });
-      queryClient.invalidateQueries({
-        queryKey: customerQueryKeys.detail(customerId!),
-      });
+      if (customerId) {
+        queryClient.invalidateQueries({
+          queryKey: customerQueryKeys.detail(customerId),
+        });
+      }
 
       onOpenChange(false);
     },
@@ -122,8 +129,17 @@ export function CustomerEditDialog({
   });
 
   const onSubmit = (data: EditFormData) => {
+    if (!customerId) {
+      toast({
+        title: '错误',
+        description: '客户ID不能为空',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     updateMutation.mutate({
-      id: customerId!,
+      id: customerId,
       ...data,
     });
   };
