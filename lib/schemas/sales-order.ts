@@ -40,13 +40,25 @@ export const SalesOrderItemSchema = z.object({
     .optional()
     .or(z.literal('')),
 
-  unit: z.string().max(20, '单位不能超过20个字符').optional().or(z.literal('')),
+  // 用户界面显示的单位（片或件）
+  displayUnit: z.enum(['片', '件']).default('片'),
 
+  // 用户界面输入的数量（根据displayUnit）
+  displayQuantity: z
+    .number()
+    .min(0.01, '数量必须大于0')
+    .max(999999.99, '数量不能超过999,999.99')
+    .multipleOf(0.01, '数量最多保留2位小数'),
+
+  // 系统内部存储的数量（始终以片为单位）
   quantity: z
     .number()
     .min(0.01, '数量必须大于0')
     .max(999999.99, '数量不能超过999,999.99')
     .multipleOf(0.01, '数量最多保留2位小数'),
+
+  // 保留原有的unit字段用于兼容性（从产品数据获取）
+  unit: z.string().max(20, '单位不能超过20个字符').optional().or(z.literal('')),
 
   unitPrice: z
     .number()

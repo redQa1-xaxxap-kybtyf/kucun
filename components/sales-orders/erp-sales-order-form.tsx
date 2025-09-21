@@ -46,6 +46,7 @@ import {
   CreateSalesOrderSchema,
   type CreateSalesOrderData,
 } from '@/lib/schemas/sales-order';
+import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
 
 interface ERPSalesOrderFormProps {
   onSuccess?: (order: unknown) => void;
@@ -85,6 +86,70 @@ export function ERPSalesOrderForm({
     m3: '立方米',
     l: '升',
     ml: '毫升',
+  };
+
+  // 单位转换工具函数
+  const convertQuantity = {
+    // 片转件：数量 ÷ 每件片数
+    piecesToUnits: (pieces: number, piecesPerUnit: number): number => {
+      if (piecesPerUnit <= 0) return pieces;
+      return Math.round((pieces / piecesPerUnit) * 100) / 100; // 保留2位小数
+    },
+
+    // 件转片：数量 × 每件片数
+    unitsToPieces: (units: number, piecesPerUnit: number): number => {
+      if (piecesPerUnit <= 0) return units;
+      return Math.round(units * piecesPerUnit * 100) / 100; // 保留2位小数
+    },
+
+    // 根据显示单位转换为片数（系统存储单位）
+    toSystemQuantity: (
+      displayQuantity: number,
+      displayUnit: '片' | '件',
+      piecesPerUnit: number
+    ): number => {
+      if (displayUnit === '片') {
+        return displayQuantity;
+      } else {
+        return convertQuantity.unitsToPieces(displayQuantity, piecesPerUnit);
+      }
+    },
+
+    // 根据系统片数转换为显示数量
+    toDisplayQuantity: (
+      systemQuantity: number,
+      displayUnit: '片' | '件',
+      piecesPerUnit: number
+    ): number => {
+      if (displayUnit === '片') {
+        return systemQuantity;
+      } else {
+        return convertQuantity.piecesToUnits(systemQuantity, piecesPerUnit);
+      }
+    },
+  };
+
+  // 生成备注说明
+  const generateRemarksText = (
+    totalPieces: number,
+    piecesPerUnit: number
+  ): string => {
+    if (piecesPerUnit <= 0 || totalPieces <= 0) return '';
+
+    try {
+      const result = calculatePieceDisplay(
+        Math.floor(totalPieces),
+        piecesPerUnit
+      );
+      // 只有当不是整件时才生成备注
+      if (result.remainingPieces > 0) {
+        return result.displayText;
+      }
+      return '';
+    } catch (error) {
+      console.error('生成备注失败:', error);
+      return '';
+    }
   };
 
   // 表单状态
@@ -157,6 +222,8 @@ export function ERPSalesOrderForm({
       productId: '',
       specification: '',
       unit: '',
+      displayUnit: '片' as const,
+      displayQuantity: 1,
       quantity: 1,
       unitPrice: 0,
       piecesPerUnit: undefined,
@@ -447,6 +514,24 @@ export function ERPSalesOrderForm({
                                           `items.${index}.piecesPerUnit`,
                                           product.piecesPerUnit || undefined
                                         );
+                                        // 初始化新的单位和数量字段
+                                        form.setValue(
+                                          `items.${index}.displayUnit`,
+                                          '片'
+                                        );
+                                        form.setValue(
+                                          `items.${index}.displayQuantity`,
+                                          1
+                                        );
+                                        form.setValue(
+                                          `items.${index}.quantity`,
+                                          1
+                                        );
+                                        // 清空备注，让用户手动输入或自动生成
+                                        form.setValue(
+                                          `items.${index}.remarks`,
+                                          ''
+                                        );
                                       }
                                     }}
                                     placeholder="选择商品"
@@ -481,17 +566,74 @@ export function ERPSalesOrderForm({
                           <TableCell className="min-w-[60px]">
                             <FormField
                               control={form.control}
-                              name={`items.${index}.unit`}
-                              render={({ field: unitField }) => (
+                              name={`items.${index}.displayUnit`}
+                              render={({ field: displayUnitField }) => (
                                 <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="单位"
-                                      className="h-7 text-xs"
-                                      readOnly
-                                      {...unitField}
-                                    />
-                                  </FormControl>
+                                  <Select
+                                    onValueChange={value => {
+                                      const newDisplayUnit = value as
+                                        | '片'
+                                        | '件';
+                                      const currentDisplayQuantity =
+                                        form.getValues(
+                                          `items.${index}.displayQuantity`
+                                        ) || 1;
+                                      const piecesPerUnit =
+                                        form.getValues(
+                                          `items.${index}.piecesPerUnit`
+                                        ) || 1;
+
+                                      // 更新显示单位
+                                      displayUnitField.onChange(newDisplayUnit);
+
+                                      // 计算新的显示数量（从当前系统数量转换）
+                                      const currentSystemQuantity =
+                                        form.getValues(
+                                          `items.${index}.quantity`
+                                        ) || 1;
+                                      const newDisplayQuantity =
+                                        convertQuantity.toDisplayQuantity(
+                                          currentSystemQuantity,
+                                          newDisplayUnit,
+                                          piecesPerUnit
+                                        );
+
+                                      // 更新显示数量
+                                      form.setValue(
+                                        `items.${index}.displayQuantity`,
+                                        newDisplayQuantity
+                                      );
+
+                                      // 生成备注（如果需要）
+                                      const currentRemarks =
+                                        form.getValues(
+                                          `items.${index}.remarks`
+                                        ) || '';
+                                      if (!currentRemarks.trim()) {
+                                        const remarksText = generateRemarksText(
+                                          currentSystemQuantity,
+                                          piecesPerUnit
+                                        );
+                                        if (remarksText) {
+                                          form.setValue(
+                                            `items.${index}.remarks`,
+                                            remarksText
+                                          );
+                                        }
+                                      }
+                                    }}
+                                    value={displayUnitField.value}
+                                  >
+                                    <FormControl>
+                                      <SelectTrigger className="h-7 text-xs">
+                                        <SelectValue placeholder="单位" />
+                                      </SelectTrigger>
+                                    </FormControl>
+                                    <SelectContent>
+                                      <SelectItem value="片">片</SelectItem>
+                                      <SelectItem value="件">件</SelectItem>
+                                    </SelectContent>
+                                  </Select>
                                   <FormMessage className="text-xs" />
                                 </FormItem>
                               )}
@@ -501,21 +643,66 @@ export function ERPSalesOrderForm({
                           <TableCell className="min-w-[80px]">
                             <FormField
                               control={form.control}
-                              name={`items.${index}.quantity`}
-                              render={({ field: quantityField }) => (
+                              name={`items.${index}.displayQuantity`}
+                              render={({ field: displayQuantityField }) => (
                                 <FormItem>
                                   <FormControl>
                                     <Input
                                       type="number"
-                                      min="1"
+                                      min="0.01"
+                                      step="0.01"
                                       placeholder="数量"
                                       className="h-7 text-xs"
-                                      {...quantityField}
-                                      onChange={e =>
-                                        quantityField.onChange(
-                                          Number(e.target.value)
-                                        )
-                                      }
+                                      value={displayQuantityField.value || ''}
+                                      onChange={e => {
+                                        const newDisplayQuantity = Number(
+                                          e.target.value
+                                        );
+                                        const displayUnit =
+                                          form.getValues(
+                                            `items.${index}.displayUnit`
+                                          ) || '片';
+                                        const piecesPerUnit =
+                                          form.getValues(
+                                            `items.${index}.piecesPerUnit`
+                                          ) || 1;
+
+                                        // 更新显示数量
+                                        displayQuantityField.onChange(
+                                          newDisplayQuantity
+                                        );
+
+                                        // 计算并更新系统数量（片数）
+                                        const systemQuantity =
+                                          convertQuantity.toSystemQuantity(
+                                            newDisplayQuantity,
+                                            displayUnit,
+                                            piecesPerUnit
+                                          );
+                                        form.setValue(
+                                          `items.${index}.quantity`,
+                                          systemQuantity
+                                        );
+
+                                        // 自动生成备注（如果用户没有手动输入）
+                                        const currentRemarks =
+                                          form.getValues(
+                                            `items.${index}.remarks`
+                                          ) || '';
+                                        if (!currentRemarks.trim()) {
+                                          const remarksText =
+                                            generateRemarksText(
+                                              systemQuantity,
+                                              piecesPerUnit
+                                            );
+                                          if (remarksText) {
+                                            form.setValue(
+                                              `items.${index}.remarks`,
+                                              remarksText
+                                            );
+                                          }
+                                        }
+                                      }}
                                     />
                                   </FormControl>
                                   <FormMessage className="text-xs" />
