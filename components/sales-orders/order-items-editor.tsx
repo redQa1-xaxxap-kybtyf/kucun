@@ -5,7 +5,7 @@ import { Calculator, Package, Plus, Trash2 } from 'lucide-react';
 import { useFieldArray, useWatch, type Control } from 'react-hook-form';
 
 // UI Components
-import { ProductSelector } from '@/components/products/product-selector';
+import { EnhancedProductSelector } from '@/components/sales-orders/enhanced-product-selector';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,6 +30,8 @@ import {
   type SalesOrderItemData,
 } from '@/lib/schemas/sales-order';
 import type { Product } from '@/lib/types/product';
+
+// API
 
 // API and Types
 type SalesOrderItemCreateFormData = SalesOrderItemData;
@@ -60,6 +62,14 @@ export function OrderItemsEditor({
     control,
     name,
   });
+
+  // 获取产品列表（包含库存信息）
+  const { data: productsResponse } = useQuery({
+    queryKey: productQueryKeys.list({ status: 'active', limit: 1000 }),
+    queryFn: () => getProducts({ status: 'active', limit: 1000 }),
+  });
+
+  const products = productsResponse?.data || [];
 
   // 监听订单明细变化以计算总金额
   const watchedItems = useWatch({
@@ -159,6 +169,7 @@ export function OrderItemsEditor({
                     disabled={disabled}
                     isDeleted={isDeleted}
                     mode={mode}
+                    products={products}
                   />
                 );
               })}
@@ -207,6 +218,7 @@ interface OrderItemRowProps {
   disabled?: boolean;
   isDeleted?: boolean;
   _mode?: 'create' | 'edit';
+  products: Product[];
 }
 
 // 订单明细行组件
@@ -219,6 +231,7 @@ function OrderItemRow({
   disabled = false,
   isDeleted = false,
   _mode = 'create',
+  products,
 }: OrderItemRowProps) {
   // 监听当前行的数据变化
   const watchedItem = useWatch({
@@ -286,12 +299,27 @@ function OrderItemRow({
           {/* 第一行：产品选择 */}
           <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
             <div className="lg:col-span-12">
-              <ProductSelector
-                label="选择产品"
-                placeholder="搜索产品..."
-                disabled={disabled}
-                onValueChange={() => {}}
-                onProductChange={handleProductChange}
+              <FormField
+                control={control}
+                name={`${name}.productId`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>选择产品</FormLabel>
+                    <FormControl>
+                      <EnhancedProductSelector
+                        products={products}
+                        value={field.value}
+                        onValueChange={value => {
+                          field.onChange(value);
+                          handleProductChange(value);
+                        }}
+                        placeholder="搜索产品..."
+                        disabled={disabled}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
               />
             </div>
           </div>
