@@ -128,16 +128,9 @@ export function InventoryChecker({
     return null;
   }
 
-  // 如果所有商品库存都充足，显示简化版本
+  // 如果所有商品库存都充足，完全隐藏库存检查组件
   if (stats.errors === 0 && stats.warnings === 0) {
-    return (
-      <Alert className="border-green-200 bg-green-50">
-        <CheckCircle className="h-4 w-4 text-green-600" />
-        <AlertDescription className="text-green-800">
-          所有商品库存充足，可以正常下单
-        </AlertDescription>
-      </Alert>
-    );
+    return null;
   }
 
   // 只有在存在库存问题时才显示详细信息
