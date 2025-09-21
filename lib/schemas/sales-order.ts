@@ -34,6 +34,14 @@ export const SalesOrderItemSchema = z.object({
     .optional()
     .or(z.literal('')),
 
+  specification: z
+    .string()
+    .max(100, '规格不能超过100个字符')
+    .optional()
+    .or(z.literal('')),
+
+  unit: z.string().max(20, '单位不能超过20个字符').optional().or(z.literal('')),
+
   quantity: z
     .number()
     .min(0.01, '数量必须大于0')
@@ -45,6 +53,12 @@ export const SalesOrderItemSchema = z.object({
     .min(0.01, '单价必须大于0')
     .max(999999.99, '单价不能超过999,999.99')
     .multipleOf(0.01, '单价最多保留2位小数'),
+
+  remarks: z
+    .string()
+    .max(200, '备注不能超过200个字符')
+    .optional()
+    .or(z.literal('')),
 
   subtotal: z.number().min(0, '小计不能为负数').optional(),
 });

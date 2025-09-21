@@ -64,6 +64,29 @@ export function ERPSalesOrderForm({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // 单位映射表：将英文单位转换为中文
+  const unitMapping: Record<string, string> = {
+    piece: '件',
+    pieces: '件',
+    box: '箱',
+    boxes: '箱',
+    pack: '包',
+    packs: '包',
+    set: '套',
+    sets: '套',
+    unit: '个',
+    units: '个',
+    kg: '公斤',
+    g: '克',
+    m: '米',
+    cm: '厘米',
+    mm: '毫米',
+    m2: '平方米',
+    m3: '立方米',
+    l: '升',
+    ml: '毫升',
+  };
+
   // 表单状态
   const form = useForm<CreateSalesOrderData>({
     resolver: zodResolver(CreateSalesOrderSchema),
@@ -132,8 +155,11 @@ export function ERPSalesOrderForm({
   const addOrderItem = () => {
     append({
       productId: '',
+      specification: '',
+      unit: '',
       quantity: 1,
       unitPrice: 0,
+      remarks: '',
     });
   };
 
@@ -363,9 +389,12 @@ export function ERPSalesOrderForm({
                     <TableRow className="bg-muted/20">
                       <TableHead className="h-8 text-xs">序号</TableHead>
                       <TableHead className="h-8 text-xs">商品名称</TableHead>
+                      <TableHead className="h-8 text-xs">规格</TableHead>
                       <TableHead className="h-8 text-xs">数量</TableHead>
+                      <TableHead className="h-8 text-xs">单位</TableHead>
                       <TableHead className="h-8 text-xs">单价</TableHead>
                       <TableHead className="h-8 text-xs">金额</TableHead>
+                      <TableHead className="h-8 text-xs">备注</TableHead>
                       <TableHead className="h-8 text-xs">操作</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -395,15 +424,48 @@ export function ERPSalesOrderForm({
                                         p => p.id === value
                                       );
                                       if (product) {
+                                        // 自动填充产品相关信息
                                         form.setValue(
                                           `items.${index}.unitPrice`,
                                           product.price
+                                        );
+                                        form.setValue(
+                                          `items.${index}.specification`,
+                                          product.specification || ''
+                                        );
+                                        form.setValue(
+                                          `items.${index}.unit`,
+                                          unitMapping[
+                                            product.unit?.toLowerCase()
+                                          ] ||
+                                            product.unit ||
+                                            ''
                                         );
                                       }
                                     }}
                                     placeholder="选择商品"
                                     className="h-7 text-xs"
                                   />
+                                  <FormMessage className="text-xs" />
+                                </FormItem>
+                              )}
+                            />
+                          </TableCell>
+                          {/* 规格列 */}
+                          <TableCell className="min-w-[100px]">
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.specification`}
+                              render={({ field: specField }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="规格"
+                                      className="h-7 text-xs"
+                                      readOnly
+                                      {...specField}
+                                    />
+                                  </FormControl>
                                   <FormMessage className="text-xs" />
                                 </FormItem>
                               )}
@@ -427,6 +489,26 @@ export function ERPSalesOrderForm({
                                           Number(e.target.value)
                                         )
                                       }
+                                    />
+                                  </FormControl>
+                                  <FormMessage className="text-xs" />
+                                </FormItem>
+                              )}
+                            />
+                          </TableCell>
+                          {/* 单位列 */}
+                          <TableCell className="min-w-[60px]">
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.unit`}
+                              render={({ field: unitField }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="单位"
+                                      className="h-7 text-xs"
+                                      readOnly
+                                      {...unitField}
                                     />
                                   </FormControl>
                                   <FormMessage className="text-xs" />
@@ -462,6 +544,25 @@ export function ERPSalesOrderForm({
                           </TableCell>
                           <TableCell className="text-xs font-medium">
                             ¥{itemAmount.toFixed(2)}
+                          </TableCell>
+                          {/* 备注列 */}
+                          <TableCell className="min-w-[120px]">
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.remarks`}
+                              render={({ field: remarksField }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="备注信息"
+                                      className="h-7 text-xs"
+                                      {...remarksField}
+                                    />
+                                  </FormControl>
+                                  <FormMessage className="text-xs" />
+                                </FormItem>
+                              )}
+                            />
                           </TableCell>
                           <TableCell>
                             <Button
