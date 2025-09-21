@@ -229,7 +229,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
   // 表单提交
   const onSubmit = (data: CreateSalesOrderData) => {
     // 不传递orderNumber，让后端自动生成，构建销售订单数据
-    const { orderNumber, ...submitData } = data;
+    const { orderNumber: _orderNumber, ...submitData } = data;
     const orderData = {
       ...submitData,
       totalAmount,

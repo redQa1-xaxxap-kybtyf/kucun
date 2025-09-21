@@ -14,7 +14,7 @@ export default function CreateSalesOrderPage() {
   return (
     <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
       <ERPSalesOrderForm
-        onSuccess={(order: any) => {
+        onSuccess={(order: { id: string }) => {
           // 创建成功后跳转到订单详情页或列表页
           router.push(`/sales-orders/${order.id}`);
         }}

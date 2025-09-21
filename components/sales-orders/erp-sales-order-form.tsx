@@ -154,7 +154,7 @@ export function ERPSalesOrderForm({
   // 提交表单
   const onSubmit = (data: CreateSalesOrderData) => {
     // 不传递orderNumber，让后端自动生成
-    const { orderNumber, ...submitData } = data;
+    const { orderNumber: _orderNumber, ...submitData } = data;
     createMutation.mutate(submitData);
   };
 

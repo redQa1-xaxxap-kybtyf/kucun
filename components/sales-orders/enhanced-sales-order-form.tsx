@@ -264,7 +264,7 @@ export function EnhancedSalesOrderForm({
   // 表单提交
   const onSubmit = (data: CreateSalesOrderData) => {
     // 不传递orderNumber，让后端自动生成，添加计算的总金额
-    const { orderNumber, ...submitData } = data;
+    const { orderNumber: _orderNumber, ...submitData } = data;
     const orderData = {
       ...submitData,
       totalAmount,

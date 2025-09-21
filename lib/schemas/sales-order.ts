@@ -50,43 +50,71 @@ export const SalesOrderItemSchema = z.object({
 });
 
 /**
+ * 基础销售订单Schema（不包含自定义验证）
+ */
+const BaseSalesOrderSchema = z.object({
+  orderNumber: z
+    .string()
+    .min(1, '订单号不能为空')
+    .max(50, '订单号不能超过50个字符')
+    .optional(), // 订单号可选，由后端自动生成
+
+  customerId: z.string().min(1, '客户ID不能为空'),
+
+  status: SalesOrderStatus.default('draft'),
+
+  remarks: z
+    .string()
+    .max(1000, '备注不能超过1000个字符')
+    .optional()
+    .or(z.literal('')),
+
+  items: z
+    .array(SalesOrderItemSchema)
+    .min(1, '至少需要一个订单项')
+    .max(100, '订单明细不能超过100条'),
+
+  totalAmount: z.number().min(0, '总金额不能为负数').optional(),
+});
+
+/**
+ * 验证订单明细组合唯一性的函数
+ */
+function validateItemCombinations(items: SalesOrderItemData[]): boolean {
+  const combinations = new Set();
+  for (const item of items) {
+    const key = `${item.productId}-${item.colorCode || ''}-${item.productionDate || ''}`;
+    if (combinations.has(key)) {
+      return false;
+    }
+    combinations.add(key);
+  }
+  return true;
+}
+
+/**
  * 创建销售订单Schema
  */
-export const CreateSalesOrderSchema = z
-  .object({
-    orderNumber: z
-      .string()
-      .min(1, '订单号不能为空')
-      .max(50, '订单号不能超过50个字符')
-      .optional(), // 订单号可选，由后端自动生成
+export const CreateSalesOrderSchema = BaseSalesOrderSchema.refine(
+  data => validateItemCombinations(data.items),
+  {
+    message: '订单明细中存在重复的产品规格组合',
+    path: ['items'],
+  }
+);
 
-    customerId: z.string().min(1, '客户ID不能为空'),
-
-    status: SalesOrderStatus.default('draft'),
-
-    remarks: z
-      .string()
-      .max(1000, '备注不能超过1000个字符')
-      .optional()
-      .or(z.literal('')),
-
-    items: z
-      .array(SalesOrderItemSchema)
-      .min(1, '至少需要一个订单项')
-      .max(100, '订单明细不能超过100条'),
-
-    totalAmount: z.number().min(0, '总金额不能为负数').optional(),
+/**
+ * 更新销售订单Schema
+ */
+export const UpdateSalesOrderSchema = BaseSalesOrderSchema.partial()
+  .extend({
+    id: z.string().min(1, 'ID不能为空'),
   })
   .refine(
     data => {
-      // 验证订单明细中是否有重复的产品+色号+生产日期组合
-      const combinations = new Set();
-      for (const item of data.items) {
-        const key = `${item.productId}-${item.colorCode || ''}-${item.productionDate || ''}`;
-        if (combinations.has(key)) {
-          return false;
-        }
-        combinations.add(key);
+      // 只有当items存在时才验证组合唯一性
+      if (data.items && data.items.length > 0) {
+        return validateItemCombinations(data.items);
       }
       return true;
     },
@@ -95,13 +123,6 @@ export const CreateSalesOrderSchema = z
       path: ['items'],
     }
   );
-
-/**
- * 更新销售订单Schema
- */
-export const UpdateSalesOrderSchema = CreateSalesOrderSchema.partial().extend({
-  id: z.string().min(1, 'ID不能为空'),
-});
 
 /**
  * 销售订单查询参数Schema
