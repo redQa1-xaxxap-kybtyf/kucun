@@ -74,8 +74,6 @@ export function OrderItemsEditor({
   const addNewItem = () => {
     append({
       productId: '',
-      colorCode: '',
-      productionDate: '',
       quantity: 1,
       unitPrice: 0,
     });
@@ -298,55 +296,10 @@ function OrderItemRow({
             </div>
           </div>
 
-          {/* 第二行：色号、生产日期、数量、单价、小计和操作 */}
+          {/* 第二行：数量、单价、小计和操作 */}
           <div className="grid grid-cols-1 items-end gap-4 lg:grid-cols-12">
-            {/* 色号 */}
-            <div className="lg:col-span-2">
-              <FormField
-                control={control}
-                name={`${name}.colorCode`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>色号</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="输入色号"
-                        disabled={disabled}
-                        {...field}
-                        value={field.value || ''}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* 生产日期 */}
-            <div className="lg:col-span-2">
-              <FormField
-                control={control}
-                name={`${name}.productionDate`}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>生产日期</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="date"
-                        disabled={disabled}
-                        {...field}
-                        value={field.value || ''}
-                        max={new Date().toISOString().split('T')[0]}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             {/* 数量 */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-3">
               <FormField
                 control={control}
                 name={`${name}.quantity`}
@@ -374,7 +327,7 @@ function OrderItemRow({
             </div>
 
             {/* 单价 */}
-            <div className="lg:col-span-2">
+            <div className="lg:col-span-3">
               <FormField
                 control={control}
                 name={`${name}.unitPrice`}
@@ -402,7 +355,7 @@ function OrderItemRow({
             </div>
 
             {/* 小计和操作 */}
-            <div className="flex items-center justify-between lg:col-span-2">
+            <div className="flex items-center justify-between lg:col-span-6">
               <div className="text-right">
                 <div className="text-xs text-muted-foreground">小计</div>
                 <div className="font-medium">¥{subtotal.toLocaleString()}</div>

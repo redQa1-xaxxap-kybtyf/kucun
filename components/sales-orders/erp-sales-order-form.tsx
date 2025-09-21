@@ -132,8 +132,6 @@ export function ERPSalesOrderForm({
       productId: '',
       quantity: 1,
       unitPrice: 0,
-      colorCode: '',
-      productionDate: '',
     });
   };
 
@@ -363,8 +361,6 @@ export function ERPSalesOrderForm({
                     <TableRow className="bg-muted/20">
                       <TableHead className="h-8 text-xs">序号</TableHead>
                       <TableHead className="h-8 text-xs">商品名称</TableHead>
-                      <TableHead className="h-8 text-xs">颜色</TableHead>
-                      <TableHead className="h-8 text-xs">生产日期</TableHead>
                       <TableHead className="h-8 text-xs">数量</TableHead>
                       <TableHead className="h-8 text-xs">单价</TableHead>
                       <TableHead className="h-8 text-xs">金额</TableHead>
@@ -426,42 +422,6 @@ export function ERPSalesOrderForm({
                                       ))}
                                     </SelectContent>
                                   </Select>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-                          </TableCell>
-                          <TableCell className="min-w-[80px]">
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.colorCode`}
-                              render={({ field: colorField }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="颜色"
-                                      className="h-7 text-xs"
-                                      {...colorField}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-                          </TableCell>
-                          <TableCell className="min-w-[100px]">
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.productionDate`}
-                              render={({ field: dateField }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      type="date"
-                                      className="h-7 text-xs"
-                                      {...dateField}
-                                    />
-                                  </FormControl>
                                   <FormMessage className="text-xs" />
                                 </FormItem>
                               )}

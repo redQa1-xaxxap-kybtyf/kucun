@@ -178,8 +178,6 @@ export function EnhancedSalesOrderForm({
   const addOrderItem = () => {
     append({
       productId: '',
-      colorCode: '',
-      productionDate: '',
       quantity: 1,
       unitPrice: 0,
     });
