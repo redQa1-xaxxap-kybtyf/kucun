@@ -50,6 +50,12 @@ import {
   updateSalesOrder,
 } from '@/lib/api/sales-orders';
 import {
+  CreateSalesOrderSchema,
+  UpdateSalesOrderSchema,
+  type CreateSalesOrderData,
+  type UpdateSalesOrderData,
+} from '@/lib/schemas/sales-order';
+import {
   SALES_ORDER_STATUS_LABELS,
   SALES_ORDER_STATUS_TRANSITIONS,
   SALES_ORDER_STATUS_VARIANTS,
@@ -57,13 +63,6 @@ import {
   type SalesOrderCreateInput,
   type SalesOrderUpdateInput,
 } from '@/lib/types/sales-order';
-import {
-  salesOrderCreateDefaults,
-  salesOrderCreateSchema,
-  salesOrderUpdateSchema,
-  type SalesOrderCreateFormData,
-  type SalesOrderUpdateFormData,
-} from '@/lib/validations/sales-order';
 
 interface SalesOrderFormProps {
   mode: 'create' | 'edit';
@@ -84,9 +83,9 @@ export function SalesOrderForm({
 
   // 表单配置
   const isEdit = mode === 'edit';
-  const schema = isEdit ? salesOrderUpdateSchema : salesOrderCreateSchema;
+  const schema = isEdit ? UpdateSalesOrderSchema : CreateSalesOrderSchema;
 
-  const form = useForm<SalesOrderCreateFormData | SalesOrderUpdateFormData>({
+  const form = useForm<CreateSalesOrderData | UpdateSalesOrderData>({
     resolver: zodResolver(schema),
     defaultValues:
       isEdit && initialData
@@ -104,7 +103,7 @@ export function SalesOrderForm({
               })) || [],
           }
         : {
-            ...salesOrderCreateDefaults,
+            ...salesOrderFormDefaults,
             customerId: '',
           },
   });

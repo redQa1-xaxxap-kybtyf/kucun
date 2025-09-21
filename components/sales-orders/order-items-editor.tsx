@@ -24,20 +24,18 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import type { Product } from '@/lib/types/product';
 import {
   calculateItemSubtotal,
   calculateOrderTotal,
-  type SalesOrderItemCreateFormData,
-  type SalesOrderItemUpdateFormData,
-} from '@/lib/validations/sales-order';
+} from '@/lib/schemas/sales-order';
+import type { Product } from '@/lib/types/product';
 
 // API and Types
 
 // 订单明细编辑器属性
 interface OrderItemsEditorProps {
   control: Control<{
-    items: SalesOrderItemCreateFormData[];
+    items: SalesOrderItemData[];
     [key: string]: unknown;
   }>;
   name: string;

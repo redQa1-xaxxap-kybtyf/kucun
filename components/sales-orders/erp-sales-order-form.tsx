@@ -65,7 +65,6 @@ export function ERPSalesOrderForm({
     resolver: zodResolver(CreateSalesOrderSchema),
     defaultValues: {
       customerId: '',
-      orderNumber: '',
       status: 'draft',
       remarks: '',
       items: [],
@@ -125,24 +124,38 @@ export function ERPSalesOrderForm({
     });
   };
 
+  // 自动生成订单号状态
+  const [autoOrderNumber, setAutoOrderNumber] = React.useState<string>('');
+
+  // 页面加载时自动生成订单号
+  React.useEffect(() => {
+    const generateOrderNumber = async () => {
+      try {
+        const response = await fetch(
+          '/api/sales-orders/generate-order-number?action=generate'
+        );
+        const data = await response.json();
+        if (data.success) {
+          setAutoOrderNumber(data.data.orderNumber);
+        }
+      } catch (error) {
+        console.error('自动生成订单号失败:', error);
+        // 如果API失败，使用本地生成逻辑作为备用
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const timeStr = now.getTime().toString().slice(-4);
+        setAutoOrderNumber(`SO${dateStr}${timeStr}`);
+      }
+    };
+
+    generateOrderNumber();
+  }, []);
+
   // 提交表单
   const onSubmit = (data: CreateSalesOrderData) => {
-    createMutation.mutate(data);
-  };
-
-  // 生成订单号
-  const generateOrderNumber = async () => {
-    try {
-      const response = await fetch(
-        '/api/sales-orders/generate-order-number?action=generate'
-      );
-      const data = await response.json();
-      if (data.success) {
-        form.setValue('orderNumber', data.data.orderNumber);
-      }
-    } catch (error) {
-      console.error('生成订单号失败:', error);
-    }
+    // 不传递orderNumber，让后端自动生成
+    const { orderNumber, ...submitData } = data;
+    createMutation.mutate(submitData);
   };
 
   return (
@@ -175,26 +188,17 @@ export function ERPSalesOrderForm({
             </div>
             <div className="p-3">
               <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 lg:grid-cols-4">
-                {/* 订单号 */}
+                {/* 订单号 - 自动生成显示 */}
                 <div className="space-y-1">
                   <Label className="text-xs text-muted-foreground">
                     订单号
                   </Label>
-                  <div className="flex gap-1">
-                    <div className="flex-1 rounded border bg-muted/50 px-2 py-1 text-xs">
-                      {form.watch('orderNumber') || '点击生成'}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={generateOrderNumber}
-                      disabled={createMutation.isPending}
-                      className="h-6 px-2 text-xs"
-                    >
-                      生成
-                    </Button>
+                  <div className="rounded border bg-muted/50 px-2 py-1 font-mono text-xs">
+                    {autoOrderNumber || '正在生成...'}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    系统将自动生成唯一订单号
+                  </p>
                 </div>
 
                 {/* 客户名称 */}

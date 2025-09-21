@@ -59,19 +59,37 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  // 自动生成订单号
-  const generateOrderNumber = React.useCallback(() => {
-    const now = new Date();
-    const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-    const timeStr = now.getTime().toString().slice(-4);
-    return `SO${dateStr}${timeStr}`;
+  // 自动生成订单号状态
+  const [autoOrderNumber, setAutoOrderNumber] = React.useState<string>('');
+
+  // 页面加载时自动生成订单号
+  React.useEffect(() => {
+    const generateOrderNumber = async () => {
+      try {
+        const response = await fetch(
+          '/api/sales-orders/generate-order-number?action=generate'
+        );
+        const data = await response.json();
+        if (data.success) {
+          setAutoOrderNumber(data.data.orderNumber);
+        }
+      } catch (error) {
+        console.error('自动生成订单号失败:', error);
+        // 如果API失败，使用本地生成逻辑作为备用
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const timeStr = now.getTime().toString().slice(-4);
+        setAutoOrderNumber(`SO${dateStr}${timeStr}`);
+      }
+    };
+
+    generateOrderNumber();
   }, []);
 
   // 表单配置
   const form = useForm<CreateSalesOrderData>({
     resolver: zodResolver(CreateSalesOrderSchema),
     defaultValues: {
-      orderNumber: generateOrderNumber(),
       customerId: '',
       status: 'draft',
       remarks: '',
@@ -210,11 +228,12 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
 
   // 表单提交
   const onSubmit = (data: CreateSalesOrderData) => {
-    // 构建销售订单数据
+    // 不传递orderNumber，让后端自动生成，构建销售订单数据
+    const { orderNumber, ...submitData } = data;
     const orderData = {
-      ...data,
+      ...submitData,
       totalAmount,
-      items: data.items.map(item => ({
+      items: submitData.items.map(item => ({
         ...item,
         subtotal: item.quantity * item.unitPrice,
       })),
@@ -251,14 +270,17 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
             {/* 单据头部信息 */}
             <div className="border-b bg-muted/30 px-6 py-4">
               <div className="grid grid-cols-12 items-center gap-4">
-                {/* 订单号 - 自动生成 */}
+                {/* 订单号 - 自动生成显示 */}
                 <div className="col-span-3">
                   <label className="text-sm font-medium text-muted-foreground">
                     订单号
                   </label>
                   <div className="mt-1 font-mono text-lg font-semibold">
-                    {form.watch('orderNumber') || '自动生成'}
+                    {autoOrderNumber || '正在生成...'}
                   </div>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    系统自动生成
+                  </p>
                 </div>
 
                 {/* 客户选择 */}

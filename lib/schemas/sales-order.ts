@@ -22,13 +22,29 @@ export const SalesOrderStatus = z.enum([
 export const SalesOrderItemSchema = z.object({
   productId: z.string().min(1, '产品ID不能为空'),
 
-  colorCode: z.string().max(20, '色号不能超过20个字符').optional(),
+  colorCode: z
+    .string()
+    .max(20, '色号不能超过20个字符')
+    .optional()
+    .or(z.literal('')),
 
-  productionDate: z.string().optional(),
+  productionDate: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/, '生产日期格式不正确，请使用YYYY-MM-DD格式')
+    .optional()
+    .or(z.literal('')),
 
-  quantity: z.number().min(0.01, '数量必须大于0'),
+  quantity: z
+    .number()
+    .min(0.01, '数量必须大于0')
+    .max(999999.99, '数量不能超过999,999.99')
+    .multipleOf(0.01, '数量最多保留2位小数'),
 
-  unitPrice: z.number().min(0, '单价不能为负数'),
+  unitPrice: z
+    .number()
+    .min(0.01, '单价必须大于0')
+    .max(999999.99, '单价不能超过999,999.99')
+    .multipleOf(0.01, '单价最多保留2位小数'),
 
   subtotal: z.number().min(0, '小计不能为负数').optional(),
 });
@@ -36,23 +52,49 @@ export const SalesOrderItemSchema = z.object({
 /**
  * 创建销售订单Schema
  */
-export const CreateSalesOrderSchema = z.object({
-  orderNumber: z
-    .string()
-    .min(1, '订单号不能为空')
-    .max(50, '订单号不能超过50个字符')
-    .optional(), // 订单号可选，由后端自动生成
+export const CreateSalesOrderSchema = z
+  .object({
+    orderNumber: z
+      .string()
+      .min(1, '订单号不能为空')
+      .max(50, '订单号不能超过50个字符')
+      .optional(), // 订单号可选，由后端自动生成
 
-  customerId: z.string().min(1, '客户ID不能为空'),
+    customerId: z.string().min(1, '客户ID不能为空'),
 
-  status: SalesOrderStatus.default('draft'),
+    status: SalesOrderStatus.default('draft'),
 
-  remarks: z.string().max(1000, '备注不能超过1000个字符').optional(),
+    remarks: z
+      .string()
+      .max(1000, '备注不能超过1000个字符')
+      .optional()
+      .or(z.literal('')),
 
-  items: z.array(SalesOrderItemSchema).min(1, '至少需要一个订单项'),
+    items: z
+      .array(SalesOrderItemSchema)
+      .min(1, '至少需要一个订单项')
+      .max(100, '订单明细不能超过100条'),
 
-  totalAmount: z.number().min(0, '总金额不能为负数').optional(),
-});
+    totalAmount: z.number().min(0, '总金额不能为负数').optional(),
+  })
+  .refine(
+    data => {
+      // 验证订单明细中是否有重复的产品+色号+生产日期组合
+      const combinations = new Set();
+      for (const item of data.items) {
+        const key = `${item.productId}-${item.colorCode || ''}-${item.productionDate || ''}`;
+        if (combinations.has(key)) {
+          return false;
+        }
+        combinations.add(key);
+      }
+      return true;
+    },
+    {
+      message: '订单明细中存在重复的产品规格组合',
+      path: ['items'],
+    }
+  );
 
 /**
  * 更新销售订单Schema
@@ -158,10 +200,30 @@ export function validateOrderNumber(orderNumber: string): boolean {
 }
 
 /**
+ * 计算订单明细小计
+ */
+export function calculateItemSubtotal(
+  quantity: number,
+  unitPrice: number
+): number {
+  return Math.round(quantity * unitPrice * 100) / 100;
+}
+
+/**
  * 计算订单总金额
  */
 export function calculateOrderTotal(items: SalesOrderItemData[]): number {
-  return items.reduce((total, item) => total + item.subtotal, 0);
+  return (
+    Math.round(
+      items
+        .filter(item => item.quantity > 0 && item.unitPrice > 0)
+        .reduce(
+          (total, item) =>
+            total + calculateItemSubtotal(item.quantity, item.unitPrice),
+          0
+        ) * 100
+    ) / 100
+  );
 }
 
 /**
@@ -225,4 +287,80 @@ export function canShipOrder(status: SalesOrderStatusType): boolean {
  */
 export function canCompleteOrder(status: SalesOrderStatusType): boolean {
   return status === 'shipped';
+}
+
+/**
+ * 验证订单明细组合唯一性
+ */
+export function validateOrderItemCombination(items: SalesOrderItemData[]): {
+  isValid: boolean;
+  duplicateIndex?: number;
+} {
+  const combinations = new Map<string, number>();
+
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    const key = `${item.productId}-${item.colorCode || ''}-${item.productionDate || ''}`;
+
+    if (combinations.has(key)) {
+      return { isValid: false, duplicateIndex: i };
+    }
+
+    combinations.set(key, i);
+  }
+
+  return { isValid: true };
+}
+
+/**
+ * 生产日期验证
+ */
+export function validateProductionDate(dateString: string): boolean {
+  if (!dateString) return true; // 可选字段
+
+  try {
+    const date = new Date(dateString);
+    const now = new Date();
+
+    // 生产日期不能是未来日期
+    if (date > now) return false;
+
+    // 生产日期不能太久远（比如超过10年）
+    const tenYearsAgo = new Date();
+    tenYearsAgo.setFullYear(now.getFullYear() - 10);
+    if (date < tenYearsAgo) return false;
+
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * 色号验证
+ */
+export function validateColorCode(colorCode: string): boolean {
+  if (!colorCode) return true; // 可选字段
+
+  // 色号格式：字母+数字组合，长度3-20
+  const colorCodeRegex = /^[A-Z0-9]{3,20}$/;
+  return colorCodeRegex.test(colorCode.toUpperCase());
+}
+
+/**
+ * 订单状态流转验证
+ */
+export function validateStatusTransition(
+  currentStatus: SalesOrderStatusType,
+  targetStatus: SalesOrderStatusType
+): boolean {
+  const transitions: Record<SalesOrderStatusType, SalesOrderStatusType[]> = {
+    draft: ['confirmed', 'cancelled'],
+    confirmed: ['shipped', 'cancelled'],
+    shipped: ['completed', 'cancelled'],
+    completed: [],
+    cancelled: [],
+  };
+
+  return transitions[currentStatus].includes(targetStatus);
 }

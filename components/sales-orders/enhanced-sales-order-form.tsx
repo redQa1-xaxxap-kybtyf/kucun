@@ -80,7 +80,6 @@ export function EnhancedSalesOrderForm({
   const form = useForm<CreateSalesOrderData>({
     resolver: zodResolver(CreateSalesOrderSchema),
     defaultValues: {
-      orderNumber: '',
       customerId: '',
       status: 'draft',
       remarks: '',
@@ -88,11 +87,38 @@ export function EnhancedSalesOrderForm({
     },
   });
 
+  // 自动生成订单号状态
+  const [autoOrderNumber, setAutoOrderNumber] = React.useState<string>('');
+
   // 订单项字段数组
   const { fields, append, remove, update } = useFieldArray({
     control: form.control,
     name: 'items',
   });
+
+  // 页面加载时自动生成订单号
+  React.useEffect(() => {
+    const generateOrderNumber = async () => {
+      try {
+        const response = await fetch(
+          '/api/sales-orders/generate-order-number?action=generate'
+        );
+        const data = await response.json();
+        if (data.success) {
+          setAutoOrderNumber(data.data.orderNumber);
+        }
+      } catch (error) {
+        console.error('自动生成订单号失败:', error);
+        // 如果API失败，使用本地生成逻辑作为备用
+        const now = new Date();
+        const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+        const timeStr = now.getTime().toString().slice(-4);
+        setAutoOrderNumber(`SO${dateStr}${timeStr}`);
+      }
+    };
+
+    generateOrderNumber();
+  }, []);
 
   // 获取客户列表
   const { data: customersData, isLoading: customersLoading } = useQuery({
@@ -237,11 +263,12 @@ export function EnhancedSalesOrderForm({
 
   // 表单提交
   const onSubmit = (data: CreateSalesOrderData) => {
-    // 添加计算的总金额
+    // 不传递orderNumber，让后端自动生成，添加计算的总金额
+    const { orderNumber, ...submitData } = data;
     const orderData = {
-      ...data,
+      ...submitData,
       totalAmount,
-      items: data.items.map(item => ({
+      items: submitData.items.map(item => ({
         ...item,
         subtotal: item.quantity * item.unitPrice,
       })),
@@ -278,38 +305,17 @@ export function EnhancedSalesOrderForm({
             </div>
             <div className="p-4">
               <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
-                {/* 订单号 */}
+                {/* 订单号 - 自动生成显示 */}
                 <div className="space-y-1">
                   <FormLabel className="text-xs text-muted-foreground">
                     订单号
                   </FormLabel>
-                  <div className="flex gap-2">
-                    <div className="flex-1 rounded border bg-muted/50 px-2 py-1 text-sm">
-                      {form.watch('orderNumber') || '点击生成'}
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={async () => {
-                        try {
-                          const response = await fetch(
-                            '/api/sales-orders/generate-order-number?action=generate'
-                          );
-                          const data = await response.json();
-                          if (data.success) {
-                            form.setValue('orderNumber', data.data.orderNumber);
-                          }
-                        } catch (error) {
-                          console.error('生成订单号失败:', error);
-                        }
-                      }}
-                      disabled={createMutation.isPending}
-                      className="h-7 px-2 text-xs"
-                    >
-                      生成
-                    </Button>
+                  <div className="rounded border bg-muted/50 px-2 py-1 font-mono text-sm">
+                    {autoOrderNumber || '正在生成...'}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    系统将自动生成唯一订单号
+                  </p>
                 </div>
 
                 {/* 客户名称 */}
