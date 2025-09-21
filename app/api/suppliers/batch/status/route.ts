@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { BatchUpdateSupplierStatusSchema } from '@/lib/schemas/supplier';
 import type { BatchUpdateSupplierStatusResult } from '@/lib/types/supplier';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * PUT /api/suppliers/batch/status - 批量更新供应商状态
@@ -82,13 +82,13 @@ export async function PUT(request: NextRequest) {
     };
 
     return NextResponse.json(result);
-
   } catch (error) {
     console.error('批量更新供应商状态失败:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : '批量更新供应商状态失败' 
+      {
+        success: false,
+        error:
+          error instanceof Error ? error.message : '批量更新供应商状态失败',
       },
       { status: 500 }
     );

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { BatchDeleteSuppliersSchema } from '@/lib/schemas/supplier';
 import type { BatchDeleteSuppliersResult } from '@/lib/types/supplier';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * DELETE /api/suppliers/batch - 批量删除供应商
@@ -76,13 +76,12 @@ export async function DELETE(request: NextRequest) {
     };
 
     return NextResponse.json(result);
-
   } catch (error) {
     console.error('批量删除供应商失败:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : '批量删除供应商失败' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '批量删除供应商失败',
       },
       { status: 500 }
     );

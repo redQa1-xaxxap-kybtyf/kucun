@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { UpdateSupplierSchema } from '@/lib/schemas/supplier';
 import type { Supplier } from '@/lib/types/supplier';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * GET /api/suppliers/[id] - 获取单个供应商详情
@@ -51,13 +51,12 @@ export async function GET(
       success: true,
       data: transformedSupplier,
     });
-
   } catch (error) {
     console.error('获取供应商详情失败:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : '获取供应商详情失败' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '获取供应商详情失败',
       },
       { status: 500 }
     );
@@ -102,7 +101,7 @@ export async function PUT(
     // 如果更新名称，检查是否与其他供应商重复
     if (validatedData.name && validatedData.name !== existingSupplier.name) {
       const duplicateSupplier = await prisma.supplier.findFirst({
-        where: { 
+        where: {
           name: validatedData.name,
           id: { not: id },
         },
@@ -121,8 +120,12 @@ export async function PUT(
       where: { id },
       data: {
         ...(validatedData.name && { name: validatedData.name }),
-        ...(validatedData.phone !== undefined && { phone: validatedData.phone || null }),
-        ...(validatedData.address !== undefined && { address: validatedData.address || null }),
+        ...(validatedData.phone !== undefined && {
+          phone: validatedData.phone || null,
+        }),
+        ...(validatedData.address !== undefined && {
+          address: validatedData.address || null,
+        }),
         ...(validatedData.status && { status: validatedData.status }),
       },
     });
@@ -143,10 +146,9 @@ export async function PUT(
       data: transformedSupplier,
       message: '供应商更新成功',
     });
-
   } catch (error) {
     console.error('更新供应商失败:', error);
-    
+
     if (error instanceof Error && error.message.includes('Unique constraint')) {
       return NextResponse.json(
         { success: false, error: '供应商名称已存在' },
@@ -155,9 +157,9 @@ export async function PUT(
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : '更新供应商失败' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '更新供应商失败',
       },
       { status: 500 }
     );
@@ -207,13 +209,12 @@ export async function DELETE(
       success: true,
       message: '供应商删除成功',
     });
-
   } catch (error) {
     console.error('删除供应商失败:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : '删除供应商失败' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '删除供应商失败',
       },
       { status: 500 }
     );

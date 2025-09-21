@@ -1,13 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
-import { 
-  SupplierQuerySchema, 
+import { prisma } from '@/lib/db';
+import {
   CreateSupplierSchema,
-  formatSupplierStatus 
+  SupplierQuerySchema,
 } from '@/lib/schemas/supplier';
 import type { Supplier } from '@/lib/types/supplier';
+import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 /**
  * GET /api/suppliers - 获取供应商列表
@@ -26,15 +25,9 @@ export async function GET(request: NextRequest) {
     // 解析查询参数
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams.entries());
-    
-    const {
-      page,
-      limit,
-      search,
-      status,
-      sortBy,
-      sortOrder,
-    } = SupplierQuerySchema.parse(queryParams);
+
+    const { page, limit, search, status, sortBy, sortOrder } =
+      SupplierQuerySchema.parse(queryParams);
 
     // 构建查询条件
     const where: any = {};
@@ -87,13 +80,12 @@ export async function GET(request: NextRequest) {
         totalPages: Math.ceil(total / limit),
       },
     });
-
   } catch (error) {
     console.error('获取供应商列表失败:', error);
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : '获取供应商列表失败' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '获取供应商列表失败',
       },
       { status: 500 }
     );
@@ -156,10 +148,9 @@ export async function POST(request: NextRequest) {
       data: transformedSupplier,
       message: '供应商创建成功',
     });
-
   } catch (error) {
     console.error('创建供应商失败:', error);
-    
+
     if (error instanceof Error && error.message.includes('Unique constraint')) {
       return NextResponse.json(
         { success: false, error: '供应商名称已存在' },
@@ -168,9 +159,9 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { 
-        success: false, 
-        error: error instanceof Error ? error.message : '创建供应商失败' 
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '创建供应商失败',
       },
       { status: 500 }
     );
