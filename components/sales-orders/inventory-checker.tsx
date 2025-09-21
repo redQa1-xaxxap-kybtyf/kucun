@@ -1,18 +1,10 @@
 'use client';
 
-import { AlertTriangle, CheckCircle, Package, XCircle } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle } from 'lucide-react';
 import * as React from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import type { Product } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
@@ -133,101 +125,22 @@ export function InventoryChecker({
     return null;
   }
 
-  // 只有在存在库存问题时才显示详细信息
+  // 简化显示：只在有库存问题时显示最必要的信息
   return (
-    <Card className={className}>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Package className="h-5 w-5" />
-          库存检查
-        </CardTitle>
-        <CardDescription>发现库存问题，请检查以下商品</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* 简化的统计概览 - 只显示有问题的商品 */}
-        <div className="grid grid-cols-2 gap-4">
-          {stats.warnings > 0 && (
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                {stats.warnings}
-              </div>
-              <div className="text-xs text-muted-foreground">库存预警</div>
-            </div>
-          )}
-          {stats.errors > 0 && (
-            <div className="text-center">
-              <div className="text-2xl font-bold text-red-600">
-                {stats.errors}
-              </div>
-              <div className="text-xs text-muted-foreground">库存不足</div>
-            </div>
-          )}
-        </div>
-
-        {/* 整体状态 */}
-        {stats.errors > 0 && (
-          <Alert variant="destructive">
-            <XCircle className="h-4 w-4" />
-            <AlertDescription>
-              有 {stats.errors} 个商品库存不足，无法完成订单
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {stats.errors === 0 && stats.warnings > 0 && (
-          <Alert>
-            <AlertTriangle className="h-4 w-4" />
-            <AlertDescription>
-              有 {stats.warnings} 个商品库存偏低，建议及时补货
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {stats.errors === 0 && stats.warnings === 0 && stats.total > 0 && (
-          <Alert className="border-green-200 bg-green-50">
-            <CheckCircle className="h-4 w-4 text-green-600" />
-            <AlertDescription className="text-green-800">
-              所有商品库存充足，可以正常下单
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* 只显示有问题的商品 */}
-        <div className="space-y-3">
-          <h4 className="text-sm font-medium">问题商品详情</h4>
-          <div className="space-y-2">
-            {checkResults
-              .filter(
-                result =>
-                  result.severity === 'error' || result.severity === 'warning'
-              )
-              .map((result, index) => (
-                <InventoryCheckItem
-                  key={`${result.productId}-${index}`}
-                  result={result}
-                />
-              ))}
-          </div>
-        </div>
-
-        {/* 操作按钮 */}
-        <div className="flex items-center justify-between border-t pt-4">
-          <Button variant="outline" size="sm" onClick={performInventoryCheck}>
-            重新检查
-          </Button>
-
-          {stats.errors > 0 && <Badge variant="destructive">无法下单</Badge>}
-
-          {stats.errors === 0 && stats.warnings > 0 && (
-            <Badge variant="secondary">可以下单（有预警）</Badge>
-          )}
-
-          {stats.errors === 0 && stats.warnings === 0 && stats.total > 0 && (
-            <Badge className="bg-green-100 text-green-800">可以下单</Badge>
-          )}
-        </div>
-      </CardContent>
-    </Card>
+    <Alert
+      variant={stats.errors > 0 ? 'destructive' : 'default'}
+      className={className}
+    >
+      <AlertTriangle className="h-4 w-4" />
+      <AlertDescription>
+        {stats.errors > 0 && `${stats.errors} 个商品库存不足`}
+        {stats.errors === 0 &&
+          stats.warnings > 0 &&
+          `${stats.warnings} 个商品库存偏低`}
+        {stats.errors > 0 && '，无法完成订单'}
+        {stats.errors === 0 && stats.warnings > 0 && '，建议及时补货'}
+      </AlertDescription>
+    </Alert>
   );
 }
 
