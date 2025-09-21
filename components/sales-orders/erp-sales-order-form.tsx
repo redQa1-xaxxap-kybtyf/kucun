@@ -129,6 +129,56 @@ export function ERPSalesOrderForm({
     },
   };
 
+  // 单价转换工具函数
+  const convertUnitPrice = {
+    // 片单价转件单价：片单价 × 每件片数
+    piecePriceToUnitPrice: (
+      piecePrice: number,
+      piecesPerUnit: number
+    ): number => {
+      if (piecesPerUnit <= 0 || piecePrice <= 0) return piecePrice;
+      return Math.round(piecePrice * piecesPerUnit * 100) / 100; // 保留2位小数
+    },
+
+    // 件单价转片单价：件单价 ÷ 每件片数
+    unitPriceToPiecePrice: (
+      unitPrice: number,
+      piecesPerUnit: number
+    ): number => {
+      if (piecesPerUnit <= 0 || unitPrice <= 0) return unitPrice;
+      return Math.round((unitPrice / piecesPerUnit) * 100) / 100; // 保留2位小数
+    },
+
+    // 根据单位转换单价（保持总金额不变）
+    convertPrice: (
+      currentPrice: number,
+      fromUnit: '片' | '件',
+      toUnit: '片' | '件',
+      piecesPerUnit: number
+    ): number => {
+      // 如果单位相同或价格为0，不需要转换
+      if (fromUnit === toUnit || currentPrice <= 0 || piecesPerUnit <= 0) {
+        return currentPrice;
+      }
+
+      if (fromUnit === '片' && toUnit === '件') {
+        // 片 → 件：单价 × 每件片数
+        return convertUnitPrice.piecePriceToUnitPrice(
+          currentPrice,
+          piecesPerUnit
+        );
+      } else if (fromUnit === '件' && toUnit === '片') {
+        // 件 → 片：单价 ÷ 每件片数
+        return convertUnitPrice.unitPriceToPiecePrice(
+          currentPrice,
+          piecesPerUnit
+        );
+      }
+
+      return currentPrice;
+    },
+  };
+
   // 生成备注说明
   const generateRemarksText = (
     totalPieces: number,
@@ -582,6 +632,8 @@ export function ERPSalesOrderForm({
                                       const newDisplayUnit = value as
                                         | '片'
                                         | '件';
+                                      const currentDisplayUnit =
+                                        displayUnitField.value || '片';
                                       const currentDisplayQuantity =
                                         form.getValues(
                                           `items.${index}.displayQuantity`
@@ -611,6 +663,27 @@ export function ERPSalesOrderForm({
                                         `items.${index}.displayQuantity`,
                                         newDisplayQuantity
                                       );
+
+                                      // 单价智能转换（保持总金额不变）
+                                      const currentUnitPrice = form.getValues(
+                                        `items.${index}.unitPrice`
+                                      );
+                                      if (
+                                        currentUnitPrice &&
+                                        currentUnitPrice > 0
+                                      ) {
+                                        const newUnitPrice =
+                                          convertUnitPrice.convertPrice(
+                                            currentUnitPrice,
+                                            currentDisplayUnit,
+                                            newDisplayUnit,
+                                            piecesPerUnit
+                                          );
+                                        form.setValue(
+                                          `items.${index}.unitPrice`,
+                                          newUnitPrice
+                                        );
+                                      }
 
                                       // 生成备注（如果需要）
                                       const currentRemarks =
