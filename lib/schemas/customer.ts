@@ -24,7 +24,7 @@ export const CreateCustomerSchema = z.object({
 
   address: z.string().max(500, '地址不能超过500个字符').optional(),
 
-  extendedInfo: z.record(z.any()).optional(),
+  extendedInfo: z.record(z.unknown()).optional(),
 });
 
 /**
@@ -118,7 +118,7 @@ export function formatCustomerAddress(address?: string): string {
 /**
  * 验证客户扩展信息JSON
  */
-export function validateCustomerExtendedInfo(extendedInfo: any): boolean {
+export function validateCustomerExtendedInfo(extendedInfo: unknown): boolean {
   try {
     if (!extendedInfo) return true;
     if (typeof extendedInfo !== 'object') return false;

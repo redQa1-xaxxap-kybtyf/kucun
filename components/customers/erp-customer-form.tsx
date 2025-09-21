@@ -23,8 +23,10 @@ import {
   customerQueryKeys,
   updateCustomer,
 } from '@/lib/api/customers';
-import type { CreateCustomerData } from '@/lib/schemas/customer';
-import { CreateCustomerSchema } from '@/lib/schemas/customer';
+import {
+  CreateCustomerSchema,
+  type CreateCustomerData,
+} from '@/lib/schemas/customer';
 import type { Customer, CustomerUpdateInput } from '@/lib/types/customer';
 
 interface ERPCustomerFormProps {
@@ -95,7 +97,7 @@ export function ERPCustomerForm({
   // 更新客户Mutation
   const updateMutation = useMutation({
     mutationFn: (data: CustomerUpdateInput) =>
-      updateCustomer(initialData!.id, data),
+      updateCustomer(initialData?.id || '', data),
     onSuccess: data => {
       toast({
         title: '更新成功',
@@ -104,7 +106,7 @@ export function ERPCustomerForm({
       });
       queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
       queryClient.invalidateQueries({
-        queryKey: customerQueryKeys.detail(initialData!.id),
+        queryKey: customerQueryKeys.detail(initialData?.id || ''),
       });
 
       if (onSuccess) {
