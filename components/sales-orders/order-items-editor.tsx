@@ -27,10 +27,16 @@ import { Separator } from '@/components/ui/separator';
 import {
   calculateItemSubtotal,
   calculateOrderTotal,
+  type SalesOrderItemData,
 } from '@/lib/schemas/sales-order';
 import type { Product } from '@/lib/types/product';
 
 // API and Types
+type SalesOrderItemCreateFormData = SalesOrderItemData;
+type SalesOrderItemUpdateFormData = SalesOrderItemData & {
+  id?: string;
+  _action?: string;
+};
 
 // 订单明细编辑器属性
 interface OrderItemsEditorProps {
@@ -68,6 +74,8 @@ export function OrderItemsEditor({
   const addNewItem = () => {
     append({
       productId: '',
+      colorCode: '',
+      productionDate: '',
       quantity: 1,
       unitPrice: 0,
     });
@@ -276,116 +284,194 @@ function OrderItemRow({
   return (
     <Card className="border-muted">
       <CardContent className="p-4">
-        <div className="grid grid-cols-1 items-end gap-4 lg:grid-cols-12">
-          {/* 产品选择 */}
-          <div className="lg:col-span-4">
-            <ProductSelector
-              label="选择产品"
-              placeholder="搜索产品..."
-              disabled={disabled}
-              onValueChange={() => {}}
-              onProductChange={handleProductChange}
-            />
-          </div>
-
-          {/* 数量 */}
-          <div className="lg:col-span-1">
-            <FormField
-              control={control}
-              name={`${name}.quantity`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>数量</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      max="999999.99"
-                      disabled={disabled}
-                      {...field}
-                      onChange={e => {
-                        const value = e.target.value;
-                        field.onChange(value ? parseFloat(value) : 0);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {/* 单价 */}
-          <div className="lg:col-span-2">
-            <FormField
-              control={control}
-              name={`${name}.unitPrice`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>单价 (元)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0.01"
-                      max="999999.99"
-                      disabled={disabled}
-                      {...field}
-                      onChange={e => {
-                        const value = e.target.value;
-                        field.onChange(value ? parseFloat(value) : 0);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {/* 小计和操作 */}
-          <div className="flex items-center justify-between lg:col-span-1">
-            <div className="text-right">
-              <div className="text-xs text-muted-foreground">小计</div>
-              <div className="font-medium">¥{subtotal.toLocaleString()}</div>
+        <div className="space-y-4">
+          {/* 第一行：产品选择 */}
+          <div className="grid grid-cols-1 gap-4 lg:grid-cols-12">
+            <div className="lg:col-span-12">
+              <ProductSelector
+                label="选择产品"
+                placeholder="搜索产品..."
+                disabled={disabled}
+                onValueChange={() => {}}
+                onProductChange={handleProductChange}
+              />
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={onRemove}
-              disabled={disabled}
-              className="ml-2"
-            >
-              <Trash2 className="h-4 w-4" />
-            </Button>
+          </div>
+
+          {/* 第二行：色号、生产日期、数量、单价、小计和操作 */}
+          <div className="grid grid-cols-1 items-end gap-4 lg:grid-cols-12">
+            {/* 色号 */}
+            <div className="lg:col-span-2">
+              <FormField
+                control={control}
+                name={`${name}.colorCode`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>色号</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="输入色号"
+                        disabled={disabled}
+                        {...field}
+                        value={field.value || ''}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* 生产日期 */}
+            <div className="lg:col-span-2">
+              <FormField
+                control={control}
+                name={`${name}.productionDate`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>生产日期</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        disabled={disabled}
+                        {...field}
+                        value={field.value || ''}
+                        max={new Date().toISOString().split('T')[0]}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* 数量 */}
+            <div className="lg:col-span-2">
+              <FormField
+                control={control}
+                name={`${name}.quantity`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>数量</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        max="999999.99"
+                        disabled={disabled}
+                        {...field}
+                        onChange={e => {
+                          const value = e.target.value;
+                          field.onChange(value ? parseFloat(value) : 0);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* 单价 */}
+            <div className="lg:col-span-2">
+              <FormField
+                control={control}
+                name={`${name}.unitPrice`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>单价 (元)</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        min="0.01"
+                        max="999999.99"
+                        disabled={disabled}
+                        {...field}
+                        onChange={e => {
+                          const value = e.target.value;
+                          field.onChange(value ? parseFloat(value) : 0);
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            {/* 小计和操作 */}
+            <div className="flex items-center justify-between lg:col-span-2">
+              <div className="text-right">
+                <div className="text-xs text-muted-foreground">小计</div>
+                <div className="font-medium">¥{subtotal.toLocaleString()}</div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={onRemove}
+                disabled={disabled}
+                className="ml-2"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </div>
 
         {/* 产品信息显示 */}
         {productData && (
           <div className="mt-3 rounded-md bg-muted/50 p-3">
-            <div className="flex items-center justify-between text-sm">
-              <div className="flex items-center space-x-4">
-                <span>
-                  <strong>产品编码:</strong> {productData.code}
-                </span>
-                <span>
-                  <strong>规格:</strong> {productData.specification || '无'}
-                </span>
-                <span>
-                  <strong>单位:</strong> {productData.unit}
-                </span>
-                {productData.piecesPerUnit > 1 && (
+            <div className="space-y-2">
+              {/* 第一行：基本信息 */}
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center space-x-4">
                   <span>
-                    <strong>每件片数:</strong> {productData.piecesPerUnit}
+                    <strong>产品编码:</strong> {productData.code}
+                  </span>
+                  <span>
+                    <strong>产品名称:</strong> {productData.name}
+                  </span>
+                  <span>
+                    <strong>单位:</strong> {productData.unit}
+                  </span>
+                  {productData.piecesPerUnit &&
+                    productData.piecesPerUnit > 1 && (
+                      <span>
+                        <strong>每件片数:</strong> {productData.piecesPerUnit}
+                      </span>
+                    )}
+                </div>
+                {productData.status === 'inactive' && (
+                  <Badge variant="destructive">已停用</Badge>
+                )}
+              </div>
+
+              {/* 第二行：规格和物理属性 */}
+              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                {productData.specification && (
+                  <span>
+                    <strong>规格:</strong> {productData.specification}
+                  </span>
+                )}
+                {productData.thickness && (
+                  <span>
+                    <strong>厚度:</strong> {productData.thickness}mm
+                  </span>
+                )}
+                {productData.weight && (
+                  <span>
+                    <strong>重量:</strong> {productData.weight}kg
+                  </span>
+                )}
+                {productData.category && (
+                  <span>
+                    <strong>分类:</strong> {productData.category.name}
                   </span>
                 )}
               </div>
-              {productData.status === 'inactive' && (
-                <Badge variant="destructive">已停用</Badge>
-              )}
             </div>
           </div>
         )}
