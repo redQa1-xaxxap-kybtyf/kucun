@@ -128,6 +128,19 @@ export function InventoryChecker({
     return null;
   }
 
+  // 如果所有商品库存都充足，显示简化版本
+  if (stats.errors === 0 && stats.warnings === 0) {
+    return (
+      <Alert className="border-green-200 bg-green-50">
+        <CheckCircle className="h-4 w-4 text-green-600" />
+        <AlertDescription className="text-green-800">
+          所有商品库存充足，可以正常下单
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  // 只有在存在库存问题时才显示详细信息
   return (
     <Card className={className}>
       <CardHeader>
@@ -135,33 +148,27 @@ export function InventoryChecker({
           <Package className="h-5 w-5" />
           库存检查
         </CardTitle>
-        <CardDescription>实时检查订单商品的库存可用性</CardDescription>
+        <CardDescription>发现库存问题，请检查以下商品</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* 统计概览 */}
-        <div className="grid grid-cols-4 gap-4">
-          <div className="text-center">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <div className="text-xs text-muted-foreground">总商品</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-green-600">
-              {stats.available}
+        {/* 简化的统计概览 - 只显示有问题的商品 */}
+        <div className="grid grid-cols-2 gap-4">
+          {stats.warnings > 0 && (
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                {stats.warnings}
+              </div>
+              <div className="text-xs text-muted-foreground">库存预警</div>
             </div>
-            <div className="text-xs text-muted-foreground">库存充足</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">
-              {stats.warnings}
+          )}
+          {stats.errors > 0 && (
+            <div className="text-center">
+              <div className="text-2xl font-bold text-red-600">
+                {stats.errors}
+              </div>
+              <div className="text-xs text-muted-foreground">库存不足</div>
             </div>
-            <div className="text-xs text-muted-foreground">库存预警</div>
-          </div>
-          <div className="text-center">
-            <div className="text-2xl font-bold text-red-600">
-              {stats.errors}
-            </div>
-            <div className="text-xs text-muted-foreground">库存不足</div>
-          </div>
+          )}
         </div>
 
         {/* 整体状态 */}
@@ -192,16 +199,21 @@ export function InventoryChecker({
           </Alert>
         )}
 
-        {/* 详细检查结果 */}
+        {/* 只显示有问题的商品 */}
         <div className="space-y-3">
-          <h4 className="text-sm font-medium">详细检查结果</h4>
+          <h4 className="text-sm font-medium">问题商品详情</h4>
           <div className="space-y-2">
-            {checkResults.map((result, index) => (
-              <InventoryCheckItem
-                key={`${result.productId}-${index}`}
-                result={result}
-              />
-            ))}
+            {checkResults
+              .filter(
+                result =>
+                  result.severity === 'error' || result.severity === 'warning'
+              )
+              .map((result, index) => (
+                <InventoryCheckItem
+                  key={`${result.productId}-${index}`}
+                  result={result}
+                />
+              ))}
           </div>
         </div>
 

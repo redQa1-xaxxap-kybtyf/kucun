@@ -171,15 +171,35 @@ export function EnhancedProductSelector({
                       )}
 
                       {/* 库存和单位信息 */}
-                      <div className="flex items-center gap-3 text-xs">
-                        <div className="flex items-center gap-1">
-                          <span className="text-muted-foreground">库存：</span>
-                          <span className="font-medium">
-                            {formatInventory(product)}
-                          </span>
+                      <div className="flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-1">
+                            <span className="text-muted-foreground">
+                              库存：
+                            </span>
+                            <span
+                              className={cn(
+                                'font-medium',
+                                inventoryStatus.status === 'out-of-stock' &&
+                                  'text-red-600',
+                                inventoryStatus.status === 'low-stock' &&
+                                  'text-orange-600',
+                                inventoryStatus.status === 'in-stock' &&
+                                  'text-green-600'
+                              )}
+                            >
+                              {formatInventory(product)}
+                            </span>
+                          </div>
                           <Badge
                             variant={inventoryStatus.color}
-                            className="text-xs"
+                            className={cn(
+                              'text-xs',
+                              inventoryStatus.status === 'out-of-stock' &&
+                                'border-red-200 bg-red-100 text-red-800',
+                              inventoryStatus.status === 'low-stock' &&
+                                'border-orange-200 bg-orange-100 text-orange-800'
+                            )}
                           >
                             {inventoryStatus.text}
                           </Badge>
