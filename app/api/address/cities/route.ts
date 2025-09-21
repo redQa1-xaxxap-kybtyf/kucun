@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 
-import { cities } from '@/lib/data/complete-address-data';
+import { cities } from '@/lib/data/complete-address-data-full';
 
 export async function GET(request: NextRequest) {
   try {
