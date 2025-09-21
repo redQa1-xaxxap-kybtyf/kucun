@@ -260,12 +260,21 @@ export function ERPSalesOrderForm({
     },
   });
 
-  // 计算总金额：使用实时的表单值
+  // 计算总金额：始终基于系统数量（片数）和片单价
   const watchedItems = form.watch('items') || [];
-  const totalAmount = watchedItems.reduce(
-    (sum, item) => sum + (item.quantity || 0) * (item.unitPrice || 0),
-    0
-  );
+  const totalAmount = watchedItems.reduce((sum, item) => {
+    // 计算片单价（如果当前显示单位是件，需要转换为片单价）
+    const piecePriceForCalculation =
+      item.displayUnit === '件' && item.unitPrice && item.piecesPerUnit
+        ? convertUnitPrice.unitPriceToPiecePrice(
+            item.unitPrice,
+            item.piecesPerUnit
+          )
+        : item.unitPrice || 0;
+
+    // 金额 = 系统数量（片数） × 片单价
+    return sum + (item.quantity || 0) * piecePriceForCalculation;
+  }, 0);
 
   // 添加商品
   const addOrderItem = () => {
@@ -523,15 +532,34 @@ export function ERPSalesOrderForm({
                       const _selectedProduct = productsData?.data?.find(
                         p => p.id === field.productId
                       );
-                      // 金额计算：使用实时的表单值
+                      // 金额计算：始终基于系统数量（片数）和片单价
                       const watchedQuantity = form.watch(
                         `items.${index}.quantity`
                       );
                       const watchedUnitPrice = form.watch(
                         `items.${index}.unitPrice`
                       );
+                      const watchedDisplayUnit = form.watch(
+                        `items.${index}.displayUnit`
+                      );
+                      const watchedPiecesPerUnit = form.watch(
+                        `items.${index}.piecesPerUnit`
+                      );
+
+                      // 计算片单价（如果当前显示单位是件，需要转换为片单价）
+                      const piecePriceForCalculation =
+                        watchedDisplayUnit === '件' &&
+                        watchedUnitPrice &&
+                        watchedPiecesPerUnit
+                          ? convertUnitPrice.unitPriceToPiecePrice(
+                              watchedUnitPrice,
+                              watchedPiecesPerUnit
+                            )
+                          : watchedUnitPrice || 0;
+
+                      // 金额 = 系统数量（片数） × 片单价
                       const itemAmount =
-                        (watchedQuantity || 0) * (watchedUnitPrice || 0);
+                        (watchedQuantity || 0) * piecePriceForCalculation;
 
                       return (
                         <TableRow key={field.id} className="h-10">
