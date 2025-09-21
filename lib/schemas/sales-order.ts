@@ -54,6 +54,12 @@ export const SalesOrderItemSchema = z.object({
     .max(999999.99, '单价不能超过999,999.99')
     .multipleOf(0.01, '单价最多保留2位小数'),
 
+  piecesPerUnit: z
+    .number()
+    .min(1, '每件片数必须大于0')
+    .max(9999, '每件片数不能超过9999')
+    .optional(),
+
   remarks: z
     .string()
     .max(200, '备注不能超过200个字符')

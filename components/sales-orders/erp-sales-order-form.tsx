@@ -159,6 +159,7 @@ export function ERPSalesOrderForm({
       unit: '',
       quantity: 1,
       unitPrice: 0,
+      piecesPerUnit: undefined,
       remarks: '',
     });
   };
@@ -390,9 +391,10 @@ export function ERPSalesOrderForm({
                       <TableHead className="h-8 text-xs">序号</TableHead>
                       <TableHead className="h-8 text-xs">商品名称</TableHead>
                       <TableHead className="h-8 text-xs">规格</TableHead>
-                      <TableHead className="h-8 text-xs">数量</TableHead>
                       <TableHead className="h-8 text-xs">单位</TableHead>
+                      <TableHead className="h-8 text-xs">数量</TableHead>
                       <TableHead className="h-8 text-xs">单价</TableHead>
+                      <TableHead className="h-8 text-xs">每件片数</TableHead>
                       <TableHead className="h-8 text-xs">金额</TableHead>
                       <TableHead className="h-8 text-xs">备注</TableHead>
                       <TableHead className="h-8 text-xs">操作</TableHead>
@@ -441,6 +443,10 @@ export function ERPSalesOrderForm({
                                             product.unit ||
                                             ''
                                         );
+                                        form.setValue(
+                                          `items.${index}.piecesPerUnit`,
+                                          product.piecesPerUnit || undefined
+                                        );
                                       }
                                     }}
                                     placeholder="选择商品"
@@ -471,6 +477,27 @@ export function ERPSalesOrderForm({
                               )}
                             />
                           </TableCell>
+                          {/* 单位列 */}
+                          <TableCell className="min-w-[60px]">
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.unit`}
+                              render={({ field: unitField }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="单位"
+                                      className="h-7 text-xs"
+                                      readOnly
+                                      {...unitField}
+                                    />
+                                  </FormControl>
+                                  <FormMessage className="text-xs" />
+                                </FormItem>
+                              )}
+                            />
+                          </TableCell>
+                          {/* 数量列 */}
                           <TableCell className="min-w-[80px]">
                             <FormField
                               control={form.control}
@@ -496,26 +523,7 @@ export function ERPSalesOrderForm({
                               )}
                             />
                           </TableCell>
-                          {/* 单位列 */}
-                          <TableCell className="min-w-[60px]">
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.unit`}
-                              render={({ field: unitField }) => (
-                                <FormItem>
-                                  <FormControl>
-                                    <Input
-                                      placeholder="单位"
-                                      className="h-7 text-xs"
-                                      readOnly
-                                      {...unitField}
-                                    />
-                                  </FormControl>
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
-                            />
-                          </TableCell>
+                          {/* 单价列 */}
                           <TableCell className="min-w-[80px]">
                             <FormField
                               control={form.control}
@@ -542,6 +550,27 @@ export function ERPSalesOrderForm({
                               )}
                             />
                           </TableCell>
+                          {/* 每件片数列 */}
+                          <TableCell className="min-w-[80px]">
+                            <FormField
+                              control={form.control}
+                              name={`items.${index}.piecesPerUnit`}
+                              render={({ field: piecesField }) => (
+                                <FormItem>
+                                  <FormControl>
+                                    <Input
+                                      placeholder="每件片数"
+                                      className="h-7 text-xs"
+                                      readOnly
+                                      value={piecesField.value || ''}
+                                    />
+                                  </FormControl>
+                                  <FormMessage className="text-xs" />
+                                </FormItem>
+                              )}
+                            />
+                          </TableCell>
+                          {/* 金额列 */}
                           <TableCell className="text-xs font-medium">
                             ¥{itemAmount.toFixed(2)}
                           </TableCell>
