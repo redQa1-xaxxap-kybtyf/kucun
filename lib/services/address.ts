@@ -5,11 +5,7 @@
  */
 
 // 使用完整的地址数据文件
-import {
-  areas,
-  cities,
-  provinces,
-} from '../data/complete-address-data-full.js';
+import { areas, cities, provinces } from '../data/complete-address-data-full';
 
 import type {
   AddressData,
