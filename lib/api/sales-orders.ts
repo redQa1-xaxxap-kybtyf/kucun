@@ -93,14 +93,17 @@ export async function getSalesOrder(id: string): Promise<SalesOrder> {
     throw new Error(data.error || '获取销售订单详情失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('获取销售订单失败：数据为空');
+  }
+  return data.data;
 }
 
 /**
  * 创建销售订单
  */
 export async function createSalesOrder(
-  orderData: SalesOrderCreateInput | any
+  orderData: SalesOrderCreateInput
 ): Promise<SalesOrder> {
   const response = await fetch(API_BASE, {
     method: 'POST',
@@ -120,7 +123,10 @@ export async function createSalesOrder(
     throw new Error(data.error || '创建销售订单失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('创建销售订单失败：数据为空');
+  }
+  return data.data;
 }
 
 // 更新销售订单

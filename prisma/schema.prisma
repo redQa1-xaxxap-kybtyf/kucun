@@ -71,9 +71,6 @@ model Supplier {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  // 关联关系
-  salesOrders SalesOrder[]
-
   @@index([name])
   @@index([phone])
   @@index([status])
@@ -164,10 +161,6 @@ model SalesOrder {
   customerId   String   @map("customer_id")
   userId       String   @map("user_id")
   status       String   @default("draft") // draft, confirmed, shipped, completed, cancelled
-  orderType    String   @default("NORMAL") @map("order_type") // NORMAL, TRANSFER
-  supplierId   String?  @map("supplier_id") // 调货销售时的供应商ID
-  costAmount   Float?   @default(0) @map("cost_amount") // 调货销售的成本金额
-  profitAmount Float?   @default(0) @map("profit_amount") // 调货销售的毛利金额
   totalAmount  Float    @default(0) @map("total_amount")
   remarks      String?
   createdAt    DateTime @default(now()) @map("created_at")
@@ -176,15 +169,12 @@ model SalesOrder {
   // 关联关系
   customer Customer         @relation(fields: [customerId], references: [id])
   user     User             @relation(fields: [userId], references: [id])
-  supplier Supplier?        @relation(fields: [supplierId], references: [id])
   items    SalesOrderItem[]
   payments PaymentRecord[]
 
   @@index([customerId], map: "idx_sales_orders_customer")
   @@index([userId], map: "idx_sales_orders_user")
   @@index([status], map: "idx_sales_orders_status")
-  @@index([orderType], map: "idx_sales_orders_order_type")
-  @@index([supplierId], map: "idx_sales_orders_supplier")
   @@index([createdAt(sort: Desc)], map: "idx_sales_orders_date")
   @@map("sales_orders")
 }

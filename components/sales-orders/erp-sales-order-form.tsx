@@ -21,7 +21,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import {
   Select,
   SelectContent,
@@ -29,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+
 import {
   Table,
   TableBody,
@@ -42,7 +42,6 @@ import { useToast } from '@/components/ui/use-toast';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
 import {
   CreateSalesOrderSchema,
   type CreateSalesOrderData,
@@ -209,9 +208,6 @@ export function ERPSalesOrderForm({
     defaultValues: {
       customerId: '',
       status: 'draft',
-      orderType: 'NORMAL',
-      supplierId: '',
-      costAmount: undefined,
       remarks: '',
       items: [],
     },
@@ -242,24 +238,6 @@ export function ERPSalesOrderForm({
   const { data: productsData, isLoading: _productsLoading } = useQuery({
     queryKey: productQueryKeys.list(),
     queryFn: () => getProducts(),
-  });
-
-  const { data: suppliersData, isLoading: suppliersLoading } = useQuery({
-    queryKey: supplierQueryKeys.list({
-      page: 1,
-      limit: 100,
-      status: 'active',
-      sortBy: 'name',
-      sortOrder: 'asc',
-    }),
-    queryFn: () =>
-      getSuppliers({
-        page: 1,
-        limit: 100,
-        status: 'active',
-        sortBy: 'name',
-        sortOrder: 'asc',
-      }),
   });
 
   // 创建订单
@@ -381,17 +359,7 @@ export function ERPSalesOrderForm({
   const onSubmit = (data: CreateSalesOrderData) => {
     // 不传递orderNumber，让后端自动生成
     const { orderNumber: _orderNumber, ...submitData } = data;
-
-    // 处理调货销售的字段：空字符串转为undefined
-    const processedData = {
-      ...submitData,
-      supplierId:
-        submitData.supplierId && submitData.supplierId.trim() !== ''
-          ? submitData.supplierId
-          : undefined,
-    };
-
-    createMutation.mutate(processedData);
+    createMutation.mutate(submitData);
   };
 
   return (
@@ -464,144 +432,6 @@ export function ERPSalesOrderForm({
                     )}
                   />
                 </div>
-
-                {/* 订单类型 */}
-                <div className="space-y-1">
-                  <FormField
-                    control={form.control}
-                    name="orderType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel className="text-xs text-muted-foreground">
-                          订单类型 <span className="text-destructive">*</span>
-                        </FormLabel>
-                        <FormControl>
-                          <RadioGroup
-                            value={field.value}
-                            onValueChange={field.onChange}
-                            className="flex flex-row space-x-6"
-                          >
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="NORMAL" id="normal" />
-                              <Label htmlFor="normal" className="text-xs">
-                                正常销售
-                              </Label>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                              <RadioGroupItem value="TRANSFER" id="transfer" />
-                              <Label htmlFor="transfer" className="text-xs">
-                                调货销售
-                              </Label>
-                            </div>
-                          </RadioGroup>
-                        </FormControl>
-                        <FormMessage className="text-xs" />
-                      </FormItem>
-                    )}
-                  />
-                </div>
-
-                {/* 调货销售特殊字段 */}
-                {form.watch('orderType') === 'TRANSFER' && (
-                  <>
-                    {/* 供应商选择 */}
-                    <div className="space-y-1">
-                      <FormField
-                        control={form.control}
-                        name="supplierId"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs text-muted-foreground">
-                              供应商/调出方{' '}
-                              <span className="text-destructive">*</span>
-                            </FormLabel>
-                            <Select
-                              onValueChange={field.onChange}
-                              value={field.value || ''}
-                              disabled={suppliersLoading}
-                            >
-                              <FormControl>
-                                <SelectTrigger className="h-8 text-xs">
-                                  <SelectValue placeholder="请选择供应商" />
-                                </SelectTrigger>
-                              </FormControl>
-                              <SelectContent>
-                                {suppliersData?.data?.map(supplier => (
-                                  <SelectItem
-                                    key={supplier.id}
-                                    value={supplier.id}
-                                  >
-                                    <div className="flex items-center gap-2">
-                                      <span className="text-xs">
-                                        {supplier.name}
-                                      </span>
-                                      {supplier.phone && (
-                                        <span className="text-xs text-muted-foreground">
-                                          ({supplier.phone})
-                                        </span>
-                                      )}
-                                    </div>
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* 成本金额 */}
-                    <div className="space-y-1">
-                      <FormField
-                        control={form.control}
-                        name="costAmount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs text-muted-foreground">
-                              成本金额{' '}
-                              <span className="text-destructive">*</span>
-                            </FormLabel>
-                            <FormControl>
-                              <Input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                placeholder="0.00"
-                                className="h-8 text-xs"
-                                {...field}
-                                value={field.value || ''}
-                                onChange={e => {
-                                  const value = e.target.value;
-                                  field.onChange(
-                                    value === '' ? undefined : parseFloat(value)
-                                  );
-                                }}
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-
-                    {/* 毛利显示 */}
-                    {form.watch('costAmount') && form.watch('totalAmount') && (
-                      <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">
-                          预计毛利
-                        </Label>
-                        <div className="h-8 rounded-md border bg-muted/50 px-3 py-2 text-xs">
-                          ¥
-                          {(
-                            (form.watch('totalAmount') || 0) -
-                            (form.watch('costAmount') || 0)
-                          ).toFixed(2)}
-                        </div>
-                      </div>
-                    )}
-                  </>
-                )}
 
                 {/* 订单状态 */}
                 <div className="space-y-1">

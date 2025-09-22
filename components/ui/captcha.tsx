@@ -35,7 +35,7 @@ const getRandomColor = (min: number = 0, max: number = 255): string => {
 export const Captcha = React.forwardRef<HTMLCanvasElement, CaptchaProps>(
   (
     { width = 120, height = 40, length = 4, onCaptchaChange, className },
-    ref
+    _ref
   ) => {
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const [captchaText, setCaptchaText] = useState('');
@@ -129,24 +129,16 @@ export const Captcha = React.forwardRef<HTMLCanvasElement, CaptchaProps>(
       drawCaptcha();
     }, [drawCaptcha]);
 
-    // 初始化绘制 - 确保在DOM完全加载后执行
+    // 初始化绘制 - 只在组件挂载时执行一次
     useEffect(() => {
-      const timer = setTimeout(() => {
-        drawCaptcha();
-      }, 100); // 延迟100ms确保DOM完全渲染
-
-      return () => clearTimeout(timer);
+      drawCaptcha();
     }, []); // 空依赖数组，只在挂载时执行
 
     // 当尺寸或长度变化时重新绘制
     useEffect(() => {
       if (captchaText) {
         // 只有在已经初始化后才重新绘制
-        const timer = setTimeout(() => {
-          drawCaptcha();
-        }, 50);
-
-        return () => clearTimeout(timer);
+        drawCaptcha();
       }
     }, [width, height, length, drawCaptcha]);
 
@@ -156,10 +148,9 @@ export const Captcha = React.forwardRef<HTMLCanvasElement, CaptchaProps>(
           ref={canvasRef}
           width={width}
           height={height}
-          className="cursor-pointer rounded border border-input bg-gray-50"
+          className="cursor-pointer rounded border border-input"
           onClick={refreshCaptcha}
           title="点击刷新验证码"
-          style={{ minWidth: width, minHeight: height }}
         />
         <Button
           type="button"

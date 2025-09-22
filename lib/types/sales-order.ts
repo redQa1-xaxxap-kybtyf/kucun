@@ -13,9 +13,6 @@ export type SalesOrderStatus =
   | 'completed'
   | 'cancelled';
 
-// 销售订单类型枚举
-export type SalesOrderType = 'NORMAL' | 'TRANSFER';
-
 // 销售订单明细类型
 export interface SalesOrderItem {
   id: string;
@@ -38,10 +35,6 @@ export interface SalesOrder {
   customerId: string;
   userId: string;
   status: SalesOrderStatus;
-  orderType: SalesOrderType;
-  supplierId?: string;
-  costAmount?: number;
-  profitAmount?: number;
   totalAmount: number;
   remarks?: string;
   createdAt: string;
@@ -50,11 +43,6 @@ export interface SalesOrder {
   // 关联数据（可选，根据查询需要包含）
   customer?: Customer;
   user?: User;
-  supplier?: {
-    id: string;
-    name: string;
-    phone?: string;
-  };
   items?: SalesOrderItem[];
 }
 
@@ -96,9 +84,6 @@ export interface SalesOrderDetailResponse {
 // 销售订单创建输入类型
 export interface SalesOrderCreateInput {
   customerId: string;
-  orderType?: SalesOrderType;
-  supplierId?: string;
-  costAmount?: number;
   remarks?: string;
   items: SalesOrderItemCreateInput[];
 }
@@ -108,9 +93,6 @@ export interface SalesOrderUpdateInput {
   id: string;
   customerId?: string;
   status?: SalesOrderStatus;
-  orderType?: SalesOrderType;
-  supplierId?: string;
-  costAmount?: number;
   remarks?: string;
   items?: SalesOrderItemUpdateInput[];
 }

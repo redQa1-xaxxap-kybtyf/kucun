@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
@@ -179,10 +179,6 @@ export async function GET(request: NextRequest) {
           customerId: true,
           userId: true,
           status: true,
-          orderType: true,
-          supplierId: true,
-          costAmount: true,
-          profitAmount: true,
           totalAmount: true,
           remarks: true,
           createdAt: true,
@@ -198,13 +194,6 @@ export async function GET(request: NextRequest) {
             select: {
               id: true,
               name: true,
-            },
-          },
-          supplier: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
             },
           },
           items: {
@@ -319,9 +308,6 @@ export async function POST(request: NextRequest) {
 
     const {
       customerId,
-      orderType = 'NORMAL',
-      supplierId,
-      costAmount,
       items,
       remarks,
       orderNumber: providedOrderNumber,
@@ -337,20 +323,6 @@ export async function POST(request: NextRequest) {
         { success: false, error: '指定的客户不存在' },
         { status: 400 }
       );
-    }
-
-    // 如果是调货销售，验证供应商是否存在
-    if (orderType === 'TRANSFER' && supplierId) {
-      const supplier = await prisma.supplier.findUnique({
-        where: { id: supplierId },
-      });
-
-      if (!supplier) {
-        return NextResponse.json(
-          { success: false, error: '供应商不存在' },
-          { status: 404 }
-        );
-      }
     }
 
     // 验证所有产品是否存在
@@ -382,12 +354,6 @@ export async function POST(request: NextRequest) {
       0
     );
 
-    // 计算调货销售的毛利金额
-    const profitAmount =
-      orderType === 'TRANSFER' && costAmount
-        ? totalAmount - costAmount
-        : undefined;
-
     // 使用提供的订单号或生成新的订单号
     const orderNumber = providedOrderNumber || generateOrderNumber();
 
@@ -400,10 +366,6 @@ export async function POST(request: NextRequest) {
           customerId,
           userId: session.user.id,
           status: 'draft',
-          orderType,
-          supplierId: orderType === 'TRANSFER' ? supplierId : null,
-          costAmount: orderType === 'TRANSFER' ? costAmount : null,
-          profitAmount,
           totalAmount,
           remarks,
         },
@@ -438,10 +400,6 @@ export async function POST(request: NextRequest) {
         customerId: true,
         userId: true,
         status: true,
-        orderType: true,
-        supplierId: true,
-        costAmount: true,
-        profitAmount: true,
         totalAmount: true,
         remarks: true,
         createdAt: true,
@@ -457,13 +415,6 @@ export async function POST(request: NextRequest) {
           select: {
             id: true,
             name: true,
-          },
-        },
-        supplier: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
           },
         },
         items: {

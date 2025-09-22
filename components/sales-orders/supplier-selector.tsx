@@ -1,8 +1,8 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronsUpDown, Search, Truck } from 'lucide-react';
 import * as React from 'react';
+import { useQuery } from '@tanstack/react-query';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -18,8 +18,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import type { Supplier } from '@/lib/types/supplier';
 import { cn } from '@/lib/utils';
+import type { Supplier } from '@/lib/types/supplier';
 
 // 供应商API查询函数
 async function getSuppliers(): Promise<{ data: Supplier[] }> {
@@ -160,7 +160,7 @@ export function SupplierSelector({
                   <div className="font-medium">清除选择</div>
                 </CommandItem>
               )}
-
+              
               {filteredSuppliers.map(supplier => {
                 const isSelected = value === supplier.id;
 
