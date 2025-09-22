@@ -66,7 +66,8 @@ export function OrderStatusBar({
   const statusConfig = getStatusConfig(status);
 
   // 格式化金额
-  const formatAmount = (amount: number) => new Intl.NumberFormat('zh-CN', {
+  const formatAmount = (amount: number) =>
+    new Intl.NumberFormat('zh-CN', {
       style: 'currency',
       currency: 'CNY',
       minimumFractionDigits: 2,

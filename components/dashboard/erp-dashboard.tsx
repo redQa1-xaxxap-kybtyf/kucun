@@ -67,7 +67,8 @@ export function ERPDashboard() {
   const router = useRouter();
 
   // 数据状态
-  const [dashboardData, setDashboardData] = React.useState<DashboardStats | null>(null);
+  const [dashboardData, setDashboardData] =
+    React.useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [selectedPeriod, setSelectedPeriod] = React.useState('7d');
   const [isRefreshing, setIsRefreshing] = React.useState(false);
@@ -172,7 +173,7 @@ export function ERPDashboard() {
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / (1000 * 60));
     const hours = Math.floor(diff / (1000 * 60 * 60));
-    
+
     if (minutes < 60) {
       return `${minutes}分钟前`;
     } else if (hours < 24) {
@@ -281,7 +282,9 @@ export function ERPDashboard() {
                 onClick={refreshData}
                 disabled={isRefreshing}
               >
-                <RefreshCw className={cn('mr-1 h-3 w-3', isRefreshing && 'animate-spin')} />
+                <RefreshCw
+                  className={cn('mr-1 h-3 w-3', isRefreshing && 'animate-spin')}
+                />
                 刷新
               </Button>
             </div>
@@ -299,7 +302,9 @@ export function ERPDashboard() {
                 <Package className="h-3 w-3" />
                 产品总数
               </div>
-              <div className="mt-1 text-lg font-bold">{dashboardData.totalProducts}</div>
+              <div className="mt-1 text-lg font-bold">
+                {dashboardData.totalProducts}
+              </div>
               <div className="text-xs text-green-600">+12%</div>
             </div>
             <div className="text-center">
@@ -307,7 +312,9 @@ export function ERPDashboard() {
                 <ShoppingCart className="h-3 w-3" />
                 订单总数
               </div>
-              <div className="mt-1 text-lg font-bold">{dashboardData.totalOrders}</div>
+              <div className="mt-1 text-lg font-bold">
+                {dashboardData.totalOrders}
+              </div>
               <div className="text-xs text-green-600">+8%</div>
             </div>
             <div className="text-center">
@@ -315,7 +322,9 @@ export function ERPDashboard() {
                 <Users className="h-3 w-3" />
                 客户总数
               </div>
-              <div className="mt-1 text-lg font-bold">{dashboardData.totalCustomers}</div>
+              <div className="mt-1 text-lg font-bold">
+                {dashboardData.totalCustomers}
+              </div>
               <div className="text-xs text-green-600">+15%</div>
             </div>
             <div className="text-center">
@@ -323,7 +332,9 @@ export function ERPDashboard() {
                 <CreditCard className="h-3 w-3" />
                 总收入
               </div>
-              <div className="mt-1 text-lg font-bold">{formatCurrency(dashboardData.totalRevenue)}</div>
+              <div className="mt-1 text-lg font-bold">
+                {formatCurrency(dashboardData.totalRevenue)}
+              </div>
               <div className="text-xs text-green-600">+23%</div>
             </div>
           </div>
@@ -445,8 +456,12 @@ export function ERPDashboard() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">{activity.title}</div>
-                  <div className="text-muted-foreground">{activity.description}</div>
-                  <div className="mt-1 text-muted-foreground">{formatTime(activity.timestamp)}</div>
+                  <div className="text-muted-foreground">
+                    {activity.description}
+                  </div>
+                  <div className="mt-1 text-muted-foreground">
+                    {formatTime(activity.timestamp)}
+                  </div>
                 </div>
               </div>
             ))}

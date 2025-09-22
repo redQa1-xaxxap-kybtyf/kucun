@@ -17,7 +17,7 @@ function fixUnusedVars(filePath: string): boolean {
     const content = fs.readFileSync(filePath, 'utf-8');
     let modified = false;
     let newContent = content;
-    
+
     // 修复未使用的导入
     const unusedImports = [
       'ChevronRight',
@@ -37,9 +37,9 @@ function fixUnusedVars(filePath: string): boolean {
       'PaymentStatistics',
       'PaymentMethodStatistics',
       'CustomerPaymentStatistics',
-      'ReturnOrder'
+      'ReturnOrder',
     ];
-    
+
     for (const varName of unusedImports) {
       // 修复导入中的未使用变量
       const importRegex = new RegExp(`(\\s+)${varName}(\\s*[,}])`, 'g');
@@ -48,7 +48,7 @@ function fixUnusedVars(filePath: string): boolean {
         return `${before}_${varName}${after}`;
       });
     }
-    
+
     // 修复未使用的变量声明
     const unusedVarDeclarations = [
       'sampleBatches',
@@ -65,9 +65,9 @@ function fixUnusedVars(filePath: string): boolean {
       'availabilityCheck',
       'setAvailabilityCheck',
       'checkAvailability',
-      'calculatedAlertLevel'
+      'calculatedAlertLevel',
     ];
-    
+
     for (const varName of unusedVarDeclarations) {
       // 修复const/let声明
       const declRegex = new RegExp(`(const|let)\\s+${varName}\\s*=`, 'g');
@@ -75,7 +75,7 @@ function fixUnusedVars(filePath: string): boolean {
         modified = true;
         return `${keyword} _${varName} =`;
       });
-      
+
       // 修复解构声明
       const destructRegex = new RegExp(`(\\s+)${varName}(\\s*[,}])`, 'g');
       newContent = newContent.replace(destructRegex, (match, before, after) => {
@@ -86,32 +86,34 @@ function fixUnusedVars(filePath: string): boolean {
         return `${before}_${varName}${after}`;
       });
     }
-    
+
     // 修复未使用的函数参数
-    const unusedParams = [
-      'customer',
-      'customerId',
-      'ref'
-    ];
-    
+    const unusedParams = ['customer', 'customerId', 'ref'];
+
     for (const paramName of unusedParams) {
       // 修复函数参数
-      const paramRegex = new RegExp(`\\(([^)]*?)\\b${paramName}\\b([^)]*)\\)`, 'g');
+      const paramRegex = new RegExp(
+        `\\(([^)]*?)\\b${paramName}\\b([^)]*)\\)`,
+        'g'
+      );
       newContent = newContent.replace(paramRegex, (match, before, after) => {
-        if (before.includes('_' + paramName) || after.includes('_' + paramName)) {
+        if (
+          before.includes('_' + paramName) ||
+          after.includes('_' + paramName)
+        ) {
           return match; // 已经有下划线前缀
         }
         modified = true;
         return `(${before}_${paramName}${after})`;
       });
     }
-    
+
     if (modified) {
       fs.writeFileSync(filePath, newContent);
       console.log(`✅ 修复未使用变量: ${filePath}`);
       return true;
     }
-    
+
     return false;
   } catch (error) {
     console.error(`❌ 处理文件失败 ${filePath}:`, error);
@@ -121,14 +123,14 @@ function fixUnusedVars(filePath: string): boolean {
 
 function findTsFiles(dir: string): string[] {
   const files: string[] = [];
-  
+
   function traverse(currentDir: string) {
     const entries = fs.readdirSync(currentDir);
-    
+
     for (const entry of entries) {
       const fullPath = path.join(currentDir, entry);
       const stat = fs.statSync(fullPath);
-      
+
       if (stat.isDirectory()) {
         if (!entry.startsWith('.') && entry !== 'node_modules') {
           traverse(fullPath);
@@ -138,25 +140,25 @@ function findTsFiles(dir: string): string[] {
       }
     }
   }
-  
+
   traverse(dir);
   return files;
 }
 
 function main() {
   console.log('🔧 开始修复未使用变量问题...');
-  
+
   const projectRoot = process.cwd();
   const files = findTsFiles(projectRoot);
-  
+
   let fixedCount = 0;
-  
+
   for (const file of files) {
     if (fixUnusedVars(file)) {
       fixedCount++;
     }
   }
-  
+
   console.log(`\n✨ 修复完成！共处理 ${fixedCount} 个文件`);
 }
 

@@ -411,8 +411,20 @@ export async function POST(request: NextRequest) {
 
       // 创建订单明细
       const orderItems = await Promise.all(
-        items.map(item =>
-          tx.salesOrderItem.create({
+        items.map(item => {
+          // 计算基础小计
+          const subtotal = item.quantity * item.unitPrice;
+
+          // 调货销售时计算成本相关字段
+          let costSubtotal: number | undefined;
+          let profitAmount: number | undefined;
+
+          if (orderType === 'TRANSFER' && item.unitCost !== undefined) {
+            costSubtotal = item.quantity * item.unitCost;
+            profitAmount = subtotal - costSubtotal;
+          }
+
+          return tx.salesOrderItem.create({
             data: {
               salesOrderId: order.id,
               productId: item.productId,
@@ -420,10 +432,14 @@ export async function POST(request: NextRequest) {
               productionDate: item.productionDate,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
-              subtotal: item.quantity * item.unitPrice,
+              subtotal,
+              // 调货销售相关字段
+              unitCost: item.unitCost || null,
+              costSubtotal: costSubtotal || null,
+              profitAmount: profitAmount || null,
             },
-          })
-        )
+          });
+        })
       );
 
       return { order, items: orderItems };

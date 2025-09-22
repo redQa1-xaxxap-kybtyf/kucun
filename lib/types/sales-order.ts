@@ -26,6 +26,10 @@ export interface SalesOrderItem {
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  // 调货销售相关字段
+  unitCost?: number; // 单位成本价（调货销售时使用）
+  costSubtotal?: number; // 成本小计（调货销售时使用）
+  profitAmount?: number; // 毛利金额（调货销售时使用）
 
   // 关联数据（可选，根据查询需要包含）
   product?: Product;
@@ -122,6 +126,8 @@ export interface SalesOrderItemCreateInput {
   productionDate?: string;
   quantity: number;
   unitPrice: number;
+  // 调货销售相关字段
+  unitCost?: number; // 单位成本价（调货销售时使用）
 }
 
 // 销售订单明细更新输入类型
@@ -132,6 +138,8 @@ export interface SalesOrderItemUpdateInput {
   productionDate?: string;
   quantity: number;
   unitPrice: number;
+  // 调货销售相关字段
+  unitCost?: number; // 单位成本价（调货销售时使用）
   _action?: 'create' | 'update' | 'delete'; // 操作类型
 }
 
