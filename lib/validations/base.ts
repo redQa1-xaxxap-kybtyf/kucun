@@ -111,26 +111,8 @@ export const userValidations = {
   }),
 };
 
-// 客户相关验证
-export const customerValidations = {
-  create: z.object({
-    name: baseValidations.name,
-    phone: baseValidations.phone,
-    email: baseValidations.email.optional(),
-    address: baseValidations.address,
-    remarks: baseValidations.remarks,
-  }),
-
-  update: z.object({
-    id: baseValidations.id,
-    name: baseValidations.name.optional(),
-    phone: baseValidations.phone,
-    email: baseValidations.email.optional(),
-    address: baseValidations.address,
-    remarks: baseValidations.remarks,
-    status: baseValidations.status.optional(),
-  }),
-};
+// 客户相关验证 - 已迁移到 lib/validations/customer.ts
+// 遵循唯一真理源原则，请使用 lib/validations/customer.ts 中的验证规则
 
 // 入库记录验证 - 已迁移到 lib/validations/inbound.ts
 // 遵循唯一真理源原则，请使用 lib/validations/inbound.ts 中的验证规则
@@ -144,8 +126,8 @@ export type UserUpdatePasswordInput = z.infer<
 >;
 export type UserRegisterInput = z.infer<typeof userValidations.register>;
 
-export type CustomerCreateInput = z.infer<typeof customerValidations.create>;
-export type CustomerUpdateInput = z.infer<typeof customerValidations.update>;
+// 客户相关类型 - 已迁移到 lib/types/customer.ts
+// 遵循唯一真理源原则，请从 lib/types/customer.ts 导入相关类型
 
 export type InboundRecordCreateInput = z.infer<
   typeof inboundRecordValidations.create

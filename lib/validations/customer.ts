@@ -234,7 +234,7 @@ export const parseExtendedInfo = (
   try {
     return JSON.parse(extendedInfoStr) as CustomerExtendedInfo;
   } catch (error) {
-    console.error('解析客户扩展信息失败:', error);
+    // 解析失败时返回空对象，避免应用崩溃
     return {};
   }
 };
