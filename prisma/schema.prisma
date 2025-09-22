@@ -199,10 +199,6 @@ model SalesOrderItem {
   quantity       Float
   unitPrice      Float      @map("unit_price")
   subtotal       Float
-  // 调货销售相关字段
-  unitCost       Float?     @map("unit_cost") // 单位成本价（调货销售时使用）
-  costSubtotal   Float?     @map("cost_subtotal") // 成本小计（调货销售时使用）
-  profitAmount   Float?     @map("profit_amount") // 毛利金额（调货销售时使用）
 
   // 关联关系
   salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
@@ -211,8 +207,6 @@ model SalesOrderItem {
   @@index([salesOrderId], map: "idx_sales_order_items_order")
   @@index([productId], map: "idx_sales_order_items_product")
   @@index([productId, colorCode], map: "idx_sales_order_items_product_color")
-  @@index([unitCost], map: "idx_sales_order_items_unit_cost")
-  @@index([profitAmount], map: "idx_sales_order_items_profit")
   @@map("sales_order_items")
 }
 

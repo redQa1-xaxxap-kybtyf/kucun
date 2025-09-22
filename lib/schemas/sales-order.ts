@@ -78,14 +78,6 @@ export const SalesOrderItemSchema = z.object({
     .max(9999, '每件片数不能超过9999')
     .optional(),
 
-  // 调货销售相关字段
-  unitCost: z
-    .number()
-    .min(0.01, '成本价必须大于0')
-    .max(999999.99, '成本价不能超过999,999.99')
-    .multipleOf(0.01, '成本价最多保留2位小数')
-    .optional(),
-
   remarks: z
     .string()
     .max(200, '备注不能超过200个字符')

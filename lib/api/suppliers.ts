@@ -1,12 +1,12 @@
-import type {
-  Supplier,
-  SupplierCreateInput,
-  SupplierUpdateInput,
+import type { 
+  Supplier, 
+  SupplierCreateInput, 
+  SupplierUpdateInput, 
   SupplierQueryParams,
   BatchDeleteSuppliersInput,
   BatchDeleteSuppliersResult,
   BatchUpdateSupplierStatusInput,
-  BatchUpdateSupplierStatusResult,
+  BatchUpdateSupplierStatusResult
 } from '@/lib/types/supplier';
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 
@@ -19,7 +19,7 @@ export async function getSuppliers(
   params: SupplierQueryParams = {}
 ): Promise<PaginatedResponse<Supplier>> {
   const searchParams = new URLSearchParams();
-
+  
   Object.entries(params).forEach(([key, value]) => {
     if (value !== undefined && value !== null && value !== '') {
       searchParams.append(key, String(value));
@@ -65,9 +65,7 @@ export async function createSupplier(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `创建供应商失败: ${response.statusText}`
-    );
+    throw new Error(errorData.error || `创建供应商失败: ${response.statusText}`);
   }
 
   return response.json();
@@ -90,9 +88,7 @@ export async function updateSupplier(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `更新供应商失败: ${response.statusText}`
-    );
+    throw new Error(errorData.error || `更新供应商失败: ${response.statusText}`);
   }
 
   return response.json();
@@ -108,9 +104,7 @@ export async function deleteSupplier(id: string): Promise<ApiResponse<void>> {
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `删除供应商失败: ${response.statusText}`
-    );
+    throw new Error(errorData.error || `删除供应商失败: ${response.statusText}`);
   }
 
   return response.json();
@@ -132,9 +126,7 @@ export async function batchDeleteSuppliers(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `批量删除供应商失败: ${response.statusText}`
-    );
+    throw new Error(errorData.error || `批量删除供应商失败: ${response.statusText}`);
   }
 
   return response.json();
@@ -156,9 +148,7 @@ export async function batchUpdateSupplierStatus(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `批量更新供应商状态失败: ${response.statusText}`
-    );
+    throw new Error(errorData.error || `批量更新供应商状态失败: ${response.statusText}`);
   }
 
   return response.json();
@@ -170,8 +160,7 @@ export async function batchUpdateSupplierStatus(
 export const supplierQueryKeys = {
   all: ['suppliers'] as const,
   lists: () => [...supplierQueryKeys.all, 'list'] as const,
-  list: (params: SupplierQueryParams) =>
-    [...supplierQueryKeys.lists(), params] as const,
+  list: (params: SupplierQueryParams) => [...supplierQueryKeys.lists(), params] as const,
   details: () => [...supplierQueryKeys.all, 'detail'] as const,
   detail: (id: string) => [...supplierQueryKeys.details(), id] as const,
 };

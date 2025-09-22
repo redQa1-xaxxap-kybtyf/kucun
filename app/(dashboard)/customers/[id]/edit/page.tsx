@@ -20,7 +20,7 @@ interface CustomerEditPageProps {
 
 export default function CustomerEditPage({ params }: CustomerEditPageProps) {
   const router = useRouter();
-
+  
   // 解析动态路由参数 (Next.js 15.4 要求)
   const { id: customerId } = React.use(params);
 
@@ -76,12 +76,7 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
           <div className="border-b bg-muted/30 px-3 py-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium">编辑客户</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7"
-                onClick={handleBack}
-              >
+              <Button variant="ghost" size="sm" className="h-7" onClick={handleBack}>
                 <ArrowLeft className="mr-1 h-3 w-3" />
                 返回
               </Button>
@@ -90,8 +85,7 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
           <div className="px-3 py-8">
             <div className="text-center">
               <p className="text-sm text-red-600">
-                加载客户信息失败:{' '}
-                {error instanceof Error ? error.message : '未知错误'}
+                加载客户信息失败: {error instanceof Error ? error.message : '未知错误'}
               </p>
               <Button
                 variant="outline"
@@ -116,12 +110,7 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
           <div className="border-b bg-muted/30 px-3 py-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium">编辑客户</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7"
-                onClick={handleBack}
-              >
+              <Button variant="ghost" size="sm" className="h-7" onClick={handleBack}>
                 <ArrowLeft className="mr-1 h-3 w-3" />
                 返回
               </Button>

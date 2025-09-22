@@ -26,7 +26,7 @@ const filesToFix = [
   'lib/utils/piece-calculation.ts',
   'lib/utils/type-guards.ts',
   'lib/validations/base.ts',
-  'app/not-found.tsx',
+  'app/not-found.tsx'
 ];
 
 function fixCommentHeader(filePath: string): boolean {
@@ -38,7 +38,7 @@ function fixCommentHeader(filePath: string): boolean {
 
     const content = fs.readFileSync(filePath, 'utf-8');
     const lines = content.split('\n');
-
+    
     // 检查第一行是否以 " * " 开头（缺少 /**）
     if (lines.length > 0 && lines[0].trim().startsWith('* ')) {
       // 找到注释块的结束位置
@@ -49,18 +49,18 @@ function fixCommentHeader(filePath: string): boolean {
           break;
         }
       }
-
+      
       if (endIndex > 0) {
         // 修复注释格式
         lines[0] = '/**' + lines[0].substring(lines[0].indexOf('*') + 1);
-
+        
         const newContent = lines.join('\n');
         fs.writeFileSync(filePath, newContent);
         console.log(`✅ 修复注释格式: ${filePath}`);
         return true;
       }
     }
-
+    
     return false;
   } catch (error) {
     console.error(`❌ 处理文件失败 ${filePath}:`, error);
@@ -70,15 +70,15 @@ function fixCommentHeader(filePath: string): boolean {
 
 function main() {
   console.log('🔧 开始修复文件头部注释格式...');
-
+  
   let fixedCount = 0;
-
+  
   for (const file of filesToFix) {
     if (fixCommentHeader(file)) {
       fixedCount++;
     }
   }
-
+  
   console.log(`\n✨ 修复完成！共处理 ${fixedCount} 个文件`);
 }
 

@@ -288,16 +288,14 @@ export function ERPReturnOrderList({
   };
 
   // 格式化金额
-  const formatAmount = (amount: number) =>
-    new Intl.NumberFormat('zh-CN', {
+  const formatAmount = (amount: number) => new Intl.NumberFormat('zh-CN', {
       style: 'currency',
       currency: 'CNY',
       minimumFractionDigits: 2,
     }).format(amount);
 
   // 格式化日期
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('zh-CN', {
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('zh-CN', {
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',

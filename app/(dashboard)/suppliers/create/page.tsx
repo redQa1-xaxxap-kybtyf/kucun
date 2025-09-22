@@ -23,10 +23,10 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 
 import { createSupplier } from '@/lib/api/suppliers';
-import {
-  CreateSupplierSchema,
+import { 
+  CreateSupplierSchema, 
   supplierCreateDefaults,
-  type SupplierCreateFormData,
+  type SupplierCreateFormData 
 } from '@/lib/schemas/supplier';
 
 export default function CreateSupplierPage() {
@@ -41,11 +41,11 @@ export default function CreateSupplierPage() {
   // 创建供应商
   const createMutation = useMutation({
     mutationFn: createSupplier,
-    onSuccess: data => {
+    onSuccess: (data) => {
       toast.success(data.message || '供应商创建成功');
       router.push('/suppliers');
     },
-    onError: error => {
+    onError: (error) => {
       toast.error(error.message || '创建供应商失败');
     },
   });
@@ -65,7 +65,7 @@ export default function CreateSupplierPage() {
   const isLoading = createMutation.isPending;
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
+    <div className="container mx-auto py-6 space-y-6">
       {/* 页面标题和导航 */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
@@ -88,10 +88,7 @@ export default function CreateSupplierPage() {
           </CardHeader>
           <CardContent>
             <Form {...form}>
-              <form
-                onSubmit={form.handleSubmit(onSubmit)}
-                className="space-y-6"
-              >
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
                 {/* 供应商名称 */}
                 <FormField
                   control={form.control}
@@ -161,7 +158,11 @@ export default function CreateSupplierPage() {
 
                 {/* 提交按钮 */}
                 <div className="flex gap-4 pt-4">
-                  <Button type="submit" disabled={isLoading} className="flex-1">
+                  <Button
+                    type="submit"
+                    disabled={isLoading}
+                    className="flex-1"
+                  >
                     {isLoading ? '创建中...' : '创建供应商'}
                   </Button>
                   <Button

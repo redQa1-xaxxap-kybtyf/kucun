@@ -1,10 +1,10 @@
-'use client';
+"use client"
 
-import { Check, ChevronsUpDown, Package, Search } from 'lucide-react';
-import * as React from 'react';
+import { Check, ChevronsUpDown, Package, Search } from "lucide-react"
+import * as React from "react"
 
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import {
   Command,
   CommandEmpty,
@@ -12,22 +12,22 @@ import {
   CommandInput,
   CommandItem,
   CommandList,
-} from '@/components/ui/command';
+} from "@/components/ui/command"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from '@/components/ui/popover';
-import type { Product } from '@/lib/types/product';
-import { cn } from '@/lib/utils';
+} from "@/components/ui/popover"
+import type { Product } from "@/lib/types/product"
+import { cn } from "@/lib/utils"
 
 interface ProductSelectorProps {
-  products: Product[];
-  value?: string;
-  onValueChange: (value: string) => void;
-  placeholder?: string;
-  disabled?: boolean;
-  className?: string;
+  products: Product[]
+  value?: string
+  onValueChange: (value: string) => void
+  placeholder?: string
+  disabled?: boolean
+  className?: string
 }
 
 /**
@@ -38,34 +38,34 @@ export function ProductSelector({
   products,
   value,
   onValueChange,
-  placeholder = '选择产品',
+  placeholder = "选择产品",
   disabled = false,
   className,
 }: ProductSelectorProps) {
-  const [open, setOpen] = React.useState(false);
-  const [searchValue, setSearchValue] = React.useState('');
+  const [open, setOpen] = React.useState(false)
+  const [searchValue, setSearchValue] = React.useState("")
 
   // 获取选中的产品
-  const selectedProduct = products.find(product => product.id === value);
+  const selectedProduct = products.find(product => product.id === value)
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!searchValue) return products;
+    if (!searchValue) return products
 
-    const search = searchValue.toLowerCase();
+    const search = searchValue.toLowerCase()
     return products.filter(
       product =>
         product.name.toLowerCase().includes(search) ||
         product.code.toLowerCase().includes(search) ||
         product.specification.toLowerCase().includes(search)
-    );
-  }, [products, searchValue]);
+    )
+  }, [products, searchValue])
 
   // 处理产品选择
   const handleSelect = (productId: string) => {
-    onValueChange(productId === value ? '' : productId);
-    setOpen(false);
-  };
+    onValueChange(productId === value ? "" : productId)
+    setOpen(false)
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -74,17 +74,15 @@ export function ProductSelector({
           variant="outline"
           role="combobox"
           aria-expanded={open}
-          className={cn('w-full justify-between', className)}
+          className={cn("w-full justify-between", className)}
           disabled={disabled}
         >
           {selectedProduct ? (
             <div className="flex items-center gap-2 truncate">
               <Package className="h-4 w-4 flex-shrink-0" />
               <div className="flex flex-col items-start truncate">
-                <span className="truncate font-medium">
-                  {selectedProduct.name}
-                </span>
-                <span className="truncate text-xs text-muted-foreground">
+                <span className="font-medium truncate">{selectedProduct.name}</span>
+                <span className="text-xs text-muted-foreground truncate">
                   {selectedProduct.code}
                 </span>
               </div>
@@ -109,9 +107,7 @@ export function ProductSelector({
             <CommandEmpty>
               <div className="flex flex-col items-center gap-2 py-6">
                 <Search className="h-8 w-8 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  未找到匹配的产品
-                </p>
+                <p className="text-sm text-muted-foreground">未找到匹配的产品</p>
               </div>
             </CommandEmpty>
             <CommandGroup>
@@ -124,8 +120,8 @@ export function ProductSelector({
                 >
                   <Check
                     className={cn(
-                      'h-4 w-4',
-                      value === product.id ? 'opacity-100' : 'opacity-0'
+                      "h-4 w-4",
+                      value === product.id ? "opacity-100" : "opacity-0"
                     )}
                   />
                   <div className="flex-1 space-y-1">
@@ -138,24 +134,20 @@ export function ProductSelector({
                     <div className="text-sm text-muted-foreground">
                       规格: {product.specification} | 单位: {product.unit}
                       {product.piecesPerUnit && (
-                        <span>
-                          {' '}
-                          | 每{product.unit}: {product.piecesPerUnit}片
-                        </span>
+                        <span> | 每{product.unit}: {product.piecesPerUnit}片</span>
                       )}
                     </div>
                     {product.inventory && (
                       <div className="flex items-center gap-2 text-xs">
                         <span
                           className={cn(
-                            'font-medium',
+                            "font-medium",
                             product.inventory.availableInventory > 0
-                              ? 'text-green-600'
-                              : 'text-red-600'
+                              ? "text-green-600"
+                              : "text-red-600"
                           )}
                         >
-                          库存: {product.inventory.availableInventory}
-                          {product.unit}
+                          库存: {product.inventory.availableInventory}{product.unit}
                         </span>
                         {product.inventory.availableInventory <= 10 && (
                           <Badge variant="destructive" className="text-xs">
@@ -172,7 +164,7 @@ export function ProductSelector({
         </Command>
       </PopoverContent>
     </Popover>
-  );
+  )
 }
 
 /**
@@ -180,19 +172,19 @@ export function ProductSelector({
  * 用于显示选中产品的详细信息
  */
 interface ProductInfoProps {
-  product: Product;
-  className?: string;
+  product: Product
+  className?: string
 }
 
 export function ProductInfo({ product, className }: ProductInfoProps) {
   return (
-    <div className={cn('space-y-2 text-sm', className)}>
+    <div className={cn("space-y-2 text-sm", className)}>
       <div className="flex items-center gap-2">
         <Package className="h-4 w-4 text-muted-foreground" />
         <span className="font-medium">{product.name}</span>
         <Badge variant="outline">{product.code}</Badge>
       </div>
-
+      
       <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
         <div>
           <span className="font-medium">规格:</span> {product.specification}
@@ -202,25 +194,19 @@ export function ProductInfo({ product, className }: ProductInfoProps) {
         </div>
         {product.piecesPerUnit && (
           <div className="col-span-2">
-            <span className="font-medium">每{product.unit}:</span>{' '}
-            {product.piecesPerUnit}片
+            <span className="font-medium">每{product.unit}:</span> {product.piecesPerUnit}片
           </div>
         )}
       </div>
 
       {product.inventory && (
-        <div className="flex items-center gap-2 border-t pt-2">
+        <div className="flex items-center gap-2 pt-2 border-t">
           <span className="text-xs font-medium">库存状态:</span>
           <Badge
-            variant={
-              product.inventory.availableInventory > 0
-                ? 'default'
-                : 'destructive'
-            }
+            variant={product.inventory.availableInventory > 0 ? "default" : "destructive"}
             className="text-xs"
           >
-            {product.inventory.availableInventory}
-            {product.unit}
+            {product.inventory.availableInventory}{product.unit}
           </Badge>
           {product.inventory.availableInventory <= 10 && (
             <Badge variant="outline" className="text-xs text-orange-600">
@@ -231,8 +217,8 @@ export function ProductInfo({ product, className }: ProductInfoProps) {
       )}
 
       {product.tileSpecifications && (
-        <div className="border-t pt-2">
-          <div className="mb-1 text-xs font-medium">瓷砖规格:</div>
+        <div className="pt-2 border-t">
+          <div className="text-xs font-medium mb-1">瓷砖规格:</div>
           <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
             {product.tileSpecifications.size && (
               <div>尺寸: {product.tileSpecifications.size}</div>
@@ -250,7 +236,7 @@ export function ProductInfo({ product, className }: ProductInfoProps) {
         </div>
       )}
     </div>
-  );
+  )
 }
 
 /**
@@ -258,11 +244,11 @@ export function ProductInfo({ product, className }: ProductInfoProps) {
  * 支持一次选择多个产品
  */
 interface BatchProductSelectorProps {
-  products: Product[];
-  selectedProducts: string[];
-  onSelectionChange: (productIds: string[]) => void;
-  maxSelection?: number;
-  disabled?: boolean;
+  products: Product[]
+  selectedProducts: string[]
+  onSelectionChange: (productIds: string[]) => void
+  maxSelection?: number
+  disabled?: boolean
 }
 
 export function BatchProductSelector({
@@ -272,36 +258,36 @@ export function BatchProductSelector({
   maxSelection = 10,
   disabled = false,
 }: BatchProductSelectorProps) {
-  const [open, setOpen] = React.useState(false);
-  const [searchValue, setSearchValue] = React.useState('');
+  const [open, setOpen] = React.useState(false)
+  const [searchValue, setSearchValue] = React.useState("")
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!searchValue) return products;
+    if (!searchValue) return products
 
-    const search = searchValue.toLowerCase();
+    const search = searchValue.toLowerCase()
     return products.filter(
       product =>
         product.name.toLowerCase().includes(search) ||
         product.code.toLowerCase().includes(search) ||
         product.specification.toLowerCase().includes(search)
-    );
-  }, [products, searchValue]);
+    )
+  }, [products, searchValue])
 
   // 处理产品选择
   const handleSelect = (productId: string) => {
-    const isSelected = selectedProducts.includes(productId);
-
+    const isSelected = selectedProducts.includes(productId)
+    
     if (isSelected) {
       // 取消选择
-      onSelectionChange(selectedProducts.filter(id => id !== productId));
+      onSelectionChange(selectedProducts.filter(id => id !== productId))
     } else {
       // 添加选择
       if (selectedProducts.length < maxSelection) {
-        onSelectionChange([...selectedProducts, productId]);
+        onSelectionChange([...selectedProducts, productId])
       }
     }
-  };
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -316,7 +302,7 @@ export function BatchProductSelector({
             <span>
               {selectedProducts.length > 0
                 ? `已选择 ${selectedProducts.length} 个产品`
-                : '批量选择产品'}
+                : "批量选择产品"}
             </span>
           </div>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -333,25 +319,24 @@ export function BatchProductSelector({
             <CommandEmpty>未找到匹配的产品</CommandEmpty>
             <CommandGroup>
               {filteredProducts.map(product => {
-                const isSelected = selectedProducts.includes(product.id);
-                const canSelect =
-                  selectedProducts.length < maxSelection || isSelected;
-
+                const isSelected = selectedProducts.includes(product.id)
+                const canSelect = selectedProducts.length < maxSelection || isSelected
+                
                 return (
                   <CommandItem
                     key={product.id}
                     value={product.id}
                     onSelect={() => canSelect && handleSelect(product.id)}
                     className={cn(
-                      'flex items-center gap-3 p-3',
-                      !canSelect && 'cursor-not-allowed opacity-50'
+                      "flex items-center gap-3 p-3",
+                      !canSelect && "opacity-50 cursor-not-allowed"
                     )}
                     disabled={!canSelect}
                   >
                     <Check
                       className={cn(
-                        'h-4 w-4',
-                        isSelected ? 'opacity-100' : 'opacity-0'
+                        "h-4 w-4",
+                        isSelected ? "opacity-100" : "opacity-0"
                       )}
                     />
                     <div className="flex-1">
@@ -366,12 +351,12 @@ export function BatchProductSelector({
                       </div>
                     </div>
                   </CommandItem>
-                );
+                )
               })}
             </CommandGroup>
           </CommandList>
         </Command>
       </PopoverContent>
     </Popover>
-  );
+  )
 }

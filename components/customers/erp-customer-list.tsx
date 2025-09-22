@@ -63,7 +63,7 @@ export function ERPCustomerList({
   onDelete,
 }: ERPCustomerListProps) {
   const router = useRouter();
-
+  
   // 查询参数状态
   const [queryParams, setQueryParams] = useState<CustomerQueryParams>({
     page: 1,
@@ -137,8 +137,7 @@ export function ERPCustomerList({
   };
 
   // 格式化日期
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('zh-CN');
+  const formatDate = (dateString: string) => new Date(dateString).toLocaleDateString('zh-CN');
 
   return (
     <div className="rounded border bg-card">
@@ -156,12 +155,7 @@ export function ERPCustomerList({
       <div className="border-b bg-muted/10 px-3 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7"
-              onClick={() => router.back()}
-            >
+            <Button variant="ghost" size="sm" className="h-7" onClick={() => router.back()}>
               <ArrowLeft className="mr-1 h-3 w-3" />
               返回
             </Button>
@@ -189,7 +183,7 @@ export function ERPCustomerList({
               <Input
                 placeholder="客户名称或电话"
                 value={queryParams.search}
-                onChange={e => handleSearch(e.target.value)}
+                onChange={(e) => handleSearch(e.target.value)}
                 className="h-7 pl-7 text-xs"
               />
             </div>
@@ -216,12 +210,7 @@ export function ERPCustomerList({
           <div className="space-y-1">
             <label className="text-xs text-muted-foreground">&nbsp;</label>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-7"
-                onClick={resetFilters}
-              >
+              <Button variant="outline" size="sm" className="h-7" onClick={resetFilters}>
                 <RotateCcw className="mr-1 h-3 w-3" />
                 重置
               </Button>
@@ -232,9 +221,7 @@ export function ERPCustomerList({
 
       {/* 表格区域 */}
       <div className="px-3 py-2">
-        <div className="mb-2 text-xs font-medium text-muted-foreground">
-          客户列表
-        </div>
+        <div className="mb-2 text-xs font-medium text-muted-foreground">客户列表</div>
         <div className="rounded border">
           <Table>
             <TableHeader>
@@ -246,39 +233,29 @@ export function ERPCustomerList({
                 <TableHead className="h-8 px-2 text-xs">合作天数</TableHead>
                 <TableHead className="h-8 px-2 text-xs">退货次数</TableHead>
                 <TableHead className="h-8 px-2 text-xs">创建时间</TableHead>
-                <TableHead className="h-8 w-[80px] px-2 text-xs">
-                  操作
-                </TableHead>
+                <TableHead className="h-8 px-2 text-xs w-[80px]">操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="h-10 text-center text-xs text-muted-foreground"
-                  >
+                  <TableCell colSpan={8} className="h-10 text-center text-xs text-muted-foreground">
                     加载中...
                   </TableCell>
                 </TableRow>
               ) : customers.length === 0 ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="h-10 text-center text-xs text-muted-foreground"
-                  >
+                  <TableCell colSpan={8} className="h-10 text-center text-xs text-muted-foreground">
                     暂无客户记录
                   </TableCell>
                 </TableRow>
               ) : (
-                customers.map(customer => (
+                customers.map((customer) => (
                   <TableRow key={customer.id} className="h-10">
                     <TableCell className="px-2 py-1">
                       <div className="flex items-center gap-2">
                         <Users className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs font-medium">
-                          {customer.name}
-                        </span>
+                        <span className="text-xs font-medium">{customer.name}</span>
                       </div>
                     </TableCell>
                     <TableCell className="px-2 py-1">
@@ -288,10 +265,7 @@ export function ERPCustomerList({
                       </div>
                     </TableCell>
                     <TableCell className="px-2 py-1">
-                      <div
-                        className="max-w-[120px] truncate text-xs"
-                        title={customer.address}
-                      >
+                      <div className="max-w-[120px] truncate text-xs" title={customer.address}>
                         {customer.address || '-'}
                       </div>
                     </TableCell>
@@ -302,11 +276,7 @@ export function ERPCustomerList({
                     </TableCell>
                     <TableCell className="px-2 py-1">
                       <Badge
-                        variant={
-                          customer.cooperationDays !== undefined
-                            ? 'default'
-                            : 'secondary'
-                        }
+                        variant={customer.cooperationDays !== undefined ? 'default' : 'secondary'}
                         className="text-xs"
                       >
                         {customer.cooperationDays !== undefined
@@ -317,8 +287,7 @@ export function ERPCustomerList({
                     <TableCell className="px-2 py-1">
                       <Badge
                         variant={
-                          customer.returnOrderCount &&
-                          customer.returnOrderCount > 0
+                          customer.returnOrderCount && customer.returnOrderCount > 0
                             ? 'destructive'
                             : 'outline'
                         }
@@ -330,32 +299,22 @@ export function ERPCustomerList({
                     <TableCell className="px-2 py-1">
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs">
-                          {formatDate(customer.createdAt)}
-                        </span>
+                        <span className="text-xs">{formatDate(customer.createdAt)}</span>
                       </div>
                     </TableCell>
                     <TableCell className="px-2 py-1">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                          >
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0">
                             <MoreHorizontal className="h-3 w-3" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="text-xs">
-                          <DropdownMenuItem
-                            onClick={() => handleViewDetail(customer)}
-                          >
+                          <DropdownMenuItem onClick={() => handleViewDetail(customer)}>
                             <Eye className="mr-1 h-3 w-3" />
                             查看详情
                           </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleEdit(customer)}
-                          >
+                          <DropdownMenuItem onClick={() => handleEdit(customer)}>
                             <Edit className="mr-1 h-3 w-3" />
                             编辑
                           </DropdownMenuItem>

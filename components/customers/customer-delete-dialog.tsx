@@ -1,8 +1,8 @@
-'use client';
+"use client"
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { AlertTriangle, Loader2 } from 'lucide-react';
-import * as React from 'react';
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { AlertTriangle, Loader2 } from "lucide-react"
+import * as React from "react"
 
 import {
   AlertDialog,
@@ -13,15 +13,15 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useToast } from '@/components/ui/use-toast';
-import { customerQueryKeys, deleteCustomer } from '@/lib/api/customers';
-import type { Customer } from '@/lib/types/customer';
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/components/ui/use-toast"
+import { customerQueryKeys, deleteCustomer } from "@/lib/api/customers"
+import type { Customer } from "@/lib/types/customer"
 
 interface CustomerDeleteDialogProps {
-  customer: Customer | null;
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+  customer: Customer | null
+  open: boolean
+  onOpenChange: (open: boolean) => void
 }
 
 /**
@@ -33,39 +33,39 @@ export function CustomerDeleteDialog({
   open,
   onOpenChange,
 }: CustomerDeleteDialogProps) {
-  const { toast } = useToast();
-  const queryClient = useQueryClient();
+  const { toast } = useToast()
+  const queryClient = useQueryClient()
 
   // 删除客户
   const deleteMutation = useMutation({
     mutationFn: (customerId: string) => deleteCustomer(customerId),
     onSuccess: () => {
       toast({
-        title: '删除成功',
+        title: "删除成功",
         description: `客户"${customer?.name}"已成功删除`,
-      });
-
+      })
+      
       // 刷新客户列表
-      queryClient.invalidateQueries({
-        queryKey: customerQueryKeys.lists(),
-      });
-
-      onOpenChange(false);
+      queryClient.invalidateQueries({ 
+        queryKey: customerQueryKeys.lists() 
+      })
+      
+      onOpenChange(false)
     },
-    onError: error => {
+    onError: (error) => {
       toast({
-        title: '删除失败',
+        title: "删除失败",
         description: error.message,
-        variant: 'destructive',
-      });
+        variant: "destructive",
+      })
     },
-  });
+  })
 
   const handleDelete = () => {
     if (customer?.id) {
-      deleteMutation.mutate(customer.id);
+      deleteMutation.mutate(customer.id)
     }
-  };
+  }
 
   return (
     <AlertDialog open={open} onOpenChange={onOpenChange}>
@@ -85,42 +85,34 @@ export function CustomerDeleteDialog({
         </AlertDialogHeader>
 
         {customer && (
-          <div className="my-4 rounded-lg bg-muted/50 p-4">
+          <div className="my-4 p-4 bg-muted/50 rounded-lg">
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">
-                  客户名称：
-                </span>
+                <span className="text-sm text-muted-foreground">客户名称：</span>
                 <span className="font-medium">{customer.name}</span>
               </div>
               {customer.phone && (
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">
-                    联系电话：
-                  </span>
+                  <span className="text-sm text-muted-foreground">联系电话：</span>
                   <span>{customer.phone}</span>
                 </div>
               )}
-              {customer.transactionCount !== undefined &&
-                customer.transactionCount > 0 && (
-                  <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
-                      交易次数：
-                    </span>
-                    <span className="font-medium text-orange-600">
-                      {customer.transactionCount}次
-                    </span>
-                  </div>
-                )}
-            </div>
-
-            {customer.transactionCount !== undefined &&
-              customer.transactionCount > 0 && (
-                <div className="mt-3 rounded border border-orange-200 bg-orange-50 p-2 text-sm text-orange-800">
-                  <AlertTriangle className="mr-1 inline h-4 w-4" />
-                  注意：该客户有交易记录，删除后相关数据将无法恢复
+              {customer.transactionCount !== undefined && customer.transactionCount > 0 && (
+                <div className="flex justify-between">
+                  <span className="text-sm text-muted-foreground">交易次数：</span>
+                  <span className="text-orange-600 font-medium">
+                    {customer.transactionCount}次
+                  </span>
                 </div>
               )}
+            </div>
+            
+            {customer.transactionCount !== undefined && customer.transactionCount > 0 && (
+              <div className="mt-3 p-2 bg-orange-50 border border-orange-200 rounded text-sm text-orange-800">
+                <AlertTriangle className="inline h-4 w-4 mr-1" />
+                注意：该客户有交易记录，删除后相关数据将无法恢复
+              </div>
+            )}
           </div>
         )}
 
@@ -141,5 +133,5 @@ export function CustomerDeleteDialog({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  );
+  )
 }

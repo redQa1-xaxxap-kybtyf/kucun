@@ -22,9 +22,9 @@ import {
 export default function TransferCostTestPage() {
   const router = useRouter();
 
-  const handleSuccess = (orderId: string) => {
+  const handleSuccess = (orderId: { id: string }) => {
     // 订单创建成功，跳转到订单详情页
-    router.push(`/sales-orders/${orderId}`);
+    router.push(`/sales-orders/${orderId.id}`);
   };
 
   const handleCancel = () => {
@@ -148,7 +148,7 @@ export default function TransferCostTestPage() {
             <div className="space-y-3">
               <h4 className="text-sm font-medium">基础功能测试</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
-                <li>1. 选择"调货销售"订单类型</li>
+                <li>1. 选择&ldquo;调货销售&rdquo;订单类型</li>
                 <li>2. 选择供应商（必填）</li>
                 <li>3. 添加产品明细</li>
                 <li>4. 为每个产品设置成本价</li>
