@@ -17,6 +17,11 @@ export const SalesOrderStatus = z.enum([
 ]);
 
 /**
+ * 销售订单类型枚举
+ */
+export const SalesOrderType = z.enum(['NORMAL', 'TRANSFER']);
+
+/**
  * 订单项Schema
  */
 export const SalesOrderItemSchema = z.object({
@@ -96,6 +101,21 @@ const BaseSalesOrderSchema = z.object({
 
   status: SalesOrderStatus.default('draft'),
 
+  orderType: SalesOrderType.default('NORMAL'),
+
+  supplierId: z
+    .string()
+    .min(1, '供应商ID不能为空')
+    .optional()
+    .or(z.literal('')),
+
+  costAmount: z
+    .number()
+    .min(0, '成本金额不能为负数')
+    .max(999999999.99, '成本金额不能超过999,999,999.99')
+    .multipleOf(0.01, '成本金额最多保留2位小数')
+    .optional(),
+
   remarks: z
     .string()
     .max(1000, '备注不能超过1000个字符')
@@ -134,7 +154,33 @@ export const CreateSalesOrderSchema = BaseSalesOrderSchema.refine(
     message: '订单明细中存在重复的产品规格组合',
     path: ['items'],
   }
-);
+)
+  .refine(
+    data => {
+      // 调货销售必须填写供应商
+      if (data.orderType === 'TRANSFER') {
+        return data.supplierId && data.supplierId.trim() !== '';
+      }
+      return true;
+    },
+    {
+      message: '调货销售必须选择供应商',
+      path: ['supplierId'],
+    }
+  )
+  .refine(
+    data => {
+      // 调货销售必须填写成本金额
+      if (data.orderType === 'TRANSFER') {
+        return data.costAmount !== undefined && data.costAmount > 0;
+      }
+      return true;
+    },
+    {
+      message: '调货销售必须填写成本金额',
+      path: ['costAmount'],
+    }
+  );
 
 /**
  * 更新销售订单Schema
@@ -211,6 +257,7 @@ export type BatchDeleteSalesOrdersData = z.infer<
 >;
 export type UpdateOrderStatusData = z.infer<typeof UpdateOrderStatusSchema>;
 export type SalesOrderStatusType = z.infer<typeof SalesOrderStatus>;
+export type SalesOrderTypeType = z.infer<typeof SalesOrderType>;
 
 /**
  * 销售订单表单默认值
@@ -218,9 +265,20 @@ export type SalesOrderStatusType = z.infer<typeof SalesOrderStatus>;
 export const salesOrderFormDefaults: CreateSalesOrderData = {
   customerId: '',
   status: 'draft',
+  orderType: 'NORMAL',
+  supplierId: '',
+  costAmount: undefined,
   remarks: '',
   items: [],
 };
+
+/**
+ * 订单类型选项
+ */
+export const SALES_ORDER_TYPE_OPTIONS = [
+  { value: 'NORMAL', label: '正常销售' },
+  { value: 'TRANSFER', label: '调货销售' },
+] as const;
 
 /**
  * 订单状态选项

@@ -28,6 +28,10 @@ export async function GET(
         customerId: true,
         userId: true,
         status: true,
+        orderType: true,
+        supplierId: true,
+        costAmount: true,
+        profitAmount: true,
         totalAmount: true,
         remarks: true,
         createdAt: true,
@@ -45,6 +49,13 @@ export async function GET(
             id: true,
             name: true,
             email: true,
+          },
+        },
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
           },
         },
         items: {

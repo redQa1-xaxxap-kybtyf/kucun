@@ -129,16 +129,24 @@ export const Captcha = React.forwardRef<HTMLCanvasElement, CaptchaProps>(
       drawCaptcha();
     }, [drawCaptcha]);
 
-    // 初始化绘制 - 只在组件挂载时执行一次
+    // 初始化绘制 - 确保在DOM完全加载后执行
     useEffect(() => {
-      drawCaptcha();
+      const timer = setTimeout(() => {
+        drawCaptcha();
+      }, 100); // 延迟100ms确保DOM完全渲染
+
+      return () => clearTimeout(timer);
     }, []); // 空依赖数组，只在挂载时执行
 
     // 当尺寸或长度变化时重新绘制
     useEffect(() => {
       if (captchaText) {
         // 只有在已经初始化后才重新绘制
-        drawCaptcha();
+        const timer = setTimeout(() => {
+          drawCaptcha();
+        }, 50);
+
+        return () => clearTimeout(timer);
       }
     }, [width, height, length, drawCaptcha]);
 
@@ -148,9 +156,10 @@ export const Captcha = React.forwardRef<HTMLCanvasElement, CaptchaProps>(
           ref={canvasRef}
           width={width}
           height={height}
-          className="cursor-pointer rounded border border-input"
+          className="cursor-pointer rounded border border-input bg-gray-50"
           onClick={refreshCaptcha}
           title="点击刷新验证码"
+          style={{ minWidth: width, minHeight: height }}
         />
         <Button
           type="button"
