@@ -53,8 +53,8 @@ export async function DELETE(request: NextRequest) {
       },
       select: {
         id: true,
-        code: true,
         name: true,
+        code: true,
         _count: {
           select: {
             inventory: true,
@@ -112,7 +112,6 @@ export async function DELETE(request: NextRequest) {
       // 不存在的产品
       ...notFoundProductIds.map(id => ({
         id,
-        code: '未知',
         name: '未知产品',
         reason: '产品不存在',
       })),
@@ -130,7 +129,6 @@ export async function DELETE(request: NextRequest) {
         }
         return {
           id: product.id,
-          code: product.code,
           name: product.name,
           reason: `存在关联数据: ${reasons.join(', ')}`,
         };

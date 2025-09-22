@@ -3,7 +3,6 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import type { UpdateProductData } from '@/lib/schemas/product';
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
   BatchDeleteProductsInput,
@@ -222,9 +221,3 @@ export async function batchDeleteProducts(
 
   return data.data;
 }
-
-// 导出类型以供其他模块使用
-export type {
-  CreateProductData,
-  UpdateProductData,
-} from '@/lib/schemas/product';

@@ -42,42 +42,24 @@ export interface InboundRecord {
   id: string;
   recordNumber: string;
   productId: string;
-  variantId?: string; // 产品变体ID
   quantity: number;
   reason: InboundReason;
   remarks?: string;
   userId: string;
-
-  // 批次管理字段
-  productionDate?: string; // ISO日期字符串
-  batchNumber?: string; // 批次号
-  colorCode?: string; // 色号
-  unitCost?: number; // 单位成本
-  location?: string; // 存储位置
-
   createdAt: string;
   updatedAt: string;
 
   // 关联数据（可选，根据查询需要包含）
   product?: Product;
-  variant?: import('./product').ProductVariant;
   user?: User;
 }
 
 // 创建入库记录的请求数据
 export interface CreateInboundRequest {
   productId: string;
-  variantId?: string; // 产品变体ID
   quantity: number;
   reason: InboundReason;
   remarks?: string;
-
-  // 批次管理字段
-  productionDate?: string; // ISO日期字符串
-  batchNumber?: string; // 批次号
-  colorCode?: string; // 色号
-  unitCost?: number; // 单位成本
-  location?: string; // 存储位置
 }
 
 // 更新入库记录的请求数据
@@ -136,19 +118,11 @@ export type InboundUnit = 'pieces' | 'units';
 // 入库表单数据
 export interface InboundFormData {
   productId: string;
-  variantId?: string; // 产品变体ID
   inputQuantity: number; // 用户输入的数量
   inputUnit: InboundUnit; // 用户选择的单位
   quantity: number; // 最终存储的片数
   reason: InboundReason;
   remarks?: string;
-
-  // 批次管理字段
-  productionDate?: string; // 生产日期
-  batchNumber?: string; // 批次号
-  colorCode?: string; // 色号
-  unitCost?: number; // 单位成本
-  location?: string; // 存储位置
 }
 
 // 入库操作结果
