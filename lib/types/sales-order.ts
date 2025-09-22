@@ -32,6 +32,13 @@ export interface SalesOrderItem {
   costSubtotal?: number; // 成本小计（调货销售时使用）
   profitAmount?: number; // 毛利金额（调货销售时使用）
 
+  // 手动输入商品信息（调货销售时使用）
+  isManualProduct?: boolean; // 是否为手动输入的商品
+  manualProductName?: string; // 手动输入的商品名称
+  manualSpecification?: string; // 手动输入的规格
+  manualWeight?: number; // 手动输入的重量
+  manualUnit?: string; // 手动输入的单位
+
   // 关联数据（可选，根据查询需要包含）
   product?: Product;
 }
@@ -130,6 +137,13 @@ export interface SalesOrderItemCreateInput {
 
   // 调货销售相关字段
   unitCost?: number; // 单位成本价（调货销售时使用）
+
+  // 手动输入商品信息（调货销售时使用）
+  isManualProduct?: boolean; // 是否为手动输入的商品
+  manualProductName?: string; // 手动输入的商品名称
+  manualSpecification?: string; // 手动输入的规格
+  manualWeight?: number; // 手动输入的重量
+  manualUnit?: string; // 手动输入的单位
 }
 
 // 销售订单明细更新输入类型
@@ -143,6 +157,13 @@ export interface SalesOrderItemUpdateInput {
 
   // 调货销售相关字段
   unitCost?: number; // 单位成本价（调货销售时使用）
+
+  // 手动输入商品信息（调货销售时使用）
+  isManualProduct?: boolean; // 是否为手动输入的商品
+  manualProductName?: string; // 手动输入的商品名称
+  manualSpecification?: string; // 手动输入的规格
+  manualWeight?: number; // 手动输入的重量
+  manualUnit?: string; // 手动输入的单位
 
   _action?: 'create' | 'update' | 'delete'; // 操作类型
 }

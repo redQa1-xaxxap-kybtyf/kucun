@@ -8,7 +8,7 @@ import React from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
-import { EnhancedProductSelector } from '@/components/sales-orders/enhanced-product-selector';
+import { EnhancedProductInput } from '@/components/sales-orders/enhanced-product-input';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
 import { Button } from '@/components/ui/button';
 import {
@@ -762,68 +762,45 @@ export function ERPSalesOrderForm({
                       return (
                         <TableRow key={field.id} className="h-10">
                           <TableCell className="text-xs">{index + 1}</TableCell>
-                          <TableCell className="min-w-[150px]">
-                            <FormField
-                              control={form.control}
-                              name={`items.${index}.productId`}
-                              render={({ field: productField }) => (
-                                <FormItem>
-                                  <EnhancedProductSelector
-                                    products={productsData?.data || []}
-                                    value={productField.value}
-                                    onValueChange={value => {
-                                      productField.onChange(value);
-                                      const product = productsData?.data?.find(
-                                        p => p.id === value
-                                      );
-                                      if (product) {
-                                        // 自动填充产品相关信息
-                                        form.setValue(
-                                          `items.${index}.unitPrice`,
-                                          product.price
-                                        );
-                                        form.setValue(
-                                          `items.${index}.specification`,
-                                          product.specification || ''
-                                        );
-                                        form.setValue(
-                                          `items.${index}.unit`,
-                                          unitMapping[
-                                            product.unit?.toLowerCase()
-                                          ] ||
-                                            product.unit ||
-                                            ''
-                                        );
-                                        form.setValue(
-                                          `items.${index}.piecesPerUnit`,
-                                          product.piecesPerUnit || undefined
-                                        );
-                                        // 初始化新的单位和数量字段
-                                        form.setValue(
-                                          `items.${index}.displayUnit`,
-                                          '片'
-                                        );
-                                        form.setValue(
-                                          `items.${index}.displayQuantity`,
-                                          1
-                                        );
-                                        form.setValue(
-                                          `items.${index}.quantity`,
-                                          1
-                                        );
-                                        // 清空备注，让用户手动输入或自动生成
-                                        form.setValue(
-                                          `items.${index}.remarks`,
-                                          ''
-                                        );
-                                      }
-                                    }}
-                                    placeholder="选择商品"
-                                    className="h-7 text-xs"
-                                  />
-                                  <FormMessage className="text-xs" />
-                                </FormItem>
-                              )}
+                          <TableCell className="min-w-[200px]">
+                            <EnhancedProductInput
+                              form={form}
+                              index={index}
+                              products={productsData?.data || []}
+                              isTransferSale={
+                                form.watch('orderType') === 'TRANSFER'
+                              }
+                              onProductChange={product => {
+                                if (product) {
+                                  // 自动填充产品相关信息（不包括价格）
+                                  form.setValue(
+                                    `items.${index}.specification`,
+                                    product.specification || ''
+                                  );
+                                  form.setValue(
+                                    `items.${index}.unit`,
+                                    unitMapping[product.unit?.toLowerCase()] ||
+                                      product.unit ||
+                                      ''
+                                  );
+                                  form.setValue(
+                                    `items.${index}.piecesPerUnit`,
+                                    product.piecesPerUnit || undefined
+                                  );
+                                  // 初始化新的单位和数量字段
+                                  form.setValue(
+                                    `items.${index}.displayUnit`,
+                                    '片'
+                                  );
+                                  form.setValue(
+                                    `items.${index}.displayQuantity`,
+                                    1
+                                  );
+                                  form.setValue(`items.${index}.quantity`, 1);
+                                  // 清空备注，让用户手动输入或自动生成
+                                  form.setValue(`items.${index}.remarks`, '');
+                                }
+                              }}
                             />
                           </TableCell>
                           {/* 规格列 */}

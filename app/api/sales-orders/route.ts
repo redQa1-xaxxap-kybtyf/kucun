@@ -353,27 +353,35 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // 验证所有产品是否存在
-    const productIds = items.map(item => item.productId);
-    const products = await prisma.product.findMany({
-      where: { id: { in: productIds } },
-      select: { id: true, status: true },
-    });
+    // 验证库存产品是否存在（排除手动输入的商品）
+    const inventoryItems = items.filter(
+      item => !item.isManualProduct && item.productId
+    );
+    const productIds = inventoryItems
+      .map(item => item.productId)
+      .filter(Boolean) as string[];
 
-    if (products.length !== productIds.length) {
-      return NextResponse.json(
-        { success: false, error: '存在无效的产品' },
-        { status: 400 }
-      );
-    }
+    if (productIds.length > 0) {
+      const products = await prisma.product.findMany({
+        where: { id: { in: productIds } },
+        select: { id: true, status: true },
+      });
 
-    // 检查产品状态
-    const inactiveProducts = products.filter(p => p.status !== 'active');
-    if (inactiveProducts.length > 0) {
-      return NextResponse.json(
-        { success: false, error: '存在已停用的产品，无法创建订单' },
-        { status: 400 }
-      );
+      if (products.length !== productIds.length) {
+        return NextResponse.json(
+          { success: false, error: '存在无效的产品' },
+          { status: 400 }
+        );
+      }
+
+      // 检查产品状态
+      const inactiveProducts = products.filter(p => p.status !== 'active');
+      if (inactiveProducts.length > 0) {
+        return NextResponse.json(
+          { success: false, error: '存在已停用的产品，无法创建订单' },
+          { status: 400 }
+        );
+      }
     }
 
     // 计算总金额
@@ -447,7 +455,7 @@ export async function POST(request: NextRequest) {
           return tx.salesOrderItem.create({
             data: {
               salesOrderId: order.id,
-              productId: item.productId,
+              productId: item.isManualProduct ? null : item.productId,
               colorCode: item.colorCode,
               productionDate: item.productionDate,
               quantity: item.quantity,
@@ -457,6 +465,12 @@ export async function POST(request: NextRequest) {
               unitCost: item.unitCost,
               costSubtotal,
               profitAmount,
+              // 手动输入商品信息
+              isManualProduct: item.isManualProduct || false,
+              manualProductName: item.manualProductName,
+              manualSpecification: item.manualSpecification,
+              manualWeight: item.manualWeight,
+              manualUnit: item.manualUnit,
             },
           });
         })

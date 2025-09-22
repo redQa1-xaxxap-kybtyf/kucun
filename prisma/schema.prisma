@@ -193,7 +193,7 @@ model SalesOrder {
 model SalesOrderItem {
   id             String     @id @default(uuid())
   salesOrderId   String     @map("sales_order_id")
-  productId      String     @map("product_id")
+  productId      String?    @map("product_id") // 手动输入商品时可为空
   colorCode      String?    @map("color_code")
   productionDate String?    @map("production_date") // 生产日期，瓷砖行业特有
   quantity       Float
@@ -205,9 +205,16 @@ model SalesOrderItem {
   costSubtotal   Float?     @map("cost_subtotal") // 成本小计（调货销售时使用）
   profitAmount   Float?     @map("profit_amount") // 毛利金额（调货销售时使用）
 
+  // 手动输入商品信息（调货销售时使用）
+  isManualProduct      Boolean? @map("is_manual_product") // 是否为手动输入的商品
+  manualProductName    String?  @map("manual_product_name") // 手动输入的商品名称
+  manualSpecification  String?  @map("manual_specification") // 手动输入的规格
+  manualWeight         Float?   @map("manual_weight") // 手动输入的重量
+  manualUnit           String?  @map("manual_unit") // 手动输入的单位
+
   // 关联关系
   salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  product    Product    @relation(fields: [productId], references: [id])
+  product    Product?   @relation(fields: [productId], references: [id])
 
   @@index([salesOrderId], map: "idx_sales_order_items_order")
   @@index([productId], map: "idx_sales_order_items_product")

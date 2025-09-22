@@ -25,7 +25,7 @@ export const SalesOrderType = z.enum(['NORMAL', 'TRANSFER']);
  * 订单项Schema
  */
 export const SalesOrderItemSchema = z.object({
-  productId: z.string().min(1, '产品ID不能为空'),
+  productId: z.string().min(1, '产品ID不能为空').optional(),
 
   colorCode: z
     .string()
@@ -93,6 +93,34 @@ export const SalesOrderItemSchema = z.object({
     .max(999999.99, '成本价不能超过999,999.99')
     .multipleOf(0.01, '成本价最多保留2位小数')
     .optional(),
+
+  // 手动输入商品信息（调货销售时使用）
+  isManualProduct: z.boolean().optional(),
+
+  manualProductName: z
+    .string()
+    .max(100, '商品名称不能超过100个字符')
+    .optional()
+    .or(z.literal('')),
+
+  manualSpecification: z
+    .string()
+    .max(200, '规格不能超过200个字符')
+    .optional()
+    .or(z.literal('')),
+
+  manualWeight: z
+    .number()
+    .min(0, '重量不能为负数')
+    .max(99999.99, '重量不能超过99,999.99')
+    .multipleOf(0.01, '重量最多保留2位小数')
+    .optional(),
+
+  manualUnit: z
+    .string()
+    .max(20, '单位不能超过20个字符')
+    .optional()
+    .or(z.literal('')),
 });
 
 /**
@@ -187,6 +215,31 @@ export const CreateSalesOrderSchema = BaseSalesOrderSchema.refine(
     {
       message: '调货销售必须填写成本金额',
       path: ['costAmount'],
+    }
+  )
+  .refine(
+    data => {
+      // 验证手动输入商品的必填字段
+      for (let i = 0; i < data.items.length; i++) {
+        const item = data.items[i];
+        if (item.isManualProduct) {
+          // 手动输入商品必须有商品名称
+          if (!item.manualProductName || item.manualProductName.trim() === '') {
+            return false;
+          }
+          // 手动输入商品不需要productId
+        } else {
+          // 非手动输入商品必须有productId
+          if (!item.productId || item.productId.trim() === '') {
+            return false;
+          }
+        }
+      }
+      return true;
+    },
+    {
+      message: '手动输入商品必须填写商品名称，库存商品必须选择产品',
+      path: ['items'],
     }
   );
 
