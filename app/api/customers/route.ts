@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     // 验证分页参数
-    const paginationResult = paginationValidations.safeParse({
+    const paginationResult = paginationValidations.query.safeParse({
       page: searchParams.get('page'),
       limit: searchParams.get('limit'),
     });
