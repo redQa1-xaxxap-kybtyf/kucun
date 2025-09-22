@@ -134,15 +134,17 @@ export function FactoryShipmentOrderForm({
   });
   const customers = customersResponse?.data || [];
 
-  const { data: products } = useQuery({
+  const { data: productsResponse } = useQuery({
     queryKey: ['products'],
-    queryFn: getProducts,
+    queryFn: () => getProducts({ page: 1, limit: 1000 }),
   });
+  const products = productsResponse?.data || [];
 
-  const { data: suppliers } = useQuery({
+  const { data: suppliersResponse } = useQuery({
     queryKey: ['suppliers'],
-    queryFn: getSuppliers,
+    queryFn: () => getSuppliers({ page: 1, limit: 1000 }),
   });
+  const suppliers = suppliersResponse?.data || [];
 
   // 查询订单详情（编辑模式）
   const { data: orderDetail } = useQuery({
@@ -462,7 +464,7 @@ export function FactoryShipmentOrderForm({
                         <IntelligentProductInput
                           form={form}
                           index={index}
-                          products={products || []}
+                          products={products}
                         />
                       </div>
 
@@ -477,7 +479,6 @@ export function FactoryShipmentOrderForm({
                             </FormLabel>
                             <FormControl>
                               <SupplierSelector
-                                suppliers={suppliers || []}
                                 value={field.value}
                                 onValueChange={field.onChange}
                                 placeholder="选择供应商"
