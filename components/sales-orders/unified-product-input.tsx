@@ -1,12 +1,17 @@
 'use client';
 
-import { Search, Plus, AlertCircle } from 'lucide-react';
+import { AlertCircle, Plus } from 'lucide-react';
 import * as React from 'react';
-import { UseFormReturn } from 'react-hook-form';
+import type { UseFormReturn } from 'react-hook-form';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -17,8 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import type { Product } from '@/lib/types/product';
 import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
+import type { Product } from '@/lib/types/product';
 
 import { EnhancedProductSelector } from './enhanced-product-selector';
 
@@ -52,8 +57,7 @@ export function UnifiedProductInput({
   onProductChange,
 }: UnifiedProductInputProps) {
   const [showManualFields, setShowManualFields] = React.useState(false);
-  const [searchValue, setSearchValue] = React.useState('');
-  
+
   // 监听产品选择状态
   const selectedProductId = form.watch(`items.${index}.productId`);
   const manualProductName = form.watch(`items.${index}.manualProductName`);
@@ -80,12 +84,18 @@ export function UnifiedProductInput({
       form.setValue(`items.${index}.manualSpecification`, '');
       form.setValue(`items.${index}.manualWeight`, undefined);
       form.setValue(`items.${index}.manualUnit`, '');
-      
+
       // 自动填充产品信息
-      form.setValue(`items.${index}.specification`, product.specification || '');
+      form.setValue(
+        `items.${index}.specification`,
+        product.specification || ''
+      );
       form.setValue(`items.${index}.unit`, product.unit || '');
-      form.setValue(`items.${index}.piecesPerUnit`, product.piecesPerUnit || undefined);
-      
+      form.setValue(
+        `items.${index}.piecesPerUnit`,
+        product.piecesPerUnit || undefined
+      );
+
       onProductChange?.(product);
       setShowManualFields(false);
     }
@@ -105,7 +115,7 @@ export function UnifiedProductInput({
       {/* 主要产品选择区域 */}
       <div className="space-y-2">
         <Label className="text-xs font-medium">商品信息</Label>
-        
+
         {/* 库存商品选择 */}
         <FormField
           control={form.control}
@@ -116,7 +126,7 @@ export function UnifiedProductInput({
                 <EnhancedProductSelector
                   products={products}
                   value={field.value || ''}
-                  onValueChange={(value) => {
+                  onValueChange={value => {
                     field.onChange(value);
                     handleProductSelect(value);
                   }}
@@ -149,7 +159,7 @@ export function UnifiedProductInput({
               variant="outline"
               size="sm"
               onClick={handleShowManualFields}
-              className="w-full h-8 text-xs border-dashed"
+              className="h-8 w-full border-dashed text-xs"
             >
               <Plus className="mr-1 h-3 w-3" />
               手动输入临时商品信息
@@ -157,14 +167,16 @@ export function UnifiedProductInput({
           ) : showManualFields || manualProductName ? (
             // 手动输入字段
             <div className="space-y-3 rounded-md border border-dashed border-amber-200 bg-amber-50/30 p-3">
-              <div className="flex items-center gap-1 mb-2">
+              <div className="mb-2 flex items-center gap-1">
                 <AlertCircle className="h-3 w-3 text-amber-600" />
-                <span className="text-xs text-amber-700 font-medium">临时商品信息</span>
+                <span className="text-xs font-medium text-amber-700">
+                  临时商品信息
+                </span>
                 <Badge variant="outline" className="text-xs">
                   不会保存到商品库
                 </Badge>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
@@ -186,7 +198,7 @@ export function UnifiedProductInput({
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name={`items.${index}.manualSpecification`}
@@ -206,7 +218,7 @@ export function UnifiedProductInput({
                   )}
                 />
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3">
                 <FormField
                   control={form.control}
@@ -222,9 +234,11 @@ export function UnifiedProductInput({
                           placeholder="输入重量"
                           className="h-8 text-xs"
                           value={field.value || ''}
-                          onChange={(e) => {
+                          onChange={e => {
                             const value = e.target.value;
-                            field.onChange(value === '' ? undefined : Number(value));
+                            field.onChange(
+                              value === '' ? undefined : Number(value)
+                            );
                           }}
                         />
                       </FormControl>
@@ -232,21 +246,24 @@ export function UnifiedProductInput({
                     </FormItem>
                   )}
                 />
-                
+
                 <FormField
                   control={form.control}
                   name={`items.${index}.manualUnit`}
                   render={({ field }) => (
                     <FormItem>
                       <Label className="text-xs">单位</Label>
-                      <Select onValueChange={field.onChange} value={field.value || ''}>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value || ''}
+                      >
                         <FormControl>
                           <SelectTrigger className="h-8 text-xs">
                             <SelectValue placeholder="选择单位" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {UNIT_OPTIONS.map((option) => (
+                          {UNIT_OPTIONS.map(option => (
                             <SelectItem key={option.value} value={option.value}>
                               {option.label}
                             </SelectItem>
@@ -258,7 +275,7 @@ export function UnifiedProductInput({
                   )}
                 />
               </div>
-              
+
               {/* 收起按钮 */}
               <div className="flex justify-end pt-1">
                 <Button

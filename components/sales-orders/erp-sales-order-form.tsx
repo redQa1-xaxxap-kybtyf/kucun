@@ -8,8 +8,8 @@ import React from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
+import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
-import { UnifiedProductInput } from '@/components/sales-orders/unified-product-input';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -763,13 +763,10 @@ export function ERPSalesOrderForm({
                         <TableRow key={field.id} className="h-10">
                           <TableCell className="text-xs">{index + 1}</TableCell>
                           <TableCell className="min-w-[200px]">
-                            <UnifiedProductInput
+                            <IntelligentProductInput
                               form={form}
                               index={index}
                               products={productsData?.data || []}
-                              isTransferSale={
-                                form.watch('orderType') === 'TRANSFER'
-                              }
                               onProductChange={product => {
                                 if (product) {
                                   // 自动填充产品相关信息（不包括价格）
