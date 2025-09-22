@@ -10,6 +10,7 @@ import { useFieldArray, useForm } from 'react-hook-form';
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import { EnhancedProductSelector } from '@/components/sales-orders/enhanced-product-selector';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
+import { SupplierSelector } from '@/components/sales-orders/supplier-selector';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -52,6 +53,16 @@ interface ERPSalesOrderFormProps {
   onSuccess?: (order: unknown) => void;
   onCancel?: () => void;
 }
+
+// 订单类型选项
+const ORDER_TYPE_OPTIONS = [
+  { value: 'normal', label: '正常销售', description: '按现有流程处理' },
+  {
+    value: 'transfer',
+    label: '调货销售',
+    description: '同时驱动采购入库和销售出库',
+  },
+] as const;
 
 /**
  * ERP风格的销售订单表单组件
@@ -210,6 +221,7 @@ export function ERPSalesOrderForm({
       status: 'draft',
       remarks: '',
       items: [],
+      orderType: 'normal',
     },
   });
 
@@ -260,6 +272,10 @@ export function ERPSalesOrderForm({
     },
   });
 
+  // 监听订单类型变化
+  const watchedOrderType = form.watch('orderType');
+  const isTransferOrder = watchedOrderType === 'transfer';
+
   // 计算总金额：始终基于系统数量（片数）和片单价
   const watchedItems = form.watch('items') || [];
   const totalAmount = watchedItems.reduce((sum, item) => {
@@ -275,6 +291,16 @@ export function ERPSalesOrderForm({
     // 金额 = 系统数量（片数） × 片单价
     return sum + (item.quantity || 0) * piecePriceForCalculation;
   }, 0);
+
+  // 计算调货销售的成本金额和毛利
+  const costAmount = isTransferOrder
+    ? watchedItems.reduce((sum, item) => {
+        const costPrice = item.costPrice || 0;
+        return sum + (item.quantity || 0) * costPrice;
+      }, 0)
+    : 0;
+
+  const profitAmount = isTransferOrder ? totalAmount - costAmount : 0;
 
   // 重量格式化工具函数
   const formatWeight = (totalKg: number): string => {
@@ -405,6 +431,49 @@ export function ERPSalesOrderForm({
                   </p>
                 </div>
 
+                {/* 订单类型 */}
+                <div className="space-y-1">
+                  <FormField
+                    control={form.control}
+                    name="orderType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-xs text-muted-foreground">
+                          订单类型 <span className="text-destructive">*</span>
+                        </FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-8 text-xs">
+                              <SelectValue placeholder="请选择订单类型" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {ORDER_TYPE_OPTIONS.map(option => (
+                              <SelectItem
+                                key={option.value}
+                                value={option.value}
+                              >
+                                <div className="space-y-1">
+                                  <div className="font-medium">
+                                    {option.label}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {option.description}
+                                  </div>
+                                </div>
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage className="text-xs" />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
                 {/* 客户名称 */}
                 <div className="space-y-1">
                   <FormField
@@ -484,6 +553,67 @@ export function ERPSalesOrderForm({
                 </div>
               </div>
 
+              {/* 调货销售专用字段 */}
+              {isTransferOrder && (
+                <div className="mt-4 space-y-3 border-t pt-3">
+                  <h4 className="text-sm font-medium text-muted-foreground">
+                    调货销售信息
+                  </h4>
+                  <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 lg:grid-cols-3">
+                    {/* 供应商选择 */}
+                    <div className="space-y-1">
+                      <FormField
+                        control={form.control}
+                        name="supplierId"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel className="text-xs text-muted-foreground">
+                              供应商/调出方{' '}
+                              <span className="text-destructive">*</span>
+                            </FormLabel>
+                            <FormControl>
+                              <SupplierSelector
+                                value={field.value}
+                                onValueChange={field.onChange}
+                                placeholder="搜索并选择供应商"
+                                className="h-8"
+                              />
+                            </FormControl>
+                            <FormMessage className="text-xs" />
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    {/* 成本金额显示 */}
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">
+                        应付金额（成本）
+                      </Label>
+                      <div className="rounded border bg-muted/50 px-2 py-1 font-mono text-xs">
+                        ¥{costAmount.toFixed(2)}
+                      </div>
+                    </div>
+
+                    {/* 毛利显示 */}
+                    <div className="space-y-1">
+                      <Label className="text-xs text-muted-foreground">
+                        毛利
+                      </Label>
+                      <div
+                        className={`rounded border px-2 py-1 font-mono text-xs ${
+                          profitAmount >= 0
+                            ? 'bg-green-50 text-green-700'
+                            : 'bg-red-50 text-red-700'
+                        }`}
+                      >
+                        ¥{profitAmount.toFixed(2)}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* 备注信息 */}
               <div className="mt-3 space-y-1 md:col-span-2 lg:col-span-4">
                 <FormField
@@ -543,6 +673,9 @@ export function ERPSalesOrderForm({
                       <TableHead className="h-8 text-xs">单位</TableHead>
                       <TableHead className="h-8 text-xs">数量</TableHead>
                       <TableHead className="h-8 text-xs">单价</TableHead>
+                      {isTransferOrder && (
+                        <TableHead className="h-8 text-xs">成本价</TableHead>
+                      )}
                       <TableHead className="h-8 text-xs">每件片数</TableHead>
                       <TableHead className="h-8 text-xs">金额</TableHead>
                       <TableHead className="h-8 text-xs">备注</TableHead>
@@ -872,6 +1005,40 @@ export function ERPSalesOrderForm({
                               )}
                             />
                           </TableCell>
+
+                          {/* 成本价列 - 仅调货销售显示 */}
+                          {isTransferOrder && (
+                            <TableCell className="min-w-[80px]">
+                              <FormField
+                                control={form.control}
+                                name={`items.${index}.costPrice`}
+                                render={({ field: costPriceField }) => (
+                                  <FormItem>
+                                    <FormControl>
+                                      <Input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="成本价"
+                                        className="h-7 text-xs"
+                                        value={costPriceField.value || ''}
+                                        onChange={e => {
+                                          const value = e.target.value;
+                                          costPriceField.onChange(
+                                            value === ''
+                                              ? undefined
+                                              : Number(value)
+                                          );
+                                        }}
+                                      />
+                                    </FormControl>
+                                    <FormMessage className="text-xs" />
+                                  </FormItem>
+                                )}
+                              />
+                            </TableCell>
+                          )}
+
                           {/* 每件片数列 */}
                           <TableCell className="min-w-[80px]">
                             <FormField

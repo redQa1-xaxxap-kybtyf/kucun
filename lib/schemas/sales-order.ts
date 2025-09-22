@@ -17,6 +17,14 @@ export const SalesOrderStatus = z.enum([
 ]);
 
 /**
+ * 订单类型枚举
+ */
+export const SalesOrderType = z.enum([
+  'normal', // 正常销售
+  'transfer', // 调货销售
+]);
+
+/**
  * 订单项Schema
  */
 export const SalesOrderItemSchema = z.object({
@@ -80,6 +88,16 @@ export const SalesOrderItemSchema = z.object({
     .or(z.literal('')),
 
   subtotal: z.number().min(0, '小计不能为负数').optional(),
+
+  // 调货销售专用字段
+  costPrice: z
+    .number()
+    .min(0.01, '成本价必须大于0')
+    .max(999999.99, '成本价不能超过999,999.99')
+    .multipleOf(0.01, '成本价最多保留2位小数')
+    .optional(),
+
+  costSubtotal: z.number().min(0, '成本小计不能为负数').optional(),
 });
 
 /**
@@ -108,6 +126,15 @@ const BaseSalesOrderSchema = z.object({
     .max(100, '订单明细不能超过100条'),
 
   totalAmount: z.number().min(0, '总金额不能为负数').optional(),
+
+  // 调货销售专用字段
+  orderType: SalesOrderType.default('normal'),
+
+  supplierId: z.string().min(1, '供应商ID不能为空').optional(),
+
+  costAmount: z.number().min(0, '成本金额不能为负数').optional(),
+
+  profitAmount: z.number().optional(), // 毛利可以为负数
 });
 
 /**
@@ -126,6 +153,25 @@ function validateItemCombinations(items: SalesOrderItemData[]): boolean {
 }
 
 /**
+ * 验证调货销售订单的函数
+ */
+function validateTransferOrder(data: {
+  orderType: string;
+  supplierId?: string;
+  items: SalesOrderItemData[];
+}): boolean {
+  if (data.orderType === 'transfer') {
+    // 调货销售必须有供应商
+    if (!data.supplierId) {
+      return false;
+    }
+    // 调货销售的所有订单项必须有成本价
+    return data.items.every(item => item.costPrice && item.costPrice > 0);
+  }
+  return true;
+}
+
+/**
  * 创建销售订单Schema
  */
 export const CreateSalesOrderSchema = BaseSalesOrderSchema.refine(
@@ -134,7 +180,35 @@ export const CreateSalesOrderSchema = BaseSalesOrderSchema.refine(
     message: '订单明细中存在重复的产品规格组合',
     path: ['items'],
   }
-);
+)
+  .refine(data => validateTransferOrder(data), {
+    message: '调货销售订单验证失败',
+    path: ['orderType'],
+  })
+  .refine(
+    data => {
+      if (data.orderType === 'transfer' && !data.supplierId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: '调货销售必须选择供应商',
+      path: ['supplierId'],
+    }
+  )
+  .refine(
+    data => {
+      if (data.orderType === 'transfer') {
+        return data.items.every(item => item.costPrice && item.costPrice > 0);
+      }
+      return true;
+    },
+    {
+      message: '调货销售的所有商品必须设置成本价',
+      path: ['items'],
+    }
+  );
 
 /**
  * 更新销售订单Schema
@@ -211,6 +285,7 @@ export type BatchDeleteSalesOrdersData = z.infer<
 >;
 export type UpdateOrderStatusData = z.infer<typeof UpdateOrderStatusSchema>;
 export type SalesOrderStatusType = z.infer<typeof SalesOrderStatus>;
+export type SalesOrderTypeType = z.infer<typeof SalesOrderType>;
 
 /**
  * 销售订单表单默认值
@@ -220,6 +295,7 @@ export const salesOrderFormDefaults: CreateSalesOrderData = {
   status: 'draft',
   remarks: '',
   items: [],
+  orderType: 'normal',
 };
 
 /**
@@ -232,6 +308,31 @@ export const SALES_ORDER_STATUS_OPTIONS = [
   { value: 'completed', label: '已完成', color: 'green' },
   { value: 'cancelled', label: '已取消', color: 'red' },
 ] as const;
+
+/**
+ * 订单类型选项
+ */
+export const SALES_ORDER_TYPE_OPTIONS = [
+  { value: 'normal', label: '正常销售', description: '按现有流程处理' },
+  {
+    value: 'transfer',
+    label: '调货销售',
+    description: '同时驱动采购入库和销售出库',
+  },
+] as const;
+
+/**
+ * 销售订单状态更新Schema
+ */
+export const UpdateSalesOrderStatusSchema = z.object({
+  id: z.string().uuid('订单ID格式不正确'),
+  status: SalesOrderStatus.optional(),
+  remarks: z.string().optional(),
+});
+
+export type UpdateSalesOrderStatusData = z.infer<
+  typeof UpdateSalesOrderStatusSchema
+>;
 
 /**
  * 获取订单状态显示信息

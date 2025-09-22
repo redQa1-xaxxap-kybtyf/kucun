@@ -1,8 +1,9 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma, withTransaction } from '@/lib/db';
+import { UpdateSalesOrderStatusSchema } from '@/lib/schemas/sales-order';
 
 // 获取单个销售订单信息
 export async function GET(
@@ -32,6 +33,10 @@ export async function GET(
         remarks: true,
         createdAt: true,
         updatedAt: true,
+        orderType: true,
+        supplierId: true,
+        costAmount: true,
+        profitAmount: true,
         customer: {
           select: {
             id: true,
@@ -47,6 +52,13 @@ export async function GET(
             email: true,
           },
         },
+        supplier: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+          },
+        },
         items: {
           select: {
             id: true,
@@ -56,6 +68,8 @@ export async function GET(
             quantity: true,
             unitPrice: true,
             subtotal: true,
+            costPrice: true,
+            costSubtotal: true,
             product: {
               select: {
                 id: true,
@@ -153,7 +167,7 @@ export async function PUT(
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = salesOrderUpdateSchema.safeParse({
+    const validationResult = UpdateSalesOrderStatusSchema.safeParse({
       id,
       ...body,
     });
@@ -179,6 +193,8 @@ export async function PUT(
             product: true,
           },
         },
+        supplier: true,
+        customer: true,
       },
     });
 
@@ -212,6 +228,12 @@ export async function PUT(
       }
     }
 
+    // 如果状态变更为已确认，需要处理调货销售的特殊逻辑
+    const shouldProcessTransferOrder =
+      status === 'confirmed' &&
+      existingOrder.status === 'draft' &&
+      existingOrder.orderType === 'transfer';
+
     // 如果状态变更为已发货或已完成，需要更新库存
     const shouldUpdateInventory =
       status &&
@@ -219,8 +241,111 @@ export async function PUT(
       existingOrder.status === 'confirmed';
 
     let _updatedOrder;
-    if (shouldUpdateInventory) {
-      // 使用事务处理库存更新
+    if (shouldProcessTransferOrder) {
+      // 调货销售确认时的特殊处理
+      _updatedOrder = await withTransaction(async tx => {
+        // 更新订单状态
+        const order = await tx.salesOrder.update({
+          where: { id },
+          data: {
+            status: 'confirmed',
+            ...(remarks !== undefined && { remarks }),
+          },
+        });
+
+        // 调货销售确认时执行：采购入库 + 销售出库
+        for (const item of existingOrder.items) {
+          // 1. 采购入库：增加库存
+          const existingInventory = await tx.inventory.findFirst({
+            where: {
+              productId: item.productId,
+              colorCode: item.colorCode,
+              productionDate: item.productionDate
+                ? new Date(item.productionDate)
+                : null,
+            },
+          });
+
+          if (existingInventory) {
+            // 更新现有库存
+            await tx.inventory.update({
+              where: { id: existingInventory.id },
+              data: {
+                quantity: existingInventory.quantity + item.quantity,
+              },
+            });
+          } else {
+            // 创建新库存记录
+            await tx.inventory.create({
+              data: {
+                productId: item.productId,
+                colorCode: item.colorCode,
+                productionDate: item.productionDate
+                  ? new Date(item.productionDate)
+                  : null,
+                quantity: item.quantity,
+                reservedQuantity: 0,
+              },
+            });
+          }
+
+          // 2. 立即销售出库：减少库存
+          const updatedInventory = await tx.inventory.findFirst({
+            where: {
+              productId: item.productId,
+              colorCode: item.colorCode,
+              productionDate: item.productionDate
+                ? new Date(item.productionDate)
+                : null,
+            },
+          });
+
+          if (updatedInventory && updatedInventory.quantity >= item.quantity) {
+            await tx.inventory.update({
+              where: { id: updatedInventory.id },
+              data: {
+                quantity: updatedInventory.quantity - item.quantity,
+              },
+            });
+          } else {
+            throw new Error(
+              `调货销售处理失败：产品 ${item.product.name} 库存不足`
+            );
+          }
+        }
+
+        // 3. 生成应付账款记录（给供应商）
+        if (existingOrder.supplierId && existingOrder.costAmount) {
+          await tx.accountsPayable.create({
+            data: {
+              supplierId: existingOrder.supplierId,
+              amount: existingOrder.costAmount,
+              description: `调货销售应付款 - 订单号: ${existingOrder.orderNumber}`,
+              dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30天后到期
+              status: 'pending',
+              relatedOrderId: existingOrder.id,
+              relatedOrderType: 'sales_order',
+            },
+          });
+        }
+
+        // 4. 生成应收账款记录（向客户）
+        await tx.accountsReceivable.create({
+          data: {
+            customerId: existingOrder.customerId,
+            amount: existingOrder.totalAmount,
+            description: `调货销售应收款 - 订单号: ${existingOrder.orderNumber}`,
+            dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30天后到期
+            status: 'pending',
+            relatedOrderId: existingOrder.id,
+            relatedOrderType: 'sales_order',
+          },
+        });
+
+        return order;
+      });
+    } else if (shouldUpdateInventory) {
+      // 普通销售订单的库存更新
       _updatedOrder = await withTransaction(async tx => {
         // 更新订单状态
         const order = await tx.salesOrder.update({

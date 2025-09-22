@@ -71,6 +71,9 @@ model Supplier {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
+  // 关联关系
+  salesOrders SalesOrder[] // 调货销售订单
+
   @@index([name])
   @@index([phone])
   @@index([status])
@@ -163,18 +166,28 @@ model SalesOrder {
   status       String   @default("draft") // draft, confirmed, shipped, completed, cancelled
   totalAmount  Float    @default(0) @map("total_amount")
   remarks      String?
+
+  // 调货销售专用字段
+  orderType    String   @default("normal") @map("order_type") // normal, transfer
+  supplierId   String?  @map("supplier_id") // 调货销售时的供应商ID
+  costAmount   Float?   @default(0) @map("cost_amount") // 调货销售的总成本金额
+  profitAmount Float?   @default(0) @map("profit_amount") // 调货销售的毛利金额
+
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // 关联关系
   customer Customer         @relation(fields: [customerId], references: [id])
   user     User             @relation(fields: [userId], references: [id])
+  supplier Supplier?        @relation(fields: [supplierId], references: [id])
   items    SalesOrderItem[]
   payments PaymentRecord[]
 
   @@index([customerId], map: "idx_sales_orders_customer")
   @@index([userId], map: "idx_sales_orders_user")
+  @@index([supplierId], map: "idx_sales_orders_supplier")
   @@index([status], map: "idx_sales_orders_status")
+  @@index([orderType], map: "idx_sales_orders_type")
   @@index([createdAt(sort: Desc)], map: "idx_sales_orders_date")
   @@map("sales_orders")
 }
@@ -189,6 +202,10 @@ model SalesOrderItem {
   quantity       Float
   unitPrice      Float      @map("unit_price")
   subtotal       Float
+
+  // 调货销售专用字段
+  costPrice      Float?     @map("cost_price") // 调货销售时的成本价
+  costSubtotal   Float?     @map("cost_subtotal") // 调货销售时的成本小计
 
   // 关联关系
   salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
