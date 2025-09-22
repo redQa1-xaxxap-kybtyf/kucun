@@ -311,8 +311,6 @@ export async function POST(request: NextRequest) {
       items,
       remarks,
       orderNumber: providedOrderNumber,
-      orderType,
-      supplierId,
     } = validationResult.data;
 
     // 验证客户是否存在
@@ -325,27 +323,6 @@ export async function POST(request: NextRequest) {
         { success: false, error: '指定的客户不存在' },
         { status: 400 }
       );
-    }
-
-    // 如果是调货销售，验证供应商是否存在
-    if (orderType === 'transfer') {
-      if (!supplierId) {
-        return NextResponse.json(
-          { success: false, error: '调货销售必须选择供应商' },
-          { status: 400 }
-        );
-      }
-
-      const supplier = await prisma.supplier.findUnique({
-        where: { id: supplierId },
-      });
-
-      if (!supplier) {
-        return NextResponse.json(
-          { success: false, error: '指定的供应商不存在' },
-          { status: 400 }
-        );
-      }
     }
 
     // 验证所有产品是否存在
@@ -377,18 +354,6 @@ export async function POST(request: NextRequest) {
       0
     );
 
-    // 计算调货销售的成本金额和毛利
-    let costAmount = 0;
-    let profitAmount = 0;
-
-    if (orderType === 'transfer') {
-      costAmount = items.reduce(
-        (sum, item) => sum + item.quantity * (item.costPrice || 0),
-        0
-      );
-      profitAmount = totalAmount - costAmount;
-    }
-
     // 使用提供的订单号或生成新的订单号
     const orderNumber = providedOrderNumber || generateOrderNumber();
 
@@ -403,10 +368,6 @@ export async function POST(request: NextRequest) {
           status: 'draft',
           totalAmount,
           remarks,
-          orderType,
-          supplierId: orderType === 'transfer' ? supplierId : null,
-          costAmount: orderType === 'transfer' ? costAmount : null,
-          profitAmount: orderType === 'transfer' ? profitAmount : null,
         },
       });
 
@@ -422,12 +383,6 @@ export async function POST(request: NextRequest) {
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               subtotal: item.quantity * item.unitPrice,
-              // 调货销售时的成本价字段
-              costPrice: orderType === 'transfer' ? item.costPrice : null,
-              costSubtotal:
-                orderType === 'transfer' && item.costPrice
-                  ? item.quantity * item.costPrice
-                  : null,
             },
           })
         )
@@ -449,10 +404,6 @@ export async function POST(request: NextRequest) {
         remarks: true,
         createdAt: true,
         updatedAt: true,
-        orderType: true,
-        supplierId: true,
-        costAmount: true,
-        profitAmount: true,
         customer: {
           select: {
             id: true,
@@ -466,13 +417,6 @@ export async function POST(request: NextRequest) {
             name: true,
           },
         },
-        supplier: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-          },
-        },
         items: {
           select: {
             id: true,
@@ -482,8 +426,6 @@ export async function POST(request: NextRequest) {
             quantity: true,
             unitPrice: true,
             subtotal: true,
-            costPrice: true,
-            costSubtotal: true,
             product: {
               select: {
                 id: true,

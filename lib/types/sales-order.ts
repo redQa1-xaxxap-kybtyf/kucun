@@ -13,9 +13,6 @@ export type SalesOrderStatus =
   | 'completed'
   | 'cancelled';
 
-// 销售订单类型枚举
-export type SalesOrderType = 'normal' | 'transfer';
-
 // 销售订单明细类型
 export interface SalesOrderItem {
   id: string;
@@ -26,10 +23,6 @@ export interface SalesOrderItem {
   quantity: number;
   unitPrice: number;
   subtotal: number;
-
-  // 调货销售专用字段
-  costPrice?: number; // 调货销售时的成本价
-  costSubtotal?: number; // 调货销售时的成本小计
 
   // 关联数据（可选，根据查询需要包含）
   product?: Product;
@@ -44,20 +37,12 @@ export interface SalesOrder {
   status: SalesOrderStatus;
   totalAmount: number;
   remarks?: string;
-
-  // 调货销售专用字段
-  orderType: SalesOrderType;
-  supplierId?: string; // 调货销售时的供应商ID
-  costAmount?: number; // 调货销售的总成本金额
-  profitAmount?: number; // 调货销售的毛利金额
-
   createdAt: string;
   updatedAt: string;
 
   // 关联数据（可选，根据查询需要包含）
   customer?: Customer;
   user?: User;
-  supplier?: { id: string; name: string; phone?: string; address?: string }; // 供应商信息
   items?: SalesOrderItem[];
 }
 
