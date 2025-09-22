@@ -10,8 +10,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-
-// UI Components
 import type { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
@@ -34,8 +32,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-
-// API and Types
 import { createCategory, getCategories } from '@/lib/api/categories';
 import { CreateCategorySchema } from '@/lib/schemas/category';
 

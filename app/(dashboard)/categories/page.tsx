@@ -68,17 +68,13 @@ import {
 import { useToast } from '@/hooks/use-toast';
 
 // API and Types
-import type {
-  Category,
-  CategoryQueryParams,
-  BatchDeleteCategoriesInput,
-  BatchDeleteResult,
-} from '@/lib/api/categories';
 import {
   batchDeleteCategories,
   deleteCategory,
   getCategories,
   updateCategoryStatus,
+  type Category,
+  type CategoryQueryParams,
 } from '@/lib/api/categories';
 
 /**
@@ -180,7 +176,7 @@ function CategoriesPage() {
       // 显示失败详情
       if (result.failedCategories && result.failedCategories.length > 0) {
         setTimeout(() => {
-          result.failedCategories!.forEach(failed => {
+          result.failedCategories?.forEach(failed => {
             toast({
               title: `分类"${failed.name}"删除失败`,
               description: failed.reason,
@@ -264,7 +260,10 @@ function CategoriesPage() {
   };
 
   // 筛选处理
-  const handleFilter = (key: keyof CategoryQueryParams, value: any) => {
+  const handleFilter = <K extends keyof CategoryQueryParams>(
+    key: K,
+    value: CategoryQueryParams[K]
+  ) => {
     setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
   };
 
@@ -662,8 +661,8 @@ function CategoriesPage() {
           <DialogHeader>
             <DialogTitle>确认删除分类</DialogTitle>
             <DialogDescription>
-              您确定要删除分类 <strong>"{deleteDialog.categoryName}"</strong>{' '}
-              吗？
+              您确定要删除分类{' '}
+              <strong>&quot;{deleteDialog.categoryName}&quot;</strong> 吗？
               <br />
               <span className="font-medium text-red-600">
                 注意：此操作不可撤销，删除后该分类下的所有子分类和产品关联也将被清除。
