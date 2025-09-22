@@ -85,6 +85,14 @@ export const SalesOrderItemSchema = z.object({
     .or(z.literal('')),
 
   subtotal: z.number().min(0, '小计不能为负数').optional(),
+
+  // 调货销售相关字段
+  unitCost: z
+    .number()
+    .min(0.01, '成本价必须大于0')
+    .max(999999.99, '成本价不能超过999,999.99')
+    .multipleOf(0.01, '成本价最多保留2位小数')
+    .optional(),
 });
 
 /**

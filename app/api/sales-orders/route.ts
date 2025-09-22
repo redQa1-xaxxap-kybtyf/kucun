@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
@@ -382,11 +382,30 @@ export async function POST(request: NextRequest) {
       0
     );
 
-    // 计算调货销售的毛利金额
-    const profitAmount =
-      orderType === 'TRANSFER' && costAmount
-        ? totalAmount - costAmount
-        : undefined;
+    // 计算调货销售的成本和毛利金额（基于单品成本）
+    let calculatedCostAmount: number | undefined;
+    let calculatedProfitAmount: number | undefined;
+
+    if (orderType === 'TRANSFER') {
+      // 基于单品成本计算总成本
+      calculatedCostAmount = items.reduce((sum, item) => {
+        if (item.unitCost !== undefined) {
+          return sum + item.quantity * item.unitCost;
+        }
+        return sum;
+      }, 0);
+
+      // 计算总毛利
+      if (calculatedCostAmount > 0) {
+        calculatedProfitAmount = totalAmount - calculatedCostAmount;
+      }
+
+      // 如果没有单品成本，使用传统的全局成本金额
+      if (calculatedCostAmount === 0 && costAmount) {
+        calculatedCostAmount = costAmount;
+        calculatedProfitAmount = totalAmount - costAmount;
+      }
+    }
 
     // 使用提供的订单号或生成新的订单号
     const orderNumber = providedOrderNumber || generateOrderNumber();
@@ -402,8 +421,11 @@ export async function POST(request: NextRequest) {
           status: 'draft',
           orderType,
           supplierId: orderType === 'TRANSFER' ? supplierId : null,
-          costAmount: orderType === 'TRANSFER' ? costAmount : null,
-          profitAmount,
+          costAmount:
+            orderType === 'TRANSFER'
+              ? calculatedCostAmount || costAmount
+              : null,
+          profitAmount: calculatedProfitAmount,
           totalAmount,
           remarks,
         },
@@ -411,8 +433,18 @@ export async function POST(request: NextRequest) {
 
       // 创建订单明细
       const orderItems = await Promise.all(
-        items.map(item =>
-          tx.salesOrderItem.create({
+        items.map(item => {
+          const subtotal = item.quantity * item.unitPrice;
+          let costSubtotal: number | undefined;
+          let profitAmount: number | undefined;
+
+          // 调货销售时计算成本和毛利
+          if (orderType === 'TRANSFER' && item.unitCost !== undefined) {
+            costSubtotal = item.quantity * item.unitCost;
+            profitAmount = subtotal - costSubtotal;
+          }
+
+          return tx.salesOrderItem.create({
             data: {
               salesOrderId: order.id,
               productId: item.productId,
@@ -420,10 +452,14 @@ export async function POST(request: NextRequest) {
               productionDate: item.productionDate,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
-              subtotal: item.quantity * item.unitPrice,
+              subtotal,
+              // 调货销售相关字段
+              unitCost: item.unitCost,
+              costSubtotal,
+              profitAmount,
             },
-          })
-        )
+          });
+        })
       );
 
       return { order, items: orderItems };

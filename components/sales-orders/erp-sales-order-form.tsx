@@ -713,6 +713,12 @@ export function ERPSalesOrderForm({
                       <TableHead className="h-8 text-xs">单位</TableHead>
                       <TableHead className="h-8 text-xs">数量</TableHead>
                       <TableHead className="h-8 text-xs">单价</TableHead>
+                      {form.watch('orderType') === 'TRANSFER' && (
+                        <>
+                          <TableHead className="h-8 text-xs">成本价</TableHead>
+                          <TableHead className="h-8 text-xs">毛利</TableHead>
+                        </>
+                      )}
                       <TableHead className="h-8 text-xs">每件片数</TableHead>
                       <TableHead className="h-8 text-xs">金额</TableHead>
                       <TableHead className="h-8 text-xs">备注</TableHead>
@@ -1042,6 +1048,81 @@ export function ERPSalesOrderForm({
                               )}
                             />
                           </TableCell>
+
+                          {/* 调货销售专用字段 */}
+                          {form.watch('orderType') === 'TRANSFER' && (
+                            <>
+                              {/* 成本价列 */}
+                              <TableCell className="min-w-[80px]">
+                                <FormField
+                                  control={form.control}
+                                  name={`items.${index}.unitCost`}
+                                  render={({ field: costField }) => (
+                                    <FormItem>
+                                      <FormControl>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          step="0.01"
+                                          placeholder="成本价"
+                                          className="h-7 text-xs"
+                                          value={costField.value || ''}
+                                          onChange={e => {
+                                            const value = e.target.value;
+                                            costField.onChange(
+                                              value === ''
+                                                ? undefined
+                                                : Number(value)
+                                            );
+                                          }}
+                                        />
+                                      </FormControl>
+                                      <FormMessage className="text-xs" />
+                                    </FormItem>
+                                  )}
+                                />
+                              </TableCell>
+
+                              {/* 毛利列 */}
+                              <TableCell className="min-w-[80px]">
+                                <div className="flex h-7 items-center text-xs">
+                                  {(() => {
+                                    const unitCost =
+                                      form.watch(`items.${index}.unitCost`) ||
+                                      0;
+                                    const unitPrice = watchedUnitPrice || 0;
+                                    const quantity = watchedQuantity || 0;
+
+                                    if (
+                                      unitCost > 0 &&
+                                      unitPrice > 0 &&
+                                      quantity > 0
+                                    ) {
+                                      const profit =
+                                        (unitPrice - unitCost) * quantity;
+                                      return (
+                                        <span
+                                          className={
+                                            profit >= 0
+                                              ? 'text-green-600'
+                                              : 'text-red-600'
+                                          }
+                                        >
+                                          ¥{profit.toFixed(2)}
+                                        </span>
+                                      );
+                                    }
+                                    return (
+                                      <span className="text-muted-foreground">
+                                        -
+                                      </span>
+                                    );
+                                  })()}
+                                </div>
+                              </TableCell>
+                            </>
+                          )}
+
                           {/* 每件片数列 */}
                           <TableCell className="min-w-[80px]">
                             <FormField
@@ -1148,6 +1229,81 @@ export function ERPSalesOrderForm({
                     })}
                   </span>
                 </div>
+
+                {/* 调货销售财务汇总 */}
+                {form.watch('orderType') === 'TRANSFER' && (
+                  <>
+                    <div className="flex items-center justify-between rounded border bg-blue-50/50 px-3 py-2">
+                      <span className="text-xs text-muted-foreground">
+                        总成本
+                      </span>
+                      <span className="text-sm font-semibold text-blue-600">
+                        ¥
+                        {(() => {
+                          const items = form.watch('items') || [];
+                          const totalCost = items.reduce((sum, item) => {
+                            const unitCost = item.unitCost || 0;
+                            const quantity = item.quantity || 0;
+                            return sum + unitCost * quantity;
+                          }, 0);
+                          return totalCost.toLocaleString('zh-CN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          });
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded border bg-green-50/50 px-3 py-2">
+                      <span className="text-xs text-muted-foreground">
+                        总毛利
+                      </span>
+                      <span className="text-sm font-semibold text-green-600">
+                        ¥
+                        {(() => {
+                          const items = form.watch('items') || [];
+                          const totalProfit = items.reduce((sum, item) => {
+                            const unitCost = item.unitCost || 0;
+                            const unitPrice = item.unitPrice || 0;
+                            const quantity = item.quantity || 0;
+                            return sum + (unitPrice - unitCost) * quantity;
+                          }, 0);
+                          return totalProfit.toLocaleString('zh-CN', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          });
+                        })()}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between rounded border bg-indigo-50/50 px-3 py-2">
+                      <span className="text-xs text-muted-foreground">
+                        毛利率
+                      </span>
+                      <span className="text-sm font-semibold text-indigo-600">
+                        {(() => {
+                          const items = form.watch('items') || [];
+                          const totalCost = items.reduce((sum, item) => {
+                            const unitCost = item.unitCost || 0;
+                            const quantity = item.quantity || 0;
+                            return sum + unitCost * quantity;
+                          }, 0);
+                          const totalProfit = items.reduce((sum, item) => {
+                            const unitCost = item.unitCost || 0;
+                            const unitPrice = item.unitPrice || 0;
+                            const quantity = item.quantity || 0;
+                            return sum + (unitPrice - unitCost) * quantity;
+                          }, 0);
+
+                          if (totalAmount > 0) {
+                            const profitRate =
+                              (totalProfit / totalAmount) * 100;
+                            return `${profitRate.toFixed(1)}%`;
+                          }
+                          return '0.0%';
+                        })()}
+                      </span>
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           </div>
