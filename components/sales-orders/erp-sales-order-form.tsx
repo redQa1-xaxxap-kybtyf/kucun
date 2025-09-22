@@ -8,8 +8,8 @@ import React from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
-import { EnhancedProductInput } from '@/components/sales-orders/enhanced-product-input';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
+import { UnifiedProductInput } from '@/components/sales-orders/unified-product-input';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -763,7 +763,7 @@ export function ERPSalesOrderForm({
                         <TableRow key={field.id} className="h-10">
                           <TableCell className="text-xs">{index + 1}</TableCell>
                           <TableCell className="min-w-[200px]">
-                            <EnhancedProductInput
+                            <UnifiedProductInput
                               form={form}
                               index={index}
                               products={productsData?.data || []}
