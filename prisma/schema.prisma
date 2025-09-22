@@ -151,8 +151,9 @@ model ProductVariant {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // 关联关系
-  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  inventory   Inventory[]
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory     Inventory[]
+  inboundRecords InboundRecord[]
 
   @@unique([productId, colorCode], map: "uk_product_color")
   @@index([productId])
@@ -255,26 +256,40 @@ model Inventory {
   @@map("inventory")
 }
 
-// 入库记录表 - 入库操作记录，支持多种入库类型
+// 入库记录表 - 入库操作记录，支持多种入库类型和批次管理
 model InboundRecord {
   id             String    @id @default(uuid())
   recordNumber   String    @unique @map("record_number")
   productId      String    @map("product_id")
+  variantId      String?   @map("variant_id") // 产品变体ID（支持色号管理）
   quantity       Float     // 支持小数点，最小值0.01
   reason         String    @default("purchase") // purchase, return, transfer, surplus, other
   remarks        String?   // 最大500字符
   userId         String    @map("user_id")
+
+  // 批次管理字段
+  productionDate DateTime? @map("production_date") // 生产日期
+  batchNumber    String?   @map("batch_number") // 批次号
+  colorCode      String?   @map("color_code") // 色号（冗余字段，便于查询）
+  unitCost       Float?    @map("unit_cost") // 单位成本
+  location       String?   // 存储位置
+
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
   // 关联关系
   product Product @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
   user    User    @relation(fields: [userId], references: [id])
 
   @@index([productId], map: "idx_inbound_records_product")
+  @@index([variantId], map: "idx_inbound_records_variant")
   @@index([userId], map: "idx_inbound_records_user")
   @@index([reason], map: "idx_inbound_records_reason")
   @@index([createdAt(sort: Desc)], map: "idx_inbound_records_date")
+  @@index([productionDate], map: "idx_inbound_records_production_date")
+  @@index([batchNumber], map: "idx_inbound_records_batch")
+  @@index([colorCode], map: "idx_inbound_records_color")
   @@map("inbound_records")
 }
 

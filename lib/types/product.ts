@@ -157,6 +157,7 @@ export interface BatchDeleteResult {
   failedCount: number;
   failedProducts?: {
     id: string;
+    code: string;
     name: string;
     reason: string;
   }[];

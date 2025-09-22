@@ -94,10 +94,12 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
   const [deleteDialog, setDeleteDialog] = React.useState<{
     open: boolean;
     productId: string | null;
+    productCode: string;
     productName: string;
   }>({
     open: false,
     productId: null,
+    productCode: '',
     productName: '',
   });
 
@@ -144,7 +146,7 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
       // 如果有失败的产品，显示详细信息
       if (result.failedProducts && result.failedProducts.length > 0) {
         const failedList = result.failedProducts
-          .map(p => `${p.name}: ${p.reason}`)
+          .map(p => `[${p.code || p.id}] ${p.name}: ${p.reason}`)
           .join('\n');
 
         setTimeout(() => {
@@ -194,10 +196,15 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
   };
 
   // 删除产品处理
-  const handleDeleteProduct = (productId: string, productName: string) => {
+  const handleDeleteProduct = (
+    productId: string,
+    productCode: string,
+    productName: string
+  ) => {
     setDeleteDialog({
       open: true,
       productId,
+      productCode,
       productName,
     });
   };
@@ -212,12 +219,17 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
 
       toast({
         title: '删除成功',
-        description: `产品"${deleteDialog.productName}"已成功删除`,
+        description: `产品 [${deleteDialog.productCode}] 已成功删除`,
         variant: 'success',
       });
 
       // 关闭对话框
-      setDeleteDialog({ open: false, productId: null, productName: '' });
+      setDeleteDialog({
+        open: false,
+        productId: null,
+        productCode: '',
+        productName: '',
+      });
 
       // 刷新数据
       queryClient.invalidateQueries({
@@ -556,7 +568,11 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
                           className="text-red-600"
                           onClick={e => {
                             e.stopPropagation();
-                            handleDeleteProduct(product.id, product.name);
+                            handleDeleteProduct(
+                              product.id,
+                              product.code,
+                              product.name
+                            );
                           }}
                         >
                           <Trash2 className="mr-2 h-3 w-3" />
@@ -621,7 +637,8 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除产品</AlertDialogTitle>
             <AlertDialogDescription>
-              您确定要删除产品 &ldquo;{deleteDialog.productName}&rdquo; 吗？
+              您确定要删除产品 [{deleteDialog.productCode}]{' '}
+              {deleteDialog.productName} 吗？
               <br />
               <span className="font-medium text-red-600">
                 此操作不可撤销，删除后将无法恢复产品数据。

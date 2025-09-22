@@ -198,7 +198,18 @@ export async function POST(request: NextRequest) {
     const validatedData = createInboundSchema.parse(body);
     console.log('入库API: 数据验证通过', validatedData);
 
-    const { productId, quantity, reason, remarks } = validatedData;
+    const {
+      productId,
+      variantId,
+      quantity,
+      reason,
+      remarks,
+      productionDate,
+      batchNumber,
+      colorCode,
+      unitCost,
+      location,
+    } = validatedData;
 
     // 验证产品是否存在
     const product = await prisma.product.findUnique({
@@ -223,15 +234,51 @@ export async function POST(request: NextRequest) {
     // 生成记录编号
     const recordNumber = generateRecordNumber();
 
+    // 验证产品变体（如果提供了variantId）
+    if (variantId) {
+      const variant = await prisma.productVariant.findUnique({
+        where: { id: variantId },
+        select: { id: true, productId: true, colorCode: true, status: true },
+      });
+
+      if (!variant) {
+        return NextResponse.json(
+          { success: false, error: '产品变体不存在' },
+          { status: 404 }
+        );
+      }
+
+      if (variant.productId !== productId) {
+        return NextResponse.json(
+          { success: false, error: '产品变体与产品不匹配' },
+          { status: 400 }
+        );
+      }
+
+      if (variant.status !== 'active') {
+        return NextResponse.json(
+          { success: false, error: '产品变体已停用，无法入库' },
+          { status: 400 }
+        );
+      }
+    }
+
     // 创建入库记录
     const record = await prisma.inboundRecord.create({
       data: {
         recordNumber,
         productId,
+        variantId,
         quantity: formatQuantity(quantity),
         reason,
         remarks: cleanRemarks(remarks),
         userId: session.user.id,
+        // 批次管理字段
+        productionDate: productionDate ? new Date(productionDate) : null,
+        batchNumber: batchNumber?.trim() || null,
+        colorCode: colorCode?.trim() || null,
+        unitCost,
+        location: location?.trim() || null,
       },
       include: {
         product: {
@@ -253,16 +300,19 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // 更新库存 - 简化处理，使用productId作为唯一标识
+    // 更新库存 - 支持批次管理
     try {
+      // 构建库存查询条件
+      const inventoryWhere = {
+        productId,
+        variantId: variantId || null,
+        productionDate: productionDate ? new Date(productionDate) : null,
+        batchNumber: batchNumber?.trim() || null,
+      };
+
       // 查找现有库存记录
       const existingInventory = await prisma.inventory.findFirst({
-        where: {
-          productId,
-          variantId: null,
-          colorCode: null,
-          productionDate: null,
-        },
+        where: inventoryWhere,
       });
 
       if (existingInventory) {
@@ -273,6 +323,10 @@ export async function POST(request: NextRequest) {
             quantity: {
               increment: formatQuantity(quantity),
             },
+            // 更新单位成本（如果提供）
+            ...(unitCost !== undefined && { unitCost }),
+            // 更新存储位置（如果提供）
+            ...(location && { location: location.trim() }),
           },
         });
       } else {
@@ -280,8 +334,14 @@ export async function POST(request: NextRequest) {
         await prisma.inventory.create({
           data: {
             productId,
+            variantId: variantId || null,
             quantity: formatQuantity(quantity),
             reservedQuantity: 0,
+            productionDate: productionDate ? new Date(productionDate) : null,
+            batchNumber: batchNumber?.trim() || null,
+            colorCode: colorCode?.trim() || null,
+            unitCost,
+            location: location?.trim() || null,
           },
         });
       }

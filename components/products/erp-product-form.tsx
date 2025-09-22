@@ -143,7 +143,7 @@ export function ERPProductForm({
     onSuccess: data => {
       toast({
         title: '创建成功',
-        description: `产品 "${data.name}" 创建成功！`,
+        description: `产品 [${data.code}] 创建成功！`,
         variant: 'success',
       });
 
@@ -178,7 +178,7 @@ export function ERPProductForm({
     onSuccess: data => {
       toast({
         title: '更新成功',
-        description: `产品 "${data.name}" 更新成功！`,
+        description: `产品 [${data.code}] 更新成功！`,
         variant: 'success',
       });
 
