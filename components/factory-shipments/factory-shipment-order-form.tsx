@@ -16,7 +16,7 @@ import {
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
-import { CustomerSelector } from '@/components/customers/customer-hierarchy';
+import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
 import { SupplierSelector } from '@/components/sales-orders/supplier-selector';
 import { Button } from '@/components/ui/button';
