@@ -134,28 +134,8 @@ export const salesOrderValidations = {
   }),
 };
 
-// 库存相关验证
-export const inventoryValidations = {
-  create: z.object({
-    productId: baseValidations.id,
-    productionDate: z.date().optional(),
-    quantity: z.number().int().min(0, '库存数量不能为负数'),
-  }),
-
-  update: z.object({
-    id: baseValidations.id,
-    quantity: z.number().int().min(0, '库存数量不能为负数').optional(),
-    reservedQuantity: z.number().int().min(0, '预留数量不能为负数').optional(),
-  }),
-
-  adjust: z.object({
-    productId: baseValidations.id,
-    productionDate: z.string().optional(),
-    adjustmentType: z.enum(['increase', 'decrease']),
-    quantity: z.number().int().min(1, '调整数量必须大于0'),
-    reason: z.string().max(200, '调整原因不能超过200个字符'),
-  }),
-};
+// 库存相关验证 - 已迁移到 lib/validations/inventory-operations.ts
+// 遵循唯一真理源原则，请使用 lib/validations/inventory-operations.ts 中的验证规则
 
 // 入库记录相关验证 - 已迁移到 lib/validations/inbound.ts
 // 遵循唯一真理源原则，请使用 lib/validations/inbound.ts 中的验证规则
@@ -236,9 +216,8 @@ export type SalesOrderUpdateInput = z.infer<
   typeof salesOrderValidations.update
 >;
 
-export type InventoryCreateInput = z.infer<typeof inventoryValidations.create>;
-export type InventoryUpdateInput = z.infer<typeof inventoryValidations.update>;
-export type InventoryAdjustInput = z.infer<typeof inventoryValidations.adjust>;
+// 库存相关类型 - 已迁移到 lib/types/inventory.ts
+// 遵循唯一真理源原则，请从 lib/types/inventory.ts 导入相关类型
 
 export type InboundRecordCreateInput = z.infer<
   typeof inboundRecordValidations.create
