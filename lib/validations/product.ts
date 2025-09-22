@@ -1,31 +1,44 @@
-// 产品表单验证规则（前端）
-// 遵循全栈开发执行手册：使用Zod进行表单验证，与React Hook Form集成
+/**
+ * 产品表单验证规则
+ * 遵循全栈开发执行手册：使用Zod进行表单验证，与React Hook Form集成
+ *
+ * 这是产品验证规则的唯一真理源，所有产品相关的验证逻辑都应该在此文件中定义
+ * 与 lib/types/product.ts 中的类型定义保持同步
+ */
 
 import { z } from 'zod';
 
-// 基础验证规则
+/**
+ * 产品基础验证规则
+ * 定义了产品各个字段的通用验证逻辑
+ */
 const baseValidations = {
+  /** 产品编码验证：必填，最多50字符，只允许字母数字和特殊符号 */
   code: z
     .string()
     .min(1, '产品编码不能为空')
     .max(50, '产品编码不能超过50个字符')
     .regex(/^[A-Za-z0-9-_]+$/, '产品编码只能包含字母、数字、短横线和下划线'),
 
+  /** 产品名称验证：必填，最多100字符 */
   name: z
     .string()
     .min(1, '产品名称不能为空')
     .max(100, '产品名称不能超过100个字符'),
 
+  /** 规格描述验证：可选，最多200字符 */
   specification: z
     .string()
     .max(200, '规格描述不能超过200个字符')
     .optional()
     .or(z.literal('')),
 
+  /** 计量单位验证：必须是预定义的枚举值 */
   unit: z.enum(['piece', 'sheet', 'strip', 'box', 'square_meter'], {
     errorMap: () => ({ message: '请选择有效的计量单位' }),
   }),
 
+  /** 每件片数验证：必填正整数，范围1-10000 */
   piecesPerUnit: z
     .number({
       required_error: '每件片数不能为空',
@@ -35,6 +48,7 @@ const baseValidations = {
     .min(1, '每件片数至少为1')
     .max(10000, '每件片数不能超过10000'),
 
+  /** 重量验证：可选正数，最大100000kg */
   weight: z
     .number({
       invalid_type_error: '重量必须是数字',
@@ -43,6 +57,7 @@ const baseValidations = {
     .max(100000, '重量不能超过100000kg')
     .optional(),
 
+  /** 厚度验证：可选正数，最大100mm */
   thickness: z
     .number({
       invalid_type_error: '厚度必须是数字',
@@ -51,6 +66,7 @@ const baseValidations = {
     .max(100, '厚度不能超过100mm')
     .optional(),
 
+  /** 产品状态验证：必须是active或inactive */
   status: z.enum(['active', 'inactive'], {
     errorMap: () => ({ message: '请选择有效的产品状态' }),
   }),

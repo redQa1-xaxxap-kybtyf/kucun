@@ -4,7 +4,6 @@
  */
 
 import type { ApiResponse } from '@/lib/types/api';
-// import type { PaginatedResponse } from '@/lib/types/api'; // 将在未来版本中使用
 import type {
   ProductVariant,
   ProductVariantCreateInput,
@@ -43,7 +42,7 @@ export async function getProductVariants(
     throw new Error(data.error || '获取产品变体失败');
   }
 
-  return data.data!;
+  return data.data ?? [];
 }
 
 /**
@@ -62,7 +61,10 @@ export async function getProductVariant(id: string): Promise<ProductVariant> {
     throw new Error(data.error || '获取产品变体详情失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('获取产品变体详情失败：数据为空');
+  }
+  return data.data;
 }
 
 /**
@@ -90,7 +92,10 @@ export async function createProductVariant(
     throw new Error(data.error || '创建产品变体失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('创建产品变体失败：数据为空');
+  }
+  return data.data;
 }
 
 /**
@@ -117,7 +122,10 @@ export async function updateProductVariant(
     throw new Error(data.error || '更新产品变体失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('更新产品变体失败：数据为空');
+  }
+  return data.data;
 }
 
 /**
@@ -164,7 +172,7 @@ export async function batchCreateProductVariants(
     throw new Error(data.error || '批量创建产品变体失败');
   }
 
-  return data.data!;
+  return data.data ?? [];
 }
 
 /**
@@ -192,7 +200,10 @@ export async function generateSKU(
     throw new Error(data.error || '生成SKU失败');
   }
 
-  return data.data!.sku;
+  if (!data.data?.sku) {
+    throw new Error('生成SKU失败：返回数据无效');
+  }
+  return data.data.sku;
 }
 
 /**
@@ -219,7 +230,7 @@ export async function checkSKUAvailability(
     throw new Error(data.error || '检查SKU可用性失败');
   }
 
-  return data.data!.available;
+  return data.data?.available ?? false;
 }
 
 /**
@@ -254,5 +265,8 @@ export async function getVariantInventorySummary(variantId: string): Promise<{
     throw new Error(data.error || '获取变体库存汇总失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('获取变体库存汇总失败：数据为空');
+  }
+  return data.data;
 }

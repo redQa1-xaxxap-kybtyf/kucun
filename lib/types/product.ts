@@ -1,63 +1,123 @@
-// 产品相关类型定义
-// 遵循命名约定：前端使用 camelCase
+/**
+ * 产品相关类型定义
+ * 遵循全栈项目统一约定规范：前端使用 camelCase
+ *
+ * 这是产品模块的唯一真理源，所有产品相关的类型定义都应该在此文件中
+ * 与 Prisma Schema 保持同步，确保类型安全
+ */
 
-// 瓷砖行业特有规格信息类型
+/**
+ * 瓷砖行业特有规格信息类型
+ * 用于存储瓷砖产品的详细规格参数
+ */
 export interface TileSpecifications {
-  color?: string; // 颜色
-  surface?: string; // 表面处理
-  size?: string; // 尺寸规格
-  thickness?: number; // 厚度(mm)
-  pattern?: string; // 花纹
-  grade?: string; // 等级
-  origin?: string; // 产地
-  series?: string; // 系列
-  [key: string]: string | number | undefined; // 允许扩展字段
+  /** 颜色描述，如"米白色"、"深灰色" */
+  color?: string;
+  /** 表面处理工艺，如"抛光"、"哑光"、"仿古" */
+  surface?: string;
+  /** 尺寸规格，如"600x600mm"、"800x800mm" */
+  size?: string;
+  /** 厚度，单位：毫米(mm) */
+  thickness?: number;
+  /** 花纹描述，如"木纹"、"石纹"、"布纹" */
+  pattern?: string;
+  /** 产品等级，如"优等品"、"一等品" */
+  grade?: string;
+  /** 产地信息，如"广东佛山"、"山东淄博" */
+  origin?: string;
+  /** 产品系列名称，如"现代简约系列" */
+  series?: string;
+  /** 允许扩展字段，支持未来新增规格参数 */
+  [key: string]: string | number | undefined;
 }
 
-// 产品单位类型
+/**
+ * 产品计量单位枚举
+ * 定义了系统支持的所有产品计量单位
+ */
 export type ProductUnit = 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
 
-// 产品状态类型
+/**
+ * 产品状态枚举
+ * 定义了产品的生命周期状态
+ */
 export type ProductStatus = 'active' | 'inactive';
 
-// 产品分类信息
+/**
+ * 产品分类信息
+ * 用于产品的分类管理和层级结构
+ */
 export interface ProductCategory {
+  /** 分类唯一标识符 */
   id: string;
+  /** 分类名称 */
   name: string;
+  /** 分类编码 */
   code: string;
 }
 
-// 产品库存汇总信息
+/**
+ * 产品库存汇总信息
+ * 包含产品的总库存、预留库存和可用库存
+ */
 export interface ProductInventory {
+  /** 总库存数量 */
   totalQuantity: number;
+  /** 预留库存数量（已分配给订单但未出库） */
   reservedQuantity: number;
+  /** 可用库存数量（总库存 - 预留库存） */
   availableQuantity: number;
 }
 
-// 产品统计信息
+/**
+ * 产品统计信息
+ * 包含产品相关的各种统计数据
+ */
 export interface ProductStatistics {
+  /** 库存记录数量 */
   inventoryRecordsCount: number;
+  /** 销售订单项目数量 */
   salesOrderItemsCount: number;
+  /** 入库记录数量 */
   inboundRecordsCount: number;
 }
 
+/**
+ * 产品主体信息
+ * 系统中产品的完整数据结构，与 Prisma Product 模型保持同步
+ */
 export interface Product {
+  /** 产品唯一标识符 */
   id: string;
+  /** 产品编码，用于业务识别和查询 */
   code: string;
+  /** 产品名称 */
   name: string;
+  /** 产品规格描述（文本格式） */
   specification?: string;
+  /** 产品详细规格信息（结构化数据） */
   specifications?: TileSpecifications;
+  /** 产品计量单位 */
   unit: ProductUnit;
+  /** 每件包含的片数，用于单位换算 */
   piecesPerUnit: number;
+  /** 产品重量，单位：千克(kg) */
   weight?: number;
-  thickness?: number; // 产品厚度(mm)
+  /** 产品厚度，单位：毫米(mm) */
+  thickness?: number;
+  /** 产品状态 */
   status: ProductStatus;
+  /** 所属分类ID */
   categoryId?: string;
+  /** 所属分类信息（关联查询时包含） */
   category?: ProductCategory;
+  /** 创建时间 */
   createdAt: string;
+  /** 更新时间 */
   updatedAt: string;
-  // 库存汇总信息（来自API响应）
+  /** 库存汇总信息（来自API响应） */
   inventory?: ProductInventory;
+  /** 统计信息（来自API响应） */
   statistics?: ProductStatistics;
 }
 

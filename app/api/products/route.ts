@@ -3,14 +3,14 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { CreateProductSchema } from '@/lib/schemas/product';
+import { env } from '@/lib/env';
 import { paginationValidations } from '@/lib/validations/base';
 
 // 获取产品列表
 export async function GET(request: NextRequest) {
   try {
     // 验证用户权限 (开发环境下临时绕过)
-    if (process.env.NODE_ENV !== 'development') {
+    if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
         return NextResponse.json(
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 验证用户权限 (开发环境下临时绕过)
-    if (process.env.NODE_ENV !== 'development') {
+    if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
         return NextResponse.json(
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = CreateProductSchema.safeParse(body);
+    const validationResult = createProductSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {

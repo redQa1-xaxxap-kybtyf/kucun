@@ -104,42 +104,8 @@ export const customerValidations = {
   }),
 };
 
-// 产品相关验证
-export const productValidations = {
-  create: z.object({
-    code: baseValidations.code,
-    name: baseValidations.name,
-    specification: z.string().max(200, '规格描述不能超过200个字符').optional(),
-    specifications: z.record(z.any()).optional(),
-    unit: z.enum(['piece', 'box', 'square_meter']).default('piece'),
-    piecesPerUnit: z.number().int().min(1, '每件片数至少为1').default(1),
-    weight: z.number().min(0, '重量不能为负数').optional(),
-    thickness: z
-      .number()
-      .min(0, '厚度不能为负数')
-      .max(100, '厚度不能超过100mm')
-      .optional(),
-    categoryId: baseValidations.id.optional(),
-  }),
-
-  update: z.object({
-    id: baseValidations.id,
-    code: baseValidations.code.optional(),
-    name: baseValidations.name.optional(),
-    specification: z.string().max(200, '规格描述不能超过200个字符').optional(),
-    specifications: z.record(z.any()).optional(),
-    unit: z.enum(['piece', 'box', 'square_meter']).optional(),
-    piecesPerUnit: z.number().int().min(1, '每件片数至少为1').optional(),
-    weight: z.number().min(0, '重量不能为负数').optional(),
-    thickness: z
-      .number()
-      .min(0, '厚度不能为负数')
-      .max(100, '厚度不能超过100mm')
-      .optional(),
-    status: z.enum(['active', 'inactive']).optional(),
-    categoryId: baseValidations.id.optional(),
-  }),
-};
+// 产品相关验证已迁移到 lib/validations/product.ts
+// 遵循唯一真理源原则，请使用 lib/validations/product.ts 中的验证规则
 
 // 销售单相关验证
 export const salesOrderValidations = {
@@ -260,8 +226,8 @@ export type UserRegisterInput = z.infer<typeof userValidations.register>;
 export type CustomerCreateInput = z.infer<typeof customerValidations.create>;
 export type CustomerUpdateInput = z.infer<typeof customerValidations.update>;
 
-export type ProductCreateInput = z.infer<typeof productValidations.create>;
-export type ProductUpdateInput = z.infer<typeof productValidations.update>;
+// 产品类型定义已迁移到 lib/validations/product.ts
+// 请使用 ProductCreateFormData 和 ProductUpdateFormData
 
 export type SalesOrderCreateInput = z.infer<
   typeof salesOrderValidations.create

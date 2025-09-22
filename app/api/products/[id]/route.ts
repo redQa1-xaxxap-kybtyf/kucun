@@ -3,7 +3,8 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { UpdateProductSchema } from '@/lib/schemas/product';
+import { env } from '@/lib/env';
+import { updateProductSchema } from '@/lib/validations/product';
 
 // 获取单个产品信息
 export async function GET(
@@ -13,7 +14,7 @@ export async function GET(
   const { id } = await params;
   try {
     // 验证用户权限 (开发环境下临时绕过)
-    if (process.env.NODE_ENV !== 'development') {
+    if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
         return NextResponse.json(
@@ -262,7 +263,7 @@ export async function GET(
         success: false,
         error: error instanceof Error ? error.message : '获取产品信息失败',
         details:
-          process.env.NODE_ENV === 'development'
+          env.NODE_ENV === 'development'
             ? {
                 message: error instanceof Error ? error.message : '未知错误',
                 stack: error instanceof Error ? error.stack : undefined,
@@ -283,7 +284,7 @@ export async function PUT(
   const { id } = await params;
   try {
     // 验证用户权限 (开发环境下临时绕过)
-    if (process.env.NODE_ENV !== 'development') {
+    if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
         return NextResponse.json(
@@ -296,7 +297,7 @@ export async function PUT(
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = UpdateProductSchema.safeParse({
+    const validationResult = updateProductSchema.safeParse({
       id,
       ...body,
     });
@@ -447,7 +448,7 @@ export async function DELETE(
   const { id } = await params;
   try {
     // 验证用户权限 (开发环境下临时绕过)
-    if (process.env.NODE_ENV !== 'development') {
+    if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
         return NextResponse.json(
