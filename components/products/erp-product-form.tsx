@@ -32,22 +32,22 @@ import {
   createProduct,
   productQueryKeys,
   updateProduct,
-  type CreateProductData,
-  type UpdateProductData,
 } from '@/lib/api/products';
-import {
-  CreateProductSchema,
-  UpdateProductSchema,
-} from '@/lib/schemas/product';
 import {
   PRODUCT_STATUS_OPTIONS,
   PRODUCT_UNIT_OPTIONS,
 } from '@/lib/types/product';
+import {
+  productCreateSchema,
+  productUpdateSchema,
+  type ProductCreateFormData,
+  type ProductUpdateFormData,
+} from '@/lib/validations/product';
 
 interface ERPProductFormProps {
   mode?: 'create' | 'edit';
   productId?: string;
-  initialData?: Partial<CreateProductData>;
+  initialData?: Partial<ProductCreateFormData>;
   onSuccess?: () => void;
 }
 
@@ -105,9 +105,9 @@ export function ERPProductForm({
   }, [categoriesResponse?.data]);
 
   // 表单配置
-  const form = useForm<CreateProductData | UpdateProductData>({
+  const form = useForm<ProductCreateFormData | ProductUpdateFormData>({
     resolver: zodResolver(
-      mode === 'create' ? CreateProductSchema : UpdateProductSchema
+      mode === 'create' ? productCreateSchema : productUpdateSchema
     ),
     defaultValues:
       mode === 'create'
@@ -143,7 +143,7 @@ export function ERPProductForm({
     onSuccess: data => {
       toast({
         title: '创建成功',
-        description: `产品 "${data.name}" 创建成功！`,
+        description: `产品 [${data.code}] 创建成功！`,
         variant: 'success',
       });
 
@@ -178,7 +178,7 @@ export function ERPProductForm({
     onSuccess: data => {
       toast({
         title: '更新成功',
-        description: `产品 "${data.name}" 更新成功！`,
+        description: `产品 [${data.code}] 更新成功！`,
         variant: 'success',
       });
 

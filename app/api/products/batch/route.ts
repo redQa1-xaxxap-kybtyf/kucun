@@ -1,18 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import type { BatchDeleteResult } from '@/lib/types/product';
-
-// 批量删除产品的验证Schema
-const BatchDeleteProductsSchema = z.object({
-  productIds: z
-    .array(z.string().min(1, '产品ID不能为空'))
-    .min(1, '至少需要选择一个产品')
-    .max(100, '一次最多只能删除100个产品'),
-});
+import { batchDeleteProductsSchema } from '@/lib/validations/product';
 
 /**
  * 批量删除产品
@@ -32,7 +24,7 @@ export async function DELETE(request: NextRequest) {
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = BatchDeleteProductsSchema.safeParse(body);
+    const validationResult = batchDeleteProductsSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -53,8 +45,8 @@ export async function DELETE(request: NextRequest) {
       },
       select: {
         id: true,
-        name: true,
         code: true,
+        name: true,
         _count: {
           select: {
             inventory: true,
@@ -112,6 +104,7 @@ export async function DELETE(request: NextRequest) {
       // 不存在的产品
       ...notFoundProductIds.map(id => ({
         id,
+        code: '未知',
         name: '未知产品',
         reason: '产品不存在',
       })),
@@ -129,6 +122,7 @@ export async function DELETE(request: NextRequest) {
         }
         return {
           id: product.id,
+          code: product.code,
           name: product.name,
           reason: `存在关联数据: ${reasons.join(', ')}`,
         };

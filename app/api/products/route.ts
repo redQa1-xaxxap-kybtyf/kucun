@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import { paginationValidations } from '@/lib/validations/base';
+import { productCreateSchema } from '@/lib/validations/product';
 
 // 获取产品列表
 export async function GET(request: NextRequest) {
@@ -214,7 +215,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = createProductSchema.safeParse(body);
+    const validationResult = productCreateSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {

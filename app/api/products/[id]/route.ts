@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
-import { updateProductSchema } from '@/lib/validations/product';
+import { productUpdateSchema } from '@/lib/validations/product';
 
 // 获取单个产品信息
 export async function GET(
@@ -297,7 +297,7 @@ export async function PUT(
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = updateProductSchema.safeParse({
+    const validationResult = productUpdateSchema.safeParse({
       id,
       ...body,
     });

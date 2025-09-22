@@ -11,6 +11,7 @@ import type {
   ProductCreateInput,
   ProductQueryParams,
 } from '@/lib/types/product';
+import type { ProductUpdateFormData } from '@/lib/validations/product';
 
 const API_BASE = '/api/products';
 
@@ -127,7 +128,7 @@ export async function createProduct(
  */
 export async function updateProduct(
   id: string,
-  productData: UpdateProductData
+  productData: ProductUpdateFormData
 ): Promise<Product> {
   // 确保包含id字段用于后端验证
   const dataWithId = {
@@ -221,3 +222,9 @@ export async function batchDeleteProducts(
 
   return data.data;
 }
+
+// 导出类型以供其他模块使用
+export type {
+  ProductCreateFormData,
+  ProductUpdateFormData,
+} from '@/lib/validations/product';
