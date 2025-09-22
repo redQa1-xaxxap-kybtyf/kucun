@@ -26,9 +26,10 @@ model User {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // 关联关系
-  salesOrders    SalesOrder[]
-  inboundRecords InboundRecord[]
-  paymentRecords PaymentRecord[]
+  salesOrders           SalesOrder[]
+  inboundRecords        InboundRecord[]
+  paymentRecords        PaymentRecord[]
+  factoryShipmentOrders FactoryShipmentOrder[]
 
   @@index([email])
   @@index([username])
@@ -52,8 +53,9 @@ model Customer {
   childCustomers Customer[] @relation("CustomerHierarchy")
 
   // 关联关系
-  salesOrders    SalesOrder[]
-  paymentRecords PaymentRecord[]
+  salesOrders           SalesOrder[]
+  paymentRecords        PaymentRecord[]
+  factoryShipmentOrders FactoryShipmentOrder[]
 
   @@index([name])
   @@index([phone])
@@ -72,7 +74,8 @@ model Supplier {
   updatedAt DateTime @updatedAt @map("updated_at")
 
   // 关联关系
-  salesOrders SalesOrder[]
+  salesOrders               SalesOrder[]
+  factoryShipmentOrderItems FactoryShipmentOrderItem[]
 
   @@index([name])
   @@index([phone])
@@ -122,11 +125,12 @@ model Product {
   updatedAt      DateTime @updatedAt @map("updated_at")
 
   // 关联关系
-  category         Category?        @relation(fields: [categoryId], references: [id])
-  variants         ProductVariant[]
-  inventory        Inventory[]
-  salesOrderItems  SalesOrderItem[]
-  inboundRecords   InboundRecord[]
+  category                   Category?                   @relation(fields: [categoryId], references: [id])
+  variants                   ProductVariant[]
+  inventory                  Inventory[]
+  salesOrderItems            SalesOrderItem[]
+  inboundRecords             InboundRecord[]
+  factoryShipmentOrderItems  FactoryShipmentOrderItem[]
 
   @@index([code])
   @@index([categoryId], map: "idx_products_category")
@@ -303,4 +307,77 @@ model PaymentRecord {
   @@index([paymentDate(sort: Desc)], map: "idx_payment_records_date")
   @@index([paymentMethod], map: "idx_payment_records_method")
   @@map("payment_records")
+}
+
+// 厂家发货订单表 - 厂家直发订单管理
+model FactoryShipmentOrder {
+  id                String   @id @default(uuid())
+  orderNumber       String   @unique @map("order_number") // 订单编号
+  containerNumber   String   @map("container_number") // 集装箱号码
+  customerId        String   @map("customer_id") // 客户ID
+  userId            String   @map("user_id") // 创建用户ID
+  status            String   @default("draft") // 订单状态
+  totalAmount       Float    @default(0) @map("total_amount") // 订单总金额
+  receivableAmount  Float    @default(0) @map("receivable_amount") // 应收金额
+  depositAmount     Float    @default(0) @map("deposit_amount") // 定金金额
+  paidAmount        Float    @default(0) @map("paid_amount") // 已付金额
+  remarks           String? // 备注
+  planDate          DateTime? @map("plan_date") // 计划发货日期
+  shipmentDate      DateTime? @map("shipment_date") // 实际发货日期
+  arrivalDate       DateTime? @map("arrival_date") // 到港日期
+  deliveryDate      DateTime? @map("delivery_date") // 收货日期
+  completionDate    DateTime? @map("completion_date") // 完成日期
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  customer Customer                    @relation(fields: [customerId], references: [id])
+  user     User                        @relation(fields: [userId], references: [id])
+  items    FactoryShipmentOrderItem[]
+
+  @@index([orderNumber])
+  @@index([containerNumber])
+  @@index([customerId], map: "idx_factory_shipment_orders_customer")
+  @@index([userId], map: "idx_factory_shipment_orders_user")
+  @@index([status])
+  @@index([createdAt(sort: Desc)], map: "idx_factory_shipment_orders_created")
+  @@map("factory_shipment_orders")
+}
+
+// 厂家发货订单明细表 - 厂家发货商品明细
+model FactoryShipmentOrderItem {
+  id                    String  @id @default(uuid())
+  factoryShipmentOrderId String  @map("factory_shipment_order_id")
+  productId             String? @map("product_id") // 产品ID（库存商品时使用）
+  supplierId            String  @map("supplier_id") // 供应商ID
+  quantity              Float // 数量
+  unitPrice             Float   @map("unit_price") // 单价
+  totalPrice            Float   @map("total_price") // 小计金额
+
+  // 手动输入商品信息（临时商品时使用）
+  isManualProduct      Boolean? @map("is_manual_product")
+  manualProductName    String?  @map("manual_product_name")
+  manualSpecification  String?  @map("manual_specification")
+  manualWeight         Float?   @map("manual_weight")
+  manualUnit           String?  @map("manual_unit")
+
+  // 通用字段（用于显示，无论是库存商品还是手动输入商品）
+  displayName          String   @map("display_name") // 显示名称
+  specification        String?  // 规格
+  unit                 String   @default("piece") // 单位
+  weight               Float? // 重量
+
+  remarks              String? // 备注
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  factoryShipmentOrder FactoryShipmentOrder @relation(fields: [factoryShipmentOrderId], references: [id], onDelete: Cascade)
+  product              Product?             @relation(fields: [productId], references: [id])
+  supplier             Supplier             @relation(fields: [supplierId], references: [id])
+
+  @@index([factoryShipmentOrderId], map: "idx_factory_shipment_order_items_order")
+  @@index([productId], map: "idx_factory_shipment_order_items_product")
+  @@index([supplierId], map: "idx_factory_shipment_order_items_supplier")
+  @@map("factory_shipment_order_items")
 }

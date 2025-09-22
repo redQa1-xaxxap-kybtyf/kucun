@@ -19,9 +19,9 @@ import {
   Users,
   Warehouse,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -87,6 +87,12 @@ const navigationItems: NavigationItem[] = [
     title: '销售订单',
     href: '/sales-orders',
     icon: ShoppingCart,
+  },
+  {
+    id: 'factory-shipments',
+    title: '厂家发货',
+    href: '/factory-shipments',
+    icon: Truck,
   },
   {
     id: 'return-orders',

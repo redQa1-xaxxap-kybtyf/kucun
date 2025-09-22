@@ -1,0 +1,280 @@
+'use client';
+
+import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import { 
+  Eye, 
+  Filter, 
+  Plus, 
+  Search, 
+  Truck,
+  Package,
+  Calendar,
+  DollarSign
+} from 'lucide-react';
+import Link from 'next/link';
+import { useState } from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { 
+  FACTORY_SHIPMENT_STATUS_LABELS,
+  type FactoryShipmentOrder,
+  type FactoryShipmentStatus 
+} from '@/lib/types/factory-shipment';
+
+interface FactoryShipmentOrderListProps {
+  onOrderSelect?: (order: FactoryShipmentOrder) => void;
+}
+
+// 模拟API调用 - 后续替换为真实API
+const fetchFactoryShipmentOrders = async (params: any) => {
+  // 这里应该调用真实的API
+  return {
+    orders: [],
+    pagination: {
+      page: 1,
+      pageSize: 20,
+      totalCount: 0,
+      totalPages: 0
+    }
+  };
+};
+
+export function FactoryShipmentOrderList({ onOrderSelect }: FactoryShipmentOrderListProps) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<FactoryShipmentStatus | 'all'>('all');
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // 查询厂家发货订单列表
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['factory-shipment-orders', { 
+      page: currentPage, 
+      search: searchTerm, 
+      status: statusFilter === 'all' ? undefined : statusFilter 
+    }],
+    queryFn: () => fetchFactoryShipmentOrders({
+      page: currentPage,
+      pageSize: 20,
+      containerNumber: searchTerm,
+      status: statusFilter === 'all' ? undefined : statusFilter
+    }),
+  });
+
+  const orders = data?.orders || [];
+  const pagination = data?.pagination;
+
+  // 获取状态徽章样式
+  const getStatusBadgeVariant = (status: FactoryShipmentStatus) => {
+    switch (status) {
+      case 'draft':
+        return 'secondary';
+      case 'planning':
+        return 'outline';
+      case 'waiting_deposit':
+        return 'destructive';
+      case 'deposit_paid':
+        return 'default';
+      case 'factory_shipped':
+        return 'default';
+      case 'in_transit':
+        return 'default';
+      case 'arrived':
+        return 'default';
+      case 'delivered':
+        return 'default';
+      case 'completed':
+        return 'default';
+      default:
+        return 'secondary';
+    }
+  };
+
+  if (error) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center text-red-600">
+            加载厂家发货订单失败，请稍后重试
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* 页面标题和操作 */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">厂家发货管理</h1>
+          <p className="mt-1 text-sm text-gray-600">
+            管理厂家直发订单，支持多供应商和临时商品
+          </p>
+        </div>
+        <Link href="/factory-shipments/create">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            创建发货订单
+          </Button>
+        </Link>
+      </div>
+
+      {/* 搜索和筛选 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            搜索筛选
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  placeholder="搜索集装箱号码或订单编号..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+            </div>
+            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+              <SelectTrigger className="w-full sm:w-48">
+                <SelectValue placeholder="选择状态" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">全部状态</SelectItem>
+                {Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(([status, label]) => (
+                  <SelectItem key={status} value={status}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 订单列表 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Truck className="h-5 w-5" />
+            厂家发货订单列表
+            {pagination && (
+              <Badge variant="outline">
+                共 {pagination.totalCount} 条记录
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+            </div>
+          ) : orders.length === 0 ? (
+            <div className="text-center py-8">
+              <Package className="mx-auto h-12 w-12 text-gray-400" />
+              <h3 className="mt-2 text-sm font-medium text-gray-900">暂无厂家发货订单</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                开始创建您的第一个厂家发货订单
+              </p>
+              <div className="mt-6">
+                <Link href="/factory-shipments/create">
+                  <Button>
+                    <Plus className="mr-2 h-4 w-4" />
+                    创建发货订单
+                  </Button>
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>订单编号</TableHead>
+                    <TableHead>集装箱号码</TableHead>
+                    <TableHead>客户</TableHead>
+                    <TableHead>状态</TableHead>
+                    <TableHead>订单金额</TableHead>
+                    <TableHead>应收金额</TableHead>
+                    <TableHead>创建时间</TableHead>
+                    <TableHead>操作</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {orders.map((order) => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">
+                        {order.orderNumber}
+                      </TableCell>
+                      <TableCell>{order.containerNumber}</TableCell>
+                      <TableCell>{order.customer.name}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(order.status)}>
+                          {FACTORY_SHIPMENT_STATUS_LABELS[order.status]}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          ¥{order.totalAmount.toLocaleString()}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <DollarSign className="h-3 w-3" />
+                          ¥{order.receivableAmount.toLocaleString()}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {format(new Date(order.createdAt), 'yyyy-MM-dd', { locale: zhCN })}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => onOrderSelect?.(order)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
