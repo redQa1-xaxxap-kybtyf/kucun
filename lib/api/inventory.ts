@@ -253,3 +253,79 @@ export async function checkInventoryAvailability(
 
   return data.data;
 }
+
+/**
+ * 获取产品的批次库存信息
+ */
+export async function getProductBatches(
+  productId: string,
+  variantId?: string
+): Promise<Inventory[]> {
+  const params = new URLSearchParams({
+    productId,
+    includeVariants: 'true',
+    limit: '100',
+  });
+
+  if (variantId) {
+    params.append('variantId', variantId);
+  }
+
+  const response = await fetch(`${API_BASE}?${params.toString()}`);
+
+  if (!response.ok) {
+    throw new Error(`获取批次库存失败: ${response.statusText}`);
+  }
+
+  const data: ApiResponse<PaginatedResponse<Inventory>> = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || '获取批次库存失败');
+  }
+
+  if (!data.data) {
+    throw new Error('获取批次库存失败：数据为空');
+  }
+
+  return data.data.data;
+}
+
+/**
+ * 批次库存可用性检查
+ */
+export async function checkBatchAvailability(
+  inventoryId: string,
+  quantity: number
+): Promise<{
+  available: boolean;
+  availableQuantity: number;
+  message?: string;
+}> {
+  const response = await fetch(`${API_BASE}/batch-availability`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ inventoryId, quantity }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`检查批次可用性失败: ${response.statusText}`);
+  }
+
+  const data: ApiResponse<{
+    available: boolean;
+    availableQuantity: number;
+    message?: string;
+  }> = await response.json();
+
+  if (!data.success) {
+    throw new Error(data.error || '检查批次可用性失败');
+  }
+
+  if (!data.data) {
+    throw new Error('检查批次可用性失败：数据为空');
+  }
+
+  return data.data;
+}
