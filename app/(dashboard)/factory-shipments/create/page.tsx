@@ -12,8 +12,8 @@ export default function CreateFactoryShipmentPage() {
   const router = useRouter();
 
   // 处理创建成功
-  const handleSuccess = (order: unknown) => {
-    console.log('厂家发货订单创建成功:', order);
+  const handleSuccess = () => {
+    // 厂家发货订单创建成功，跳转到列表页
     router.push('/factory-shipments');
   };
 
@@ -30,8 +30,8 @@ export default function CreateFactoryShipmentPage() {
           创建新的厂家发货订单，支持多供应商商品和临时商品管理
         </p>
       </div>
-      
-      <FactoryShipmentOrderForm 
+
+      <FactoryShipmentOrderForm
         onSuccess={handleSuccess}
         onCancel={handleCancel}
       />

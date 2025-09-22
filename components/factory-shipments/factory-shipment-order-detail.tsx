@@ -3,16 +3,16 @@
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  DollarSign, 
-  Edit, 
-  Package, 
-  Truck, 
-  User,
+import {
+  ArrowLeft,
+  Calendar,
+  DollarSign,
+  Edit,
   MapPin,
-  Phone
+  Package,
+  Phone,
+  Truck,
+  User,
 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -27,9 +27,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { 
+import {
   FACTORY_SHIPMENT_STATUS_LABELS,
-  type FactoryShipmentOrder 
+  type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
 
 interface FactoryShipmentOrderDetailProps {
@@ -39,19 +39,25 @@ interface FactoryShipmentOrderDetailProps {
 }
 
 // 模拟API调用 - 后续替换为真实API
-const getFactoryShipmentOrder = async (id: string): Promise<FactoryShipmentOrder | null> => {
-  console.log('获取厂家发货订单详情:', id);
+const getFactoryShipmentOrder = async (
+  id: string
+): Promise<FactoryShipmentOrder | null> => {
+  // TODO: 实现真实API调用
   // 这里应该调用真实的API
   return null;
 };
 
-export function FactoryShipmentOrderDetail({ 
-  orderId, 
-  onEdit, 
-  onBack 
+export function FactoryShipmentOrderDetail({
+  orderId,
+  onEdit,
+  onBack,
 }: FactoryShipmentOrderDetailProps) {
   // 查询订单详情
-  const { data: order, isLoading, error } = useQuery({
+  const {
+    data: order,
+    isLoading,
+    error,
+  } = useQuery({
     queryKey: ['factory-shipment-order', orderId],
     queryFn: () => getFactoryShipmentOrder(orderId),
   });
@@ -112,7 +118,9 @@ export function FactoryShipmentOrderDetail({
             返回列表
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">厂家发货订单详情</h1>
+            <h1 className="text-2xl font-bold text-gray-900">
+              厂家发货订单详情
+            </h1>
             <p className="mt-1 text-sm text-gray-600">
               订单编号：{order.orderNumber}
             </p>
@@ -135,15 +143,23 @@ export function FactoryShipmentOrderDetail({
         <CardContent>
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div>
-              <label className="text-sm font-medium text-gray-500">订单编号</label>
+              <label className="text-sm font-medium text-gray-500">
+                订单编号
+              </label>
               <p className="mt-1 text-sm text-gray-900">{order.orderNumber}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">集装箱号码</label>
-              <p className="mt-1 text-sm text-gray-900">{order.containerNumber}</p>
+              <label className="text-sm font-medium text-gray-500">
+                集装箱号码
+              </label>
+              <p className="mt-1 text-sm text-gray-900">
+                {order.containerNumber}
+              </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">订单状态</label>
+              <label className="text-sm font-medium text-gray-500">
+                订单状态
+              </label>
               <div className="mt-1">
                 <Badge variant={getStatusBadgeVariant(order.status)}>
                   {FACTORY_SHIPMENT_STATUS_LABELS[order.status]}
@@ -151,27 +167,39 @@ export function FactoryShipmentOrderDetail({
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">创建时间</label>
+              <label className="text-sm font-medium text-gray-500">
+                创建时间
+              </label>
               <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                 <Calendar className="h-3 w-3" />
-                {format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm', { locale: zhCN })}
+                {format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm', {
+                  locale: zhCN,
+                })}
               </p>
             </div>
             {order.planDate && (
               <div>
-                <label className="text-sm font-medium text-gray-500">计划发货日期</label>
+                <label className="text-sm font-medium text-gray-500">
+                  计划发货日期
+                </label>
                 <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                   <Calendar className="h-3 w-3" />
-                  {format(new Date(order.planDate), 'yyyy-MM-dd', { locale: zhCN })}
+                  {format(new Date(order.planDate), 'yyyy-MM-dd', {
+                    locale: zhCN,
+                  })}
                 </p>
               </div>
             )}
             {order.shipmentDate && (
               <div>
-                <label className="text-sm font-medium text-gray-500">实际发货日期</label>
+                <label className="text-sm font-medium text-gray-500">
+                  实际发货日期
+                </label>
                 <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                   <Calendar className="h-3 w-3" />
-                  {format(new Date(order.shipmentDate), 'yyyy-MM-dd', { locale: zhCN })}
+                  {format(new Date(order.shipmentDate), 'yyyy-MM-dd', {
+                    locale: zhCN,
+                  })}
                 </p>
               </div>
             )}
@@ -180,7 +208,9 @@ export function FactoryShipmentOrderDetail({
             <>
               <Separator className="my-4" />
               <div>
-                <label className="text-sm font-medium text-gray-500">备注</label>
+                <label className="text-sm font-medium text-gray-500">
+                  备注
+                </label>
                 <p className="mt-1 text-sm text-gray-900">{order.remarks}</p>
               </div>
             </>
@@ -199,12 +229,18 @@ export function FactoryShipmentOrderDetail({
         <CardContent>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label className="text-sm font-medium text-gray-500">客户名称</label>
-              <p className="mt-1 text-sm text-gray-900">{order.customer.name}</p>
+              <label className="text-sm font-medium text-gray-500">
+                客户名称
+              </label>
+              <p className="mt-1 text-sm text-gray-900">
+                {order.customer.name}
+              </p>
             </div>
             {order.customer.phone && (
               <div>
-                <label className="text-sm font-medium text-gray-500">联系电话</label>
+                <label className="text-sm font-medium text-gray-500">
+                  联系电话
+                </label>
                 <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                   <Phone className="h-3 w-3" />
                   {order.customer.phone}
@@ -213,7 +249,9 @@ export function FactoryShipmentOrderDetail({
             )}
             {order.customer.address && (
               <div className="sm:col-span-2">
-                <label className="text-sm font-medium text-gray-500">客户地址</label>
+                <label className="text-sm font-medium text-gray-500">
+                  客户地址
+                </label>
                 <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                   <MapPin className="h-3 w-3" />
                   {order.customer.address}
@@ -230,9 +268,7 @@ export function FactoryShipmentOrderDetail({
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
             商品明细
-            <Badge variant="outline">
-              共 {order.items.length} 个商品
-            </Badge>
+            <Badge variant="outline">共 {order.items.length} 个商品</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -251,7 +287,7 @@ export function FactoryShipmentOrderDetail({
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {order.items.map((item, index) => (
+                {order.items.map(item => (
                   <TableRow key={item.id}>
                     <TableCell>
                       <div>
@@ -262,7 +298,9 @@ export function FactoryShipmentOrderDetail({
                           </Badge>
                         )}
                         {item.product && (
-                          <p className="text-xs text-gray-500">编码: {item.product.code}</p>
+                          <p className="text-xs text-gray-500">
+                            编码: {item.product.code}
+                          </p>
                         )}
                       </div>
                     </TableCell>
@@ -292,39 +330,54 @@ export function FactoryShipmentOrderDetail({
         <CardContent>
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div>
-              <label className="text-sm font-medium text-gray-500">订单总金额</label>
+              <label className="text-sm font-medium text-gray-500">
+                订单总金额
+              </label>
               <p className="mt-1 text-lg font-semibold text-gray-900">
                 ¥{order.totalAmount.toLocaleString()}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">应收金额</label>
+              <label className="text-sm font-medium text-gray-500">
+                应收金额
+              </label>
               <p className="mt-1 text-lg font-semibold text-blue-600">
                 ¥{order.receivableAmount.toLocaleString()}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">定金金额</label>
+              <label className="text-sm font-medium text-gray-500">
+                定金金额
+              </label>
               <p className="mt-1 text-lg font-semibold text-orange-600">
                 ¥{order.depositAmount.toLocaleString()}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">已付金额</label>
+              <label className="text-sm font-medium text-gray-500">
+                已付金额
+              </label>
               <p className="mt-1 text-lg font-semibold text-green-600">
                 ¥{order.paidAmount.toLocaleString()}
               </p>
             </div>
           </div>
-          
+
           {/* 付款进度 */}
           <Separator className="my-4" />
           <div>
-            <label className="text-sm font-medium text-gray-500">付款进度</label>
+            <label className="text-sm font-medium text-gray-500">
+              付款进度
+            </label>
             <div className="mt-2">
               <div className="flex justify-between text-sm">
                 <span>已付款</span>
-                <span>{((order.paidAmount / order.receivableAmount) * 100).toFixed(1)}%</span>
+                <span>
+                  {((order.paidAmount / order.receivableAmount) * 100).toFixed(
+                    1
+                  )}
+                  %
+                </span>
               </div>
               <div className="mt-1 h-2 w-full rounded-full bg-gray-200">
                 <div

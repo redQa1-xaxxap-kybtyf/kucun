@@ -14,8 +14,8 @@ export default function EditFactoryShipmentPage() {
   const orderId = params.id as string;
 
   // 处理更新成功
-  const handleSuccess = (order: unknown) => {
-    console.log('厂家发货订单更新成功:', order);
+  const handleSuccess = () => {
+    // 厂家发货订单更新成功，跳转到详情页
     router.push(`/factory-shipments/${orderId}`);
   };
 
@@ -32,8 +32,8 @@ export default function EditFactoryShipmentPage() {
           修改厂家发货订单信息，支持多供应商商品和临时商品管理
         </p>
       </div>
-      
-      <FactoryShipmentOrderForm 
+
+      <FactoryShipmentOrderForm
         orderId={orderId}
         onSuccess={handleSuccess}
         onCancel={handleCancel}

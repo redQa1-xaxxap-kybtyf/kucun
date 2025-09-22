@@ -4,14 +4,14 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { 
-  CalendarIcon, 
-  Minus, 
-  Plus, 
-  Save, 
-  Truck,
+import {
+  CalendarIcon,
+  DollarSign,
+  Minus,
   Package,
-  DollarSign
+  Plus,
+  Save,
+  Truck,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -31,7 +31,11 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -39,15 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
+
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { getCustomers } from '@/lib/api/customers';
@@ -57,10 +53,9 @@ import {
   createFactoryShipmentOrderSchema,
   type CreateFactoryShipmentOrderData,
 } from '@/lib/schemas/factory-shipment';
-import { 
+import {
   FACTORY_SHIPMENT_STATUS,
   FACTORY_SHIPMENT_STATUS_LABELS,
-  type FactoryShipmentStatus 
 } from '@/lib/types/factory-shipment';
 import { cn } from '@/lib/utils';
 
@@ -71,25 +66,30 @@ interface FactoryShipmentOrderFormProps {
 }
 
 // 模拟API调用 - 后续替换为真实API
-const createFactoryShipmentOrder = async (data: CreateFactoryShipmentOrderData) => {
-  console.log('创建厂家发货订单:', data);
+const createFactoryShipmentOrder = async (
+  data: CreateFactoryShipmentOrderData
+) => {
+  // TODO: 实现真实API调用
   return { id: 'mock-id', ...data };
 };
 
-const updateFactoryShipmentOrder = async (id: string, data: any) => {
-  console.log('更新厂家发货订单:', id, data);
+const updateFactoryShipmentOrder = async (
+  id: string,
+  data: CreateFactoryShipmentOrderData
+) => {
+  // TODO: 实现真实API调用
   return { id, ...data };
 };
 
 const getFactoryShipmentOrder = async (id: string) => {
-  console.log('获取厂家发货订单:', id);
+  // TODO: 实现真实API调用
   return null; // 模拟数据
 };
 
-export function FactoryShipmentOrderForm({ 
-  orderId, 
-  onSuccess, 
-  onCancel 
+export function FactoryShipmentOrderForm({
+  orderId,
+  onSuccess,
+  onCancel,
 }: FactoryShipmentOrderFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -153,7 +153,7 @@ export function FactoryShipmentOrderForm({
   // 创建订单mutation
   const createMutation = useMutation({
     mutationFn: createFactoryShipmentOrder,
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast({
         title: '创建成功',
         description: '厂家发货订单创建成功',
@@ -161,10 +161,11 @@ export function FactoryShipmentOrderForm({
       queryClient.invalidateQueries({ queryKey: ['factory-shipment-orders'] });
       onSuccess?.(data);
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: '创建失败',
-        description: error instanceof Error ? error.message : '创建厂家发货订单失败',
+        description:
+          error instanceof Error ? error.message : '创建厂家发货订单失败',
         variant: 'destructive',
       });
     },
@@ -173,19 +174,22 @@ export function FactoryShipmentOrderForm({
   // 更新订单mutation
   const updateMutation = useMutation({
     mutationFn: (data: any) => updateFactoryShipmentOrder(orderId!, data),
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast({
         title: '更新成功',
         description: '厂家发货订单更新成功',
       });
       queryClient.invalidateQueries({ queryKey: ['factory-shipment-orders'] });
-      queryClient.invalidateQueries({ queryKey: ['factory-shipment-order', orderId] });
+      queryClient.invalidateQueries({
+        queryKey: ['factory-shipment-order', orderId],
+      });
       onSuccess?.(data);
     },
-    onError: (error) => {
+    onError: error => {
       toast({
         title: '更新失败',
-        description: error instanceof Error ? error.message : '更新厂家发货订单失败',
+        description:
+          error instanceof Error ? error.message : '更新厂家发货订单失败',
         variant: 'destructive',
       });
     },
@@ -202,7 +206,9 @@ export function FactoryShipmentOrderForm({
         receivableAmount: orderDetail.receivableAmount,
         depositAmount: orderDetail.depositAmount,
         remarks: orderDetail.remarks || '',
-        planDate: orderDetail.planDate ? new Date(orderDetail.planDate) : undefined,
+        planDate: orderDetail.planDate
+          ? new Date(orderDetail.planDate)
+          : undefined,
         items: orderDetail.items.map((item: any) => ({
           productId: item.productId || '',
           supplierId: item.supplierId,
@@ -247,7 +253,7 @@ export function FactoryShipmentOrderForm({
   // 计算订单总金额
   const calculateTotalAmount = () => {
     const items = form.getValues('items');
-    return items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+    return items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0);
   };
 
   // 自动计算总金额
@@ -334,11 +340,13 @@ export function FactoryShipmentOrderForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(([status, label]) => (
-                          <SelectItem key={status} value={status}>
-                            {label}
-                          </SelectItem>
-                        ))}
+                        {Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(
+                          ([status, label]) => (
+                            <SelectItem key={status} value={status}>
+                              {label}
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -363,7 +371,9 @@ export function FactoryShipmentOrderForm({
                             )}
                           >
                             {field.value ? (
-                              format(field.value, 'yyyy-MM-dd', { locale: zhCN })
+                              format(field.value, 'yyyy-MM-dd', {
+                                locale: zhCN,
+                              })
                             ) : (
                               <span>选择日期</span>
                             )}
@@ -376,7 +386,7 @@ export function FactoryShipmentOrderForm({
                           mode="single"
                           selected={field.value}
                           onSelect={field.onChange}
-                          disabled={(date) => date < new Date('1900-01-01')}
+                          disabled={date => date < new Date('1900-01-01')}
                           initialFocus
                         />
                       </PopoverContent>
@@ -415,7 +425,12 @@ export function FactoryShipmentOrderForm({
                 <Package className="h-5 w-5" />
                 商品明细
               </CardTitle>
-              <Button type="button" variant="outline" size="sm" onClick={handleAddItem}>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={handleAddItem}
+              >
                 <Plus className="mr-2 h-4 w-4" />
                 添加商品
               </Button>
@@ -426,7 +441,7 @@ export function FactoryShipmentOrderForm({
               {fields.map((field, index) => (
                 <Card key={field.id} className="border-dashed">
                   <CardContent className="pt-4">
-                    <div className="flex items-start justify-between mb-4">
+                    <div className="mb-4 flex items-start justify-between">
                       <h4 className="text-sm font-medium">商品 {index + 1}</h4>
                       {fields.length > 1 && (
                         <Button
@@ -456,7 +471,9 @@ export function FactoryShipmentOrderForm({
                         name={`items.${index}.supplierId`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs font-medium">供应商 *</FormLabel>
+                            <FormLabel className="text-xs font-medium">
+                              供应商 *
+                            </FormLabel>
                             <FormControl>
                               <SupplierSelector
                                 suppliers={suppliers || []}
@@ -477,7 +494,9 @@ export function FactoryShipmentOrderForm({
                         name={`items.${index}.quantity`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs font-medium">数量 *</FormLabel>
+                            <FormLabel className="text-xs font-medium">
+                              数量 *
+                            </FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -486,7 +505,11 @@ export function FactoryShipmentOrderForm({
                                 placeholder="0"
                                 className="h-8 text-xs"
                                 {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                onChange={e =>
+                                  field.onChange(
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
                               />
                             </FormControl>
                             <FormMessage className="text-xs" />
@@ -500,7 +523,9 @@ export function FactoryShipmentOrderForm({
                         name={`items.${index}.unitPrice`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs font-medium">单价 *</FormLabel>
+                            <FormLabel className="text-xs font-medium">
+                              单价 *
+                            </FormLabel>
                             <FormControl>
                               <Input
                                 type="number"
@@ -509,7 +534,11 @@ export function FactoryShipmentOrderForm({
                                 placeholder="0.00"
                                 className="h-8 text-xs"
                                 {...field}
-                                onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                                onChange={e =>
+                                  field.onChange(
+                                    parseFloat(e.target.value) || 0
+                                  )
+                                }
                               />
                             </FormControl>
                             <FormMessage className="text-xs" />
@@ -520,10 +549,15 @@ export function FactoryShipmentOrderForm({
                       {/* 小计 */}
                       <div className="flex items-end">
                         <div className="w-full">
-                          <label className="text-xs font-medium text-gray-700">小计</label>
+                          <label className="text-xs font-medium text-gray-700">
+                            小计
+                          </label>
                           <div className="mt-1 flex h-8 items-center rounded-md border border-gray-200 bg-gray-50 px-3 text-xs">
-                            ¥{((form.watch(`items.${index}.quantity`) || 0) * 
-                               (form.watch(`items.${index}.unitPrice`) || 0)).toFixed(2)}
+                            ¥
+                            {(
+                              (form.watch(`items.${index}.quantity`) || 0) *
+                              (form.watch(`items.${index}.unitPrice`) || 0)
+                            ).toFixed(2)}
                           </div>
                         </div>
                       </div>
@@ -534,7 +568,9 @@ export function FactoryShipmentOrderForm({
                         name={`items.${index}.remarks`}
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs font-medium">备注</FormLabel>
+                            <FormLabel className="text-xs font-medium">
+                              备注
+                            </FormLabel>
                             <FormControl>
                               <Input
                                 placeholder="备注信息"
@@ -577,7 +613,9 @@ export function FactoryShipmentOrderForm({
                         step="0.01"
                         placeholder="0.00"
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        onChange={e =>
+                          field.onChange(parseFloat(e.target.value) || 0)
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -598,7 +636,9 @@ export function FactoryShipmentOrderForm({
                         step="0.01"
                         placeholder="0.00"
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        onChange={e =>
+                          field.onChange(parseFloat(e.target.value) || 0)
+                        }
                       />
                     </FormControl>
                     <FormMessage />
@@ -619,7 +659,9 @@ export function FactoryShipmentOrderForm({
                         step="0.01"
                         placeholder="0.00"
                         {...field}
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        onChange={e =>
+                          field.onChange(parseFloat(e.target.value) || 0)
+                        }
                       />
                     </FormControl>
                     <FormMessage />

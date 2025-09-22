@@ -1,20 +1,21 @@
 'use client';
 
+import { useState } from 'react';
+
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { 
-  Eye, 
-  Filter, 
-  Plus, 
-  Search, 
-  Truck,
-  Package,
+import {
   Calendar,
-  DollarSign
+  DollarSign,
+  Eye,
+  Filter,
+  Package,
+  Plus,
+  Search,
+  Truck,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -35,10 +36,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { 
+import {
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentOrder,
-  type FactoryShipmentStatus 
+  type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
 
 interface FactoryShipmentOrderListProps {
@@ -46,37 +47,45 @@ interface FactoryShipmentOrderListProps {
 }
 
 // 模拟API调用 - 后续替换为真实API
-const fetchFactoryShipmentOrders = async (params: any) => {
-  // 这里应该调用真实的API
+const fetchFactoryShipmentOrders = async () => {
+  // TODO: 实现真实API调用
   return {
     orders: [],
     pagination: {
       page: 1,
       pageSize: 20,
       totalCount: 0,
-      totalPages: 0
-    }
+      totalPages: 0,
+    },
   };
 };
 
-export function FactoryShipmentOrderList({ onOrderSelect }: FactoryShipmentOrderListProps) {
+export function FactoryShipmentOrderList({
+  onOrderSelect,
+}: FactoryShipmentOrderListProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<FactoryShipmentStatus | 'all'>('all');
-  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState<
+    FactoryShipmentStatus | 'all'
+  >('all');
+  const currentPage = 1;
 
   // 查询厂家发货订单列表
   const { data, isLoading, error } = useQuery({
-    queryKey: ['factory-shipment-orders', { 
-      page: currentPage, 
-      search: searchTerm, 
-      status: statusFilter === 'all' ? undefined : statusFilter 
-    }],
-    queryFn: () => fetchFactoryShipmentOrders({
-      page: currentPage,
-      pageSize: 20,
-      containerNumber: searchTerm,
-      status: statusFilter === 'all' ? undefined : statusFilter
-    }),
+    queryKey: [
+      'factory-shipment-orders',
+      {
+        page: currentPage,
+        search: searchTerm,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+      },
+    ],
+    queryFn: () =>
+      fetchFactoryShipmentOrders({
+        page: currentPage,
+        pageSize: 20,
+        containerNumber: searchTerm,
+        status: statusFilter === 'all' ? undefined : statusFilter,
+      }),
   });
 
   const orders = data?.orders || [];
@@ -154,22 +163,27 @@ export function FactoryShipmentOrderList({ onOrderSelect }: FactoryShipmentOrder
                 <Input
                   placeholder="搜索集装箱号码或订单编号..."
                   value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  onChange={e => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
               </div>
             </div>
-            <Select value={statusFilter} onValueChange={(value) => setStatusFilter(value as any)}>
+            <Select
+              value={statusFilter}
+              onValueChange={value => setStatusFilter(value as any)}
+            >
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="选择状态" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">全部状态</SelectItem>
-                {Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(([status, label]) => (
-                  <SelectItem key={status} value={status}>
-                    {label}
-                  </SelectItem>
-                ))}
+                {Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(
+                  ([status, label]) => (
+                    <SelectItem key={status} value={status}>
+                      {label}
+                    </SelectItem>
+                  )
+                )}
               </SelectContent>
             </Select>
           </div>
@@ -183,9 +197,7 @@ export function FactoryShipmentOrderList({ onOrderSelect }: FactoryShipmentOrder
             <Truck className="h-5 w-5" />
             厂家发货订单列表
             {pagination && (
-              <Badge variant="outline">
-                共 {pagination.totalCount} 条记录
-              </Badge>
+              <Badge variant="outline">共 {pagination.totalCount} 条记录</Badge>
             )}
           </CardTitle>
         </CardHeader>
@@ -195,9 +207,11 @@ export function FactoryShipmentOrderList({ onOrderSelect }: FactoryShipmentOrder
               <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
             </div>
           ) : orders.length === 0 ? (
-            <div className="text-center py-8">
+            <div className="py-8 text-center">
               <Package className="mx-auto h-12 w-12 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900">暂无厂家发货订单</h3>
+              <h3 className="mt-2 text-sm font-medium text-gray-900">
+                暂无厂家发货订单
+              </h3>
               <p className="mt-1 text-sm text-gray-500">
                 开始创建您的第一个厂家发货订单
               </p>
@@ -226,7 +240,7 @@ export function FactoryShipmentOrderList({ onOrderSelect }: FactoryShipmentOrder
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.map((order) => (
+                  {orders.map(order => (
                     <TableRow key={order.id}>
                       <TableCell className="font-medium">
                         {order.orderNumber}
@@ -240,20 +254,22 @@ export function FactoryShipmentOrderList({ onOrderSelect }: FactoryShipmentOrder
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />
-                          ¥{order.totalAmount.toLocaleString()}
+                          <DollarSign className="h-3 w-3" />¥
+                          {order.totalAmount.toLocaleString()}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />
-                          ¥{order.receivableAmount.toLocaleString()}
+                          <DollarSign className="h-3 w-3" />¥
+                          {order.receivableAmount.toLocaleString()}
                         </div>
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {format(new Date(order.createdAt), 'yyyy-MM-dd', { locale: zhCN })}
+                          {format(new Date(order.createdAt), 'yyyy-MM-dd', {
+                            locale: zhCN,
+                          })}
                         </div>
                       </TableCell>
                       <TableCell>

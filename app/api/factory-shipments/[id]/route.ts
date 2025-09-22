@@ -1,10 +1,12 @@
 // 单个厂家发货订单 API 路由
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
-import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { prisma } from '@/lib/prisma';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
 import { updateFactoryShipmentOrderSchema } from '@/lib/schemas/factory-shipment';
 
 interface RouteParams {
@@ -29,22 +31,29 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       where: { id },
       include: {
         customer: {
-          select: { id: true, name: true, phone: true, address: true }
+          select: { id: true, name: true, phone: true, address: true },
         },
         user: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         items: {
           include: {
             product: {
-              select: { id: true, code: true, name: true, specification: true, unit: true, weight: true }
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                specification: true,
+                unit: true,
+                weight: true,
+              },
             },
             supplier: {
-              select: { id: true, name: true, phone: true, address: true }
-            }
-          }
-        }
-      }
+              select: { id: true, name: true, phone: true, address: true },
+            },
+          },
+        },
+      },
     });
 
     if (!order) {
@@ -52,13 +61,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     }
 
     return NextResponse.json(order);
-
   } catch (error) {
     console.error('获取厂家发货订单详情失败:', error);
-    return NextResponse.json(
-      { error: '获取订单详情失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '获取订单详情失败' }, { status: 500 });
   }
 }
 
@@ -76,7 +81,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // 检查订单是否存在
     const existingOrder = await prisma.factoryShipmentOrder.findUnique({
       where: { id },
-      include: { items: true }
+      include: { items: true },
     });
 
     if (!existingOrder) {
@@ -85,30 +90,30 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     // 解析请求体
     const body = await request.json();
-    
+
     // 验证输入数据
     const validatedData = updateFactoryShipmentOrderSchema.parse(body);
-    const { 
-      containerNumber, 
-      customerId, 
-      status, 
-      totalAmount, 
-      receivableAmount, 
-      depositAmount, 
+    const {
+      containerNumber,
+      customerId,
+      status,
+      totalAmount,
+      receivableAmount,
+      depositAmount,
       paidAmount,
-      remarks, 
+      remarks,
       planDate,
       shipmentDate,
       arrivalDate,
       deliveryDate,
       completionDate,
-      items 
+      items,
     } = validatedData;
 
     // 验证客户是否存在（如果提供了customerId）
     if (customerId) {
       const customer = await prisma.customer.findUnique({
-        where: { id: customerId }
+        where: { id: customerId },
       });
       if (!customer) {
         return NextResponse.json({ error: '客户不存在' }, { status: 400 });
@@ -118,17 +123,21 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // 如果更新了商品明细，需要验证商品和供应商
     if (items) {
       // 验证库存商品是否存在（排除手动输入的商品）
-      const inventoryItems = items.filter(item => !item.isManualProduct && item.productId);
+      const inventoryItems = items.filter(
+        item => !item.isManualProduct && item.productId
+      );
       if (inventoryItems.length > 0) {
-        const productIds = inventoryItems.map(item => item.productId!);
+        const productIds = inventoryItems.map(item => item.productId || '');
         const existingProducts = await prisma.product.findMany({
           where: { id: { in: productIds } },
-          select: { id: true }
+          select: { id: true },
         });
-        
+
         const existingProductIds = existingProducts.map(p => p.id);
-        const missingProductIds = productIds.filter(id => !existingProductIds.includes(id));
-        
+        const missingProductIds = productIds.filter(
+          id => !existingProductIds.includes(id)
+        );
+
         if (missingProductIds.length > 0) {
           return NextResponse.json(
             { error: `商品不存在: ${missingProductIds.join(', ')}` },
@@ -141,12 +150,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       const supplierIds = [...new Set(items.map(item => item.supplierId))];
       const existingSuppliers = await prisma.supplier.findMany({
         where: { id: { in: supplierIds } },
-        select: { id: true }
+        select: { id: true },
       });
-      
+
       const existingSupplierIds = existingSuppliers.map(s => s.id);
-      const missingSupplierIds = supplierIds.filter(id => !existingSupplierIds.includes(id));
-      
+      const missingSupplierIds = supplierIds.filter(
+        id => !existingSupplierIds.includes(id)
+      );
+
       if (missingSupplierIds.length > 0) {
         return NextResponse.json(
           { error: `供应商不存在: ${missingSupplierIds.join(', ')}` },
@@ -156,9 +167,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     }
 
     // 计算订单总金额（如果更新了商品明细）
-    const calculatedTotalAmount = items ? 
-      items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0) : 
-      undefined;
+    const calculatedTotalAmount = items
+      ? items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+      : undefined;
 
     // 更新厂家发货订单
     const updatedOrder = await prisma.factoryShipmentOrder.update({
@@ -177,7 +188,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         ...(arrivalDate !== undefined && { arrivalDate }),
         ...(deliveryDate !== undefined && { deliveryDate }),
         ...(completionDate !== undefined && { completionDate }),
-        ...(calculatedTotalAmount !== undefined && { totalAmount: calculatedTotalAmount }),
+        ...(calculatedTotalAmount !== undefined && {
+          totalAmount: calculatedTotalAmount,
+        }),
         ...(items && {
           items: {
             deleteMany: {},
@@ -197,46 +210,46 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
               unit: item.unit,
               weight: item.weight,
               remarks: item.remarks,
-            }))
-          }
-        })
+            })),
+          },
+        }),
       },
       include: {
         customer: {
-          select: { id: true, name: true, phone: true, address: true }
+          select: { id: true, name: true, phone: true, address: true },
         },
         user: {
-          select: { id: true, name: true, email: true }
+          select: { id: true, name: true, email: true },
         },
         items: {
           include: {
             product: {
-              select: { id: true, code: true, name: true, specification: true, unit: true, weight: true }
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                specification: true,
+                unit: true,
+                weight: true,
+              },
             },
             supplier: {
-              select: { id: true, name: true, phone: true, address: true }
-            }
-          }
-        }
-      }
+              select: { id: true, name: true, phone: true, address: true },
+            },
+          },
+        },
+      },
     });
 
     return NextResponse.json(updatedOrder);
-
   } catch (error) {
     console.error('更新厂家发货订单失败:', error);
-    
+
     if (error instanceof Error && error.message.includes('Unique constraint')) {
-      return NextResponse.json(
-        { error: '集装箱号码已存在' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '集装箱号码已存在' }, { status: 400 });
     }
-    
-    return NextResponse.json(
-      { error: '更新订单失败' },
-      { status: 500 }
-    );
+
+    return NextResponse.json({ error: '更新订单失败' }, { status: 500 });
   }
 }
 
@@ -253,7 +266,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // 检查订单是否存在
     const existingOrder = await prisma.factoryShipmentOrder.findUnique({
-      where: { id }
+      where: { id },
     });
 
     if (!existingOrder) {
@@ -262,16 +275,12 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     // 删除订单（级联删除订单明细）
     await prisma.factoryShipmentOrder.delete({
-      where: { id }
+      where: { id },
     });
 
     return NextResponse.json({ message: '订单删除成功' });
-
   } catch (error) {
     console.error('删除厂家发货订单失败:', error);
-    return NextResponse.json(
-      { error: '删除订单失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '删除订单失败' }, { status: 500 });
   }
 }
