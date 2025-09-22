@@ -6,7 +6,7 @@ import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 import { updateFactoryShipmentOrderSchema } from '@/lib/schemas/factory-shipment';
 
 interface RouteParams {
