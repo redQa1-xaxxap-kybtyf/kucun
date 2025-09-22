@@ -8,7 +8,6 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
-import { Label } from '@/components/ui/label';
 import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
 import type { Product } from '@/lib/types/product';
 
@@ -88,44 +87,28 @@ export function IntelligentProductInput({
   };
 
   return (
-    <div className="space-y-2">
-      <Label className="text-xs font-medium">商品信息</Label>
-
-      <FormField
-        control={form.control}
-        name={`items.${index}.productId`}
-        render={({ field }) => (
-          <FormItem>
-            <FormControl>
-              <SmartProductSearch
-                products={products}
-                value={field.value || ''}
-                onValueChange={value => {
-                  field.onChange(value);
-                  handleProductSelect(value);
-                }}
-                onTemporaryProductAdd={handleTemporaryProductAdd}
-                placeholder="搜索商品或添加临时商品"
-                className="h-8 text-xs"
-                allowTemporaryProducts={true}
-              />
-            </FormControl>
-            <FormMessage className="text-xs" />
-          </FormItem>
-        )}
-      />
-
-      {/* 显示当前选择的商品信息 */}
-      {form.watch(`items.${index}.isManualProduct`) && (
-        <div className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-xs text-muted-foreground">
-          临时商品：{form.watch(`items.${index}.manualProductName`)}
-          {form.watch(`items.${index}.manualSpecification`) && (
-            <span className="ml-2">
-              ({form.watch(`items.${index}.manualSpecification`)})
-            </span>
-          )}
-        </div>
+    <FormField
+      control={form.control}
+      name={`items.${index}.productId`}
+      render={({ field }) => (
+        <FormItem>
+          <FormControl>
+            <SmartProductSearch
+              products={products}
+              value={field.value || ''}
+              onValueChange={value => {
+                field.onChange(value);
+                handleProductSelect(value);
+              }}
+              onTemporaryProductAdd={handleTemporaryProductAdd}
+              placeholder="搜索商品或添加临时商品"
+              className="h-8 text-xs"
+              allowTemporaryProducts={true}
+            />
+          </FormControl>
+          <FormMessage className="text-xs" />
+        </FormItem>
       )}
-    </div>
+    />
   );
 }

@@ -3,7 +3,6 @@
 import { Check, ChevronsUpDown, Package, Plus, Search } from 'lucide-react';
 import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Command,
@@ -131,14 +130,7 @@ export function SmartProductSearch({
               <Search className="h-4 w-4 flex-shrink-0" />
               <span className="truncate">
                 {selectedProduct ? (
-                  <span className="flex items-center gap-2">
-                    <span className="font-medium">{selectedProduct.name}</span>
-                    {selectedProduct.specification && (
-                      <span className="text-sm text-muted-foreground">
-                        {selectedProduct.specification}
-                      </span>
-                    )}
-                  </span>
+                  <span className="font-medium">{selectedProduct.name}</span>
                 ) : (
                   placeholder
                 )}
@@ -173,28 +165,15 @@ export function SmartProductSearch({
                         />
                         <Package className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
                         <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className="truncate font-medium">
-                              {product.name}
-                            </span>
-                            <Badge variant="outline" className="text-xs">
-                              {product.code}
-                            </Badge>
-                          </div>
-                          {product.specification && (
-                            <div className="truncate text-sm text-muted-foreground">
-                              {product.specification}
-                            </div>
-                          )}
+                          <span className="truncate font-medium">
+                            {product.name}
+                          </span>
                         </div>
                       </div>
                       {product.inventory && (
                         <div className="flex-shrink-0 text-right">
                           <div className="text-sm font-medium">
                             库存: {product.inventory.availableInventory}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            {product.unit}
                           </div>
                         </div>
                       )}
