@@ -128,10 +128,11 @@ export function FactoryShipmentOrderForm({
   });
 
   // 查询基础数据
-  const { data: customers } = useQuery({
+  const { data: customersResponse } = useQuery({
     queryKey: ['customers'],
-    queryFn: getCustomers,
+    queryFn: () => getCustomers({ page: 1, limit: 1000 }),
   });
+  const customers = customersResponse?.data || [];
 
   const { data: products } = useQuery({
     queryKey: ['products'],
@@ -316,7 +317,7 @@ export function FactoryShipmentOrderForm({
                     <FormLabel>客户 *</FormLabel>
                     <FormControl>
                       <CustomerSelector
-                        customers={customers || []}
+                        customers={customers}
                         value={field.value}
                         onValueChange={field.onChange}
                         placeholder="请选择客户"
