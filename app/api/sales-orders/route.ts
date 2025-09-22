@@ -1,10 +1,9 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { CreateSalesOrderSchema } from '@/lib/schemas/sales-order';
 
 // 销售订单查询参数验证
 const salesOrderQuerySchema = z.object({

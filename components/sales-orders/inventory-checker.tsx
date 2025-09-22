@@ -151,7 +151,7 @@ interface InventoryCheckItemProps {
   result: InventoryCheckResult;
 }
 
-function InventoryCheckItem({ result }: InventoryCheckItemProps) {
+function _InventoryCheckItem({ result }: InventoryCheckItemProps) {
   const getIcon = () => {
     switch (result.severity) {
       case 'success':

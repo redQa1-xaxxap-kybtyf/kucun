@@ -1255,11 +1255,6 @@ export function ERPSalesOrderForm({
                       <span className="text-sm font-semibold text-indigo-600">
                         {(() => {
                           const items = form.watch('items') || [];
-                          const totalCost = items.reduce((sum, item) => {
-                            const unitCost = item.unitCost || 0;
-                            const quantity = item.quantity || 0;
-                            return sum + unitCost * quantity;
-                          }, 0);
                           const totalProfit = items.reduce((sum, item) => {
                             const unitCost = item.unitCost || 0;
                             const unitPrice = item.unitPrice || 0;

@@ -2,7 +2,7 @@
 
 import { Package, PenTool } from 'lucide-react';
 import * as React from 'react';
-import { UseFormReturn } from 'react-hook-form';
+import type { UseFormReturn } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import {
