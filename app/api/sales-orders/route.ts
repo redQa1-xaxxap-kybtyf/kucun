@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
 // 销售订单查询参数验证
 const salesOrderQuerySchema = z.object({
@@ -304,7 +305,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = CreateSalesOrderSchema.safeParse(body);
+    const validationResult = salesOrderCreateSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {

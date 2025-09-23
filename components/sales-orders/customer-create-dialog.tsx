@@ -28,9 +28,9 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
 import { createCustomer, customerQueryKeys } from '@/lib/api/customers';
 import {
-  CreateCustomerSchema,
-  type CreateCustomerData,
-} from '@/lib/schemas/customer';
+  customerCreateSchema as CreateCustomerSchema,
+  type CustomerCreateFormData as CreateCustomerData,
+} from '@/lib/validations/customer';
 
 interface CustomerCreateDialogProps {
   open: boolean;

@@ -50,12 +50,6 @@ import {
   updateSalesOrder,
 } from '@/lib/api/sales-orders';
 import {
-  CreateSalesOrderSchema,
-  UpdateSalesOrderSchema,
-  type CreateSalesOrderData,
-  type UpdateSalesOrderData,
-} from '@/lib/schemas/sales-order';
-import {
   SALES_ORDER_STATUS_LABELS,
   SALES_ORDER_STATUS_TRANSITIONS,
   SALES_ORDER_STATUS_VARIANTS,
@@ -63,6 +57,12 @@ import {
   type SalesOrderCreateInput,
   type SalesOrderUpdateInput,
 } from '@/lib/types/sales-order';
+import {
+  salesOrderCreateSchema as CreateSalesOrderSchema,
+  salesOrderUpdateSchema as UpdateSalesOrderSchema,
+  type SalesOrderCreateFormData as CreateSalesOrderData,
+  type SalesOrderUpdateFormData as UpdateSalesOrderData,
+} from '@/lib/validations/sales-order';
 
 interface SalesOrderFormProps {
   mode: 'create' | 'edit';

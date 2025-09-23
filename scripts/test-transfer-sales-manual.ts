@@ -6,7 +6,7 @@
 import {
   CreateSalesOrderSchema,
   SALES_ORDER_TYPE_OPTIONS,
-} from '../lib/schemas/sales-order';
+} from '../lib/validations/sales-order';
 
 console.log('🧪 调货销售功能测试开始');
 console.log('='.repeat(50));

@@ -27,12 +27,12 @@ import {
   customerQueryKeys,
   updateCustomer,
 } from '@/lib/api/customers';
-import {
-  CreateCustomerSchema,
-  type CreateCustomerData,
-} from '@/lib/schemas/customer';
 import { formatAddressString } from '@/lib/services/address-client';
 import type { Customer, CustomerUpdateInput } from '@/lib/types/customer';
+import {
+  customerCreateSchema as CreateCustomerSchema,
+  type CustomerCreateFormData as CreateCustomerData,
+} from '@/lib/validations/customer';
 
 interface ERPCustomerFormProps {
   mode?: 'create' | 'edit';

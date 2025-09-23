@@ -1,7 +1,7 @@
 import bcrypt from 'bcryptjs';
 
 import { prisma } from './db';
-import { userValidations } from './validations/database';
+import { userValidations } from './validations/base';
 
 // 简化的用户创建函数，不依赖环境变量
 async function createTestUser(data: {

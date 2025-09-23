@@ -34,9 +34,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { createCustomer, customerQueryKeys } from '@/lib/api/customers';
 import {
-  CreateCustomerSchema,
-  type CreateCustomerData,
-} from '@/lib/schemas/customer';
+  customerCreateSchema as CreateCustomerSchema,
+  type CustomerCreateFormData as CreateCustomerData,
+} from '@/lib/validations/customer';
 
 interface QuickAddCustomerDialogProps {
   onCustomerCreated?: (customer: { id: string; name: string }) => void;

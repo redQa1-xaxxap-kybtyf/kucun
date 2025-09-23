@@ -8,7 +8,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   CreateSalesOrderSchema,
   SALES_ORDER_TYPE_OPTIONS,
-} from '@/lib/schemas/sales-order';
+} from '@/lib/validations/sales-order';
 
 describe('调货销售订单功能测试', () => {
   describe('数据验证测试', () => {

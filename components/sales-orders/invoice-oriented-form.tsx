@@ -41,9 +41,9 @@ import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import {
-  CreateSalesOrderSchema,
-  type CreateSalesOrderData,
-} from '@/lib/schemas/sales-order';
+  salesOrderCreateSchema as CreateSalesOrderSchema,
+  type SalesOrderCreateFormData as CreateSalesOrderData,
+} from '@/lib/validations/sales-order';
 
 interface SalesOrderFormProps {
   onSuccess?: (order: CreateSalesOrderData) => void;

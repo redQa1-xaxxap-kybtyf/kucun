@@ -53,11 +53,11 @@ import { useToast } from '@/components/ui/use-toast';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import {
-  CreateSalesOrderSchema,
-  type CreateSalesOrderData,
-} from '@/lib/schemas/sales-order';
 import type { Customer } from '@/lib/types/customer';
+import {
+  salesOrderCreateSchema as CreateSalesOrderSchema,
+  type SalesOrderCreateFormData as CreateSalesOrderData,
+} from '@/lib/validations/sales-order';
 
 interface EnhancedSalesOrderFormProps {
   onSuccess?: (order: unknown) => void;

@@ -43,11 +43,11 @@ import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
-import {
-  CreateSalesOrderSchema,
-  type CreateSalesOrderData,
-} from '@/lib/schemas/sales-order';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+import {
+  salesOrderCreateSchema as CreateSalesOrderSchema,
+  type SalesOrderCreateFormData as CreateSalesOrderData,
+} from '@/lib/validations/sales-order';
 
 interface ERPSalesOrderFormProps {
   onSuccess?: (order: unknown) => void;
