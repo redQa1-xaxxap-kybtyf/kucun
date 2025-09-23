@@ -10,9 +10,7 @@ export interface Inventory {
   id: string;
   productId: string;
   variantId?: string; // 产品变体ID
-  colorCode?: string; // 保留字段，向后兼容
-  productionDate?: string; // ISO日期字符串
-  batchNumber?: string; // 生产批次号
+  colorCode?: string; // 色号字段，用于瓷砖产品色号管理
   quantity: number;
   reservedQuantity: number; // 预留数量
   unitCost?: number; // 单位成本
@@ -34,7 +32,10 @@ export const formatInventoryQuantity = (
   inventory: Inventory,
   unit?: string
 ): string => {
-  const available = Math.max(0, inventory.quantity - inventory.reservedQuantity);
+  const available = Math.max(
+    0,
+    inventory.quantity - inventory.reservedQuantity
+  );
   const unitStr = unit || '件';
 
   if (inventory.reservedQuantity > 0) {

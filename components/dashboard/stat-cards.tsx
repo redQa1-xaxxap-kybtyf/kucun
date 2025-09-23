@@ -35,46 +35,6 @@ const ICON_MAP = {
   'rotate-ccw': RotateCcw,
 } as const;
 
-// 颜色映射
-const COLOR_MAP = {
-  blue: {
-    bg: 'bg-blue-50',
-    text: 'text-blue-600',
-    icon: 'text-blue-500',
-    border: 'border-blue-200',
-  },
-  green: {
-    bg: 'bg-green-50',
-    text: 'text-green-600',
-    icon: 'text-green-500',
-    border: 'border-green-200',
-  },
-  yellow: {
-    bg: 'bg-yellow-50',
-    text: 'text-yellow-600',
-    icon: 'text-yellow-500',
-    border: 'border-yellow-200',
-  },
-  red: {
-    bg: 'bg-red-50',
-    text: 'text-red-600',
-    icon: 'text-red-500',
-    border: 'border-red-200',
-  },
-  purple: {
-    bg: 'bg-purple-50',
-    text: 'text-purple-600',
-    icon: 'text-purple-500',
-    border: 'border-purple-200',
-  },
-  gray: {
-    bg: 'bg-gray-50',
-    text: 'text-gray-600',
-    icon: 'text-gray-500',
-    border: 'border-gray-200',
-  },
-} as const;
-
 export interface StatCardProps {
   title: string;
   value: string | number;
@@ -84,7 +44,7 @@ export interface StatCardProps {
     period: string;
   };
   icon: keyof typeof ICON_MAP;
-  color: keyof typeof COLOR_MAP;
+  color: string;
   href?: string;
   loading?: boolean;
   className?: string;
@@ -106,7 +66,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
     ref
   ) => {
     const IconComponent = ICON_MAP[icon];
-    const colorClasses = COLOR_MAP[color];
+    const colorClasses = getColorConfig(color);
 
     if (loading) {
       return (
@@ -129,7 +89,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
     const cardProps = href ? { href } : {};
 
     return (
-      <CardWrapper {...(cardProps as any)}>
+      <CardWrapper {...cardProps}>
         <Card
           className={cn(
             'transition-all duration-200',
@@ -353,7 +313,7 @@ const MobileStatCard = React.forwardRef<HTMLDivElement, MobileStatCardProps>(
   ({ compact = false, ...props }, ref) => {
     if (compact) {
       const IconComponent = ICON_MAP[props.icon];
-      const colorClasses = COLOR_MAP[props.color];
+      const colorClasses = getColorConfig(props.color);
 
       return (
         <div

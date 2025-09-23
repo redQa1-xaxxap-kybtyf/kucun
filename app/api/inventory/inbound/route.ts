@@ -54,9 +54,6 @@ export async function POST(request: NextRequest) {
     await updateInventoryQuantity(
       validatedData.productId,
       validatedData.colorCode || null,
-      validatedData.productionDate
-        ? new Date(validatedData.productionDate)
-        : null,
       validatedData.quantity
     );
 

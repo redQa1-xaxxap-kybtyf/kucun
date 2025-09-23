@@ -72,9 +72,7 @@ export interface CreateInboundRequest {
   reason: InboundReason;
   remarks?: string;
 
-  // 批次管理字段
-  productionDate?: string; // ISO日期字符串
-  batchNumber?: string; // 批次号
+  // 产品属性字段
   colorCode?: string; // 色号
   unitCost?: number; // 单位成本
   location?: string; // 存储位置

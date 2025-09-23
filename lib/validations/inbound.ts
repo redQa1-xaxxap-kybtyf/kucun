@@ -54,18 +54,7 @@ export const createInboundSchema = z.object({
     .optional()
     .transform(val => val?.trim() || undefined),
 
-  // 批次管理字段
-  productionDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, '生产日期格式不正确')
-    .optional(),
-
-  batchNumber: z
-    .string()
-    .min(1, '批次号不能为空')
-    .max(50, '批次号不能超过50个字符')
-    .optional(),
-
+  // 色号字段
   colorCode: z
     .string()
     .min(1, '色号不能为空')

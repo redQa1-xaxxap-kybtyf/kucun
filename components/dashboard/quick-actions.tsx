@@ -31,6 +31,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { getColorConfig } from '@/lib/config/dashboard';
 import type { QuickAction } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
 
@@ -50,70 +51,6 @@ const ICON_MAP = {
   truck: Truck,
   'alert-triangle': AlertTriangle,
 } as const;
-
-// 颜色配置
-const COLOR_CONFIG = {
-  blue: {
-    bg: 'bg-blue-50 hover:bg-blue-100',
-    text: 'text-blue-600',
-    icon: 'text-blue-500',
-    border: 'border-blue-200 hover:border-blue-300',
-  },
-  green: {
-    bg: 'bg-green-50 hover:bg-green-100',
-    text: 'text-green-600',
-    icon: 'text-green-500',
-    border: 'border-green-200 hover:border-green-300',
-  },
-  yellow: {
-    bg: 'bg-yellow-50 hover:bg-yellow-100',
-    text: 'text-yellow-600',
-    icon: 'text-yellow-500',
-    border: 'border-yellow-200 hover:border-yellow-300',
-  },
-  red: {
-    bg: 'bg-red-50 hover:bg-red-100',
-    text: 'text-red-600',
-    icon: 'text-red-500',
-    border: 'border-red-200 hover:border-red-300',
-  },
-  purple: {
-    bg: 'bg-purple-50 hover:bg-purple-100',
-    text: 'text-purple-600',
-    icon: 'text-purple-500',
-    border: 'border-purple-200 hover:border-purple-300',
-  },
-  gray: {
-    bg: 'bg-gray-50 hover:bg-gray-100',
-    text: 'text-gray-600',
-    icon: 'text-gray-500',
-    border: 'border-gray-200 hover:border-gray-300',
-  },
-  orange: {
-    bg: 'bg-orange-50 hover:bg-orange-100',
-    text: 'text-orange-600',
-    icon: 'text-orange-500',
-    border: 'border-orange-200 hover:border-orange-300',
-  },
-  indigo: {
-    bg: 'bg-indigo-50 hover:bg-indigo-100',
-    text: 'text-indigo-600',
-    icon: 'text-indigo-500',
-    border: 'border-indigo-200 hover:border-indigo-300',
-  },
-} as const;
-
-// 默认颜色配置（防御性编程）
-const DEFAULT_COLOR_CONFIG = {
-  bg: 'bg-gray-50 hover:bg-gray-100',
-  text: 'text-gray-600',
-  icon: 'text-gray-500',
-  border: 'border-gray-200 hover:border-gray-300',
-};
-
-// 类型安全的颜色配置获取函数
-const getColorConfig = (color: string) =>
-  COLOR_CONFIG[color as keyof typeof COLOR_CONFIG] || DEFAULT_COLOR_CONFIG;
 
 export interface QuickActionItemProps {
   action: QuickAction;
@@ -256,85 +193,8 @@ const QuickActions = React.forwardRef<HTMLDivElement, QuickActionsProps>(
     },
     ref
   ) => {
-    // 默认快速操作（当没有数据时显示）
-    const defaultActions: QuickAction[] = React.useMemo(
-      () => [
-        {
-          id: 'create-sales-order',
-          title: '创建销售订单',
-          description: '新建销售订单',
-          icon: 'shopping-cart',
-          href: '/sales-orders/create',
-          color: 'blue',
-        },
-        {
-          id: 'add-product',
-          title: '添加产品',
-          description: '新增产品信息',
-          icon: 'package',
-          href: '/products/create',
-          color: 'green',
-        },
-        {
-          id: 'add-customer',
-          title: '添加客户',
-          description: '新增客户信息',
-          icon: 'users',
-          href: '/customers/create',
-          color: 'purple',
-        },
-        {
-          id: 'inventory-inbound',
-          title: '库存入库',
-          description: '商品入库操作',
-          icon: 'upload',
-          href: '/inventory/inbound',
-          color: 'yellow',
-        },
-        {
-          id: 'inventory-outbound',
-          title: '库存出库',
-          description: '商品出库操作',
-          icon: 'download',
-          href: '/inventory/outbound',
-          color: 'red',
-        },
-
-        {
-          id: 'process-returns',
-          title: '处理退货',
-          description: '退货订单处理',
-          icon: 'rotate-ccw',
-          href: '/return-orders',
-          color: 'yellow',
-          badge: {
-            text: '待处理',
-            variant: 'secondary',
-          },
-        },
-        {
-          id: 'inventory-alerts',
-          title: '库存预警',
-          description: '查看库存预警',
-          icon: 'alert-triangle',
-          href: '/inventory?filter=alerts',
-          color: 'red',
-          badge: {
-            text: '预警',
-            variant: 'destructive',
-          },
-        },
-        {
-          id: 'reports',
-          title: '业务报表',
-          description: '查看业务报表',
-          icon: 'bar-chart-3',
-          href: '/reports',
-          color: 'blue',
-        },
-      ],
-      []
-    );
+    // 使用统一配置的默认快速操作
+    const defaultActions = React.useMemo(() => DEFAULT_QUICK_ACTIONS, []);
 
     const displayActions = actions.length > 0 ? actions : defaultActions;
 

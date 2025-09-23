@@ -255,7 +255,6 @@ export function BatchInventoryTable({
                           <TableRow>
                             <TableHead>产品规格</TableHead>
                             <TableHead>每件片数</TableHead>
-                            <TableHead>批次号</TableHead>
                             <TableHead className="text-right">
                               库存数量
                             </TableHead>
@@ -283,7 +282,6 @@ export function BatchInventoryTable({
                                   batch.product?.piecesPerUnit
                                 )}
                               </TableCell>
-                              <TableCell>{batch.batchNumber || '-'}</TableCell>
                               <TableCell className="text-right font-medium">
                                 {batch.product?.piecesPerUnit
                                   ? formatInventoryQuantity(
@@ -336,7 +334,6 @@ export function BatchInventoryTable({
               {showVariantInfo && <TableHead>产品变体</TableHead>}
               <TableHead>产品规格</TableHead>
               <TableHead>每件片数</TableHead>
-              <TableHead>批次号</TableHead>
               <TableHead className="text-right">库存数量</TableHead>
               <TableHead className="text-right">预留数量</TableHead>
               <TableHead className="text-right">可用数量</TableHead>
@@ -370,7 +367,6 @@ export function BatchInventoryTable({
                 <TableCell>
                   {formatPiecesPerUnit(inventory.product?.piecesPerUnit)}
                 </TableCell>
-                <TableCell>{inventory.batchNumber || '-'}</TableCell>
                 <TableCell className="text-right font-medium">
                   {inventory.product?.piecesPerUnit
                     ? formatInventoryQuantity(
