@@ -15,6 +15,7 @@ export const outboundCreateSchema = z
     }),
     productId: baseValidations.productId,
     colorCode: baseValidations.colorCode,
+    productionDate: baseValidations.productionDate,
     quantity: baseValidations.quantity,
     unitCost: baseValidations.unitCost,
     customerId: baseValidations.customerId,
@@ -39,6 +40,7 @@ export const outboundCreateSchema = z
 export const inventoryAdjustSchema = z.object({
   productId: baseValidations.productId,
   colorCode: baseValidations.colorCode,
+  productionDate: baseValidations.productionDate,
   adjustQuantity: z
     .number()
     .int('调整数量必须为整数')
@@ -56,6 +58,7 @@ export const inventoryAdjustSchema = z.object({
 const inventoryCountItemSchema = z.object({
   productId: baseValidations.productId,
   colorCode: baseValidations.colorCode,
+  productionDate: baseValidations.productionDate,
   actualQuantity: z
     .number()
     .int('实际数量必须为整数')
@@ -82,7 +85,7 @@ export const inventoryCountSchema = z
       // 验证是否有重复的库存项目
       const combinations = new Set();
       for (const item of data.items) {
-        const key = `${item.productId}-${item.colorCode || ''}`;
+        const key = `${item.productId}-${item.colorCode || ''}-${item.productionDate || ''}`;
         if (combinations.has(key)) {
           return false;
         }
@@ -116,6 +119,7 @@ export type BatchOperationFormData = z.infer<typeof batchOperationSchema>;
 export const outboundCreateDefaults: Partial<OutboundCreateFormData> = {
   type: 'normal_outbound',
   colorCode: '',
+  productionDate: '',
   unitCost: undefined,
   customerId: '',
   salesOrderId: '',
@@ -124,6 +128,7 @@ export const outboundCreateDefaults: Partial<OutboundCreateFormData> = {
 
 export const inventoryAdjustDefaults: Partial<InventoryAdjustFormData> = {
   colorCode: '',
+  productionDate: '',
   adjustQuantity: 0,
   reason: '',
   remarks: '',

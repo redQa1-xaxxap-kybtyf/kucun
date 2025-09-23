@@ -61,8 +61,11 @@ export async function GET(request: NextRequest) {
       sortBy,
       sortOrder,
       productId,
+      batchNumber,
       location,
       categoryId,
+      productionDateStart,
+      productionDateEnd,
       lowStock,
       hasStock,
     } = validationResult.data;
@@ -74,12 +77,17 @@ export async function GET(request: NextRequest) {
       where.OR = [
         { product: { code: { contains: search } } },
         { product: { name: { contains: search } } },
+        { batchNumber: { contains: search } },
         { location: { contains: search } },
       ];
     }
 
     if (productId) {
       where.productId = productId;
+    }
+
+    if (batchNumber) {
+      where.batchNumber = batchNumber;
     }
 
     if (location) {
@@ -91,6 +99,18 @@ export async function GET(request: NextRequest) {
         ...((where.product as Record<string, unknown>) || {}),
         categoryId,
       };
+    }
+
+    if (productionDateStart || productionDateEnd) {
+      where.productionDate = {};
+      if (productionDateStart) {
+        (where.productionDate as Record<string, unknown>).gte =
+          productionDateStart;
+      }
+      if (productionDateEnd) {
+        (where.productionDate as Record<string, unknown>).lte =
+          productionDateEnd;
+      }
     }
 
     if (lowStock) {
@@ -259,6 +279,7 @@ export async function POST(request: NextRequest) {
       inventory = await prisma.inventory.create({
         data: {
           productId,
+          productionDate: productionDate ? new Date(productionDate) : null,
           quantity: adjustmentType === 'increase' ? quantity : 0,
           reservedQuantity: 0,
         },
@@ -311,7 +332,7 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         productId: true,
-
+        productionDate: true,
         quantity: true,
         reservedQuantity: true,
         updatedAt: true,

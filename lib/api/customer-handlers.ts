@@ -3,7 +3,9 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { auth } from '@/lib/auth';
+import { getServerSession } from 'next-auth';
+
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import type {
   Customer,
@@ -21,7 +23,7 @@ import {
  * @throws {Error} 当用户未登录时抛出错误
  */
 export async function validateUserSession(): Promise<void> {
-  const session = await auth();
+  const session = await getServerSession(authOptions);
 
   if (!session || !session.user) {
     throw new Error('未授权访问');

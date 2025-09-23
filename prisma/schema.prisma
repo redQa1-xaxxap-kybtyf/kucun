@@ -32,15 +32,6 @@ model User {
   factoryShipmentOrders FactoryShipmentOrder[]
   refundRecords         RefundRecord[]
 
-  // 仪表盘模块关联关系
-  dashboardConfig       DashboardConfig?
-  dashboardWidgets      DashboardWidget[]
-  todoItems             TodoItem[]
-  assignedTodos         TodoItem[]        @relation("TodoAssignee")
-  acknowledgedAlerts    InventoryAlert[]  @relation("AlertAcknowledged")
-  resolvedAlerts        InventoryAlert[]  @relation("AlertResolved")
-  dismissedAlerts       InventoryAlert[]  @relation("AlertDismissed")
-
   @@index([email])
   @@index([username])
   @@index([role])
@@ -142,7 +133,6 @@ model Product {
   salesOrderItems            SalesOrderItem[]
   inboundRecords             InboundRecord[]
   factoryShipmentOrderItems  FactoryShipmentOrderItem[]
-  inventoryAlerts            InventoryAlert[]
 
   @@index([code])
   @@index([categoryId], map: "idx_products_category")
@@ -212,6 +202,7 @@ model SalesOrderItem {
   salesOrderId   String     @map("sales_order_id")
   productId      String?    @map("product_id") // 手动输入商品时可为空
   colorCode      String?    @map("color_code")
+  productionDate String?    @map("production_date") // 生产日期，瓷砖行业特有
   quantity       Float
   unitPrice      Float      @map("unit_price")
   subtotal       Float
@@ -240,12 +231,14 @@ model SalesOrderItem {
   @@map("sales_order_items")
 }
 
-// 库存表 - 产品库存管理，支持变体和色号维度
+// 库存表 - 产品库存管理，支持变体和生产批次维度
 model Inventory {
   id               String    @id @default(uuid())
   productId        String    @map("product_id")
   variantId        String?   @map("variant_id") // 产品变体ID（可选，兼容无色号产品）
-  colorCode        String?   @map("color_code") // 色号字段，用于瓷砖产品色号管理
+  colorCode        String?   @map("color_code") // 保留字段，用于向后兼容
+  productionDate   DateTime? @map("production_date")
+  batchNumber      String?   @map("batch_number") // 生产批次号
   quantity         Int       @default(0)
   reservedQuantity Int       @default(0) @map("reserved_quantity") // 预留数量
   unitCost         Float?    @map("unit_cost") // 单位成本
@@ -256,11 +249,12 @@ model Inventory {
   product Product @relation(fields: [productId], references: [id])
   variant ProductVariant? @relation(fields: [variantId], references: [id])
 
-  @@unique([productId, variantId, colorCode], map: "uk_inventory_variant_color")
+  @@unique([productId, variantId, productionDate, batchNumber], map: "uk_inventory_variant_batch")
   @@index([productId], map: "idx_inventory_product")
   @@index([variantId], map: "idx_inventory_variant")
   @@index([quantity], map: "idx_inventory_quantity")
-  @@index([colorCode], map: "idx_inventory_color_code")
+  @@index([productionDate], map: "idx_inventory_production_date")
+  @@index([batchNumber], map: "idx_inventory_batch")
   @@map("inventory")
 }
 
@@ -483,122 +477,4 @@ model StatementTransaction {
   @@index([transactionDate(sort: Desc)], map: "idx_statement_transactions_date")
   @@index([status], map: "idx_statement_transactions_status")
   @@map("statement_transactions")
-}
-
-// ==================== 仪表盘模块数据模型 ====================
-
-// 仪表盘配置表 - 用户个性化仪表盘配置
-model DashboardConfig {
-  id              String   @id @default(uuid())
-  userId          String   @unique @map("user_id")
-  refreshInterval Int      @default(30000) @map("refresh_interval") // 刷新间隔（毫秒）
-  showAlerts      Boolean  @default(true) @map("show_alerts") // 是否显示预警
-  showTodos       Boolean  @default(true) @map("show_todos") // 是否显示待办事项
-  showCharts      Boolean  @default(true) @map("show_charts") // 是否显示图表
-  showQuickActions Boolean @default(true) @map("show_quick_actions") // 是否显示快速操作
-  layout          String   @default("grid") // 布局方式: grid, list
-  theme           String   @default("light") // 主题: light, dark
-  timeRange       String   @default("30d") @map("time_range") // 默认时间范围
-  customSettings  String?  @map("custom_settings") // JSON格式的自定义设置
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId], map: "idx_dashboard_configs_user")
-  @@map("dashboard_configs")
-}
-
-// 仪表盘小部件表 - 自定义仪表盘布局和小部件
-model DashboardWidget {
-  id          String   @id @default(uuid())
-  userId      String   @map("user_id")
-  type        String   // 小部件类型: stat, chart, list, alert, todo, quick_action
-  title       String   // 小部件标题
-  size        String   @default("md") // 尺寸: sm, md, lg, xl
-  position    String   // JSON格式的位置信息 {x, y, w, h}
-  config      String?  // JSON格式的小部件特定配置
-  visible     Boolean  @default(true) // 是否可见
-  refreshable Boolean  @default(true) // 是否可刷新
-  sortOrder   Int      @default(0) @map("sort_order") // 排序顺序
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  // 关联关系
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId], map: "idx_dashboard_widgets_user")
-  @@index([userId, visible], map: "idx_dashboard_widgets_user_visible")
-  @@index([type], map: "idx_dashboard_widgets_type")
-  @@map("dashboard_widgets")
-}
-
-// 待办事项表 - 系统生成和用户创建的待办事项
-model TodoItem {
-  id          String    @id @default(uuid())
-  userId      String    @map("user_id")
-  type        String    // 类型: sales_order, return_order, inventory_alert, customer_follow_up, custom
-  title       String    // 标题
-  description String?   // 描述
-  priority    String    @default("medium") // 优先级: low, medium, high, urgent
-  status      String    @default("pending") // 状态: pending, in_progress, completed, cancelled
-  dueDate     DateTime? @map("due_date") // 截止日期
-  completedAt DateTime? @map("completed_at") // 完成时间
-  relatedId   String?   @map("related_id") // 关联的业务对象ID
-  relatedType String?   @map("related_type") // 关联的业务对象类型
-  assignedTo  String?   @map("assigned_to") // 分配给的用户ID
-  metadata    String?   // JSON格式的元数据
-  createdAt   DateTime  @default(now()) @map("created_at")
-  updatedAt   DateTime  @updatedAt @map("updated_at")
-
-  // 关联关系
-  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  assignee User? @relation("TodoAssignee", fields: [assignedTo], references: [id], onDelete: SetNull)
-
-  @@index([userId], map: "idx_todo_items_user")
-  @@index([assignedTo], map: "idx_todo_items_assignee")
-  @@index([status], map: "idx_todo_items_status")
-  @@index([priority], map: "idx_todo_items_priority")
-  @@index([type], map: "idx_todo_items_type")
-  @@index([dueDate], map: "idx_todo_items_due_date")
-  @@index([relatedId, relatedType], map: "idx_todo_items_related")
-  @@map("todo_items")
-}
-
-// 库存预警表 - 库存预警记录和处理状态
-model InventoryAlert {
-  id              String    @id @default(uuid())
-  productId       String    @map("product_id")
-  colorCode       String?   @map("color_code")
-  alertType       String    @map("alert_type") // 预警类型: low_stock, out_of_stock, overstock, expired
-  alertLevel      String    @map("alert_level") // 预警级别: warning, danger, critical
-  currentStock    Int       @map("current_stock") // 当前库存
-  safetyStock     Int       @map("safety_stock") // 安全库存
-  suggestedAction String    @map("suggested_action") // 建议操作
-  status          String    @default("active") // 状态: active, acknowledged, resolved, dismissed
-  acknowledgedBy  String?   @map("acknowledged_by") // 确认人
-  acknowledgedAt  DateTime? @map("acknowledged_at") // 确认时间
-  resolvedBy      String?   @map("resolved_by") // 解决人
-  resolvedAt      DateTime? @map("resolved_at") // 解决时间
-  dismissedBy     String?   @map("dismissed_by") // 忽略人
-  dismissedAt     DateTime? @map("dismissed_at") // 忽略时间
-  notes           String?   // 备注
-  metadata        String?   // JSON格式的元数据
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
-
-  // 关联关系
-  product          Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  acknowledgedUser User?   @relation("AlertAcknowledged", fields: [acknowledgedBy], references: [id], onDelete: SetNull)
-  resolvedUser     User?   @relation("AlertResolved", fields: [resolvedBy], references: [id], onDelete: SetNull)
-  dismissedUser    User?   @relation("AlertDismissed", fields: [dismissedBy], references: [id], onDelete: SetNull)
-
-  @@index([productId], map: "idx_inventory_alerts_product")
-  @@index([alertType], map: "idx_inventory_alerts_type")
-  @@index([alertLevel], map: "idx_inventory_alerts_level")
-  @@index([status], map: "idx_inventory_alerts_status")
-  @@index([createdAt(sort: Desc)], map: "idx_inventory_alerts_created")
-  @@index([productId, colorCode], map: "idx_inventory_alerts_product_color")
-  @@map("inventory_alerts")
 }

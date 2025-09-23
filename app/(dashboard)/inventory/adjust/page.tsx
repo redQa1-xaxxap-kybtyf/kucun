@@ -353,7 +353,15 @@ export default function InventoryAdjustPage() {
                             {record.product.specification}
                           </div>
                         )}
-
+                        {/* 显示批次号（如果有） */}
+                        {record.batchNumber && (
+                          <div className="text-sm">
+                            <span className="text-muted-foreground">
+                              批次:{' '}
+                            </span>
+                            <span>{record.batchNumber}</span>
+                          </div>
+                        )}
                         {/* 显示库存位置（如果有） */}
                         {record.location && (
                           <div className="text-sm">

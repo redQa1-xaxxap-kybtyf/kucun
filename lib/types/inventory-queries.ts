@@ -4,12 +4,7 @@
  */
 
 import type { Inventory } from './inventory-core';
-import type {
-  InboundRecord,
-  InboundType,
-  OutboundRecord,
-  OutboundType,
-} from './inventory-operations';
+import type { InboundRecord, OutboundRecord, InboundType, OutboundType } from './inventory-operations';
 
 // API 查询参数类型
 export interface InventoryQueryParams {
@@ -20,7 +15,10 @@ export interface InventoryQueryParams {
   sortOrder?: 'asc' | 'desc';
   productId?: string;
   variantId?: string; // 产品变体ID筛选
-  colorCode?: string; // 色号筛选
+  colorCode?: string;
+  batchNumber?: string; // 批次号筛选
+  productionDateStart?: string;
+  productionDateEnd?: string;
   location?: string; // 存储位置筛选
   categoryId?: string; // 产品分类筛选
   lowStock?: boolean;
