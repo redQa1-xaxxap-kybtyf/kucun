@@ -53,11 +53,11 @@ export async function POST(request: NextRequest) {
     // 更新库存数量
     await updateInventoryQuantity(
       validatedData.productId,
-      validatedData.colorCode || null,
-      validatedData.productionDate
-        ? new Date(validatedData.productionDate)
-        : null,
-      validatedData.quantity
+      validatedData.batchNumber || null,
+      validatedData.quantity,
+      {
+        variantId: validatedData.variantId,
+      }
     );
 
     return NextResponse.json({

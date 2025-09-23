@@ -4,7 +4,12 @@
  */
 
 import type { Inventory } from './inventory-core';
-import type { InboundRecord, OutboundRecord, InboundType, OutboundType } from './inventory-operations';
+import type {
+  InboundRecord,
+  InboundType,
+  OutboundRecord,
+  OutboundType,
+} from './inventory-operations';
 
 // API 查询参数类型
 export interface InventoryQueryParams {
@@ -15,10 +20,7 @@ export interface InventoryQueryParams {
   sortOrder?: 'asc' | 'desc';
   productId?: string;
   variantId?: string; // 产品变体ID筛选
-  colorCode?: string;
   batchNumber?: string; // 批次号筛选
-  productionDateStart?: string;
-  productionDateEnd?: string;
   location?: string; // 存储位置筛选
   categoryId?: string; // 产品分类筛选
   lowStock?: boolean;
@@ -116,7 +118,7 @@ export interface InventoryAlert {
   id: string;
   productId: string;
   productName: string;
-  colorCode?: string;
+  batchNumber?: string;
   currentQuantity: number;
   minQuantity: number;
   alertType: 'low_stock' | 'out_of_stock';
@@ -135,8 +137,7 @@ export const INVENTORY_SORT_OPTIONS = [
 // 库存字段标签映射
 export const INVENTORY_FIELD_LABELS = {
   product: '产品',
-  colorCode: '色号',
-  productionDate: '生产日期',
+  batchNumber: '批次号',
   quantity: '库存数量',
   reservedQuantity: '预留数量',
   availableQuantity: '可用数量',

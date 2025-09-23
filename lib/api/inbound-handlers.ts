@@ -275,10 +275,11 @@ export async function validateProductExists(productId: string) {
 export async function createInboundRecord(
   data: {
     productId: string;
+    variantId?: string;
+    batchNumber?: string;
     colorCode?: string;
     productionDate?: string;
     quantity: number;
-    unitCost?: number;
     reason: string;
     remarks?: string;
   },
@@ -290,21 +291,14 @@ export async function createInboundRecord(
   // 生成记录编号
   const recordNumber = generateInboundRecordNumber();
 
-  // 计算总成本
-  const totalCost = data.unitCost ? data.quantity * data.unitCost : 0;
-
   // 创建入库记录
   const inboundRecord = await prisma.inboundRecord.create({
     data: {
       recordNumber,
       productId: data.productId,
-      colorCode: data.colorCode || null,
-      productionDate: data.productionDate
-        ? new Date(data.productionDate)
-        : null,
+      variantId: data.variantId || null,
+      batchNumber: data.batchNumber || null,
       quantity: data.quantity,
-      unitCost: data.unitCost || null,
-      totalCost,
       reason: data.reason,
       remarks: cleanRemarks(data.remarks),
       userId,
@@ -370,16 +364,18 @@ export async function createInboundRecord(
  */
 export async function updateInventoryQuantity(
   productId: string,
-  colorCode: string | null,
-  productionDate: Date | null,
-  quantity: number
+  batchNumber: string | null,
+  quantity: number,
+  options?: {
+    variantId?: string;
+  }
 ) {
   // 查找现有库存记录
   const existingInventory = await prisma.inventory.findFirst({
     where: {
       productId,
-      colorCode,
-      productionDate,
+      variantId: options?.variantId || null,
+      batchNumber,
     },
   });
 
@@ -397,8 +393,8 @@ export async function updateInventoryQuantity(
     await prisma.inventory.create({
       data: {
         productId,
-        colorCode,
-        productionDate,
+        variantId: options?.variantId || null,
+        batchNumber,
         quantity,
         reservedQuantity: 0,
       },

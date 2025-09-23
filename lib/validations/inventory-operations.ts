@@ -14,8 +14,7 @@ export const outboundCreateSchema = z
       errorMap: () => ({ message: '请选择正确的出库类型' }),
     }),
     productId: baseValidations.productId,
-    colorCode: baseValidations.colorCode,
-    productionDate: baseValidations.productionDate,
+    batchNumber: baseValidations.batchNumber,
     quantity: baseValidations.quantity,
     unitCost: baseValidations.unitCost,
     customerId: baseValidations.customerId,
@@ -39,8 +38,7 @@ export const outboundCreateSchema = z
 // 库存调整验证
 export const inventoryAdjustSchema = z.object({
   productId: baseValidations.productId,
-  colorCode: baseValidations.colorCode,
-  productionDate: baseValidations.productionDate,
+  batchNumber: baseValidations.batchNumber,
   adjustQuantity: z
     .number()
     .int('调整数量必须为整数')
@@ -57,8 +55,7 @@ export const inventoryAdjustSchema = z.object({
 // 库存盘点明细验证
 const inventoryCountItemSchema = z.object({
   productId: baseValidations.productId,
-  colorCode: baseValidations.colorCode,
-  productionDate: baseValidations.productionDate,
+  batchNumber: baseValidations.batchNumber,
   actualQuantity: z
     .number()
     .int('实际数量必须为整数')
@@ -85,7 +82,7 @@ export const inventoryCountSchema = z
       // 验证是否有重复的库存项目
       const combinations = new Set();
       for (const item of data.items) {
-        const key = `${item.productId}-${item.colorCode || ''}-${item.productionDate || ''}`;
+        const key = `${item.productId}-${item.batchNumber || ''}`;
         if (combinations.has(key)) {
           return false;
         }
@@ -118,8 +115,7 @@ export type BatchOperationFormData = z.infer<typeof batchOperationSchema>;
 // 表单默认值
 export const outboundCreateDefaults: Partial<OutboundCreateFormData> = {
   type: 'normal_outbound',
-  colorCode: '',
-  productionDate: '',
+  batchNumber: '',
   unitCost: undefined,
   customerId: '',
   salesOrderId: '',
@@ -127,8 +123,7 @@ export const outboundCreateDefaults: Partial<OutboundCreateFormData> = {
 };
 
 export const inventoryAdjustDefaults: Partial<InventoryAdjustFormData> = {
-  colorCode: '',
-  productionDate: '',
+  batchNumber: '',
   adjustQuantity: 0,
   reason: '',
   remarks: '',

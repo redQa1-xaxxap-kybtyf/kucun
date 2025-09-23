@@ -66,6 +66,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       quantity: 1,
       reason: 'purchase',
       remarks: '',
+      batchNumber: '',
     },
   });
 
@@ -164,7 +165,15 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
 
   // 重置表单
   const handleReset = () => {
-    form.reset();
+    form.reset({
+      productId: '',
+      inputQuantity: 1,
+      inputUnit: 'pieces' as InboundUnit,
+      quantity: 1,
+      reason: 'purchase',
+      remarks: '',
+      batchNumber: '',
+    });
     setSelectedProduct(null);
   };
 
@@ -339,7 +348,27 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
               />
             </div>
 
-            {/* 第三行：备注 */}
+            {/* 第三行：批次号 */}
+            <FormField
+              control={form.control}
+              name="batchNumber"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">批次号</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      placeholder="请输入批次号（可选）"
+                      maxLength={50}
+                      className="h-8"
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 第四行：备注 */}
             <FormField
               control={form.control}
               name="remarks"

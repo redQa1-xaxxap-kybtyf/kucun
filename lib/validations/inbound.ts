@@ -55,34 +55,11 @@ export const createInboundSchema = z.object({
     .transform(val => val?.trim() || undefined),
 
   // 批次管理字段
-  productionDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, '生产日期格式不正确')
-    .optional(),
-
   batchNumber: z
     .string()
     .min(1, '批次号不能为空')
     .max(50, '批次号不能超过50个字符')
     .optional(),
-
-  colorCode: z
-    .string()
-    .min(1, '色号不能为空')
-    .max(20, '色号不能超过20个字符')
-    .optional(),
-
-  unitCost: z
-    .number()
-    .min(0, '单位成本不能为负数')
-    .max(999999, '单位成本不能超过999999')
-    .optional(),
-
-  location: z
-    .string()
-    .max(100, '存储位置不能超过100个字符')
-    .optional()
-    .transform(val => val?.trim() || undefined),
 });
 
 // 更新入库记录验证规则
