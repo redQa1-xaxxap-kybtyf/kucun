@@ -1,9 +1,8 @@
 // 单个厂家发货订单 API 路由
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
+import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';

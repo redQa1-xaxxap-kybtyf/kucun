@@ -3,8 +3,7 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';

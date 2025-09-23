@@ -3,8 +3,7 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
@@ -53,7 +52,7 @@ export async function GET(request: NextRequest) {
     const validatedParams = CategoryQuerySchema.parse(queryParams);
 
     // 构建查询条件
-    const where: any = {
+    const where: Prisma.CategoryWhereInput = {
       status: 'active', // 只返回启用的分类
     };
 

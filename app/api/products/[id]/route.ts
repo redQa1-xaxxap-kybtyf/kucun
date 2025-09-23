@@ -1,529 +1,88 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-
-import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
+import {
+  deleteProduct,
+  getProductById,
+  updateProduct,
+} from '@/lib/api/handlers/products';
+import { withAuth, withErrorHandling } from '@/lib/api/middleware';
+import {
+  errorResponse,
+  notFoundResponse,
+  successResponse,
+  validationErrorResponse,
+} from '@/lib/api/response';
 import { productUpdateSchema } from '@/lib/validations/product';
 
-// 获取单个产品信息
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  try {
-    // 验证用户权限 (开发环境下临时绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+/**
+ * 获取单个产品信息
+ */
+export const GET = withErrorHandling(
+  withAuth(async (request, context, _session) => {
+    const params = await context.params;
+    if (!params) {
+      return errorResponse('参数缺失', 400);
     }
+    const { id } = params;
 
-    const product = await prisma.product.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        specification: true,
-        specifications: true,
-        unit: true,
-        piecesPerUnit: true,
-        weight: true,
-        thickness: true,
-        status: true,
-        categoryId: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-        createdAt: true,
-        updatedAt: true,
-        inventory: {
-          select: {
-            id: true,
-            colorCode: true,
-            productionDate: true,
-            quantity: true,
-            reservedQuantity: true,
-            updatedAt: true,
-          },
-          orderBy: [{ colorCode: 'asc' }, { productionDate: 'desc' }],
-        },
-        salesOrderItems: {
-          select: {
-            id: true,
-            colorCode: true,
-            productionDate: true,
-            quantity: true,
-            unitPrice: true,
-            subtotal: true,
-            salesOrder: {
-              select: {
-                id: true,
-                orderNumber: true,
-                status: true,
-                createdAt: true,
-                customer: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
-              },
-            },
-          },
-          orderBy: {
-            salesOrder: {
-              createdAt: 'desc',
-            },
-          },
-          take: 10, // 最近10个销售记录
-        },
-        inboundRecords: {
-          select: {
-            id: true,
-            recordNumber: true,
-            reason: true, // 修复：使用正确的字段名 reason 而不是 type
-            quantity: true,
-            remarks: true,
-            createdAt: true,
-            user: {
-              select: {
-                id: true,
-                name: true,
-              },
-            },
-          },
-          orderBy: {
-            createdAt: 'desc',
-          },
-          take: 10, // 最近10个入库记录
-        },
-        _count: {
-          select: {
-            inventory: true,
-            salesOrderItems: true,
-            inboundRecords: true,
-          },
-        },
-      },
-    });
-
+    const product = await getProductById(id);
     if (!product) {
-      return NextResponse.json(
-        { success: false, error: '产品不存在' },
-        { status: 404 }
-      );
+      return notFoundResponse('产品不存在');
     }
 
-    // 计算库存汇总
-    const inventorySummary = product.inventory.reduce(
-      (acc, inv) => {
-        acc.totalQuantity += inv.quantity;
-        acc.reservedQuantity += inv.reservedQuantity;
-        acc.availableQuantity += inv.quantity - inv.reservedQuantity;
-        return acc;
-      },
-      { totalQuantity: 0, reservedQuantity: 0, availableQuantity: 0 }
-    );
-
-    // 按色号分组库存
-    const inventoryByColor = product.inventory.reduce(
-      (acc, inv) => {
-        const colorKey = inv.colorCode || '无色号';
-        if (!acc[colorKey]) {
-          acc[colorKey] = {
-            colorCode: inv.colorCode,
-            totalQuantity: 0,
-            reservedQuantity: 0,
-            availableQuantity: 0,
-            records: [],
-          };
-        }
-        acc[colorKey].totalQuantity += inv.quantity;
-        acc[colorKey].reservedQuantity += inv.reservedQuantity;
-        acc[colorKey].availableQuantity += inv.quantity - inv.reservedQuantity;
-        acc[colorKey].records.push({
-          id: inv.id,
-          productionDate: inv.productionDate,
-          quantity: inv.quantity,
-          reservedQuantity: inv.reservedQuantity,
-          availableQuantity: inv.quantity - inv.reservedQuantity,
-          updatedAt: inv.updatedAt,
-        });
-        return acc;
-      },
-      {} as Record<
-        string,
-        {
-          colorCode: string | null;
-          totalQuantity: number;
-          reservedQuantity: number;
-          availableQuantity: number;
-          records: Array<{
-            id: string;
-            productionDate: string | null;
-            quantity: number;
-            reservedQuantity: number;
-            availableQuantity: number;
-            updatedAt: Date;
-          }>;
-        }
-      >
-    );
-
-    // 转换数据格式
-    const formattedProduct = {
-      id: product.id,
-      code: product.code,
-      name: product.name,
-      specification: product.specification,
-      specifications: (() => {
-        try {
-          return product.specifications &&
-            typeof product.specifications === 'string'
-            ? JSON.parse(product.specifications)
-            : product.specifications || null;
-        } catch (error) {
-          // console.error('解析产品规格JSON失败:', error);
-          return null;
-        }
-      })(),
-      unit: product.unit,
-      piecesPerUnit: product.piecesPerUnit,
-      weight: product.weight,
-      thickness: product.thickness,
-      status: product.status,
-      inventorySummary,
-      inventoryByColor: Object.values(inventoryByColor),
-      recentSalesOrderItems: product.salesOrderItems.map(item => ({
-        id: item.id,
-        colorCode: item.colorCode,
-        productionDate: item.productionDate,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        subtotal: item.subtotal,
-        salesOrder: {
-          id: item.salesOrder.id,
-          orderNumber: item.salesOrder.orderNumber,
-          status: item.salesOrder.status,
-          createdAt: item.salesOrder.createdAt,
-          customer: item.salesOrder.customer,
-        },
-      })),
-      recentInboundRecords: product.inboundRecords.map(record => ({
-        id: record.id,
-        recordNumber: record.recordNumber,
-        reason: record.reason, // 修复：使用正确的字段名 reason 而不是 type
-        quantity: record.quantity,
-        remarks: record.remarks,
-        createdAt: record.createdAt,
-        user: record.user,
-      })),
-      statistics: {
-        inventoryRecordsCount: product._count.inventory,
-        salesOrderItemsCount: product._count.salesOrderItems,
-        inboundRecordsCount: product._count.inboundRecords,
-      },
-      categoryId: product.categoryId,
-      category: product.category
-        ? {
-            id: product.category.id,
-            name: product.category.name,
-            code: product.category.code,
-          }
-        : null,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
-    };
-
-    return NextResponse.json({
-      success: true,
-      data: formattedProduct,
-    });
-  } catch (error) {
-    // console.error('获取产品信息错误:', error);
-    // console.error(
-    //   '错误堆栈:',
-    //   error instanceof Error ? error.stack : 'No stack trace'
-    // );
-    // console.error('产品ID:', id);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '获取产品信息失败',
-        details:
-          env.NODE_ENV === 'development'
-            ? {
-                message: error instanceof Error ? error.message : '未知错误',
-                stack: error instanceof Error ? error.stack : undefined,
-                productId: id,
-              }
-            : undefined,
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// 更新产品信息
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  try {
-    // 验证用户权限 (开发环境下临时绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    return successResponse(product);
+  })
+);
+/**
+ * 更新产品信息
+ */
+export const PUT = withErrorHandling(
+  withAuth(async (request, context, _session) => {
+    const params = await context.params;
+    if (!params) {
+      return errorResponse('参数缺失', 400);
     }
-
+    const { id } = params;
     const body = await request.json();
 
-    // 验证输入数据
-    const validationResult = productUpdateSchema.safeParse({
-      id,
-      ...body,
-    });
+    // 验证请求数据
+    const validationResult = productUpdateSchema.safeParse(body);
     if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '输入数据格式不正确',
-          details: validationResult.error.errors,
-        },
-        { status: 400 }
+      return validationErrorResponse(
+        '产品数据格式不正确',
+        validationResult.error.errors
       );
     }
 
-    const {
-      code,
-      name,
-      specification,
-      specifications,
-      unit,
-      piecesPerUnit,
-      weight,
-      thickness,
-      status,
-      categoryId,
-    } = validationResult.data;
-
-    // 检查产品是否存在
-    const existingProduct = await prisma.product.findUnique({
-      where: { id },
-    });
-
-    if (!existingProduct) {
-      return NextResponse.json(
-        { success: false, error: '产品不存在' },
-        { status: 404 }
+    try {
+      const product = await updateProduct(id, validationResult.data);
+      return successResponse(product, 200, '产品更新成功');
+    } catch (error) {
+      return errorResponse(
+        error instanceof Error ? error.message : '产品更新失败',
+        400
       );
     }
+  })
+);
 
-    // 如果更新产品编码，检查是否与其他产品冲突
-    if (code && code !== existingProduct.code) {
-      const codeConflict = await prisma.product.findUnique({
-        where: { code },
-      });
-
-      if (codeConflict) {
-        return NextResponse.json(
-          { success: false, error: '产品编码已存在' },
-          { status: 400 }
-        );
-      }
+/**
+ * 删除产品
+ */
+export const DELETE = withErrorHandling(
+  withAuth(async (request, context, _session) => {
+    const params = await context.params;
+    if (!params) {
+      return errorResponse('参数缺失', 400);
     }
+    const { id } = params;
 
-    // 更新产品信息
-    const updatedProduct = await prisma.product.update({
-      where: { id },
-      data: {
-        ...(code && { code }),
-        ...(name && { name }),
-        ...(specification !== undefined && { specification }),
-        ...(specifications !== undefined && {
-          specifications: specifications
-            ? JSON.stringify(specifications)
-            : null,
-        }),
-        ...(unit && { unit }),
-        ...(piecesPerUnit !== undefined && { piecesPerUnit }),
-        ...(weight !== undefined && { weight }),
-        ...(thickness !== undefined && { thickness }),
-        ...(status && { status }),
-        ...(categoryId !== undefined && {
-          categoryId: categoryId === 'uncategorized' ? null : categoryId,
-        }),
-      },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        specification: true,
-        specifications: true,
-        unit: true,
-        piecesPerUnit: true,
-        weight: true,
-        thickness: true,
-        status: true,
-        categoryId: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-        createdAt: true,
-        updatedAt: true,
-      },
-    });
-
-    // 转换数据格式
-    const formattedProduct = {
-      id: updatedProduct.id,
-      code: updatedProduct.code,
-      name: updatedProduct.name,
-      specification: updatedProduct.specification,
-      specifications: updatedProduct.specifications
-        ? JSON.parse(updatedProduct.specifications as string)
-        : null,
-      unit: updatedProduct.unit,
-      piecesPerUnit: updatedProduct.piecesPerUnit,
-      weight: updatedProduct.weight,
-      thickness: updatedProduct.thickness,
-      status: updatedProduct.status,
-      categoryId: updatedProduct.categoryId,
-      category: updatedProduct.category
-        ? {
-            id: updatedProduct.category.id,
-            name: updatedProduct.category.name,
-            code: updatedProduct.category.code,
-          }
-        : null,
-      createdAt: updatedProduct.createdAt,
-      updatedAt: updatedProduct.updatedAt,
-    };
-
-    return NextResponse.json({
-      success: true,
-      data: formattedProduct,
-      message: '产品信息更新成功',
-    });
-  } catch (error) {
-    // console.error('更新产品信息错误:', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '更新产品信息失败',
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// 删除产品（检查关联后禁止删除）
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  try {
-    // 验证用户权限 (开发环境下临时绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-    }
-
-    // 检查产品是否存在
-    const existingProduct = await prisma.product.findUnique({
-      where: { id },
-      include: {
-        inventory: true,
-        salesOrderItems: true,
-        inboundRecords: true,
-      },
-    });
-
-    if (!existingProduct) {
-      return NextResponse.json(
-        { success: false, error: '产品不存在' },
-        { status: 404 }
+    try {
+      const result = await deleteProduct(id);
+      return successResponse(result, 200, '产品删除成功');
+    } catch (error) {
+      return errorResponse(
+        error instanceof Error ? error.message : '产品删除失败',
+        400
       );
     }
-
-    // 检查是否有关联数据
-    if (existingProduct.inventory.length > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `该产品有 ${existingProduct.inventory.length} 条库存记录，无法删除`,
-        },
-        { status: 400 }
-      );
-    }
-
-    if (existingProduct.salesOrderItems.length > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `该产品有 ${existingProduct.salesOrderItems.length} 条销售记录，无法删除`,
-        },
-        { status: 400 }
-      );
-    }
-
-    if (existingProduct.inboundRecords.length > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `该产品有 ${existingProduct.inboundRecords.length} 条入库记录，无法删除`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // 删除产品
-    await prisma.product.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: '产品删除成功',
-    });
-  } catch (error) {
-    // console.error('删除产品错误:', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '删除产品失败',
-      },
-      { status: 500 }
-    );
-  }
-}
+  })
+);

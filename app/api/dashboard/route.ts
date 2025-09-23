@@ -1,5 +1,4 @@
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
@@ -71,7 +70,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 构建过滤条件
-    const whereConditions: Record<string, any> = {
+    const whereConditions: Prisma.SalesOrderWhereInput = {
       createdAt: {
         gte: startDate,
         lte: now,

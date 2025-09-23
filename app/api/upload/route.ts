@@ -1,10 +1,9 @@
 import { existsSync } from 'fs';
-import { writeFile, mkdir } from 'fs/promises';
+import { mkdir, writeFile } from 'fs/promises';
 import { join } from 'path';
 
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 import sharp from 'sharp';
 import { z } from 'zod';
 
@@ -108,7 +107,7 @@ export async function POST(request: NextRequest) {
         let sharpInstance = sharp(buffer);
 
         // 获取图片信息
-        const metadata = await sharpInstance.metadata();
+        const _metadata = await sharpInstance.metadata();
 
         // 根据上传类型进行不同的优化
         switch (type) {
