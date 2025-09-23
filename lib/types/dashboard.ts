@@ -77,6 +77,28 @@ export interface TodoItem {
   assignedTo?: string; // 分配给的用户ID
 }
 
+// 最近活动数据
+export interface RecentActivity {
+  id: string;
+  type: 'order' | 'inventory' | 'customer' | 'payment';
+  title: string;
+  description: string;
+  timestamp: Date;
+  status: 'success' | 'warning' | 'error' | 'info';
+}
+
+// 仪表盘统计数据（兼容旧版本）
+export interface DashboardStats {
+  totalProducts: number;
+  totalOrders: number;
+  totalCustomers: number;
+  totalRevenue: number;
+  lowStockItems: number;
+  pendingOrders: number;
+  recentActivities: RecentActivity[];
+  salesTrend: ChartDataPoint[];
+}
+
 // 图表数据点
 export interface ChartDataPoint {
   date: string;
