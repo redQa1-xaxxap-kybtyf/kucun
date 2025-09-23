@@ -277,8 +277,6 @@ export async function createInboundRecord(
     productId: string;
     variantId?: string;
     batchNumber?: string;
-    colorCode?: string;
-    productionDate?: string;
     quantity: number;
     reason: string;
     remarks?: string;

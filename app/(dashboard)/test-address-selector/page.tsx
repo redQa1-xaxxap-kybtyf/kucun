@@ -2,11 +2,10 @@
 
 import React from 'react';
 
+import { AddressSelector } from '@/components/ui/address-selector';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { toast } from '@/components/ui/use-toast';
-
-import { AddressSelector } from '@/components/ui/address-selector';
 import type { AddressData } from '@/lib/types/address';
 
 /**

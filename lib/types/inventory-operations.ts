@@ -24,7 +24,8 @@ export interface InboundRecord {
   recordNumber: string;
   type: InboundType;
   productId: string;
-  batchNumber?: string;
+  colorCode?: string;
+  productionDate?: string;
   quantity: number;
   unitCost?: number;
   totalCost?: number;
@@ -44,7 +45,8 @@ export interface OutboundRecord {
   recordNumber: string;
   type: OutboundType;
   productId: string;
-  batchNumber?: string;
+  colorCode?: string;
+  productionDate?: string;
   quantity: number;
   unitCost?: number;
   totalCost?: number;
@@ -63,7 +65,8 @@ export interface OutboundRecord {
 export interface InboundCreateInput {
   type: InboundType;
   productId: string;
-  batchNumber?: string;
+  colorCode?: string;
+  productionDate?: string;
   quantity: number;
   unitCost?: number;
   supplierId?: string;
@@ -73,7 +76,8 @@ export interface InboundCreateInput {
 export interface OutboundCreateInput {
   type: OutboundType;
   productId: string;
-  batchNumber?: string;
+  colorCode?: string;
+  productionDate?: string;
   quantity: number;
   unitCost?: number;
   customerId?: string;
@@ -84,7 +88,8 @@ export interface OutboundCreateInput {
 // 库存调整输入类型
 export interface InventoryAdjustInput {
   productId: string;
-  batchNumber?: string;
+  colorCode?: string;
+  productionDate?: string;
   adjustQuantity: number; // 正数为增加，负数为减少
   reason: string;
   remarks?: string;
@@ -98,7 +103,8 @@ export interface InventoryCountInput {
 
 export interface InventoryCountItem {
   productId: string;
-  batchNumber?: string;
+  colorCode?: string;
+  productionDate?: string;
   actualQuantity: number;
   systemQuantity: number;
 }
@@ -163,3 +169,23 @@ export const calculateTotalCost = (
   quantity: number,
   unitCost: number
 ): number => Math.round(quantity * unitCost * 100) / 100;
+
+/**
+ * 格式化生产日期
+ * @param dateString 日期字符串
+ * @returns 格式化后的日期字符串
+ */
+export const formatProductionDate = (dateString?: string): string => {
+  if (!dateString) return '';
+
+  try {
+    const date = new Date(dateString);
+    return date.toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
+  } catch {
+    return dateString;
+  }
+};

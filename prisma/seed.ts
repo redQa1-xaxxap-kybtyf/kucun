@@ -172,36 +172,72 @@ async function main() {
 
   const inventoryRecords = await Promise.all([
     // TC001 抛光砖库存
-    prisma.inventory.create({
-      data: {
+    prisma.inventory.upsert({
+      where: {
+        productId_colorCode_productionDate: {
+          productId: products[0].id,
+          colorCode: 'white',
+          productionDate: new Date('2024-01-15'),
+        },
+      },
+      update: {},
+      create: {
         productId: products[0].id,
-        batchNumber: 'BATCH-2024-001',
+        colorCode: 'white',
+        productionDate: new Date('2024-01-15'),
         quantity: 100,
         reservedQuantity: 0,
       },
     }),
-    prisma.inventory.create({
-      data: {
+    prisma.inventory.upsert({
+      where: {
+        productId_colorCode_productionDate: {
+          productId: products[0].id,
+          colorCode: 'grey',
+          productionDate: new Date('2024-01-15'),
+        },
+      },
+      update: {},
+      create: {
         productId: products[0].id,
-        batchNumber: 'BATCH-2024-002',
+        colorCode: 'grey',
+        productionDate: new Date('2024-01-15'),
         quantity: 80,
         reservedQuantity: 0,
       },
     }),
     // TC002 仿古砖库存
-    prisma.inventory.create({
-      data: {
+    prisma.inventory.upsert({
+      where: {
+        productId_colorCode_productionDate: {
+          productId: products[1].id,
+          colorCode: 'brown',
+          productionDate: new Date('2024-01-20'),
+        },
+      },
+      update: {},
+      create: {
         productId: products[1].id,
-        batchNumber: 'BATCH-2024-003',
+        colorCode: 'brown',
+        productionDate: new Date('2024-01-20'),
         quantity: 150,
         reservedQuantity: 0,
       },
     }),
     // TC003 马赛克库存
-    prisma.inventory.create({
-      data: {
+    prisma.inventory.upsert({
+      where: {
+        productId_colorCode_productionDate: {
+          productId: products[2].id,
+          colorCode: 'blue',
+          productionDate: new Date('2024-01-25'),
+        },
+      },
+      update: {},
+      create: {
         productId: products[2].id,
-        batchNumber: 'BATCH-2024-004',
+        colorCode: 'blue',
+        productionDate: new Date('2024-01-25'),
         quantity: 200,
         reservedQuantity: 0,
       },
@@ -217,9 +253,11 @@ async function main() {
     prisma.inboundRecord.create({
       data: {
         recordNumber: 'RK20240115001',
+        type: 'normal_inbound',
         productId: products[0].id,
+        colorCode: 'white',
+        productionDate: new Date('2024-01-15'),
         quantity: 100,
-        reason: 'purchase',
         remarks: '初始库存入库',
         userId: adminUser.id,
       },
@@ -227,9 +265,11 @@ async function main() {
     prisma.inboundRecord.create({
       data: {
         recordNumber: 'RK20240120001',
+        type: 'normal_inbound',
         productId: products[1].id,
+        colorCode: 'brown',
+        productionDate: new Date('2024-01-20'),
         quantity: 150,
-        reason: 'purchase',
         remarks: '新批次入库',
         userId: adminUser.id,
       },

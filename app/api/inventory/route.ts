@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -33,7 +33,8 @@ export async function GET(request: NextRequest) {
       batchNumber: searchParams.get('batchNumber'),
       location: searchParams.get('location'),
       categoryId: searchParams.get('categoryId'),
-
+      productionDateStart: searchParams.get('productionDateStart'),
+      productionDateEnd: searchParams.get('productionDateEnd'),
       lowStock: searchParams.get('lowStock'),
       hasStock: searchParams.get('hasStock'),
       groupByVariant: searchParams.get('groupByVariant'),
@@ -63,7 +64,8 @@ export async function GET(request: NextRequest) {
       batchNumber,
       location,
       categoryId,
-
+      productionDateStart,
+      productionDateEnd,
       lowStock,
       hasStock,
     } = validationResult.data;
@@ -99,6 +101,18 @@ export async function GET(request: NextRequest) {
       };
     }
 
+    if (productionDateStart || productionDateEnd) {
+      where.productionDate = {};
+      if (productionDateStart) {
+        (where.productionDate as Record<string, unknown>).gte =
+          productionDateStart;
+      }
+      if (productionDateEnd) {
+        (where.productionDate as Record<string, unknown>).lte =
+          productionDateEnd;
+      }
+    }
+
     if (lowStock) {
       // 低库存：可用库存 <= 10
       where.quantity = { lte: 10 };
@@ -117,6 +131,7 @@ export async function GET(request: NextRequest) {
           id: true,
           productId: true,
 
+          productionDate: true,
           batchNumber: true,
           quantity: true,
           reservedQuantity: true,
@@ -158,7 +173,7 @@ export async function GET(request: NextRequest) {
     const formattedInventory = inventoryRecords.map(record => ({
       id: record.id,
       productId: record.productId,
-
+      productionDate: record.productionDate,
       batchNumber: record.batchNumber,
       quantity: record.quantity,
       reservedQuantity: record.reservedQuantity,
@@ -228,7 +243,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { productId, batchNumber, adjustmentType, quantity, reason } =
+    const { productId, productionDate, adjustmentType, quantity, reason } =
       validationResult.data;
 
     // 验证产品是否存在
@@ -247,7 +262,7 @@ export async function POST(request: NextRequest) {
     let inventory = await prisma.inventory.findFirst({
       where: {
         productId,
-        batchNumber: batchNumber || null,
+        productionDate: productionDate ? new Date(productionDate) : null,
       },
     });
 
@@ -264,7 +279,7 @@ export async function POST(request: NextRequest) {
       inventory = await prisma.inventory.create({
         data: {
           productId,
-          batchNumber: batchNumber || null,
+          productionDate: productionDate ? new Date(productionDate) : null,
           quantity: adjustmentType === 'increase' ? quantity : 0,
           reservedQuantity: 0,
         },
@@ -317,7 +332,7 @@ export async function POST(request: NextRequest) {
       select: {
         id: true,
         productId: true,
-        batchNumber: true,
+        productionDate: true,
         quantity: true,
         reservedQuantity: true,
         updatedAt: true,
@@ -345,7 +360,7 @@ export async function POST(request: NextRequest) {
     const formattedInventory = {
       id: updatedInventory.id,
       productId: updatedInventory.productId,
-      batchNumber: updatedInventory.batchNumber,
+      productionDate: updatedInventory.productionDate,
       quantity: updatedInventory.quantity,
       reservedQuantity: updatedInventory.reservedQuantity,
       availableQuantity:

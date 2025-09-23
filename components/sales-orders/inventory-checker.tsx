@@ -12,7 +12,8 @@ import { cn } from '@/lib/utils';
 interface InventoryItem {
   productId: string;
   quantity: number;
-  batchNumber?: string;
+  colorCode?: string;
+  productionDate?: string;
 }
 
 interface InventoryCheckResult {

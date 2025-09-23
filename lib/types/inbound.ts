@@ -144,7 +144,9 @@ export interface InboundFormData {
   remarks?: string;
 
   // 批次管理字段
+  productionDate?: string; // 生产日期
   batchNumber?: string; // 批次号
+  colorCode?: string; // 色号
   unitCost?: number; // 单位成本
   location?: string; // 存储位置
 }
