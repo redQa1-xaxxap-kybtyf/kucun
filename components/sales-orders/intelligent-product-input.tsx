@@ -8,11 +8,10 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
+import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
 import type { Product } from '@/lib/types/product';
 
 import { SmartProductSearch } from './smart-product-search';
-
-import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
 
 interface IntelligentProductInputProps {
   form: UseFormReturn<CreateSalesOrderData>;

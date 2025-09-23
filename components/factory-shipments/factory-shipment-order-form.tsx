@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { getCustomers } from '@/lib/api/customers';
@@ -67,23 +68,23 @@ interface FactoryShipmentOrderFormProps {
 // 模拟API调用 - 后续替换为真实API
 const createFactoryShipmentOrder = async (
   data: CreateFactoryShipmentOrderData
-) => 
+) => {
   // TODO: 实现真实API调用
-   ({ id: 'mock-id', ...data })
-;
+  return { id: 'mock-id', ...data };
+};
 
 const updateFactoryShipmentOrder = async (
   id: string,
   data: CreateFactoryShipmentOrderData
-) => 
+) => {
   // TODO: 实现真实API调用
-   ({ id, ...data })
-;
+  return { id, ...data };
+};
 
-const getFactoryShipmentOrder = async (id: string) => 
+const getFactoryShipmentOrder = async (id: string) => {
   // TODO: 实现真实API调用
-   null // 模拟数据
-;
+  return null; // 模拟数据
+};
 
 export function FactoryShipmentOrderForm({
   orderId,

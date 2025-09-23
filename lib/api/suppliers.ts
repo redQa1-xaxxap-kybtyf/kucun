@@ -1,4 +1,3 @@
-import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type { 
   Supplier, 
   SupplierCreateInput, 
@@ -9,6 +8,7 @@ import type {
   BatchUpdateSupplierStatusInput,
   BatchUpdateSupplierStatusResult
 } from '@/lib/types/supplier';
+import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 
 const API_BASE = '/api/suppliers';
 

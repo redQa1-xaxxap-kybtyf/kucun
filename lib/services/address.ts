@@ -5,6 +5,8 @@
  */
 
 // 使用完整的地址数据文件
+import { areas, cities, provinces } from '../data/complete-address-data-full';
+
 import type {
   AddressData,
   AddressSearchResult,
@@ -12,9 +14,6 @@ import type {
   DistrictData,
   ProvinceData,
 } from '@/lib/types/address';
-
-import { areas, cities, provinces } from '../data/complete-address-data-full';
-
 
 /**
  * 获取所有省份列表

@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
@@ -15,7 +16,6 @@ import {
   Truck,
 } from 'lucide-react';
 import Link from 'next/link';
-import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -47,9 +47,9 @@ interface FactoryShipmentOrderListProps {
 }
 
 // 模拟API调用 - 后续替换为真实API
-const fetchFactoryShipmentOrders = async () => 
+const fetchFactoryShipmentOrders = async () => {
   // TODO: 实现真实API调用
-   ({
+  return {
     orders: [],
     pagination: {
       page: 1,
@@ -57,8 +57,8 @@ const fetchFactoryShipmentOrders = async () =>
       totalCount: 0,
       totalPages: 0,
     },
-  })
-;
+  };
+};
 
 export function FactoryShipmentOrderList({
   onOrderSelect,

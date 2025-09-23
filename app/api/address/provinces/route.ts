@@ -1,6 +1,5 @@
-import { NextResponse } from 'next/server';
-
 import { provinces } from '@/lib/data/complete-address-data-full';
+import { NextResponse } from 'next/server';
 
 export async function GET() {
   try {

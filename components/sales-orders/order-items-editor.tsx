@@ -24,13 +24,12 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import type { Product } from '@/lib/types/product';
-
 import {
   calculateItemSubtotal,
   calculateOrderTotal,
   type SalesOrderItemData,
 } from '@/lib/schemas/sales-order';
+import type { Product } from '@/lib/types/product';
 
 // API
 

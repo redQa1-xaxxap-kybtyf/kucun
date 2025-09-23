@@ -63,18 +63,6 @@ export const inventoryQuerySchema = z.object({
     .optional()
     .transform(val => val?.trim() || undefined),
 
-  productionDateStart: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => val?.trim() || undefined),
-
-  productionDateEnd: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => val?.trim() || undefined),
-
   lowStock: z
     .string()
     .nullable()
@@ -101,47 +89,21 @@ export const inventoryQuerySchema = z.object({
 });
 
 // 库存搜索表单验证
-export const inventorySearchSchema = z
-  .object({
-    search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
-    productId: z.string().uuid('产品ID格式不正确').optional().or(z.literal('')),
-    colorCode: z
-      .string()
-      .max(20, '色号不能超过20个字符')
-      .optional()
-      .or(z.literal('')),
-    lowStock: z.boolean().optional(),
-    hasStock: z.boolean().optional(),
-    productionDateStart: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, '开始日期格式不正确')
-      .optional()
-      .or(z.literal('')),
-    productionDateEnd: z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, '结束日期格式不正确')
-      .optional()
-      .or(z.literal('')),
-    sortBy: z
-      .enum(['quantity', 'reservedQuantity', 'updatedAt'])
-      .default('updatedAt'),
-    sortOrder: z.enum(['asc', 'desc']).default('desc'),
-  })
-  .refine(
-    data => {
-      // 验证日期范围
-      if (data.productionDateStart && data.productionDateEnd) {
-        return (
-          new Date(data.productionDateStart) <= new Date(data.productionDateEnd)
-        );
-      }
-      return true;
-    },
-    {
-      message: '开始日期不能晚于结束日期',
-      path: ['productionDateEnd'],
-    }
-  );
+export const inventorySearchSchema = z.object({
+  search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),
+  productId: z.string().uuid('产品ID格式不正确').optional().or(z.literal('')),
+  batchNumber: z
+    .string()
+    .max(50, '批次号不能超过50个字符')
+    .optional()
+    .or(z.literal('')),
+  lowStock: z.boolean().optional(),
+  hasStock: z.boolean().optional(),
+  sortBy: z
+    .enum(['quantity', 'reservedQuantity', 'updatedAt'])
+    .default('updatedAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
 
 // 入库记录搜索表单验证
 export const inboundRecordSearchSchema = z
@@ -244,11 +206,9 @@ export type OutboundRecordSearchFormData = z.infer<
 export const inventorySearchDefaults: InventorySearchFormData = {
   search: '',
   productId: '',
-  colorCode: '',
+  batchNumber: '',
   lowStock: undefined,
   hasStock: undefined,
-  productionDateStart: '',
-  productionDateEnd: '',
   sortBy: 'updatedAt',
   sortOrder: 'desc',
 };

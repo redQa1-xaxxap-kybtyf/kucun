@@ -22,11 +22,10 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
 import type { Product } from '@/lib/types/product';
 
 import { EnhancedProductSelector } from './enhanced-product-selector';
-
-import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
 
 interface UnifiedProductInputProps {
   form: UseFormReturn<CreateSalesOrderData>;

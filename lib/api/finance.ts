@@ -4,11 +4,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type {
-  AccountsReceivable,
-  PaymentStatistics,
-  AccountsReceivableQuery as ReceivablesQuery,
-} from '@/lib/types/payment';
-import type {
   CreateRefundRecordData,
   RefundRecord,
   RefundRecordDetail,
@@ -25,6 +20,11 @@ import type {
 } from '@/lib/types/statement';
 
 // 导入统一的类型定义，遵循唯一真理源原则
+import type {
+  AccountsReceivable,
+  PaymentStatistics,
+  AccountsReceivableQuery as ReceivablesQuery,
+} from '@/lib/types/payment';
 
 // 分页响应类型
 interface PaginationResponse {

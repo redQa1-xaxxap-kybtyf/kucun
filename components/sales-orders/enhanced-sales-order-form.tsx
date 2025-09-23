@@ -554,8 +554,7 @@ export function EnhancedSalesOrderForm({
               items={fields.map(item => ({
                 productId: item.productId,
                 quantity: item.quantity,
-                colorCode: item.colorCode,
-                productionDate: item.productionDate,
+                batchNumber: item.batchNumber,
               }))}
               products={productsData?.data || []}
               onInventoryCheck={results => {
@@ -660,27 +659,12 @@ export function EnhancedSalesOrderForm({
 
                               <TableCell>
                                 <Input
-                                  placeholder="色号"
-                                  value={item.colorCode || ''}
+                                  placeholder="批次号"
+                                  value={item.batchNumber || ''}
                                   onChange={e =>
                                     updateOrderItem(
                                       index,
-                                      'colorCode',
-                                      e.target.value
-                                    )
-                                  }
-                                  className="w-full"
-                                />
-                              </TableCell>
-
-                              <TableCell>
-                                <Input
-                                  type="date"
-                                  value={item.productionDate || ''}
-                                  onChange={e =>
-                                    updateOrderItem(
-                                      index,
-                                      'productionDate',
+                                      'batchNumber',
                                       e.target.value
                                     )
                                   }

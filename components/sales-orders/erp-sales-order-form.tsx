@@ -1283,8 +1283,7 @@ export function ERPSalesOrderForm({
               items={fields.map(item => ({
                 productId: item.productId,
                 quantity: item.quantity,
-                colorCode: item.colorCode,
-                productionDate: item.productionDate,
+                batchNumber: item.batchNumber,
               }))}
               products={productsData?.data || []}
               onInventoryCheck={results => {
