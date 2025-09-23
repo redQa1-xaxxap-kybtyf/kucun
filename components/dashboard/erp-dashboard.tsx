@@ -2,12 +2,15 @@
 
 import {
   AlertCircle,
+  BarChart3,
   Calendar,
   CreditCard,
   Eye,
   Package,
   RefreshCw,
   ShoppingCart,
+  TrendingDown,
+  TrendingUp,
   Users,
   Zap,
 } from 'lucide-react';
@@ -15,6 +18,7 @@ import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -23,8 +27,36 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { DashboardStats, RecentActivity } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
+
+/**
+ * 仪表盘数据类型定义
+ */
+interface DashboardStats {
+  totalProducts: number;
+  totalOrders: number;
+  totalCustomers: number;
+  totalRevenue: number;
+  lowStockItems: number;
+  pendingOrders: number;
+  recentActivities: Activity[];
+  salesTrend: SalesTrendData[];
+}
+
+interface Activity {
+  id: string;
+  type: 'order' | 'inventory' | 'customer' | 'payment';
+  title: string;
+  description: string;
+  timestamp: Date;
+  status: 'success' | 'warning' | 'error' | 'info';
+}
+
+interface SalesTrendData {
+  date: string;
+  sales: number;
+  orders: number;
+}
 
 /**
  * ERP风格的仪表盘组件
@@ -35,110 +67,71 @@ export function ERPDashboard() {
   const router = useRouter();
 
   // 数据状态
-  const [dashboardData, setDashboardData] =
-    React.useState<DashboardStats | null>(null);
+  const [dashboardData, setDashboardData] = React.useState<DashboardStats | null>(null);
   const [isLoading, setIsLoading] = React.useState(true);
   const [selectedPeriod, setSelectedPeriod] = React.useState('7d');
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
-  // 模拟数据（使用useMemo优化）
-  const mockData = React.useMemo<DashboardStats>(
-    () => ({
-      totalProducts: 156,
-      totalOrders: 89,
-      totalCustomers: 45,
-      totalRevenue: 125600,
-      lowStockItems: 8,
-      pendingOrders: 12,
-      recentActivities: [
-        {
-          id: '1',
-          type: 'order',
-          title: '新订单 #SO-2024-001',
-          description: '客户张三下单，金额 ¥2,500',
-          timestamp: new Date(Date.now() - 1000 * 60 * 30),
-          status: 'success',
-        },
-        {
-          id: '2',
-          type: 'inventory',
-          title: '库存预警',
-          description: '白色瓷砖 W001 库存不足',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60),
-          status: 'warning',
-        },
-        {
-          id: '3',
-          type: 'customer',
-          title: '新客户注册',
-          description: '李四装饰公司完成注册',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
-          status: 'info',
-        },
-        {
-          id: '4',
-          type: 'payment',
-          title: '收款到账',
-          description: '订单 #SO-2024-002 收款 ¥3,200',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
-          status: 'success',
-        },
-        {
-          id: '5',
-          type: 'order',
-          title: '订单完成',
-          description: '订单 #SO-2024-003 已发货',
-          timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
-          status: 'success',
-        },
-      ],
-      salesTrend: [
-        {
-          date: '2024-01-01',
-          value: 12500,
-          label: '¥12,500',
-          category: '15单',
-        },
-        {
-          date: '2024-01-02',
-          value: 15600,
-          label: '¥15,600',
-          category: '18单',
-        },
-        {
-          date: '2024-01-03',
-          value: 13200,
-          label: '¥13,200',
-          category: '16单',
-        },
-        {
-          date: '2024-01-04',
-          value: 18900,
-          label: '¥18,900',
-          category: '22单',
-        },
-        {
-          date: '2024-01-05',
-          value: 16700,
-          label: '¥16,700',
-          category: '19单',
-        },
-        {
-          date: '2024-01-06',
-          value: 21300,
-          label: '¥21,300',
-          category: '25单',
-        },
-        {
-          date: '2024-01-07',
-          value: 19800,
-          label: '¥19,800',
-          category: '23单',
-        },
-      ],
-    }),
-    []
-  );
+  // 模拟数据
+  const mockData: DashboardStats = {
+    totalProducts: 156,
+    totalOrders: 89,
+    totalCustomers: 45,
+    totalRevenue: 125600,
+    lowStockItems: 8,
+    pendingOrders: 12,
+    recentActivities: [
+      {
+        id: '1',
+        type: 'order',
+        title: '新订单 #SO-2024-001',
+        description: '客户张三下单，金额 ¥2,500',
+        timestamp: new Date(Date.now() - 1000 * 60 * 30),
+        status: 'success',
+      },
+      {
+        id: '2',
+        type: 'inventory',
+        title: '库存预警',
+        description: '白色瓷砖 W001 库存不足',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60),
+        status: 'warning',
+      },
+      {
+        id: '3',
+        type: 'customer',
+        title: '新客户注册',
+        description: '李四装饰公司完成注册',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+        status: 'info',
+      },
+      {
+        id: '4',
+        type: 'payment',
+        title: '收款到账',
+        description: '订单 #SO-2024-002 收款 ¥3,200',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
+        status: 'success',
+      },
+      {
+        id: '5',
+        type: 'order',
+        title: '订单完成',
+        description: '订单 #SO-2024-003 已发货',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
+        status: 'success',
+      },
+    ],
+    salesTrend: [
+      { date: '2024-01-01', sales: 12500, orders: 15 },
+      { date: '2024-01-02', sales: 15600, orders: 18 },
+      { date: '2024-01-03', sales: 13200, orders: 16 },
+      { date: '2024-01-04', sales: 18900, orders: 22 },
+      { date: '2024-01-05', sales: 16700, orders: 19 },
+      { date: '2024-01-06', sales: 21300, orders: 25 },
+      { date: '2024-01-07', sales: 19800, orders: 23 },
+    ],
+  };
 
   // 加载数据
   const loadDashboardData = React.useCallback(async () => {
@@ -148,12 +141,11 @@ export function ERPDashboard() {
       await new Promise(resolve => setTimeout(resolve, 1000));
       setDashboardData(mockData);
     } catch (error) {
-      // TODO: 集成日志系统
-      // console.error('加载仪表盘数据失败:', error);
+      console.error('加载仪表盘数据失败:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [mockData]);
+  }, []);
 
   // 刷新数据
   const refreshData = async () => {
@@ -180,7 +172,7 @@ export function ERPDashboard() {
     const diff = now.getTime() - date.getTime();
     const minutes = Math.floor(diff / (1000 * 60));
     const hours = Math.floor(diff / (1000 * 60 * 60));
-
+    
     if (minutes < 60) {
       return `${minutes}分钟前`;
     } else if (hours < 24) {
@@ -191,7 +183,7 @@ export function ERPDashboard() {
   };
 
   // 获取活动图标
-  const getActivityIcon = (type: RecentActivity['type']) => {
+  const getActivityIcon = (type: Activity['type']) => {
     switch (type) {
       case 'order':
         return <ShoppingCart className="h-3 w-3" />;
@@ -207,7 +199,7 @@ export function ERPDashboard() {
   };
 
   // 获取状态颜色
-  const getStatusColor = (status: RecentActivity['status']) => {
+  const getStatusColor = (status: Activity['status']) => {
     switch (status) {
       case 'success':
         return 'text-green-600';
@@ -289,9 +281,7 @@ export function ERPDashboard() {
                 onClick={refreshData}
                 disabled={isRefreshing}
               >
-                <RefreshCw
-                  className={cn('mr-1 h-3 w-3', isRefreshing && 'animate-spin')}
-                />
+                <RefreshCw className={cn('mr-1 h-3 w-3', isRefreshing && 'animate-spin')} />
                 刷新
               </Button>
             </div>
@@ -309,9 +299,7 @@ export function ERPDashboard() {
                 <Package className="h-3 w-3" />
                 产品总数
               </div>
-              <div className="mt-1 text-lg font-bold">
-                {dashboardData.totalProducts}
-              </div>
+              <div className="mt-1 text-lg font-bold">{dashboardData.totalProducts}</div>
               <div className="text-xs text-green-600">+12%</div>
             </div>
             <div className="text-center">
@@ -319,9 +307,7 @@ export function ERPDashboard() {
                 <ShoppingCart className="h-3 w-3" />
                 订单总数
               </div>
-              <div className="mt-1 text-lg font-bold">
-                {dashboardData.totalOrders}
-              </div>
+              <div className="mt-1 text-lg font-bold">{dashboardData.totalOrders}</div>
               <div className="text-xs text-green-600">+8%</div>
             </div>
             <div className="text-center">
@@ -329,9 +315,7 @@ export function ERPDashboard() {
                 <Users className="h-3 w-3" />
                 客户总数
               </div>
-              <div className="mt-1 text-lg font-bold">
-                {dashboardData.totalCustomers}
-              </div>
+              <div className="mt-1 text-lg font-bold">{dashboardData.totalCustomers}</div>
               <div className="text-xs text-green-600">+15%</div>
             </div>
             <div className="text-center">
@@ -339,9 +323,7 @@ export function ERPDashboard() {
                 <CreditCard className="h-3 w-3" />
                 总收入
               </div>
-              <div className="mt-1 text-lg font-bold">
-                {formatCurrency(dashboardData.totalRevenue)}
-              </div>
+              <div className="mt-1 text-lg font-bold">{formatCurrency(dashboardData.totalRevenue)}</div>
               <div className="text-xs text-green-600">+23%</div>
             </div>
           </div>
@@ -463,12 +445,8 @@ export function ERPDashboard() {
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="font-medium">{activity.title}</div>
-                  <div className="text-muted-foreground">
-                    {activity.description}
-                  </div>
-                  <div className="mt-1 text-muted-foreground">
-                    {formatTime(activity.timestamp)}
-                  </div>
+                  <div className="text-muted-foreground">{activity.description}</div>
+                  <div className="mt-1 text-muted-foreground">{formatTime(activity.timestamp)}</div>
                 </div>
               </div>
             ))}

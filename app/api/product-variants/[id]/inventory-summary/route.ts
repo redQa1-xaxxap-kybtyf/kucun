@@ -1,6 +1,6 @@
-import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -62,10 +62,16 @@ export async function GET(
         quantity: true,
         reservedQuantity: true,
         location: true,
+        productionDate: true,
+        batchNumber: true,
         unitCost: true,
         updatedAt: true,
       },
-      orderBy: [{ location: 'asc' }, { updatedAt: 'desc' }],
+      orderBy: [
+        { location: 'asc' },
+        { productionDate: 'desc' },
+        { batchNumber: 'asc' },
+      ],
     });
 
     // 计算汇总数据

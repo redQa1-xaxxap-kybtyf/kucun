@@ -23,6 +23,7 @@ interface InboundRecordWithRelations {
   remarks: string | null;
   userId: string;
   colorCode: string | null;
+  productionDate: Date | null;
   unitCost: number | null;
   totalCost: number | null;
   createdAt: Date;
@@ -275,6 +276,7 @@ export async function createInboundRecord(
   data: {
     productId: string;
     colorCode?: string;
+    productionDate?: string;
     quantity: number;
     unitCost?: number;
     reason: string;
@@ -297,6 +299,9 @@ export async function createInboundRecord(
       recordNumber,
       productId: data.productId,
       colorCode: data.colorCode || null,
+      productionDate: data.productionDate
+        ? new Date(data.productionDate)
+        : null,
       quantity: data.quantity,
       unitCost: data.unitCost || null,
       totalCost,
@@ -366,6 +371,7 @@ export async function createInboundRecord(
 export async function updateInventoryQuantity(
   productId: string,
   colorCode: string | null,
+  productionDate: Date | null,
   quantity: number
 ) {
   // 查找现有库存记录
@@ -373,6 +379,7 @@ export async function updateInventoryQuantity(
     where: {
       productId,
       colorCode,
+      productionDate,
     },
   });
 
@@ -391,6 +398,7 @@ export async function updateInventoryQuantity(
       data: {
         productId,
         colorCode,
+        productionDate,
         quantity,
         reservedQuantity: 0,
       },

@@ -14,7 +14,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import type { Inventory } from '@/lib/types/inventory';
 
-import { BatchInventoryTable } from '@/components/inventory/BatchInventoryTable';
+import { BatchInboundForm } from '@/components/inventory/batch-inbound-form';
+import { BatchInventoryTable } from '@/components/inventory/batch-inventory-table';
 
 /**
  * 批次管理页面
@@ -246,13 +247,13 @@ const BatchManagementPage = () => {
                 <div>
                   <span className="text-muted-foreground">批次号:</span>
                   <p className="font-medium">
-                    {selectedInventory.colorCode || '-'}
+                    {selectedInventory.batchNumber || '-'}
                   </p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">生产日期:</span>
                   <p className="font-medium">
-                    {selectedInventory.location || '-'}
+                    {selectedInventory.productionDate || '-'}
                   </p>
                 </div>
                 <div>
