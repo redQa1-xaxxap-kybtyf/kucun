@@ -1,7 +1,10 @@
--- AlterTable
-ALTER TABLE "inbound_records" ADD COLUMN "batch_number" TEXT;
-ALTER TABLE "inbound_records" ADD COLUMN "variant_id" TEXT;
+/*
+  Warnings:
 
+  - You are about to drop the column `color_code` on the `inventory` table. All the data in the column will be lost.
+  - You are about to drop the column `production_date` on the `inventory` table. All the data in the column will be lost.
+
+*/
 -- CreateTable
 CREATE TABLE "factory_shipment_orders" (
     "id" TEXT NOT NULL PRIMARY KEY,
@@ -119,6 +122,27 @@ CREATE TABLE "statement_transactions" (
 -- RedefineTables
 PRAGMA defer_foreign_keys=ON;
 PRAGMA foreign_keys=OFF;
+CREATE TABLE "new_inventory" (
+    "id" TEXT NOT NULL PRIMARY KEY,
+    "product_id" TEXT NOT NULL,
+    "variant_id" TEXT,
+    "batch_number" TEXT,
+    "quantity" INTEGER NOT NULL DEFAULT 0,
+    "reserved_quantity" INTEGER NOT NULL DEFAULT 0,
+    "unit_cost" REAL,
+    "location" TEXT,
+    "updated_at" DATETIME NOT NULL,
+    CONSTRAINT "inventory_product_id_fkey" FOREIGN KEY ("product_id") REFERENCES "products" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "inventory_variant_id_fkey" FOREIGN KEY ("variant_id") REFERENCES "product_variants" ("id") ON DELETE SET NULL ON UPDATE CASCADE
+);
+INSERT INTO "new_inventory" ("batch_number", "id", "location", "product_id", "quantity", "reserved_quantity", "unit_cost", "updated_at", "variant_id") SELECT "batch_number", "id", "location", "product_id", "quantity", "reserved_quantity", "unit_cost", "updated_at", "variant_id" FROM "inventory";
+DROP TABLE "inventory";
+ALTER TABLE "new_inventory" RENAME TO "inventory";
+CREATE INDEX "idx_inventory_product" ON "inventory"("product_id");
+CREATE INDEX "idx_inventory_variant" ON "inventory"("variant_id");
+CREATE INDEX "idx_inventory_quantity" ON "inventory"("quantity");
+CREATE INDEX "idx_inventory_batch" ON "inventory"("batch_number");
+CREATE UNIQUE INDEX "uk_inventory_variant_batch" ON "inventory"("product_id", "variant_id", "batch_number");
 CREATE TABLE "new_sales_order_items" (
     "id" TEXT NOT NULL PRIMARY KEY,
     "sales_order_id" TEXT NOT NULL,
@@ -233,9 +257,3 @@ CREATE INDEX "idx_statement_transactions_date" ON "statement_transactions"("tran
 
 -- CreateIndex
 CREATE INDEX "idx_statement_transactions_status" ON "statement_transactions"("status");
-
--- CreateIndex
-CREATE INDEX "idx_inbound_records_variant" ON "inbound_records"("variant_id");
-
--- CreateIndex
-CREATE INDEX "idx_inbound_records_batch" ON "inbound_records"("batch_number");

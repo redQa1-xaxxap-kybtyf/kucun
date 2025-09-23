@@ -153,8 +153,9 @@ model ProductVariant {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   // 关联关系
-  product     Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  inventory   Inventory[]
+  product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventory     Inventory[]
+  inboundRecords InboundRecord[]
 
   @@unique([productId, colorCode], map: "uk_product_color")
   @@index([productId])
@@ -236,8 +237,6 @@ model Inventory {
   id               String    @id @default(uuid())
   productId        String    @map("product_id")
   variantId        String?   @map("variant_id") // 产品变体ID（可选，兼容无色号产品）
-  colorCode        String?   @map("color_code") // 保留字段，用于向后兼容
-  productionDate   DateTime? @map("production_date")
   batchNumber      String?   @map("batch_number") // 生产批次号
   quantity         Int       @default(0)
   reservedQuantity Int       @default(0) @map("reserved_quantity") // 预留数量
@@ -249,11 +248,10 @@ model Inventory {
   product Product @relation(fields: [productId], references: [id])
   variant ProductVariant? @relation(fields: [variantId], references: [id])
 
-  @@unique([productId, variantId, productionDate, batchNumber], map: "uk_inventory_variant_batch")
+  @@unique([productId, variantId, batchNumber], map: "uk_inventory_variant_batch")
   @@index([productId], map: "idx_inventory_product")
   @@index([variantId], map: "idx_inventory_variant")
   @@index([quantity], map: "idx_inventory_quantity")
-  @@index([productionDate], map: "idx_inventory_production_date")
   @@index([batchNumber], map: "idx_inventory_batch")
   @@map("inventory")
 }
@@ -264,8 +262,11 @@ model InboundRecord {
   recordNumber   String    @unique @map("record_number")
   productId      String    @map("product_id")
   variantId      String?   @map("variant_id") // 产品变体ID（可选）
-  batchNumber    String?   @map("batch_number") // 批次号
+  batchNumber    String?   @map("batch_number") // 生产批次号
   quantity       Float     // 支持小数点，最小值0.01
+  unitCost       Float?    @map("unit_cost") // 单位成本
+  totalCost      Float?    @map("total_cost") // 总成本
+  location       String?   // 存储位置
   reason         String    @default("purchase") // purchase, return, transfer, surplus, other
   remarks        String?   // 最大500字符
   userId         String    @map("user_id")
@@ -274,6 +275,7 @@ model InboundRecord {
 
   // 关联关系
   product Product @relation(fields: [productId], references: [id])
+  variant ProductVariant? @relation(fields: [variantId], references: [id])
   user    User    @relation(fields: [userId], references: [id])
 
   @@index([productId], map: "idx_inbound_records_product")
