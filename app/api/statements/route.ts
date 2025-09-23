@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -35,19 +35,28 @@ export async function GET(request: NextRequest) {
 
     if (!queryResult.success) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: '查询参数验证失败', 
-          details: queryResult.error.errors 
+        {
+          success: false,
+          error: '查询参数验证失败',
+          details: queryResult.error.errors,
         },
         { status: 400 }
       );
     }
 
-    const { page, pageSize, search, entityType, status, overdueOnly, startDate, endDate } = queryResult.data;
+    const {
+      page,
+      pageSize,
+      search,
+      entityType,
+      status,
+      overdueOnly,
+      startDate,
+      endDate,
+    } = queryResult.data;
 
     // 构建查询条件
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (search) {
       where.OR = [
@@ -136,7 +145,8 @@ export async function POST(request: NextRequest) {
 
     // 解析请求体
     const body = await request.json();
-    const { entityId, entityName, entityType, creditLimit, paymentTerms } = body;
+    const { entityId, entityName, entityType, creditLimit, paymentTerms } =
+      body;
 
     // 基本验证
     if (!entityId || !entityName || !entityType) {

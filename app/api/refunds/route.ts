@@ -1,9 +1,12 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
-import { refundQuerySchema, createRefundRecordSchema } from '@/lib/validations/refund';
+import {
+  createRefundRecordSchema,
+  refundQuerySchema,
+} from '@/lib/validations/refund';
 
 /**
  * GET /api/refunds - 获取退款记录列表
@@ -37,19 +40,30 @@ export async function GET(request: NextRequest) {
 
     if (!queryResult.success) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: '查询参数验证失败', 
-          details: queryResult.error.errors 
+        {
+          success: false,
+          error: '查询参数验证失败',
+          details: queryResult.error.errors,
         },
         { status: 400 }
       );
     }
 
-    const { page, pageSize, search, status, refundType, refundMethod, customerId, salesOrderId, startDate, endDate } = queryResult.data;
+    const {
+      page,
+      pageSize,
+      search,
+      status,
+      refundType,
+      refundMethod,
+      customerId,
+      salesOrderId,
+      startDate,
+      endDate,
+    } = queryResult.data;
 
     // 构建查询条件
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (search) {
       where.OR = [
@@ -169,10 +183,10 @@ export async function POST(request: NextRequest) {
 
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: '数据验证失败', 
-          details: validationResult.error.errors 
+        {
+          success: false,
+          error: '数据验证失败',
+          details: validationResult.error.errors,
         },
         { status: 400 }
       );

@@ -1,5 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
@@ -113,10 +113,10 @@ export async function PUT(
 
     if (!validationResult.success) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: '数据验证失败', 
-          details: validationResult.error.errors 
+        {
+          success: false,
+          error: '数据验证失败',
+          details: validationResult.error.errors,
         },
         { status: 400 }
       );
