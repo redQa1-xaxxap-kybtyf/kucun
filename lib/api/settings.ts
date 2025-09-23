@@ -36,6 +36,14 @@ export async function getSystemSettings(): Promise<SettingsResponse> {
   const response = await fetch(`${API_BASE}`);
 
   if (!response.ok) {
+    // 处理身份验证错误
+    if (response.status === 401) {
+      throw new Error('UNAUTHORIZED');
+    }
+    // 处理权限错误
+    if (response.status === 403) {
+      throw new Error('FORBIDDEN');
+    }
     throw new Error(`获取系统设置失败: ${response.statusText}`);
   }
 
@@ -150,6 +158,14 @@ export function useSystemSettings() {
     queryFn: getSystemSettings,
     staleTime: 5 * 60 * 1000, // 5分钟
     gcTime: 10 * 60 * 1000, // 10分钟
+    retry: (failureCount, error) => {
+      // 不重试身份验证和权限错误
+      if (error.message === 'UNAUTHORIZED' || error.message === 'FORBIDDEN') {
+        return false;
+      }
+      // 其他错误最多重试2次
+      return failureCount < 2;
+    },
   });
 }
 

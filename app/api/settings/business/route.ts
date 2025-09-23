@@ -7,11 +7,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
-import {
-  DEFAULT_SETTINGS,
-  type BusinessSettings,
-  type SettingsResponse,
-} from '@/lib/types/settings';
+import { SETTINGS_DEFAULTS } from '@/lib/config/settings';
+import { prisma } from '@/lib/db';
+import type { BusinessSettings, SettingsResponse } from '@/lib/types/settings';
 import { BusinessSettingsSchema } from '@/lib/validations/settings';
 
 /**
@@ -29,8 +27,34 @@ export async function GET(): Promise<NextResponse<SettingsResponse>> {
     }
 
     // 从数据库获取业务设置
-    // TODO: 实际项目中从数据库获取
-    const businessSettings: BusinessSettings = DEFAULT_SETTINGS.business;
+    let dbSettings = await prisma.systemSettings.findUnique({
+      where: { id: 'system' },
+    });
+
+    // 如果数据库中没有设置，创建默认设置
+    if (!dbSettings) {
+      dbSettings = await prisma.systemSettings.create({
+        data: {
+          id: 'system',
+          companyName: SETTINGS_DEFAULTS.basic.companyName,
+          systemName: SETTINGS_DEFAULTS.basic.systemName,
+          logoUrl: SETTINGS_DEFAULTS.basic.logoUrl,
+          timezone: SETTINGS_DEFAULTS.basic.timezone,
+          language: SETTINGS_DEFAULTS.basic.language,
+          currency: SETTINGS_DEFAULTS.basic.currency,
+          address: SETTINGS_DEFAULTS.basic.address,
+          phone: SETTINGS_DEFAULTS.basic.phone,
+          email: SETTINGS_DEFAULTS.basic.email,
+          userManagement: JSON.stringify(SETTINGS_DEFAULTS.userManagement),
+          business: JSON.stringify(SETTINGS_DEFAULTS.business),
+          notifications: JSON.stringify(SETTINGS_DEFAULTS.notifications),
+          dataManagement: JSON.stringify(SETTINGS_DEFAULTS.dataManagement),
+          updatedBy: session.user.id,
+        },
+      });
+    }
+
+    const businessSettings: BusinessSettings = JSON.parse(dbSettings.business);
 
     return NextResponse.json({
       success: true,

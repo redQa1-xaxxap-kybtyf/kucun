@@ -47,7 +47,7 @@ import {
   useResetSettings,
   useUpdateSettings,
 } from '@/lib/api/settings';
-import { PAYMENT_METHOD_OPTIONS } from '@/lib/types/settings';
+import { PAYMENT_METHODS } from '@/lib/config/settings';
 import { usePermissions } from '@/lib/utils/permissions';
 import {
   BusinessSettingsSchema,
@@ -58,7 +58,9 @@ import {
 const BusinessSettingsPage = () => {
   const router = useRouter();
   const { data: session } = useSession();
-  const permissions = usePermissions(session?.user?.role);
+  const permissions = usePermissions(
+    session?.user?.role as 'admin' | 'sales' | undefined
+  );
   const { toast } = useToast();
 
   const {
@@ -106,7 +108,18 @@ const BusinessSettingsPage = () => {
     try {
       await updateSettingsMutation.mutateAsync({
         category: 'business',
-        data,
+        data: {
+          ...data,
+          paymentMethods: data.paymentMethods as Array<
+            | '现金'
+            | '银行转账'
+            | '支付宝'
+            | '微信支付'
+            | '信用卡'
+            | '支票'
+            | '承兑汇票'
+          >,
+        },
       });
 
       toast({
@@ -458,7 +471,7 @@ const BusinessSettingsPage = () => {
                         </FormDescription>
                       </div>
                       <div className="grid grid-cols-2 gap-4 md:grid-cols-3">
-                        {PAYMENT_METHOD_OPTIONS.map(method => (
+                        {PAYMENT_METHODS.map(method => (
                           <FormField
                             key={method}
                             control={form.control}

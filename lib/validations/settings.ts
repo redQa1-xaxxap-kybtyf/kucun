@@ -1,9 +1,12 @@
 /**
  * 系统设置验证规则
  * 使用Zod进行数据验证，确保类型安全
+ * 默认值统一从 lib/config/settings.ts 导入
  */
 
 import { z } from 'zod';
+
+import { PAYMENT_METHODS, SETTINGS_DEFAULTS } from '@/lib/config/settings';
 
 // 基础设置验证规则
 export const BasicSettingsSchema = z.object({
@@ -75,7 +78,9 @@ export const BusinessSettingsSchema = z.object({
     .number()
     .min(0, '税率不能为负数')
     .max(1, '税率不能超过100%'),
-  paymentMethods: z.array(z.string()).min(1, '至少需要选择一种付款方式'),
+  paymentMethods: z
+    .array(z.enum(PAYMENT_METHODS as [string, ...string[]]))
+    .min(1, '至少需要选择一种付款方式'),
   enableInventoryTracking: z.boolean(),
   enableBarcodeScanning: z.boolean(),
   autoGenerateOrderNumbers: z.boolean(),
@@ -200,14 +205,10 @@ export type SettingsUpdateRequestFormData = z.infer<
   typeof SettingsUpdateRequestSchema
 >;
 
-// 表单默认值
+// 表单默认值 - 从统一配置导入
 export const basicSettingsDefaults: Partial<BasicSettingsFormData> = {
-  companyName: '',
-  systemName: '',
+  ...SETTINGS_DEFAULTS.basic,
   logoUrl: '',
-  timezone: 'Asia/Shanghai',
-  language: 'zh-CN',
-  currency: 'CNY',
   address: '',
   phone: '',
   email: '',
@@ -215,35 +216,36 @@ export const basicSettingsDefaults: Partial<BasicSettingsFormData> = {
 
 export const userManagementSettingsDefaults: Partial<UserManagementSettingsFormData> =
   {
-    passwordMinLength: 8,
+    ...SETTINGS_DEFAULTS.userManagement,
     passwordRequireUppercase: true,
     passwordRequireLowercase: true,
     passwordRequireNumbers: true,
     passwordRequireSpecialChars: false,
-    sessionTimeoutHours: 8,
+    sessionTimeoutHours: 24,
     maxLoginAttempts: 5,
     lockoutDurationMinutes: 30,
-    enableTwoFactor: false,
   };
 
 export const businessSettingsDefaults: Partial<BusinessSettingsFormData> = {
-  lowStockThreshold: 10,
+  lowStockThreshold: SETTINGS_DEFAULTS.business.lowStockThreshold,
   orderNumberFormat: 'SO{YYYYMMDD}{序号}',
   returnPeriodDays: 30,
   priceDecimalPlaces: 2,
-  defaultTaxRate: 0.13,
-  paymentMethods: ['现金', '银行转账'],
-  enableInventoryTracking: true,
+  defaultTaxRate: SETTINGS_DEFAULTS.business.taxRate,
+  paymentMethods: SETTINGS_DEFAULTS.business.paymentMethods,
+  enableInventoryTracking: SETTINGS_DEFAULTS.business.enableInventoryWarning,
   enableBarcodeScanning: false,
-  autoGenerateOrderNumbers: true,
+  autoGenerateOrderNumbers: SETTINGS_DEFAULTS.business.autoGenerateOrderNumber,
 };
 
 export const notificationSettingsDefaults: Partial<NotificationSettingsFormData> =
   {
-    enableLowStockAlerts: true,
-    enableOrderNotifications: true,
-    enableSystemNotifications: true,
-    enableEmailNotifications: false,
+    enableLowStockAlerts: SETTINGS_DEFAULTS.notifications.lowStockAlert,
+    enableOrderNotifications: SETTINGS_DEFAULTS.notifications.orderStatusUpdate,
+    enableSystemNotifications:
+      SETTINGS_DEFAULTS.notifications.enableSystemNotifications,
+    enableEmailNotifications:
+      SETTINGS_DEFAULTS.notifications.enableEmailNotifications,
     enableSoundAlerts: false,
     lowStockThresholdPercent: 20,
     emailRecipients: [],
@@ -252,15 +254,15 @@ export const notificationSettingsDefaults: Partial<NotificationSettingsFormData>
 export const dataManagementSettingsDefaults: Partial<DataManagementSettingsFormData> =
   {
     // 数据备份设置
-    autoBackupEnabled: true,
-    backupFrequency: 'daily' as const,
+    autoBackupEnabled: SETTINGS_DEFAULTS.dataManagement.enableAutoBackup,
+    backupFrequency: SETTINGS_DEFAULTS.dataManagement.backupFrequency,
     backupTime: '02:00',
-    backupRetentionDays: 30,
+    backupRetentionDays: SETTINGS_DEFAULTS.dataManagement.retentionPeriod,
     backupStoragePath: '/backups',
     backupCompression: true,
 
     // 数据导出设置
-    exportFormats: ['excel', 'csv'] as const,
+    exportFormats: SETTINGS_DEFAULTS.dataManagement.exportFormats,
     exportMaxRecords: 10000,
     exportIncludeDeleted: false,
     exportScheduleEnabled: false,
@@ -268,11 +270,11 @@ export const dataManagementSettingsDefaults: Partial<DataManagementSettingsFormD
 
     // 系统维护设置
     autoCleanupEnabled: true,
-    logRetentionDays: 90,
+    logRetentionDays: SETTINGS_DEFAULTS.dataManagement.retentionPeriod,
     tempFileCleanupDays: 7,
     cacheCleanupFrequency: 'daily' as const,
     performanceMonitoringEnabled: true,
-    maxFileUploadSizeMB: 10,
+    maxFileUploadSizeMB: SETTINGS_DEFAULTS.dataManagement.maxFileSize,
 
     // 数据库维护
     dbOptimizationEnabled: true,

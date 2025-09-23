@@ -60,7 +60,9 @@ import {
 const BasicSettingsPage = () => {
   const router = useRouter();
   const { data: session } = useSession();
-  const permissions = usePermissions(session?.user?.role);
+  const permissions = usePermissions(
+    session?.user?.role as 'admin' | 'sales' | undefined
+  );
   const { toast } = useToast();
 
   const {
@@ -105,7 +107,10 @@ const BasicSettingsPage = () => {
     try {
       await updateSettingsMutation.mutateAsync({
         category: 'basic',
-        data,
+        data: {
+          ...data,
+          logoUrl: data.logoUrl || undefined,
+        },
       });
 
       toast({

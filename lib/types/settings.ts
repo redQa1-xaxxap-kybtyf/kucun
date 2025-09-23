@@ -1,7 +1,10 @@
 /**
  * 系统设置相关类型定义
  * 遵循项目TypeScript严格模式规范
+ * 配置常量统一从 lib/config/settings.ts 导入
  */
+
+import type { PaymentMethod } from '@/lib/config/settings';
 
 // 基础设置类型
 export interface BasicSettings {
@@ -36,7 +39,7 @@ export interface BusinessSettings {
   returnPeriodDays: number;
   priceDecimalPlaces: number;
   defaultTaxRate: number;
-  paymentMethods: string[];
+  paymentMethods: PaymentMethod[];
   enableInventoryTracking: boolean;
   enableBarcodeScanning: boolean;
   autoGenerateOrderNumbers: boolean;
@@ -57,18 +60,18 @@ export interface NotificationSettings {
 export interface DataManagementSettings {
   // 数据备份设置
   autoBackupEnabled: boolean;
-  backupFrequency: 'daily' | 'weekly' | 'monthly';
+  backupFrequency: BackupFrequency;
   backupTime: string; // HH:mm 格式
   backupRetentionDays: number;
   backupStoragePath: string;
   backupCompression: boolean;
 
   // 数据导出设置
-  exportFormats: ('excel' | 'csv' | 'json')[];
+  exportFormats: ExportFormat[];
   exportMaxRecords: number;
   exportIncludeDeleted: boolean;
   exportScheduleEnabled: boolean;
-  exportScheduleFrequency: 'daily' | 'weekly' | 'monthly';
+  exportScheduleFrequency: BackupFrequency;
 
   // 系统维护设置
   autoCleanupEnabled: boolean;
@@ -96,21 +99,27 @@ export interface SystemSettings {
 }
 
 // 设置更新请求类型
-export interface SettingsUpdateRequest {
-  category:
-    | 'basic'
-    | 'userManagement'
-    | 'business'
-    | 'notifications'
-    | 'dataManagement';
-  data: Partial<
-    | BasicSettings
-    | UserManagementSettings
-    | BusinessSettings
-    | NotificationSettings
-    | DataManagementSettings
-  >;
-}
+export type SettingsUpdateRequest =
+  | {
+      category: 'basic';
+      data: Partial<BasicSettings>;
+    }
+  | {
+      category: 'userManagement';
+      data: Partial<UserManagementSettings>;
+    }
+  | {
+      category: 'business';
+      data: Partial<BusinessSettings>;
+    }
+  | {
+      category: 'notifications';
+      data: Partial<NotificationSettings>;
+    }
+  | {
+      category: 'dataManagement';
+      data: Partial<DataManagementSettings>;
+    };
 
 // 设置响应类型
 export interface SettingsResponse {
@@ -174,88 +183,16 @@ export const SETTING_CATEGORIES: SettingCategory[] = [
   },
 ];
 
-// 默认设置值
-export const DEFAULT_SETTINGS: SystemSettings = {
-  basic: {
-    companyName: '瓷砖库存管理系统',
-    systemName: '库存管理工具',
-    timezone: 'Asia/Shanghai',
-    language: 'zh-CN',
-    currency: 'CNY',
-  },
-  userManagement: {
-    passwordMinLength: 8,
-    passwordRequireUppercase: true,
-    passwordRequireLowercase: true,
-    passwordRequireNumbers: true,
-    passwordRequireSpecialChars: false,
-    sessionTimeoutHours: 8,
-    maxLoginAttempts: 5,
-    lockoutDurationMinutes: 30,
-    enableTwoFactor: false,
-  },
-  business: {
-    lowStockThreshold: 10,
-    orderNumberFormat: 'SO{YYYYMMDD}{序号}',
-    returnPeriodDays: 30,
-    priceDecimalPlaces: 2,
-    defaultTaxRate: 0.13,
-    paymentMethods: ['现金', '银行转账', '支付宝', '微信支付'],
-    enableInventoryTracking: true,
-    enableBarcodeScanning: false,
-    autoGenerateOrderNumbers: true,
-  },
-  notifications: {
-    enableLowStockAlerts: true,
-    enableOrderNotifications: true,
-    enableSystemNotifications: true,
-    enableEmailNotifications: false,
-    enableSoundAlerts: false,
-    lowStockThresholdPercent: 20,
-    emailRecipients: [],
-  },
-  dataManagement: {
-    autoBackupEnabled: true,
-    backupFrequency: 'daily',
-    logRetentionDays: 90,
-    tempFileCleanupDays: 7,
-    exportFormats: ['Excel', 'CSV', 'PDF'],
-    maxFileUploadSizeMB: 10,
-  },
-  updatedAt: new Date(),
-  updatedBy: 'system',
-};
+// 默认设置值 - 从统一配置导入
+export { SETTINGS_DEFAULTS as DEFAULT_SETTINGS } from '@/lib/config/settings';
 
-// 支持的选项
-export const TIMEZONE_OPTIONS = [
-  { value: 'Asia/Shanghai', label: '中国标准时间 (UTC+8)' },
-  { value: 'Asia/Hong_Kong', label: '香港时间 (UTC+8)' },
-  { value: 'Asia/Taipei', label: '台北时间 (UTC+8)' },
-  { value: 'UTC', label: '协调世界时 (UTC)' },
-];
-
-export const LANGUAGE_OPTIONS = [
-  { value: 'zh-CN', label: '简体中文' },
-  { value: 'zh-TW', label: '繁体中文' },
-  { value: 'en-US', label: 'English' },
-];
-
-export const CURRENCY_OPTIONS = [
-  { value: 'CNY', label: '人民币 (¥)' },
-  { value: 'HKD', label: '港币 (HK$)' },
-  { value: 'TWD', label: '新台币 (NT$)' },
-  { value: 'USD', label: '美元 ($)' },
-];
-
-export const PAYMENT_METHOD_OPTIONS = [
-  '现金',
-  '银行转账',
-  '支付宝',
-  '微信支付',
-  '信用卡',
-  '支票',
-  '承兑汇票',
-];
+// 支持的选项 - 从统一配置导入
+export {
+  CURRENCY_OPTIONS,
+  LANGUAGE_OPTIONS,
+  PAYMENT_METHODS as PAYMENT_METHOD_OPTIONS,
+  TIMEZONE_OPTIONS,
+} from '@/lib/config/settings';
 
 // 数据管理相关类型
 export interface BackupOperation {
@@ -315,25 +252,18 @@ export interface SystemPerformance {
   errorRate: number;
 }
 
-// 数据管理操作选项
-export const BACKUP_FREQUENCY_OPTIONS = [
-  { value: 'daily', label: '每日' },
-  { value: 'weekly', label: '每周' },
-  { value: 'monthly', label: '每月' },
-];
-
-export const EXPORT_FORMAT_OPTIONS = [
-  { value: 'excel', label: 'Excel (.xlsx)' },
-  { value: 'csv', label: 'CSV (.csv)' },
-  { value: 'json', label: 'JSON (.json)' },
-];
+// 数据管理操作选项 - 从统一配置导入
+export {
+  BACKUP_FREQUENCY_OPTIONS,
+  EXPORT_FORMATS as EXPORT_FORMAT_OPTIONS,
+} from '@/lib/config/settings';
 
 export const CLEANUP_FREQUENCY_OPTIONS = [
   { value: 'daily', label: '每日' },
   { value: 'weekly', label: '每周' },
-];
+] as const;
 
 export const DB_OPTIMIZATION_FREQUENCY_OPTIONS = [
   { value: 'weekly', label: '每周' },
   { value: 'monthly', label: '每月' },
-];
+] as const;

@@ -139,6 +139,54 @@ const SettingsPage = () => {
   }
 
   if (error) {
+    // 处理身份验证错误
+    if (error.message === 'UNAUTHORIZED') {
+      return (
+        <div className="container mx-auto space-y-6 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">系统设置</h1>
+              <p className="text-muted-foreground">管理系统配置和偏好设置</p>
+            </div>
+          </div>
+          <Card className="border-warning">
+            <CardHeader>
+              <CardTitle className="text-warning">需要登录</CardTitle>
+              <CardDescription>请先登录以访问系统设置。</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={() => (window.location.href = '/auth/signin')}>
+                前往登录
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
+    // 处理权限错误
+    if (error.message === 'FORBIDDEN') {
+      return (
+        <div className="container mx-auto space-y-6 py-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold">系统设置</h1>
+              <p className="text-muted-foreground">管理系统配置和偏好设置</p>
+            </div>
+          </div>
+          <Card className="border-warning">
+            <CardHeader>
+              <CardTitle className="text-warning">权限不足</CardTitle>
+              <CardDescription>
+                您没有权限访问系统设置，请联系管理员。
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
+      );
+    }
+
+    // 处理其他错误
     return (
       <div className="container mx-auto space-y-6 py-6">
         <div className="flex items-center justify-between">
