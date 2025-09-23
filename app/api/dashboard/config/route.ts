@@ -17,7 +17,7 @@ import { dashboardConfigUpdateSchema } from '@/lib/validations/dashboard';
 export async function GET(request: NextRequest) {
   try {
     // 身份验证
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
@@ -90,7 +90,7 @@ export async function GET(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     // 身份验证
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
@@ -189,7 +189,7 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     // 身份验证
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },

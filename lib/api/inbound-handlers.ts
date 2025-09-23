@@ -56,7 +56,7 @@ export function generateInboundRecordNumber(): string {
  * 验证用户会话
  */
 export async function validateUserSession() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session?.user?.id) {
     throw new Error('未授权访问');
   }

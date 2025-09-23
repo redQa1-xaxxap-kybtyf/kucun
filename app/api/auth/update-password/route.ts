@@ -1,10 +1,9 @@
 import bcrypt from 'bcryptjs';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
-import { authOptions, updatePassword } from '@/lib/auth';
+import { auth, updatePassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { baseValidations } from '@/lib/validations/base';
 
@@ -23,7 +22,7 @@ const updatePasswordSchema = z
 export async function POST(request: NextRequest) {
   try {
     // 验证用户会话
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },

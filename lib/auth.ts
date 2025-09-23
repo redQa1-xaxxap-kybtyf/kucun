@@ -1,6 +1,6 @@
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import bcrypt from 'bcryptjs';
-import type { NextAuthOptions } from 'next-auth';
+import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { prisma } from './db';
@@ -161,6 +161,15 @@ export const authOptions: NextAuthOptions = {
   },
   secret: env.NEXTAUTH_SECRET || 'fallback-secret-for-development',
 };
+
+// 创建 NextAuth 处理程序
+const handler = NextAuth(authOptions);
+
+export { handler as GET, handler as POST };
+
+// 导出 auth 函数用于服务器端会话检查
+export { getServerSession } from 'next-auth';
+export const auth = () => getServerSession(authOptions);
 
 // 权限检查函数
 export function hasPermission(

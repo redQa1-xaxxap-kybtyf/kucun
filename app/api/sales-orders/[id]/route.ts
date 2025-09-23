@@ -12,7 +12,7 @@ export async function GET(
   const { id } = await params;
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
@@ -153,7 +153,7 @@ export async function PUT(
   const { id } = await params;
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions);
+    const session = await auth();
     if (!session?.user?.id) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },

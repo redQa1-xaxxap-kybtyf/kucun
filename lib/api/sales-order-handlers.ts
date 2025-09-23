@@ -3,9 +3,7 @@
  * 将超长API函数拆分为职责单一的小函数
  */
 
-import { getServerSession } from 'next-auth';
-
-import { authOptions } from '@/lib/auth';
+import { auth } from '@/lib/auth';
 import { prisma, withTransaction } from '@/lib/db';
 import type {
   SalesOrderCreateFormData,
@@ -17,7 +15,7 @@ import type {
  * 验证用户权限
  */
 export async function validateUserSession() {
-  const session = await getServerSession(authOptions);
+  const session = await auth();
   if (!session?.user?.id) {
     return { error: '未授权访问', status: 401 };
   }
