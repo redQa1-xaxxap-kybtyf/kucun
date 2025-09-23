@@ -16,13 +16,13 @@ export interface PaymentRecord {
   userId: string;
   paymentMethod: PaymentMethod;
   paymentAmount: number;
-  paymentDate: string;
+  paymentDate: Date | string; // 支持Date对象和ISO字符串
   status: PaymentStatus;
   remarks?: string;
   receiptNumber?: string;
   bankInfo?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 // 收款记录详情（包含关联数据）
@@ -50,7 +50,7 @@ export interface CreatePaymentRecordData {
   customerId: string;
   paymentMethod: PaymentMethod;
   paymentAmount: number;
-  paymentDate: string;
+  paymentDate: Date | string; // 支持Date对象和ISO字符串
   remarks?: string;
   receiptNumber?: string;
   bankInfo?: string;
@@ -60,7 +60,7 @@ export interface CreatePaymentRecordData {
 export interface UpdatePaymentRecordData {
   paymentMethod?: PaymentMethod;
   paymentAmount?: number;
-  paymentDate?: string;
+  paymentDate?: Date | string; // 支持Date对象和ISO字符串
   status?: PaymentStatus;
   remarks?: string;
   receiptNumber?: string;
@@ -77,10 +77,10 @@ export interface AccountsReceivable {
   paidAmount: number;
   remainingAmount: number;
   paymentStatus: 'unpaid' | 'partial' | 'paid' | 'overdue';
-  orderDate: string;
-  dueDate?: string;
+  orderDate: Date | string; // 支持Date对象和ISO字符串
+  dueDate?: Date | string;
   overdueDays?: number;
-  lastPaymentDate?: string;
+  lastPaymentDate?: Date | string;
 }
 
 // 收款统计数据

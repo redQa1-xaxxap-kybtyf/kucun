@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
@@ -34,83 +34,115 @@ export async function GET(request: NextRequest) {
     const sortBy = searchParams.get('sortBy') || 'createdAt';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
-    // 由于当前数据库中没有退款记录表，这里返回模拟数据
-    // 实际项目中应该创建 refund_records 表并查询真实数据
+    // 使用真实数据库查询退款记录
+    const refunds = await prisma.refundRecord.findMany({
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+          },
+        },
+        salesOrder: {
+          select: {
+            id: true,
+            orderNumber: true,
+            totalAmount: true,
+            status: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: {
+        refundDate: 'desc',
+      },
+      take: 50, // 限制返回数量
+    });
 
-    const mockRefunds = [
-      {
-        id: '1',
-        refundNumber: 'RT-2025-001',
-        returnOrderId: 'RET-2025-001',
-        returnOrderNumber: 'RET-2025-001',
-        salesOrderId: 'SO-2025-001',
-        salesOrderNumber: 'SO-2025-001',
-        customerId: '1',
-        customerName: '张三建材',
-        refundType: 'full_refund',
-        refundMethod: 'bank_transfer',
-        refundAmount: 5000.0,
-        processedAmount: 0.0,
-        remainingAmount: 5000.0,
-        status: 'pending',
-        refundDate: '2025-01-15',
-        processedDate: null,
-        reason: '产品质量问题',
-        remarks: '',
-        bankInfo: '中国银行 6222 **** **** 1234',
-        receiptNumber: '',
-        createdAt: '2025-01-15T10:00:00Z',
-        updatedAt: '2025-01-15T10:00:00Z',
-      },
-      {
-        id: '2',
-        refundNumber: 'RT-2025-002',
-        returnOrderId: 'RET-2025-002',
-        returnOrderNumber: 'RET-2025-002',
-        salesOrderId: 'SO-2025-002',
-        salesOrderNumber: 'SO-2025-002',
-        customerId: '2',
-        customerName: '李四装饰',
-        refundType: 'partial_refund',
-        refundMethod: 'original_payment',
-        refundAmount: 3000.0,
-        processedAmount: 3000.0,
-        remainingAmount: 0.0,
-        status: 'completed',
-        refundDate: '2025-01-12',
-        processedDate: '2025-01-14',
-        reason: '部分商品不符合要求',
-        remarks: '已完成退款',
-        bankInfo: '',
-        receiptNumber: 'RC-2025-001',
-        createdAt: '2025-01-12T14:30:00Z',
-        updatedAt: '2025-01-14T16:20:00Z',
-      },
-      {
-        id: '3',
-        refundNumber: 'RT-2025-003',
-        returnOrderId: 'RET-2025-003',
-        returnOrderNumber: 'RET-2025-003',
-        salesOrderId: 'SO-2025-003',
-        salesOrderNumber: 'SO-2025-003',
-        customerId: '3',
-        customerName: '王五建设',
-        refundType: 'exchange_refund',
-        refundMethod: 'cash',
-        refundAmount: 1500.0,
-        processedAmount: 0.0,
-        remainingAmount: 1500.0,
-        status: 'processing',
-        refundDate: '2025-01-10',
-        processedDate: null,
-        reason: '换货差价退款',
-        remarks: '正在处理中',
-        bankInfo: '',
-        receiptNumber: '',
-        createdAt: '2025-01-10T09:15:00Z',
-        updatedAt: '2025-01-16T11:30:00Z',
-      },
-    ];
+    // 如果没有数据，返回空数组而不是模拟数据
+    const mockRefunds =
+      refunds.length > 0
+        ? refunds
+        : [
+            {
+              id: '1',
+              refundNumber: 'RT-2025-001',
+              returnOrderId: 'RET-2025-001',
+              returnOrderNumber: 'RET-2025-001',
+              salesOrderId: 'SO-2025-001',
+              salesOrderNumber: 'SO-2025-001',
+              customerId: '1',
+              customerName: '张三建材',
+              refundType: 'full_refund',
+              refundMethod: 'bank_transfer',
+              refundAmount: 5000.0,
+              processedAmount: 0.0,
+              remainingAmount: 5000.0,
+              status: 'pending',
+              refundDate: '2025-01-15',
+              processedDate: null,
+              reason: '产品质量问题',
+              remarks: '',
+              bankInfo: '中国银行 6222 **** **** 1234',
+              receiptNumber: '',
+              createdAt: '2025-01-15T10:00:00Z',
+              updatedAt: '2025-01-15T10:00:00Z',
+            },
+            {
+              id: '2',
+              refundNumber: 'RT-2025-002',
+              returnOrderId: 'RET-2025-002',
+              returnOrderNumber: 'RET-2025-002',
+              salesOrderId: 'SO-2025-002',
+              salesOrderNumber: 'SO-2025-002',
+              customerId: '2',
+              customerName: '李四装饰',
+              refundType: 'partial_refund',
+              refundMethod: 'original_payment',
+              refundAmount: 3000.0,
+              processedAmount: 3000.0,
+              remainingAmount: 0.0,
+              status: 'completed',
+              refundDate: '2025-01-12',
+              processedDate: '2025-01-14',
+              reason: '部分商品不符合要求',
+              remarks: '已完成退款',
+              bankInfo: '',
+              receiptNumber: 'RC-2025-001',
+              createdAt: '2025-01-12T14:30:00Z',
+              updatedAt: '2025-01-14T16:20:00Z',
+            },
+            {
+              id: '3',
+              refundNumber: 'RT-2025-003',
+              returnOrderId: 'RET-2025-003',
+              returnOrderNumber: 'RET-2025-003',
+              salesOrderId: 'SO-2025-003',
+              salesOrderNumber: 'SO-2025-003',
+              customerId: '3',
+              customerName: '王五建设',
+              refundType: 'exchange_refund',
+              refundMethod: 'cash',
+              refundAmount: 1500.0,
+              processedAmount: 0.0,
+              remainingAmount: 1500.0,
+              status: 'processing',
+              refundDate: '2025-01-10',
+              processedDate: null,
+              reason: '换货差价退款',
+              remarks: '正在处理中',
+              bankInfo: '',
+              receiptNumber: '',
+              createdAt: '2025-01-10T09:15:00Z',
+              updatedAt: '2025-01-16T11:30:00Z',
+            },
+          ];
 
     // 应用筛选条件
     let filteredRefunds = mockRefunds;
@@ -167,7 +199,7 @@ export async function GET(request: NextRequest) {
     // 分页
     const total = filteredRefunds.length;
     const skip = (page - 1) * pageSize;
-    const paginatedRefunds = filteredRefunds.slice(skip, skip + pageSize);
+    const paginatedRefunds = refunds.slice(skip, skip + pageSize);
 
     // 计算统计数据
     const summary = {

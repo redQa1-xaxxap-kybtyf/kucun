@@ -19,38 +19,12 @@ import type {
   StatementStatistics,
 } from '@/lib/types/statement';
 
-// 应收货款相关类型
-interface AccountsReceivable {
-  id: string;
-  orderId: string;
-  customerName: string;
-  amount: number;
-  paidAmount: number;
-  remainingAmount: number;
-  dueDate: string;
-  status: 'pending' | 'partial' | 'paid' | 'overdue';
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface PaymentStatistics {
-  totalReceivables: number;
-  totalPaid: number;
-  totalOverdue: number;
-  monthlyCollection: number;
-  growthRate: number;
-}
-
-// 查询参数类型
-interface ReceivablesQuery {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: string;
-  customerId?: string;
-  startDate?: string;
-  endDate?: string;
-}
+// 导入统一的类型定义，遵循唯一真理源原则
+import type {
+  AccountsReceivable,
+  PaymentStatistics,
+  AccountsReceivableQuery as ReceivablesQuery,
+} from '@/lib/types/payment';
 
 // 分页响应类型
 interface PaginationResponse {

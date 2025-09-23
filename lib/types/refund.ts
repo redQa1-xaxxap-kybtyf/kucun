@@ -32,15 +32,15 @@ export interface RefundRecord {
   refundAmount: number;
   processedAmount: number;
   remainingAmount: number;
-  refundDate: string;
-  processedDate?: string;
+  refundDate: Date | string; // 支持Date对象和ISO字符串
+  processedDate?: Date | string;
   status: RefundStatus;
   reason: string;
   remarks?: string;
   bankInfo?: string;
   receiptNumber?: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 // 退款记录详情（包含关联数据）
@@ -76,7 +76,7 @@ export interface CreateRefundRecordData {
   refundType: RefundType;
   refundMethod: RefundMethod;
   refundAmount: number;
-  refundDate: string;
+  refundDate: Date | string; // 支持Date对象和ISO字符串
   reason: string;
   remarks?: string;
   bankInfo?: string;

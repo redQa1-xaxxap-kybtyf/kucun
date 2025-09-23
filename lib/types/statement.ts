@@ -30,10 +30,10 @@ export interface AccountStatement {
   creditLimit: number;
   paymentTerms: string; // 付款条件，如"30天"
   status: StatementStatus;
-  lastTransactionDate?: string;
-  lastPaymentDate?: string;
-  createdAt: string;
-  updatedAt: string;
+  lastTransactionDate?: Date | string; // 支持Date对象和ISO字符串
+  lastPaymentDate?: Date | string;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 }
 
 // 往来账单详情（包含交易明细）
@@ -65,10 +65,10 @@ export interface StatementTransaction {
   amount: number;
   balance: number; // 交易后余额
   description: string;
-  transactionDate: string;
-  dueDate?: string;
+  transactionDate: Date | string; // 支持Date对象和ISO字符串
+  dueDate?: Date | string;
   status: 'pending' | 'completed' | 'overdue';
-  createdAt: string;
+  createdAt: Date | string;
 }
 
 // 往来账单查询参数

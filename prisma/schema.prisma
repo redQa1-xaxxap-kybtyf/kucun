@@ -30,6 +30,7 @@ model User {
   inboundRecords        InboundRecord[]
   paymentRecords        PaymentRecord[]
   factoryShipmentOrders FactoryShipmentOrder[]
+  refundRecords         RefundRecord[]
 
   @@index([email])
   @@index([username])
@@ -56,6 +57,7 @@ model Customer {
   salesOrders           SalesOrder[]
   paymentRecords        PaymentRecord[]
   factoryShipmentOrders FactoryShipmentOrder[]
+  refundRecords         RefundRecord[]
 
   @@index([name])
   @@index([phone])
@@ -183,6 +185,7 @@ model SalesOrder {
   supplier Supplier?        @relation(fields: [supplierId], references: [id])
   items    SalesOrderItem[]
   payments PaymentRecord[]
+  refunds  RefundRecord[]
 
   @@index([customerId], map: "idx_sales_orders_customer")
   @@index([userId], map: "idx_sales_orders_user")
@@ -380,4 +383,98 @@ model FactoryShipmentOrderItem {
   @@index([productId], map: "idx_factory_shipment_order_items_product")
   @@index([supplierId], map: "idx_factory_shipment_order_items_supplier")
   @@map("factory_shipment_order_items")
+}
+
+// 退款记录表 - 退款管理，支持全额退款、部分退款和换货退款
+model RefundRecord {
+  id              String   @id @default(uuid())
+  refundNumber    String   @unique @map("refund_number")
+  returnOrderId   String   @map("return_order_id")
+  salesOrderId    String   @map("sales_order_id")
+  customerId      String   @map("customer_id")
+  userId          String   @map("user_id")
+  refundType      String   @map("refund_type") // full_refund, partial_refund, exchange_refund
+  refundMethod    String   @map("refund_method") // cash, bank_transfer, original_payment, other
+  refundAmount    Float    @map("refund_amount")
+  processedAmount Float    @default(0) @map("processed_amount")
+  remainingAmount Float    @default(0) @map("remaining_amount")
+  refundDate      DateTime @map("refund_date")
+  processedDate   DateTime? @map("processed_date")
+  status          String   @default("pending") // pending, processing, completed, rejected, cancelled
+  reason          String
+  remarks         String?
+  bankInfo        String?  @map("bank_info")
+  receiptNumber   String?  @map("receipt_number")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id])
+  customer   Customer   @relation(fields: [customerId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+
+  @@index([salesOrderId], map: "idx_refund_records_order")
+  @@index([customerId], map: "idx_refund_records_customer")
+  @@index([userId], map: "idx_refund_records_user")
+  @@index([status], map: "idx_refund_records_status")
+  @@index([refundDate(sort: Desc)], map: "idx_refund_records_date")
+  @@index([refundType], map: "idx_refund_records_type")
+  @@index([refundMethod], map: "idx_refund_records_method")
+  @@map("refund_records")
+}
+
+// 往来账单表 - 客户和供应商的综合账务往来管理
+model AccountStatement {
+  id                  String   @id @default(uuid())
+  entityId            String   @map("entity_id")
+  entityName          String   @map("entity_name")
+  entityType          String   @map("entity_type") // customer, supplier
+  totalOrders         Int      @default(0) @map("total_orders")
+  totalAmount         Float    @default(0) @map("total_amount")
+  paidAmount          Float    @default(0) @map("paid_amount")
+  pendingAmount       Float    @default(0) @map("pending_amount")
+  overdueAmount       Float    @default(0) @map("overdue_amount")
+  creditLimit         Float    @default(0) @map("credit_limit")
+  paymentTerms        String   @default("30天") @map("payment_terms")
+  status              String   @default("active") // active, settled, overdue, suspended
+  lastTransactionDate DateTime? @map("last_transaction_date")
+  lastPaymentDate     DateTime? @map("last_payment_date")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  transactions StatementTransaction[]
+
+  @@index([entityId], map: "idx_account_statements_entity")
+  @@index([entityType], map: "idx_account_statements_type")
+  @@index([status], map: "idx_account_statements_status")
+  @@index([lastTransactionDate(sort: Desc)], map: "idx_account_statements_last_transaction")
+  @@index([overdueAmount], map: "idx_account_statements_overdue")
+  @@map("account_statements")
+}
+
+// 账单交易记录表 - 往来账单的详细交易明细
+model StatementTransaction {
+  id               String   @id @default(uuid())
+  statementId      String   @map("statement_id")
+  transactionType  String   @map("transaction_type") // sale, payment, refund, purchase, payment_out, adjustment
+  referenceId      String   @map("reference_id") // 关联的订单、支付或退款ID
+  referenceNumber  String   @map("reference_number") // 关联的单据号
+  amount           Float
+  balance          Float // 交易后余额
+  description      String
+  transactionDate  DateTime @map("transaction_date")
+  dueDate          DateTime? @map("due_date")
+  status           String   @default("pending") // pending, completed, overdue
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  // 关联关系
+  statement AccountStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
+
+  @@index([statementId], map: "idx_statement_transactions_statement")
+  @@index([transactionType], map: "idx_statement_transactions_type")
+  @@index([referenceId], map: "idx_statement_transactions_reference")
+  @@index([transactionDate(sort: Desc)], map: "idx_statement_transactions_date")
+  @@index([status], map: "idx_statement_transactions_status")
+  @@map("statement_transactions")
 }
