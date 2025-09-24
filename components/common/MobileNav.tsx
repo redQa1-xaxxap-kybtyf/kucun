@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   Package,
   RotateCcw,
-  Settings,
   ShoppingCart,
   Users,
   Warehouse,
@@ -85,13 +84,6 @@ const mobileNavigationItems: NavigationItem[] = [
  * 移动端底部辅助功能导航
  */
 const mobileBottomNavigationItems: NavigationItem[] = [
-  {
-    id: 'settings',
-    title: '系统设置',
-    href: '/settings',
-    icon: Settings,
-    requiredRoles: ['admin'],
-  },
   {
     id: 'help',
     title: '帮助中心',

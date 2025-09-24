@@ -11,7 +11,6 @@ import {
   Plus,
   Receipt,
   RotateCcw,
-  Settings,
   ShoppingCart,
   TrendingDown,
   TrendingUp,
@@ -19,9 +18,9 @@ import {
   Users,
   Warehouse,
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -144,13 +143,6 @@ const navigationItems: NavigationItem[] = [
  * 底部辅助功能导航
  */
 const bottomNavigationItems: NavigationItem[] = [
-  {
-    id: 'settings',
-    title: '系统设置',
-    href: '/settings',
-    icon: Settings,
-    requiredRoles: ['admin'],
-  },
   {
     id: 'help',
     title: '帮助中心',

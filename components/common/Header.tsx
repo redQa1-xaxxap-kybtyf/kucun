@@ -11,7 +11,6 @@ import {
   Plus,
   RefreshCw,
   Search,
-  Settings,
   Sun,
   User,
 } from 'lucide-react';
@@ -34,7 +33,6 @@ import { Input } from '@/components/ui/input';
 import { useNavigationBadges } from '@/hooks/use-navigation-badges';
 import type { NotificationItem } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
-import { usePermissions } from '@/lib/utils/permissions';
 
 interface HeaderProps {
   /** 是否显示移动端菜单按钮 */
@@ -64,7 +62,6 @@ export function Header({
   const { data: session } = useSession();
   const router = useRouter();
   const { getTotalBadgeCount, getUrgentBadgeCount } = useNavigationBadges();
-  const permissions = usePermissions(session?.user?.role);
 
   // 搜索状态
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -108,12 +105,6 @@ export function Header({
 
   const handleProfileClick = () => {
     router.push('/profile');
-  };
-
-  const handleSettingsClick = () => {
-    if (permissions.hasRole(['admin'])) {
-      router.push('/settings');
-    }
   };
 
   const handleNotificationClick = (notification: NotificationItem) => {
@@ -401,14 +392,6 @@ export function Header({
                 <HelpCircle className="mr-2 h-4 w-4" />
                 帮助中心
               </DropdownMenuItem>
-
-              {/* 管理员设置 */}
-              {permissions.hasRole(['admin']) && (
-                <DropdownMenuItem onClick={handleSettingsClick}>
-                  <Settings className="mr-2 h-4 w-4" />
-                  系统设置
-                </DropdownMenuItem>
-              )}
 
               <DropdownMenuSeparator />
               <DropdownMenuItem
