@@ -43,6 +43,7 @@ import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
+import { formatDate } from '@/lib/utils/datetime';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
@@ -649,7 +650,7 @@ export function ERPSalesOrderForm({
                     创建日期
                   </Label>
                   <div className="rounded border bg-muted/50 px-2 py-1 text-xs">
-                    {new Date().toLocaleDateString('zh-CN')}
+                    {formatDate(new Date())}
                   </div>
                 </div>
               </div>

@@ -3,7 +3,6 @@
 
 'use client';
 
-import { format } from 'date-fns';
 import {
   Check,
   DollarSign,
@@ -189,9 +188,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         title: '收款日期',
         width: '100px',
         render: (payment: PaymentRecordDetail) => (
-          <div className="text-sm">
-            {format(new Date(payment.paymentDate), 'yyyy-MM-dd')}
-          </div>
+          <div className="text-sm">{formatDate(payment.paymentDate)}</div>
         ),
       },
       {
@@ -279,7 +276,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
             <div>
               <div className="text-sm font-medium">{payment.paymentNumber}</div>
               <div className="mt-1 text-xs text-muted-foreground">
-                {format(new Date(payment.paymentDate), 'yyyy-MM-dd HH:mm')}
+                {formatDate(payment.paymentDate, 'yyyy-MM-dd HH:mm')}
               </div>
             </div>
             <Badge

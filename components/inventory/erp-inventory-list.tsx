@@ -24,6 +24,7 @@ import {
 } from '@/components/ui/table';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
+import { formatDate } from '@/lib/utils/datetime';
 import { formatInventoryQuantity } from '@/lib/utils/piece-calculation';
 
 interface ERPInventoryListProps {
@@ -353,9 +354,7 @@ export function ERPInventoryList({
                     {item.quantity - (item.reservedQuantity || 0)}
                   </TableCell>
                   <TableCell>{getStockBadge(item.quantity, 10)}</TableCell>
-                  <TableCell>
-                    {new Date(item.updatedAt).toLocaleDateString('zh-CN')}
-                  </TableCell>
+                  <TableCell>{formatDate(item.updatedAt)}</TableCell>
                   <TableCell>
                     <div className="flex items-center gap-1">
                       <Button

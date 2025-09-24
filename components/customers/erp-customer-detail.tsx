@@ -17,6 +17,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { customerQueryKeys, getCustomer } from '@/lib/api/customers';
 import type { Customer } from '@/lib/types/customer';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface ERPCustomerDetailProps {
   customerId: string;
@@ -66,10 +67,6 @@ export function ERPCustomerDetail({
       }
     }
   };
-
-  // 格式化日期
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('zh-CN');
 
   if (isLoading) {
     return (

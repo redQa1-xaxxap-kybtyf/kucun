@@ -44,6 +44,7 @@ import {
 } from '@/components/ui/table';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import type { Customer, CustomerQueryParams } from '@/lib/types/customer';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface ERPCustomerListProps {
   onCreateNew?: () => void;
@@ -135,10 +136,6 @@ export function ERPCustomerList({
       onDelete(customer);
     }
   };
-
-  // 格式化日期
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('zh-CN');
 
   return (
     <div className="rounded border bg-card">

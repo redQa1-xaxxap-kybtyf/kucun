@@ -12,13 +12,13 @@ import { zhCN } from 'date-fns/locale';
 export const DATE_FORMATS = {
   // ISO标准格式（API响应统一使用）
   ISO: 'YYYY-MM-DDTHH:mm:ss.sssZ',
-  
+
   // 显示格式
   DATE: 'yyyy-MM-dd',
   DATETIME: 'yyyy-MM-dd HH:mm',
   DATETIME_FULL: 'yyyy-MM-dd HH:mm:ss',
   TIME: 'HH:mm',
-  
+
   // 中文显示格式
   DATE_CN: 'yyyy年MM月dd日',
   DATETIME_CN: 'yyyy年MM月dd日 HH:mm',
@@ -36,27 +36,27 @@ export type DateInput = Date | string | number | null | undefined;
  */
 export function parseDate(input: DateInput): Date | null {
   if (!input) return null;
-  
+
   try {
     if (input instanceof Date) {
       return isValid(input) ? input : null;
     }
-    
+
     if (typeof input === 'string') {
       // 尝试解析ISO字符串
       const parsed = parseISO(input);
       if (isValid(parsed)) return parsed;
-      
+
       // 尝试直接创建Date对象
       const date = new Date(input);
       return isValid(date) ? date : null;
     }
-    
+
     if (typeof input === 'number') {
       const date = new Date(input);
       return isValid(date) ? date : null;
     }
-    
+
     return null;
   } catch {
     return null;
@@ -75,10 +75,13 @@ export function toISOString(input: DateInput): string | null {
 /**
  * 格式化日期显示
  */
-export function formatDate(input: DateInput, formatStr: string = DATE_FORMATS.DATE): string {
+export function formatDate(
+  input: DateInput,
+  formatStr: string = DATE_FORMATS.DATE
+): string {
   const date = parseDate(input);
   if (!date) return '';
-  
+
   try {
     return format(date, formatStr, { locale: zhCN });
   } catch {
@@ -89,10 +92,13 @@ export function formatDate(input: DateInput, formatStr: string = DATE_FORMATS.DA
 /**
  * 格式化日期时间显示
  */
-export function formatDateTime(input: DateInput, formatStr: string = DATE_FORMATS.DATETIME): string {
+export function formatDateTime(
+  input: DateInput,
+  formatStr: string = DATE_FORMATS.DATETIME
+): string {
   const date = parseDate(input);
   if (!date) return '';
-  
+
   try {
     return format(date, formatStr, { locale: zhCN });
   } catch {
@@ -121,11 +127,11 @@ export function formatDateTimeCN(input: DateInput): string {
 export function formatTimeAgo(input: DateInput): string {
   const date = parseDate(input);
   if (!date) return '';
-  
+
   try {
-    return formatDistanceToNow(date, { 
-      addSuffix: true, 
-      locale: zhCN 
+    return formatDistanceToNow(date, {
+      addSuffix: true,
+      locale: zhCN,
     });
   } catch {
     return '';
@@ -144,15 +150,18 @@ export function isValidDate(input: DateInput): boolean {
  * 比较两个日期
  * 返回值：-1(date1 < date2), 0(相等), 1(date1 > date2), null(无效日期)
  */
-export function compareDates(date1: DateInput, date2: DateInput): number | null {
+export function compareDates(
+  date1: DateInput,
+  date2: DateInput
+): number | null {
   const d1 = parseDate(date1);
   const d2 = parseDate(date2);
-  
+
   if (!d1 || !d2) return null;
-  
+
   const time1 = d1.getTime();
   const time2 = d2.getTime();
-  
+
   if (time1 < time2) return -1;
   if (time1 > time2) return 1;
   return 0;
@@ -162,16 +171,16 @@ export function compareDates(date1: DateInput, date2: DateInput): number | null 
  * 检查日期是否在指定范围内
  */
 export function isDateInRange(
-  date: DateInput, 
-  startDate: DateInput, 
+  date: DateInput,
+  startDate: DateInput,
   endDate: DateInput
 ): boolean {
   const d = parseDate(date);
   const start = parseDate(startDate);
   const end = parseDate(endDate);
-  
+
   if (!d || !start || !end) return false;
-  
+
   const time = d.getTime();
   return time >= start.getTime() && time <= end.getTime();
 }
@@ -182,7 +191,7 @@ export function isDateInRange(
 export function getStartOfDay(input: DateInput): Date | null {
   const date = parseDate(input);
   if (!date) return null;
-  
+
   const result = new Date(date);
   result.setHours(0, 0, 0, 0);
   return result;
@@ -194,7 +203,7 @@ export function getStartOfDay(input: DateInput): Date | null {
 export function getEndOfDay(input: DateInput): Date | null {
   const date = parseDate(input);
   if (!date) return null;
-  
+
   const result = new Date(date);
   result.setHours(23, 59, 59, 999);
   return result;
@@ -205,6 +214,33 @@ export function getEndOfDay(input: DateInput): Date | null {
  */
 export function getCurrentISOString(): string {
   return new Date().toISOString();
+}
+
+/**
+ * 计算时间范围的开始日期
+ */
+export function getTimeRangeStartDate(
+  range: '7d' | '30d' | '90d' | '1y'
+): Date {
+  const now = new Date();
+  const startDate = new Date();
+
+  switch (range) {
+    case '7d':
+      startDate.setDate(now.getDate() - 7);
+      break;
+    case '30d':
+      startDate.setDate(now.getDate() - 30);
+      break;
+    case '90d':
+      startDate.setDate(now.getDate() - 90);
+      break;
+    case '1y':
+      startDate.setFullYear(now.getFullYear() - 1);
+      break;
+  }
+
+  return startDate;
 }
 
 /**
@@ -220,9 +256,9 @@ export class DateTimeTransformer {
     timeFields: (keyof T)[] = ['createdAt', 'updatedAt']
   ): T {
     if (!obj || typeof obj !== 'object') return obj;
-    
+
     const transformed = { ...obj };
-    
+
     for (const field of timeFields) {
       if (field in transformed && transformed[field]) {
         const isoString = toISOString(transformed[field] as DateInput);
@@ -231,10 +267,10 @@ export class DateTimeTransformer {
         }
       }
     }
-    
+
     return transformed;
   }
-  
+
   /**
    * 转换对象数组中的时间字段
    */
@@ -243,10 +279,10 @@ export class DateTimeTransformer {
     timeFields: (keyof T)[] = ['createdAt', 'updatedAt']
   ): T[] {
     if (!Array.isArray(array)) return array;
-    
+
     return array.map(item => this.transformObject(item, timeFields));
   }
-  
+
   /**
    * 深度转换嵌套对象中的时间字段
    */
@@ -255,13 +291,13 @@ export class DateTimeTransformer {
     timeFields: string[] = ['createdAt', 'updatedAt']
   ): T {
     if (!obj || typeof obj !== 'object') return obj;
-    
+
     if (Array.isArray(obj)) {
       return obj.map(item => this.transformNested(item, timeFields)) as T;
     }
-    
+
     const transformed = { ...obj } as Record<string, unknown>;
-    
+
     for (const [key, value] of Object.entries(transformed)) {
       if (timeFields.includes(key) && value) {
         const isoString = toISOString(value as DateInput);
@@ -272,7 +308,7 @@ export class DateTimeTransformer {
         transformed[key] = this.transformNested(value, timeFields);
       }
     }
-    
+
     return transformed as T;
   }
 }

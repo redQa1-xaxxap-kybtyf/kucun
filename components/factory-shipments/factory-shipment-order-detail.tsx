@@ -1,8 +1,7 @@
 'use client';
 
+import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import {
   ArrowLeft,
   Calendar,
@@ -170,9 +169,7 @@ export function FactoryShipmentOrderDetail({
               </label>
               <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                 <Calendar className="h-3 w-3" />
-                {format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm', {
-                  locale: zhCN,
-                })}
+                {formatDateTime(order.createdAt)}
               </p>
             </div>
             {order.planDate && (
@@ -182,9 +179,7 @@ export function FactoryShipmentOrderDetail({
                 </label>
                 <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                   <Calendar className="h-3 w-3" />
-                  {format(new Date(order.planDate), 'yyyy-MM-dd', {
-                    locale: zhCN,
-                  })}
+                  {formatDate(order.planDate)}
                 </p>
               </div>
             )}
@@ -195,9 +190,7 @@ export function FactoryShipmentOrderDetail({
                 </label>
                 <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                   <Calendar className="h-3 w-3" />
-                  {format(new Date(order.shipmentDate), 'yyyy-MM-dd', {
-                    locale: zhCN,
-                  })}
+                  {formatDate(order.shipmentDate)}
                 </p>
               </div>
             )}

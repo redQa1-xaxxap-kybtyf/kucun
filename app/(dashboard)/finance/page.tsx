@@ -15,6 +15,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDate } from '@/lib/utils/datetime';
 
 /**
  * 财务管理主页面
@@ -96,7 +97,7 @@ export default function FinancePage() {
         <div className="flex items-center gap-2">
           <Calendar className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm text-muted-foreground">
-            {new Date().toLocaleDateString('zh-CN')}
+            {formatDate(new Date())}
           </span>
         </div>
       </div>

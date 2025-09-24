@@ -50,7 +50,10 @@ const testColumns: ColumnDef<(typeof testData)[0]>[] = [
   createDateColumn(
     'createdAt',
     '创建时间',
-    date => new Date(date).toLocaleDateString(),
+    date => {
+      const { formatDate } = require('@/lib/utils/datetime');
+      return formatDate(date);
+    },
     { mobileHidden: true }
   ),
 ];

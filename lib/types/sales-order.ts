@@ -295,19 +295,13 @@ export const getStatusBgColor = (status: SalesOrderStatus): string => {
 };
 
 // 生产日期格式化函数
+// @deprecated 请使用 lib/utils/datetime.ts 中的 formatDate 函数
 export const formatProductionDate = (dateString?: string): string => {
   if (!dateString) return '';
 
-  try {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-  } catch {
-    return dateString;
-  }
+  // 使用统一的时间格式化函数
+  const { formatDate } = require('@/lib/utils/datetime');
+  return formatDate(dateString);
 };
 
 // 订单号生成规则说明

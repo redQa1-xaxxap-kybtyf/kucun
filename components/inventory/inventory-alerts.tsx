@@ -36,6 +36,7 @@ import {
   INVENTORY_ALERT_TYPE_VARIANTS,
   type InventoryAlert,
 } from '@/lib/types/inventory';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface InventoryAlertsProps {
   className?: string;
@@ -287,11 +288,7 @@ export function InventoryAlerts({
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">预警时间:</span>
-                        <span>
-                          {new Date(alert.createdAt).toLocaleDateString(
-                            'zh-CN'
-                          )}
-                        </span>
+                        <span>{formatDate(alert.createdAt)}</span>
                       </div>
                     </div>
                   </CardContent>

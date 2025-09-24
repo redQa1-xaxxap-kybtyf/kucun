@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { compareDates } from '@/lib/utils/datetime';
 
 /**
  * 应收货款API
@@ -115,10 +116,8 @@ export async function GET(request: NextRequest) {
 
       const lastPaymentDate =
         order.payments.length > 0
-          ? order.payments.sort(
-              (a, b) =>
-                new Date(b.paymentDate).getTime() -
-                new Date(a.paymentDate).getTime()
+          ? order.payments.sort((a, b) =>
+              compareDates(b.paymentDate, a.paymentDate)
             )[0].paymentDate
           : undefined;
 
@@ -131,14 +130,14 @@ export async function GET(request: NextRequest) {
         paidAmount,
         remainingAmount,
         paymentStatus,
-        orderDate: order.createdAt.toISOString().split('T')[0],
-        dueDate: new Date(orderDate.getTime() + 30 * 24 * 60 * 60 * 1000)
-          .toISOString()
-          .split('T')[0], // 30天后到期
+        orderDate: formatDate(order.createdAt),
+        dueDate: formatDate(
+          new Date(orderDate.getTime() + 30 * 24 * 60 * 60 * 1000)
+        ), // 30天后到期
         overdueDays:
           paymentStatus === 'overdue' ? Math.max(0, daysSinceOrder - 30) : 0,
         lastPaymentDate: lastPaymentDate
-          ? new Date(lastPaymentDate).toISOString().split('T')[0]
+          ? formatDate(lastPaymentDate)
           : undefined,
       };
     });

@@ -14,6 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface Customer {
   id: string;
@@ -28,6 +29,7 @@ interface OrderStatusBarProps {
   status?: string;
   totalAmount?: number;
   itemCount?: number;
+  createdAt?: string | Date;
   className?: string;
 }
 
@@ -41,6 +43,7 @@ export function OrderStatusBar({
   status = 'draft',
   totalAmount = 0,
   itemCount = 0,
+  createdAt,
   className,
 }: OrderStatusBarProps) {
   // 状态显示配置
@@ -158,7 +161,7 @@ export function OrderStatusBar({
           <div className="space-y-1">
             <div className="text-xs text-muted-foreground">创建时间</div>
             <div className="font-medium">
-              {new Date().toLocaleDateString('zh-CN')}
+              {createdAt ? formatDate(createdAt) : '未设置'}
             </div>
           </div>
         </div>

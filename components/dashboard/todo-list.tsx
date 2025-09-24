@@ -28,9 +28,10 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { dashboardUtils, useCompleteTodoItem } from '@/lib/api/dashboard';
+import { useCompleteTodoItem } from '@/lib/api/dashboard';
 import type { TodoItem } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
+import { formatDate, formatTimeAgo } from '@/lib/utils/datetime';
 
 // 待办事项类型配置
 const TODO_TYPE_CONFIG = {
@@ -255,13 +256,13 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
                         isDueSoon && 'text-yellow-600'
                       )}
                     >
-                      {new Date(todo.dueDate).toLocaleDateString('zh-CN')}
+                      {formatDate(todo.dueDate)}
                     </span>
                   </div>
                 )}
               </div>
 
-              <span>{dashboardUtils.formatTimeAgo(todo.createdAt)}</span>
+              <span>{formatTimeAgo(todo.createdAt)}</span>
             </div>
           </div>
         </div>

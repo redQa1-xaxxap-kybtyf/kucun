@@ -2,9 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import { statementQuerySchema } from '@/lib/validations/statement';
-
-import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/statements - 获取往来账单列表

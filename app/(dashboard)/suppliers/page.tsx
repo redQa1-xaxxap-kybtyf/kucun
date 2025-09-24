@@ -52,9 +52,10 @@ import {
 } from '@/lib/api/suppliers';
 import { formatSupplierStatus } from '@/lib/schemas/supplier';
 import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
+import { formatDate } from '@/lib/utils/datetime';
 
 export default function SuppliersPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const queryClient = useQueryClient();
 
   // 查询参数状态
@@ -185,7 +186,7 @@ export default function SuppliersPage() {
   const pagination = data?.pagination;
   const isAllSelected =
     selectedSuppliers.length === suppliers.length && suppliers.length > 0;
-  const isPartialSelected =
+  const _isPartialSelected =
     selectedSuppliers.length > 0 && selectedSuppliers.length < suppliers.length;
 
   if (error) {
@@ -350,9 +351,7 @@ export default function SuppliersPage() {
                         {formatSupplierStatus(supplier.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell>
-                      {new Date(supplier.createdAt).toLocaleDateString('zh-CN')}
-                    </TableCell>
+                    <TableCell>{formatDate(supplier.createdAt)}</TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>

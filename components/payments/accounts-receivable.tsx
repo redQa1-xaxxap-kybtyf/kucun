@@ -3,7 +3,6 @@
 
 'use client';
 
-import { format } from 'date-fns';
 import {
   AlertTriangle,
   CheckCircle,
@@ -230,9 +229,7 @@ const AccountsReceivableComponent = React.forwardRef<
         title: '订单日期',
         width: '100px',
         render: (receivable: AccountsReceivable) => (
-          <div className="text-sm">
-            {format(new Date(receivable.orderDate), 'yyyy-MM-dd')}
-          </div>
+          <div className="text-sm">{formatDate(receivable.orderDate)}</div>
         ),
       },
       {
@@ -355,9 +352,7 @@ const AccountsReceivableComponent = React.forwardRef<
               {/* 其他信息 */}
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">订单日期:</span>
-                <span>
-                  {format(new Date(receivable.orderDate), 'yyyy-MM-dd')}
-                </span>
+                <span>{formatDate(receivable.orderDate)}</span>
               </div>
 
               {receivable.overdueDays && receivable.overdueDays > 0 && (

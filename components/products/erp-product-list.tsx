@@ -65,6 +65,7 @@ import {
   type Product,
   type ProductQueryParams,
 } from '@/lib/types/product';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface ERPProductListProps {
   onProductSelect?: (productId: string) => void;
@@ -520,7 +521,7 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
                     {getStatusBadge(product.status)}
                   </TableCell>
                   <TableCell className="py-1 text-xs">
-                    {new Date(product.createdAt).toLocaleDateString('zh-CN')}
+                    {formatDate(product.createdAt)}
                   </TableCell>
                   <TableCell className="py-1">
                     <DropdownMenu>

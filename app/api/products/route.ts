@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 
-import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
+import { successResponse } from '@/lib/api/response';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
+import { DateTimeTransformer } from '@/lib/utils/datetime';
 import { paginationValidations } from '@/lib/validations/base';
 import { productCreateSchema } from '@/lib/validations/product';
 
@@ -176,8 +177,14 @@ export async function GET(request: NextRequest) {
       updatedAt: product.updatedAt,
     }));
 
-    return createDateTimeResponse({
-      data: formattedProducts,
+    // 使用统一的时间转换器
+    const transformedProducts = DateTimeTransformer.transformArray(
+      formattedProducts,
+      ['createdAt', 'updatedAt']
+    );
+
+    return NextResponse.json({
+      data: transformedProducts,
       pagination: {
         page,
         limit,
@@ -319,7 +326,13 @@ export async function POST(request: NextRequest) {
       updatedAt: product.updatedAt,
     };
 
-    return createDateTimeResponse(formattedProduct, 201, '产品创建成功');
+    // 使用统一的时间转换器
+    const transformedProduct = DateTimeTransformer.transformObject(
+      formattedProduct,
+      ['createdAt', 'updatedAt']
+    );
+
+    return successResponse(transformedProduct, 201, '产品创建成功');
   } catch (error) {
     console.error('创建产品错误:', error);
 

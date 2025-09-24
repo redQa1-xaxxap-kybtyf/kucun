@@ -1,7 +1,5 @@
 'use client';
 
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -14,6 +12,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { UserManagementUser } from '@/lib/types/settings';
+import { formatDateTime } from '@/lib/utils/datetime';
 
 import { UserActions } from './UserActions';
 
@@ -36,28 +35,25 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
   onResetPassword,
   isLoading = false,
 }) => {
-  // 格式化日期
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'yyyy-MM-dd HH:mm', {
-        locale: zhCN,
-      });
-    } catch {
-      return dateString;
-    }
-  };
+  // 使用统一的时间格式化函数
+  const formatDate = (dateString: string) =>
+    formatDateTime(dateString) || dateString;
 
   // 获取角色显示文本
-  const getRoleText = (role: string) => role === 'admin' ? '管理员' : '销售员';
+  const getRoleText = (role: string) =>
+    role === 'admin' ? '管理员' : '销售员';
 
   // 获取角色徽章样式
-  const getRoleBadgeVariant = (role: string) => role === 'admin' ? 'destructive' : 'secondary';
+  const getRoleBadgeVariant = (role: string) =>
+    role === 'admin' ? 'destructive' : 'secondary';
 
   // 获取状态显示文本
-  const getStatusText = (status: string) => status === 'active' ? '启用' : '禁用';
+  const getStatusText = (status: string) =>
+    status === 'active' ? '启用' : '禁用';
 
   // 获取状态徽章样式
-  const getStatusBadgeVariant = (status: string) => status === 'active' ? 'default' : 'outline';
+  const getStatusBadgeVariant = (status: string) =>
+    status === 'active' ? 'default' : 'outline';
 
   if (users.length === 0) {
     return (
@@ -83,7 +79,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
           </TableRow>
         </TableHeader>
         <TableBody>
-          {users.map((user) => (
+          {users.map(user => (
             <TableRow key={user.id}>
               <TableCell className="font-medium">
                 {user.username}

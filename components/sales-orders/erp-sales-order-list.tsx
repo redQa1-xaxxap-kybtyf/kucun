@@ -37,6 +37,7 @@ import {
   type SalesOrderQueryParams,
   type SalesOrderStatus,
 } from '@/lib/types/sales-order';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface ERPSalesOrderListProps {
   onOrderSelect?: (order: SalesOrder) => void;
@@ -97,14 +98,6 @@ export function ERPSalesOrderList({ onOrderSelect }: ERPSalesOrderListProps) {
     if (!amount) return '¥0.00';
     return `¥${amount.toFixed(2)}`;
   };
-
-  // 格式化日期
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
 
   if (error) {
     return (

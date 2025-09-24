@@ -243,13 +243,11 @@ export function formatReturnAmount(amount: number): string {
 
 /**
  * 格式化退货日期
+ * @deprecated 请使用 lib/utils/datetime.ts 中的 formatDate 函数
  */
 export function formatReturnDate(dateString: string): string {
-  return new Date(dateString).toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  });
+  const { formatDate } = require('@/lib/utils/datetime');
+  return formatDate(dateString);
 }
 
 /**
