@@ -277,13 +277,14 @@ export function useMobileGestures(
   );
 
   // 清理函数
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
       }
-    };
-  }, []);
+    },
+    []
+  );
 
   return {
     bindGestures,

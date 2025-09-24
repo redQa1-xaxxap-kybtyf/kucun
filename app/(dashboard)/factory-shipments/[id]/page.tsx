@@ -25,7 +25,7 @@ export default function FactoryShipmentDetailPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
-      <FactoryShipmentOrderDetail 
+      <FactoryShipmentOrderDetail
         orderId={orderId}
         onEdit={handleEdit}
         onBack={handleBack}

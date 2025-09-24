@@ -4,6 +4,9 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import { describe, expect, it, jest } from '@jest/globals';
+import { Home } from 'lucide-react';
+
 import {
   NavigationItemSchema,
   validateNavigationItem,
@@ -29,8 +32,6 @@ import {
   TypeAssert,
   TypeSafeConverter,
 } from '@/lib/utils/type-guards';
-import { describe, expect, it, jest } from '@jest/globals';
-import { Home } from 'lucide-react';
 
 describe('布局系统类型守卫测试', () => {
   describe('isNavigationItem', () => {

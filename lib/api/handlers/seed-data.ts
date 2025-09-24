@@ -14,7 +14,7 @@ export async function cleanupTestData() {
       },
     },
   });
-  
+
   await prisma.productVariant.deleteMany({
     where: {
       product: {
@@ -24,7 +24,7 @@ export async function cleanupTestData() {
       },
     },
   });
-  
+
   await prisma.product.deleteMany({
     where: {
       code: {
@@ -132,7 +132,7 @@ export async function createTestProducts(categories: any[]) {
  */
 export async function createTestProductVariants(products: any[]) {
   const variants = [];
-  
+
   for (const product of products) {
     const productVariants = [
       {

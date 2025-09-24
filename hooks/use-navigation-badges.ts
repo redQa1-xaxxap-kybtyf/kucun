@@ -1,7 +1,8 @@
 'use client';
 
-import type { NavigationItem } from '@/lib/types/layout';
 import { useQuery } from '@tanstack/react-query';
+
+import type { NavigationItem } from '@/lib/types/layout';
 
 /**
  * 导航徽章数据类型
@@ -145,11 +146,8 @@ export function useNavigationBadges() {
   /**
    * 获取特定导航项的徽章信息
    */
-  const getBadgeForNavItem = (
-    navId: string
-  ): NavigationBadgeData | undefined => {
-    return badgeData?.find(badge => badge.navId === navId);
-  };
+  const getBadgeForNavItem = (navId: string): NavigationBadgeData | undefined =>
+    badgeData?.find(badge => badge.navId === navId);
 
   /**
    * 获取总的未读/待处理数量
@@ -224,9 +222,8 @@ export function useNavigationBadgeUpdater() {
   /**
    * 清除特定导航项的徽章
    */
-  const clearBadge = async (navId: string) => {
-    return updateBadge(navId, undefined, undefined);
-  };
+  const clearBadge = async (navId: string) =>
+    updateBadge(navId, undefined, undefined);
 
   /**
    * 增加徽章数量

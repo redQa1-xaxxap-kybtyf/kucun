@@ -8,6 +8,7 @@ import {
   createTextColumn,
   type ColumnDef,
 } from '@/components/ui/mobile-data-table';
+
 import '@testing-library/jest-dom';
 import { fireEvent, render, screen } from '@testing-library/react';
 

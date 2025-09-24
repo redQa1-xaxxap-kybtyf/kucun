@@ -361,7 +361,7 @@ function MobileDataTable<T extends Record<string, any>>({
 }
 
 // 预设的列类型
-export const createTextColumn = <T, >(
+export const createTextColumn = <T,>(
   key: string,
   title: string,
   options?: Partial<ColumnDef<T>>
@@ -371,7 +371,7 @@ export const createTextColumn = <T, >(
   ...options,
 });
 
-export const createBadgeColumn = <T, >(
+export const createBadgeColumn = <T,>(
   key: string,
   title: string,
   badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'default',
@@ -384,7 +384,7 @@ export const createBadgeColumn = <T, >(
   ...options,
 });
 
-export const createDateColumn = <T, >(
+export const createDateColumn = <T,>(
   key: string,
   title: string,
   format: (date: string | Date) => string = date =>
@@ -397,7 +397,7 @@ export const createDateColumn = <T, >(
   ...options,
 });
 
-export const createNumberColumn = <T, >(
+export const createNumberColumn = <T,>(
   key: string,
   title: string,
   formatter?: (value: number) => string,

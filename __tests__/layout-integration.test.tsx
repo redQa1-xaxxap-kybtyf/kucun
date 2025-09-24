@@ -4,15 +4,16 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { useRouter } from 'next/navigation';
+import { SessionProvider } from 'next-auth/react';
+import React from 'react';
+
 import { AuthLayout } from '@/components/common/AuthLayout';
 import { DashboardLayout } from '@/components/common/DashboardLayout';
 import { GlobalSearch } from '@/components/common/GlobalSearch';
 import { Header } from '@/components/common/Header';
 import { MobileNav } from '@/components/common/MobileNav';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { SessionProvider } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import React from 'react';
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({

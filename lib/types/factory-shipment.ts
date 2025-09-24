@@ -3,21 +3,25 @@
 
 // 厂家发货订单状态枚举
 export const FACTORY_SHIPMENT_STATUS = {
-  DRAFT: 'draft',                    // 草稿（用户报货）
-  PLANNING: 'planning',              // 计划中（我们做计划）
+  DRAFT: 'draft', // 草稿（用户报货）
+  PLANNING: 'planning', // 计划中（我们做计划）
   WAITING_DEPOSIT: 'waiting_deposit', // 待定金（等待用户交定金）
-  DEPOSIT_PAID: 'deposit_paid',      // 已付定金（定金已收）
+  DEPOSIT_PAID: 'deposit_paid', // 已付定金（定金已收）
   FACTORY_SHIPPED: 'factory_shipped', // 工厂发货（确认发货）
-  IN_TRANSIT: 'in_transit',          // 运输中（集装箱到港前）
-  ARRIVED: 'arrived',                // 到港（集装箱到港）
-  DELIVERED: 'delivered',            // 已收货（确认用户收货）
-  COMPLETED: 'completed',            // 已完成（货款付完）
+  IN_TRANSIT: 'in_transit', // 运输中（集装箱到港前）
+  ARRIVED: 'arrived', // 到港（集装箱到港）
+  DELIVERED: 'delivered', // 已收货（确认用户收货）
+  COMPLETED: 'completed', // 已完成（货款付完）
 } as const;
 
-export type FactoryShipmentStatus = typeof FACTORY_SHIPMENT_STATUS[keyof typeof FACTORY_SHIPMENT_STATUS];
+export type FactoryShipmentStatus =
+  (typeof FACTORY_SHIPMENT_STATUS)[keyof typeof FACTORY_SHIPMENT_STATUS];
 
 // 厂家发货订单状态标签
-export const FACTORY_SHIPMENT_STATUS_LABELS: Record<FactoryShipmentStatus, string> = {
+export const FACTORY_SHIPMENT_STATUS_LABELS: Record<
+  FactoryShipmentStatus,
+  string
+> = {
   [FACTORY_SHIPMENT_STATUS.DRAFT]: '草稿',
   [FACTORY_SHIPMENT_STATUS.PLANNING]: '计划中',
   [FACTORY_SHIPMENT_STATUS.WAITING_DEPOSIT]: '待定金',
@@ -38,24 +42,24 @@ export interface FactoryShipmentOrderItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
-  
+
   // 手动输入商品信息（临时商品）
   isManualProduct?: boolean;
   manualProductName?: string;
   manualSpecification?: string;
   manualWeight?: number;
   manualUnit?: string;
-  
+
   // 通用显示字段
   displayName: string;
   specification?: string;
   unit: string;
   weight?: number;
-  
+
   remarks?: string;
   createdAt: Date;
   updatedAt: Date;
-  
+
   // 关联数据
   product?: {
     id: string;
@@ -93,7 +97,7 @@ export interface FactoryShipmentOrder {
   completionDate?: Date;
   createdAt: Date;
   updatedAt: Date;
-  
+
   // 关联数据
   customer: {
     id: string;
@@ -128,20 +132,20 @@ export interface CreateFactoryShipmentOrderItemData {
   supplierId: string;
   quantity: number;
   unitPrice: number;
-  
+
   // 手动输入商品信息（临时商品）
   isManualProduct?: boolean;
   manualProductName?: string;
   manualSpecification?: string;
   manualWeight?: number;
   manualUnit?: string;
-  
+
   // 通用显示字段
   displayName: string;
   specification?: string;
   unit: string;
   weight?: number;
-  
+
   remarks?: string;
 }
 

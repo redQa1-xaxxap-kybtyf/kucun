@@ -4,6 +4,9 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import { beforeEach, describe, expect, it, jest } from '@jest/globals';
+import { act, renderHook } from '@testing-library/react';
+
 import {
   globalCache,
   LRUCache,
@@ -11,8 +14,6 @@ import {
   useDebounce,
   useThrottle,
 } from '@/lib/utils/performance';
-import { beforeEach, describe, expect, it, jest } from '@jest/globals';
-import { act, renderHook } from '@testing-library/react';
 
 describe('性能优化工具测试', () => {
   beforeEach(() => {

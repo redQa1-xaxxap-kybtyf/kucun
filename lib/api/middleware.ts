@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
+
 import { unauthorizedResponse } from './response';
 
 /**
@@ -23,11 +24,11 @@ export function withAuth(handler: AuthenticatedHandler) {
   ) => {
     try {
       const session = await getServerSession(authOptions);
-      
+
       if (!session || !session.user) {
         return unauthorizedResponse('请先登录');
       }
-      
+
       return await handler(request, context, session);
     } catch (error) {
       console.error('认证中间件错误:', error);
@@ -63,7 +64,7 @@ export function withValidation<T>(
     try {
       const body = await request.json();
       const validatedData = schema.parse(body) as T;
-      
+
       return await handler(request, context, validatedData);
     } catch (error) {
       console.error('验证中间件错误:', error);
@@ -88,7 +89,7 @@ export function withAuthAndValidation<T>(
     try {
       const body = await request.json();
       const validatedData = schema.parse(body) as T;
-      
+
       return await handler(request, context, session, validatedData);
     } catch (error) {
       console.error('验证错误:', error);

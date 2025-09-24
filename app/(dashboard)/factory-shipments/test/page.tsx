@@ -13,7 +13,10 @@ export default function FactoryShipmentTestPage() {
   const [testResults, setTestResults] = useState<string[]>([]);
 
   const addResult = (result: string) => {
-    setTestResults(prev => [...prev, `${new Date().toLocaleTimeString()}: ${result}`]);
+    setTestResults(prev => [
+      ...prev,
+      `${new Date().toLocaleTimeString()}: ${result}`,
+    ]);
   };
 
   const testDatabaseConnection = async () => {
@@ -97,7 +100,7 @@ export default function FactoryShipmentTestPage() {
 
               {/* 快速导航 */}
               <div className="border-t pt-4">
-                <h3 className="font-semibold text-gray-900 mb-3">快速导航</h3>
+                <h3 className="mb-3 font-semibold text-gray-900">快速导航</h3>
                 <div className="flex flex-wrap gap-2">
                   <Button asChild size="sm">
                     <a href="/factory-shipments">厂家发货列表</a>
@@ -122,7 +125,7 @@ export default function FactoryShipmentTestPage() {
                 {testResults.map((result, index) => (
                   <div
                     key={index}
-                    className="rounded-md bg-gray-50 p-3 text-sm font-mono"
+                    className="rounded-md bg-gray-50 p-3 font-mono text-sm"
                   >
                     {result}
                   </div>

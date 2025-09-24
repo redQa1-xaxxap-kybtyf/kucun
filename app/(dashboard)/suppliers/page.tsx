@@ -43,7 +43,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
 import {
   batchDeleteSuppliers,
   batchUpdateSupplierStatus,

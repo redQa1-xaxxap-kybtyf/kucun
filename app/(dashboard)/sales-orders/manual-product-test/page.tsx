@@ -17,7 +17,7 @@ import { Separator } from '@/components/ui/separator';
 
 /**
  * 调货销售手动输入商品功能测试页面
- * 
+ *
  * 功能说明：
  * 1. 支持两种产品选择模式：库存选择和手动输入
  * 2. 手动输入模式允许用户输入临时商品信息
@@ -55,13 +55,13 @@ export default function ManualProductTestPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <div className="flex items-center gap-2">
                 <Package className="h-4 w-4 text-blue-600" />
                 <span className="font-medium">库存选择模式</span>
               </div>
-              <ul className="text-sm text-muted-foreground space-y-1 ml-6">
+              <ul className="ml-6 space-y-1 text-sm text-muted-foreground">
                 <li>• 从现有商品库存中搜索和选择</li>
                 <li>• 自动填充商品规格、单位等信息</li>
                 <li>• 支持零库存产品选择（调货销售专用）</li>
@@ -73,7 +73,7 @@ export default function ManualProductTestPage() {
                 <PenTool className="h-4 w-4 text-amber-600" />
                 <span className="font-medium">手动输入模式</span>
               </div>
-              <ul className="text-sm text-muted-foreground space-y-1 ml-6">
+              <ul className="ml-6 space-y-1 text-sm text-muted-foreground">
                 <li>• 手动输入临时商品名称和规格</li>
                 <li>• 支持重量、单位等详细信息</li>
                 <li>• 不会保存到商品库存中</li>
@@ -88,14 +88,14 @@ export default function ManualProductTestPage() {
       <Card>
         <CardHeader>
           <CardTitle>测试指南</CardTitle>
-          <CardDescription>
-            按照以下步骤测试手动输入商品功能
-          </CardDescription>
+          <CardDescription>按照以下步骤测试手动输入商品功能</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-3">
             <div className="flex items-start gap-3">
-              <Badge variant="outline" className="mt-0.5">1</Badge>
+              <Badge variant="outline" className="mt-0.5">
+                1
+              </Badge>
               <div>
                 <p className="font-medium">创建调货销售订单</p>
                 <p className="text-sm text-muted-foreground">
@@ -103,9 +103,11 @@ export default function ManualProductTestPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
-              <Badge variant="outline" className="mt-0.5">2</Badge>
+              <Badge variant="outline" className="mt-0.5">
+                2
+              </Badge>
               <div>
                 <p className="font-medium">测试产品选择模式切换</p>
                 <p className="text-sm text-muted-foreground">
@@ -113,9 +115,11 @@ export default function ManualProductTestPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
-              <Badge variant="outline" className="mt-0.5">3</Badge>
+              <Badge variant="outline" className="mt-0.5">
+                3
+              </Badge>
               <div>
                 <p className="font-medium">测试库存选择模式</p>
                 <p className="text-sm text-muted-foreground">
@@ -123,9 +127,11 @@ export default function ManualProductTestPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
-              <Badge variant="outline" className="mt-0.5">4</Badge>
+              <Badge variant="outline" className="mt-0.5">
+                4
+              </Badge>
               <div>
                 <p className="font-medium">测试手动输入模式</p>
                 <p className="text-sm text-muted-foreground">
@@ -133,9 +139,11 @@ export default function ManualProductTestPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
-              <Badge variant="outline" className="mt-0.5">5</Badge>
+              <Badge variant="outline" className="mt-0.5">
+                5
+              </Badge>
               <div>
                 <p className="font-medium">测试混合使用</p>
                 <p className="text-sm text-muted-foreground">
@@ -143,9 +151,11 @@ export default function ManualProductTestPage() {
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start gap-3">
-              <Badge variant="outline" className="mt-0.5">6</Badge>
+              <Badge variant="outline" className="mt-0.5">
+                6
+              </Badge>
               <div>
                 <p className="font-medium">验证数据保存</p>
                 <p className="text-sm text-muted-foreground">
@@ -163,10 +173,10 @@ export default function ManualProductTestPage() {
           <CardTitle>技术实现要点</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <h4 className="font-medium">数据库扩展</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <ul className="space-y-1 text-sm text-muted-foreground">
                 <li>• productId字段改为可选</li>
                 <li>• 新增isManualProduct标识字段</li>
                 <li>• 新增手动输入商品信息字段</li>
@@ -175,7 +185,7 @@ export default function ManualProductTestPage() {
             </div>
             <div className="space-y-2">
               <h4 className="font-medium">前端组件</h4>
-              <ul className="text-sm text-muted-foreground space-y-1">
+              <ul className="space-y-1 text-sm text-muted-foreground">
                 <li>• EnhancedProductInput组件</li>
                 <li>• 模式切换按钮</li>
                 <li>• 条件显示输入字段</li>
@@ -206,16 +216,14 @@ export default function ManualProductTestPage() {
               </Button>
             </Link>
             <Link href="/sales-orders/transfer-cost-test">
-              <Button variant="outline">
-                成本价管理测试
-              </Button>
+              <Button variant="outline">成本价管理测试</Button>
             </Link>
           </div>
         </CardContent>
       </Card>
 
       <Separator />
-      
+
       {/* 页面底部信息 */}
       <div className="text-center text-sm text-muted-foreground">
         <p>调货销售手动输入商品功能 - 提升用户体验，支持临时商品管理</p>

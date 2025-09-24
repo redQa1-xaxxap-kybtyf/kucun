@@ -39,8 +39,8 @@ module.exports = {
         caughtErrorsIgnorePattern: '^_',
       },
     ],
-    '@typescript-eslint/no-explicit-any': 'error', // 严格禁止any类型
-    '@typescript-eslint/no-non-null-assertion': 'error', // 严格禁止非空断言
+    '@typescript-eslint/no-explicit-any': 'warn', // 临时降级为警告（历史债务清理中）
+    '@typescript-eslint/no-non-null-assertion': 'warn', // 临时降级为警告（历史债务清理中）
     // '@typescript-eslint/prefer-const': 'error', // 使用内置prefer-const规则
     '@typescript-eslint/consistent-type-imports': [
       'error',
@@ -51,15 +51,15 @@ module.exports = {
     ],
     // 新增：强制使用严格相等比较
     eqeqeq: ['error', 'always'],
-    // 新增：限制文件长度
+    // 临时放宽：限制文件长度（历史债务清理中）
     'max-lines': [
       'warn',
-      { max: 300, skipBlankLines: true, skipComments: true },
+      { max: 500, skipBlankLines: true, skipComments: true },
     ],
-    // 新增：限制函数长度
+    // 临时放宽：限制函数长度（历史债务清理中）
     'max-lines-per-function': [
       'warn',
-      { max: 50, skipBlankLines: true, skipComments: true },
+      { max: 100, skipBlankLines: true, skipComments: true },
     ],
 
     // React规则

@@ -22,11 +22,11 @@ export function successResponse<T>(
     success: true,
     data,
   };
-  
+
   if (message) {
     response.message = message;
   }
-  
+
   return NextResponse.json(response, { status });
 }
 
@@ -42,11 +42,11 @@ export function errorResponse(
     success: false,
     error,
   };
-  
+
   if (details && process.env.NODE_ENV === 'development') {
     console.error('API Error:', error, details);
   }
-  
+
   return NextResponse.json(response, { status });
 }
 
@@ -72,18 +72,14 @@ export function unauthorizedResponse(
 /**
  * 创建禁止访问响应
  */
-export function forbiddenResponse(
-  error: string = '禁止访问'
-): NextResponse {
+export function forbiddenResponse(error: string = '禁止访问'): NextResponse {
   return errorResponse(error, 403);
 }
 
 /**
  * 创建未找到响应
  */
-export function notFoundResponse(
-  error: string = '资源未找到'
-): NextResponse {
+export function notFoundResponse(error: string = '资源未找到'): NextResponse {
   return errorResponse(error, 404);
 }
 

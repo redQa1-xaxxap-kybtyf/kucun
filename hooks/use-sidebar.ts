@@ -1,8 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useMediaQuery } from './use-media-query';
+
 import type { SidebarState } from '@/lib/types/layout';
+
+import { useMediaQuery } from './use-media-query';
 
 /**
  * 侧边栏状态管理Hook

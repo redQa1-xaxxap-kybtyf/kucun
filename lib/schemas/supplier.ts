@@ -91,8 +91,12 @@ export const BatchUpdateSupplierStatusSchema = z.object({
 export type SupplierCreateFormData = z.infer<typeof CreateSupplierSchema>;
 export type SupplierUpdateFormData = z.infer<typeof UpdateSupplierSchema>;
 export type SupplierQueryFormData = z.infer<typeof SupplierQuerySchema>;
-export type BatchDeleteSuppliersFormData = z.infer<typeof BatchDeleteSuppliersSchema>;
-export type BatchUpdateSupplierStatusFormData = z.infer<typeof BatchUpdateSupplierStatusSchema>;
+export type BatchDeleteSuppliersFormData = z.infer<
+  typeof BatchDeleteSuppliersSchema
+>;
+export type BatchUpdateSupplierStatusFormData = z.infer<
+  typeof BatchUpdateSupplierStatusSchema
+>;
 
 // 表单默认值
 export const supplierCreateDefaults: Partial<SupplierCreateFormData> = {
@@ -142,7 +146,5 @@ export function formatSupplierPhone(phone?: string): string {
  */
 export function formatSupplierAddress(address?: string): string {
   if (!address) return '-';
-  return address.length > 50
-    ? `${address.substring(0, 50)}...`
-    : address;
+  return address.length > 50 ? `${address.substring(0, 50)}...` : address;
 }

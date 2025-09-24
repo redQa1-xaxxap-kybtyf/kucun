@@ -137,7 +137,10 @@ export const getAlertLevel = (
   reservedQuantity: number = 0,
   minQuantity: number = INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY
 ): AlertLevel => {
-  const availableQuantity = calculateAvailableQuantity(quantity, reservedQuantity);
+  const availableQuantity = calculateAvailableQuantity(
+    quantity,
+    reservedQuantity
+  );
 
   if (availableQuantity <= 0) {
     return 'critical';

@@ -50,11 +50,7 @@ const temporaryProductSchema = z.object({
     .max(99999.99, '重量不能超过99,999.99')
     .multipleOf(0.01, '重量最多保留2位小数')
     .optional(),
-  unit: z
-    .string()
-    .max(20, '单位不能超过20个字符')
-    .optional()
-    .or(z.literal('')),
+  unit: z.string().max(20, '单位不能超过20个字符').optional().or(z.literal('')),
 });
 
 type TemporaryProductData = z.infer<typeof temporaryProductSchema>;
@@ -102,7 +98,9 @@ export function AddTemporaryProductDialog({
       form.setValue('name', initialName);
       // 聚焦到商品名称输入框
       setTimeout(() => {
-        const nameInput = document.querySelector('[name="name"]') as HTMLInputElement;
+        const nameInput = document.querySelector(
+          '[name="name"]'
+        ) as HTMLInputElement;
         if (nameInput) {
           nameInput.focus();
           nameInput.select();
@@ -137,13 +135,16 @@ export function AddTemporaryProductDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(handleSubmit)}
+            className="space-y-4"
+          >
             {/* 提示信息 */}
-            <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-md">
-              <AlertCircle className="h-4 w-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3">
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
               <div className="text-sm">
                 <div className="font-medium text-amber-800">临时商品说明</div>
-                <div className="text-amber-700 mt-1">
+                <div className="mt-1 text-amber-700">
                   此商品仅存储在当前订单中，不会添加到商品库存系统
                 </div>
               </div>
@@ -206,9 +207,11 @@ export function AddTemporaryProductDialog({
                         min="0"
                         placeholder="输入重量"
                         value={field.value || ''}
-                        onChange={(e) => {
+                        onChange={e => {
                           const value = e.target.value;
-                          field.onChange(value === '' ? undefined : Number(value));
+                          field.onChange(
+                            value === '' ? undefined : Number(value)
+                          );
                         }}
                       />
                     </FormControl>
@@ -225,14 +228,17 @@ export function AddTemporaryProductDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>单位</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value || ''}>
+                  <Select
+                    onValueChange={field.onChange}
+                    value={field.value || ''}
+                  >
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="选择单位" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {UNIT_OPTIONS.map((option) => (
+                      {UNIT_OPTIONS.map(option => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>
@@ -248,9 +254,7 @@ export function AddTemporaryProductDialog({
               <Button type="button" variant="outline" onClick={handleClose}>
                 取消
               </Button>
-              <Button type="submit">
-                添加商品
-              </Button>
+              <Button type="submit">添加商品</Button>
             </DialogFooter>
           </form>
         </Form>

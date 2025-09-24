@@ -1,5 +1,5 @@
-import { Prisma } from '@prisma/client';
-import { z } from 'zod';
+import type { Prisma } from '@prisma/client';
+import type { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { productUpdateSchema } from '@/lib/validations/product';
