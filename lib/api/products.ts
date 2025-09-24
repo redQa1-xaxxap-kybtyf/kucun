@@ -8,10 +8,12 @@ import type {
   BatchDeleteProductsInput,
   BatchDeleteResult,
   Product,
-  ProductCreateInput,
   ProductQueryParams,
 } from '@/lib/types/product';
-import type { ProductUpdateFormData } from '@/lib/validations/product';
+import type {
+  ProductCreateFormData,
+  ProductUpdateFormData,
+} from '@/lib/validations/product';
 
 const API_BASE = '/api/products';
 
@@ -95,7 +97,7 @@ export async function getProduct(id: string): Promise<Product> {
  * 创建产品
  */
 export async function createProduct(
-  productData: ProductCreateInput
+  productData: ProductCreateFormData
 ): Promise<Product> {
   const response = await fetch(API_BASE, {
     method: 'POST',

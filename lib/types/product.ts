@@ -171,7 +171,7 @@ export interface ProductVariantUpdateInput {
   status?: ProductStatus;
 }
 
-// ProductUpdateInput 已移除 - 使用 lib/schemas/product.ts 中的 UpdateProductData 作为唯一真理源
+// ProductUpdateInput 已移除 - 使用 lib/validations/product.ts 中的 ProductUpdateFormData 作为唯一真理源
 
 export interface ProductQueryParams {
   page?: number;
@@ -225,7 +225,7 @@ export interface BatchDeleteResult {
 
 // 新增类型定义以匹配页面需求
 export type CreateProductData = ProductCreateInput;
-// UpdateProductData 现在从 lib/schemas/product.ts 导入，遵循唯一真理源原则
+// UpdateProductData 现在从 lib/validations/product.ts 导入，遵循唯一真理源原则
 
 // 产品单位显示名称映射
 export const PRODUCT_UNIT_LABELS: Record<string, string> = {
