@@ -4,8 +4,10 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { UpdateCategorySchema } from '@/lib/schemas/category';
 import type { ApiResponse } from '@/lib/types/api';
@@ -36,6 +38,15 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 验证用户身份
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
 
     // 验证ID格式
@@ -124,6 +135,15 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 验证用户身份
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
     const body = await request.json();
 
@@ -290,6 +310,15 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    // 验证用户身份
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
     const { id } = await params;
 
     // 验证ID格式

@@ -289,7 +289,9 @@ function formatSalesOrder(order: any): SalesOrderWithDetails {
  */
 export async function createSalesOrder(
   data: z.infer<typeof salesOrderCreateSchema>,
-  userId: string
+  userId: string,
+  ipAddress?: string | null,
+  userAgent?: string | null
 ) {
   // 验证数据
   const validatedData = salesOrderCreateSchema.parse(data);
@@ -367,6 +369,29 @@ export async function createSalesOrder(
       },
     },
   });
+
+  // 记录销售订单创建日志
+  try {
+    await logBusinessOperation(
+      'create_sales_order',
+      `创建销售订单：${order.orderNumber} - 客户：${order.customer?.name || '未知'} - 金额：¥${totalAmount.toFixed(2)}`,
+      userId,
+      ipAddress,
+      userAgent,
+      {
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        customerId: order.customerId,
+        customerName: order.customer?.name,
+        totalAmount,
+        itemCount: validatedData.items.length,
+        status: order.status,
+      }
+    );
+  } catch (logError) {
+    console.error('记录销售订单创建日志失败:', logError);
+    // 不影响主要业务流程
+  }
 
   return formatSalesOrder(order);
 }

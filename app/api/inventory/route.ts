@@ -1,8 +1,9 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { extractRequestInfo, logBusinessOperation } from '@/lib/logger';
 import {
   inventoryAdjustSchema,
   inventoryQuerySchema,
@@ -306,10 +307,37 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // 记录库存调整日志（可选，这里简化处理）
-    console.log(
-      `库存调整: 产品${productId}, ${adjustmentType} ${quantity}, 原因: ${reason}`
-    );
+    // 记录库存调整日志
+    try {
+      const requestInfo = extractRequestInfo(request);
+      const adjustmentDescription = `库存${adjustmentType === 'increase' ? '增加' : '减少'}：${product.name} (编码: ${product.code}) - 数量: ${adjustmentType === 'increase' ? '+' : '-'}${quantity}`;
+
+      await logBusinessOperation(
+        'inventory_adjustment',
+        adjustmentDescription,
+        session.user.id,
+        requestInfo.ipAddress,
+        requestInfo.userAgent,
+        {
+          inventoryId: inventory.id,
+          productId: product.id,
+          productCode: product.code,
+          productName: product.name,
+          batchNumber: batchNumber || null,
+          adjustmentType,
+          quantity,
+          oldQuantity:
+            adjustmentType === 'increase'
+              ? inventory.quantity - quantity
+              : inventory.quantity + quantity,
+          newQuantity: inventory.quantity,
+          reason,
+        }
+      );
+    } catch (logError) {
+      console.error('记录库存调整日志失败:', logError);
+      // 不影响主要业务流程
+    }
 
     // 获取更新后的库存信息
     const updatedInventory = await prisma.inventory.findUnique({

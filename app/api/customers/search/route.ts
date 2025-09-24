@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
 /**
@@ -8,6 +10,15 @@ import { prisma } from '@/lib/db';
  */
 export async function GET(request: NextRequest) {
   try {
+    // 验证用户身份
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
     const limit = parseInt(searchParams.get('limit') || '10', 10);

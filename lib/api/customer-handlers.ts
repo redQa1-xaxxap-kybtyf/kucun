@@ -109,7 +109,10 @@ export async function getCustomerDetail(id: string): Promise<Customer> {
  * @throws {Error} 当创建失败时抛出错误
  */
 export async function createCustomer(
-  data: CustomerCreateInput
+  data: CustomerCreateInput,
+  userId?: string | null,
+  ipAddress?: string | null,
+  userAgent?: string | null
 ): Promise<Customer> {
   // 处理扩展信息
   const extendedInfoStr = processExtendedInfo(data.extendedInfo);
@@ -131,6 +134,27 @@ export async function createCustomer(
       },
     },
   });
+
+  // 记录客户创建日志
+  try {
+    await logBusinessOperation(
+      'create_customer',
+      `创建新客户：${customer.name} - 电话：${customer.phone || '无'} - 地址：${customer.address || '无'}`,
+      userId,
+      ipAddress,
+      userAgent,
+      {
+        customerId: customer.id,
+        customerName: customer.name,
+        phone: customer.phone,
+        address: customer.address,
+        parentCustomerId: customer.parentCustomerId,
+      }
+    );
+  } catch (logError) {
+    console.error('记录客户创建日志失败:', logError);
+    // 不影响主要业务流程
+  }
 
   return {
     id: customer.id,
@@ -154,7 +178,10 @@ export async function createCustomer(
  */
 export async function updateCustomer(
   id: string,
-  data: CustomerUpdateInput
+  data: CustomerUpdateInput,
+  userId?: string | null,
+  ipAddress?: string | null,
+  userAgent?: string | null
 ): Promise<Customer> {
   // 检查客户是否存在
   const existingCustomer = await prisma.customer.findUnique({
@@ -191,6 +218,55 @@ export async function updateCustomer(
     },
   });
 
+  // 记录客户更新日志
+  try {
+    // 构建变更描述
+    const changes: string[] = [];
+    if (data.name && data.name !== existingCustomer.name) {
+      changes.push(`名称: ${existingCustomer.name} → ${data.name}`);
+    }
+    if (data.phone !== undefined && data.phone !== existingCustomer.phone) {
+      changes.push(
+        `电话: ${existingCustomer.phone || '无'} → ${data.phone || '无'}`
+      );
+    }
+    if (
+      data.address !== undefined &&
+      data.address !== existingCustomer.address
+    ) {
+      changes.push(
+        `地址: ${existingCustomer.address || '无'} → ${data.address || '无'}`
+      );
+    }
+
+    const changeDescription =
+      changes.length > 0
+        ? `修改客户信息：${customer.name} - ${changes.join(', ')}`
+        : `更新客户信息：${customer.name}`;
+
+    await logBusinessOperation(
+      'update_customer',
+      changeDescription,
+      userId,
+      ipAddress,
+      userAgent,
+      {
+        customerId: customer.id,
+        customerName: customer.name,
+        changes,
+        oldName: existingCustomer.name,
+        newName: data.name,
+        oldPhone: existingCustomer.phone,
+        newPhone: data.phone,
+        oldAddress: existingCustomer.address,
+        newAddress: data.address,
+      }
+    );
+  } catch (logError) {
+    console.error('记录客户更新日志失败:', logError);
+    // 不影响主要业务流程
+  }
+
   return {
     id: customer.id,
     name: customer.name,
@@ -209,7 +285,12 @@ export async function updateCustomer(
  * @param id 客户ID
  * @throws {Error} 当客户不存在或删除失败时抛出错误
  */
-export async function deleteCustomer(id: string): Promise<void> {
+export async function deleteCustomer(
+  id: string,
+  userId?: string | null,
+  ipAddress?: string | null,
+  userAgent?: string | null
+): Promise<void> {
   // 检查客户是否存在
   const existingCustomer = await prisma.customer.findUnique({
     where: { id },
@@ -236,6 +317,27 @@ export async function deleteCustomer(id: string): Promise<void> {
   await prisma.customer.delete({
     where: { id },
   });
+
+  // 记录客户删除日志
+  try {
+    await logBusinessOperation(
+      'delete_customer',
+      `删除客户：${existingCustomer.name} - 电话：${existingCustomer.phone || '无'} - 地址：${existingCustomer.address || '无'}`,
+      userId,
+      ipAddress,
+      userAgent,
+      {
+        customerId: existingCustomer.id,
+        customerName: existingCustomer.name,
+        phone: existingCustomer.phone,
+        address: existingCustomer.address,
+        parentCustomerId: existingCustomer.parentCustomerId,
+      }
+    );
+  } catch (logError) {
+    console.error('记录客户删除日志失败:', logError);
+    // 不影响主要业务流程
+  }
 }
 
 /**

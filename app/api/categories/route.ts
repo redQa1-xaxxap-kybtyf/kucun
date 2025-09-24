@@ -4,8 +4,10 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import {
   CategoryQuerySchema,
@@ -36,6 +38,15 @@ interface Category {
  */
 export async function GET(request: NextRequest) {
   try {
+    // 验证用户身份
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
 
     // 解析查询参数
@@ -163,6 +174,15 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
+    // 验证用户身份
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
 
     // 验证请求数据

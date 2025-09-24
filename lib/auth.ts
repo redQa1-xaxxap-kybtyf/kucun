@@ -5,7 +5,74 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { prisma } from './db';
 import { env } from './env';
+import { logSecurityEvent, logUserAction } from './logger';
 import { userValidations } from './validations/base';
+
+/**
+ * 验证验证码
+ * @param sessionId 验证码会话ID
+ * @param captcha 用户输入的验证码
+ * @returns 验证是否成功
+ */
+async function verifyCaptcha(
+  sessionId: string,
+  captcha: string
+): Promise<boolean> {
+  try {
+    // 查找验证码会话
+    const session = await prisma.captchaSession.findUnique({
+      where: { sessionId },
+    });
+
+    if (!session) {
+      console.warn('验证码会话不存在:', sessionId);
+      return false;
+    }
+
+    // 检查是否过期
+    if (new Date() > session.expiresAt) {
+      // 删除过期的会话
+      await prisma.captchaSession.delete({
+        where: { sessionId },
+      });
+      console.warn('验证码已过期:', sessionId);
+      return false;
+    }
+
+    // 检查尝试次数
+    if (session.attempts >= 5) {
+      // 删除超过尝试次数的会话
+      await prisma.captchaSession.delete({
+        where: { sessionId },
+      });
+      console.warn('验证码尝试次数过多:', sessionId);
+      return false;
+    }
+
+    // 验证验证码（不区分大小写）
+    const isValid = captcha.toUpperCase() === session.captchaText.toUpperCase();
+
+    if (isValid) {
+      // 验证成功，删除会话（一次性使用）
+      await prisma.captchaSession.delete({
+        where: { sessionId },
+      });
+      return true;
+    } else {
+      // 验证失败，增加尝试次数
+      await prisma.captchaSession.update({
+        where: { sessionId },
+        data: {
+          attempts: session.attempts + 1,
+        },
+      });
+      return false;
+    }
+  } catch (error) {
+    console.error('验证码验证失败:', error);
+    return false;
+  }
+}
 
 // 扩展 NextAuth 类型定义
 declare module 'next-auth' {
@@ -50,14 +117,16 @@ export const authOptions: NextAuthOptions = {
         username: { label: '用户名', type: 'text' },
         password: { label: '密码', type: 'password' },
         captcha: { label: '验证码', type: 'text' },
+        captchaSessionId: { label: '验证码会话ID', type: 'text' },
       },
-      async authorize(credentials) {
+      async authorize(credentials, req) {
         if (
           !credentials?.username ||
           !credentials?.password ||
-          !credentials?.captcha
+          !credentials?.captcha ||
+          !credentials?.captchaSessionId
         ) {
-          throw new Error('用户名、密码和验证码不能为空');
+          throw new Error('用户名、密码、验证码和验证码会话ID不能为空');
         }
 
         // 验证输入格式
@@ -69,6 +138,29 @@ export const authOptions: NextAuthOptions = {
 
         if (!validationResult.success) {
           throw new Error('用户名、密码或验证码格式不正确');
+        }
+
+        // 验证验证码
+        const captchaValid = await verifyCaptcha(
+          credentials.captchaSessionId,
+          credentials.captcha
+        );
+
+        if (!captchaValid) {
+          // 记录验证码验证失败的安全日志
+          await logSecurityEvent(
+            'failed_login',
+            `登录失败：验证码错误 - ${credentials.username}`,
+            'warning',
+            null,
+            null,
+            null,
+            {
+              username: credentials.username,
+              reason: 'invalid_captcha',
+            }
+          );
+          throw new Error('验证码错误或已过期');
         }
 
         try {
@@ -92,11 +184,39 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user) {
+            // 记录用户不存在的安全日志
+            await logSecurityEvent(
+              'failed_login',
+              `登录失败：用户不存在 - ${credentials.username}`,
+              'warning',
+              null,
+              null,
+              null,
+              {
+                username: credentials.username,
+                reason: 'user_not_found',
+              }
+            );
             throw new Error('用户不存在');
           }
 
           // 检查用户状态
           if (user.status !== 'active') {
+            // 记录账户被禁用的安全日志
+            await logSecurityEvent(
+              'failed_login',
+              `登录失败：账户已被禁用 - ${credentials.username}`,
+              'error',
+              user.id,
+              null,
+              null,
+              {
+                username: credentials.username,
+                userId: user.id,
+                reason: 'account_disabled',
+                status: user.status,
+              }
+            );
             throw new Error('用户账户已被禁用');
           }
 
@@ -107,8 +227,34 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!isPasswordValid) {
+            // 记录登录失败日志
+            await logSecurityEvent(
+              'failed_login',
+              `登录失败：密码错误 - ${credentials.username}`,
+              'warning',
+              null,
+              null,
+              null,
+              {
+                username: credentials.username,
+                reason: 'invalid_password',
+              }
+            );
             throw new Error('密码错误');
           }
+
+          // 记录登录成功日志
+          await logUserAction(
+            'login',
+            `用户登录系统 - ${user.username}`,
+            user.id,
+            null,
+            null,
+            {
+              username: user.username,
+              role: user.role,
+            }
+          );
 
           // 返回用户信息（不包含密码）
           return {

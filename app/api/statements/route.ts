@@ -1,10 +1,10 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { statementQuerySchema } from '@/lib/validations/statement';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 
 /**
  * GET /api/statements - 获取往来账单列表

@@ -31,11 +31,28 @@ model User {
   paymentRecords        PaymentRecord[]
   factoryShipmentOrders FactoryShipmentOrder[]
   refundRecords         RefundRecord[]
+  systemLogs            SystemLog[]
 
   @@index([email])
   @@index([username])
   @@index([role])
   @@map("users")
+}
+
+// 验证码会话表 - 服务器端验证码验证
+model CaptchaSession {
+  id          String   @id @default(uuid())
+  sessionId   String   @unique @map("session_id")
+  captchaText String   @map("captcha_text")
+  clientIp    String   @map("client_ip")
+  attempts    Int      @default(0)
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@index([sessionId])
+  @@index([clientIp])
+  @@index([expiresAt])
+  @@map("captcha_sessions")
 }
 
 // 客户表 - 客户信息管理，支持层级关系
@@ -483,4 +500,46 @@ model StatementTransaction {
   @@index([transactionDate(sort: Desc)], map: "idx_statement_transactions_date")
   @@index([status], map: "idx_statement_transactions_status")
   @@map("statement_transactions")
+}
+
+// 系统设置表 - 存储系统基本配置信息
+model SystemSetting {
+  id          String   @id @default(uuid())
+  key         String   @unique // 设置项的唯一键名
+  value       String   // 设置项的值（JSON格式存储复杂数据）
+  category    String   @default("basic") // 设置分类：basic, user, storage, log
+  description String?  // 设置项描述
+  dataType    String   @default("string") // 数据类型：string, number, boolean, json
+  isPublic    Boolean  @default(false) @map("is_public") // 是否为公开设置（前端可访问）
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([category])
+  @@index([key])
+  @@index([isPublic])
+  @@map("system_settings")
+}
+
+// 系统日志表 - 记录系统操作和事件日志
+model SystemLog {
+  id          String   @id @default(uuid())
+  type        String   // 日志类型：user_action, business_operation, system_event, error, security
+  level       String   // 日志级别：info, warning, error, critical
+  action      String   // 操作动作：login, create_user, update_product等
+  description String   // 日志描述
+  userId      String?  @map("user_id") // 操作用户ID（可选）
+  ipAddress   String?  @map("ip_address") // 操作IP地址
+  userAgent   String?  @map("user_agent") // 用户代理
+  metadata    String?  // 额外的元数据（JSON格式，SQLite存储为文本）
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // 关联关系
+  user User? @relation(fields: [userId], references: [id])
+
+  @@index([type])
+  @@index([level])
+  @@index([action])
+  @@index([userId], map: "idx_system_logs_user")
+  @@index([createdAt(sort: Desc)], map: "idx_system_logs_date")
+  @@map("system_logs")
 }
