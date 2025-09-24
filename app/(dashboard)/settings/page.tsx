@@ -39,6 +39,13 @@ const SettingsPage = () => {
   const { data: session } = useSession();
   const permissions = usePermissions(session?.user?.role as 'admin' | 'sales');
 
+  // 直接重定向到基本设置页面，避免冗余的聚合页面
+  React.useEffect(() => {
+    if (typeof window !== 'undefined' && session && permissions.isAdmin()) {
+      window.location.replace('/settings/basic');
+    }
+  }, [session, permissions]);
+
   // 检查用户权限
   if (!session) {
     return <LoginRequiredView />;
@@ -68,13 +75,6 @@ const SettingsPage = () => {
       </div>
     );
   }
-
-  // 直接重定向到基本设置页面，避免冗余的聚合页面
-  React.useEffect(() => {
-    if (typeof window !== 'undefined') {
-      window.location.replace('/settings/basic');
-    }
-  }, []);
 
   return (
     <div className="container mx-auto space-y-6 py-6">
