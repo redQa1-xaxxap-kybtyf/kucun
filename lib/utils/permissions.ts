@@ -201,9 +201,6 @@ export function canAccessRoute(
   // 路由权限映射
   const routePermissions: Record<string, string[]> = {
     '/settings': [PERMISSIONS.SYSTEM_SETTINGS_READ],
-    '/settings/basic': [PERMISSIONS.SYSTEM_SETTINGS_WRITE],
-    '/settings/user-management': [PERMISSIONS.SYSTEM_SETTINGS_WRITE],
-    '/settings/business': [PERMISSIONS.SYSTEM_SETTINGS_WRITE],
     '/users': [PERMISSIONS.SYSTEM_USERS_READ],
     '/products': [PERMISSIONS.PRODUCTS_READ],
     '/inventory': [PERMISSIONS.INVENTORY_READ],
