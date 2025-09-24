@@ -8,6 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import type { InboundListResponse } from '@/lib/types/inbound';
+import { toISOString } from '@/lib/utils/datetime';
 import { cleanRemarks, inboundQuerySchema } from '@/lib/validations/inbound';
 
 /**
@@ -162,11 +163,13 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
     remarks: record.remarks || '',
     userId: record.userId,
     colorCode: record.colorCode || '',
-    productionDate: record.productionDate?.toISOString().split('T')[0] || '',
+    productionDate: record.productionDate
+      ? toISOString(record.productionDate)?.split('T')[0] || ''
+      : '',
     unitCost: record.unitCost || 0,
     totalCost: record.totalCost || 0,
-    createdAt: record.createdAt.toISOString(),
-    updatedAt: record.updatedAt.toISOString(),
+    createdAt: toISOString(record.createdAt) || '',
+    updatedAt: toISOString(record.updatedAt) || '',
 
     // 嵌套的产品对象（前端组件期望的结构）
     product: {
@@ -330,12 +333,13 @@ export async function createInboundRecord(
     remarks: inboundRecord.remarks || '',
     userId: inboundRecord.userId,
     colorCode: inboundRecord.colorCode || '',
-    productionDate:
-      inboundRecord.productionDate?.toISOString().split('T')[0] || '',
+    productionDate: inboundRecord.productionDate
+      ? toISOString(inboundRecord.productionDate)?.split('T')[0] || ''
+      : '',
     unitCost: inboundRecord.unitCost || 0,
     totalCost: inboundRecord.totalCost || 0,
-    createdAt: inboundRecord.createdAt.toISOString(),
-    updatedAt: inboundRecord.updatedAt.toISOString(),
+    createdAt: toISOString(inboundRecord.createdAt) || '',
+    updatedAt: toISOString(inboundRecord.updatedAt) || '',
 
     // 嵌套的产品对象（前端组件期望的结构）
     product: {

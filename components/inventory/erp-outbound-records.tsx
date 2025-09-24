@@ -1,8 +1,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import {
   ArrowLeft,
   Calendar,
@@ -39,6 +37,7 @@ import {
   type OutboundRecord,
   type OutboundType,
 } from '@/lib/types/inventory';
+import { formatDateTimeCN } from '@/lib/utils/datetime';
 
 interface ERPOutboundRecordsProps {
   onCreateNew?: () => void;
@@ -157,9 +156,8 @@ export function ERPOutboundRecords({ onCreateNew }: ERPOutboundRecordsProps) {
 
   const outboundRecords = data?.data || [];
 
-  // 格式化日期
-  const formatDate = (dateString: string) =>
-    format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
+  // 格式化日期 - 使用统一的时间格式化函数
+  const formatDate = (dateString: string) => formatDateTimeCN(dateString);
 
   // 重置筛选
   const resetFilters = () => {

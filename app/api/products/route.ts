@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 
+import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
@@ -175,8 +176,7 @@ export async function GET(request: NextRequest) {
       updatedAt: product.updatedAt,
     }));
 
-    return NextResponse.json({
-      success: true,
+    return createDateTimeResponse({
       data: formattedProducts,
       pagination: {
         page,
@@ -319,11 +319,7 @@ export async function POST(request: NextRequest) {
       updatedAt: product.updatedAt,
     };
 
-    return NextResponse.json({
-      success: true,
-      data: formattedProduct,
-      message: '产品创建成功',
-    });
+    return createDateTimeResponse(formattedProduct, 201, '产品创建成功');
   } catch (error) {
     console.error('创建产品错误:', error);
 

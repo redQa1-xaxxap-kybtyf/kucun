@@ -7,10 +7,12 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Plus, Search, Users } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import React from 'react';
 
+import { UserForm } from '@/components/settings/UserForm';
+import { UserManagementTable } from '@/components/settings/UserManagementTable';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -37,8 +39,6 @@ import type {
   UserManagementUser,
 } from '@/lib/types/settings';
 
-import { UserForm } from '@/components/settings/UserForm';
-import { UserManagementTable } from '@/components/settings/UserManagementTable';
 
 export default function UsersSettingsPage() {
   const { data: session } = useSession();

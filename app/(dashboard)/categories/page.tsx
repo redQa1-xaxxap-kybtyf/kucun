@@ -76,6 +76,7 @@ import {
   type Category,
   type CategoryQueryParams,
 } from '@/lib/api/categories';
+import { formatDateTimeCN } from '@/lib/utils/datetime';
 
 /**
  * 分类管理页面组件
@@ -357,15 +358,8 @@ function CategoriesPage() {
     updateStatusMutation.mutate({ id: category.id, status: newStatus });
   };
 
-  // 格式化日期
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+  // 格式化日期 - 使用统一的时间格式化函数
+  const formatDate = (dateString: string) => formatDateTimeCN(dateString);
 
   // 加载状态
   if (isLoading) {

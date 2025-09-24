@@ -4,8 +4,9 @@
  */
 
 import crypto from 'crypto';
-import { getServerSession } from 'next-auth';
+
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -34,7 +35,7 @@ function encrypt(text: string): string {
     );
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
-    return iv.toString('hex') + ':' + encrypted;
+    return `${iv.toString('hex')}:${encrypted}`;
   } catch (error) {
     console.error('加密失败:', error);
     // 如果加密失败，返回原文（在生产环境中应该抛出错误）

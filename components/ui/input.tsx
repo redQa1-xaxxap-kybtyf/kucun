@@ -4,12 +4,15 @@ import { cn } from '@/lib/utils';
 
 const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
   ({ className, type, value, defaultValue, ...props }, ref) => {
-    // 确保受控组件的一致性：如果提供了 value，则确保它不是 undefined
-    // 如果没有提供 value 但提供了 defaultValue，则使用 defaultValue
-    // 否则使用空字符串作为默认值
-    const controlledValue =
-      value !== undefined ? value : defaultValue !== undefined ? undefined : '';
-    const isControlled = value !== undefined;
+    // 简化受控/非受控组件逻辑
+    // 如果提供了 value 属性，则使用受控模式
+    // 否则使用非受控模式
+    const inputProps =
+      value !== undefined
+        ? { value: value || '' } // 受控模式：确保 value 不为 undefined
+        : defaultValue !== undefined
+          ? { defaultValue } // 非受控模式：使用 defaultValue
+          : {}; // 完全非受控模式
 
     return (
       <input
@@ -19,7 +22,7 @@ const Input = React.forwardRef<HTMLInputElement, React.ComponentProps<'input'>>(
           className
         )}
         ref={ref}
-        {...(isControlled ? { value: controlledValue } : { defaultValue })}
+        {...inputProps}
         {...props}
       />
     );

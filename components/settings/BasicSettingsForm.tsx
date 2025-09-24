@@ -117,7 +117,22 @@ export function BasicSettingsForm() {
   // 表单配置
   const form = useForm<BasicSettingsFormData>({
     resolver: zodResolver(BasicSettingsFormSchema),
-    defaultValues: {},
+    defaultValues: settings || {
+      // 提供默认值以避免受控/非受控组件警告
+      companyName: '',
+      companyAddress: '',
+      companyPhone: '',
+      companyEmail: '',
+      companyWebsite: '',
+      systemName: '',
+      systemVersion: '',
+      systemDescription: '',
+      defaultLanguage: 'zh',
+      lowStockThreshold: 10,
+      enableStockAlerts: true,
+      orderNumberPrefix: 'SO',
+      enableOrderApproval: false,
+    },
   });
 
   // 当数据加载完成时，更新表单默认值

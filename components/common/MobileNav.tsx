@@ -6,6 +6,7 @@ import {
   LayoutDashboard,
   Package,
   RotateCcw,
+  Settings,
   ShoppingCart,
   Users,
   Warehouse,
@@ -77,6 +78,13 @@ const mobileNavigationItems: NavigationItem[] = [
     title: '财务管理',
     href: '/finance',
     icon: DollarSign,
+  },
+  {
+    id: 'settings',
+    title: '系统设置',
+    href: '/settings',
+    icon: Settings,
+    requiredRoles: ['admin'],
   },
 ];
 

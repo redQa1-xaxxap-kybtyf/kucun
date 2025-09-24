@@ -1,8 +1,6 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import {
   ArrowLeft,
   Edit,
@@ -38,6 +36,7 @@ import {
 import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
+import { formatDateTimeCN } from '@/lib/utils/datetime';
 import { formatInventoryQuantity } from '@/lib/utils/piece-calculation';
 
 /**
@@ -64,12 +63,10 @@ export default function InventoryAdjustPage() {
 
   const inventoryRecords = data?.data || [];
 
-  // 格式化日期
+  // 格式化日期 - 使用统一的时间格式化函数
   const formatDate = (dateString: string | Date) => {
     if (!dateString) return null;
-    const date =
-      typeof dateString === 'string' ? new Date(dateString) : dateString;
-    return format(date, 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
+    return formatDateTimeCN(dateString);
   };
 
   // 获取库存状态标签

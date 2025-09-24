@@ -48,24 +48,16 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
   };
 
   // 获取角色显示文本
-  const getRoleText = (role: string) => {
-    return role === 'admin' ? '管理员' : '销售员';
-  };
+  const getRoleText = (role: string) => role === 'admin' ? '管理员' : '销售员';
 
   // 获取角色徽章样式
-  const getRoleBadgeVariant = (role: string) => {
-    return role === 'admin' ? 'destructive' : 'secondary';
-  };
+  const getRoleBadgeVariant = (role: string) => role === 'admin' ? 'destructive' : 'secondary';
 
   // 获取状态显示文本
-  const getStatusText = (status: string) => {
-    return status === 'active' ? '启用' : '禁用';
-  };
+  const getStatusText = (status: string) => status === 'active' ? '启用' : '禁用';
 
   // 获取状态徽章样式
-  const getStatusBadgeVariant = (status: string) => {
-    return status === 'active' ? 'default' : 'outline';
-  };
+  const getStatusBadgeVariant = (status: string) => status === 'active' ? 'default' : 'outline';
 
   if (users.length === 0) {
     return (

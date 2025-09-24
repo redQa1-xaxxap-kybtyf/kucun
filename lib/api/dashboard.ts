@@ -1,22 +1,24 @@
 // 仪表盘API客户端
 // 基于TanStack Query的仪表盘数据获取和管理
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type {
-  DashboardData,
-  DashboardApiResponse,
   BusinessOverview,
+  CustomerSalesRanking,
+  DashboardApiResponse,
+  DashboardData,
+  DashboardFilters,
   InventoryAlert,
-  TodoItem,
-  SalesTrendData,
   InventoryTrendData,
   ProductSalesRanking,
-  CustomerSalesRanking,
   QuickAction,
-  DashboardFilters,
+  SalesTrendData,
   TimeRange,
+  TodoItem,
 } from '@/lib/types/dashboard';
+import { formatTimeAgo } from '@/lib/utils/datetime';
+
 
 // API基础URL
 const API_BASE = '/api/dashboard';
@@ -387,17 +389,8 @@ export const dashboardUtils = {
     }
   },
 
-  formatTimeAgo: (date: string): string => {
-    const now = new Date();
-    const past = new Date(date);
-    const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
-
-    if (diffInSeconds < 60) return '刚刚';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}分钟前`;
-    if (diffInSeconds < 86400)
-      return `${Math.floor(diffInSeconds / 3600)}小时前`;
-    if (diffInSeconds < 2592000)
-      return `${Math.floor(diffInSeconds / 86400)}天前`;
-    return past.toLocaleDateString('zh-CN');
-  },
+  formatTimeAgo: (date: string): string => 
+    // 使用统一的时间格式化函数
+     formatTimeAgo(date)
+  ,
 };

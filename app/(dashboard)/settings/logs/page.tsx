@@ -5,13 +5,12 @@
 
 'use client';
 
-import React from 'react';
-
-import { useSession } from 'next-auth/react';
-import Link from 'next/link';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, FileText, Trash2 } from 'lucide-react';
+import Link from 'next/link';
+import { useSession } from 'next-auth/react';
+import React from 'react';
 
 import { LogFilters } from '@/components/settings/LogFilters';
 import { SystemLogsTable } from '@/components/settings/SystemLogsTable';

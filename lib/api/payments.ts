@@ -1,26 +1,24 @@
 // 收款管理API客户端
 // 基于TanStack Query实现收款记录CRUD、应收账款查询、收款统计等API调用函数
 
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type {
+  AccountsReceivableQuery,
+  AccountsReceivableResponse,
+  CreatePaymentRecordData,
+  PaymentMethod,
   PaymentRecord,
   PaymentRecordDetail,
-  AccountsReceivable,
-  PaymentStatistics,
-  PaymentMethodStatistics,
-  CustomerPaymentStatistics,
-  CreatePaymentRecordData,
-  UpdatePaymentRecordData,
-  PaymentRecordQuery,
-  AccountsReceivableQuery,
-  PaymentRecordResponse,
   PaymentRecordListResponse,
-  AccountsReceivableResponse,
+  PaymentRecordQuery,
+  PaymentRecordResponse,
   PaymentStatisticsResponse,
-  PaymentMethod,
   PaymentStatus,
+  UpdatePaymentRecordData,
 } from '@/lib/types/payment';
+import { formatTimeAgo } from '@/lib/utils/datetime';
+
 
 // API基础URL
 const API_BASE = '/api/payments';
@@ -507,17 +505,8 @@ export const paymentUtils = {
   validatePaymentAmount: (amount: number, maxAmount: number): boolean =>
     amount > 0 && amount <= maxAmount,
 
-  formatTimeAgo: (date: string): string => {
-    const now = new Date();
-    const past = new Date(date);
-    const diffInSeconds = Math.floor((now.getTime() - past.getTime()) / 1000);
-
-    if (diffInSeconds < 60) return '刚刚';
-    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}分钟前`;
-    if (diffInSeconds < 86400)
-      return `${Math.floor(diffInSeconds / 3600)}小时前`;
-    if (diffInSeconds < 2592000)
-      return `${Math.floor(diffInSeconds / 86400)}天前`;
-    return past.toLocaleDateString('zh-CN');
-  },
+  formatTimeAgo: (date: string): string => 
+    // 使用统一的时间格式化函数
+     formatTimeAgo(date)
+  ,
 };

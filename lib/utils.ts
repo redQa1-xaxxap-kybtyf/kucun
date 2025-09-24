@@ -20,6 +20,7 @@ export function formatCurrency(amount: number): string {
 
 /**
  * 格式化日期
+ * @deprecated 请使用 lib/utils/datetime.ts 中的 formatDate 函数
  */
 export function formatDate(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;
@@ -32,6 +33,7 @@ export function formatDate(date: Date | string): string {
 
 /**
  * 格式化日期时间
+ * @deprecated 请使用 lib/utils/datetime.ts 中的 formatDateTime 函数
  */
 export function formatDateTime(date: Date | string): string {
   const d = typeof date === 'string' ? new Date(date) : date;

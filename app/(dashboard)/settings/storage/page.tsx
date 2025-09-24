@@ -7,10 +7,12 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Package } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import React from 'react';
 
+import { QiniuStorageForm } from '@/components/settings/QiniuStorageForm';
+import { StorageTestConnection } from '@/components/settings/StorageTestConnection';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -26,8 +28,6 @@ import type {
   SettingsApiResponse,
 } from '@/lib/types/settings';
 
-import { QiniuStorageForm } from '@/components/settings/QiniuStorageForm';
-import { StorageTestConnection } from '@/components/settings/StorageTestConnection';
 
 export default function StorageSettingsPage() {
   const { data: session } = useSession();

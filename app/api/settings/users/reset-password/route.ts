@@ -3,9 +3,9 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import bcrypt from 'bcryptjs';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
-import bcrypt from 'bcryptjs';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';

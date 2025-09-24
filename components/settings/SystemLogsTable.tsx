@@ -5,8 +5,6 @@
 
 'use client';
 
-import { format } from 'date-fns';
-import { zhCN } from 'date-fns/locale';
 import { ChevronLeft, ChevronRight, Eye, Loader2 } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +23,7 @@ import type {
   SystemLogType,
 } from '@/lib/types/settings';
 import { cn } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils/datetime';
 
 interface SystemLogsTableProps {
   /** 日志列表 */
@@ -84,15 +83,7 @@ export const SystemLogsTable = ({
   onPageChange,
   onViewDetail,
 }: SystemLogsTableProps) => {
-  const formatDate = (dateString: string) => {
-    try {
-      return format(new Date(dateString), 'yyyy-MM-dd HH:mm:ss', {
-        locale: zhCN,
-      });
-    } catch {
-      return dateString;
-    }
-  };
+  const formatDate = (dateString: string) => formatDateTime(dateString, 'yyyy-MM-dd HH:mm:ss') || dateString;
 
   const truncateText = (text: string, maxLength: number = 50) => {
     if (text.length <= maxLength) return text;
