@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const { sku, excludeId } = validationResult.data;
 
     // 构建查询条件
-    const where: { sku: string; id?: { not: string } } = { sku };
+    const where: any = { sku };
     if (excludeId) {
       where.id = { not: excludeId };
     }

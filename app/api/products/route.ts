@@ -1,10 +1,9 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
-import { extractRequestInfo, logBusinessOperation } from '@/lib/logger';
 import { paginationValidations } from '@/lib/validations/base';
 import { productCreateSchema } from '@/lib/validations/product';
 
@@ -319,29 +318,6 @@ export async function POST(request: NextRequest) {
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };
-
-    // 记录产品创建日志
-    try {
-      const session = await getServerSession(authOptions);
-      const requestInfo = extractRequestInfo(request);
-      await logBusinessOperation(
-        'create_product',
-        `创建新产品：${product.name} (编码: ${product.code})`,
-        session?.user?.id || null,
-        requestInfo.ipAddress,
-        requestInfo.userAgent,
-        {
-          productId: product.id,
-          productCode: product.code,
-          productName: product.name,
-          categoryId: product.categoryId,
-          unit: product.unit,
-        }
-      );
-    } catch (logError) {
-      console.error('记录产品创建日志失败:', logError);
-      // 不影响主要业务流程
-    }
 
     return NextResponse.json({
       success: true,

@@ -10,7 +10,6 @@ import {
   successResponse,
   validationErrorResponse,
 } from '@/lib/api/response';
-import { extractRequestInfo } from '@/lib/logger';
 import { productUpdateSchema } from '@/lib/validations/product';
 
 /**
@@ -54,14 +53,7 @@ export const PUT = withErrorHandling(
     }
 
     try {
-      const requestInfo = extractRequestInfo(request);
-      const product = await updateProduct(
-        id,
-        validationResult.data,
-        _session.user.id,
-        requestInfo.ipAddress,
-        requestInfo.userAgent
-      );
+      const product = await updateProduct(id, validationResult.data);
       return successResponse(product, 200, '产品更新成功');
     } catch (error) {
       return errorResponse(
@@ -84,13 +76,7 @@ export const DELETE = withErrorHandling(
     const { id } = params;
 
     try {
-      const requestInfo = extractRequestInfo(request);
-      const result = await deleteProduct(
-        id,
-        _session.user.id,
-        requestInfo.ipAddress,
-        requestInfo.userAgent
-      );
+      const result = await deleteProduct(id);
       return successResponse(result, 200, '产品删除成功');
     } catch (error) {
       return errorResponse(

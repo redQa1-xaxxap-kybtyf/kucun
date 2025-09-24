@@ -11,7 +11,6 @@ import {
   Plus,
   Receipt,
   RotateCcw,
-  Settings,
   ShoppingCart,
   TrendingDown,
   TrendingUp,
@@ -19,9 +18,9 @@ import {
   Users,
   Warehouse,
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -134,38 +133,6 @@ const navigationItems: NavigationItem[] = [
         id: 'finance-statements',
         title: '往来账单',
         href: '/finance/statements',
-        icon: Receipt,
-      },
-    ],
-  },
-  {
-    id: 'settings',
-    title: '系统设置',
-    href: '/settings',
-    icon: Settings,
-    children: [
-      {
-        id: 'settings-basic',
-        title: '基本设置',
-        href: '/settings/basic',
-        icon: Settings,
-      },
-      {
-        id: 'settings-users',
-        title: '用户管理',
-        href: '/settings/users',
-        icon: Users,
-      },
-      {
-        id: 'settings-storage',
-        title: '七牛云存储',
-        href: '/settings/storage',
-        icon: Package,
-      },
-      {
-        id: 'settings-logs',
-        title: '系统日志',
-        href: '/settings/logs',
         icon: Receipt,
       },
     ],

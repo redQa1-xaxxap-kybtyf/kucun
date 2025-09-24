@@ -1,4 +1,3 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import {
@@ -7,8 +6,6 @@ import {
   updateCustomer,
   validateUserSession,
 } from '@/lib/api/customer-handlers';
-import { authOptions } from '@/lib/auth';
-import { extractRequestInfo } from '@/lib/logger';
 import { customerUpdateSchema } from '@/lib/validations/customer';
 
 /**
@@ -77,18 +74,8 @@ export async function PUT(
       );
     }
 
-    // 获取用户会话信息
-    const session = await getServerSession(authOptions);
-    const requestInfo = extractRequestInfo(request);
-
     // 更新客户
-    const customer = await updateCustomer(
-      params.id,
-      validationResult.data,
-      session?.user?.id,
-      requestInfo.ipAddress,
-      requestInfo.userAgent
-    );
+    const customer = await updateCustomer(params.id, validationResult.data);
 
     return NextResponse.json({
       success: true,
@@ -125,17 +112,8 @@ export async function DELETE(
     // 验证用户会话
     await validateUserSession();
 
-    // 获取用户会话信息
-    const session = await getServerSession(authOptions);
-    const requestInfo = extractRequestInfo(request);
-
     // 删除客户
-    await deleteCustomer(
-      params.id,
-      session?.user?.id,
-      requestInfo.ipAddress,
-      requestInfo.userAgent
-    );
+    await deleteCustomer(params.id);
 
     return NextResponse.json({
       success: true,

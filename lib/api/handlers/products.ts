@@ -82,10 +82,7 @@ export async function getProductById(id: string) {
  */
 export async function updateProduct(
   id: string,
-  data: z.infer<typeof productUpdateSchema>,
-  userId?: string | null,
-  ipAddress?: string | null,
-  userAgent?: string | null
+  data: z.infer<typeof productUpdateSchema>
 ) {
   // 验证数据
   const validatedData = productUpdateSchema.parse(data);
@@ -173,59 +170,13 @@ export async function updateProduct(
     },
   });
 
-  // 记录产品更新日志
-  try {
-    // 构建变更描述
-    const changes: string[] = [];
-    if (validatedData.name !== existingProduct.name) {
-      changes.push(`名称: ${existingProduct.name} → ${validatedData.name}`);
-    }
-    if (validatedData.status !== existingProduct.status) {
-      changes.push(`状态: ${existingProduct.status} → ${validatedData.status}`);
-    }
-    if (validatedData.categoryId !== existingProduct.categoryId) {
-      changes.push(
-        `分类ID: ${existingProduct.categoryId || '无'} → ${validatedData.categoryId || '无'}`
-      );
-    }
-
-    const changeDescription =
-      changes.length > 0
-        ? `修改产品信息：${updatedProduct.name} (编码: ${updatedProduct.code}) - ${changes.join(', ')}`
-        : `更新产品信息：${updatedProduct.name} (编码: ${updatedProduct.code})`;
-
-    await logBusinessOperation(
-      'update_product',
-      changeDescription,
-      userId,
-      ipAddress,
-      userAgent,
-      {
-        productId: updatedProduct.id,
-        productCode: updatedProduct.code,
-        productName: updatedProduct.name,
-        changes,
-        oldStatus: existingProduct.status,
-        newStatus: validatedData.status,
-      }
-    );
-  } catch (logError) {
-    console.error('记录产品更新日志失败:', logError);
-    // 不影响主要业务流程
-  }
-
   return formatProduct(updatedProduct);
 }
 
 /**
  * 删除产品
  */
-export async function deleteProduct(
-  id: string,
-  userId?: string | null,
-  ipAddress?: string | null,
-  userAgent?: string | null
-) {
+export async function deleteProduct(id: string) {
   // 检查产品是否存在
   const product = await prisma.product.findUnique({
     where: { id },
@@ -266,27 +217,6 @@ export async function deleteProduct(
   await prisma.product.delete({
     where: { id },
   });
-
-  // 记录产品删除日志
-  try {
-    await logBusinessOperation(
-      'delete_product',
-      `删除产品：${product.name} (编码: ${product.code})`,
-      userId,
-      ipAddress,
-      userAgent,
-      {
-        productId: product.id,
-        productCode: product.code,
-        productName: product.name,
-        categoryId: product.categoryId,
-        status: product.status,
-      }
-    );
-  } catch (logError) {
-    console.error('记录产品删除日志失败:', logError);
-    // 不影响主要业务流程
-  }
 
   return { success: true, message: '产品删除成功' };
 }

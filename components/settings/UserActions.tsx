@@ -92,11 +92,7 @@ export const UserActions: React.FC<UserActionsProps> = ({
     <>
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="h-8 w-8 p-0"
-            disabled={isLoading}
-          >
+          <Button variant="ghost" className="h-8 w-8 p-0" disabled={isLoading}>
             <span className="sr-only">打开菜单</span>
             <MoreHorizontal className="h-4 w-4" />
           </Button>
@@ -109,9 +105,7 @@ export const UserActions: React.FC<UserActionsProps> = ({
           </DropdownMenuItem>
 
           {/* 重置密码 */}
-          <DropdownMenuItem
-            onClick={() => setResetPasswordDialogOpen(true)}
-          >
+          <DropdownMenuItem onClick={() => setResetPasswordDialogOpen(true)}>
             <Key className="mr-2 h-4 w-4" />
             重置密码
           </DropdownMenuItem>
@@ -157,7 +151,8 @@ export const UserActions: React.FC<UserActionsProps> = ({
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除用户</AlertDialogTitle>
             <AlertDialogDescription>
-              您确定要删除用户 "{user.name}" 吗？此操作将禁用该用户账户，用户将无法登录系统。
+              您确定要删除用户 &ldquo;{user.name}&rdquo;
+              吗？此操作将禁用该用户账户，用户将无法登录系统。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -181,7 +176,8 @@ export const UserActions: React.FC<UserActionsProps> = ({
           <DialogHeader>
             <DialogTitle>重置用户密码</DialogTitle>
             <DialogDescription>
-              为用户 "{user.name}" 设置新密码。新密码至少需要6个字符。
+              为用户 &ldquo;{user.name}&rdquo;
+              设置新密码。新密码至少需要6个字符。
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -191,7 +187,7 @@ export const UserActions: React.FC<UserActionsProps> = ({
                 id="new-password"
                 type="password"
                 value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
+                onChange={e => setNewPassword(e.target.value)}
                 placeholder="请输入新密码（至少6位）"
                 minLength={6}
               />

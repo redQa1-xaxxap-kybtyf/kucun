@@ -42,7 +42,7 @@ export default function StorageSettingsPage() {
   // 获取七牛云存储配置
   const {
     data: storageConfig,
-    isLoading: isLoadingConfig,
+    isLoading: _isLoadingConfig,
     error: configError,
   } = useQuery({
     queryKey: ['storage-config'],

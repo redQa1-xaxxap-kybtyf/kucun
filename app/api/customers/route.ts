@@ -1,4 +1,3 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
 
 import {
@@ -6,8 +5,6 @@ import {
   getCustomerList,
   validateUserSession,
 } from '@/lib/api/customer-handlers';
-import { authOptions } from '@/lib/auth';
-import { extractRequestInfo } from '@/lib/logger';
 import { paginationValidations } from '@/lib/validations/base';
 import { customerCreateSchema } from '@/lib/validations/customer';
 
@@ -95,17 +92,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 获取用户会话信息
-    const session = await getServerSession(authOptions);
-    const requestInfo = extractRequestInfo(request);
-
     // 创建客户
-    const customer = await createCustomer(
-      validationResult.data,
-      session?.user?.id,
-      requestInfo.ipAddress,
-      requestInfo.userAgent
-    );
+    const customer = await createCustomer(validationResult.data);
 
     return NextResponse.json({
       success: true,

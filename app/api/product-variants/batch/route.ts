@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
 }
 
 // 处理批量操作
-async function handleBatchOperation(body: unknown) {
+async function handleBatchOperation(body: any) {
   try {
     // 验证批量操作输入数据
     const validationResult = BatchOperationSchema.safeParse(body);
@@ -253,7 +253,7 @@ async function handleBatchOperation(body: unknown) {
       );
     }
 
-    let results: unknown[] = [];
+    let results: any[] = [];
 
     switch (operation) {
       case 'delete':

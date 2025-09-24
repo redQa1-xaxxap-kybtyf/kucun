@@ -4,23 +4,6 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
-// 类型定义
-interface LocationSummary {
-  location: string;
-  quantity: number;
-  reservedQuantity: number;
-  availableQuantity: number;
-  batches: number;
-}
-
-interface DateSummary {
-  productionDate: string;
-  quantity: number;
-  reservedQuantity: number;
-  availableQuantity: number;
-  batches: number;
-}
-
 // 获取产品变体的库存汇总
 export async function GET(
   request: NextRequest,
@@ -121,7 +104,7 @@ export async function GET(
         acc[location].batches += 1;
         return acc;
       },
-      {} as Record<string, LocationSummary>
+      {} as Record<string, any>
     );
 
     const locations = Object.values(locationSummary);
@@ -148,11 +131,11 @@ export async function GET(
         acc[dateKey].batches += 1;
         return acc;
       },
-      {} as Record<string, DateSummary>
+      {} as Record<string, any>
     );
 
     const productionDates = Object.values(dateSummary).sort(
-      (a: DateSummary, b: DateSummary) => {
+      (a: any, b: any) => {
         if (a.productionDate === '未指定日期') return 1;
         if (b.productionDate === '未指定日期') return -1;
         return (

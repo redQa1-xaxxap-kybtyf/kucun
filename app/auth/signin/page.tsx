@@ -5,11 +5,12 @@ import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import { getSession, signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+// 验证码功能已迁移到服务器端
 import {
   Card,
   CardContent,
@@ -37,58 +38,12 @@ export default function SignInPage() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [formError, setFormError] = useState('');
+  const [captchaImage, setCaptchaImage] = useState('');
   const [captchaSessionId, setCaptchaSessionId] = useState('');
-  const [captchaImageUrl, setCaptchaImageUrl] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   const { toast } = useToast();
-
-  // 加载验证码
-  const loadCaptcha = async () => {
-    try {
-      const response = await fetch('/api/auth/captcha', {
-        method: 'GET',
-        cache: 'no-cache',
-      });
-
-      if (response.ok) {
-        const sessionId = response.headers.get('X-Captcha-Session');
-        if (sessionId) {
-          setCaptchaSessionId(sessionId);
-          // 使用blob URL来显示验证码图片
-          const blob = await response.blob();
-          const imageUrl = URL.createObjectURL(blob);
-          setCaptchaImageUrl(imageUrl);
-        } else {
-          console.error('未获取到验证码会话ID');
-          toast({
-            title: '验证码加载失败',
-            description: '未获取到验证码会话ID',
-            variant: 'destructive',
-          });
-        }
-      } else {
-        console.error(
-          '验证码API请求失败:',
-          response.status,
-          response.statusText
-        );
-        toast({
-          title: '验证码加载失败',
-          description: `服务器错误: ${response.status}`,
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      console.error('加载验证码失败:', error);
-      toast({
-        title: '验证码加载失败',
-        description: '请刷新页面重试',
-        variant: 'destructive',
-      });
-    }
-  };
 
   // 表单配置
   const form = useForm<UserLoginInput>({
@@ -99,11 +54,6 @@ export default function SignInPage() {
       captcha: '',
     },
   });
-
-  // 页面加载时获取验证码
-  useEffect(() => {
-    loadCaptcha();
-  }, []);
 
   // 错误信息映射
   const errorMessages: Record<string, string> = {
@@ -120,14 +70,6 @@ export default function SignInPage() {
     setIsSuccess(false);
 
     try {
-      // 检查验证码会话ID
-      if (!captchaSessionId) {
-        setFormError('验证码会话无效，请刷新验证码');
-        form.setValue('captcha', '');
-        await loadCaptcha();
-        return;
-      }
-
       const result = await signIn('credentials', {
         username: data.username,
         password: data.password,
@@ -140,7 +82,7 @@ export default function SignInPage() {
         setFormError(errorMessages[result.error] || errorMessages.Default);
         // 登录失败时清空验证码并重新加载
         form.setValue('captcha', '');
-        await loadCaptcha();
+        loadCaptcha();
 
         // 显示错误 Toast
         toast({
@@ -176,7 +118,7 @@ export default function SignInPage() {
       console.error('登录错误:', error);
       setFormError('登录失败，请稍后重试');
       form.setValue('captcha', '');
-      await loadCaptcha();
+      loadCaptcha();
 
       // 显示错误 Toast
       toast({
@@ -192,10 +134,24 @@ export default function SignInPage() {
     }
   };
 
-  const handleRefreshCaptcha = async () => {
-    await loadCaptcha();
-    form.setValue('captcha', '');
+  // 加载验证码
+  const loadCaptcha = async () => {
+    try {
+      const response = await fetch('/api/auth/captcha');
+      if (response.ok) {
+        const data = await response.json();
+        setCaptchaImage(data.captchaImage);
+        setCaptchaSessionId(data.sessionId);
+      }
+    } catch (error) {
+      console.error('加载验证码失败:', error);
+    }
   };
+
+  // 页面加载时获取验证码
+  React.useEffect(() => {
+    loadCaptcha();
+  }, []);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
@@ -328,30 +284,20 @@ export default function SignInPage() {
                             placeholder="请输入验证码"
                             disabled={isLoading}
                             className="flex-1"
-                            maxLength={4}
+                            maxLength={6}
                             autoComplete="off"
                           />
                         </FormControl>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          className="h-10 cursor-pointer p-0"
-                          onClick={handleRefreshCaptcha}
-                          disabled={isLoading}
-                        >
-                          {captchaImageUrl ? (
-                            <img
-                              src={captchaImageUrl}
-                              alt="验证码"
-                              className="h-full w-[120px] rounded border"
-                              style={{ imageRendering: 'crisp-edges' }}
+                        <div className="flex items-center">
+                          {captchaImage && (
+                            <div
+                              className="cursor-pointer rounded border"
+                              onClick={loadCaptcha}
+                              title="点击刷新验证码"
+                              dangerouslySetInnerHTML={{ __html: captchaImage }}
                             />
-                          ) : (
-                            <div className="flex h-10 w-[120px] items-center justify-center text-xs text-gray-500">
-                              加载中...
-                            </div>
                           )}
-                        </Button>
+                        </div>
                       </div>
                       <FormMessage />
                     </FormItem>

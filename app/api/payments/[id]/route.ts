@@ -1,10 +1,10 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { updatePaymentRecordSchema } from '@/lib/validations/payment';
 
-import { prisma } from '@/lib/db';
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/payments/[id] - 获取单个收款记录详情

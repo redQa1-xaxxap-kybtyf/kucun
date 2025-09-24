@@ -1,9 +1,8 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma, withTransaction } from '@/lib/db';
-import { extractRequestInfo, logBusinessOperation } from '@/lib/logger';
 
 // 获取单个销售订单信息
 export async function GET(
@@ -372,36 +371,6 @@ export async function PUT(
       createdAt: fullOrder.createdAt,
       updatedAt: fullOrder.updatedAt,
     };
-
-    // 记录销售订单状态更新日志
-    try {
-      const requestInfo = extractRequestInfo(request);
-      const statusChangeDescription =
-        status && status !== existingOrder.status
-          ? `订单状态变更：${existingOrder.status} → ${status}`
-          : '订单信息更新';
-
-      await logBusinessOperation(
-        'update_sales_order',
-        `更新销售订单：${fullOrder.orderNumber} - ${statusChangeDescription}`,
-        session.user.id,
-        requestInfo.ipAddress,
-        requestInfo.userAgent,
-        {
-          orderId: fullOrder.id,
-          orderNumber: fullOrder.orderNumber,
-          customerId: fullOrder.customerId,
-          customerName: fullOrder.customer?.name,
-          oldStatus: existingOrder.status,
-          newStatus: status || existingOrder.status,
-          totalAmount: fullOrder.totalAmount,
-          hasInventoryUpdate: shouldUpdateInventory,
-        }
-      );
-    } catch (logError) {
-      console.error('记录销售订单更新日志失败:', logError);
-      // 不影响主要业务流程
-    }
 
     return NextResponse.json({
       success: true,

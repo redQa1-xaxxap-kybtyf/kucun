@@ -1,12 +1,13 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
 import {
   createRefundRecordSchema,
   refundQuerySchema,
 } from '@/lib/validations/refund';
+
+import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/refunds - 获取退款记录列表

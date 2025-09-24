@@ -5,7 +5,6 @@ import {
 } from '@/lib/api/handlers/sales-orders';
 import { withAuth, withErrorHandling } from '@/lib/api/middleware';
 import { successResponse, validationErrorResponse } from '@/lib/api/response';
-import { extractRequestInfo } from '@/lib/logger';
 import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
 /**
@@ -55,12 +54,9 @@ export const POST = withErrorHandling(
       );
     }
 
-    const requestInfo = extractRequestInfo(request);
     const order = await createSalesOrder(
       validationResult.data,
-      session.user.id,
-      requestInfo.ipAddress,
-      requestInfo.userAgent
+      session.user.id
     );
     return successResponse(order, 201, '销售订单创建成功');
   })
