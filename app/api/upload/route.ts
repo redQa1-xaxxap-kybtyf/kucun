@@ -165,7 +165,7 @@ export async function POST(request: NextRequest) {
         size: file.size,
         type: file.type,
         url: publicUrl,
-        uploadedAt: getCurrentISOString(),
+        uploadedAt: new Date().toISOString(),
         uploadedBy: session.user.id,
       },
       message: '文件上传成功',

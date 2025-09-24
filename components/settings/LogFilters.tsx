@@ -37,7 +37,6 @@ import type {
   SystemLogType,
 } from '@/lib/types/settings';
 import { cn } from '@/lib/utils';
-import { formatDate } from '@/lib/utils/datetime';
 
 interface LogFiltersProps {
   /** 当前筛选条件 */
@@ -218,7 +217,9 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? formatDate(startDate) : '选择开始日期'}
+                  {startDate
+                    ? startDate.toLocaleDateString('zh-CN')
+                    : '选择开始日期'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -245,7 +246,9 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
                   )}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endDate ? formatDate(endDate) : '选择结束日期'}
+                  {endDate
+                    ? endDate.toLocaleDateString('zh-CN')
+                    : '选择结束日期'}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">

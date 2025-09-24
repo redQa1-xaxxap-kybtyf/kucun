@@ -1,5 +1,7 @@
 'use client';
 
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import {
   ArrowLeft,
   Calendar,
@@ -34,7 +36,6 @@ import {
 } from '@/components/ui/table';
 import { useInboundRecords } from '@/lib/api/inbound';
 import type { InboundQueryParams, InboundReason } from '@/lib/types/inbound';
-import { formatDate } from '@/lib/utils/datetime';
 
 // 入库原因标签映射
 const INBOUND_REASON_LABELS = {
@@ -91,9 +92,9 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
     });
   };
 
-  // 格式化日期 - 使用统一的时间格式化函数
-  const formatInboundDate = (dateString: string) =>
-    formatDate(dateString, 'yyyy年MM月dd日 HH:mm');
+  // 格式化日期
+  const formatDate = (dateString: string) =>
+    format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
 
   // 格式化操作类型
   const getOperationTypeLabel = (reason: string) =>
@@ -326,7 +327,7 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3 text-muted-foreground" />
                         <span className="text-xs">
-                          {formatInboundDate(record.createdAt)}
+                          {formatDate(record.createdAt)}
                         </span>
                       </div>
                     </TableCell>

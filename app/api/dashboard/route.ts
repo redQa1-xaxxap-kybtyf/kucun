@@ -1,14 +1,9 @@
-import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import {
-  getCurrentISOString,
-  getTimeRangeStartDate,
-} from '@/lib/utils/datetime';
 
 // 请求参数验证
 const dashboardQuerySchema = z.object({
@@ -57,7 +52,22 @@ export async function GET(request: NextRequest) {
 
     // 计算时间范围
     const now = new Date();
-    const startDate = getTimeRangeStartDate(timeRange);
+    const startDate = new Date();
+
+    switch (timeRange) {
+      case '7d':
+        startDate.setDate(now.getDate() - 7);
+        break;
+      case '30d':
+        startDate.setDate(now.getDate() - 30);
+        break;
+      case '90d':
+        startDate.setDate(now.getDate() - 90);
+        break;
+      case '1y':
+        startDate.setFullYear(now.getFullYear() - 1);
+        break;
+    }
 
     // 构建过滤条件
     const whereConditions: Prisma.SalesOrderWhereInput = {
@@ -123,7 +133,7 @@ export async function GET(request: NextRequest) {
         totalCustomers: customerStats._count.id || 0,
       },
       timeRange,
-      lastUpdated: getCurrentISOString(),
+      lastUpdated: new Date().toISOString(),
     };
 
     return NextResponse.json({

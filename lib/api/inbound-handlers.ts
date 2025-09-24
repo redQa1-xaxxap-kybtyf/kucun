@@ -8,7 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import type { InboundListResponse } from '@/lib/types/inbound';
-import { getEndOfDay, toISOString } from '@/lib/utils/datetime';
+import { toISOString } from '@/lib/utils/datetime';
 import { cleanRemarks, inboundQuerySchema } from '@/lib/validations/inbound';
 
 /**
@@ -46,8 +46,8 @@ interface InboundRecordWithRelations {
  */
 export function generateInboundRecordNumber(): string {
   const now = new Date();
-  const dateStr = formatDateTime(now, 'yyyyMMdd');
-  const timeStr = formatDateTime(now, 'HHmmss');
+  const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
   const random = Math.floor(Math.random() * 1000)
     .toString()
     .padStart(3, '0');
@@ -128,10 +128,9 @@ export function buildInboundWhereClause(queryData: {
       where.createdAt.gte = new Date(queryData.startDate);
     }
     if (queryData.endDate) {
-      const endDate = getEndOfDay(queryData.endDate);
-      if (endDate) {
-        where.createdAt.lte = endDate;
-      }
+      const endDate = new Date(queryData.endDate);
+      endDate.setHours(23, 59, 59, 999);
+      where.createdAt.lte = endDate;
     }
   }
 

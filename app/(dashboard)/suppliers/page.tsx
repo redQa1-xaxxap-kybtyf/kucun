@@ -52,10 +52,9 @@ import {
 } from '@/lib/api/suppliers';
 import { formatSupplierStatus } from '@/lib/schemas/supplier';
 import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
-import { formatDate } from '@/lib/utils/datetime';
 
 export default function SuppliersPage() {
-  const _router = useRouter();
+  const router = useRouter();
   const queryClient = useQueryClient();
 
   // 查询参数状态
@@ -186,7 +185,7 @@ export default function SuppliersPage() {
   const pagination = data?.pagination;
   const isAllSelected =
     selectedSuppliers.length === suppliers.length && suppliers.length > 0;
-  const _isPartialSelected =
+  const isPartialSelected =
     selectedSuppliers.length > 0 && selectedSuppliers.length < suppliers.length;
 
   if (error) {
@@ -351,7 +350,9 @@ export default function SuppliersPage() {
                         {formatSupplierStatus(supplier.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell>{formatDate(supplier.createdAt)}</TableCell>
+                    <TableCell>
+                      {new Date(supplier.createdAt).toLocaleDateString('zh-CN')}
+                    </TableCell>
                     <TableCell>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -418,7 +419,8 @@ export default function SuppliersPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要删除供应商 "{supplierToDelete?.name}" 吗？此操作无法撤销。
+              确定要删除供应商 &quot;{supplierToDelete?.name}&quot;
+              吗？此操作无法撤销。
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

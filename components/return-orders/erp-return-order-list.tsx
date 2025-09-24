@@ -52,7 +52,6 @@ import {
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
-import { formatDate } from '@/lib/utils/datetime';
 
 interface ERPReturnOrderListProps {
   onCreateNew?: () => void;
@@ -295,6 +294,14 @@ export function ERPReturnOrderList({
       currency: 'CNY',
       minimumFractionDigits: 2,
     }).format(amount);
+
+  // 格式化日期
+  const formatDate = (dateString: string) =>
+    new Date(dateString).toLocaleDateString('zh-CN', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    });
 
   // 获取状态颜色
   const getStatusColor = (status: string) => {

@@ -2,6 +2,8 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import {
   CalendarIcon,
   DollarSign,
@@ -55,7 +57,6 @@ import {
   FACTORY_SHIPMENT_STATUS_LABELS,
 } from '@/lib/types/factory-shipment';
 import { cn } from '@/lib/utils';
-import { formatDate } from '@/lib/utils/datetime';
 
 interface FactoryShipmentOrderFormProps {
   orderId?: string;
@@ -75,17 +76,17 @@ const updateFactoryShipmentOrder = async (
 ) =>
   // TODO: 实现真实API调用
   ({ id, ...data });
-const getFactoryShipmentOrder = async (_id: string) =>
+const getFactoryShipmentOrder = async (id: string) =>
   // TODO: 实现真实API调用
   null; // 模拟数据
 export function FactoryShipmentOrderForm({
-  orderId: _orderId,
+  orderId,
   onSuccess,
   onCancel,
 }: FactoryShipmentOrderFormProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isEditing = Boolean(_orderId);
+  const isEditing = Boolean(orderId);
 
   // 表单配置
   const form = useForm<CreateFactoryShipmentOrderData>({
@@ -136,12 +137,12 @@ export function FactoryShipmentOrderForm({
     queryKey: ['suppliers'],
     queryFn: () => getSuppliers({ page: 1, limit: 1000 }),
   });
-  const _suppliers = suppliersResponse?.data || [];
+  const suppliers = suppliersResponse?.data || [];
 
   // 查询订单详情（编辑模式）
   const { data: orderDetail } = useQuery({
-    queryKey: ['factory-shipment-order', _orderId],
-    queryFn: () => getFactoryShipmentOrder(_orderId!),
+    queryKey: ['factory-shipment-order', orderId],
+    queryFn: () => getFactoryShipmentOrder(orderId!),
     enabled: isEditing,
   });
 
@@ -168,7 +169,7 @@ export function FactoryShipmentOrderForm({
 
   // 更新订单mutation
   const updateMutation = useMutation({
-    mutationFn: (data: any) => updateFactoryShipmentOrder(_orderId!, data),
+    mutationFn: (data: any) => updateFactoryShipmentOrder(orderId!, data),
     onSuccess: data => {
       toast({
         title: '更新成功',
@@ -176,7 +177,7 @@ export function FactoryShipmentOrderForm({
       });
       queryClient.invalidateQueries({ queryKey: ['factory-shipment-orders'] });
       queryClient.invalidateQueries({
-        queryKey: ['factory-shipment-order', _orderId],
+        queryKey: ['factory-shipment-order', orderId],
       });
       onSuccess?.(data);
     },
@@ -366,7 +367,9 @@ export function FactoryShipmentOrderForm({
                             )}
                           >
                             {field.value ? (
-                              formatDate(field.value)
+                              format(field.value, 'yyyy-MM-dd', {
+                                locale: zhCN,
+                              })
                             ) : (
                               <span>选择日期</span>
                             )}

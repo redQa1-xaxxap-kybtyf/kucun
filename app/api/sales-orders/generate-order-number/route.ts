@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { getCurrentISOString, getStartOfDay } from '@/lib/utils/datetime';
 
 /**
  * 生成销售订单号
@@ -60,10 +59,8 @@ async function generateUniqueOrderNumber(): Promise<string> {
  * 获取今日订单统计
  */
 async function getTodayOrderStats() {
-  const today = getStartOfDay(new Date());
-  if (!today) {
-    throw new Error('无法获取今日开始时间');
-  }
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
   const tomorrow = new Date(today);
   tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -107,7 +104,7 @@ export async function GET(request: NextRequest) {
         data: {
           orderNumber,
           stats,
-          generatedAt: getCurrentISOString(),
+          generatedAt: new Date().toISOString(),
         },
       });
     }

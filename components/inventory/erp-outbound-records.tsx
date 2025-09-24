@@ -156,6 +156,9 @@ export function ERPOutboundRecords({ onCreateNew }: ERPOutboundRecordsProps) {
 
   const outboundRecords = data?.data || [];
 
+  // 格式化日期 - 使用统一的时间格式化函数
+  const formatDate = (dateString: string) => formatDateTimeCN(dateString);
+
   // 重置筛选
   const resetFilters = () => {
     setFilters({
@@ -348,7 +351,7 @@ export function ERPOutboundRecords({ onCreateNew }: ERPOutboundRecordsProps) {
                       <div className="flex items-center gap-1">
                         <Calendar className="h-3 w-3 text-muted-foreground" />
                         <span className="text-xs">
-                          {formatDateTimeCN(record.createdAt)}
+                          {formatDate(record.createdAt)}
                         </span>
                       </div>
                     </TableCell>

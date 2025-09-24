@@ -17,7 +17,8 @@ import type {
   PaymentStatus,
   UpdatePaymentRecordData,
 } from '@/lib/types/payment';
-import { compareDates } from '@/lib/utils/datetime';
+import { formatTimeAgo } from '@/lib/utils/datetime';
+
 
 // API基础URL
 const API_BASE = '/api/payments';
@@ -466,9 +467,6 @@ export const paymentUtils = {
   },
 
   calculateOverdueDays: (dueDate: string): number => {
-    const comparison = compareDates(new Date(), dueDate);
-    if (comparison === null || comparison <= 0) return 0;
-
     const due = new Date(dueDate);
     const now = new Date();
     const diffTime = now.getTime() - due.getTime();
@@ -497,11 +495,18 @@ export const paymentUtils = {
 
   generatePaymentNumber: (): string => {
     const now = new Date();
-    const dateStr = formatDateTime(now, 'yyyyMMdd');
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, '0');
+    const day = String(now.getDate()).padStart(2, '0');
     const timestamp = now.getTime().toString().slice(-6);
-    return `PAY-${dateStr}-${timestamp}`;
+    return `PAY-${year}${month}${day}-${timestamp}`;
   },
 
   validatePaymentAmount: (amount: number, maxAmount: number): boolean =>
     amount > 0 && amount <= maxAmount,
+
+  formatTimeAgo: (date: string): string => 
+    // 使用统一的时间格式化函数
+     formatTimeAgo(date)
+  ,
 };

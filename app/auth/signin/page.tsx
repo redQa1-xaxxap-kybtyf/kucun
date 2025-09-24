@@ -5,7 +5,7 @@ import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';

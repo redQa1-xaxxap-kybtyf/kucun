@@ -4,18 +4,23 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import {
-  Building2,
   CalendarIcon,
-  Check,
   DollarSign,
-  Loader2,
+  CreditCard,
+  Building2,
   Receipt,
+  AlertCircle,
+  Loader2,
+  Check,
   X,
 } from 'lucide-react';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -36,6 +41,7 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Popover,
   PopoverContent,
@@ -54,16 +60,18 @@ import { paymentUtils } from '@/lib/api/payments';
 import {
   DEFAULT_PAYMENT_METHODS,
   DEFAULT_PAYMENT_STATUSES,
-  type PaymentMethod,
+  type PaymentRecord,
   type PaymentRecordDetail,
+  type PaymentMethod,
+  type PaymentStatus,
 } from '@/lib/types/payment';
 import { cn } from '@/lib/utils';
 import {
   createPaymentRecordSchema,
-  PAYMENT_FORM_FIELDS,
   updatePaymentRecordSchema,
   type CreatePaymentRecordInput,
   type UpdatePaymentRecordInput,
+  PAYMENT_FORM_FIELDS,
 } from '@/lib/validations/payment';
 
 export interface PaymentFormProps {
@@ -115,7 +123,7 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
             customerId: customerId || '',
             paymentMethod: 'cash' as PaymentMethod,
             paymentAmount: 0,
-            paymentDate: formatDate(new Date(), 'yyyy-MM-dd'),
+            paymentDate: format(new Date(), 'yyyy-MM-dd'),
             remarks: '',
             receiptNumber: '',
             bankInfo: '',

@@ -3,6 +3,7 @@
 
 'use client';
 
+import { format } from 'date-fns';
 import {
   Check,
   DollarSign,
@@ -91,7 +92,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
   ) => {
     // 搜索和筛选状态
     const [searchValue, setSearchValue] = React.useState(query.search || '');
-    const [isFiltering, setIsFiltering] = React.useState(false);
+    const [_isFiltering, _setIsFiltering] = React.useState(false);
 
     // 处理搜索
     const handleSearch = (value: string) => {
@@ -188,7 +189,9 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         title: '收款日期',
         width: '100px',
         render: (payment: PaymentRecordDetail) => (
-          <div className="text-sm">{formatDate(payment.paymentDate)}</div>
+          <div className="text-sm">
+            {format(new Date(payment.paymentDate), 'yyyy-MM-dd')}
+          </div>
         ),
       },
       {
@@ -276,7 +279,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
             <div>
               <div className="text-sm font-medium">{payment.paymentNumber}</div>
               <div className="mt-1 text-xs text-muted-foreground">
-                {formatDate(payment.paymentDate, 'yyyy-MM-dd HH:mm')}
+                {format(new Date(payment.paymentDate), 'yyyy-MM-dd HH:mm')}
               </div>
             </div>
             <Badge

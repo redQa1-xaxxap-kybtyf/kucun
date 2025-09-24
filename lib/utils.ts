@@ -19,6 +19,34 @@ export function formatCurrency(amount: number): string {
 }
 
 /**
+ * 格式化日期
+ * @deprecated 请使用 lib/utils/datetime.ts 中的 formatDate 函数
+ */
+export function formatDate(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(d);
+}
+
+/**
+ * 格式化日期时间
+ * @deprecated 请使用 lib/utils/datetime.ts 中的 formatDateTime 函数
+ */
+export function formatDateTime(date: Date | string): string {
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return new Intl.DateTimeFormat('zh-CN', {
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(d);
+}
+
+/**
  * 生成随机 ID
  */
 export function generateId(): string {

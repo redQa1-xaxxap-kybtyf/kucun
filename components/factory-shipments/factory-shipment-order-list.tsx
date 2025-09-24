@@ -1,6 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import {
   Calendar,
   DollarSign,
@@ -262,7 +264,9 @@ export function FactoryShipmentOrderList({
                       <TableCell>
                         <div className="flex items-center gap-1">
                           <Calendar className="h-3 w-3" />
-                          {formatDate(order.createdAt)}
+                          {format(new Date(order.createdAt), 'yyyy-MM-dd', {
+                            locale: zhCN,
+                          })}
                         </div>
                       </TableCell>
                       <TableCell>

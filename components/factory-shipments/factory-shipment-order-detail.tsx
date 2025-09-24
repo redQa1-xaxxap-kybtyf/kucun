@@ -1,7 +1,8 @@
 'use client';
 
-import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 import { useQuery } from '@tanstack/react-query';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
 import {
   ArrowLeft,
   Calendar,
@@ -45,7 +46,7 @@ const getFactoryShipmentOrder = async (
   // 这里应该调用真实的API
   null;
 export function FactoryShipmentOrderDetail({
-  orderId,
+  orderId: _orderId,
   onEdit,
   onBack,
 }: FactoryShipmentOrderDetailProps) {
@@ -169,7 +170,9 @@ export function FactoryShipmentOrderDetail({
               </label>
               <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                 <Calendar className="h-3 w-3" />
-                {formatDateTime(order.createdAt)}
+                {format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm', {
+                  locale: zhCN,
+                })}
               </p>
             </div>
             {order.planDate && (
@@ -179,7 +182,9 @@ export function FactoryShipmentOrderDetail({
                 </label>
                 <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                   <Calendar className="h-3 w-3" />
-                  {formatDate(order.planDate)}
+                  {format(new Date(order.planDate), 'yyyy-MM-dd', {
+                    locale: zhCN,
+                  })}
                 </p>
               </div>
             )}
@@ -190,7 +195,9 @@ export function FactoryShipmentOrderDetail({
                 </label>
                 <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                   <Calendar className="h-3 w-3" />
-                  {formatDate(order.shipmentDate)}
+                  {format(new Date(order.shipmentDate), 'yyyy-MM-dd', {
+                    locale: zhCN,
+                  })}
                 </p>
               </div>
             )}

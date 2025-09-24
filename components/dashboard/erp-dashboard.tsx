@@ -2,19 +2,23 @@
 
 import {
   AlertCircle,
+  BarChart3,
   Calendar,
   CreditCard,
   Eye,
   Package,
   RefreshCw,
   ShoppingCart,
+  TrendingDown,
+  TrendingUp,
   Users,
   Zap,
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -24,7 +28,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
-import { formatTimeAgo } from '@/lib/utils/datetime';
 
 /**
  * 仪表盘数据类型定义
@@ -163,6 +166,22 @@ export function ERPDashboard() {
       style: 'currency',
       currency: 'CNY',
     }).format(amount);
+
+  // 格式化时间
+  const formatTime = (date: Date) => {
+    const now = new Date();
+    const diff = now.getTime() - date.getTime();
+    const minutes = Math.floor(diff / (1000 * 60));
+    const hours = Math.floor(diff / (1000 * 60 * 60));
+
+    if (minutes < 60) {
+      return `${minutes}分钟前`;
+    } else if (hours < 24) {
+      return `${hours}小时前`;
+    } else {
+      return date.toLocaleDateString('zh-CN');
+    }
+  };
 
   // 获取活动图标
   const getActivityIcon = (type: Activity['type']) => {
@@ -441,7 +460,7 @@ export function ERPDashboard() {
                     {activity.description}
                   </div>
                   <div className="mt-1 text-muted-foreground">
-                    {formatTimeAgo(activity.timestamp)}
+                    {formatTime(activity.timestamp)}
                   </div>
                 </div>
               </div>

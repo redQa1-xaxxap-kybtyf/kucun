@@ -356,6 +356,9 @@ function CategoriesPage() {
     updateStatusMutation.mutate({ id: category.id, status: newStatus });
   };
 
+  // 格式化日期 - 使用统一的时间格式化函数
+  const formatDate = (dateString: string) => formatDateTimeCN(dateString);
+
   // 加载状态
   if (isLoading) {
     return (
@@ -543,7 +546,7 @@ function CategoriesPage() {
                         </span>
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {formatDateTimeCN(category.createdAt)}
+                        {formatDate(category.createdAt)}
                       </TableCell>
                       <TableCell className="text-right">
                         <DropdownMenu>
