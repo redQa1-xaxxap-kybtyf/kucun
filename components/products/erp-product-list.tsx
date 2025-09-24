@@ -246,7 +246,7 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
 
   // 全选/取消全选处理
   const handleSelectAll = (checked: boolean) => {
-    if (checked && data?.data) {
+    if (checked && Array.isArray(data?.data)) {
       setSelectedProductIds(data.data.map(product => product.id));
     } else {
       setSelectedProductIds([]);
@@ -257,9 +257,9 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
   const handleBatchDelete = () => {
     if (selectedProductIds.length === 0) return;
 
-    const selectedProducts =
-      data?.data?.filter(product => selectedProductIds.includes(product.id)) ||
-      [];
+    const selectedProducts = Array.isArray(data?.data)
+      ? data.data.filter(product => selectedProductIds.includes(product.id))
+      : [];
 
     setBatchDeleteDialog({
       open: true,
@@ -432,6 +432,24 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
               ))}
             </div>
           </div>
+        ) : error ? (
+          <div className="p-8 text-center">
+            <div className="text-sm text-red-600">
+              加载产品列表失败: {error.message}
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() =>
+                queryClient.invalidateQueries({
+                  queryKey: productQueryKeys.list(queryParams),
+                })
+              }
+            >
+              重试
+            </Button>
+          </div>
         ) : (
           <Table>
             <TableHeader>
@@ -439,7 +457,8 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
                 <TableHead className="h-8 w-12 text-xs font-medium">
                   <Checkbox
                     checked={
-                      data?.data?.length > 0 &&
+                      Array.isArray(data?.data) &&
+                      data.data.length > 0 &&
                       selectedProductIds.length === data.data.length
                     }
                     onCheckedChange={handleSelectAll}
@@ -468,105 +487,119 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {data?.data?.map((product, index) => (
-                <TableRow
-                  key={product.id}
-                  className="h-8 cursor-pointer hover:bg-muted/50"
-                  onClick={() => {
-                    if (onProductSelect) {
-                      onProductSelect(product.id);
-                    } else {
-                      router.push(`/products/${product.id}`);
-                    }
-                  }}
-                >
-                  <TableCell className="py-1">
-                    <Checkbox
-                      checked={selectedProductIds.includes(product.id)}
-                      onCheckedChange={checked =>
-                        handleSelectProduct(product.id, checked as boolean)
+              {Array.isArray(data?.data) ? (
+                data.data.map((product, index) => (
+                  <TableRow
+                    key={product.id}
+                    className="h-8 cursor-pointer hover:bg-muted/50"
+                    onClick={() => {
+                      if (onProductSelect) {
+                        onProductSelect(product.id);
+                      } else {
+                        router.push(`/products/${product.id}`);
                       }
-                      onClick={e => e.stopPropagation()}
-                      aria-label={`选择产品 ${product.name}`}
-                    />
-                  </TableCell>
-                  <TableCell className="py-1 text-xs text-muted-foreground">
-                    {(queryParams.page - 1) * queryParams.limit + index + 1}
-                  </TableCell>
-                  <TableCell className="py-1 text-xs font-medium">
-                    {product.code}
-                  </TableCell>
-                  <TableCell className="py-1 text-xs">{product.name}</TableCell>
-                  <TableCell className="py-1 text-xs">
-                    {product.specification || '-'}
-                  </TableCell>
-                  <TableCell className="py-1">
-                    <Badge variant="outline" className="text-xs">
-                      {product.category?.name || '未分类'}
-                    </Badge>
-                  </TableCell>
-                  <TableCell className="py-1 text-xs">
-                    {product?.thickness ? `${product.thickness}mm` : '-'}
-                  </TableCell>
-                  <TableCell className="py-1 text-xs">
-                    {product?.weight ? `${product.weight}kg` : '-'}
-                  </TableCell>
-                  <TableCell className="py-1 text-xs">
-                    {PRODUCT_UNIT_LABELS[
-                      product.unit as keyof typeof PRODUCT_UNIT_LABELS
-                    ] || product.unit}
-                  </TableCell>
-                  <TableCell className="py-1">
-                    {getStatusBadge(product.status)}
-                  </TableCell>
-                  <TableCell className="py-1 text-xs">
-                    {new Date(product.createdAt).toLocaleDateString('zh-CN')}
-                  </TableCell>
-                  <TableCell className="py-1">
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          className="h-7 w-7 p-0"
-                          onClick={e => e.stopPropagation()}
-                        >
-                          <MoreHorizontal className="h-3 w-3" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem
-                          onClick={e => {
-                            e.stopPropagation();
-                            router.push(`/products/${product.id}`);
-                          }}
-                        >
-                          <Eye className="mr-2 h-3 w-3" />
-                          查看
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={e => {
-                            e.stopPropagation();
-                            router.push(`/products/${product.id}/edit`);
-                          }}
-                        >
-                          <Edit className="mr-2 h-3 w-3" />
-                          编辑
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          className="text-red-600"
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleDeleteProduct(product.id, product.name);
-                          }}
-                        >
-                          <Trash2 className="mr-2 h-3 w-3" />
-                          删除
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+                    }}
+                  >
+                    <TableCell className="py-1">
+                      <Checkbox
+                        checked={selectedProductIds.includes(product.id)}
+                        onCheckedChange={checked =>
+                          handleSelectProduct(product.id, checked as boolean)
+                        }
+                        onClick={e => e.stopPropagation()}
+                        aria-label={`选择产品 ${product.name}`}
+                      />
+                    </TableCell>
+                    <TableCell className="py-1 text-xs text-muted-foreground">
+                      {(queryParams.page - 1) * queryParams.limit + index + 1}
+                    </TableCell>
+                    <TableCell className="py-1 text-xs font-medium">
+                      {product.code}
+                    </TableCell>
+                    <TableCell className="py-1 text-xs">
+                      {product.name}
+                    </TableCell>
+                    <TableCell className="py-1 text-xs">
+                      {product.specification || '-'}
+                    </TableCell>
+                    <TableCell className="py-1">
+                      <Badge variant="outline" className="text-xs">
+                        {product.category?.name || '未分类'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="py-1 text-xs">
+                      {product?.thickness ? `${product.thickness}mm` : '-'}
+                    </TableCell>
+                    <TableCell className="py-1 text-xs">
+                      {product?.weight ? `${product.weight}kg` : '-'}
+                    </TableCell>
+                    <TableCell className="py-1 text-xs">
+                      {PRODUCT_UNIT_LABELS[
+                        product.unit as keyof typeof PRODUCT_UNIT_LABELS
+                      ] || product.unit}
+                    </TableCell>
+                    <TableCell className="py-1">
+                      {getStatusBadge(product.status)}
+                    </TableCell>
+                    <TableCell className="py-1 text-xs">
+                      {new Date(product.createdAt).toLocaleDateString('zh-CN')}
+                    </TableCell>
+                    <TableCell className="py-1">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            className="h-7 w-7 p-0"
+                            onClick={e => e.stopPropagation()}
+                          >
+                            <MoreHorizontal className="h-3 w-3" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem
+                            onClick={e => {
+                              e.stopPropagation();
+                              router.push(`/products/${product.id}`);
+                            }}
+                          >
+                            <Eye className="mr-2 h-3 w-3" />
+                            查看
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={e => {
+                              e.stopPropagation();
+                              router.push(`/products/${product.id}/edit`);
+                            }}
+                          >
+                            <Edit className="mr-2 h-3 w-3" />
+                            编辑
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleDeleteProduct(product.id, product.name);
+                            }}
+                          >
+                            <Trash2 className="mr-2 h-3 w-3" />
+                            删除
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={8} className="h-24 text-center">
+                    <div className="flex flex-col items-center justify-center space-y-2">
+                      <div className="text-sm text-muted-foreground">
+                        {isLoading ? '加载中...' : '暂无数据'}
+                      </div>
+                    </div>
                   </TableCell>
                 </TableRow>
-              ))}
+              )}
             </TableBody>
           </Table>
         )}
