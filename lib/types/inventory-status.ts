@@ -65,16 +65,20 @@ export const INVENTORY_THRESHOLDS = {
 } as const;
 
 /**
- * 库存状态检查函数
+ * 库存状态检查函数（增强版）
  * @param quantity 当前库存数量
  * @param reservedQuantity 预留数量
  * @param minQuantity 最小库存阈值
+ * @param criticalQuantity 紧急库存阈值
+ * @param overstockThreshold 库存过多阈值
  * @returns 库存状态信息
  */
 export const getInventoryStatus = (
   quantity: number,
   reservedQuantity: number = 0,
-  minQuantity: number = INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY
+  minQuantity: number = INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY,
+  criticalQuantity: number = INVENTORY_THRESHOLDS.CRITICAL_MIN_QUANTITY,
+  overstockThreshold?: number
 ): {
   status: InventoryStatus;
   label: string;
@@ -83,6 +87,7 @@ export const getInventoryStatus = (
 } => {
   const availableQuantity = quantity - reservedQuantity;
 
+  // 检查缺货
   if (availableQuantity <= 0) {
     return {
       status: 'out_of_stock',
@@ -90,28 +95,45 @@ export const getInventoryStatus = (
       color: 'text-red-600',
       variant: 'destructive',
     };
-  } else if (availableQuantity <= INVENTORY_THRESHOLDS.CRITICAL_MIN_QUANTITY) {
+  }
+
+  // 检查紧急库存不足
+  if (availableQuantity <= criticalQuantity) {
     return {
       status: 'low_stock',
       label: INVENTORY_STATUS_LABELS.low_stock,
-      color: 'text-orange-600',
+      color: 'text-red-600',
       variant: 'destructive',
     };
-  } else if (availableQuantity <= minQuantity) {
+  }
+
+  // 检查库存不足
+  if (availableQuantity <= minQuantity) {
     return {
       status: 'low_stock',
       label: INVENTORY_STATUS_LABELS.low_stock,
       color: 'text-yellow-600',
       variant: 'outline',
     };
-  } else {
+  }
+
+  // 检查库存过多
+  if (overstockThreshold && availableQuantity > overstockThreshold) {
     return {
-      status: 'in_stock',
-      label: INVENTORY_STATUS_LABELS.in_stock,
-      color: 'text-green-600',
-      variant: 'default',
+      status: 'overstock',
+      label: INVENTORY_STATUS_LABELS.overstock,
+      color: 'text-blue-600',
+      variant: 'secondary',
     };
   }
+
+  // 库存正常
+  return {
+    status: 'in_stock',
+    label: INVENTORY_STATUS_LABELS.in_stock,
+    color: 'text-green-600',
+    variant: 'default',
+  };
 };
 
 /**

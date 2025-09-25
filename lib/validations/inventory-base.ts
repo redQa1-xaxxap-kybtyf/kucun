@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { INVENTORY_THRESHOLDS } from '@/lib/types/inventory-status';
+
 /**
  * 库存管理基础验证规则
  * 提供通用的字段验证规则，供其他验证模块使用
@@ -70,3 +72,72 @@ export const calculateTotalCost = (
   quantity: number,
   unitCost: number
 ): number => Math.round(quantity * unitCost * 100) / 100;
+
+/**
+ * 验证库存调整边界
+ * @param currentQuantity 当前库存数量
+ * @param adjustQuantity 调整数量（正数为增加，负数为减少）
+ * @param reservedQuantity 预留数量
+ * @param minQuantity 最小库存阈值
+ * @param maxQuantity 最大库存阈值
+ * @returns 验证结果
+ */
+export const validateInventoryAdjustment = (
+  currentQuantity: number,
+  adjustQuantity: number,
+  reservedQuantity: number = 0,
+  minQuantity: number = INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY,
+  maxQuantity: number = 999999
+): { isValid: boolean; message?: string; warnings?: string[] } => {
+  const newQuantity = currentQuantity + adjustQuantity;
+  const warnings: string[] = [];
+
+  // 检查调整后数量不能为负数
+  if (newQuantity < 0) {
+    return {
+      isValid: false,
+      message: `调整后库存数量(${newQuantity})不能为负数`,
+    };
+  }
+
+  // 检查调整后数量不能低于预留数量
+  if (newQuantity < reservedQuantity) {
+    return {
+      isValid: false,
+      message: `调整后可用库存(${newQuantity})不能低于预留数量(${reservedQuantity})`,
+    };
+  }
+
+  // 检查调整后数量不能超过最大库存
+  if (newQuantity > maxQuantity) {
+    return {
+      isValid: false,
+      message: `调整后库存数量(${newQuantity})不能超过最大库存限制(${maxQuantity})`,
+    };
+  }
+
+  // 警告：调整后库存低于最小阈值
+  if (newQuantity <= INVENTORY_THRESHOLDS.CRITICAL_MIN_QUANTITY) {
+    warnings.push(
+      `调整后库存(${newQuantity})将低于紧急阈值(${INVENTORY_THRESHOLDS.CRITICAL_MIN_QUANTITY})，可能导致缺货`
+    );
+  } else if (newQuantity <= minQuantity) {
+    warnings.push(
+      `调整后库存(${newQuantity})将低于安全库存(${minQuantity})，建议及时补货`
+    );
+  }
+
+  // 警告：调整后库存过多
+  const overstockThreshold =
+    minQuantity * INVENTORY_THRESHOLDS.OVERSTOCK_MULTIPLIER;
+  if (newQuantity > overstockThreshold) {
+    warnings.push(
+      `调整后库存(${newQuantity})将超过建议库存(${overstockThreshold})，可能造成资金占用`
+    );
+  }
+
+  return {
+    isValid: true,
+    warnings: warnings.length > 0 ? warnings : undefined,
+  };
+};

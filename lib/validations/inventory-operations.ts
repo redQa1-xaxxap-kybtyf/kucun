@@ -50,6 +50,10 @@ export const inventoryAdjustSchema = z.object({
     .min(1, '请填写调整原因')
     .max(200, '调整原因不能超过200个字符'),
   remarks: baseValidations.remarks,
+  // 新增字段用于边界检查
+  currentQuantity: z.number().int().min(0).optional(),
+  maxQuantity: z.number().int().min(0).optional(),
+  minQuantity: z.number().int().min(0).optional(),
 });
 
 // 库存盘点明细验证

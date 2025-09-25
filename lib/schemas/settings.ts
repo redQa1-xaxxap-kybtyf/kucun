@@ -5,6 +5,8 @@
 
 import { z } from 'zod';
 
+import { INVENTORY_THRESHOLDS } from '@/lib/types/inventory-status';
+
 // 设置数据类型验证
 export const SettingDataTypeSchema = z.enum([
   'string',
@@ -68,7 +70,7 @@ export const BasicSettingsSchema = z.object({
     .number()
     .int('库存阈值必须为整数')
     .min(0, '库存阈值不能小于0')
-    .default(10),
+    .default(INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY),
   enableStockAlerts: z.boolean().default(true),
 
   // 订单配置

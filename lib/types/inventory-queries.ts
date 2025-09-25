@@ -113,18 +113,37 @@ export interface InventoryStats {
   }[];
 }
 
-// 库存预警类型
+// 库存预警类型 - 统一使用dashboard类型定义
 export interface InventoryAlert {
   id: string;
   productId: string;
   productName: string;
+  productCode: string;
   batchNumber?: string;
-  currentQuantity: number;
-  minQuantity: number;
-  alertType: 'low_stock' | 'out_of_stock';
-  createdAt: string;
+  colorCode?: string;
+  currentStock: number;
+  safetyStock: number;
+  alertLevel: 'warning' | 'danger' | 'critical';
+  alertType: 'low_stock' | 'out_of_stock' | 'overstock' | 'expired';
+  lastUpdated: string;
+  daysUntilStockout?: number;
+  suggestedAction: string;
+  createdAt?: string; // 向后兼容
 
-  product?: import('./product').Product;
+  // 扩展字段用于组件显示
+  inventory?: {
+    id: string;
+    productId: string;
+    quantity: number;
+    reservedQuantity: number;
+    product?: {
+      id: string;
+      name: string;
+      code: string;
+      unit?: string;
+      safetyStock?: number;
+    };
+  };
 }
 
 // 排序选项
@@ -156,9 +175,11 @@ export const INVENTORY_FIELD_LABELS = {
 export const DEFAULT_PAGE_SIZE = 20;
 export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
-// 库存预警阈值
-export const DEFAULT_MIN_QUANTITY = 10;
-export const CRITICAL_MIN_QUANTITY = 5;
+// 库存预警阈值 - 使用统一的阈值配置
+import { INVENTORY_THRESHOLDS } from './inventory-status';
+export { INVENTORY_THRESHOLDS };
+export const DEFAULT_MIN_QUANTITY = INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY;
+export const CRITICAL_MIN_QUANTITY = INVENTORY_THRESHOLDS.CRITICAL_MIN_QUANTITY;
 
 // 库存警报类型标签
 export const INVENTORY_ALERT_TYPE_LABELS: Record<string, string> = {

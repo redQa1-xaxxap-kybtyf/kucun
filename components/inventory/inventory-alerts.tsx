@@ -198,19 +198,23 @@ export function InventoryAlerts({
 
                       <TableCell>
                         <span className="font-medium text-orange-600">
-                          {alert.inventory?.quantity || 0}{' '}
+                          {alert.currentStock || alert.inventory?.quantity || 0}{' '}
                           {alert.inventory?.product?.unit || '件'}
                         </span>
                       </TableCell>
                       <TableCell>
                         <span className="font-medium">
-                          {alert.inventory?.product?.safetyStock || 0}{' '}
+                          {alert.safetyStock ||
+                            alert.inventory?.product?.safetyStock ||
+                            0}{' '}
                           {alert.inventory?.product?.unit || '件'}
                         </span>
                       </TableCell>
                       <TableCell>
                         <div className="text-sm text-muted-foreground">
-                          {new Date(alert.createdAt).toLocaleString('zh-CN')}
+                          {new Date(
+                            alert.lastUpdated || alert.createdAt || new Date()
+                          ).toLocaleString('zh-CN')}
                         </div>
                       </TableCell>
                       <TableCell>
@@ -274,23 +278,25 @@ export function InventoryAlerts({
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">当前库存:</span>
                         <span className="font-medium text-orange-600">
-                          {alert.inventory?.quantity || 0}{' '}
+                          {alert.currentStock || alert.inventory?.quantity || 0}{' '}
                           {alert.inventory?.product?.unit || '件'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">安全库存:</span>
                         <span className="font-medium">
-                          {alert.inventory?.product?.safetyStock || 0}{' '}
+                          {alert.safetyStock ||
+                            alert.inventory?.product?.safetyStock ||
+                            0}{' '}
                           {alert.inventory?.product?.unit || '件'}
                         </span>
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-muted-foreground">预警时间:</span>
                         <span>
-                          {new Date(alert.createdAt).toLocaleDateString(
-                            'zh-CN'
-                          )}
+                          {new Date(
+                            alert.lastUpdated || alert.createdAt || new Date()
+                          ).toLocaleDateString('zh-CN')}
                         </span>
                       </div>
                     </div>

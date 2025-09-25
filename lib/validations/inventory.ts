@@ -4,12 +4,11 @@
  */
 
 // 基础验证规则
-export { baseValidations } from './inventory-base';
 export {
+  baseValidations,
   calculateTotalCost,
-  validateColorCode,
+  validateInventoryAdjustment,
   validateInventoryQuantity,
-  validateProductionDate,
 } from './inventory-base';
 
 // 库存操作验证规则

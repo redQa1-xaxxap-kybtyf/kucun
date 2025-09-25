@@ -1,8 +1,9 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { INVENTORY_THRESHOLDS } from '@/lib/types/inventory-status';
 import {
   inventoryAdjustSchema,
   inventoryQuerySchema,
@@ -99,13 +100,18 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    if (lowStock) {
-      // 低库存：可用库存 <= 10
-      where.quantity = { lte: 10 };
-    }
-
-    if (hasStock) {
-      // 有库存：数量 > 0
+    // 处理库存筛选条件 - 避免条件冲突
+    if (lowStock && hasStock) {
+      // 同时筛选低库存和有库存：0 < 数量 <= 默认最小库存阈值
+      where.quantity = {
+        gt: 0,
+        lte: INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY,
+      };
+    } else if (lowStock) {
+      // 仅筛选低库存：数量 <= 默认最小库存阈值
+      where.quantity = { lte: INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY };
+    } else if (hasStock) {
+      // 仅筛选有库存：数量 > 0
       where.quantity = { gt: 0 };
     }
 
