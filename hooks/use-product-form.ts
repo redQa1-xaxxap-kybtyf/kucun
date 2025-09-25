@@ -22,6 +22,7 @@ import {
 
 interface UseProductFormProps {
   mode: 'create' | 'edit';
+  productId?: string | undefined;
   initialData?: Product | undefined;
   onSuccess?: ((product: Product) => void) | undefined;
   onCancel?: (() => void) | undefined;
@@ -29,6 +30,7 @@ interface UseProductFormProps {
 
 export function useProductForm({
   mode,
+  productId,
   initialData,
   onSuccess,
   onCancel,
@@ -43,7 +45,7 @@ export function useProductForm({
   const defaultValues =
     isEdit && initialData
       ? ProductDataUtils.transformer.toFormData(initialData)
-      : ProductDataUtils.transformer.getCreateDefaults();
+      : ProductDataUtils.defaults.getCreateDefaults();
 
   const form = useForm<ProductCreateFormData | ProductUpdateFormData>({
     resolver: zodResolver(schema),
@@ -83,12 +85,12 @@ export function useProductForm({
     setSubmitError('');
 
     try {
-      if (isEdit && initialData) {
+      if (isEdit && (productId || initialData?.id)) {
         const updateData = ProductDataUtils.transformer.toUpdateApiData(
           data as ProductUpdateFormData
         );
         await updateMutation.mutateAsync({
-          id: initialData.id,
+          id: productId || (initialData?.id ?? ''),
           data: updateData,
         });
       } else {

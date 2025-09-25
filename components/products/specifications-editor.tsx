@@ -1,7 +1,7 @@
 'use client';
 
 import { Layers, Minus, Palette, Plus, Ruler } from 'lucide-react';
-import { useFieldArray, type Control } from 'react-hook-form';
+import { useFieldArray, useWatch, type Control } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -215,13 +215,18 @@ export function SpecificationsEditor({
 // 规格信息预览组件
 function SpecificationPreview({
   control,
-  name,
+  name: _name,
 }: {
   control: Control<Record<string, unknown>>;
   name: string;
 }) {
+  // 使用useWatch来监听表单值变化，而不是直接访问内部属性
   const watchedSpecs =
-    control._formValues?.[name.split('.')[0]]?.specifications || {};
+    useWatch({
+      control,
+      name: 'specifications',
+      defaultValue: {},
+    }) || {};
 
   const hasSpecs = Object.values(watchedSpecs).some(
     value => value !== undefined && value !== null && value !== ''

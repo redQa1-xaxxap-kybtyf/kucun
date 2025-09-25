@@ -25,20 +25,25 @@ import { type Product } from '@/lib/types/product';
 
 interface ProductFormProps {
   mode: 'create' | 'edit';
+  productId?: string;
   initialData?: Product;
   onSuccess?: (product: Product) => void;
   onCancel?: () => void;
+  variant?: 'default' | 'erp';
 }
 
 export function ProductForm({
   mode,
+  productId,
   initialData,
   onSuccess,
   onCancel,
+  variant: _variant = 'default',
 }: ProductFormProps) {
   const { form, isEdit, isLoading, submitError, onSubmit, handleCancel } =
     useProductForm({
       mode,
+      productId,
       initialData,
       onSuccess,
       onCancel,

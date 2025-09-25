@@ -5,7 +5,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { ERPProductForm } from '@/components/products/erp-product-form';
+import { ProductForm } from '@/components/products/product-form';
 import { Button } from '@/components/ui/button';
 import { getProduct, productQueryKeys } from '@/lib/api/products';
 
@@ -36,23 +36,6 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
     staleTime: 0,
     gcTime: 0,
   });
-
-  // 准备初始数据
-  const initialData = React.useMemo(() => {
-    if (!product) return undefined;
-
-    return {
-      code: product.code,
-      name: product.name,
-      specification: product.specification || '',
-      unit: product.unit,
-      piecesPerUnit: product.piecesPerUnit,
-      weight: product.weight || 0,
-      thickness: product.thickness || 0,
-      status: product.status,
-      categoryId: product.categoryId || 'uncategorized',
-    };
-  }, [product]);
 
   // 加载状态
   if (isProductLoading) {
@@ -111,10 +94,11 @@ export default function ProductEditPage({ params }: ProductEditPageProps) {
 
   return (
     <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      <ERPProductForm
+      <ProductForm
         mode="edit"
         productId={productId}
-        initialData={initialData}
+        initialData={product}
+        variant="erp"
       />
     </div>
   );
