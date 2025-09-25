@@ -12,14 +12,14 @@ import {
 // 获取库存列表
 export async function GET(request: NextRequest) {
   try {
-    // 验证用户权限 - 临时跳过用于测试
-    // const session = await getServerSession(authOptions);
-    // if (!session?.user?.id) {
-    //   return NextResponse.json(
-    //     { success: false, error: '未授权访问' },
-    //     { status: 401 }
-    //   );
-    // }
+    // 验证用户权限
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
+    }
 
     const { searchParams } = new URL(request.url);
 

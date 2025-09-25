@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { TableCell, TableRow } from '@/components/ui/table';
 
 import type { Inventory } from '@/lib/types/inventory';
+import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 import { formatInventoryQuantity } from '@/lib/utils/piece-calculation';
 
@@ -24,38 +25,11 @@ interface InventoryTableRowProps {
 }
 
 /**
- * 库存状态判断
- */
-const getStockStatus = (quantity: number, minStock: number = 10) => {
-  if (quantity <= 0) {
-    return {
-      status: 'out',
-      label: '缺货',
-      variant: 'destructive' as const,
-      color: 'text-red-600',
-    };
-  } else if (quantity <= minStock) {
-    return {
-      status: 'low',
-      label: '库存不足',
-      variant: 'secondary' as const,
-      color: 'text-yellow-600',
-    };
-  } else {
-    return {
-      status: 'normal',
-      label: '正常',
-      variant: 'default' as const,
-      color: 'text-green-600',
-    };
-  }
-};
-
-/**
  * 库存状态标签渲染
+ * 使用统一的库存状态判断逻辑
  */
-const getStockBadge = (quantity: number, minStock?: number) => {
-  const { label, variant } = getStockStatus(quantity, minStock);
+const getStockBadge = (quantity: number, reservedQuantity: number = 0) => {
+  const { label, variant } = getInventoryStatus(quantity, reservedQuantity);
   return (
     <Badge variant={variant} className="text-xs">
       {label}
@@ -103,8 +77,8 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
     );
 
     const stockBadge = React.useMemo(
-      () => getStockBadge(item.quantity, 10),
-      [item.quantity]
+      () => getStockBadge(item.quantity, item.reservedQuantity || 0),
+      [item.quantity, item.reservedQuantity]
     );
 
     const availableQuantity = React.useMemo(
@@ -127,23 +101,15 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
             className="rounded border border-input"
           />
         </TableCell>
-        <TableCell className="font-mono">
-          {item.product?.code || '-'}
-        </TableCell>
+        <TableCell className="font-mono">{item.product?.code || '-'}</TableCell>
         <TableCell className="font-medium">
           {item.product?.name || '-'}
         </TableCell>
         <TableCell>{item.product?.specification || '-'}</TableCell>
-        <TableCell className="font-mono">
-          {item.batchNumber || '-'}
-        </TableCell>
-        <TableCell className="font-medium">
-          {quantityDisplay}
-        </TableCell>
+        <TableCell className="font-mono">{item.batchNumber || '-'}</TableCell>
+        <TableCell className="font-medium">{quantityDisplay}</TableCell>
         <TableCell>{item.reservedQuantity || 0}</TableCell>
-        <TableCell className="font-medium">
-          {availableQuantity}
-        </TableCell>
+        <TableCell className="font-medium">{availableQuantity}</TableCell>
         <TableCell>{stockBadge}</TableCell>
         <TableCell>{formattedDate}</TableCell>
         <TableCell>

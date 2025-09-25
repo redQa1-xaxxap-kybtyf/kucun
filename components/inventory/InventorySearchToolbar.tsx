@@ -51,15 +51,11 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
     selectedCount = 0,
   }) => {
     // 使用防抖搜索Hook
-    const {
-      inputValue,
-      debouncedValue,
-      isDebouncing,
-      setInputValue,
-    } = useDebouncedSearch({
-      delay: 400,
-      minLength: 0,
-    });
+    const { inputValue, debouncedValue, isDebouncing, setInputValue } =
+      useDebouncedSearch({
+        delay: 400,
+        minLength: 0,
+      });
 
     // 监听防抖后的值变化，触发搜索
     React.useEffect(() => {
@@ -71,7 +67,7 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
       if (queryParams.search !== inputValue) {
         setInputValue(queryParams.search || '');
       }
-    }, [queryParams.search, inputValue, setInputValue]);
+    }, [queryParams.search, setInputValue]); // 移除inputValue依赖避免无限循环
 
     // 优化的事件处理函数
     const handleLowStockFilter = React.useCallback(() => {

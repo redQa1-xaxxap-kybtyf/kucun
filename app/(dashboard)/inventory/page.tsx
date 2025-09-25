@@ -39,22 +39,25 @@ export default function InventoryPage() {
   });
 
   // 搜索处理
-  const handleSearch = (value: string) => {
+  const handleSearch = React.useCallback((value: string) => {
     setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
-  };
+  }, []);
 
   // 筛选处理
-  const handleFilter = (
-    key: keyof InventoryQueryParams,
-    value: string | number | boolean
-  ) => {
-    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
-  };
+  const handleFilter = React.useCallback(
+    (
+      key: keyof InventoryQueryParams,
+      value: string | number | boolean | undefined
+    ) => {
+      setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
+    },
+    []
+  );
 
   // 分页处理
-  const handlePageChange = (page: number) => {
+  const handlePageChange = React.useCallback((page: number) => {
     setQueryParams(prev => ({ ...prev, page }));
-  };
+  }, []);
 
   if (error) {
     return (

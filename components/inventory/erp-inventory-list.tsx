@@ -4,8 +4,8 @@ import { Package } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { InventorySearchToolbar } from '@/components/inventory/inventory-search-toolbar';
-import { InventoryTableRow } from '@/components/inventory/inventory-table-row';
+import { InventorySearchToolbar } from '@/components/inventory/InventorySearchToolbar';
+import { InventoryTableRow } from '@/components/inventory/InventoryTableRow';
 import { Button } from '@/components/ui/button';
 import {
   Table,

@@ -8,8 +8,8 @@
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { InventorySearchToolbar } from '@/components/inventory/inventory-search-toolbar';
-import { VirtualizedInventoryTable } from '@/components/inventory/virtualized-inventory-table';
+import { InventorySearchToolbar } from '@/components/inventory/InventorySearchToolbar';
+import { VirtualizedInventoryTable } from '@/components/inventory/VirtualizedInventoryTable';
 import { Button } from '@/components/ui/button';
 
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
@@ -58,17 +58,12 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
     const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
 
     // 使用优化的查询Hook
-    const {
-      data,
-      isLoading,
-      isError,
-      error,
-      cache,
-    } = useOptimizedInventoryQuery({
-      params: queryParams,
-      prefetchNext: true,
-      prefetchPrev: false,
-    });
+    const { data, isLoading, isError, error, cache } =
+      useOptimizedInventoryQuery({
+        params: queryParams,
+        prefetchNext: true,
+        prefetchPrev: false,
+      });
 
     // 优化的搜索处理函数（防抖已在InventorySearchToolbar中实现）
     const handleSearch = React.useCallback((value: string) => {
@@ -81,7 +76,10 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
 
     // 优化的筛选处理函数
     const handleFilter = React.useCallback(
-      (key: keyof InventoryQueryParams, value: string | number | boolean | undefined) => {
+      (
+        key: keyof InventoryQueryParams,
+        value: string | number | boolean | undefined
+      ) => {
         setQueryParams(prev => ({
           ...prev,
           [key]: value,
@@ -143,7 +141,10 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
 
     // 使用useMemo优化计算
     const inventoryData = React.useMemo(() => data?.data || [], [data?.data]);
-    const pagination = React.useMemo(() => data?.pagination, [data?.pagination]);
+    const pagination = React.useMemo(
+      () => data?.pagination,
+      [data?.pagination]
+    );
 
     // 错误处理
     if (isError) {
@@ -180,7 +181,10 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
             <div className="p-3">
               <div className="flex items-center gap-2">
                 {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-7 w-16 animate-pulse rounded bg-muted" />
+                  <div
+                    key={i}
+                    className="h-7 w-16 animate-pulse rounded bg-muted"
+                  />
                 ))}
               </div>
             </div>
@@ -191,7 +195,10 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
             <div className="p-4">
               <div className="space-y-3">
                 {Array.from({ length: 5 }).map((_, i) => (
-                  <div key={i} className="h-12 animate-pulse rounded bg-muted" />
+                  <div
+                    key={i}
+                    className="h-12 animate-pulse rounded bg-muted"
+                  />
                 ))}
               </div>
             </div>
@@ -242,7 +249,7 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
         ) : (
           <div className="rounded border bg-card">
             {/* 非虚拟化表格实现 */}
-            <div className="text-center p-4 text-muted-foreground">
+            <div className="p-4 text-center text-muted-foreground">
               非虚拟化表格待实现
             </div>
           </div>

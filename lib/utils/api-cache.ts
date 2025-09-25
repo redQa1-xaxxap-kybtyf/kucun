@@ -3,14 +3,14 @@
  * 提供智能缓存策略和请求去重机制
  */
 
-interface CacheEntry<T = any> {
+interface CacheEntry<T = unknown> {
   data: T;
   timestamp: number;
   expiresAt: number;
 }
 
-interface RequestEntry {
-  promise: Promise<any>;
+interface RequestEntry<T = unknown> {
+  promise: Promise<T>;
   timestamp: number;
 }
 
@@ -18,8 +18,8 @@ interface RequestEntry {
  * API缓存管理器
  */
 class ApiCacheManager {
-  private cache = new Map<string, CacheEntry>();
-  private pendingRequests = new Map<string, RequestEntry>();
+  private cache = new Map<string, CacheEntry<unknown>>();
+  private pendingRequests = new Map<string, RequestEntry<unknown>>();
   private defaultTTL = 5 * 60 * 1000; // 5分钟默认缓存时间
 
   /**
@@ -34,7 +34,7 @@ class ApiCacheManager {
   /**
    * 检查缓存是否有效
    */
-  private isValidCache(entry: CacheEntry): boolean {
+  private isValidCache(entry: CacheEntry<unknown>): boolean {
     return Date.now() < entry.expiresAt;
   }
 
@@ -56,7 +56,7 @@ class ApiCacheManager {
   private cleanExpiredRequests(): void {
     const now = Date.now();
     const maxAge = 30 * 1000; // 30秒超时
-    
+
     for (const [key, entry] of this.pendingRequests.entries()) {
       if (now - entry.timestamp > maxAge) {
         this.pendingRequests.delete(key);
@@ -72,11 +72,11 @@ class ApiCacheManager {
     if (entry && this.isValidCache(entry)) {
       return entry.data as T;
     }
-    
+
     if (entry) {
       this.cache.delete(key); // 删除过期缓存
     }
-    
+
     return null;
   }
 
@@ -116,7 +116,7 @@ class ApiCacheManager {
    * 带缓存的fetch请求
    */
   async fetch<T>(
-    url: string, 
+    url: string,
     options: RequestInit & { ttl?: number } = {}
   ): Promise<T> {
     const { ttl = this.defaultTTL, ...fetchOptions } = options;
@@ -136,24 +136,24 @@ class ApiCacheManager {
 
     // 发起新请求
     const requestPromise = this.performFetch<T>(url, fetchOptions);
-    
+
     // 记录正在进行的请求
     this.pendingRequests.set(cacheKey, {
-      promise: requestPromise,
+      promise: requestPromise as Promise<unknown>,
       timestamp: Date.now(),
     });
 
     try {
       const result = await requestPromise;
-      
+
       // 缓存结果
       this.set(cacheKey, result, ttl);
-      
+
       return result;
     } finally {
       // 清理请求记录
       this.pendingRequests.delete(cacheKey);
-      
+
       // 定期清理过期请求
       if (this.pendingRequests.size % 10 === 0) {
         this.cleanExpiredRequests();
@@ -190,7 +190,7 @@ class ApiCacheManager {
     }
 
     const keys = Array.from(this.cache.keys());
-    
+
     if (typeof pattern === 'string') {
       // 字符串匹配
       keys.forEach(key => {
@@ -238,13 +238,13 @@ class ApiCacheManager {
    */
   private estimateMemoryUsage(): number {
     let size = 0;
-    
+
     for (const [key, entry] of this.cache.entries()) {
       size += key.length * 2; // 字符串按UTF-16计算
       size += JSON.stringify(entry.data).length * 2;
       size += 16; // timestamp和expiresAt
     }
-    
+
     return size;
   }
 }
@@ -269,7 +269,7 @@ export const inventoryCache = {
   /**
    * 获取库存列表（带缓存）
    */
-  async getList(params: Record<string, any> = {}, ttl = 5 * 60 * 1000) {
+  async getList(params: Record<string, unknown> = {}, ttl = 5 * 60 * 1000) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -320,15 +320,14 @@ export const inventoryCache = {
 /**
  * 请求去重装饰器
  */
-export function withDeduplication<T extends (...args: any[]) => Promise<any>>(
-  fn: T,
-  keyGenerator?: (...args: Parameters<T>) => string
-): T {
-  const pendingRequests = new Map<string, Promise<any>>();
+export function withDeduplication<
+  T extends (...args: unknown[]) => Promise<unknown>,
+>(fn: T, keyGenerator?: (...args: Parameters<T>) => string): T {
+  const pendingRequests = new Map<string, Promise<unknown>>();
 
   return (async (...args: Parameters<T>) => {
     const key = keyGenerator ? keyGenerator(...args) : JSON.stringify(args);
-    
+
     // 如果有相同的请求正在进行，返回相同的Promise
     if (pendingRequests.has(key)) {
       return pendingRequests.get(key);
