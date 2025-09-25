@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 
-import './globals.css';
 import QueryProvider from '@/components/providers/query-provider';
 import AuthSessionProvider from '@/components/providers/session-provider';
+import { WebSocketProvider } from '@/components/providers/websocket-provider';
 import { Toaster } from '@/components/ui/toaster';
+import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -23,8 +24,10 @@ export default function RootLayout({
       <body className={inter.className}>
         <AuthSessionProvider>
           <QueryProvider>
-            <div className="min-h-screen bg-background">{children}</div>
-            <Toaster />
+            <WebSocketProvider>
+              <div className="min-h-screen bg-background">{children}</div>
+              <Toaster />
+            </WebSocketProvider>
           </QueryProvider>
         </AuthSessionProvider>
       </body>

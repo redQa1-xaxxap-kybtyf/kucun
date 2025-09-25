@@ -1,7 +1,8 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
+import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { INVENTORY_THRESHOLDS } from '@/lib/types/inventory-status';
 import {
@@ -115,85 +116,100 @@ export async function GET(request: NextRequest) {
       where.quantity = { gt: 0 };
     }
 
-    // 查询库存列表
-    const [inventoryRecords, total] = await Promise.all([
-      prisma.inventory.findMany({
-        where,
-        select: {
-          id: true,
-          productId: true,
+    // Redis 缓存键
+    const cacheKey = buildCacheKey('inventory:list', {
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder,
+      productId,
+      batchNumber,
+      location,
+      categoryId,
+      lowStock,
+      hasStock,
+    });
 
-          batchNumber: true,
-          quantity: true,
-          reservedQuantity: true,
-          location: true,
-          unitCost: true,
-          updatedAt: true,
-          product: {
+    const cached = await getOrSetJSON(
+      cacheKey,
+      async () => {
+        const [inventoryRecords, total] = await Promise.all([
+          prisma.inventory.findMany({
+            where,
             select: {
               id: true,
-              code: true,
-              name: true,
-              specification: true,
-              specifications: true,
-              unit: true,
-              piecesPerUnit: true,
-              status: true,
-              categoryId: true,
-              category: {
+              productId: true,
+              batchNumber: true,
+              quantity: true,
+              reservedQuantity: true,
+              location: true,
+              unitCost: true,
+              updatedAt: true,
+              product: {
                 select: {
                   id: true,
-                  name: true,
                   code: true,
+                  name: true,
+                  specification: true,
+                  specifications: true,
+                  unit: true,
+                  piecesPerUnit: true,
+                  status: true,
+                  categoryId: true,
+                  category: {
+                    select: {
+                      id: true,
+                      name: true,
+                      code: true,
+                    },
+                  },
                 },
               },
             },
+            orderBy: { [sortBy as string]: sortOrder },
+            skip: (page - 1) * limit,
+            take: limit,
+          }),
+          prisma.inventory.count({ where }),
+        ]);
+
+        const totalPages = Math.ceil(total / limit);
+
+        const formattedInventory = inventoryRecords.map(record => ({
+          id: record.id,
+          productId: record.productId,
+          batchNumber: record.batchNumber,
+          quantity: record.quantity,
+          reservedQuantity: record.reservedQuantity,
+          availableQuantity: record.quantity - record.reservedQuantity,
+          location: record.location,
+          unitCost: record.unitCost,
+          product: record.product
+            ? {
+                ...record.product,
+                specifications: record.product.specifications
+                  ? JSON.parse(record.product.specifications as string)
+                  : null,
+              }
+            : null,
+          updatedAt: record.updatedAt,
+        }));
+
+        return {
+          data: formattedInventory,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
           },
-          // 变体功能已移除
-        },
-        orderBy: { [sortBy as string]: sortOrder },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.inventory.count({ where }),
-    ]);
-
-    const totalPages = Math.ceil(total / limit);
-
-    // 转换数据格式（snake_case -> camelCase）
-    const formattedInventory = inventoryRecords.map(record => ({
-      id: record.id,
-      productId: record.productId,
-
-      batchNumber: record.batchNumber,
-      quantity: record.quantity,
-      reservedQuantity: record.reservedQuantity,
-      availableQuantity: record.quantity - record.reservedQuantity,
-      location: record.location,
-      unitCost: record.unitCost,
-      product: record.product
-        ? {
-            ...record.product,
-            specifications: record.product.specifications
-              ? JSON.parse(record.product.specifications as string)
-              : null,
-          }
-        : null,
-      updatedAt: record.updatedAt,
-    }));
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        data: formattedInventory,
-        pagination: {
-          page,
-          limit,
-          total,
-          totalPages,
-        },
+        } as const;
       },
-    });
+      10
+    );
+
+    return NextResponse.json({ success: true, data: cached });
   } catch (error) {
     console.error('获取库存列表错误:', error);
 

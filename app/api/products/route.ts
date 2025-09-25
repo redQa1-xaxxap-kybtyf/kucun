@@ -3,10 +3,16 @@ import { getServerSession } from 'next-auth';
 
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
 import { authOptions } from '@/lib/auth';
+import {
+  buildCacheKey,
+  getOrSetJSON,
+  invalidateNamespace,
+} from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import { paginationValidations } from '@/lib/validations/base';
 import { productCreateSchema } from '@/lib/validations/product';
+import { publishWs } from '@/lib/ws/ws-server';
 
 // 获取产品列表
 export async function GET(request: NextRequest) {
@@ -48,7 +54,6 @@ export async function GET(request: NextRequest) {
     }
 
     const { page, limit, search, sortBy, sortOrder } = validationResult.data;
-    const { status, unit, categoryId } = queryParams;
 
     // 构建查询条件
     const where: Record<string, unknown> = {};
@@ -61,130 +66,151 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    if (status && status !== 'all') {
-      where.status = status;
+    if (queryParams.status && queryParams.status !== 'all') {
+      (where as Record<string, unknown>).status = queryParams.status;
     }
 
-    if (unit) {
-      where.unit = unit;
+    if (queryParams.unit) {
+      (where as Record<string, unknown>).unit = queryParams.unit;
     }
 
-    if (categoryId) {
-      where.categoryId = categoryId;
+    if (queryParams.categoryId) {
+      (where as Record<string, unknown>).categoryId = queryParams.categoryId;
     }
 
-    // 查询产品列表
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        select: {
-          id: true,
-          code: true,
-          name: true,
-          specification: true,
-          specifications: true,
-          unit: true,
-          piecesPerUnit: true,
-          weight: true,
-          thickness: true,
-          status: true,
-          categoryId: true,
-          category: {
+    // Redis 缓存键
+    const cacheKey = buildCacheKey('products:list', {
+      page,
+      limit,
+      search,
+      sortBy,
+      sortOrder,
+      status: queryParams.status,
+      unit: queryParams.unit,
+      categoryId: queryParams.categoryId,
+    });
+
+    // 命中缓存则直接返回
+    const cached = await getOrSetJSON(
+      cacheKey,
+      async () => {
+        // 查询产品列表（缓存未命中时）
+        const [products, total] = await Promise.all([
+          prisma.product.findMany({
+            where,
             select: {
               id: true,
-              name: true,
               code: true,
+              name: true,
+              specification: true,
+              specifications: true,
+              unit: true,
+              piecesPerUnit: true,
+              weight: true,
+              thickness: true,
+              status: true,
+              categoryId: true,
+              category: {
+                select: {
+                  id: true,
+                  name: true,
+                  code: true,
+                },
+              },
+              createdAt: true,
+              updatedAt: true,
+              _count: {
+                select: {
+                  inventory: true,
+                  salesOrderItems: true,
+                  inboundRecords: true,
+                },
+              },
             },
+            orderBy: { [sortBy as string]: sortOrder },
+            skip: (page - 1) * limit,
+            take: limit,
+          }),
+          prisma.product.count({ where }),
+        ]);
+
+        const totalPages = Math.ceil(total / limit);
+
+        // 获取库存汇总信息
+        const productIds = products.map(p => p.id);
+        const inventorySummary = await prisma.inventory.groupBy({
+          by: ['productId'],
+          where: {
+            productId: { in: productIds },
           },
-          createdAt: true,
-          updatedAt: true,
-          _count: {
-            select: {
-              inventory: true,
-              salesOrderItems: true,
-              inboundRecords: true,
+          _sum: {
+            quantity: true,
+            reservedQuantity: true,
+          },
+        });
+
+        const inventoryMap = new Map(
+          inventorySummary.map(item => [
+            item.productId,
+            {
+              totalQuantity: item._sum.quantity || 0,
+              reservedQuantity: item._sum.reservedQuantity || 0,
+              availableQuantity:
+                (item._sum.quantity || 0) - (item._sum.reservedQuantity || 0),
             },
+          ])
+        );
+
+        // 转换数据格式
+        const formattedProducts = products.map(product => ({
+          id: product.id,
+          code: product.code,
+          name: product.name,
+          specification: product.specification,
+          specifications: product.specifications
+            ? JSON.parse(product.specifications as string)
+            : null,
+          unit: product.unit,
+          piecesPerUnit: product.piecesPerUnit,
+          weight: product.weight,
+          thickness: product.thickness,
+          status: product.status,
+          categoryId: product.categoryId,
+          category: product.category
+            ? {
+                id: product.category.id,
+                name: product.category.name,
+                code: product.category.code,
+              }
+            : null,
+          inventory: inventoryMap.get(product.id) || {
+            totalQuantity: 0,
+            reservedQuantity: 0,
+            availableQuantity: 0,
           },
-        },
-        orderBy: { [sortBy as string]: sortOrder },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      prisma.product.count({ where }),
-    ]);
+          statistics: {
+            inventory: product._count.inventory,
+            salesOrderItems: product._count.salesOrderItems,
+            inboundRecords: product._count.inboundRecords,
+          },
+          createdAt: product.createdAt,
+          updatedAt: product.updatedAt,
+        }));
 
-    const totalPages = Math.ceil(total / limit);
-
-    // 获取库存汇总信息
-    const productIds = products.map(p => p.id);
-    const inventorySummary = await prisma.inventory.groupBy({
-      by: ['productId'],
-      where: {
-        productId: { in: productIds },
+        return {
+          data: formattedProducts,
+          pagination: {
+            page,
+            limit,
+            total,
+            totalPages,
+          },
+        } as const;
       },
-      _sum: {
-        quantity: true,
-        reservedQuantity: true,
-      },
-    });
-
-    const inventoryMap = new Map(
-      inventorySummary.map(item => [
-        item.productId,
-        {
-          totalQuantity: item._sum.quantity || 0,
-          reservedQuantity: item._sum.reservedQuantity || 0,
-          availableQuantity:
-            (item._sum.quantity || 0) - (item._sum.reservedQuantity || 0),
-        },
-      ])
+      60 // TTL 秒
     );
 
-    // 转换数据格式（snake_case -> camelCase）
-    const formattedProducts = products.map(product => ({
-      id: product.id,
-      code: product.code,
-      name: product.name,
-      specification: product.specification,
-      specifications: product.specifications
-        ? JSON.parse(product.specifications as string)
-        : null,
-      unit: product.unit,
-      piecesPerUnit: product.piecesPerUnit,
-      weight: product.weight,
-      thickness: product.thickness,
-      status: product.status,
-      categoryId: product.categoryId,
-      category: product.category
-        ? {
-            id: product.category.id,
-            name: product.category.name,
-            code: product.category.code,
-          }
-        : null,
-      inventory: inventoryMap.get(product.id) || {
-        totalQuantity: 0,
-        reservedQuantity: 0,
-        availableQuantity: 0,
-      },
-      statistics: {
-        inventoryRecordsCount: product._count.inventory,
-        salesOrderItemsCount: product._count.salesOrderItems,
-        inboundRecordsCount: product._count.inboundRecords,
-      },
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
-    }));
-
-    return createDateTimeResponse({
-      data: formattedProducts,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    });
+    return createDateTimeResponse(cached);
   } catch (error) {
     console.error('获取产品列表错误:', error);
 
@@ -255,42 +281,63 @@ export async function POST(request: NextRequest) {
     const processedCategoryId =
       categoryId === 'uncategorized' ? null : categoryId;
 
-    // 创建产品
-    const product = await prisma.product.create({
-      data: {
-        code,
-        name,
-        specification,
-        specifications: specifications ? JSON.stringify(specifications) : null,
-        unit,
-        piecesPerUnit,
-        weight,
-        thickness,
-        categoryId: processedCategoryId,
-        status: 'active',
-      },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        specification: true,
-        specifications: true,
-        unit: true,
-        piecesPerUnit: true,
-        weight: true,
-        thickness: true,
-        status: true,
-        categoryId: true,
-        category: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
+    // 使用事务创建产品
+    const product = await prisma.$transaction(async tx => {
+      // 检查分类是否存在（如果提供了分类ID）
+      if (processedCategoryId) {
+        const category = await tx.category.findUnique({
+          where: { id: processedCategoryId },
+          select: { id: true, status: true },
+        });
+
+        if (!category) {
+          throw new Error('指定的产品分类不存在');
+        }
+
+        if (category.status !== 'active') {
+          throw new Error('指定的产品分类已被禁用');
+        }
+      }
+
+      // 创建产品
+      return await tx.product.create({
+        data: {
+          code,
+          name,
+          specification,
+          specifications: specifications
+            ? JSON.stringify(specifications)
+            : null,
+          unit,
+          piecesPerUnit,
+          weight,
+          thickness,
+          categoryId: processedCategoryId,
+          status: 'active',
         },
-        createdAt: true,
-        updatedAt: true,
-      },
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          specification: true,
+          specifications: true,
+          unit: true,
+          piecesPerUnit: true,
+          weight: true,
+          thickness: true,
+          status: true,
+          categoryId: true,
+          category: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+            },
+          },
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
     });
 
     // 转换数据格式
@@ -318,6 +365,14 @@ export async function POST(request: NextRequest) {
       createdAt: product.createdAt,
       updatedAt: product.updatedAt,
     };
+
+    // 缓存失效 & WebSocket 推送
+    await invalidateNamespace('products:list:*');
+    publishWs('products', {
+      type: 'created',
+      id: formattedProduct.id,
+      code: formattedProduct.code,
+    });
 
     return createDateTimeResponse(formattedProduct, 201, '产品创建成功');
   } catch (error) {
