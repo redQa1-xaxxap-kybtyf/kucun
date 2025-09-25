@@ -58,6 +58,7 @@ export class ProductDataTransformer {
       code: product.code,
       name: product.name,
       specification: product.specification || '',
+      description: (product as any).description || '',
       unit: product.unit,
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight || undefined,
@@ -260,13 +261,17 @@ export class ProductDataDefaults {
    */
   static getCreateDefaults(): Partial<ProductCreateFormData> {
     return {
+      code: '',
+      name: '',
+      specification: '',
+      description: '',
       unit: 'piece',
       piecesPerUnit: 1,
       status: 'active',
-      specification: '',
       weight: undefined,
       thickness: undefined,
       specifications: {},
+      images: [],
     };
   }
 
@@ -276,6 +281,7 @@ export class ProductDataDefaults {
   static getUpdateDefaults(): Partial<ProductUpdateFormData> {
     return {
       specification: '',
+      description: '',
       weight: undefined,
       thickness: undefined,
       specifications: {},

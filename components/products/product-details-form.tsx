@@ -112,7 +112,7 @@ export function ProductDetailsForm({
       <div className="md:col-span-2">
         <FormField
           control={control}
-          name="specification"
+          name="description"
           render={({ field }) => (
             <FormItem>
               <FormLabel>产品描述</FormLabel>

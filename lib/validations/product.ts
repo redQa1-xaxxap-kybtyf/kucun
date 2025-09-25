@@ -33,6 +33,13 @@ const baseValidations = {
     .optional()
     .or(z.literal('')),
 
+  /** 产品描述验证：可选，最多1000字符 */
+  description: z
+    .string()
+    .max(1000, '产品描述不能超过1000个字符')
+    .optional()
+    .or(z.literal('')),
+
   /** 计量单位验证：必须是预定义的枚举值 */
   unit: z.enum(['piece', 'sheet', 'strip', 'box', 'square_meter'], {
     errorMap: () => ({ message: '请选择有效的计量单位' }),
@@ -93,6 +100,7 @@ export const productCreateSchema = z.object({
   code: baseValidations.code,
   name: baseValidations.name,
   specification: baseValidations.specification,
+  description: baseValidations.description,
   unit: baseValidations.unit.default('piece'),
   piecesPerUnit: baseValidations.piecesPerUnit.default(1),
   weight: baseValidations.weight,
@@ -111,6 +119,7 @@ export const productUpdateSchema = z.object({
   code: baseValidations.code.optional(),
   name: baseValidations.name.optional(),
   specification: baseValidations.specification,
+  description: baseValidations.description,
   unit: baseValidations.unit.optional(),
   piecesPerUnit: baseValidations.piecesPerUnit.optional(),
   weight: baseValidations.weight,

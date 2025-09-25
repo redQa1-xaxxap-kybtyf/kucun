@@ -1,13 +1,14 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import {
   createProduct,
+  getProduct,
   productQueryKeys,
   updateProduct,
 } from '@/lib/api/products';
@@ -42,9 +43,21 @@ export function useProductForm({
   // 表单配置
   const isEdit = mode === 'edit';
   const schema = isEdit ? productUpdateSchema : productCreateSchema;
+
+  // 如果是编辑模式且提供了productId但没有initialData，则预加载产品数据
+  const { data: productData, isLoading: isLoadingProduct } = useQuery({
+    queryKey: productQueryKeys.detail(productId!),
+    queryFn: () => getProduct(productId!),
+    enabled: isEdit && !!productId && !initialData,
+    staleTime: 5 * 60 * 1000, // 5分钟缓存
+  });
+
+  // 确定实际使用的产品数据
+  const actualProductData = initialData || productData;
+
   const defaultValues =
-    isEdit && initialData
-      ? ProductDataUtils.transformer.toFormData(initialData)
+    isEdit && actualProductData
+      ? ProductDataUtils.transformer.toFormData(actualProductData)
       : ProductDataUtils.defaults.getCreateDefaults();
 
   const form = useForm<ProductCreateFormData | ProductUpdateFormData>({
@@ -77,7 +90,8 @@ export function useProductForm({
     },
   });
 
-  const isLoading = createMutation.isPending || updateMutation.isPending;
+  const isLoading =
+    createMutation.isPending || updateMutation.isPending || isLoadingProduct;
 
   const onSubmit = async (
     data: ProductCreateFormData | ProductUpdateFormData
@@ -85,12 +99,12 @@ export function useProductForm({
     setSubmitError('');
 
     try {
-      if (isEdit && (productId || initialData?.id)) {
+      if (isEdit && (productId || actualProductData?.id)) {
         const updateData = ProductDataUtils.transformer.toUpdateApiData(
           data as ProductUpdateFormData
         );
         await updateMutation.mutateAsync({
-          id: productId || (initialData?.id ?? ''),
+          id: productId || (actualProductData?.id ?? ''),
           data: updateData,
         });
       } else {
