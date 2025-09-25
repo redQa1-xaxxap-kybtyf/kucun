@@ -40,6 +40,7 @@ interface InventorySearchToolbarProps {
  * 使用防抖搜索优化性能
  */
 export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
+  // eslint-disable-next-line max-lines-per-function
   ({
     queryParams,
     categoryOptions,
@@ -48,7 +49,8 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
     onInbound,
     onOutbound,
     onAdjust,
-    selectedCount = 0,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    selectedCount = 0, // 保留参数但不使用
   }) => {
     // 使用防抖搜索Hook
     const { inputValue, debouncedValue, isDebouncing, setInputValue } =
@@ -63,11 +65,13 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
     }, [debouncedValue, onSearch]);
 
     // 初始化搜索值
+    const prevSearchRef = React.useRef(queryParams.search);
     React.useEffect(() => {
-      if (queryParams.search !== inputValue) {
+      if (queryParams.search !== prevSearchRef.current) {
         setInputValue(queryParams.search || '');
+        prevSearchRef.current = queryParams.search;
       }
-    }, [queryParams.search, setInputValue]); // 移除inputValue依赖避免无限循环
+    }, [queryParams.search, setInputValue]); // 使用ref避免inputValue依赖
 
     // 优化的事件处理函数
     const handleLowStockFilter = React.useCallback(() => {

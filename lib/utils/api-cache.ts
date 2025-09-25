@@ -212,7 +212,6 @@ class ApiCacheManager {
    * 获取缓存统计信息
    */
   getStats() {
-    const now = Date.now();
     let validEntries = 0;
     let expiredEntries = 0;
 

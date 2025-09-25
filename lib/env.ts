@@ -71,7 +71,9 @@ function validateEnv(): Env {
         err => `${err.path.join('.')}: ${err.message}`
       );
 
+      // eslint-disable-next-line no-console
       console.error('❌ 环境变量验证失败:');
+      // eslint-disable-next-line no-console
       errorMessages.forEach(msg => console.error(`  - ${msg}`));
 
       throw new Error(`环境变量验证失败:\n${errorMessages.join('\n')}`);
@@ -133,11 +135,16 @@ export const logConfig = {
 
 // 在开发环境下打印配置信息（不包含敏感信息）
 if (isDevelopment) {
+  // eslint-disable-next-line no-console
   console.log('🔧 环境配置已加载:');
+  // eslint-disable-next-line no-console
   console.log(`  - 环境: ${env.NODE_ENV}`);
+  // eslint-disable-next-line no-console
   console.log(
     `  - 数据库: ${env.DATABASE_URL.includes('sqlite') ? 'SQLite (开发)' : 'MySQL (生产)'}`
   );
+  // eslint-disable-next-line no-console
   console.log(`  - 上传目录: ${env.UPLOAD_DIR}`);
+  // eslint-disable-next-line no-console
   console.log(`  - 日志级别: ${env.LOG_LEVEL}`);
 }
