@@ -8,8 +8,6 @@ import crypto from 'crypto';
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { prisma } from '@/lib/db';
-
 // 验证码配置
 const CAPTCHA_CONFIG = {
   width: 120,
@@ -19,6 +17,18 @@ const CAPTCHA_CONFIG = {
   expireMinutes: 5, // 5分钟过期
   maxAttempts: 5, // 最大尝试次数
 };
+
+// 内存存储验证码会话
+interface CaptchaSession {
+  sessionId: string;
+  captchaText: string;
+  clientIp: string;
+  expiresAt: Date;
+  attempts: number;
+  createdAt: Date;
+}
+
+const captchaSessions = new Map<string, CaptchaSession>();
 
 /**
  * 生成随机验证码字符串
@@ -115,21 +125,13 @@ function generateSessionId(): string {
 /**
  * 清理过期的验证码记录
  */
-async function cleanExpiredCaptchas(): Promise<void> {
-  const expireTime = new Date(
-    Date.now() - CAPTCHA_CONFIG.expireMinutes * 60 * 1000
-  );
+function cleanExpiredCaptchas(): void {
+  const now = new Date();
 
-  try {
-    await prisma.captchaSession.deleteMany({
-      where: {
-        createdAt: {
-          lt: expireTime,
-        },
-      },
-    });
-  } catch (error) {
-    console.error('清理过期验证码失败:', error);
+  for (const [sessionId, session] of captchaSessions.entries()) {
+    if (now > session.expiresAt) {
+      captchaSessions.delete(sessionId);
+    }
   }
 }
 
@@ -139,7 +141,7 @@ async function cleanExpiredCaptchas(): Promise<void> {
 export async function GET(request: NextRequest): Promise<NextResponse> {
   try {
     // 清理过期的验证码记录
-    await cleanExpiredCaptchas();
+    cleanExpiredCaptchas();
 
     // 生成验证码文本和会话ID
     const captchaText = generateCaptchaText();
@@ -155,33 +157,35 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       request.ip ||
       '127.0.0.1';
 
-    // 存储验证码会话到数据库
-    await prisma.captchaSession.create({
-      data: {
-        sessionId,
-        captchaText: captchaText.toUpperCase(), // 统一转为大写存储
-        clientIp,
-        expiresAt,
-        attempts: 0,
-      },
+    // 存储验证码会话到内存
+    captchaSessions.set(sessionId, {
+      sessionId,
+      captchaText: captchaText.toUpperCase(), // 统一转为大写存储
+      clientIp,
+      expiresAt,
+      attempts: 0,
+      createdAt: new Date(),
     });
 
     // 生成验证码SVG图片
     const svgContent = generateCaptchaSVG(captchaText);
 
-    // 返回SVG图片和会话ID
-    const response = new NextResponse(svgContent, {
-      status: 200,
-      headers: {
-        'Content-Type': 'image/svg+xml',
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        Pragma: 'no-cache',
-        Expires: '0',
-        'X-Captcha-Session': sessionId,
+    // 返回JSON格式响应，包含SVG内容和会话ID
+    return NextResponse.json(
+      {
+        success: true,
+        captchaImage: svgContent,
+        sessionId,
       },
-    });
-
-    return response;
+      {
+        status: 200,
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      }
+    );
   } catch (error) {
     console.error('生成验证码失败:', error);
 
@@ -208,9 +212,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     // 查找验证码会话
-    const session = await prisma.captchaSession.findUnique({
-      where: { sessionId },
-    });
+    const session = captchaSessions.get(sessionId);
 
     if (!session) {
       return NextResponse.json(
@@ -222,9 +224,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // 检查是否过期
     if (new Date() > session.expiresAt) {
       // 删除过期的会话
-      await prisma.captchaSession.delete({
-        where: { sessionId },
-      });
+      captchaSessions.delete(sessionId);
 
       return NextResponse.json(
         { success: false, error: '验证码已过期' },
@@ -235,9 +235,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     // 检查尝试次数
     if (session.attempts >= CAPTCHA_CONFIG.maxAttempts) {
       // 删除超过尝试次数的会话
-      await prisma.captchaSession.delete({
-        where: { sessionId },
-      });
+      captchaSessions.delete(sessionId);
 
       return NextResponse.json(
         { success: false, error: '验证码尝试次数过多' },
@@ -255,12 +253,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       });
     } else {
       // 增加尝试次数
-      await prisma.captchaSession.update({
-        where: { sessionId },
-        data: {
-          attempts: session.attempts + 1,
-        },
-      });
+      session.attempts += 1;
+      captchaSessions.set(sessionId, session);
 
       return NextResponse.json(
         { success: false, error: '验证码错误' },
