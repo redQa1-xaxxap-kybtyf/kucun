@@ -50,7 +50,7 @@ import {
 } from '@/lib/validations/sales-order';
 
 interface ERPSalesOrderFormProps {
-  onSuccess?: (order: unknown) => void;
+  onSuccess?: (order: { id: string; orderNumber?: string }) => void;
   onCancel?: () => void;
 }
 

@@ -310,3 +310,12 @@ export type BatchDeleteSalesOrdersFormData = z.infer<
 export type UpdateOrderStatusFormData = z.infer<typeof updateOrderStatusSchema>;
 export type SalesOrderStatusType = z.infer<typeof salesOrderStatusSchema>;
 export type SalesOrderTypeType = z.infer<typeof salesOrderTypeSchema>;
+
+// 兼容性导出（用于测试文件）
+export const CreateSalesOrderSchema = salesOrderCreateSchema;
+
+// 销售订单类型选项（用于测试文件）
+export const SALES_ORDER_TYPE_OPTIONS = [
+  { value: 'NORMAL', label: '普通销售' },
+  { value: 'TRANSFER', label: '调货销售' },
+] as const;

@@ -234,7 +234,7 @@ function CategoriesPage() {
       setTimeout(() => {
         toast({
           title: '状态更新成功',
-          description: `分类 "${data.data.name}" 已成功${statusText}！`,
+          description: `分类 "${data.data?.name || '未知分类'}" 已成功${statusText}！`,
           variant: 'success',
         });
       }, 200);
@@ -465,9 +465,13 @@ function CategoriesPage() {
             <div className="flex gap-2">
               <Select
                 value={queryParams.status || 'all'}
-                onValueChange={value =>
-                  handleFilter('status', value === 'all' ? undefined : value)
-                }
+                onValueChange={value => {
+                  const statusValue =
+                    value === 'all'
+                      ? undefined
+                      : (value as 'active' | 'inactive');
+                  handleFilter('status', statusValue);
+                }}
               >
                 <SelectTrigger className="w-32">
                   <SelectValue placeholder="状态" />
@@ -501,8 +505,9 @@ function CategoriesPage() {
                     <TableHead className="w-12">
                       <Checkbox
                         checked={
-                          data?.data?.length > 0 &&
-                          selectedCategoryIds.length === data.data.length
+                          (data?.data?.length ?? 0) > 0 &&
+                          selectedCategoryIds.length ===
+                            (data?.data?.length ?? 0)
                         }
                         onCheckedChange={handleSelectAll}
                         aria-label="全选分类"

@@ -3,8 +3,8 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -226,6 +226,35 @@ export async function GET(
 }
 
 /**
+ * 定义关键系统日志，这些日志不应被清空以保持审计痕迹
+ */
+const CRITICAL_LOG_ACTIONS = [
+  'clear_all_logs',
+  'clear_business_logs',
+  'cleanup_logs',
+  'user_login',
+  'user_logout',
+  'user_register',
+  'admin_login',
+  'admin_logout',
+  'permission_denied',
+  'security_alert',
+  'system_start',
+  'system_shutdown',
+  'database_backup',
+  'database_restore',
+  'user_role_change',
+  'admin_action',
+  'critical_error',
+  'data_export',
+  'data_import',
+  'settings_change',
+];
+
+const CRITICAL_LOG_TYPES: SystemLogType[] = ['security', 'system_event'];
+const CRITICAL_LOG_LEVELS: SystemLogLevel[] = ['critical', 'error'];
+
+/**
  * 清理系统日志
  */
 export async function DELETE(
@@ -259,11 +288,10 @@ export async function DELETE(
     const clearAll = searchParams.get('clearAll') === 'true';
 
     if (clearAll) {
-      // 清空所有日志
       // 先记录清空操作日志（在清空之前记录）
       await logSystemEventInfo(
-        'clear_all_logs',
-        `管理员清空所有系统日志 - 操作者：${session.user.name} (${session.user.username})`,
+        'clear_business_logs',
+        `管理员清空业务日志 - 操作者：${session.user.name} (${session.user.username})，保留关键系统日志以维护审计痕迹`,
         session.user.id,
         requestInfo.ipAddress,
         requestInfo.userAgent,
@@ -271,18 +299,47 @@ export async function DELETE(
           operatorId: session.user.id,
           operatorName: session.user.name,
           operatorUsername: session.user.username,
-          operationType: 'clear_all_logs',
+          operationType: 'clear_business_logs',
           timestamp: new Date().toISOString(),
+          preservedLogTypes: CRITICAL_LOG_TYPES,
+          preservedLogActions: CRITICAL_LOG_ACTIONS,
+          preservedLogLevels: CRITICAL_LOG_LEVELS,
         }
       );
 
-      // 执行清空操作
-      const result = await prisma.systemLog.deleteMany({});
+      // 构建删除条件：排除关键日志
+      const deleteCondition = {
+        AND: [
+          {
+            // 排除关键日志类型
+            type: {
+              notIn: CRITICAL_LOG_TYPES,
+            },
+          },
+          {
+            // 排除关键日志级别
+            level: {
+              notIn: CRITICAL_LOG_LEVELS,
+            },
+          },
+          {
+            // 排除关键操作
+            action: {
+              notIn: CRITICAL_LOG_ACTIONS,
+            },
+          },
+        ],
+      };
+
+      // 执行清空操作（只删除非关键日志）
+      const result = await prisma.systemLog.deleteMany({
+        where: deleteCondition,
+      });
 
       return NextResponse.json({
         success: true,
         data: {
-          message: '所有系统日志已清空',
+          message: `已清空业务日志，保留 ${CRITICAL_LOG_TYPES.length} 种关键日志类型、${CRITICAL_LOG_LEVELS.length} 种关键日志级别和 ${CRITICAL_LOG_ACTIONS.length} 种关键操作的审计记录`,
           deletedCount: result.count,
         },
       });

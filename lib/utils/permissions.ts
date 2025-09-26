@@ -309,3 +309,34 @@ export function getAccessibleNavItems(
     return item.requiredRoles.includes(role);
   });
 }
+
+/**
+ * 检查用户是否可以访问指定路径（兼容测试文件）
+ */
+export function canAccessPath(
+  role: UserRole | undefined,
+  path: string
+): boolean {
+  return canAccessRoute(role, path);
+}
+
+/**
+ * 检查用户是否有指定权限（兼容测试文件）
+ */
+export function hasPermission(
+  role: UserRole | undefined,
+  permission: string
+): boolean {
+  const permissions = new Permissions(role);
+  return permissions.hasPermission(permission);
+}
+
+/**
+ * 检查用户是否有指定角色（兼容测试文件）
+ */
+export function hasRole(
+  userRole: UserRole | undefined,
+  requiredRole: UserRole
+): boolean {
+  return userRole === requiredRole;
+}

@@ -46,6 +46,13 @@ const fetchBasicSettings = async (): Promise<BasicSettings> => {
   const data: SettingsApiResponse<BasicSettings> = await response.json();
 
   if (!data.success) {
+    // 如果有详细的验证错误信息，显示具体错误
+    if (data.details && Array.isArray(data.details)) {
+      const errorMessages = data.details
+        .map((detail: any) => `${detail.field}: ${detail.message}`)
+        .join('; ');
+      throw new Error(`设置数据验证失败：${errorMessages}`);
+    }
     throw new Error(data.error || '获取基本设置失败');
   }
 
@@ -70,6 +77,13 @@ const updateBasicSettings = async (
   const data: SettingsApiResponse<BasicSettings> = await response.json();
 
   if (!data.success) {
+    // 如果有详细的验证错误信息，显示具体错误
+    if (data.details && Array.isArray(data.details)) {
+      const errorMessages = data.details
+        .map((detail: any) => `${detail.field}: ${detail.message}`)
+        .join('; ');
+      throw new Error(`数据验证失败：${errorMessages}`);
+    }
     throw new Error(data.error || '更新基本设置失败');
   }
 
@@ -380,14 +394,30 @@ export function BasicSettingsForm() {
                   <FormControl>
                     <Input
                       type="number"
-                      min="0"
+                      min="1"
+                      max="9999"
                       placeholder="10"
                       {...field}
-                      onChange={e => field.onChange(Number(e.target.value))}
+                      onChange={e => {
+                        const value = e.target.value;
+                        // 只允许正整数
+                        if (value === '' || /^[1-9]\d*$/.test(value)) {
+                          field.onChange(value === '' ? '' : Number(value));
+                        }
+                      }}
+                      onBlur={e => {
+                        const value = Number(e.target.value);
+                        // 确保值在有效范围内
+                        if (value < 1) {
+                          field.onChange(1);
+                        } else if (value > 9999) {
+                          field.onChange(9999);
+                        }
+                      }}
                     />
                   </FormControl>
                   <FormDescription>
-                    当库存数量低于此值时将触发预警
+                    当库存数量低于此值时将触发预警（最小值：1，最大值：9999）
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

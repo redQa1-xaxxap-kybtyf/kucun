@@ -203,8 +203,10 @@ describe('Zod验证Schema测试', () => {
 describe('权限系统测试', () => {
   describe('hasRole', () => {
     it('应该正确检查用户角色', () => {
-      expect(hasRole('admin', ['admin', 'user'])).toBe(true);
-      expect(hasRole('user', ['admin'])).toBe(false);
+      expect(hasRole('admin', 'admin')).toBe(true);
+      expect(hasRole('user', 'admin')).toBe(false);
+      expect(hasRole('admin', 'user')).toBe(false);
+      expect(hasRole('user', 'user')).toBe(true);
     });
   });
 
@@ -230,8 +232,18 @@ describe('权限系统测试', () => {
   describe('getAccessibleNavItems', () => {
     it('应该根据角色过滤导航项', () => {
       const navItems = [
-        { id: '1', title: '仪表盘', href: '/dashboard', requiredRoles: [] },
-        { id: '2', title: '设置', href: '/settings', requiredRoles: ['admin'] },
+        {
+          id: '1',
+          title: '仪表盘',
+          href: '/dashboard',
+          requiredRoles: [] as UserRole[],
+        },
+        {
+          id: '2',
+          title: '设置',
+          href: '/settings',
+          requiredRoles: ['admin'] as UserRole[],
+        },
       ];
 
       const adminItems = getAccessibleNavItems(navItems, 'admin');

@@ -45,7 +45,12 @@ export default function InventoryPage() {
     const response = data as {
       data?: Inventory[];
       inventories?: Inventory[];
-      pagination?: unknown;
+      pagination?: {
+        page: number;
+        limit: number;
+        total: number;
+        totalPages: number;
+      };
     };
     const items = response.data ?? response.inventories ?? [];
     const pagination = response.pagination;

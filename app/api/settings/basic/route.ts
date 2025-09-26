@@ -3,8 +3,8 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -43,6 +43,17 @@ export async function GET(_request: NextRequest) {
       return NextResponse.json(
         { success: false, error: '未授权访问' } as SettingsApiResponse,
         { status: 401 }
+      );
+    }
+
+    // 检查管理员权限
+    if (session.user.role !== 'admin') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '权限不足，只有管理员可以访问基本设置',
+        } as SettingsApiResponse,
+        { status: 403 }
       );
     }
 
@@ -95,12 +106,18 @@ export async function GET(_request: NextRequest) {
     const validationResult = BasicSettingsSchema.safeParse(basicSettings);
     if (!validationResult.success) {
       console.error('基本设置数据验证失败:', validationResult.error);
-      // 返回默认设置
-      return NextResponse.json({
-        success: true,
-        data: DEFAULT_BASIC_SETTINGS,
-        message: '使用默认设置',
-      } as SettingsApiResponse<BasicSettings>);
+      // 返回验证错误信息
+      return NextResponse.json(
+        {
+          success: false,
+          error: '基本设置数据验证失败',
+          details: validationResult.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message,
+          })),
+        } as SettingsApiResponse,
+        { status: 400 }
+      );
     }
 
     return NextResponse.json({

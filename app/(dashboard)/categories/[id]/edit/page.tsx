@@ -113,7 +113,7 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
       // 先显示成功提示
       toast({
         title: '更新成功',
-        description: `分类 "${data.data.name}" 更新成功！所有修改已保存。`,
+        description: `分类 "${data.data?.name || '未知分类'}" 更新成功！所有修改已保存。`,
         variant: 'success',
       });
 

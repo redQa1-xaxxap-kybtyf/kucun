@@ -5,11 +5,10 @@
 
 'use client';
 
-
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, FileText, Trash2 } from 'lucide-react';
-import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import React from 'react';
 
 import { LogFilters } from '@/components/settings/LogFilters';
@@ -121,7 +120,7 @@ export default function LogsSettingsPage() {
     onSuccess: data => {
       toast({
         title: '清空成功',
-        description: `已清空 ${data.deletedCount} 条系统日志`,
+        description: data.message || `已清空 ${data.deletedCount} 条业务日志`,
         variant: 'success',
       });
       // 刷新日志列表
@@ -215,22 +214,41 @@ export default function LogsSettingsPage() {
             <AlertDialogTrigger asChild>
               <Button variant="destructive" size="sm">
                 <Trash2 className="mr-2 h-4 w-4" />
-                清空日志
+                清空业务日志
               </Button>
             </AlertDialogTrigger>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle className="flex items-center text-red-600">
                   <Trash2 className="mr-2 h-5 w-5" />
-                  确认清空所有系统日志
+                  确认清空业务日志
                 </AlertDialogTitle>
                 <AlertDialogDescription asChild>
                   <div className="space-y-3">
-                    <div className="font-medium text-red-700">
-                      ⚠️ 此操作将永久删除所有系统日志，无法恢复！
+                    <div className="rounded-md border border-amber-200 bg-amber-50 p-3 font-medium text-amber-700">
+                      🛡️
+                      安全提示：此操作将清空业务操作日志，但会保留关键系统日志以维护审计痕迹
                     </div>
-                    <div>
-                      这将删除包括用户操作、业务操作、系统事件、错误和安全日志在内的所有记录。
+                    <div className="space-y-2 text-sm">
+                      <div className="font-medium text-green-700">
+                        ✅ 将保留的关键日志：
+                      </div>
+                      <ul className="ml-4 list-inside list-disc space-y-1 text-green-600">
+                        <li>安全相关日志（登录、权限等）</li>
+                        <li>系统事件日志（启动、关闭等）</li>
+                        <li>错误和关键级别日志</li>
+                        <li>管理员操作审计记录</li>
+                      </ul>
+                    </div>
+                    <div className="space-y-2 text-sm">
+                      <div className="font-medium text-red-700">
+                        🗑️ 将清空的日志：
+                      </div>
+                      <ul className="ml-4 list-inside list-disc space-y-1 text-red-600">
+                        <li>一般用户操作日志</li>
+                        <li>业务操作记录</li>
+                        <li>信息级别的常规日志</li>
+                      </ul>
                     </div>
                     <div className="space-y-2">
                       <Label

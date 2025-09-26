@@ -1,6 +1,6 @@
+import { getToken } from 'next-auth/jwt';
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 
 import { env } from './env';
 
@@ -26,6 +26,7 @@ const adminOnlyPaths = [
   '/api/users',
   '/dashboard/users',
   '/dashboard/settings',
+  '/settings', // 系统设置页面（包括基本设置、用户管理等）
 ];
 
 // 公开路径（不需要认证）

@@ -69,7 +69,8 @@ export const BasicSettingsSchema = z.object({
   lowStockThreshold: z
     .number()
     .int('库存阈值必须为整数')
-    .min(0, '库存阈值不能小于0')
+    .min(1, '库存阈值必须大于0')
+    .max(9999, '库存阈值不能超过9999')
     .default(INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY),
   enableStockAlerts: z.boolean().default(true),
 
