@@ -5,7 +5,16 @@
 
 import { z } from 'zod';
 
-import { INVENTORY_THRESHOLDS } from '@/lib/types/inventory-status';
+import {
+  inventoryConfig,
+  logExtendedConfig,
+  paginationConfig,
+  returnRefundConfig,
+  salesOrderConfig,
+  storageConfig,
+  systemConfig,
+  userPolicyConfig,
+} from '@/lib/env';
 
 // 设置数据类型验证
 export const SettingDataTypeSchema = z.enum([
@@ -63,7 +72,10 @@ export const BasicSettingsSchema = z.object({
     .optional(),
 
   // 业务配置
-  defaultLanguage: z.string().length(2, '语言代码必须为2位').default('zh'),
+  defaultLanguage: z
+    .string()
+    .length(2, '语言代码必须为2位')
+    .default(systemConfig.defaultLanguage),
 
   // 库存配置
   lowStockThreshold: z
@@ -71,14 +83,14 @@ export const BasicSettingsSchema = z.object({
     .int('库存阈值必须为整数')
     .min(1, '库存阈值必须大于0')
     .max(9999, '库存阈值不能超过9999')
-    .default(INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY),
+    .default(inventoryConfig.defaultMinQuantity),
   enableStockAlerts: z.boolean().default(true),
 
   // 订单配置
   orderNumberPrefix: z
     .string()
     .max(10, '订单号前缀不能超过10个字符')
-    .default('SO'),
+    .default(salesOrderConfig.orderPrefix),
   enableOrderApproval: z.boolean().default(false),
 });
 
@@ -90,7 +102,7 @@ export const UserSettingsSchema = z.object({
     .int()
     .min(6, '密码最小长度不能小于6位')
     .max(50, '密码最大长度不能超过50位')
-    .default(8),
+    .default(userPolicyConfig.passwordMinLength),
   requireSpecialChars: z.boolean().default(true),
   passwordExpiryDays: z
     .number()
@@ -104,13 +116,13 @@ export const UserSettingsSchema = z.object({
     .int()
     .min(5, '会话超时时间不能小于5分钟')
     .max(1440, '会话超时时间不能超过24小时')
-    .default(30),
+    .default(userPolicyConfig.sessionTimeout),
   maxLoginAttempts: z
     .number()
     .int()
     .min(1, '最大登录尝试次数不能小于1')
     .max(10, '最大登录尝试次数不能超过10')
-    .default(5),
+    .default(userPolicyConfig.maxLoginAttempts),
   lockoutDurationMinutes: z
     .number()
     .int()
@@ -137,11 +149,11 @@ export const StorageSettingsSchema = z.object({
     .int()
     .min(1, '最大文件大小不能小于1MB')
     .max(100, '最大文件大小不能超过100MB')
-    .default(10),
+    .default(Math.floor(storageConfig.maxFileSize / 1024 / 1024)), // 转换为MB
   allowedFileTypes: z
     .array(z.string())
     .min(1, '至少需要允许一种文件类型')
-    .default(['jpg', 'jpeg', 'png', 'gif', 'pdf']),
+    .default(storageConfig.allowedFileTypes),
   enableImageCompression: z.boolean().default(true),
   imageQuality: z
     .number()
@@ -162,7 +174,7 @@ export const LogSettingsSchema = z.object({
     .int()
     .min(1, '日志保留天数不能小于1天')
     .max(365, '日志保留天数不能超过365天')
-    .default(30),
+    .default(logExtendedConfig.retentionDays),
   enableLogRotation: z.boolean().default(true),
   maxLogFileSize: z
     .number()
@@ -175,7 +187,7 @@ export const LogSettingsSchema = z.object({
   enableAuditLog: z.boolean().default(true),
   auditLogEvents: z
     .array(z.string())
-    .default(['login', 'logout', 'create', 'update', 'delete']),
+    .default(logExtendedConfig.criticalActions),
 });
 
 // 设置更新请求验证
@@ -193,7 +205,10 @@ export const BatchSettingUpdateRequestSchema = z.object({
   settings: z
     .array(SettingUpdateRequestSchema)
     .min(1, '至少需要更新一个设置项')
-    .max(50, '批量更新最多支持50个设置项'),
+    .max(
+      returnRefundConfig.refundBatchLimit,
+      `批量更新最多支持${returnRefundConfig.refundBatchLimit}个设置项`
+    ),
 });
 
 // 设置查询参数验证
@@ -261,7 +276,13 @@ export const UpdateUserSchema = z.object({
 
 export const UserListQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1).optional(),
-  limit: z.coerce.number().int().min(1).max(100).default(10).optional(),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(paginationConfig.maxPageSize)
+    .default(paginationConfig.defaultPageSize)
+    .optional(),
   search: z.string().optional().nullable(),
   role: z.enum(['admin', 'sales']).optional().nullable(),
   status: z.enum(['active', 'inactive']).optional().nullable(),
@@ -341,7 +362,12 @@ export const SystemLogFiltersSchema = z.object({
 
 export const SystemLogListRequestSchema = z.object({
   page: z.number().int().min(1).default(1),
-  limit: z.number().int().min(1).max(100).default(20),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(paginationConfig.maxPageSize)
+    .default(paginationConfig.defaultPageSize),
   filters: SystemLogFiltersSchema.optional(),
 });
 

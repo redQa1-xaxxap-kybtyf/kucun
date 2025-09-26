@@ -8,6 +8,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { logExtendedConfig } from '@/lib/env';
 import { extractRequestInfo, logSystemEventInfo } from '@/lib/logger';
 import {
   SystemLogCleanupRequestSchema,
@@ -227,32 +228,13 @@ export async function GET(
 
 /**
  * 定义关键系统日志，这些日志不应被清空以保持审计痕迹
+ * 使用环境配置替代硬编码
  */
-const CRITICAL_LOG_ACTIONS = [
-  'clear_all_logs',
-  'clear_business_logs',
-  'cleanup_logs',
-  'user_login',
-  'user_logout',
-  'user_register',
-  'admin_login',
-  'admin_logout',
-  'permission_denied',
-  'security_alert',
-  'system_start',
-  'system_shutdown',
-  'database_backup',
-  'database_restore',
-  'user_role_change',
-  'admin_action',
-  'critical_error',
-  'data_export',
-  'data_import',
-  'settings_change',
-];
-
-const CRITICAL_LOG_TYPES: SystemLogType[] = ['security', 'system_event'];
-const CRITICAL_LOG_LEVELS: SystemLogLevel[] = ['critical', 'error'];
+const CRITICAL_LOG_ACTIONS = logExtendedConfig.criticalActions;
+const CRITICAL_LOG_TYPES: SystemLogType[] =
+  logExtendedConfig.criticalTypes as SystemLogType[];
+const CRITICAL_LOG_LEVELS: SystemLogLevel[] =
+  logExtendedConfig.criticalLevels as SystemLogLevel[];
 
 /**
  * 清理系统日志

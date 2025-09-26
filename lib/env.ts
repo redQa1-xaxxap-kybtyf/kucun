@@ -347,6 +347,104 @@ const envSchema = z.object({
     .default('active')
     .describe('供应商默认状态过滤'),
 
+  // 系统基础设置配置
+  SYSTEM_DEFAULT_LANGUAGE: z
+    .string()
+    .min(1, 'SYSTEM_DEFAULT_LANGUAGE 不能为空')
+    .default('zh')
+    .describe('系统默认语言'),
+
+  SYSTEM_COMPANY_NAME: z
+    .string()
+    .min(1, 'SYSTEM_COMPANY_NAME 不能为空')
+    .max(100, 'SYSTEM_COMPANY_NAME 不能超过100个字符')
+    .default('库存管理系统')
+    .describe('默认公司名称'),
+
+  SYSTEM_TIMEZONE: z
+    .string()
+    .min(1, 'SYSTEM_TIMEZONE 不能为空')
+    .default('Asia/Shanghai')
+    .describe('系统时区'),
+
+  // 用户策略配置
+  USER_PASSWORD_MIN_LENGTH: z
+    .string()
+    .regex(/^[\d]+$/, 'USER_PASSWORD_MIN_LENGTH 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .refine(
+      val => val >= 6 && val <= 20,
+      'USER_PASSWORD_MIN_LENGTH 必须在6-20之间'
+    )
+    .default('8')
+    .describe('密码最小长度'),
+
+  USER_MAX_LOGIN_ATTEMPTS: z
+    .string()
+    .regex(/^[\d]+$/, 'USER_MAX_LOGIN_ATTEMPTS 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('5')
+    .describe('最大登录失败次数'),
+
+  USER_SESSION_TIMEOUT: z
+    .string()
+    .regex(/^[\d]+$/, 'USER_SESSION_TIMEOUT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('90')
+    .describe('会话超时时间（分钟）'),
+
+  // 存储配置
+  STORAGE_MAX_FILE_SIZE: z
+    .string()
+    .regex(/^[\d]+$/, 'STORAGE_MAX_FILE_SIZE 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('10485760')
+    .describe('最大文件大小（字节）'),
+
+  STORAGE_ALLOWED_FILE_TYPES: z
+    .string()
+    .min(1, 'STORAGE_ALLOWED_FILE_TYPES 不能为空')
+    .default('jpg,jpeg,png,pdf,doc,docx,xls,xlsx')
+    .describe('允许的文件类型'),
+
+  STORAGE_ENCRYPTION_KEY: z
+    .string()
+    .min(32, 'STORAGE_ENCRYPTION_KEY 必须至少32个字符')
+    .max(64, 'STORAGE_ENCRYPTION_KEY 不能超过64个字符')
+    .describe('存储加密密钥（必须配置）'),
+
+  STORAGE_REGION: z
+    .string()
+    .min(1, 'STORAGE_REGION 不能为空')
+    .default('z0')
+    .describe('存储区域'),
+
+  // 日志配置扩展
+  LOG_RETENTION_DAYS: z
+    .string()
+    .regex(/^[\d]+$/, 'LOG_RETENTION_DAYS 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('30')
+    .describe('日志保留天数'),
+
+  LOG_CRITICAL_ACTIONS: z
+    .string()
+    .min(1, 'LOG_CRITICAL_ACTIONS 不能为空')
+    .default('login,logout,delete,update_settings')
+    .describe('关键日志行为'),
+
+  LOG_CRITICAL_TYPES: z
+    .string()
+    .min(1, 'LOG_CRITICAL_TYPES 不能为空')
+    .default('security,system,error')
+    .describe('关键日志类型'),
+
+  LOG_CRITICAL_LEVELS: z
+    .string()
+    .min(1, 'LOG_CRITICAL_LEVELS 不能为空')
+    .default('error,warn,info')
+    .describe('关键日志级别'),
+
   // 日志配置
   LOG_LEVEL: z
     .enum(['error', 'warn', 'info', 'debug'])
@@ -661,6 +759,44 @@ export const supplierConfig = {
 } as const;
 
 /**
+ * 系统基础设置配置对象
+ */
+export const systemConfig = {
+  defaultLanguage: env.SYSTEM_DEFAULT_LANGUAGE,
+  companyName: env.SYSTEM_COMPANY_NAME,
+  timezone: env.SYSTEM_TIMEZONE,
+} as const;
+
+/**
+ * 用户策略配置对象
+ */
+export const userPolicyConfig = {
+  passwordMinLength: env.USER_PASSWORD_MIN_LENGTH,
+  maxLoginAttempts: env.USER_MAX_LOGIN_ATTEMPTS,
+  sessionTimeout: env.USER_SESSION_TIMEOUT,
+} as const;
+
+/**
+ * 存储配置对象
+ */
+export const storageConfig = {
+  maxFileSize: env.STORAGE_MAX_FILE_SIZE,
+  allowedFileTypes: env.STORAGE_ALLOWED_FILE_TYPES?.split(',') || [],
+  encryptionKey: env.STORAGE_ENCRYPTION_KEY,
+  region: env.STORAGE_REGION,
+} as const;
+
+/**
+ * 日志配置扩展对象
+ */
+export const logExtendedConfig = {
+  retentionDays: env.LOG_RETENTION_DAYS,
+  criticalActions: env.LOG_CRITICAL_ACTIONS?.split(',') || [],
+  criticalTypes: env.LOG_CRITICAL_TYPES?.split(',') || [],
+  criticalLevels: env.LOG_CRITICAL_LEVELS?.split(',') || [],
+} as const;
+
+/**
  * 日志配置
  */
 export const logConfig = {
@@ -734,6 +870,22 @@ if (isDevelopment) {
   // eslint-disable-next-line no-console
   console.log(
     `  - 供应商: 查询限制${env.SUPPLIER_QUERY_LIMIT}/缓存${env.SUPPLIER_CACHE_TTL}ms/默认状态${env.SUPPLIER_DEFAULT_STATUS}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 系统设置: 语言${env.SYSTEM_DEFAULT_LANGUAGE}/公司${env.SYSTEM_COMPANY_NAME}/时区${env.SYSTEM_TIMEZONE}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 用户策略: 密码长度${env.USER_PASSWORD_MIN_LENGTH}/登录尝试${env.USER_MAX_LOGIN_ATTEMPTS}/会话${env.USER_SESSION_TIMEOUT}分钟`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 存储配置: 最大${env.STORAGE_MAX_FILE_SIZE}字节/区域${env.STORAGE_REGION}/类型${env.STORAGE_ALLOWED_FILE_TYPES}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 日志扩展: 保留${env.LOG_RETENTION_DAYS}天/关键行为${env.LOG_CRITICAL_ACTIONS}/类型${env.LOG_CRITICAL_TYPES}`
   );
   // eslint-disable-next-line no-console
   console.log(`  - 日志级别: ${env.LOG_LEVEL}`);

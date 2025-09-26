@@ -5,11 +5,12 @@
 
 import crypto from 'crypto';
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { storageConfig } from '@/lib/env';
 import { extractRequestInfo, logSystemEventInfo } from '@/lib/logger';
 import { QiniuStorageConfigSchema } from '@/lib/schemas/settings';
 import type {
@@ -17,9 +18,8 @@ import type {
   SettingsApiResponse,
 } from '@/lib/types/settings';
 
-// 加密密钥（在生产环境中应该从环境变量获取）
-const ENCRYPTION_KEY =
-  process.env.ENCRYPTION_KEY || 'your-32-char-secret-key-here-123456';
+// 使用环境配置的加密密钥
+const ENCRYPTION_KEY = storageConfig.encryptionKey;
 const ALGORITHM = 'aes-256-cbc';
 
 /**
@@ -116,7 +116,7 @@ export async function GET(): Promise<
       secretKey: '',
       bucket: '',
       domain: '',
-      region: 'z0',
+      region: storageConfig.region,
     };
 
     settings.forEach(setting => {
@@ -134,7 +134,7 @@ export async function GET(): Promise<
           config.domain = setting.value || '';
           break;
         case 'qiniu_region':
-          config.region = setting.value || 'z0';
+          config.region = setting.value || storageConfig.region;
           break;
       }
     });
@@ -212,7 +212,7 @@ export async function PUT(
       },
       {
         key: 'qiniu_region',
-        value: validatedData.region || 'z0',
+        value: validatedData.region || storageConfig.region,
         category: 'storage',
         dataType: 'string',
         description: '七牛云存储区域',

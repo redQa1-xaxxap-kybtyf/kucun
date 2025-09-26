@@ -1,19 +1,21 @@
 import { PrismaClient } from '@prisma/client';
 
+import { inventoryConfig } from '../lib/env';
+
 const prisma = new PrismaClient();
 
 async function checkSettings() {
   try {
     console.log('🔍 检查系统设置...');
-    
+
     // 查询所有基本设置
     const settings = await prisma.systemSetting.findMany({
       where: {
-        category: 'basic'
+        category: 'basic',
       },
       orderBy: {
-        key: 'asc'
-      }
+        key: 'asc',
+      },
     });
 
     console.log('\n📋 当前基本设置:');
@@ -26,40 +28,43 @@ async function checkSettings() {
     if (lowStockThreshold) {
       const value = Number(lowStockThreshold.value);
       console.log(`\n⚠️  低库存阈值当前值: ${value}`);
-      
+
       if (value <= 0) {
         console.log('❌ 发现问题: 低库存阈值 <= 0，需要修复');
-        
-        // 修复为默认值 10
+
+        // 修复为环境配置的默认值
         await prisma.systemSetting.update({
           where: { key: 'lowStockThreshold' },
-          data: { 
-            value: '10',
-            dataType: 'number'
-          }
+          data: {
+            value: inventoryConfig.defaultMinQuantity.toString(),
+            dataType: 'number',
+          },
         });
-        
-        console.log('✅ 已修复: 低库存阈值设置为 10');
+
+        console.log(
+          `✅ 已修复: 低库存阈值设置为 ${inventoryConfig.defaultMinQuantity}`
+        );
       } else {
         console.log('✅ 低库存阈值值正常');
       }
     } else {
       console.log('⚠️  未找到低库存阈值设置，创建默认值...');
-      
+
       await prisma.systemSetting.create({
         data: {
           key: 'lowStockThreshold',
-          value: '10',
+          value: inventoryConfig.defaultMinQuantity.toString(),
           category: 'basic',
           description: '低库存预警阈值',
           dataType: 'number',
-          isPublic: false
-        }
+          isPublic: false,
+        },
       });
-      
-      console.log('✅ 已创建默认低库存阈值设置: 10');
-    }
 
+      console.log(
+        `✅ 已创建默认低库存阈值设置: ${inventoryConfig.defaultMinQuantity}`
+      );
+    }
   } catch (error) {
     console.error('❌ 检查设置时出错:', error);
   } finally {

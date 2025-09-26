@@ -8,6 +8,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { inventoryConfig, salesOrderConfig, systemConfig } from '@/lib/env';
 import { extractRequestInfo, logSystemEventInfo } from '@/lib/logger';
 import {
   BasicSettingsFormSchema,
@@ -15,20 +16,20 @@ import {
 } from '@/lib/schemas/settings';
 import type { BasicSettings, SettingsApiResponse } from '@/lib/types/settings';
 
-// 默认基本设置
+// 默认基本设置 - 使用环境配置
 const DEFAULT_BASIC_SETTINGS: BasicSettings = {
-  companyName: '库存管理工具',
+  companyName: systemConfig.companyName,
   companyAddress: '',
   companyPhone: '',
   companyEmail: '',
   companyWebsite: '',
-  systemName: '库存管理工具',
+  systemName: systemConfig.companyName,
   systemVersion: '1.0.0',
   systemDescription: '专业的库存管理解决方案',
-  defaultLanguage: 'zh',
-  lowStockThreshold: 10,
+  defaultLanguage: systemConfig.defaultLanguage,
+  lowStockThreshold: inventoryConfig.defaultMinQuantity,
   enableStockAlerts: true,
-  orderNumberPrefix: 'SO',
+  orderNumberPrefix: salesOrderConfig.orderPrefix,
   enableOrderApproval: false,
 };
 
