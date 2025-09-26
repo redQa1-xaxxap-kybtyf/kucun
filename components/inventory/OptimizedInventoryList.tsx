@@ -11,7 +11,6 @@ import * as React from 'react';
 import { InventorySearchToolbar } from '@/components/inventory/InventorySearchToolbar';
 import { VirtualizedInventoryTable } from '@/components/inventory/VirtualizedInventoryTable';
 import { Button } from '@/components/ui/button';
-
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 

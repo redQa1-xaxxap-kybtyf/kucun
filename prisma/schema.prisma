@@ -135,8 +135,11 @@ model Product {
   factoryShipmentOrderItems  FactoryShipmentOrderItem[]
 
   @@index([code])
+  @@index([name])
   @@index([categoryId], map: "idx_products_category")
   @@index([status])
+  @@index([status, categoryId], map: "idx_products_status_category")
+  @@index([createdAt])
   @@map("products")
 }
 

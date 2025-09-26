@@ -52,7 +52,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { getCategories } from '@/lib/api/categories';
+import { categoryQueryKeys, getCategories } from '@/lib/api/categories';
 import {
   batchDeleteProducts,
   deleteProduct,
@@ -118,7 +118,7 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
   // 获取分类列表
   const { data: categoriesResponse, isLoading: isLoadingCategories } = useQuery(
     {
-      queryKey: ['categories'],
+      queryKey: categoryQueryKeys.lists(),
       queryFn: () => getCategories(),
     }
   );

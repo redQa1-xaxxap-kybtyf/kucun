@@ -7,12 +7,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
+import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
+import { generateCategoryCode } from '@/lib/utils/category-code-generator';
 import {
   CategoryQuerySchema,
   CreateCategorySchema,
-} from '@/lib/schemas/category';
-import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
-import { generateCategoryCode } from '@/lib/utils/category-code-generator';
+} from '@/lib/validations/category';
 
 // 分类类型定义
 interface Category {

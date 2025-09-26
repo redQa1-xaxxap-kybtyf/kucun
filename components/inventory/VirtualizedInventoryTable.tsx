@@ -8,6 +8,7 @@
 import { Package } from 'lucide-react';
 import * as React from 'react';
 
+import { InventoryTableRow } from '@/components/inventory/InventoryTableRow';
 import {
   Table,
   TableBody,
@@ -16,8 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
-import { InventoryTableRow } from '@/components/inventory/InventoryTableRow';
 import type { Inventory } from '@/lib/types/inventory';
 
 interface VirtualizedInventoryTableProps {

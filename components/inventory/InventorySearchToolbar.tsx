@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
 import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 

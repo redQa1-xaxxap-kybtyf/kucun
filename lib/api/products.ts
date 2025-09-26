@@ -56,9 +56,14 @@ export async function getProducts(
     throw new Error(`获取产品列表失败: ${response.statusText}`);
   }
 
-  const data: PaginatedResponse<Product> = await response.json();
+  const apiResponse: ApiResponse<PaginatedResponse<Product>> =
+    await response.json();
 
-  return data;
+  if (!apiResponse.success || !apiResponse.data) {
+    throw new Error(apiResponse.error || '获取产品列表失败');
+  }
+
+  return apiResponse.data;
 }
 
 /**
