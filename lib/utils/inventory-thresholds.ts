@@ -3,6 +3,7 @@
  * 实现产品级别的库存阈值配置，优先使用产品特定的最小/最大库存值
  */
 
+import { inventoryConfig } from '@/lib/env';
 import { INVENTORY_THRESHOLDS } from '@/lib/types/inventory-status';
 
 // 产品库存阈值配置接口
@@ -143,7 +144,7 @@ export const inventoryThresholdUtils = {
       productInfo,
       customThresholds
     );
-    return minQuantity * 50; // 默认最大库存为最小库存的50倍
+    return minQuantity * inventoryConfig.maxStockMultiplier; // 使用环境配置的倍数
   },
 
   /**

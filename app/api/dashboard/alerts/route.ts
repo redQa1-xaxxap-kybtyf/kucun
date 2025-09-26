@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { inventoryConfig } from '@/lib/env';
 
 // 获取库存预警数据
 export async function GET(_request: NextRequest) {
@@ -41,7 +42,7 @@ export async function GET(_request: NextRequest) {
     // 生成库存预警
     const alerts = inventoryData
       .map(inventory => {
-        const safetyStock = 10; // 假设安全库存为10
+        const safetyStock = inventoryConfig.defaultMinQuantity; // 使用环境配置的安全库存
         const currentStock = inventory.quantity;
 
         let alertLevel: 'warning' | 'danger' | 'critical';
@@ -52,7 +53,7 @@ export async function GET(_request: NextRequest) {
           alertLevel = 'critical';
           alertType = 'out_of_stock';
           suggestedAction = '立即补货';
-        } else if (currentStock <= safetyStock * 0.5) {
+        } else if (currentStock <= inventoryConfig.criticalMinQuantity) {
           alertLevel = 'danger';
           alertType = 'low_stock';
           suggestedAction = '紧急补货';
@@ -64,8 +65,8 @@ export async function GET(_request: NextRequest) {
           return null; // 库存正常，不需要预警
         }
 
-        // 计算预计缺货天数（简化计算）
-        const averageDailySales = 2; // 假设平均每日销售2件
+        // 计算预计缺货天数（使用环境配置的平均日销量）
+        const averageDailySales = inventoryConfig.averageDailySales;
         const daysUntilStockout =
           currentStock > 0 ? Math.floor(currentStock / averageDailySales) : 0;
 
@@ -86,7 +87,7 @@ export async function GET(_request: NextRequest) {
         };
       })
       .filter(Boolean) // 过滤掉null值
-      .slice(0, 20); // 限制返回数量
+      .slice(0, inventoryConfig.alertLimit); // 使用环境配置的限制数量
 
     return NextResponse.json({
       success: true,

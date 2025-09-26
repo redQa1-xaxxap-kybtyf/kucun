@@ -57,11 +57,13 @@ export const ALERT_LEVEL_COLORS: Record<AlertLevel, string> = {
   critical: 'text-red-600',
 };
 
-// 库存预警阈值配置
+// 库存预警阈值配置 - 使用环境配置
+import { inventoryConfig } from '@/lib/env';
+
 export const INVENTORY_THRESHOLDS = {
-  DEFAULT_MIN_QUANTITY: 10,
-  CRITICAL_MIN_QUANTITY: 5,
-  OVERSTOCK_MULTIPLIER: 5, // 超过平均库存5倍视为库存过多
+  DEFAULT_MIN_QUANTITY: inventoryConfig.defaultMinQuantity,
+  CRITICAL_MIN_QUANTITY: inventoryConfig.criticalMinQuantity,
+  OVERSTOCK_MULTIPLIER: inventoryConfig.overstockMultiplier,
 } as const;
 
 /**

@@ -104,6 +104,79 @@ const envSchema = z.object({
     .default('60')
     .describe('产品缓存时间（秒）'),
 
+  INVENTORY_CACHE_TTL: z
+    .string()
+    .regex(/^[\d]+$/, 'INVENTORY_CACHE_TTL 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('10')
+    .describe('库存缓存时间（秒）'),
+
+  // 库存阈值配置
+  INVENTORY_DEFAULT_MIN_QUANTITY: z
+    .string()
+    .regex(/^[\d]+$/, 'INVENTORY_DEFAULT_MIN_QUANTITY 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('10')
+    .describe('默认最小库存阈值'),
+
+  INVENTORY_CRITICAL_MIN_QUANTITY: z
+    .string()
+    .regex(/^[\d]+$/, 'INVENTORY_CRITICAL_MIN_QUANTITY 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('5')
+    .describe('紧急库存阈值'),
+
+  INVENTORY_OVERSTOCK_MULTIPLIER: z
+    .string()
+    .regex(/^[\d]+$/, 'INVENTORY_OVERSTOCK_MULTIPLIER 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('5')
+    .describe('库存过多倍率'),
+
+  INVENTORY_MAX_STOCK_MULTIPLIER: z
+    .string()
+    .regex(/^[\d]+$/, 'INVENTORY_MAX_STOCK_MULTIPLIER 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('50')
+    .describe('最大库存为最小库存的倍数'),
+
+  // 库存业务配置
+  INVENTORY_AVERAGE_DAILY_SALES: z
+    .string()
+    .regex(/^[\d]+$/, 'INVENTORY_AVERAGE_DAILY_SALES 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('2')
+    .describe('平均日销量假设值'),
+
+  INVENTORY_ALERT_REFRESH_INTERVAL: z
+    .string()
+    .regex(/^[\d]+$/, 'INVENTORY_ALERT_REFRESH_INTERVAL 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('300000')
+    .describe('库存预警刷新间隔（毫秒）'),
+
+  INVENTORY_ALERT_LIMIT: z
+    .string()
+    .regex(/^[\d]+$/, 'INVENTORY_ALERT_LIMIT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('20')
+    .describe('库存预警返回数量限制'),
+
+  // 分页配置
+  DEFAULT_PAGE_SIZE: z
+    .string()
+    .regex(/^[\d]+$/, 'DEFAULT_PAGE_SIZE 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('20')
+    .describe('默认分页大小'),
+
+  MAX_PAGE_SIZE: z
+    .string()
+    .regex(/^[\d]+$/, 'MAX_PAGE_SIZE 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('100')
+    .describe('最大分页大小'),
+
   // 日志配置
   LOG_LEVEL: z
     .enum(['error', 'warn', 'info', 'debug'])
@@ -150,6 +223,16 @@ function validateEnv(): Env {
         UPLOAD_DIR: '',
         PORT: 3000,
         PRODUCT_CACHE_TTL: 60,
+        INVENTORY_CACHE_TTL: 10,
+        INVENTORY_DEFAULT_MIN_QUANTITY: 10,
+        INVENTORY_CRITICAL_MIN_QUANTITY: 5,
+        INVENTORY_OVERSTOCK_MULTIPLIER: 5,
+        INVENTORY_MAX_STOCK_MULTIPLIER: 50,
+        INVENTORY_AVERAGE_DAILY_SALES: 2,
+        INVENTORY_ALERT_REFRESH_INTERVAL: 300000,
+        INVENTORY_ALERT_LIMIT: 20,
+        DEFAULT_PAGE_SIZE: 20,
+        MAX_PAGE_SIZE: 100,
         LOG_LEVEL: 'info',
       } as Env;
     } catch (error) {
@@ -169,6 +252,16 @@ function validateEnv(): Env {
         UPLOAD_DIR: '',
         PORT: 3000,
         PRODUCT_CACHE_TTL: 60,
+        INVENTORY_CACHE_TTL: 10,
+        INVENTORY_DEFAULT_MIN_QUANTITY: 10,
+        INVENTORY_CRITICAL_MIN_QUANTITY: 5,
+        INVENTORY_OVERSTOCK_MULTIPLIER: 5,
+        INVENTORY_MAX_STOCK_MULTIPLIER: 50,
+        INVENTORY_AVERAGE_DAILY_SALES: 2,
+        INVENTORY_ALERT_REFRESH_INTERVAL: 300000,
+        INVENTORY_ALERT_LIMIT: 20,
+        DEFAULT_PAGE_SIZE: 20,
+        MAX_PAGE_SIZE: 100,
         LOG_LEVEL: 'info',
       } as Env;
     }
@@ -272,6 +365,31 @@ export const appConfig = {
  */
 export const cacheConfig = {
   productTtl: env.PRODUCT_CACHE_TTL,
+  inventoryTtl: env.INVENTORY_CACHE_TTL,
+} as const;
+
+/**
+ * 库存配置对象
+ */
+export const inventoryConfig = {
+  // 阈值配置
+  defaultMinQuantity: env.INVENTORY_DEFAULT_MIN_QUANTITY,
+  criticalMinQuantity: env.INVENTORY_CRITICAL_MIN_QUANTITY,
+  overstockMultiplier: env.INVENTORY_OVERSTOCK_MULTIPLIER,
+  maxStockMultiplier: env.INVENTORY_MAX_STOCK_MULTIPLIER,
+
+  // 业务配置
+  averageDailySales: env.INVENTORY_AVERAGE_DAILY_SALES,
+  alertRefreshInterval: env.INVENTORY_ALERT_REFRESH_INTERVAL,
+  alertLimit: env.INVENTORY_ALERT_LIMIT,
+} as const;
+
+/**
+ * 分页配置对象
+ */
+export const paginationConfig = {
+  defaultPageSize: env.DEFAULT_PAGE_SIZE,
+  maxPageSize: env.MAX_PAGE_SIZE,
 } as const;
 
 /**
@@ -299,6 +417,16 @@ if (isDevelopment) {
   );
   // eslint-disable-next-line no-console
   console.log(`  - 产品缓存TTL: ${env.PRODUCT_CACHE_TTL}秒`);
+  // eslint-disable-next-line no-console
+  console.log(`  - 库存缓存TTL: ${env.INVENTORY_CACHE_TTL}秒`);
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 库存阈值: 默认${env.INVENTORY_DEFAULT_MIN_QUANTITY}/紧急${env.INVENTORY_CRITICAL_MIN_QUANTITY}/过多倍率${env.INVENTORY_OVERSTOCK_MULTIPLIER}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 分页配置: 默认${env.DEFAULT_PAGE_SIZE}/最大${env.MAX_PAGE_SIZE}`
+  );
   // eslint-disable-next-line no-console
   console.log(`  - 日志级别: ${env.LOG_LEVEL}`);
   // eslint-disable-next-line no-console

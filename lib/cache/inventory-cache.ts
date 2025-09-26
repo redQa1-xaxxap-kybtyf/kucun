@@ -4,6 +4,7 @@ import {
   invalidateNamespace,
 } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
+import { cacheConfig } from '@/lib/env';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 
@@ -11,8 +12,6 @@ import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
  * 库存缓存管理
  * 提供库存数据的缓存策略和失效管理
  */
-
-export const INVENTORY_CACHE_TTL = 10; // 10秒缓存时间（库存变化频繁）
 
 /**
  * 获取缓存的库存列表
@@ -35,7 +34,7 @@ export async function setCachedInventory(
   await getOrSetJSON(
     cacheKey,
     () => Promise.resolve(data),
-    INVENTORY_CACHE_TTL
+    cacheConfig.inventoryTtl
   );
 }
 
@@ -70,7 +69,7 @@ export async function getCachedProductInventorySummary(
         availableQuantity: totalQuantity - reservedQuantity,
       };
     },
-    INVENTORY_CACHE_TTL
+    cacheConfig.inventoryTtl
   );
 }
 

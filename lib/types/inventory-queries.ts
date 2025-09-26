@@ -3,6 +3,8 @@
  * 包含API查询参数、响应格式和分页信息
  */
 
+import { paginationConfig } from '@/lib/env';
+
 import type { Inventory } from './inventory-core';
 // eslint-disable-next-line import/order
 import type {
@@ -172,8 +174,9 @@ export const INVENTORY_FIELD_LABELS = {
   updatedAt: '更新时间',
 } as const;
 
-// 默认分页配置
-export const DEFAULT_PAGE_SIZE = 20;
+// 默认分页配置 - 使用环境配置
+
+export const DEFAULT_PAGE_SIZE = paginationConfig.defaultPageSize;
 export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 // 库存预警阈值 - 使用统一的阈值配置

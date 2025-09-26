@@ -8,6 +8,7 @@ import {
   RefreshCw,
   TrendingUp,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useMemo, useState } from 'react';
 
 // UI Components
@@ -31,12 +32,12 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getInventoryAlerts, inventoryQueryKeys } from '@/lib/api/inventory';
+import { inventoryConfig } from '@/lib/env';
 import {
   INVENTORY_ALERT_TYPE_LABELS,
   INVENTORY_ALERT_TYPE_VARIANTS,
   type InventoryAlert,
 } from '@/lib/types/inventory';
-import { useRouter } from 'next/navigation';
 
 interface InventoryAlertsProps {
   className?: string;
@@ -61,7 +62,7 @@ export function InventoryAlerts({
   } = useQuery<InventoryAlert[]>({
     queryKey: inventoryQueryKeys.alerts(),
     queryFn: () => getInventoryAlerts(),
-    refetchInterval: 5 * 60 * 1000, // 5分钟自动刷新
+    refetchInterval: inventoryConfig.alertRefreshInterval, // 使用环境配置的刷新间隔
   });
 
   // 将数据处理移到 useMemo 中，确保 hooks 在条件返回之前调用
