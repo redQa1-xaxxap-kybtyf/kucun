@@ -6,7 +6,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { paginationConfig } from '@/lib/env';
+import { factoryShipmentConfig, paginationConfig } from '@/lib/env';
 import {
   createFactoryShipmentOrderSchema,
   factoryShipmentOrderListParamsSchema,

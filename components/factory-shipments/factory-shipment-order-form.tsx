@@ -77,7 +77,7 @@ const updateFactoryShipmentOrder = async (
 ) =>
   // TODO: 实现真实API调用
   ({ id, ...data });
-const getFactoryShipmentOrder = async (id: string) =>
+const getFactoryShipmentOrder = async (_id: string) =>
   // TODO: 实现真实API调用
   null; // 模拟数据
 export function FactoryShipmentOrderForm({
@@ -141,12 +141,12 @@ export function FactoryShipmentOrderForm({
     queryFn: () =>
       getSuppliers({ page: 1, limit: factoryShipmentConfig.queryLimit }),
   });
-  const suppliers = suppliersResponse?.data || [];
+  const _suppliers = suppliersResponse?.data || [];
 
   // 查询订单详情（编辑模式）
   const { data: orderDetail } = useQuery({
     queryKey: ['factory-shipment-order', orderId],
-    queryFn: () => getFactoryShipmentOrder(orderId!),
+    queryFn: () => getFactoryShipmentOrder(orderId ?? ''),
     enabled: isEditing,
   });
 
