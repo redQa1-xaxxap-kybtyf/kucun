@@ -1,7 +1,7 @@
 'use client';
 
-import { Check, ChevronDown, Package } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Check, ChevronDown, Package } from 'lucide-react';
 
 // UI Components
 import { Badge } from '@/components/ui/badge';
@@ -150,6 +150,15 @@ export function ProductSelector({
       </div>
     </div>
   );
+
+  // 组件卸载时清理搜索定时器，避免内存泄漏
+  useEffect(() => {
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
+    };
+  }, []);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

@@ -120,7 +120,7 @@ export type BatchOperationFormData = z.infer<typeof batchOperationSchema>;
 export const outboundCreateDefaults: Partial<OutboundCreateFormData> = {
   type: 'normal_outbound',
   batchNumber: '',
-  unitCost: undefined,
+  unitCost: undefined as number | undefined,
   customerId: '',
   salesOrderId: '',
   remarks: '',

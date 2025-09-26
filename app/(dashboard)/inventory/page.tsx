@@ -4,9 +4,9 @@ import { useQuery } from '@tanstack/react-query';
 import * as React from 'react';
 
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
+import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
 import { categoryQueryKeys, getCategoryOptions } from '@/lib/api/categories';
-import { getInventories, inventoryQueryKeys } from '@/lib/api/inventory';
-import type { InventoryQueryParams } from '@/lib/types/inventory';
+import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 
 /**
  * 库存管理页面 - ERP风格
@@ -26,10 +26,9 @@ export default function InventoryPage() {
     sortOrder: 'desc',
   });
 
-  // 获取库存列表数据
-  const { data, isLoading, error } = useQuery({
-    queryKey: inventoryQueryKeys.list(queryParams),
-    queryFn: () => getInventories(queryParams),
+  // 获取库存列表数据（使用优化Hook，内置缓存与预取，保持上一页数据）
+  const { data, isLoading, error } = useOptimizedInventoryQuery({
+    params: queryParams,
   });
 
   // 获取分类选项数据
@@ -37,6 +36,13 @@ export default function InventoryPage() {
     queryKey: categoryQueryKeys.options(),
     queryFn: getCategoryOptions,
   });
+
+  // 规范化列表数据结构，适配不同返回字段命名
+  const normalizedData = React.useMemo(() => {
+    const items = (data as any)?.data ?? (data as any)?.inventories ?? [];
+    const pagination = (data as any)?.pagination;
+    return { data: items as Inventory[], pagination };
+  }, [data]);
 
   // 搜索处理
   const handleSearch = React.useCallback((value: string) => {
@@ -72,7 +78,7 @@ export default function InventoryPage() {
   return (
     <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
       <ERPInventoryList
-        data={data || { data: [] }}
+        data={normalizedData}
         categoryOptions={categoryOptions}
         queryParams={queryParams}
         onSearch={handleSearch}

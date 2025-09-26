@@ -88,9 +88,14 @@ export function InventoryAdjustTable({
                 <span className="font-medium">
                   {record.product?.name || '未知产品'}
                 </span>
-                {record.product?.sku && (
+                {record.product?.code && (
                   <span className="text-sm text-muted-foreground">
-                    SKU: {record.product.sku}
+                    编码: {record.product.code}
+                  </span>
+                )}
+                {record.variant?.sku && (
+                  <span className="text-sm text-muted-foreground">
+                    SKU: {record.variant.sku}
                   </span>
                 )}
               </div>

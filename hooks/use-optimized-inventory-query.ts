@@ -54,7 +54,7 @@ export function useOptimizedInventoryQuery({
   const queryClient = useQueryClient();
 
   // 主查询
-  const query = useQuery({
+  const query = useQuery<InventoryListResponse>({
     queryKey: inventoryQueryKeys.list(params),
     queryFn: async (): Promise<InventoryListResponse> => {
       const searchParams = new URLSearchParams();
@@ -76,6 +76,7 @@ export function useOptimizedInventoryQuery({
     enabled,
     staleTime,
     cacheTime,
+    keepPreviousData: true,
     // 错误重试配置
     retry: (failureCount, error) => {
       // 4xx错误不重试

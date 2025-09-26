@@ -43,6 +43,12 @@ export const baseValidations = {
     .uuid('销售订单ID格式不正确')
     .optional()
     .or(z.literal('')),
+
+  batchNumber: z
+    .string()
+    .max(50, '批次号不能超过50个字符')
+    .optional()
+    .or(z.literal('')),
 };
 
 /**

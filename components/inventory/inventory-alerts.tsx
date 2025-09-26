@@ -8,7 +8,7 @@ import {
   RefreshCw,
   TrendingUp,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 // UI Components
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -36,6 +36,7 @@ import {
   INVENTORY_ALERT_TYPE_VARIANTS,
   type InventoryAlert,
 } from '@/lib/types/inventory';
+import { useRouter } from 'next/navigation';
 
 interface InventoryAlertsProps {
   className?: string;
@@ -56,7 +57,7 @@ export function InventoryAlerts({
     isLoading,
     error,
     refetch,
-  } = useQuery({
+  } = useQuery<InventoryAlert[]>({
     queryKey: inventoryQueryKeys.alerts(),
     queryFn: () => getInventoryAlerts(),
     refetchInterval: 5 * 60 * 1000, // 5分钟自动刷新
@@ -96,17 +97,25 @@ export function InventoryAlerts({
   }
 
   const alerts = alertsData || [];
-  const displayAlerts =
-    maxItems && !showAll ? alerts.slice(0, maxItems) : alerts;
-
-  // 按类型分组统计
-  const alertStats = alerts.reduce(
-    (acc: Record<string, number>, alert: { type: string }) => {
-      acc[alert.type] = (acc[alert.type] || 0) + 1;
-      return acc;
-    },
-    {} as Record<string, number>
+  const displayAlerts = useMemo(
+    () => (maxItems && !showAll ? alerts.slice(0, maxItems) : alerts),
+    [alerts, maxItems, showAll]
   );
+
+  // 按类型分组统计（useMemo 缓存）
+  const alertStats = useMemo(
+    () =>
+      alerts.reduce(
+        (acc: Record<string, number>, alert: { type: string }) => {
+          acc[alert.type] = (acc[alert.type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
+    [alerts]
+  );
+
+  const router = useRouter();
 
   return (
     <Card className={className}>
@@ -223,7 +232,9 @@ export function InventoryAlerts({
                           size="sm"
                           onClick={() => {
                             // 跳转到入库页面，预填产品信息
-                            window.location.href = `/inventory/inbound?productId=${alert.inventory?.productId}`;
+                            router.push(
+                              `/inventory/inbound?productId=${alert.inventory?.productId}`
+                            );
                           }}
                         >
                           <TrendingUp className="mr-1 h-4 w-4" />
@@ -255,7 +266,9 @@ export function InventoryAlerts({
                         variant="outline"
                         size="sm"
                         onClick={() => {
-                          window.location.href = `/inventory/inbound?productId=${alert.inventory?.productId}`;
+                          router.push(
+                            `/inventory/inbound?productId=${alert.inventory?.productId}`
+                          );
                         }}
                       >
                         <TrendingUp className="mr-1 h-4 w-4" />

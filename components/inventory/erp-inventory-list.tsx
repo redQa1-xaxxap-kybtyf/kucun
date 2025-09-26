@@ -6,7 +6,9 @@ import * as React from 'react';
 
 import { InventorySearchToolbar } from '@/components/inventory/InventorySearchToolbar';
 import { InventoryTableRow } from '@/components/inventory/InventoryTableRow';
+import { VirtualizedInventoryTable } from '@/components/inventory/VirtualizedInventoryTable';
 import { Button } from '@/components/ui/button';
+
 import {
   Table,
   TableBody,
@@ -55,26 +57,34 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
   }) => {
     const router = useRouter();
     const [selectedInventoryIds, setSelectedInventoryIds] = React.useState<
-      string[]
-    >([]);
+      Set<string>
+    >(new Set());
 
-    // 处理行选择
-    const handleRowSelect = (inventoryId: string, checked: boolean) => {
-      if (checked) {
-        setSelectedInventoryIds(prev => [...prev, inventoryId]);
-      } else {
-        setSelectedInventoryIds(prev => prev.filter(id => id !== inventoryId));
-      }
-    };
+    // 处理行选择（useCallback稳定引用）
+    const handleRowSelect = React.useCallback(
+      (inventoryId: string, checked: boolean) => {
+        setSelectedInventoryIds(prev => {
+          const next = new Set(prev);
+          if (checked) {
+            next.add(inventoryId);
+          } else {
+            next.delete(inventoryId);
+          }
+          return next;
+        });
+      },
+      []
+    );
 
-    // 处理全选
-    const handleSelectAll = (checked: boolean) => {
-      if (checked) {
-        setSelectedInventoryIds(data.data.map(item => item.id));
-      } else {
-        setSelectedInventoryIds([]);
-      }
-    };
+    // 处理全选（useCallback稳定引用）
+    const handleSelectAll = React.useCallback(
+      (checked: boolean) => {
+        setSelectedInventoryIds(
+          checked ? new Set(data.data.map(item => item.id)) : new Set()
+        );
+      },
+      [data.data]
+    );
 
     // 优化的事件处理函数
     const handleAdjust = React.useCallback(
@@ -125,9 +135,9 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
               <h3 className="text-sm font-medium">库存管理</h3>
               <div className="text-xs text-muted-foreground">
                 {data?.pagination ? `共 ${data.pagination.total} 条记录` : ''}
-                {selectedInventoryIds.length > 0 && (
+                {selectedInventoryIds.size > 0 && (
                   <span className="ml-2 text-blue-600">
-                    已选择 {selectedInventoryIds.length} 个库存记录
+                    已选择 {selectedInventoryIds.size} 个库存记录
                   </span>
                 )}
               </div>
@@ -141,64 +151,74 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
             onInbound={handleInbound}
             onOutbound={handleOutbound}
             onAdjust={handleAdjust}
-            selectedCount={selectedInventoryIds.length}
+            selectedCount={selectedInventoryIds.size}
           />
         </div>
 
-        {/* ERP标准数据表格 */}
+        {/* ERP标准数据表格（数据量大于200行时启用虚拟化） */}
         <div className="rounded border bg-card">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30">
-                <TableHead className="w-12 text-xs">
-                  <input
-                    type="checkbox"
-                    checked={
-                      selectedInventoryIds.length === data.data.length &&
-                      data.data.length > 0
-                    }
-                    onChange={e => handleSelectAll(e.target.checked)}
-                    className="rounded border border-input"
-                  />
-                </TableHead>
-                <TableHead className="text-xs">产品编码</TableHead>
-                <TableHead className="text-xs">产品名称</TableHead>
-                <TableHead className="text-xs">规格</TableHead>
-                <TableHead className="text-xs">批次号</TableHead>
-                <TableHead className="text-xs">库存数量</TableHead>
-                <TableHead className="text-xs">预留数量</TableHead>
-                <TableHead className="text-xs">可用数量</TableHead>
-                <TableHead className="text-xs">库存状态</TableHead>
-                <TableHead className="text-xs">最后更新</TableHead>
-                <TableHead className="w-20 text-xs">操作</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.data.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={11}
-                    className="h-24 text-center text-muted-foreground"
-                  >
-                    <div className="flex flex-col items-center gap-2">
-                      <Package className="h-8 w-8" />
-                      <div>暂无库存数据</div>
-                    </div>
-                  </TableCell>
+          {data.data.length > 200 ? (
+            <VirtualizedInventoryTable
+              data={data.data}
+              selectedIds={Array.from(selectedInventoryIds)}
+              onSelectAll={handleSelectAll}
+              onSelectRow={handleRowSelect}
+              onAdjust={id => handleAdjust(id)}
+            />
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/30">
+                  <TableHead className="w-12 text-xs">
+                    <input
+                      type="checkbox"
+                      checked={
+                        selectedInventoryIds.size === data.data.length &&
+                        data.data.length > 0
+                      }
+                      onChange={e => handleSelectAll(e.target.checked)}
+                      className="rounded border border-input"
+                    />
+                  </TableHead>
+                  <TableHead className="text-xs">产品编码</TableHead>
+                  <TableHead className="text-xs">产品名称</TableHead>
+                  <TableHead className="text-xs">规格</TableHead>
+                  <TableHead className="text-xs">批次号</TableHead>
+                  <TableHead className="text-xs">库存数量</TableHead>
+                  <TableHead className="text-xs">预留数量</TableHead>
+                  <TableHead className="text-xs">可用数量</TableHead>
+                  <TableHead className="text-xs">库存状态</TableHead>
+                  <TableHead className="text-xs">最后更新</TableHead>
+                  <TableHead className="w-20 text-xs">操作</TableHead>
                 </TableRow>
-              ) : (
-                data.data.map(item => (
-                  <InventoryTableRow
-                    key={item.id}
-                    item={item}
-                    isSelected={selectedInventoryIds.includes(item.id)}
-                    onSelect={handleRowSelect}
-                    onAdjust={handleAdjust}
-                  />
-                ))
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {data.data.length === 0 ? (
+                  <TableRow>
+                    <TableCell
+                      colSpan={11}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <Package className="h-8 w-8" />
+                        <div>暂无库存数据</div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  data.data.map(item => (
+                    <InventoryTableRow
+                      key={item.id}
+                      item={item}
+                      isSelected={selectedInventoryIds.has(item.id)}
+                      onSelect={handleRowSelect}
+                      onAdjust={handleAdjust}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          )}
         </div>
 
         {/* 分页 */}
