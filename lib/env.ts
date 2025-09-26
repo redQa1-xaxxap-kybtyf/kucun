@@ -177,6 +177,78 @@ const envSchema = z.object({
     .default('100')
     .describe('最大分页大小'),
 
+  // 产品模块配置
+  PRODUCT_LIST_INCLUDE_INVENTORY: z
+    .string()
+    .transform(val => val === 'true')
+    .default('false')
+    .describe('默认是否包含库存统计'),
+
+  PRODUCT_LIST_INCLUDE_STATISTICS: z
+    .string()
+    .transform(val => val === 'true')
+    .default('false')
+    .describe('默认是否包含统计信息'),
+
+  PRODUCT_CACHE_WITH_INVENTORY_TTL: z
+    .string()
+    .regex(/^[\d]+$/, 'PRODUCT_CACHE_WITH_INVENTORY_TTL 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('60')
+    .describe('包含库存的产品缓存TTL（秒）'),
+
+  PRODUCT_CACHE_WITHOUT_INVENTORY_TTL: z
+    .string()
+    .regex(/^[\d]+$/, 'PRODUCT_CACHE_WITHOUT_INVENTORY_TTL 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('30')
+    .describe('不包含库存的产品缓存TTL（秒）'),
+
+  // 销售订单配置
+  ORDER_NUMBER_MAX_RETRY: z
+    .string()
+    .regex(/^[\d]+$/, 'ORDER_NUMBER_MAX_RETRY 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('10')
+    .describe('订单号生成最大重试次数'),
+
+  ORDER_NUMBER_RECENT_LIMIT: z
+    .string()
+    .regex(/^[\d]+$/, 'ORDER_NUMBER_RECENT_LIMIT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('5')
+    .describe('最近订单查询数量'),
+
+  // 客户模块配置
+  CUSTOMER_SEARCH_LIMIT: z
+    .string()
+    .regex(/^[\d]+$/, 'CUSTOMER_SEARCH_LIMIT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('5')
+    .describe('客户搜索结果限制'),
+
+  CUSTOMER_TAG_LIMIT: z
+    .string()
+    .regex(/^[\d]+$/, 'CUSTOMER_TAG_LIMIT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('10')
+    .describe('客户标签数量上限'),
+
+  // 仪表盘配置
+  DASHBOARD_STALE_TIME: z
+    .string()
+    .regex(/^[\d]+$/, 'DASHBOARD_STALE_TIME 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('300000')
+    .describe('仪表盘数据过期时间（毫秒）'),
+
+  DASHBOARD_REFETCH_INTERVAL: z
+    .string()
+    .regex(/^[\d]+$/, 'DASHBOARD_REFETCH_INTERVAL 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('60000')
+    .describe('仪表盘刷新间隔（毫秒）'),
+
   // 日志配置
   LOG_LEVEL: z
     .enum(['error', 'warn', 'info', 'debug'])
@@ -233,6 +305,16 @@ function validateEnv(): Env {
         INVENTORY_ALERT_LIMIT: 20,
         DEFAULT_PAGE_SIZE: 20,
         MAX_PAGE_SIZE: 100,
+        PRODUCT_LIST_INCLUDE_INVENTORY: false,
+        PRODUCT_LIST_INCLUDE_STATISTICS: false,
+        PRODUCT_CACHE_WITH_INVENTORY_TTL: 60,
+        PRODUCT_CACHE_WITHOUT_INVENTORY_TTL: 30,
+        ORDER_NUMBER_MAX_RETRY: 10,
+        ORDER_NUMBER_RECENT_LIMIT: 5,
+        CUSTOMER_SEARCH_LIMIT: 5,
+        CUSTOMER_TAG_LIMIT: 10,
+        DASHBOARD_STALE_TIME: 300000,
+        DASHBOARD_REFETCH_INTERVAL: 60000,
         LOG_LEVEL: 'info',
       } as Env;
     } catch (error) {
@@ -262,6 +344,16 @@ function validateEnv(): Env {
         INVENTORY_ALERT_LIMIT: 20,
         DEFAULT_PAGE_SIZE: 20,
         MAX_PAGE_SIZE: 100,
+        PRODUCT_LIST_INCLUDE_INVENTORY: false,
+        PRODUCT_LIST_INCLUDE_STATISTICS: false,
+        PRODUCT_CACHE_WITH_INVENTORY_TTL: 60,
+        PRODUCT_CACHE_WITHOUT_INVENTORY_TTL: 30,
+        ORDER_NUMBER_MAX_RETRY: 10,
+        ORDER_NUMBER_RECENT_LIMIT: 5,
+        CUSTOMER_SEARCH_LIMIT: 5,
+        CUSTOMER_TAG_LIMIT: 10,
+        DASHBOARD_STALE_TIME: 300000,
+        DASHBOARD_REFETCH_INTERVAL: 60000,
         LOG_LEVEL: 'info',
       } as Env;
     }
@@ -393,6 +485,43 @@ export const paginationConfig = {
 } as const;
 
 /**
+ * 产品模块配置对象
+ */
+export const productConfig = {
+  // 默认查询配置
+  defaultIncludeInventory: env.PRODUCT_LIST_INCLUDE_INVENTORY,
+  defaultIncludeStatistics: env.PRODUCT_LIST_INCLUDE_STATISTICS,
+
+  // 缓存配置
+  cacheWithInventoryTtl: env.PRODUCT_CACHE_WITH_INVENTORY_TTL,
+  cacheWithoutInventoryTtl: env.PRODUCT_CACHE_WITHOUT_INVENTORY_TTL,
+} as const;
+
+/**
+ * 销售订单配置对象
+ */
+export const salesOrderConfig = {
+  orderNumberMaxRetry: env.ORDER_NUMBER_MAX_RETRY,
+  orderNumberRecentLimit: env.ORDER_NUMBER_RECENT_LIMIT,
+} as const;
+
+/**
+ * 客户模块配置对象
+ */
+export const customerConfig = {
+  searchLimit: env.CUSTOMER_SEARCH_LIMIT,
+  tagLimit: env.CUSTOMER_TAG_LIMIT,
+} as const;
+
+/**
+ * 仪表盘配置对象
+ */
+export const dashboardConfig = {
+  staleTime: env.DASHBOARD_STALE_TIME,
+  refetchInterval: env.DASHBOARD_REFETCH_INTERVAL,
+} as const;
+
+/**
  * 日志配置
  */
 export const logConfig = {
@@ -426,6 +555,26 @@ if (isDevelopment) {
   // eslint-disable-next-line no-console
   console.log(
     `  - 分页配置: 默认${env.DEFAULT_PAGE_SIZE}/最大${env.MAX_PAGE_SIZE}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 产品配置: 库存${env.PRODUCT_LIST_INCLUDE_INVENTORY}/统计${env.PRODUCT_LIST_INCLUDE_STATISTICS}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 产品缓存: 含库存${env.PRODUCT_CACHE_WITH_INVENTORY_TTL}s/不含库存${env.PRODUCT_CACHE_WITHOUT_INVENTORY_TTL}s`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 订单配置: 重试${env.ORDER_NUMBER_MAX_RETRY}/最近${env.ORDER_NUMBER_RECENT_LIMIT}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 客户配置: 搜索${env.CUSTOMER_SEARCH_LIMIT}/标签${env.CUSTOMER_TAG_LIMIT}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 仪表盘: 过期${env.DASHBOARD_STALE_TIME}ms/刷新${env.DASHBOARD_REFETCH_INTERVAL}ms`
   );
   // eslint-disable-next-line no-console
   console.log(`  - 日志级别: ${env.LOG_LEVEL}`);

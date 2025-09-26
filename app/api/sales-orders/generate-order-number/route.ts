@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { salesOrderConfig } from '@/lib/env';
 
 /**
  * 生成销售订单号
@@ -41,7 +42,7 @@ async function isOrderNumberExists(orderNumber: string): Promise<boolean> {
 async function generateUniqueOrderNumber(): Promise<string> {
   let orderNumber: string;
   let attempts = 0;
-  const maxAttempts = 10;
+  const maxAttempts = salesOrderConfig.orderNumberMaxRetry;
 
   do {
     orderNumber = generateOrderNumber();
@@ -145,7 +146,7 @@ export async function GET(request: NextRequest) {
         orderBy: {
           createdAt: 'desc',
         },
-        take: 5,
+        take: salesOrderConfig.orderNumberRecentLimit,
       });
 
       return NextResponse.json({

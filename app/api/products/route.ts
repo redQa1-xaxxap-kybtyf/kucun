@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { invalidateProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
+import { env, productConfig } from '@/lib/env';
 import { paginationValidations } from '@/lib/validations/base';
 import { productCreateSchema } from '@/lib/validations/product';
 import { publishWs } from '@/lib/ws/ws-server';
@@ -33,8 +33,12 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
 
-    const includeInventory = searchParams.get('includeInventory') !== 'false';
-    const includeStatistics = searchParams.get('includeStatistics') !== 'false';
+    const includeInventory = searchParams.get('includeInventory')
+      ? searchParams.get('includeInventory') === 'true'
+      : productConfig.defaultIncludeInventory;
+    const includeStatistics = searchParams.get('includeStatistics')
+      ? searchParams.get('includeStatistics') === 'true'
+      : productConfig.defaultIncludeStatistics;
 
     const rawStatus = searchParams.get('status');
     const rawCategoryId = searchParams.get('categoryId');
@@ -42,7 +46,9 @@ export async function GET(request: NextRequest) {
 
     const queryParams = {
       page: searchParams.get('page') || '1',
-      limit: searchParams.get('limit') || '20',
+      limit:
+        searchParams.get('limit') ||
+        paginationConfig.defaultPageSize.toString(),
       search: searchParams.get('search') || undefined,
       sortBy: searchParams.get('sortBy') || 'createdAt',
       sortOrder: searchParams.get('sortOrder') || 'desc',
@@ -246,7 +252,9 @@ export async function GET(request: NextRequest) {
           },
         } as const;
       },
-      includeInventory ? 60 : 30
+      includeInventory
+        ? productConfig.cacheWithInventoryTtl
+        : productConfig.cacheWithoutInventoryTtl
     );
 
     return createDateTimeResponse(cached);

@@ -59,6 +59,7 @@ import {
   getProducts,
   productQueryKeys,
 } from '@/lib/api/products';
+import { paginationConfig } from '@/lib/env';
 import {
   PRODUCT_STATUS_LABELS,
   PRODUCT_UNIT_LABELS,
@@ -81,7 +82,7 @@ export function ERPProductList({ onProductSelect }: ERPProductListProps) {
 
   const [queryParams, setQueryParams] = React.useState<ProductQueryParams>({
     page: 1,
-    limit: 50, // ERP标准：更多记录显示
+    limit: paginationConfig.defaultPageSize,
     search: '',
     status: undefined,
     unit: undefined,

@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { inventoryConfig } from '@/lib/env';
 
 // 请求参数验证
 const overviewQuerySchema = z.object({
@@ -126,7 +127,7 @@ export async function GET(request: NextRequest) {
     const lowStockProducts = await prisma.inventory.count({
       where: {
         quantity: {
-          lte: 10, // 假设安全库存为10
+          lte: inventoryConfig.defaultMinQuantity,
         },
       },
     });

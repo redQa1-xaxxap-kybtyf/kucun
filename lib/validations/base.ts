@@ -5,6 +5,8 @@
 
 import { z } from 'zod';
 
+import { paginationConfig } from '@/lib/env';
+
 // 基础验证规则
 export const baseValidations = {
   // ID验证
@@ -60,8 +62,13 @@ export const paginationValidations = {
     limit: z
       .string()
       .optional()
-      .transform(val => (val ? parseInt(val) : 20))
-      .refine(val => val > 0 && val <= 100, '每页数量必须在1-100之间'),
+      .transform(val =>
+        val ? parseInt(val) : paginationConfig.defaultPageSize
+      )
+      .refine(
+        val => val > 0 && val <= paginationConfig.maxPageSize,
+        `每页数量必须在1-${paginationConfig.maxPageSize}之间`
+      ),
 
     search: z
       .string()

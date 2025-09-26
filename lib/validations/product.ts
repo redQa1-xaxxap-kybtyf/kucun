@@ -8,6 +8,8 @@
 
 import { z } from 'zod';
 
+import { paginationConfig } from '@/lib/env';
+
 /**
  * 产品基础验证规则
  * 定义了产品各个字段的通用验证逻辑
@@ -134,7 +136,12 @@ export const batchDeleteProductsSchema = z.object({
 // 产品查询参数验证
 export const productQuerySchema = z.object({
   page: z.number().int().min(1).default(1),
-  limit: z.number().int().min(1).max(100).default(20),
+  limit: z
+    .number()
+    .int()
+    .min(1)
+    .max(paginationConfig.maxPageSize)
+    .default(paginationConfig.defaultPageSize),
   search: z.string().optional(),
   sortBy: z
     .enum(['name', 'code', 'createdAt', 'updatedAt'])

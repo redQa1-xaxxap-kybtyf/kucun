@@ -43,6 +43,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
+import { paginationConfig } from '@/lib/env';
 import type { Customer, CustomerQueryParams } from '@/lib/types/customer';
 
 interface ERPCustomerListProps {
@@ -67,7 +68,7 @@ export function ERPCustomerList({
   // 查询参数状态
   const [queryParams, setQueryParams] = useState<CustomerQueryParams>({
     page: 1,
-    limit: 50,
+    limit: paginationConfig.defaultPageSize,
     search: '',
     sortBy: 'createdAt',
     sortOrder: 'desc',
