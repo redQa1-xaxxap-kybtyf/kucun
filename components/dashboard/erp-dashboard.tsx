@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useDashboardData } from '@/lib/api/dashboard';
+import type { DashboardData, TimeRange } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
 
 /**
@@ -131,31 +132,93 @@ export function ERPDashboard() {
     ],
   };
 
-  // 加载数据
+  // 映射时间周期到API格式
+  const mapPeriodToTimeRange = (period: string): TimeRange => {
+    switch (period) {
+      case 'today':
+        return '1d';
+      case 'week':
+        return '7d';
+      case 'month':
+        return '30d';
+      case 'quarter':
+        return '90d';
+      default:
+        return '1d';
+    }
+  };
+
+  // 转换API数据到组件数据格式
+  const transformDashboardData = (apiData: DashboardData): DashboardStats => {
+    return {
+      totalProducts: apiData.overview.inventory.totalProducts,
+      totalOrders: apiData.overview.sales.totalOrders,
+      totalCustomers: apiData.overview.customers.totalCustomers,
+      totalRevenue: apiData.overview.sales.totalRevenue,
+      lowStockItems: apiData.overview.inventory.lowStockCount,
+      pendingOrders: apiData.overview.sales.monthlyOrders, // 使用月订单数作为待处理订单
+      recentActivities: [], // 暂时为空，后续可以从API获取
+      salesTrend: [], // 暂时为空，后续可以从API获取
+    };
+  };
+
+  // 使用真实API获取仪表盘数据
+  const {
+    data: dashboardApiData,
+    isLoading: isApiLoading,
+    refetch,
+  } = useDashboardData({
+    timeRange: mapPeriodToTimeRange(selectedPeriod),
+  });
+
+  // 加载数据 - 优先使用API数据，fallback到mockData
   const loadDashboardData = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      setDashboardData(mockData);
+      if (dashboardApiData) {
+        // 转换API数据格式
+        const transformedData = transformDashboardData(dashboardApiData);
+        setDashboardData(transformedData);
+      } else {
+        // 如果API数据不可用，使用mockData作为fallback
+        console.warn('仪表盘API数据不可用，使用模拟数据');
+        setDashboardData(mockData);
+      }
     } catch (error) {
       console.error('加载仪表盘数据失败:', error);
+      // 错误时使用mockData作为fallback
+      setDashboardData(mockData);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [dashboardApiData]);
 
   // 刷新数据
   const refreshData = async () => {
     setIsRefreshing(true);
-    await loadDashboardData();
-    setIsRefreshing(false);
+    try {
+      // 使用API的refetch方法刷新数据
+      if (refetch) {
+        await refetch();
+      } else {
+        await loadDashboardData();
+      }
+    } catch (error) {
+      console.error('刷新仪表盘数据失败:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
-  // 初始化加载
+  // 初始化加载 - 结合API加载状态
   React.useEffect(() => {
-    loadDashboardData();
-  }, [loadDashboardData, selectedPeriod]);
+    if (!isApiLoading) {
+      loadDashboardData();
+    }
+  }, [loadDashboardData, selectedPeriod, isApiLoading]);
+
+  // 合并加载状态
+  const isLoadingData = isLoading || isApiLoading;
 
   // 格式化货币
   const formatCurrency = (amount: number) =>
@@ -212,7 +275,7 @@ export function ERPDashboard() {
     }
   };
 
-  if (isLoading) {
+  if (isLoadingData) {
     return (
       <div className="rounded border bg-card">
         <div className="border-b bg-muted/30 px-3 py-2">

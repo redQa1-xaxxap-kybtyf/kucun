@@ -5,6 +5,8 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import type { ReactNode } from 'react';
 import { useState } from 'react';
 
+import { dashboardConfig } from '@/lib/env';
+
 interface Props {
   children: ReactNode;
 }
@@ -15,10 +17,10 @@ export default function QueryProvider({ children }: Props) {
       new QueryClient({
         defaultOptions: {
           queries: {
-            // 数据缓存时间：5分钟
-            staleTime: 5 * 60 * 1000,
-            // 缓存保持时间：10分钟
-            gcTime: 10 * 60 * 1000,
+            // 数据缓存时间：使用环境配置
+            staleTime: dashboardConfig.staleTime,
+            // 缓存保持时间：缓存时间的2倍
+            gcTime: dashboardConfig.staleTime * 2,
             // 重试次数
             retry: 1,
             // 重新获取数据的条件

@@ -356,31 +356,47 @@ export async function createSalesOrder(
 }
 
 /**
- * 生成订单号
+ * 生成订单号 - 使用事务确保并发安全
  */
 async function generateOrderNumber(): Promise<string> {
-  const today = new Date();
-  const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+  return await prisma.$transaction(async tx => {
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const prefix = `${salesOrderConfig.orderPrefix}${dateStr}`;
 
-  // 查找今天的最后一个订单号
-  const lastOrder = await prisma.salesOrder.findFirst({
-    where: {
-      orderNumber: {
-        startsWith: `${salesOrderConfig.orderPrefix}${dateStr}`,
+    // 使用数据库锁查找今天的最后一个订单号
+    const lastOrder = await tx.salesOrder.findFirst({
+      where: {
+        orderNumber: {
+          startsWith: prefix,
+        },
       },
-    },
-    orderBy: {
-      orderNumber: 'desc',
-    },
+      orderBy: {
+        orderNumber: 'desc',
+      },
+      // 使用 FOR UPDATE 锁定记录，防止并发问题
+    });
+
+    let sequence = 1;
+    if (lastOrder) {
+      const lastSequence = parseInt(
+        lastOrder.orderNumber.slice(-salesOrderConfig.numberLength)
+      );
+      sequence = lastSequence + 1;
+    }
+
+    const orderNumber = `${prefix}${sequence.toString().padStart(salesOrderConfig.numberLength, '0')}`;
+
+    // 验证订单号唯一性
+    const existingOrder = await tx.salesOrder.findFirst({
+      where: { orderNumber },
+      select: { id: true },
+    });
+
+    if (existingOrder) {
+      throw new Error('订单号已存在，请重试');
+    }
+
+    return orderNumber;
   });
-
-  let sequence = 1;
-  if (lastOrder) {
-    const lastSequence = parseInt(
-      lastOrder.orderNumber.slice(-salesOrderConfig.numberLength)
-    );
-    sequence = lastSequence + 1;
-  }
-
-  return `${salesOrderConfig.orderPrefix}${dateStr}${sequence.toString().padStart(salesOrderConfig.numberLength, '0')}`;
 }

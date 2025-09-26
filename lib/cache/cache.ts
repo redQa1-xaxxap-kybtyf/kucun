@@ -29,11 +29,15 @@ export function buildCacheKey(
 
 export async function getOrSetJSON<T>(
   key: string,
-  fetcher: () => Promise<T>,
+  fetcher: (() => Promise<T>) | null,
   ttlSeconds?: number
-): Promise<T> {
+): Promise<T | null> {
   const cached = await redis.getJson<T>(key);
   if (cached) return cached;
+
+  // 如果fetcher为null，只返回缓存结果
+  if (fetcher === null) return null;
+
   const fresh = await fetcher();
   await redis.setJson<T>(key, fresh, ttlSeconds);
   return fresh;

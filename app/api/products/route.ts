@@ -40,6 +40,14 @@ export async function GET(request: NextRequest) {
       ? searchParams.get('includeStatistics') === 'true'
       : productConfig.defaultIncludeStatistics;
 
+    // 性能优化：限制聚合查询的使用
+    const requestLimit = parseInt(
+      searchParams.get('limit') || paginationConfig.defaultPageSize.toString()
+    );
+    const shouldLimitAggregation = requestLimit > 50; // 超过50条记录时限制聚合查询
+
+    const finalIncludeStatistics = includeStatistics && !shouldLimitAggregation;
+
     const rawStatus = searchParams.get('status');
     const rawCategoryId = searchParams.get('categoryId');
     const filterUncategorized = rawCategoryId === 'none';
@@ -108,7 +116,7 @@ export async function GET(request: NextRequest) {
       unit: queryParams.unit,
       categoryId: queryParams.categoryId,
       includeInventory,
-      includeStatistics,
+      includeStatistics: finalIncludeStatistics,
       uncategorized: filterUncategorized,
     });
 
@@ -138,7 +146,7 @@ export async function GET(request: NextRequest) {
           updatedAt: true,
         } as const;
 
-        const productSelect = includeStatistics
+        const productSelect = finalIncludeStatistics
           ? {
               ...baseProductSelect,
               _count: {
