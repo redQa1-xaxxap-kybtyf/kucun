@@ -55,9 +55,7 @@ export const StorageTestConnection = ({
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />
             正在测试连接
           </CardTitle>
-          <CardDescription>
-            正在验证七牛云存储配置，请稍候...
-          </CardDescription>
+          <CardDescription>正在验证七牛云存储配置，请稍候...</CardDescription>
         </CardHeader>
         <CardContent>
           <Alert>
@@ -75,7 +73,7 @@ export const StorageTestConnection = ({
   // 测试失败
   if (testError || (testResult && !testResult.success)) {
     const errorMessage = testError || testResult?.message || '连接测试失败';
-    
+
     return (
       <Card>
         <CardHeader>
@@ -93,10 +91,10 @@ export const StorageTestConnection = ({
             <AlertTitle>错误信息</AlertTitle>
             <AlertDescription>{errorMessage}</AlertDescription>
           </Alert>
-          
+
           <div className="space-y-2">
             <h4 className="text-sm font-medium">请检查以下配置：</h4>
-            <ul className="text-sm text-muted-foreground space-y-1">
+            <ul className="space-y-1 text-sm text-muted-foreground">
               <li>• Access Key 和 Secret Key 是否正确</li>
               <li>• 存储空间名称是否存在</li>
               <li>• 存储区域是否匹配</li>
@@ -105,7 +103,11 @@ export const StorageTestConnection = ({
           </div>
 
           {onRetry && (
-            <Button variant="outline" onClick={onRetry} className="w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={onRetry}
+              className="w-full sm:w-auto"
+            >
               重新测试
             </Button>
           )}
@@ -142,16 +144,30 @@ export const StorageTestConnection = ({
               <h4 className="text-sm font-medium">存储空间信息</h4>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm text-muted-foreground">空间名称</span>
-                  <Badge variant="secondary">{testResult.bucketInfo.name}</Badge>
+                  <span className="text-sm text-muted-foreground">
+                    空间名称
+                  </span>
+                  <Badge variant="secondary">
+                    {testResult.bucketInfo.name}
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm text-muted-foreground">存储区域</span>
-                  <Badge variant="secondary">{testResult.bucketInfo.region}</Badge>
+                  <span className="text-sm text-muted-foreground">
+                    存储区域
+                  </span>
+                  <Badge variant="secondary">
+                    {testResult.bucketInfo.region}
+                  </Badge>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm text-muted-foreground">访问权限</span>
-                  <Badge variant={testResult.bucketInfo.private ? 'destructive' : 'default'}>
+                  <span className="text-sm text-muted-foreground">
+                    访问权限
+                  </span>
+                  <Badge
+                    variant={
+                      testResult.bucketInfo.private ? 'destructive' : 'default'
+                    }
+                  >
                     {testResult.bucketInfo.private ? '私有' : '公开'}
                   </Badge>
                 </div>
@@ -161,10 +177,10 @@ export const StorageTestConnection = ({
 
           <div className="rounded-lg bg-blue-50 p-3">
             <div className="flex items-start">
-              <Info className="mr-2 h-4 w-4 text-blue-600 mt-0.5" />
+              <Info className="mr-2 mt-0.5 h-4 w-4 text-blue-600" />
               <div className="text-sm">
                 <p className="font-medium text-blue-800">配置提示</p>
-                <p className="text-blue-700 mt-1">
+                <p className="mt-1 text-blue-700">
                   配置验证成功后，您可以保存配置并开始使用七牛云存储服务。
                   建议定期检查存储空间的使用情况和费用。
                 </p>
@@ -173,7 +189,11 @@ export const StorageTestConnection = ({
           </div>
 
           {onRetry && (
-            <Button variant="outline" onClick={onRetry} className="w-full sm:w-auto">
+            <Button
+              variant="outline"
+              onClick={onRetry}
+              className="w-full sm:w-auto"
+            >
               重新测试
             </Button>
           )}

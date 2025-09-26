@@ -8,7 +8,10 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { QiniuStorageTestSchema } from '@/lib/schemas/settings';
-import type { QiniuStorageTestResponse, SettingsApiResponse } from '@/lib/types/settings';
+import type {
+  QiniuStorageTestResponse,
+  SettingsApiResponse,
+} from '@/lib/types/settings';
 
 /**
  * 测试七牛云存储连接
@@ -48,7 +51,7 @@ export async function POST(
     });
   } catch (error) {
     console.error('七牛云存储连接测试失败:', error);
-    
+
     if (error instanceof Error && error.name === 'ZodError') {
       return NextResponse.json(
         { success: false, error: '测试参数格式不正确' },
@@ -74,7 +77,9 @@ async function simulateQiniuConnectionTest(config: {
   region?: string | null;
 }): Promise<QiniuStorageTestResponse> {
   // 模拟网络延迟
-  await new Promise(resolve => setTimeout(resolve, 1000 + Math.random() * 2000));
+  await new Promise(resolve =>
+    setTimeout(resolve, 1000 + Math.random() * 2000)
+  );
 
   // 基本参数验证
   if (!config.accessKey || !config.secretKey || !config.bucket) {
@@ -110,11 +115,11 @@ async function simulateQiniuConnectionTest(config: {
 
   // 模拟连接成功的情况（80%概率成功）
   const isSuccess = Math.random() > 0.2;
-  
+
   if (isSuccess) {
     // 获取区域显示名称
     const regionName = getRegionDisplayName(config.region || 'z0');
-    
+
     return {
       success: true,
       message: '七牛云存储连接测试成功',
@@ -133,7 +138,7 @@ async function simulateQiniuConnectionTest(config: {
       '存储区域配置错误',
       '账户余额不足或服务已暂停',
     ];
-    
+
     return {
       success: false,
       message: errors[Math.floor(Math.random() * errors.length)],
@@ -146,14 +151,14 @@ async function simulateQiniuConnectionTest(config: {
  */
 function getRegionDisplayName(region: string): string {
   const regionMap: Record<string, string> = {
-    'z0': '华东-浙江',
-    'z1': '华北-河北',
-    'z2': '华南-广东',
-    'na0': '北美-洛杉矶',
-    'as0': '亚太-新加坡',
+    z0: '华东-浙江',
+    z1: '华北-河北',
+    z2: '华南-广东',
+    na0: '北美-洛杉矶',
+    as0: '亚太-新加坡',
     'cn-east-2': '华东-浙江2',
   };
-  
+
   return regionMap[region] || region;
 }
 

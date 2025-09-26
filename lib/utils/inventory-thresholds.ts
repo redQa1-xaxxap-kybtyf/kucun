@@ -27,7 +27,8 @@ export interface ProductInfo {
 // 库存阈值配置管理器
 export class InventoryThresholdManager {
   private static instance: InventoryThresholdManager;
-  private productThresholds: Map<string, ProductInventoryThresholds> = new Map();
+  private productThresholds: Map<string, ProductInventoryThresholds> =
+    new Map();
 
   private constructor() {}
 
@@ -54,7 +55,9 @@ export class InventoryThresholdManager {
   /**
    * 获取产品库存阈值
    */
-  public getProductThresholds(productId: string): ProductInventoryThresholds | null {
+  public getProductThresholds(
+    productId: string
+  ): ProductInventoryThresholds | null {
     return this.productThresholds.get(productId) || null;
   }
 
@@ -205,45 +208,48 @@ export const inventoryThresholdUtils = {
     productInfo?: ProductInfo,
     customThresholds?: ProductInventoryThresholds
   ) => ({
-      minQuantity: inventoryThresholdUtils.getMinQuantity(
-        productId,
-        productInfo,
-        customThresholds
-      ),
-      maxQuantity: inventoryThresholdUtils.getMaxQuantity(
-        productId,
-        productInfo,
-        customThresholds
-      ),
-      criticalQuantity: inventoryThresholdUtils.getCriticalQuantity(
-        productId,
-        productInfo,
-        customThresholds
-      ),
-      overstockThreshold: inventoryThresholdUtils.getOverstockThreshold(
-        productId,
-        productInfo,
-        customThresholds
-      ),
-    }),
+    minQuantity: inventoryThresholdUtils.getMinQuantity(
+      productId,
+      productInfo,
+      customThresholds
+    ),
+    maxQuantity: inventoryThresholdUtils.getMaxQuantity(
+      productId,
+      productInfo,
+      customThresholds
+    ),
+    criticalQuantity: inventoryThresholdUtils.getCriticalQuantity(
+      productId,
+      productInfo,
+      customThresholds
+    ),
+    overstockThreshold: inventoryThresholdUtils.getOverstockThreshold(
+      productId,
+      productInfo,
+      customThresholds
+    ),
+  }),
 
   /**
    * 从产品信息创建阈值配置
    */
-  createThresholdsFromProduct: (productInfo: ProductInfo): ProductInventoryThresholds => ({
-      productId: productInfo.id,
-      minQuantity: productInfo.safetyStock || productInfo.minStock,
-      maxQuantity: productInfo.maxStock,
-    }),
+  createThresholdsFromProduct: (
+    productInfo: ProductInfo
+  ): ProductInventoryThresholds => ({
+    productId: productInfo.id,
+    minQuantity: productInfo.safetyStock || productInfo.minStock,
+    maxQuantity: productInfo.maxStock,
+  }),
 
   /**
    * 批量设置产品阈值
    */
   setBatchThresholds: (products: ProductInfo[]): void => {
     const manager = InventoryThresholdManager.getInstance();
-    
+
     products.forEach(product => {
-      const thresholds = inventoryThresholdUtils.createThresholdsFromProduct(product);
+      const thresholds =
+        inventoryThresholdUtils.createThresholdsFromProduct(product);
       manager.setProductThresholds(product.id, thresholds);
     });
   },

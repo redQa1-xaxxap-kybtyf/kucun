@@ -4,6 +4,7 @@
  */
 
 import type { Inventory } from './inventory-core';
+// eslint-disable-next-line import/order
 import type {
   InboundRecord,
   InboundType,

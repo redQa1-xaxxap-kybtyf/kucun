@@ -83,7 +83,8 @@ export const SystemLogsTable = ({
   onPageChange,
   onViewDetail,
 }: SystemLogsTableProps) => {
-  const formatDate = (dateString: string) => formatDateTime(dateString, 'yyyy-MM-dd HH:mm:ss') || dateString;
+  const formatDate = (dateString: string) =>
+    formatDateTime(dateString, 'yyyy-MM-dd HH:mm:ss') || dateString;
 
   const truncateText = (text: string, maxLength: number = 50) => {
     if (text.length <= maxLength) return text;

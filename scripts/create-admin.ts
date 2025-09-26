@@ -2,8 +2,8 @@
  * 创建管理员用户
  */
 
-import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
 
@@ -13,7 +13,7 @@ async function createAdmin() {
 
     // 检查是否已存在管理员用户
     const existingAdmin = await prisma.user.findFirst({
-      where: { role: 'admin' }
+      where: { role: 'admin' },
     });
 
     if (existingAdmin) {
@@ -23,7 +23,7 @@ async function createAdmin() {
 
     // 创建管理员用户
     const hashedPassword = await bcrypt.hash('admin123', 10);
-    
+
     const admin = await prisma.user.create({
       data: {
         email: 'admin@example.com',

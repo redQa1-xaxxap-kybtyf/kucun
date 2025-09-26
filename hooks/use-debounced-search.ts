@@ -31,14 +31,14 @@ interface UseDebouncedSearchReturn {
 
 /**
  * 防抖搜索Hook
- * 
+ *
  * @example
  * ```tsx
  * const { inputValue, debouncedValue, isDebouncing, setInputValue } = useDebouncedSearch({
  *   delay: 400,
  *   minLength: 1
  * });
- * 
+ *
  * // 监听防抖后的值变化
  * useEffect(() => {
  *   if (debouncedValue) {
@@ -50,16 +50,12 @@ interface UseDebouncedSearchReturn {
 export function useDebouncedSearch(
   options: UseDebouncedSearchOptions = {}
 ): UseDebouncedSearchReturn {
-  const {
-    delay = 400,
-    minLength = 0,
-    cancelOnUnmount = true,
-  } = options;
+  const { delay = 400, minLength = 0, cancelOnUnmount = true } = options;
 
   const [inputValue, setInputValue] = useState('');
   const [debouncedValue, setDebouncedValue] = useState('');
   const [isDebouncing, setIsDebouncing] = useState(false);
-  
+
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
   const mountedRef = useRef(true);
 
@@ -103,7 +99,7 @@ export function useDebouncedSearch(
     }
 
     setIsDebouncing(true);
-    
+
     timeoutRef.current = setTimeout(() => {
       if (mountedRef.current) {
         setDebouncedValue(inputValue);
@@ -117,14 +113,15 @@ export function useDebouncedSearch(
   }, [inputValue, debouncedValue, delay, minLength, clearTimeout]);
 
   // 组件卸载时清理
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       mountedRef.current = false;
       if (cancelOnUnmount) {
         clearTimeout();
       }
-    };
-  }, [cancelOnUnmount, clearTimeout]);
+    },
+    [cancelOnUnmount, clearTimeout]
+  );
 
   return {
     inputValue,
@@ -138,7 +135,7 @@ export function useDebouncedSearch(
 
 /**
  * 简化版防抖Hook，只返回防抖后的值
- * 
+ *
  * @param value 输入值
  * @param delay 防抖延迟时间
  * @returns 防抖后的值
@@ -161,7 +158,7 @@ export function useDebounce<T>(value: T, delay: number): T {
 
 /**
  * 防抖回调Hook
- * 
+ *
  * @param callback 回调函数
  * @param delay 防抖延迟时间
  * @param deps 依赖数组
@@ -187,13 +184,14 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
     [callback, delay, ...deps]
   ) as T;
 
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
-    };
-  }, []);
+    },
+    []
+  );
 
   return debouncedCallback;
 }

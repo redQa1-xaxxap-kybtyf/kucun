@@ -19,7 +19,6 @@ import type {
 } from '@/lib/types/dashboard';
 import { formatTimeAgo } from '@/lib/utils/datetime';
 
-
 // API基础URL
 const API_BASE = '/api/dashboard';
 
@@ -389,8 +388,7 @@ export const dashboardUtils = {
     }
   },
 
-  formatTimeAgo: (date: string): string => 
+  formatTimeAgo: (date: string): string =>
     // 使用统一的时间格式化函数
-     formatTimeAgo(date)
-  ,
+    formatTimeAgo(date),
 };

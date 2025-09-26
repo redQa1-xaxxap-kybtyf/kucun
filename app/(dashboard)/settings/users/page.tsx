@@ -39,7 +39,6 @@ import type {
   UserManagementUser,
 } from '@/lib/types/settings';
 
-
 export default function UsersSettingsPage() {
   const { data: session } = useSession();
   const { toast } = useToast();

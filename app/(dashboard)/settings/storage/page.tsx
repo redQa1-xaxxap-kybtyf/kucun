@@ -28,7 +28,6 @@ import type {
   SettingsApiResponse,
 } from '@/lib/types/settings';
 
-
 export default function StorageSettingsPage() {
   const { data: session } = useSession();
   const { toast } = useToast();

@@ -98,7 +98,11 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         piecesPerUnit
       );
     } catch (error) {
-      console.error('计算片数失败:', error);
+      // TODO: 使用统一的错误处理机制替代console.error
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('计算片数失败:', error);
+      }
       return inputQuantity;
     }
   };
@@ -152,7 +156,11 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         }, 1500);
       }
     } catch (error) {
-      console.error('入库失败:', error);
+      // TODO: 使用统一的错误处理机制替代console.error
+      if (process.env.NODE_ENV === 'development') {
+        // eslint-disable-next-line no-console
+        console.error('入库失败:', error);
+      }
       toast({
         title: '入库失败',
         description: error instanceof Error ? error.message : '请稍后重试',

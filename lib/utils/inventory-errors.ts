@@ -93,7 +93,8 @@ export const inventoryValidators = {
   /**
    * 验证产品存在性
    */
-  validateProductExists: (product: unknown): boolean => product !== null && product !== undefined,
+  validateProductExists: (product: unknown): boolean =>
+    product !== null && product !== undefined,
 
   /**
    * 验证库存充足性
@@ -158,16 +159,10 @@ export function handleInventoryError(error: unknown): InventoryOperationResult {
   }
 
   if (error instanceof Error) {
-    return createErrorResult(
-      InventoryErrorType.SYSTEM_ERROR,
-      error.message
-    );
+    return createErrorResult(InventoryErrorType.SYSTEM_ERROR, error.message);
   }
 
-  return createErrorResult(
-    InventoryErrorType.SYSTEM_ERROR,
-    '未知错误'
-  );
+  return createErrorResult(InventoryErrorType.SYSTEM_ERROR, '未知错误');
 }
 
 // 库存状态检查工具
@@ -183,7 +178,8 @@ export const inventoryStatusCheckers = {
   /**
    * 检查是否为紧急库存
    */
-  isCriticalStock: (quantity: number): boolean => quantity <= INVENTORY_THRESHOLDS.CRITICAL_MIN_QUANTITY,
+  isCriticalStock: (quantity: number): boolean =>
+    quantity <= INVENTORY_THRESHOLDS.CRITICAL_MIN_QUANTITY,
 
   /**
    * 检查是否缺货
@@ -197,7 +193,8 @@ export const inventoryStatusCheckers = {
     quantity: number,
     minQuantity: number = INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY
   ): boolean => {
-    const overstockThreshold = minQuantity * INVENTORY_THRESHOLDS.OVERSTOCK_MULTIPLIER;
+    const overstockThreshold =
+      minQuantity * INVENTORY_THRESHOLDS.OVERSTOCK_MULTIPLIER;
     return quantity > overstockThreshold;
   },
 };

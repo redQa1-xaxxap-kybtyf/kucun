@@ -95,7 +95,7 @@ describe('时间处理工具函数', () => {
     it('应该格式化相对时间', () => {
       const now = new Date();
       const oneHourAgo = new Date(now.getTime() - 60 * 60 * 1000);
-      
+
       const result = formatTimeAgo(oneHourAgo);
       expect(result).toContain('小时前');
     });
@@ -140,7 +140,7 @@ describe('时间处理工具函数', () => {
 
     it('应该转换对象中的时间字段', () => {
       const result = DateTimeTransformer.transformObject(testObject);
-      
+
       expect(result.createdAt).toBe(testISOString);
       expect(result.updatedAt).toBe(testISOString);
       expect(result.id).toBe('1');
@@ -151,7 +151,7 @@ describe('时间处理工具函数', () => {
     it('应该转换数组中的时间字段', () => {
       const testArray = [testObject, { ...testObject, id: '2' }];
       const result = DateTimeTransformer.transformArray(testArray);
-      
+
       expect(result).toHaveLength(2);
       expect(result[0].createdAt).toBe(testISOString);
       expect(result[1].createdAt).toBe(testISOString);
@@ -165,7 +165,7 @@ describe('时间处理工具函数', () => {
       };
 
       const result = DateTimeTransformer.transformNested(nestedObject);
-      
+
       expect(result.createdAt).toBe(testISOString);
       expect(result.data.createdAt).toBe(testISOString);
       expect(result.items[0].createdAt).toBe(testISOString);
@@ -178,10 +178,10 @@ describe('时间处理工具函数', () => {
         expiredAt: testDate,
       };
 
-      const result = DateTimeTransformer.transformObject(
-        customObject,
-        ['publishedAt', 'expiredAt']
-      );
+      const result = DateTimeTransformer.transformObject(customObject, [
+        'publishedAt',
+        'expiredAt',
+      ]);
 
       expect(result.publishedAt).toBe(testISOString);
       expect(result.expiredAt).toBe(testISOString);
