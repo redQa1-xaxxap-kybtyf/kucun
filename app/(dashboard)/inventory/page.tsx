@@ -39,9 +39,17 @@ export default function InventoryPage() {
 
   // 规范化列表数据结构，适配不同返回字段命名
   const normalizedData = React.useMemo(() => {
-    const items = (data as any)?.data ?? (data as any)?.inventories ?? [];
-    const pagination = (data as any)?.pagination;
-    return { data: items as Inventory[], pagination };
+    if (!data) return { data: [], pagination: undefined };
+
+    // 类型安全的数据提取
+    const response = data as {
+      data?: Inventory[];
+      inventories?: Inventory[];
+      pagination?: unknown;
+    };
+    const items = response.data ?? response.inventories ?? [];
+    const pagination = response.pagination;
+    return { data: items, pagination };
   }, [data]);
 
   // 搜索处理

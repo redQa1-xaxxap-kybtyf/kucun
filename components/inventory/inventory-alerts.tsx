@@ -50,6 +50,7 @@ export function InventoryAlerts({
   maxItems,
 }: InventoryAlertsProps) {
   const [showAll, setShowAll] = useState(false);
+  const router = useRouter();
 
   // 获取库存预警
   const {
@@ -62,6 +63,27 @@ export function InventoryAlerts({
     queryFn: () => getInventoryAlerts(),
     refetchInterval: 5 * 60 * 1000, // 5分钟自动刷新
   });
+
+  // 将数据处理移到 useMemo 中，确保 hooks 在条件返回之前调用
+  const alerts = useMemo(() => alertsData || [], [alertsData]);
+
+  const displayAlerts = useMemo(
+    () => (maxItems && !showAll ? alerts.slice(0, maxItems) : alerts),
+    [alerts, maxItems, showAll]
+  );
+
+  // 按类型分组统计（useMemo 缓存）
+  const alertStats = useMemo(
+    () =>
+      alerts.reduce(
+        (acc: Record<string, number>, alert: { type: string }) => {
+          acc[alert.type] = (acc[alert.type] || 0) + 1;
+          return acc;
+        },
+        {} as Record<string, number>
+      ),
+    [alerts]
+  );
 
   if (isLoading) {
     return <InventoryAlertsSkeleton showTitle={showTitle} />;
@@ -95,27 +117,6 @@ export function InventoryAlerts({
       </Card>
     );
   }
-
-  const alerts = alertsData || [];
-  const displayAlerts = useMemo(
-    () => (maxItems && !showAll ? alerts.slice(0, maxItems) : alerts),
-    [alerts, maxItems, showAll]
-  );
-
-  // 按类型分组统计（useMemo 缓存）
-  const alertStats = useMemo(
-    () =>
-      alerts.reduce(
-        (acc: Record<string, number>, alert: { type: string }) => {
-          acc[alert.type] = (acc[alert.type] || 0) + 1;
-          return acc;
-        },
-        {} as Record<string, number>
-      ),
-    [alerts]
-  );
-
-  const router = useRouter();
 
   return (
     <Card className={className}>
