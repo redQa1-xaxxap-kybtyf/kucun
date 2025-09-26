@@ -313,6 +313,6 @@ export const formatProductionDate = (dateString?: string): string => {
 // 订单号生成规则说明
 export const ORDER_NUMBER_FORMAT = 'SO + YYYYMMDD + 6位时间戳';
 
-// 默认分页配置
-export const DEFAULT_PAGE_SIZE = 20;
-export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
+// 注意：分页配置已迁移到环境配置 (lib/env.ts)
+// 请使用 paginationConfig.defaultPageSize 和 paginationConfig.maxPageSize
+// 分页选项可以根据 paginationConfig.maxPageSize 动态生成

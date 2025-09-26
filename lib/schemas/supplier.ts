@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { paginationConfig } from '@/lib/env';
+
 /**
  * 供应商状态枚举
  */
@@ -59,7 +61,11 @@ export const UpdateSupplierSchema = z.object({
  */
 export const SupplierQuerySchema = z.object({
   page: z.coerce.number().min(1).default(1),
-  limit: z.coerce.number().min(1).max(100).default(10),
+  limit: z.coerce
+    .number()
+    .min(1)
+    .max(paginationConfig.maxPageSize)
+    .default(paginationConfig.defaultPageSize),
   search: z.string().optional(),
   status: SupplierStatusEnum.optional(),
   sortBy: z.enum(['name', 'createdAt', 'updatedAt']).default('createdAt'),

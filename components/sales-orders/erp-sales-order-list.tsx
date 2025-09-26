@@ -5,6 +5,8 @@ import { Edit, Eye, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { paginationConfig } from '@/lib/env';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -50,7 +52,7 @@ export function ERPSalesOrderList({ onOrderSelect }: ERPSalesOrderListProps) {
   const router = useRouter();
   const [queryParams, setQueryParams] = React.useState<SalesOrderQueryParams>({
     page: 1,
-    limit: 50, // ERP系统通常显示更多数据
+    limit: paginationConfig.defaultPageSize, // 使用统一的分页配置
     search: '',
     status: undefined,
     sortBy: 'createdAt',

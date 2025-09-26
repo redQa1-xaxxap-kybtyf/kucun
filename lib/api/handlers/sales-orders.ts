@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 import type { z } from 'zod';
 
 import { prisma } from '@/lib/db';
+import { salesOrderConfig } from '@/lib/env';
 import type { SalesOrderQueryParams as StandardSalesOrderQueryParams } from '@/lib/types/sales-order';
 import {
   salesOrderCreateSchema,
@@ -365,7 +366,7 @@ async function generateOrderNumber(): Promise<string> {
   const lastOrder = await prisma.salesOrder.findFirst({
     where: {
       orderNumber: {
-        startsWith: `SO${dateStr}`,
+        startsWith: `${salesOrderConfig.orderPrefix}${dateStr}`,
       },
     },
     orderBy: {
@@ -375,9 +376,11 @@ async function generateOrderNumber(): Promise<string> {
 
   let sequence = 1;
   if (lastOrder) {
-    const lastSequence = parseInt(lastOrder.orderNumber.slice(-4));
+    const lastSequence = parseInt(
+      lastOrder.orderNumber.slice(-salesOrderConfig.numberLength)
+    );
     sequence = lastSequence + 1;
   }
 
-  return `SO${dateStr}${sequence.toString().padStart(4, '0')}`;
+  return `${salesOrderConfig.orderPrefix}${dateStr}${sequence.toString().padStart(salesOrderConfig.numberLength, '0')}`;
 }

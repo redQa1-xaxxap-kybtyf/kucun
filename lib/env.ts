@@ -307,6 +307,46 @@ const envSchema = z.object({
     .default('300')
     .describe('财务数据缓存时间（秒）'),
 
+  // 销售订单模块配置
+  SALES_ORDER_PREFIX: z
+    .string()
+    .min(1, 'SALES_ORDER_PREFIX 不能为空')
+    .max(10, 'SALES_ORDER_PREFIX 不能超过10个字符')
+    .default('SO')
+    .describe('销售订单号前缀'),
+
+  SALES_ORDER_NUMBER_LENGTH: z
+    .string()
+    .regex(/^[\d]+$/, 'SALES_ORDER_NUMBER_LENGTH 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .refine(
+      val => val >= 1 && val <= 10,
+      'SALES_ORDER_NUMBER_LENGTH 必须在1-10之间'
+    )
+    .default('4')
+    .describe('销售订单号序号位数'),
+
+  // 供应商模块配置
+  SUPPLIER_QUERY_LIMIT: z
+    .string()
+    .regex(/^[\d]+$/, 'SUPPLIER_QUERY_LIMIT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('100')
+    .describe('供应商查询默认限制'),
+
+  SUPPLIER_CACHE_TTL: z
+    .string()
+    .regex(/^[\d]+$/, 'SUPPLIER_CACHE_TTL 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('300000')
+    .describe('供应商数据缓存时间（毫秒）'),
+
+  SUPPLIER_DEFAULT_STATUS: z
+    .string()
+    .min(1, 'SUPPLIER_DEFAULT_STATUS 不能为空')
+    .default('active')
+    .describe('供应商默认状态过滤'),
+
   // 日志配置
   LOG_LEVEL: z
     .enum(['error', 'warn', 'info', 'debug'])
@@ -563,6 +603,8 @@ export const productConfig = {
  * 销售订单配置对象
  */
 export const salesOrderConfig = {
+  orderPrefix: env.SALES_ORDER_PREFIX,
+  numberLength: env.SALES_ORDER_NUMBER_LENGTH,
   orderNumberMaxRetry: env.ORDER_NUMBER_MAX_RETRY,
   orderNumberRecentLimit: env.ORDER_NUMBER_RECENT_LIMIT,
 } as const;
@@ -607,6 +649,15 @@ export const returnRefundConfig = {
 export const financeConfig = {
   creditLimit: env.FINANCE_CREDIT_LIMIT,
   cacheTtl: env.FINANCE_CACHE_TTL,
+} as const;
+
+/**
+ * 供应商模块配置对象
+ */
+export const supplierConfig = {
+  queryLimit: env.SUPPLIER_QUERY_LIMIT,
+  cacheTtl: env.SUPPLIER_CACHE_TTL,
+  defaultStatus: env.SUPPLIER_DEFAULT_STATUS,
 } as const;
 
 /**
@@ -675,6 +726,14 @@ if (isDevelopment) {
   // eslint-disable-next-line no-console
   console.log(
     `  - 财务配置: 信用额度${env.FINANCE_CREDIT_LIMIT}/缓存${env.FINANCE_CACHE_TTL}s`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 销售订单: 前缀${env.SALES_ORDER_PREFIX}/序号位数${env.SALES_ORDER_NUMBER_LENGTH}/重试${env.ORDER_NUMBER_MAX_RETRY}/最近${env.ORDER_NUMBER_RECENT_LIMIT}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 供应商: 查询限制${env.SUPPLIER_QUERY_LIMIT}/缓存${env.SUPPLIER_CACHE_TTL}ms/默认状态${env.SUPPLIER_DEFAULT_STATUS}`
   );
   // eslint-disable-next-line no-console
   console.log(`  - 日志级别: ${env.LOG_LEVEL}`);

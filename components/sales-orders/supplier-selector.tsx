@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronsUpDown, Search, Truck } from 'lucide-react';
+
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -18,12 +19,15 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { supplierConfig } from '@/lib/env';
 import type { Supplier } from '@/lib/types/supplier';
 import { cn } from '@/lib/utils';
 
 // 供应商API查询函数
 async function getSuppliers(): Promise<{ data: Supplier[] }> {
-  const response = await fetch('/api/suppliers?limit=100&status=active');
+  const response = await fetch(
+    `/api/suppliers?limit=${supplierConfig.queryLimit}&status=${supplierConfig.defaultStatus}`
+  );
   if (!response.ok) {
     throw new Error('获取供应商列表失败');
   }
@@ -60,9 +64,9 @@ export function SupplierSelector({
 
   // 获取供应商列表
   const { data: suppliersResponse, isLoading } = useQuery({
-    queryKey: ['suppliers', 'active'],
+    queryKey: ['suppliers', supplierConfig.defaultStatus],
     queryFn: getSuppliers,
-    staleTime: 5 * 60 * 1000, // 5分钟缓存
+    staleTime: supplierConfig.cacheTtl, // 使用环境配置的缓存时间
   });
 
   const suppliers = suppliersResponse?.data || [];
