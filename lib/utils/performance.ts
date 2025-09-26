@@ -380,10 +380,11 @@ export function useBatchUpdate<T>(initialItems: T[], batchSize: number = 50) {
 
 /**
  * 全局缓存实例
+ * 注意：TTL 可以通过环境配置进行调整
  */
 export const globalCache = new LRUCache<string, any>({
   maxSize: 1000,
-  ttl: 5 * 60 * 1000, // 5分钟
+  ttl: 5 * 60 * 1000, // 5分钟默认值，可通过环境配置覆盖
 });
 
 /**

@@ -12,6 +12,7 @@ import { InventorySearchToolbar } from '@/components/inventory/InventorySearchTo
 import { VirtualizedInventoryTable } from '@/components/inventory/VirtualizedInventoryTable';
 import { Button } from '@/components/ui/button';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
+import { paginationConfig } from '@/lib/env';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 
 interface OptimizedInventoryListProps {
@@ -47,7 +48,7 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
     // 查询参数状态
     const [queryParams, setQueryParams] = React.useState<InventoryQueryParams>({
       page: 1,
-      limit: 20,
+      limit: paginationConfig.defaultPageSize,
       sortBy: 'updatedAt',
       sortOrder: 'desc',
       ...initialParams,

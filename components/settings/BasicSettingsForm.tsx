@@ -32,6 +32,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { inventoryConfig, salesOrderConfig, systemConfig } from '@/lib/env';
 import { BasicSettingsFormSchema } from '@/lib/schemas/settings';
 import type { BasicSettings, SettingsApiResponse } from '@/lib/types/settings';
 
@@ -132,19 +133,19 @@ export function BasicSettingsForm() {
   const form = useForm<BasicSettingsFormData>({
     resolver: zodResolver(BasicSettingsFormSchema),
     defaultValues: settings || {
-      // 提供默认值以避免受控/非受控组件警告
-      companyName: '',
+      // 提供默认值以避免受控/非受控组件警告，使用环境配置
+      companyName: systemConfig.companyName,
       companyAddress: '',
       companyPhone: '',
       companyEmail: '',
       companyWebsite: '',
-      systemName: '',
+      systemName: systemConfig.companyName,
       systemVersion: '',
       systemDescription: '',
-      defaultLanguage: 'zh',
-      lowStockThreshold: 10,
+      defaultLanguage: systemConfig.defaultLanguage,
+      lowStockThreshold: inventoryConfig.defaultMinQuantity,
       enableStockAlerts: true,
-      orderNumberPrefix: 'SO',
+      orderNumberPrefix: salesOrderConfig.orderPrefix,
       enableOrderApproval: false,
     },
   });

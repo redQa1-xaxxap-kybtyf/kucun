@@ -6,6 +6,7 @@ import * as React from 'react';
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
 import { categoryQueryKeys, getCategoryOptions } from '@/lib/api/categories';
+import { paginationConfig } from '@/lib/env';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 
 /**
@@ -15,7 +16,7 @@ import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 export default function InventoryPage() {
   const [queryParams, setQueryParams] = React.useState<InventoryQueryParams>({
     page: 1,
-    limit: 20,
+    limit: paginationConfig.defaultPageSize,
     search: '',
     categoryId: '',
     lowStock: false,

@@ -3,6 +3,8 @@
  * 提供智能缓存策略和请求去重机制
  */
 
+import { inventoryConfig } from '@/lib/env';
+
 interface CacheEntry<T = unknown> {
   data: T;
   timestamp: number;
@@ -20,7 +22,7 @@ interface RequestEntry<T = unknown> {
 class ApiCacheManager {
   private cache = new Map<string, CacheEntry<unknown>>();
   private pendingRequests = new Map<string, RequestEntry<unknown>>();
-  private defaultTTL = 5 * 60 * 1000; // 5分钟默认缓存时间
+  private defaultTTL = 5 * 60 * 1000; // 5分钟默认缓存时间（可通过环境配置覆盖）
 
   /**
    * 生成缓存键
@@ -268,7 +270,10 @@ export const inventoryCache = {
   /**
    * 获取库存列表（带缓存）
    */
-  async getList(params: Record<string, unknown> = {}, ttl = 5 * 60 * 1000) {
+  async getList(
+    params: Record<string, unknown> = {},
+    ttl = inventoryConfig.alertRefreshInterval
+  ) {
     const searchParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -283,21 +288,24 @@ export const inventoryCache = {
   /**
    * 获取库存详情（带缓存）
    */
-  async getDetail(id: string, ttl = 2 * 60 * 1000) {
+  async getDetail(
+    id: string,
+    ttl = inventoryConfig.alertRefreshInterval / 2.5
+  ) {
     return cachedFetch(`/api/inventory/${id}`, { ttl });
   },
 
   /**
    * 获取库存统计（带缓存）
    */
-  async getStats(ttl = 5 * 60 * 1000) {
+  async getStats(ttl = inventoryConfig.alertRefreshInterval) {
     return cachedFetch('/api/inventory/stats', { ttl });
   },
 
   /**
    * 获取库存预警（带缓存）
    */
-  async getAlerts(ttl = 2 * 60 * 1000) {
+  async getAlerts(ttl = inventoryConfig.alertRefreshInterval / 2.5) {
     return cachedFetch('/api/inventory/alerts', { ttl });
   },
 

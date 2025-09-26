@@ -15,6 +15,7 @@ export async function getCachedProducts(
   params: ProductQueryParams
 ): Promise<PaginatedResponse<Product> | null> {
   const cacheKey = buildCacheKey('products:list', params);
+  // 注意：这里只是获取缓存，不设置新值，所以 fetcher 为 null 是正确的
   return getOrSetJSON(cacheKey, null);
 }
 

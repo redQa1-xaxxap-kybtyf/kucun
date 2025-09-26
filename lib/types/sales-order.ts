@@ -310,8 +310,9 @@ export const formatProductionDate = (dateString?: string): string => {
   }
 };
 
-// 订单号生成规则说明
-export const ORDER_NUMBER_FORMAT = 'SO + YYYYMMDD + 6位时间戳';
+// 订单号生成规则说明 - 已迁移到环境配置
+// 请使用 salesOrderConfig.orderPrefix 和 salesOrderConfig.numberLength
+// export const ORDER_NUMBER_FORMAT = 'SO + YYYYMMDD + 6位时间戳'; // 已废弃
 
 // 注意：分页配置已迁移到环境配置 (lib/env.ts)
 // 请使用 paginationConfig.defaultPageSize 和 paginationConfig.maxPageSize

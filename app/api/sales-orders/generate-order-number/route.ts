@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -7,7 +7,7 @@ import { salesOrderConfig } from '@/lib/env';
 
 /**
  * 生成销售订单号
- * 格式：SO + YYYYMMDD + 4位序号
+ * 格式：前缀 + YYYYMMDD + N位序号（使用环境配置）
  * 例如：SO202501190001
  */
 function generateOrderNumber(): string {
@@ -17,11 +17,15 @@ function generateOrderNumber(): string {
   const day = String(now.getDate()).padStart(2, '0');
   const dateStr = `${year}${month}${day}`;
 
-  // 生成随机4位序号作为基础
-  const randomNum = Math.floor(Math.random() * 9999) + 1;
-  const sequence = String(randomNum).padStart(4, '0');
+  // 生成随机序号作为基础，使用环境配置的位数
+  const maxNum = Math.pow(10, salesOrderConfig.numberLength) - 1;
+  const randomNum = Math.floor(Math.random() * maxNum) + 1;
+  const sequence = String(randomNum).padStart(
+    salesOrderConfig.numberLength,
+    '0'
+  );
 
-  return `SO${dateStr}${sequence}`;
+  return `${salesOrderConfig.orderPrefix}${dateStr}${sequence}`;
 }
 
 /**

@@ -24,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { paginationConfig } from '@/lib/env';
 
 /**
  * 应收货款管理页面
@@ -33,7 +34,7 @@ export default function ReceivablesPage() {
   const router = useRouter();
   const [queryParams, setQueryParams] = React.useState({
     page: 1,
-    limit: 20,
+    limit: paginationConfig.defaultPageSize,
     search: '',
     status: undefined as string | undefined,
     sortBy: 'orderDate',
