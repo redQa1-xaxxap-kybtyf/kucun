@@ -4,15 +4,9 @@ import {
   invalidateNamespace,
 } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
+import { cacheConfig } from '@/lib/env';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Product, ProductQueryParams } from '@/lib/types/product';
-
-/**
- * 产品缓存管理
- * 提供产品数据的缓存策略和失效管理
- */
-
-export const PRODUCT_CACHE_TTL = 60; // 60秒缓存时间
 
 /**
  * 获取缓存的产品列表
@@ -32,7 +26,11 @@ export async function setCachedProducts(
   data: PaginatedResponse<Product>
 ): Promise<void> {
   const cacheKey = buildCacheKey('products:list', params);
-  await getOrSetJSON(cacheKey, () => Promise.resolve(data), PRODUCT_CACHE_TTL);
+  await getOrSetJSON(
+    cacheKey,
+    () => Promise.resolve(data),
+    cacheConfig.productTtl
+  );
 }
 
 /**
@@ -76,7 +74,7 @@ export async function getCachedProduct(
         },
       } as Product;
     },
-    PRODUCT_CACHE_TTL
+    cacheConfig.productTtl
   );
 }
 

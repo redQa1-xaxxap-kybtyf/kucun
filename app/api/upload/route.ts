@@ -8,6 +8,7 @@ import sharp from 'sharp';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
+import { uploadConfig } from '@/lib/env';
 
 // 文件上传验证
 const uploadValidation = z.object({
@@ -21,8 +22,7 @@ const SUPPORTED_IMAGE_TYPES = [
   'image/png',
   'image/webp',
   'image/gif',
-];
-const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+] as const;
 
 export async function POST(request: NextRequest) {
   try {
@@ -71,11 +71,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证文件大小
-    if (file.size > MAX_FILE_SIZE) {
+    if (file.size > uploadConfig.maxSize) {
       return NextResponse.json(
         {
           success: false,
-          error: `文件大小不能超过 ${MAX_FILE_SIZE / 1024 / 1024}MB`,
+          error: `文件大小不能超过 ${uploadConfig.maxSize / 1024 / 1024}MB`,
         },
         { status: 400 }
       );
@@ -88,14 +88,14 @@ export async function POST(request: NextRequest) {
     const fileName = `${type}_${timestamp}_${randomString}.${fileExtension}`;
 
     // 创建上传目录
-    const uploadDir = join(process.cwd(), 'public', 'uploads', type);
+    const uploadDir = join(process.cwd(), uploadConfig.directory, type);
     if (!existsSync(uploadDir)) {
       await mkdir(uploadDir, { recursive: true });
     }
 
     // 文件路径
     const filePath = join(uploadDir, fileName);
-    const publicUrl = `/uploads/${type}/${fileName}`;
+    const publicUrl = `/${uploadConfig.directory.replace('./public/', '')}/${type}/${fileName}`;
 
     // 读取文件内容
     const bytes = await file.arrayBuffer();
@@ -201,9 +201,9 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        maxFileSize: MAX_FILE_SIZE,
+        maxFileSize: uploadConfig.maxSize,
         supportedTypes: SUPPORTED_IMAGE_TYPES,
-        uploadPath: `/uploads/${type}/`,
+        uploadPath: `/${uploadConfig.directory.replace('./public/', '')}/${type}/`,
       },
     });
   } catch (error) {

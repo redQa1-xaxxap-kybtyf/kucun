@@ -67,6 +67,12 @@ const envSchema = z.object({
     .string()
     .optional()
     .describe('允许的 WebSocket Origin，逗号分隔'),
+  NEXT_PUBLIC_WS_PORT: z
+    .string()
+    .regex(/^[\d]+$/, 'NEXT_PUBLIC_WS_PORT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('3002')
+    .describe('客户端 WebSocket 端口'),
 
   // 文件上传配置
   UPLOAD_MAX_SIZE: z
@@ -81,6 +87,22 @@ const envSchema = z.object({
     .min(1, '上传目录路径不能为空')
     .default('./public/uploads')
     .describe('文件上传目录'),
+
+  // 应用端口配置
+  PORT: z
+    .string()
+    .regex(/^[\d]+$/, 'PORT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('3000')
+    .describe('应用服务器端口'),
+
+  // 缓存配置
+  PRODUCT_CACHE_TTL: z
+    .string()
+    .regex(/^[\d]+$/, 'PRODUCT_CACHE_TTL 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('60')
+    .describe('产品缓存时间（秒）'),
 
   // 日志配置
   LOG_LEVEL: z
@@ -98,6 +120,61 @@ export type Env = z.infer<typeof envSchema>;
  * @throws 如果环境变量验证失败
  */
 function validateEnv(): Env {
+  // 在客户端环境下，只验证公开的环境变量
+  if (typeof window !== 'undefined') {
+    const clientEnvSchema = z.object({
+      NEXT_PUBLIC_WS_PORT: z
+        .string()
+        .regex(/^[\d]+$/, 'NEXT_PUBLIC_WS_PORT 必须是数字')
+        .transform(val => parseInt(val, 10))
+        .default('3002')
+        .describe('客户端 WebSocket 端口'),
+    });
+
+    try {
+      const parsed = clientEnvSchema.parse(process.env);
+      // 为客户端返回一个安全的环境对象
+      return {
+        ...parsed,
+        // 客户端不需要的字段使用默认值
+        DATABASE_URL: '',
+        NEXTAUTH_SECRET: '',
+        NEXTAUTH_URL: '',
+        NODE_ENV: 'development',
+        REDIS_URL: '',
+        REDIS_POOL_SIZE: 3,
+        REDIS_NAMESPACE: '',
+        WS_PORT: 3002,
+        WS_ALLOWED_ORIGINS: '',
+        UPLOAD_MAX_SIZE: 10485760,
+        UPLOAD_DIR: '',
+        PORT: 3000,
+        PRODUCT_CACHE_TTL: 60,
+        LOG_LEVEL: 'info',
+      } as Env;
+    } catch (error) {
+      // 客户端环境变量验证失败时使用默认值
+      return {
+        DATABASE_URL: '',
+        NEXTAUTH_SECRET: '',
+        NEXTAUTH_URL: '',
+        NODE_ENV: 'development',
+        REDIS_URL: '',
+        REDIS_POOL_SIZE: 3,
+        REDIS_NAMESPACE: '',
+        WS_PORT: 3002,
+        WS_ALLOWED_ORIGINS: '',
+        NEXT_PUBLIC_WS_PORT: 3002,
+        UPLOAD_MAX_SIZE: 10485760,
+        UPLOAD_DIR: '',
+        PORT: 3000,
+        PRODUCT_CACHE_TTL: 60,
+        LOG_LEVEL: 'info',
+      } as Env;
+    }
+  }
+
+  // 服务器端验证完整的环境变量
   try {
     const parsed = envSchema.parse(process.env);
     return parsed;
@@ -168,6 +245,7 @@ export const redisConfig = {
  */
 export const wsConfig = {
   port: env.WS_PORT,
+  clientPort: env.NEXT_PUBLIC_WS_PORT,
   allowedOrigins:
     env.WS_ALLOWED_ORIGINS?.split(',')
       .map(s => s.trim())
@@ -180,6 +258,20 @@ export const wsConfig = {
 export const uploadConfig = {
   maxSize: env.UPLOAD_MAX_SIZE,
   directory: env.UPLOAD_DIR,
+} as const;
+
+/**
+ * 应用配置
+ */
+export const appConfig = {
+  port: env.PORT,
+} as const;
+
+/**
+ * 缓存配置
+ */
+export const cacheConfig = {
+  productTtl: env.PRODUCT_CACHE_TTL,
 } as const;
 
 /**
@@ -196,15 +288,23 @@ if (isDevelopment) {
   // eslint-disable-next-line no-console
   console.log(`  - 环境: ${env.NODE_ENV}`);
   // eslint-disable-next-line no-console
+  console.log(`  - 应用端口: ${env.PORT}`);
+  // eslint-disable-next-line no-console
   console.log(
     `  - 数据库: ${env.DATABASE_URL.includes('sqlite') ? 'SQLite (开发)' : 'MySQL (生产)'}`
   );
   // eslint-disable-next-line no-console
-  console.log(`  - 上传目录: ${env.UPLOAD_DIR}`);
+  console.log(
+    `  - 上传目录: ${env.UPLOAD_DIR} (最大: ${env.UPLOAD_MAX_SIZE} bytes)`
+  );
+  // eslint-disable-next-line no-console
+  console.log(`  - 产品缓存TTL: ${env.PRODUCT_CACHE_TTL}秒`);
   // eslint-disable-next-line no-console
   console.log(`  - 日志级别: ${env.LOG_LEVEL}`);
   // eslint-disable-next-line no-console
-  console.log(`  - Redis: ${env.REDIS_URL}`);
+  console.log(`  - Redis: ${env.REDIS_URL} (池大小: ${env.REDIS_POOL_SIZE})`);
   // eslint-disable-next-line no-console
-  console.log(`  - WS端口: ${env.WS_PORT}`);
+  console.log(
+    `  - WS端口: ${env.WS_PORT} (客户端: ${env.NEXT_PUBLIC_WS_PORT})`
+  );
 }

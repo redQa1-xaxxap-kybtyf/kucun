@@ -1,6 +1,6 @@
 import { WebSocketServer, type WebSocket } from 'ws';
 
-import { isDevelopment, wsConfig } from '@/lib/env';
+import { appConfig, isDevelopment, wsConfig } from '@/lib/env';
 
 interface ClientInfo {
   socket: WebSocket;
@@ -48,7 +48,7 @@ function createServer(): ServerApi {
     if (!cookieHeader) return { ok: false };
     try {
       const res = await fetch(
-        `http://localhost:${process.env.PORT || '3001'}/api/auth/session`,
+        `http://localhost:${appConfig.port}/api/auth/session`,
         {
           headers: { cookie: cookieHeader },
         }

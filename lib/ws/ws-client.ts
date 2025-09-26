@@ -1,6 +1,8 @@
+import { wsConfig } from '@/lib/env';
+
 // WebSocket客户端配置（客户端安全）
-const wsConfig = {
-  port: process.env.NEXT_PUBLIC_WS_PORT || '3003',
+const clientWsConfig = {
+  port: wsConfig.clientPort,
 };
 
 export interface WsMessage<T = unknown> {
@@ -32,7 +34,7 @@ export function createWsClient(): WsClient {
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.hostname;
-      const port = wsConfig.port;
+      const port = clientWsConfig.port;
       ws = new WebSocket(`${protocol}//${host}:${port}`);
 
       ws.onopen = () => {

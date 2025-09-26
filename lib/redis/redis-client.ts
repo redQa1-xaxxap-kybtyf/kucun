@@ -1,6 +1,6 @@
 import Redis from 'ioredis';
 
-import { env } from '@/lib/env';
+import { env, redisConfig } from '@/lib/env';
 
 export interface RedisClientWrapper {
   getClient(): Redis;
@@ -10,9 +10,9 @@ export interface RedisClientWrapper {
   scanDel(pattern: string): Promise<number>;
 }
 
-const poolSize = Number(process.env.REDIS_POOL_SIZE || 3);
-const redisUrl = process.env.REDIS_URL || 'redis://127.0.0.1:6379';
-const namespace = process.env.REDIS_NAMESPACE || 'kucun';
+const poolSize = redisConfig.poolSize;
+const redisUrl = redisConfig.url;
+const namespace = redisConfig.namespace;
 
 // 开发环境降级模式：如果Redis不可用，使用内存缓存（暂时保留用于未来扩展）
 // const isDevelopment = process.env.NODE_ENV === 'development';
