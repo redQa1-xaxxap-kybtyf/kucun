@@ -1,8 +1,10 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { paginationConfig } from '@/lib/env';
 import { createRefundRecordSchema } from '@/lib/validations/refund';
 
 /**
@@ -24,7 +26,10 @@ export async function GET(request: NextRequest) {
     // 解析查询参数
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get('page') || '1');
-    const pageSize = parseInt(searchParams.get('pageSize') || '20');
+    const pageSize = parseInt(
+      searchParams.get('pageSize') ||
+        paginationConfig.defaultPageSize.toString()
+    );
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status');
     const customerId = searchParams.get('customerId');
@@ -62,7 +67,7 @@ export async function GET(request: NextRequest) {
       orderBy: {
         refundDate: 'desc',
       },
-      take: 50, // 限制返回数量
+      take: paginationConfig.maxPageSize, // 限制返回数量
     });
 
     // 如果没有数据，返回空数组而不是模拟数据

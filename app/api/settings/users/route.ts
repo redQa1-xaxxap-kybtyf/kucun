@@ -4,11 +4,12 @@
  */
 
 import bcrypt from 'bcryptjs';
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { paginationConfig } from '@/lib/env';
 import { extractRequestInfo, logUserAction } from '@/lib/logger';
 import {
   CreateUserSchema,
@@ -67,7 +68,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const queryParams = {
       page: searchParams.get('page') || '1',
-      limit: searchParams.get('limit') || '10',
+      limit:
+        searchParams.get('limit') ||
+        paginationConfig.defaultPageSize.toString(),
       search: searchParams.get('search'),
       role: searchParams.get('role'),
       status: searchParams.get('status'),
@@ -105,7 +108,7 @@ export async function GET(request: NextRequest) {
 
     // 计算分页
     const page = validatedQuery.page || 1;
-    const limit = validatedQuery.limit || 10;
+    const limit = validatedQuery.limit || paginationConfig.defaultPageSize;
     const skip = (page - 1) * limit;
 
     // 查询用户总数

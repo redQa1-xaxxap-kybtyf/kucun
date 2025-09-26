@@ -1,8 +1,9 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions, createUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { paginationConfig } from '@/lib/env';
 import { paginationValidations, userValidations } from '@/lib/validations/base';
 
 // 获取用户列表 (仅管理员)
@@ -20,7 +21,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const queryParams = {
       page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '20'),
+      limit: parseInt(
+        searchParams.get('limit') || paginationConfig.defaultPageSize.toString()
+      ),
       search: searchParams.get('search') || undefined,
       sortBy: searchParams.get('sortBy') || 'createdAt',
       sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',

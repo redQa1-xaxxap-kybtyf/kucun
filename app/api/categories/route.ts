@@ -7,6 +7,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
+import { paginationConfig } from '@/lib/env';
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import { generateCategoryCode } from '@/lib/utils/category-code-generator';
 import {
@@ -41,7 +42,9 @@ export async function GET(request: NextRequest) {
     // 解析查询参数
     const queryParams = {
       page: parseInt(searchParams.get('page') || '1'),
-      limit: parseInt(searchParams.get('limit') || '20'),
+      limit: parseInt(
+        searchParams.get('limit') || paginationConfig.defaultPageSize.toString()
+      ),
       search: searchParams.get('search') || '',
       sortBy: searchParams.get('sortBy') || 'createdAt',
       sortOrder: searchParams.get('sortOrder') || 'desc',

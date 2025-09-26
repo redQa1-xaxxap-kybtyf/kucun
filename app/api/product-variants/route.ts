@@ -1,9 +1,10 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { paginationConfig } from '@/lib/env';
 
 // 产品变体查询参数验证
 const ProductVariantQuerySchema = z.object({
@@ -11,7 +12,12 @@ const ProductVariantQuerySchema = z.object({
   colorCode: z.string().max(20, '色号不能超过20个字符').optional(),
   status: z.enum(['active', 'inactive']).optional(),
   page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(paginationConfig.maxPageSize)
+    .default(paginationConfig.defaultPageSize),
   sortBy: z.enum(['colorCode', 'sku', 'createdAt']).default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });

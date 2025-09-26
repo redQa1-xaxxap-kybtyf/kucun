@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { prisma } from '@/lib/db';
+import { customerConfig } from '@/lib/env';
 
 /**
  * 搜索客户API
@@ -10,7 +11,10 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const query = searchParams.get('q') || '';
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
+    const limit = parseInt(
+      searchParams.get('limit') || customerConfig.searchLimit.toString(),
+      10
+    );
 
     // 构建搜索条件
     const whereCondition = query

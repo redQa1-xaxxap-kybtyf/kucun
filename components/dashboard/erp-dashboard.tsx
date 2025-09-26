@@ -2,23 +2,19 @@
 
 import {
   AlertCircle,
-  BarChart3,
   Calendar,
   CreditCard,
   Eye,
   Package,
   RefreshCw,
   ShoppingCart,
-  TrendingDown,
-  TrendingUp,
   Users,
   Zap,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -27,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useDashboardData } from '@/lib/api/dashboard';
 import { cn } from '@/lib/utils';
 
 /**

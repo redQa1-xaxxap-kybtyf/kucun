@@ -3,6 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { dashboardConfig } from '@/lib/env';
 import type {
   BusinessOverview,
   CustomerSalesRanking,
@@ -250,65 +251,65 @@ export const useDashboardData = (filters: DashboardFilters) =>
   useQuery({
     queryKey: dashboardQueryKeys.complete(filters),
     queryFn: () => dashboardApi.getDashboardData(filters),
-    staleTime: 5 * 60 * 1000, // 5分钟
-    refetchInterval: 30 * 1000, // 30秒自动刷新
+    staleTime: dashboardConfig.staleTime,
+    refetchInterval: dashboardConfig.refetchInterval,
   });
 
 export const useBusinessOverview = (timeRange: TimeRange) =>
   useQuery({
     queryKey: dashboardQueryKeys.overview(),
     queryFn: () => dashboardApi.getBusinessOverview(timeRange),
-    staleTime: 5 * 60 * 1000,
+    staleTime: dashboardConfig.staleTime,
   });
 
 export const useInventoryAlerts = () =>
   useQuery({
     queryKey: dashboardQueryKeys.alerts(),
     queryFn: dashboardApi.getInventoryAlerts,
-    staleTime: 2 * 60 * 1000, // 2分钟
-    refetchInterval: 60 * 1000, // 1分钟自动刷新
+    staleTime: dashboardConfig.staleTime / 2.5, // 比主数据更频繁刷新
+    refetchInterval: dashboardConfig.refetchInterval,
   });
 
 export const useTodoItems = () =>
   useQuery({
     queryKey: dashboardQueryKeys.todos(),
     queryFn: dashboardApi.getTodoItems,
-    staleTime: 5 * 60 * 1000,
+    staleTime: dashboardConfig.staleTime,
   });
 
 export const useSalesTrend = (timeRange: TimeRange) =>
   useQuery({
     queryKey: dashboardQueryKeys.salesTrend(timeRange),
     queryFn: () => dashboardApi.getSalesTrend(timeRange),
-    staleTime: 10 * 60 * 1000, // 10分钟
+    staleTime: dashboardConfig.staleTime * 2, // 趋势数据可以缓存更久
   });
 
 export const useInventoryTrend = (timeRange: TimeRange) =>
   useQuery({
     queryKey: dashboardQueryKeys.inventoryTrend(timeRange),
     queryFn: () => dashboardApi.getInventoryTrend(timeRange),
-    staleTime: 10 * 60 * 1000,
+    staleTime: dashboardConfig.staleTime * 2,
   });
 
 export const useProductRanking = (timeRange: TimeRange) =>
   useQuery({
     queryKey: dashboardQueryKeys.productRanking(timeRange),
     queryFn: () => dashboardApi.getProductRanking(timeRange),
-    staleTime: 15 * 60 * 1000, // 15分钟
+    staleTime: dashboardConfig.staleTime * 3, // 排名数据可以缓存更久
   });
 
 export const useCustomerRanking = (timeRange: TimeRange) =>
   useQuery({
     queryKey: dashboardQueryKeys.customerRanking(timeRange),
     queryFn: () => dashboardApi.getCustomerRanking(timeRange),
-    staleTime: 15 * 60 * 1000,
+    staleTime: dashboardConfig.staleTime * 3,
   });
 
 export const useQuickActions = () =>
   useQuery({
     queryKey: dashboardQueryKeys.quickActions(),
     queryFn: dashboardApi.getQuickActions,
-    staleTime: 60 * 60 * 1000, // 1小时
+    staleTime: dashboardConfig.staleTime * 12, // 快捷操作可以缓存很久
   });
 
 // Mutation Hooks
