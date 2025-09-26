@@ -117,7 +117,6 @@ model Product {
   code           String   @unique
   name           String
   specification  String?
-  specifications String?  // JSON格式的详细规格信息（SQLite存储为文本）
   unit           String   @default("piece") // piece, sheet, strip
   piecesPerUnit  Int      @default(1) @map("pieces_per_unit")
   weight         Float?

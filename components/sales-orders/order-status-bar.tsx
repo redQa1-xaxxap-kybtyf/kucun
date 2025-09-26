@@ -13,6 +13,11 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import {
+  SALES_ORDER_STATUS_LABELS,
+  SALES_ORDER_STATUS_VARIANTS,
+  type SalesOrderStatus,
+} from '@/lib/types/sales-order';
 import { cn } from '@/lib/utils';
 
 interface Customer {
@@ -43,24 +48,20 @@ export function OrderStatusBar({
   itemCount = 0,
   className,
 }: OrderStatusBarProps) {
-  // 状态显示配置
+  // 状态显示配置 - 使用标准定义
   const getStatusConfig = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return { label: '草稿', variant: 'secondary' as const };
-      case 'pending':
-        return { label: '待确认', variant: 'outline' as const };
-      case 'confirmed':
-        return { label: '已确认', variant: 'default' as const };
-      case 'shipped':
-        return { label: '已发货', variant: 'default' as const };
-      case 'delivered':
-        return { label: '已送达', variant: 'default' as const };
-      case 'cancelled':
-        return { label: '已取消', variant: 'destructive' as const };
-      default:
-        return { label: '未知', variant: 'secondary' as const };
+    const salesOrderStatus = status as SalesOrderStatus;
+
+    // 检查是否为有效的销售订单状态
+    if (salesOrderStatus in SALES_ORDER_STATUS_LABELS) {
+      return {
+        label: SALES_ORDER_STATUS_LABELS[salesOrderStatus],
+        variant: SALES_ORDER_STATUS_VARIANTS[salesOrderStatus],
+      };
     }
+
+    // 处理未知状态
+    return { label: '未知', variant: 'secondary' as const };
   };
 
   const statusConfig = getStatusConfig(status);

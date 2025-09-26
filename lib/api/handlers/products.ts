@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import type { z } from 'zod';
 
+import { invalidateProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
 import { productUpdateSchema } from '@/lib/validations/product';
 
@@ -29,7 +30,6 @@ export async function getProductById(id: string) {
       code: true,
       name: true,
       specification: true,
-      specifications: true,
       unit: true,
       piecesPerUnit: true,
       weight: true,
@@ -130,7 +130,6 @@ export async function updateProduct(
       code: true,
       name: true,
       specification: true,
-      specifications: true,
       unit: true,
       piecesPerUnit: true,
       weight: true,
@@ -171,6 +170,8 @@ export async function updateProduct(
       },
     },
   });
+
+  await invalidateProductCache(id);
 
   return formatProduct(updatedProduct);
 }
@@ -219,6 +220,8 @@ export async function deleteProduct(id: string) {
   await prisma.product.delete({
     where: { id },
   });
+
+  await invalidateProductCache(id);
 
   return { success: true, message: '产品删除成功' };
 }

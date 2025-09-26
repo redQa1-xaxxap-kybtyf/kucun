@@ -68,9 +68,9 @@ export function useProductForm({
   // 创建产品
   const createMutation = useMutation({
     mutationFn: createProduct,
-    onSuccess: response => {
+    onSuccess: product => {
       queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
-      onSuccess?.(response.data);
+      onSuccess?.(product);
     },
     onError: (error: Error) => {
       setSubmitError(error.message || '创建产品失败');
@@ -81,9 +81,9 @@ export function useProductForm({
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ProductUpdateFormData }) =>
       updateProduct(id, data),
-    onSuccess: response => {
+    onSuccess: product => {
       queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
-      onSuccess?.(response.data);
+      onSuccess?.(product);
     },
     onError: (error: Error) => {
       setSubmitError(error.message || '更新产品失败');

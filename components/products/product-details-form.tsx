@@ -2,7 +2,6 @@
 
 import type { Control } from 'react-hook-form';
 
-import { SpecificationsEditor } from '@/components/products/specifications-editor';
 import {
   FormControl,
   FormDescription,
@@ -127,28 +126,6 @@ export function ProductDetailsForm({
               <FormDescription>
                 详细的产品描述信息，包括特性、用途等
               </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      </div>
-
-      {/* 瓷砖规格编辑器 - 跨两列 */}
-      <div className="md:col-span-2">
-        <FormField
-          control={control}
-          name="specifications"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>瓷砖规格</FormLabel>
-              <FormControl>
-                <SpecificationsEditor
-                  value={field.value}
-                  onChange={field.onChange}
-                  disabled={isLoading}
-                />
-              </FormControl>
-              <FormDescription>瓷砖的详细技术规格参数</FormDescription>
               <FormMessage />
             </FormItem>
           )}

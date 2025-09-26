@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
+import { invalidateProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
 import type { BatchDeleteResult } from '@/lib/types/product';
 import { batchDeleteProductsSchema } from '@/lib/validations/product';
@@ -149,6 +150,10 @@ export async function DELETE(request: NextRequest) {
       failedProducts: failedCount > 0 ? failedProducts : undefined,
       message,
     };
+
+    if (deletedCount > 0) {
+      await invalidateProductCache();
+    }
 
     return NextResponse.json({
       success: true,

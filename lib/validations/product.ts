@@ -79,22 +79,6 @@ const baseValidations = {
   }),
 };
 
-// 瓷砖规格验证
-const tileSpecificationValidations = {
-  color: z.string().max(50, '颜色描述不能超过50个字符').optional(),
-  surface: z.string().max(50, '表面处理不能超过50个字符').optional(),
-  thickness: z
-    .number()
-    .min(0, '厚度不能为负数')
-    .max(100, '厚度不能超过100mm')
-    .optional(),
-  size: z.string().max(50, '尺寸规格不能超过50个字符').optional(),
-  pattern: z.string().max(50, '花纹描述不能超过50个字符').optional(),
-  grade: z.string().max(20, '等级不能超过20个字符').optional(),
-  origin: z.string().max(50, '产地不能超过50个字符').optional(),
-  series: z.string().max(50, '系列名称不能超过50个字符').optional(),
-};
-
 // 产品创建表单验证
 export const productCreateSchema = z.object({
   code: baseValidations.code,
@@ -107,8 +91,6 @@ export const productCreateSchema = z.object({
   thickness: baseValidations.thickness,
   status: baseValidations.status.default('active'),
   categoryId: z.string().optional(),
-  // 瓷砖特有规格信息
-  specifications: z.object(tileSpecificationValidations).optional(),
   // 产品图片
   images: z.array(z.string().url('图片URL格式不正确')).optional(),
 });
@@ -126,8 +108,6 @@ export const productUpdateSchema = z.object({
   thickness: baseValidations.thickness,
   status: baseValidations.status.optional(),
   categoryId: z.string().optional(),
-  // 瓷砖特有规格信息
-  specifications: z.object(tileSpecificationValidations).optional(),
   // 产品图片
   images: z.array(z.string().url('图片URL格式不正确')).optional(),
 });
@@ -180,16 +160,6 @@ export const productCreateDefaults: Partial<ProductCreateFormData> = {
   weight: undefined, // 修复：厚度和重量字段应该是可选的，使用 undefined 而不是 0
   thickness: undefined, // 修复：厚度字段应该是可选的，使用 undefined 而不是 0
   images: [],
-  specifications: {
-    color: '',
-    surface: '',
-    thickness: undefined, // 修复：规格中的厚度也应该是可选的
-    size: '',
-    pattern: '',
-    grade: '',
-    origin: '',
-    series: '',
-  },
 };
 
 export const productSearchDefaults: ProductSearchFormData = {

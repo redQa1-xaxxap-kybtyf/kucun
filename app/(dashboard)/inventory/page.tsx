@@ -41,9 +41,22 @@ export default function InventoryPage() {
   const normalizedData = React.useMemo(() => {
     if (!data) return { data: [], pagination: undefined };
 
-    // 类型安全的数据提取
+    // 处理API响应的嵌套结构
+    // API返回: { success: true, data: { data: [...], pagination: {...} } }
+    // 组件期望: { data: [...], pagination: {...} }
     const response = data as {
-      data?: Inventory[];
+      success?: boolean;
+      data?: {
+        data?: Inventory[];
+        inventories?: Inventory[];
+        pagination?: {
+          page: number;
+          limit: number;
+          total: number;
+          totalPages: number;
+        };
+      };
+      // 直接格式（向后兼容）
       inventories?: Inventory[];
       pagination?: {
         page: number;
@@ -52,8 +65,13 @@ export default function InventoryPage() {
         totalPages: number;
       };
     };
-    const items = response.data ?? response.inventories ?? [];
-    const pagination = response.pagination;
+
+    // 优先从嵌套的data中提取
+    const nestedData = response.data;
+    const items =
+      nestedData?.data ?? nestedData?.inventories ?? response.inventories ?? [];
+    const pagination = nestedData?.pagination ?? response.pagination;
+
     return { data: items, pagination };
   }, [data]);
 

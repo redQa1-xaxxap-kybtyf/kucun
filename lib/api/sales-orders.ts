@@ -103,7 +103,7 @@ export async function getSalesOrder(id: string): Promise<SalesOrder> {
  * 创建销售订单
  */
 export async function createSalesOrder(
-  orderData: SalesOrderCreateInput | any
+  orderData: SalesOrderCreateInput
 ): Promise<SalesOrder> {
   const response = await fetch(API_BASE, {
     method: 'POST',

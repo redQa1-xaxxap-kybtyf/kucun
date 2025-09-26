@@ -15,6 +15,11 @@ import type {
   ProductUpdateFormData,
 } from '@/lib/validations/product';
 
+export type ProductListQueryParams = ProductQueryParams & {
+  includeInventory?: boolean;
+  includeStatistics?: boolean;
+};
+
 const API_BASE = '/api/products';
 
 /**
@@ -23,7 +28,7 @@ const API_BASE = '/api/products';
 export const productQueryKeys = {
   all: ['products'] as const,
   lists: () => [...productQueryKeys.all, 'list'] as const,
-  list: (params: ProductQueryParams) =>
+  list: (params: ProductListQueryParams) =>
     [...productQueryKeys.lists(), params] as const,
   details: () => [...productQueryKeys.all, 'detail'] as const,
   detail: (id: string) => [...productQueryKeys.details(), id] as const,
@@ -33,7 +38,7 @@ export const productQueryKeys = {
  * 获取产品列表
  */
 export async function getProducts(
-  params: ProductQueryParams = {}
+  params: ProductListQueryParams = {}
 ): Promise<PaginatedResponse<Product>> {
   const searchParams = new URLSearchParams();
 

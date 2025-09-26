@@ -7,31 +7,6 @@
  */
 
 /**
- * 瓷砖行业特有规格信息类型
- * 用于存储瓷砖产品的详细规格参数
- */
-export interface TileSpecifications {
-  /** 颜色描述，如"米白色"、"深灰色" */
-  color?: string;
-  /** 表面处理工艺，如"抛光"、"哑光"、"仿古" */
-  surface?: string;
-  /** 尺寸规格，如"600x600mm"、"800x800mm" */
-  size?: string;
-  /** 厚度，单位：毫米(mm) */
-  thickness?: number;
-  /** 花纹描述，如"木纹"、"石纹"、"布纹" */
-  pattern?: string;
-  /** 产品等级，如"优等品"、"一等品" */
-  grade?: string;
-  /** 产地信息，如"广东佛山"、"山东淄博" */
-  origin?: string;
-  /** 产品系列名称，如"现代简约系列" */
-  series?: string;
-  /** 允许扩展字段，支持未来新增规格参数 */
-  [key: string]: string | number | undefined;
-}
-
-/**
  * 产品计量单位枚举
  * 定义了系统支持的所有产品计量单位
  */
@@ -95,8 +70,6 @@ export interface Product {
   name: string;
   /** 产品规格描述（文本格式） */
   specification?: string;
-  /** 产品详细规格信息（结构化数据） */
-  specifications?: TileSpecifications;
   /** 产品计量单位 */
   unit: ProductUnit;
   /** 每件包含的片数，用于单位换算 */
@@ -144,7 +117,6 @@ export interface ProductCreateInput {
   code: string;
   name: string;
   specification?: string;
-  specifications?: TileSpecifications;
   unit?: ProductUnit;
   piecesPerUnit?: number;
   weight?: number;

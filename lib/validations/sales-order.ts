@@ -267,17 +267,33 @@ export const salesOrderUpdateSchema = baseSalesOrderSchema
  * 销售订单查询参数验证规则
  */
 export const salesOrderQuerySchema = z.object({
-  page: z.number().int().min(1).default(1),
-  limit: z.number().int().min(1).max(100).default(20),
-  search: z.string().optional(),
+  page: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val ? parseInt(val) : 1))
+    .refine(val => val > 0, '页码必须大于0'),
+  limit: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val ? parseInt(val) : 20))
+    .refine(val => val > 0 && val <= 100, '每页数量必须在1-100之间'),
+  search: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val?.trim() || undefined),
   sortBy: z
     .enum(['orderNumber', 'totalAmount', 'createdAt', 'updatedAt'])
+    .nullable()
+    .optional()
     .default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
-  status: salesOrderStatusSchema.optional(),
-  customerId: z.string().optional(),
-  dateFrom: z.string().optional(),
-  dateTo: z.string().optional(),
+  sortOrder: z.enum(['asc', 'desc']).nullable().optional().default('desc'),
+  status: salesOrderStatusSchema.nullable().optional(),
+  customerId: z.string().nullable().optional(),
+  startDate: z.string().nullable().optional(),
+  endDate: z.string().nullable().optional(),
 });
 
 /**

@@ -1,51 +1,19 @@
 import type { Prisma } from '@prisma/client';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 import { prisma } from '@/lib/db';
-import type { SalesOrderWithDetails } from '@/lib/types/sales-order';
-import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
+import type { SalesOrderQueryParams as StandardSalesOrderQueryParams } from '@/lib/types/sales-order';
+import {
+  salesOrderCreateSchema,
+  salesOrderQuerySchema as standardSalesOrderQuerySchema,
+} from '@/lib/validations/sales-order';
 
 /**
- * 销售订单查询参数验证
+ * 使用标准的销售订单查询参数验证
+ * 统一使用 lib/validations/sales-order.ts 中的定义
  */
-export const salesOrderQuerySchema = z.object({
-  page: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => (val ? parseInt(val) : 1))
-    .refine(val => val > 0, '页码必须大于0'),
-  limit: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => (val ? parseInt(val) : 20))
-    .refine(val => val > 0 && val <= 100, '每页数量必须在1-100之间'),
-  search: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => val?.trim() || undefined),
-  sortBy: z.string().nullable().optional().default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).nullable().optional().default('desc'),
-  status: z
-    .enum(['pending', 'confirmed', 'shipped', 'delivered', 'cancelled'])
-    .nullable()
-    .optional(),
-  customerId: z.string().nullable().optional(),
-  startDate: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => (val ? new Date(val) : undefined)),
-  endDate: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => (val ? new Date(val) : undefined)),
-});
-
-export type SalesOrderQueryParams = z.infer<typeof salesOrderQuerySchema>;
+export const salesOrderQuerySchema = standardSalesOrderQuerySchema;
+export type SalesOrderQueryParams = StandardSalesOrderQueryParams;
 
 /**
  * 获取销售订单列表
@@ -263,13 +231,21 @@ function formatSalesOrder(order: any): SalesOrderWithDetails {
     items:
       order.items?.map((item: any) => ({
         id: item.id,
+        salesOrderId: item.salesOrderId,
         productId: item.productId,
+        colorCode: item.colorCode,
+        productionDate: item.productionDate,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice,
-        costPrice: item.costPrice,
+        subtotal: item.subtotal || item.totalPrice, // 兼容旧字段名
+        unitCost: item.unitCost || item.costPrice, // 兼容旧字段名
+        costSubtotal: item.costSubtotal || item.costPrice * item.quantity,
         profitAmount: item.profitAmount,
-        remarks: item.remarks,
+        isManualProduct: item.isManualProduct,
+        manualProductName: item.manualProductName,
+        manualSpecification: item.manualSpecification,
+        manualWeight: item.manualWeight,
+        manualUnit: item.manualUnit,
         product: item.product
           ? {
               id: item.product.id,
@@ -303,9 +279,9 @@ export async function createSalesOrder(
   let profitAmount = 0;
 
   for (const item of validatedData.items) {
-    totalAmount += item.totalPrice;
-    costAmount += item.costPrice * item.quantity;
-    profitAmount += item.profitAmount;
+    totalAmount += item.subtotal || 0;
+    costAmount += (item.unitCost || 0) * item.quantity;
+    profitAmount += item.profitAmount || 0;
   }
 
   // 创建订单
@@ -315,7 +291,7 @@ export async function createSalesOrder(
       customerId: validatedData.customerId,
       userId,
       supplierId: validatedData.supplierId,
-      status: validatedData.status || 'pending',
+      status: validatedData.status || 'draft',
       orderType: validatedData.orderType,
       costAmount,
       profitAmount,
@@ -324,12 +300,19 @@ export async function createSalesOrder(
       items: {
         create: validatedData.items.map(item => ({
           productId: item.productId,
+          colorCode: item.colorCode,
+          productionDate: item.productionDate,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
-          totalPrice: item.totalPrice,
-          costPrice: item.costPrice,
+          subtotal: item.subtotal,
+          unitCost: item.unitCost,
+          costSubtotal: item.costSubtotal,
           profitAmount: item.profitAmount,
-          remarks: item.remarks,
+          isManualProduct: item.isManualProduct,
+          manualProductName: item.manualProductName,
+          manualSpecification: item.manualSpecification,
+          manualWeight: item.manualWeight,
+          manualUnit: item.manualUnit,
         })),
       },
     },

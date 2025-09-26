@@ -3,16 +3,19 @@ import { getServerSession } from 'next-auth';
 
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
 import { authOptions } from '@/lib/auth';
-import {
-  buildCacheKey,
-  getOrSetJSON,
-  invalidateNamespace,
-} from '@/lib/cache/cache';
+import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
+import { invalidateProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import { paginationValidations } from '@/lib/validations/base';
 import { productCreateSchema } from '@/lib/validations/product';
 import { publishWs } from '@/lib/ws/ws-server';
+
+const DEFAULT_INVENTORY = {
+  totalQuantity: 0,
+  reservedQuantity: 0,
+  availableQuantity: 0,
+};
 
 // 获取产品列表
 export async function GET(request: NextRequest) {
@@ -29,15 +32,23 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
+
+    const includeInventory = searchParams.get('includeInventory') !== 'false';
+    const includeStatistics = searchParams.get('includeStatistics') !== 'false';
+
+    const rawStatus = searchParams.get('status');
+    const rawCategoryId = searchParams.get('categoryId');
+    const filterUncategorized = rawCategoryId === 'none';
+
     const queryParams = {
       page: searchParams.get('page') || '1',
       limit: searchParams.get('limit') || '20',
       search: searchParams.get('search') || undefined,
       sortBy: searchParams.get('sortBy') || 'createdAt',
       sortOrder: searchParams.get('sortOrder') || 'desc',
-      status: searchParams.get('status') || undefined,
+      status: rawStatus && rawStatus !== 'all' ? rawStatus : undefined,
       unit: searchParams.get('unit') || undefined,
-      categoryId: searchParams.get('categoryId') || undefined,
+      categoryId: filterUncategorized ? undefined : rawCategoryId || undefined,
     };
 
     // 验证查询参数
@@ -66,7 +77,7 @@ export async function GET(request: NextRequest) {
       ];
     }
 
-    if (queryParams.status && queryParams.status !== 'all') {
+    if (queryParams.status) {
       (where as Record<string, unknown>).status = queryParams.status;
     }
 
@@ -74,7 +85,9 @@ export async function GET(request: NextRequest) {
       (where as Record<string, unknown>).unit = queryParams.unit;
     }
 
-    if (queryParams.categoryId) {
+    if (filterUncategorized) {
+      (where as Record<string, unknown>).categoryId = null;
+    } else if (queryParams.categoryId) {
       (where as Record<string, unknown>).categoryId = queryParams.categoryId;
     }
 
@@ -88,37 +101,40 @@ export async function GET(request: NextRequest) {
       status: queryParams.status,
       unit: queryParams.unit,
       categoryId: queryParams.categoryId,
+      includeInventory,
+      includeStatistics,
+      uncategorized: filterUncategorized,
     });
 
     // 命中缓存则直接返回
     const cached = await getOrSetJSON(
       cacheKey,
       async () => {
-        // 查询产品列表（缓存未命中时）
-        const [products, total] = await Promise.all([
-          prisma.product.findMany({
-            where,
+        const baseProductSelect = {
+          id: true,
+          code: true,
+          name: true,
+          specification: true,
+          unit: true,
+          piecesPerUnit: true,
+          weight: true,
+          thickness: true,
+          status: true,
+          categoryId: true,
+          category: {
             select: {
               id: true,
-              code: true,
               name: true,
-              specification: true,
-              specifications: true,
-              unit: true,
-              piecesPerUnit: true,
-              weight: true,
-              thickness: true,
-              status: true,
-              categoryId: true,
-              category: {
-                select: {
-                  id: true,
-                  name: true,
-                  code: true,
-                },
-              },
-              createdAt: true,
-              updatedAt: true,
+              code: true,
+            },
+          },
+          createdAt: true,
+          updatedAt: true,
+        } as const;
+
+        const productSelect = includeStatistics
+          ? {
+              ...baseProductSelect,
               _count: {
                 select: {
                   inventory: true,
@@ -126,7 +142,13 @@ export async function GET(request: NextRequest) {
                   inboundRecords: true,
                 },
               },
-            },
+            }
+          : baseProductSelect;
+
+        const [products, total] = await Promise.all([
+          prisma.product.findMany({
+            where,
+            select: productSelect,
             orderBy: { [sortBy as string]: sortOrder },
             skip: (page - 1) * limit,
             take: limit,
@@ -134,68 +156,85 @@ export async function GET(request: NextRequest) {
           prisma.product.count({ where }),
         ]);
 
-        const totalPages = Math.ceil(total / limit);
+        let inventoryMap = new Map<string, typeof DEFAULT_INVENTORY>();
+        if (includeInventory && products.length > 0) {
+          const productIds = products.map(product => product.id as string);
+          const inventorySummary = await prisma.inventory.groupBy({
+            by: ['productId'],
+            where: {
+              productId: { in: productIds },
+            },
+            _sum: {
+              quantity: true,
+              reservedQuantity: true,
+            },
+          });
 
-        // 获取库存汇总信息
-        const productIds = products.map(p => p.id);
-        const inventorySummary = await prisma.inventory.groupBy({
-          by: ['productId'],
-          where: {
-            productId: { in: productIds },
-          },
-          _sum: {
-            quantity: true,
-            reservedQuantity: true,
-          },
+          inventoryMap = new Map(
+            inventorySummary.map(item => [
+              item.productId,
+              {
+                totalQuantity: item._sum.quantity || 0,
+                reservedQuantity: item._sum.reservedQuantity || 0,
+                availableQuantity:
+                  (item._sum.quantity || 0) - (item._sum.reservedQuantity || 0),
+              },
+            ])
+          );
+        }
+
+        const formattedProducts = products.map(product => {
+          const inventory = includeInventory
+            ? (inventoryMap.get(product.id as string) ?? {
+                ...DEFAULT_INVENTORY,
+              })
+            : { ...DEFAULT_INVENTORY };
+
+          const counts =
+            includeStatistics && '_count' in product
+              ? (
+                  product as {
+                    _count: {
+                      inventory: number;
+                      salesOrderItems: number;
+                      inboundRecords: number;
+                    };
+                  }
+                )._count
+              : undefined;
+
+          return {
+            id: product.id,
+            code: product.code,
+            name: product.name,
+            specification: product.specification,
+            unit: product.unit,
+            piecesPerUnit: product.piecesPerUnit,
+            weight: product.weight,
+            thickness: product.thickness,
+            status: product.status,
+            categoryId: product.categoryId,
+            category: product.category
+              ? {
+                  id: product.category.id,
+                  name: product.category.name,
+                  code: product.category.code,
+                }
+              : null,
+            inventory,
+            statistics: counts
+              ? {
+                  inventory: counts.inventory,
+                  salesOrderItems: counts.salesOrderItems,
+                  inboundRecords: counts.inboundRecords,
+                }
+              : undefined,
+            createdAt: product.createdAt,
+            updatedAt: product.updatedAt,
+          };
         });
 
-        const inventoryMap = new Map(
-          inventorySummary.map(item => [
-            item.productId,
-            {
-              totalQuantity: item._sum.quantity || 0,
-              reservedQuantity: item._sum.reservedQuantity || 0,
-              availableQuantity:
-                (item._sum.quantity || 0) - (item._sum.reservedQuantity || 0),
-            },
-          ])
-        );
-
-        // 转换数据格式
-        const formattedProducts = products.map(product => ({
-          id: product.id,
-          code: product.code,
-          name: product.name,
-          specification: product.specification,
-          specifications: product.specifications
-            ? JSON.parse(product.specifications as string)
-            : null,
-          unit: product.unit,
-          piecesPerUnit: product.piecesPerUnit,
-          weight: product.weight,
-          thickness: product.thickness,
-          status: product.status,
-          categoryId: product.categoryId,
-          category: product.category
-            ? {
-                id: product.category.id,
-                name: product.category.name,
-                code: product.category.code,
-              }
-            : null,
-          inventory: inventoryMap.get(product.id) || {
-            totalQuantity: 0,
-            reservedQuantity: 0,
-            availableQuantity: 0,
-          },
-          statistics: {
-            inventory: product._count.inventory,
-            salesOrderItems: product._count.salesOrderItems,
-            inboundRecords: product._count.inboundRecords,
-          },
-          createdAt: product.createdAt,
-          updatedAt: product.updatedAt,
-        }));
+        const totalPages = Math.ceil(total / limit);
 
         return {
           data: formattedProducts,
@@ -207,7 +246,7 @@ export async function GET(request: NextRequest) {
           },
         } as const;
       },
-      60 // TTL 秒
+      includeInventory ? 60 : 30
     );
 
     return createDateTimeResponse(cached);
@@ -227,7 +266,6 @@ export async function GET(request: NextRequest) {
 // 创建产品
 export async function POST(request: NextRequest) {
   try {
-    // 验证用户权限 (开发环境下临时绕过)
     if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
@@ -240,13 +278,13 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
 
-    // 验证输入数据
+    // 验证请求数据
     const validationResult = productCreateSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
           success: false,
-          error: '输入数据格式不正确',
+          error: '产品数据格式不正确',
           details: validationResult.error.errors,
         },
         { status: 400 }
@@ -257,7 +295,6 @@ export async function POST(request: NextRequest) {
       code,
       name,
       specification,
-      specifications,
       unit,
       piecesPerUnit,
       weight,
@@ -305,9 +342,6 @@ export async function POST(request: NextRequest) {
           code,
           name,
           specification,
-          specifications: specifications
-            ? JSON.stringify(specifications)
-            : null,
           unit,
           piecesPerUnit,
           weight,
@@ -320,7 +354,6 @@ export async function POST(request: NextRequest) {
           code: true,
           name: true,
           specification: true,
-          specifications: true,
           unit: true,
           piecesPerUnit: true,
           weight: true,
@@ -346,9 +379,6 @@ export async function POST(request: NextRequest) {
       code: product.code,
       name: product.name,
       specification: product.specification,
-      specifications: product.specifications
-        ? JSON.parse(product.specifications as string)
-        : null,
       unit: product.unit,
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
@@ -367,7 +397,7 @@ export async function POST(request: NextRequest) {
     };
 
     // 缓存失效 & WebSocket 推送
-    await invalidateNamespace('products:list:*');
+    await invalidateProductCache();
     publishWs('products', {
       type: 'created',
       id: formattedProduct.id,

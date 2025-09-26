@@ -8,7 +8,6 @@ import { InventorySearchToolbar } from '@/components/inventory/InventorySearchTo
 import { InventoryTableRow } from '@/components/inventory/InventoryTableRow';
 import { VirtualizedInventoryTable } from '@/components/inventory/VirtualizedInventoryTable';
 import { Button } from '@/components/ui/button';
-
 import {
   Table,
   TableBody,
@@ -79,11 +78,12 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     // 处理全选（useCallback稳定引用）
     const handleSelectAll = React.useCallback(
       (checked: boolean) => {
+        const inventoryData = Array.isArray(data?.data) ? data.data : [];
         setSelectedInventoryIds(
-          checked ? new Set(data.data.map(item => item.id)) : new Set()
+          checked ? new Set(inventoryData.map(item => item.id)) : new Set()
         );
       },
-      [data.data]
+      [data?.data]
     );
 
     // 优化的事件处理函数
@@ -157,7 +157,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
 
         {/* ERP标准数据表格（数据量大于200行时启用虚拟化） */}
         <div className="rounded border bg-card">
-          {data.data.length > 200 ? (
+          {Array.isArray(data?.data) && data.data.length > 200 ? (
             <VirtualizedInventoryTable
               data={data.data}
               selectedIds={Array.from(selectedInventoryIds)}
@@ -173,6 +173,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
                     <input
                       type="checkbox"
                       checked={
+                        Array.isArray(data?.data) &&
                         selectedInventoryIds.size === data.data.length &&
                         data.data.length > 0
                       }
@@ -193,7 +194,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {data.data.length === 0 ? (
+                {!data?.data || data.data.length === 0 ? (
                   <TableRow>
                     <TableCell
                       colSpan={11}
@@ -205,7 +206,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
                       </div>
                     </TableCell>
                   </TableRow>
-                ) : (
+                ) : Array.isArray(data.data) ? (
                   data.data.map(item => (
                     <InventoryTableRow
                       key={item.id}
@@ -215,6 +216,18 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
                       onAdjust={handleAdjust}
                     />
                   ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={11}
+                      className="h-24 text-center text-muted-foreground"
+                    >
+                      <div className="flex flex-col items-center gap-2">
+                        <Package className="h-8 w-8" />
+                        <div>数据格式错误</div>
+                      </div>
+                    </TableCell>
+                  </TableRow>
                 )}
               </TableBody>
             </Table>

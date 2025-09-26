@@ -43,6 +43,7 @@ import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
+import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
@@ -623,18 +624,30 @@ export function ERPSalesOrderForm({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="draft">
-                              <div className="flex items-center gap-1">
-                                <div className="h-1.5 w-1.5 rounded-full bg-yellow-500"></div>
-                                <span className="text-xs">草稿</span>
-                              </div>
-                            </SelectItem>
-                            <SelectItem value="confirmed">
-                              <div className="flex items-center gap-1">
-                                <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                                <span className="text-xs">已确认</span>
-                              </div>
-                            </SelectItem>
+                            {Object.entries(SALES_ORDER_STATUS_LABELS).map(
+                              ([status, label]) => (
+                                <SelectItem key={status} value={status}>
+                                  <div className="flex items-center gap-1">
+                                    <div
+                                      className={`h-1.5 w-1.5 rounded-full ${
+                                        status === 'draft'
+                                          ? 'bg-yellow-500'
+                                          : status === 'confirmed'
+                                            ? 'bg-green-500'
+                                            : status === 'shipped'
+                                              ? 'bg-blue-500'
+                                              : status === 'completed'
+                                                ? 'bg-green-600'
+                                                : status === 'cancelled'
+                                                  ? 'bg-red-500'
+                                                  : 'bg-gray-500'
+                                      }`}
+                                    ></div>
+                                    <span className="text-xs">{label}</span>
+                                  </div>
+                                </SelectItem>
+                              )
+                            )}
                           </SelectContent>
                         </Select>
                         <FormMessage className="text-xs" />

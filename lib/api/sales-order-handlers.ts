@@ -46,13 +46,13 @@ export function buildSalesOrderQuery(params: SalesOrderQueryFormData) {
     where.customerId = params.customerId;
   }
 
-  if (params.dateFrom || params.dateTo) {
+  if (params.startDate || params.endDate) {
     where.createdAt = {};
-    if (params.dateFrom) {
-      where.createdAt.gte = new Date(params.dateFrom);
+    if (params.startDate) {
+      where.createdAt.gte = new Date(params.startDate);
     }
-    if (params.dateTo) {
-      where.createdAt.lte = new Date(params.dateTo);
+    if (params.endDate) {
+      where.createdAt.lte = new Date(params.endDate);
     }
   }
 

@@ -69,9 +69,6 @@ export async function getCachedProduct(
 
       return {
         ...product,
-        specifications: product.specifications
-          ? JSON.parse(product.specifications as string)
-          : null,
         statistics: {
           inventory: product._count.inventory,
           salesOrderItems: product._count.salesOrderItems,

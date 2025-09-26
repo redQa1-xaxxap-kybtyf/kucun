@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronsUpDown } from 'lucide-react';
-import { useCallback, useState } from 'react';
+import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,8 +19,84 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { getProducts, productQueryKeys } from '@/lib/api/products';
+import { getProduct, getProducts, productQueryKeys } from '@/lib/api/products';
+import type { Product } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
+
+const SEARCH_DEBOUNCE_MS = 250;
+
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = React.useState(value);
+
+  React.useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
+  }, [value, delay]);
+
+  return debounced;
+}
+
+type ProductStatusFilter = 'active' | 'inactive' | 'all';
+
+type ProductSelectorQuery = {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: 'active' | 'inactive';
+  includeInventory: boolean;
+  includeStatistics: boolean;
+};
+
+function buildProductSelectorQuery(
+  search: string,
+  status: ProductStatusFilter | undefined,
+  limit: number
+): ProductSelectorQuery {
+  const normalizedSearch = search.trim();
+  const normalizedStatus = status && status !== 'all' ? status : undefined;
+
+  return {
+    page: 1,
+    limit,
+    search: normalizedSearch.length > 0 ? normalizedSearch : undefined,
+    status: normalizedStatus,
+    includeInventory: false,
+    includeStatistics: false,
+  };
+}
+
+function ProductLabel({
+  product,
+  showCode,
+  showSpecification,
+}: {
+  product: Product;
+  showCode: boolean;
+  showSpecification: boolean;
+}) {
+  return (
+    <div className="flex min-w-0 flex-1 flex-col gap-1">
+      <div className="flex flex-wrap items-center gap-2">
+        {showCode && product.code && (
+          <span className="font-mono text-sm text-muted-foreground">
+            {product.code}
+          </span>
+        )}
+        <span className="truncate text-sm font-medium">{product.name}</span>
+        {product.status === 'inactive' && (
+          <Badge variant="secondary" className="text-xs">
+            停用
+          </Badge>
+        )}
+      </div>
+      {showSpecification && product.specification && (
+        <span className="truncate text-xs text-muted-foreground">
+          {product.specification}
+        </span>
+      )}
+    </div>
+  );
+}
 
 interface ProductSelectorProps {
   value?: string;
@@ -30,7 +106,7 @@ interface ProductSelectorProps {
   className?: string;
   showCode?: boolean;
   showSpecification?: boolean;
-  filterStatus?: 'active' | 'inactive' | 'all';
+  filterStatus?: ProductStatusFilter;
   label?: string;
   onProductChange?: (productId: string) => void;
 }
@@ -47,37 +123,53 @@ export function ProductSelector({
   label,
   onProductChange,
 }: ProductSelectorProps) {
-  const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
+  const [open, setOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState('');
+  const debouncedSearch = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
 
-  // 获取产品列表
-  const { data: productsResponse, isLoading } = useQuery({
-    queryKey: productQueryKeys.list({
-      search: searchValue,
-      status: filterStatus === 'all' ? undefined : filterStatus,
-      limit: 100,
-    }),
-    queryFn: () =>
-      getProducts({
-        search: searchValue,
-        status: filterStatus === 'all' ? undefined : filterStatus,
-        limit: 100,
-      }),
-  });
-
-  const products = productsResponse?.data || [];
-  const selectedProduct = products.find(product => product.id === value);
-
-  const handleSelect = useCallback(
-    (productId: string) => {
-      onValueChange(productId);
-      onProductChange?.(productId);
-      setOpen(false);
-    },
-    [onValueChange, onProductChange]
+  const queryInput = React.useMemo(
+    () => buildProductSelectorQuery(debouncedSearch, filterStatus, 20),
+    [debouncedSearch, filterStatus]
   );
 
-  const handleSearchChange = useCallback((search: string) => {
+  const { data: productsResponse, isFetching } = useQuery({
+    queryKey: productQueryKeys.list(queryInput),
+    queryFn: () => getProducts(queryInput),
+    enabled: open,
+    staleTime: 30_000,
+  });
+
+  const products = productsResponse?.data ?? [];
+  const selectedProductFromList = value
+    ? products.find(product => product.id === value)
+    : undefined;
+
+  const shouldQueryById = Boolean(
+    value && !selectedProductFromList && !isFetching
+  );
+
+  const { data: selectedProductFallback } = useQuery({
+    queryKey: value
+      ? productQueryKeys.detail(value)
+      : ['product', 'detail', null],
+    queryFn: () => getProduct(value as string),
+    enabled: shouldQueryById,
+    staleTime: 60_000,
+  });
+
+  const selectedProduct = selectedProductFromList || selectedProductFallback;
+
+  const handleSelect = React.useCallback(
+    (product: Product) => {
+      onValueChange(product.id);
+      onProductChange?.(product.id);
+      setSearchValue('');
+      setOpen(false);
+    },
+    [onProductChange, onValueChange]
+  );
+
+  const handleSearchChange = React.useCallback((search: string) => {
     setSearchValue(search);
   }, []);
 
@@ -98,27 +190,15 @@ export function ProductSelector({
             disabled={disabled}
           >
             {selectedProduct ? (
-              <div className="flex items-center gap-2 truncate">
-                <span className="truncate">
-                  {showCode && selectedProduct.code && (
-                    <span className="font-mono text-sm text-muted-foreground">
-                      {selectedProduct.code}
-                    </span>
-                  )}
-                  <span
-                    className={showCode && selectedProduct.code ? 'ml-2' : ''}
-                  >
-                    {selectedProduct.name}
-                  </span>
-                </span>
-                {selectedProduct.status === 'inactive' && (
-                  <Badge variant="secondary" className="text-xs">
-                    停用
-                  </Badge>
-                )}
+              <div className="flex min-w-0 flex-1 items-center gap-2 truncate">
+                <ProductLabel
+                  product={selectedProduct}
+                  showCode={showCode}
+                  showSpecification={showSpecification}
+                />
               </div>
             ) : (
-              placeholder
+              <span className="truncate">{placeholder}</span>
             )}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
@@ -132,36 +212,20 @@ export function ProductSelector({
             />
             <CommandList>
               <CommandEmpty>
-                {isLoading ? '加载中...' : '未找到产品'}
+                {isFetching ? '加载中...' : '未找到产品'}
               </CommandEmpty>
               <CommandGroup>
                 {products.map(product => (
                   <CommandItem
                     key={product.id}
                     value={product.id}
-                    onSelect={() => handleSelect(product.id)}
-                    className="flex items-center justify-between"
+                    onSelect={() => handleSelect(product)}
                   >
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        {showCode && product.code && (
-                          <span className="font-mono text-sm text-muted-foreground">
-                            {product.code}
-                          </span>
-                        )}
-                        <span className="truncate">{product.name}</span>
-                        {product.status === 'inactive' && (
-                          <Badge variant="secondary" className="text-xs">
-                            停用
-                          </Badge>
-                        )}
-                      </div>
-                      {showSpecification && product.specification && (
-                        <span className="truncate text-sm text-muted-foreground">
-                          {product.specification}
-                        </span>
-                      )}
-                    </div>
+                    <ProductLabel
+                      product={product}
+                      showCode={showCode}
+                      showSpecification={showSpecification}
+                    />
                     <Check
                       className={cn(
                         'ml-2 h-4 w-4',
@@ -179,74 +243,117 @@ export function ProductSelector({
   );
 }
 
-// 多选产品选择器
 interface MultiProductSelectorProps {
-  value?: string[];
+  value: string[];
   onValueChange: (value: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  maxItems?: number;
   showCode?: boolean;
-  filterStatus?: 'active' | 'inactive' | 'all';
+  showSpecification?: boolean;
+  filterStatus?: ProductStatusFilter;
+  label?: string;
+  maxItems?: number;
 }
 
 export function MultiProductSelector({
-  value = [],
+  value,
   onValueChange,
   placeholder = '选择产品...',
   disabled = false,
   className,
-  maxItems,
   showCode = true,
+  showSpecification = true,
   filterStatus = 'active',
+  label,
+  maxItems,
 }: MultiProductSelectorProps) {
-  const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
+  const [open, setOpen] = React.useState(false);
+  const [searchValue, setSearchValue] = React.useState('');
+  const debouncedSearch = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
 
-  // 获取产品列表
-  const { data: productsResponse, isLoading } = useQuery({
-    queryKey: productQueryKeys.list({
-      search: searchValue,
-      status: filterStatus === 'all' ? undefined : filterStatus,
-      limit: 100,
-    }),
-    queryFn: () =>
-      getProducts({
-        search: searchValue,
-        status: filterStatus === 'all' ? undefined : filterStatus,
-        limit: 100,
-      }),
+  const queryInput = React.useMemo(
+    () => buildProductSelectorQuery(debouncedSearch, filterStatus, 50),
+    [debouncedSearch, filterStatus]
+  );
+
+  const { data: productsResponse, isFetching } = useQuery({
+    queryKey: productQueryKeys.list(queryInput),
+    queryFn: () => getProducts(queryInput),
+    enabled: open,
+    staleTime: 30_000,
   });
 
-  const products = productsResponse?.data || [];
-  const selectedProducts = products.filter(product =>
-    value.includes(product.id)
+  const products = productsResponse?.data ?? [];
+
+  const selectedProductsQueryKey = React.useMemo(
+    () => ['product-selector', 'selected', [...value].sort()],
+    [value]
   );
 
-  const handleSelect = useCallback(
-    (productId: string) => {
-      const newValue = value.includes(productId)
-        ? value.filter(id => id !== productId)
-        : maxItems && value.length >= maxItems
-          ? value
-          : [...value, productId];
-
-      onValueChange(newValue);
+  const { data: persistedProducts } = useQuery({
+    queryKey: selectedProductsQueryKey,
+    queryFn: async (): Promise<Product[]> => {
+      const uniqueIds = Array.from(new Set(value));
+      const results = await Promise.allSettled(
+        uniqueIds.map(id => getProduct(id))
+      );
+      return results
+        .filter(
+          (item): item is PromiseFulfilledResult<Product> =>
+            item.status === 'fulfilled'
+        )
+        .map(item => item.value);
     },
-    [value, onValueChange, maxItems]
+    enabled: value.length > 0,
+    staleTime: 60_000,
+  });
+
+  const productMap = React.useMemo(() => {
+    const map = new Map<string, Product>();
+    products.forEach(product => map.set(product.id, product));
+    persistedProducts?.forEach(product => map.set(product.id, product));
+    return map;
+  }, [persistedProducts, products]);
+
+  const selectedProducts = React.useMemo(
+    () =>
+      value
+        .map(id => productMap.get(id))
+        .filter((product): product is Product => Boolean(product)),
+    [productMap, value]
   );
 
-  const handleRemove = useCallback(
+  const handleSelect = React.useCallback(
+    (product: Product) => {
+      const exists = value.includes(product.id);
+      let nextValue: string[];
+
+      if (exists) {
+        nextValue = value.filter(id => id !== product.id);
+      } else if (maxItems && value.length >= maxItems) {
+        nextValue = value;
+      } else {
+        nextValue = [...value, product.id];
+      }
+
+      onValueChange(nextValue);
+      setSearchValue('');
+    },
+    [maxItems, onValueChange, value]
+  );
+
+  const handleRemove = React.useCallback(
     (productId: string) => {
       onValueChange(value.filter(id => id !== productId));
     },
-    [value, onValueChange]
+    [onValueChange, value]
   );
 
   return (
     <div className={cn('space-y-2', className)}>
-      {/* 已选择的产品 */}
+      {label && <label className="text-sm font-medium">{label}</label>}
+
       {selectedProducts.length > 0 && (
         <div className="flex flex-wrap gap-1">
           {selectedProducts.map(product => (
@@ -268,7 +375,6 @@ export function MultiProductSelector({
         </div>
       )}
 
-      {/* 产品选择器 */}
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>
           <Button
@@ -276,7 +382,7 @@ export function MultiProductSelector({
             role="combobox"
             aria-expanded={open}
             className="w-full justify-between"
-            disabled={disabled || !!(maxItems && value.length >= maxItems)}
+            disabled={disabled || Boolean(maxItems && value.length >= maxItems)}
           >
             {value.length > 0 ? `已选择 ${value.length} 个产品` : placeholder}
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
@@ -291,31 +397,21 @@ export function MultiProductSelector({
             />
             <CommandList>
               <CommandEmpty>
-                {isLoading ? '加载中...' : '未找到产品'}
+                {isFetching ? '加载中...' : '未找到产品'}
               </CommandEmpty>
               <CommandGroup>
                 {products.map(product => (
                   <CommandItem
                     key={product.id}
                     value={product.id}
-                    onSelect={() => handleSelect(product.id)}
+                    onSelect={() => handleSelect(product)}
                     className="flex items-center justify-between"
                   >
-                    <div className="flex min-w-0 flex-1 flex-col gap-1">
-                      <div className="flex items-center gap-2">
-                        {showCode && product.code && (
-                          <span className="font-mono text-sm text-muted-foreground">
-                            {product.code}
-                          </span>
-                        )}
-                        <span className="truncate">{product.name}</span>
-                        {product.status === 'inactive' && (
-                          <Badge variant="secondary" className="text-xs">
-                            停用
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+                    <ProductLabel
+                      product={product}
+                      showCode={showCode}
+                      showSpecification={showSpecification}
+                    />
                     <Check
                       className={cn(
                         'ml-2 h-4 w-4',

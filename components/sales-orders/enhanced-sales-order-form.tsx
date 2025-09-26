@@ -54,6 +54,7 @@ import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import type { Customer } from '@/lib/types/customer';
+import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
@@ -454,18 +455,30 @@ export function EnhancedSalesOrderForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="draft">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-yellow-500"></div>
-                            草稿
-                          </div>
-                        </SelectItem>
-                        <SelectItem value="confirmed">
-                          <div className="flex items-center gap-2">
-                            <div className="h-2 w-2 rounded-full bg-green-500"></div>
-                            已确认
-                          </div>
-                        </SelectItem>
+                        {Object.entries(SALES_ORDER_STATUS_LABELS).map(
+                          ([status, label]) => (
+                            <SelectItem key={status} value={status}>
+                              <div className="flex items-center gap-2">
+                                <div
+                                  className={`h-2 w-2 rounded-full ${
+                                    status === 'draft'
+                                      ? 'bg-yellow-500'
+                                      : status === 'confirmed'
+                                        ? 'bg-green-500'
+                                        : status === 'shipped'
+                                          ? 'bg-blue-500'
+                                          : status === 'completed'
+                                            ? 'bg-green-600'
+                                            : status === 'cancelled'
+                                              ? 'bg-red-500'
+                                              : 'bg-gray-500'
+                                  }`}
+                                ></div>
+                                {label}
+                              </div>
+                            </SelectItem>
+                          )
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage className="text-xs" />
