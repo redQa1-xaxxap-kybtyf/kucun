@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { paginationConfig } from '@/lib/env';
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentOrder,
@@ -52,7 +53,7 @@ const fetchFactoryShipmentOrders = async () =>
     orders: [],
     pagination: {
       page: 1,
-      pageSize: 20,
+      pageSize: paginationConfig.defaultPageSize,
       totalCount: 0,
       totalPages: 0,
     },
@@ -79,7 +80,7 @@ export function FactoryShipmentOrderList({
     queryFn: () =>
       fetchFactoryShipmentOrders({
         page: currentPage,
-        pageSize: 20,
+        pageSize: paginationConfig.defaultPageSize,
         containerNumber: searchTerm,
         status: statusFilter === 'all' ? undefined : statusFilter,
       }),

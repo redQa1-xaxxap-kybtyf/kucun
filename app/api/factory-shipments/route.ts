@@ -1,11 +1,12 @@
 // 厂家发货订单 API 路由
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { paginationConfig } from '@/lib/env';
 import {
   createFactoryShipmentOrderSchema,
   factoryShipmentOrderListParamsSchema,
@@ -28,8 +29,11 @@ export async function GET(request: NextRequest) {
         ? parseInt(searchParams.get('page') || '1')
         : 1,
       pageSize: searchParams.get('pageSize')
-        ? parseInt(searchParams.get('pageSize') || '20')
-        : 20,
+        ? parseInt(
+            searchParams.get('pageSize') ||
+              paginationConfig.defaultPageSize.toString()
+          )
+        : paginationConfig.defaultPageSize,
       status: searchParams.get('status') || undefined,
       customerId: searchParams.get('customerId') || undefined,
       containerNumber: searchParams.get('containerNumber') || undefined,
@@ -200,7 +204,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 生成订单编号
-    const orderNumber = `FS${Date.now()}`;
+    const orderNumber = `${factoryShipmentConfig.orderPrefix}${Date.now()}`;
 
     // 计算订单总金额
     const calculatedTotalAmount = items.reduce(

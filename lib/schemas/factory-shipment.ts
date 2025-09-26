@@ -3,6 +3,8 @@
 
 import { z } from 'zod';
 
+import { paginationConfig } from '@/lib/env';
+
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 
 // 厂家发货订单状态验证
@@ -185,7 +187,10 @@ export const factoryShipmentOrderListParamsSchema = z
       .number()
       .int()
       .min(1, '每页数量必须大于0')
-      .max(100, '每页数量不能超过100')
+      .max(
+        paginationConfig.maxPageSize,
+        `每页数量不能超过${paginationConfig.maxPageSize}`
+      )
       .optional(),
     status: factoryShipmentStatusSchema.optional(),
     customerId: z.string().uuid('客户ID格式不正确').optional(),

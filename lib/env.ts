@@ -249,6 +249,21 @@ const envSchema = z.object({
     .default('60000')
     .describe('仪表盘刷新间隔（毫秒）'),
 
+  // 厂家发货模块配置
+  FACTORY_SHIPMENT_ORDER_PREFIX: z
+    .string()
+    .min(1, 'FACTORY_SHIPMENT_ORDER_PREFIX 不能为空')
+    .max(10, 'FACTORY_SHIPMENT_ORDER_PREFIX 不能超过10个字符')
+    .default('FS')
+    .describe('厂家发货订单号前缀'),
+
+  FACTORY_SHIPMENT_QUERY_LIMIT: z
+    .string()
+    .regex(/^[\d]+$/, 'FACTORY_SHIPMENT_QUERY_LIMIT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('1000')
+    .describe('厂家发货表单查询限制'),
+
   // 日志配置
   LOG_LEVEL: z
     .enum(['error', 'warn', 'info', 'debug'])
@@ -315,6 +330,8 @@ function validateEnv(): Env {
         CUSTOMER_TAG_LIMIT: 10,
         DASHBOARD_STALE_TIME: 300000,
         DASHBOARD_REFETCH_INTERVAL: 60000,
+        FACTORY_SHIPMENT_ORDER_PREFIX: 'FS',
+        FACTORY_SHIPMENT_QUERY_LIMIT: 1000,
         LOG_LEVEL: 'info',
       } as Env;
     } catch (error) {
@@ -354,6 +371,8 @@ function validateEnv(): Env {
         CUSTOMER_TAG_LIMIT: 10,
         DASHBOARD_STALE_TIME: 300000,
         DASHBOARD_REFETCH_INTERVAL: 60000,
+        FACTORY_SHIPMENT_ORDER_PREFIX: 'FS',
+        FACTORY_SHIPMENT_QUERY_LIMIT: 1000,
         LOG_LEVEL: 'info',
       } as Env;
     }
@@ -522,6 +541,14 @@ export const dashboardConfig = {
 } as const;
 
 /**
+ * 厂家发货模块配置对象
+ */
+export const factoryShipmentConfig = {
+  orderPrefix: env.FACTORY_SHIPMENT_ORDER_PREFIX,
+  queryLimit: env.FACTORY_SHIPMENT_QUERY_LIMIT,
+} as const;
+
+/**
  * 日志配置
  */
 export const logConfig = {
@@ -575,6 +602,10 @@ if (isDevelopment) {
   // eslint-disable-next-line no-console
   console.log(
     `  - 仪表盘: 过期${env.DASHBOARD_STALE_TIME}ms/刷新${env.DASHBOARD_REFETCH_INTERVAL}ms`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 厂家发货: 前缀${env.FACTORY_SHIPMENT_ORDER_PREFIX}/查询${env.FACTORY_SHIPMENT_QUERY_LIMIT}`
   );
   // eslint-disable-next-line no-console
   console.log(`  - 日志级别: ${env.LOG_LEVEL}`);

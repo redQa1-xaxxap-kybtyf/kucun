@@ -48,6 +48,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { getCustomers } from '@/lib/api/customers';
 import { getProducts } from '@/lib/api/products';
 import { getSuppliers } from '@/lib/api/suppliers';
+import { factoryShipmentConfig } from '@/lib/env';
 import {
   createFactoryShipmentOrderSchema,
   type CreateFactoryShipmentOrderData,
@@ -123,19 +124,22 @@ export function FactoryShipmentOrderForm({
   // 查询基础数据
   const { data: customersResponse } = useQuery({
     queryKey: ['customers'],
-    queryFn: () => getCustomers({ page: 1, limit: 1000 }),
+    queryFn: () =>
+      getCustomers({ page: 1, limit: factoryShipmentConfig.queryLimit }),
   });
   const customers = customersResponse?.data || [];
 
   const { data: productsResponse } = useQuery({
     queryKey: ['products'],
-    queryFn: () => getProducts({ page: 1, limit: 1000 }),
+    queryFn: () =>
+      getProducts({ page: 1, limit: factoryShipmentConfig.queryLimit }),
   });
   const products = productsResponse?.data || [];
 
   const { data: suppliersResponse } = useQuery({
     queryKey: ['suppliers'],
-    queryFn: () => getSuppliers({ page: 1, limit: 1000 }),
+    queryFn: () =>
+      getSuppliers({ page: 1, limit: factoryShipmentConfig.queryLimit }),
   });
   const suppliers = suppliersResponse?.data || [];
 
