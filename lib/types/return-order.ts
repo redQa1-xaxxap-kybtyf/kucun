@@ -192,9 +192,8 @@ export const RETURN_ORDER_SORT_OPTIONS = [
   { value: 'completedAt', label: '完成时间' },
 ];
 
-// 常量定义
-export const DEFAULT_PAGE_SIZE = 20;
-export const MAX_PAGE_SIZE = 100;
+// 注意：分页常量已迁移到环境配置 (lib/env.ts)
+// 请使用 paginationConfig.defaultPageSize 和 paginationConfig.maxPageSize
 
 // 业务逻辑辅助函数
 

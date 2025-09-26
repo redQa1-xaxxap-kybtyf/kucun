@@ -18,6 +18,8 @@ import {
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { paginationConfig } from '@/lib/env';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -75,7 +77,7 @@ export function ERPReturnOrderList({
   // 查询参数状态
   const [queryParams, setQueryParams] = useState<ReturnOrderQueryParams>({
     page: 1,
-    limit: 20,
+    limit: paginationConfig.defaultPageSize,
     sortBy: 'createdAt',
     sortOrder: 'desc',
   });

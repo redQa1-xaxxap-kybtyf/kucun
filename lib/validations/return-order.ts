@@ -3,6 +3,8 @@
 
 import { z } from 'zod';
 
+import { returnRefundConfig } from '@/lib/env';
+
 import type {
   ReturnOrderStatus,
   ReturnOrderType,
@@ -80,7 +82,10 @@ export const createReturnOrderSchema = z
     items: z
       .array(returnOrderItemSchema)
       .min(1, '至少需要一个退货明细')
-      .max(50, '退货明细不能超过50项'),
+      .max(
+        returnRefundConfig.returnOrderItemsLimit,
+        `退货明细不能超过${returnRefundConfig.returnOrderItemsLimit}项`
+      ),
   })
   .refine(
     data => {
@@ -354,7 +359,7 @@ export function generateReturnNumber(): string {
   const day = String(now.getDate()).padStart(2, '0');
   const timestamp = now.getTime().toString().slice(-6);
 
-  return `RT${year}${month}${day}${timestamp}`;
+  return `${returnRefundConfig.returnOrderPrefix}${year}${month}${day}${timestamp}`;
 }
 
 /**

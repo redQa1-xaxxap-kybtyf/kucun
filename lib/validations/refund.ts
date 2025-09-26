@@ -3,6 +3,8 @@
 
 import { z } from 'zod';
 
+import { paginationConfig } from '@/lib/env';
+
 // 退款方式验证规则
 export const refundMethodSchema = z.enum(
   ['cash', 'bank_transfer', 'original_payment', 'other'],
@@ -198,7 +200,12 @@ export const updateRefundRecordSchema = z
 // 退款查询参数验证规则
 export const refundQuerySchema = z.object({
   page: z.number().int().positive().optional(),
-  pageSize: z.number().int().positive().max(100).optional(),
+  pageSize: z
+    .number()
+    .int()
+    .positive()
+    .max(paginationConfig.maxPageSize)
+    .optional(),
   search: z.string().optional(),
   customerId: z.string().optional(),
   returnOrderId: z.string().optional(),
@@ -251,7 +258,10 @@ export const batchRefundSchema = z.object({
       invalid_type_error: '退款记录ID列表格式不正确',
     })
     .min(1, '请至少选择一个退款记录')
-    .max(50, '一次最多处理50个退款记录'),
+    .max(
+      returnRefundConfig.refundBatchLimit,
+      `一次最多处理${returnRefundConfig.refundBatchLimit}个退款记录`
+    ),
 
   action: z.enum(['approve', 'reject', 'cancel'], {
     required_error: '请选择批量操作类型',

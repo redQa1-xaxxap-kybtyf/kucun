@@ -13,6 +13,8 @@ import {
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { paginationConfig } from '@/lib/env';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -33,7 +35,7 @@ export default function RefundsPage() {
   const router = useRouter();
   const [queryParams, setQueryParams] = React.useState({
     page: 1,
-    limit: 20,
+    limit: paginationConfig.defaultPageSize,
     search: '',
     status: undefined as string | undefined,
     sortBy: 'returnDate',

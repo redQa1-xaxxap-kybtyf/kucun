@@ -1,6 +1,8 @@
 /**
  * 财务管理模块统一配置
  * 遵循唯一真理源原则，所有枚举值和常量在此统一定义
+ * 注意：分页和信用额度配置已迁移到环境配置 (lib/env.ts)
+ * 请使用 paginationConfig 和 financeConfig 替代硬编码值
  */
 
 // 支付方式枚举
@@ -116,18 +118,26 @@ export const FINANCE_CONFIG = {
   // 逾期天数阈值
   OVERDUE_THRESHOLD_DAYS: 30,
 
-  // 默认信用额度
-  DEFAULT_CREDIT_LIMIT: 100000,
+  // 默认信用额度 - 已迁移到环境配置
+  get DEFAULT_CREDIT_LIMIT() {
+    return financeConfig.creditLimit;
+  },
 
-  // 分页默认设置
-  DEFAULT_PAGE_SIZE: 20,
-  MAX_PAGE_SIZE: 100,
+  // 分页默认设置 - 已迁移到环境配置
+  get DEFAULT_PAGE_SIZE() {
+    return paginationConfig.defaultPageSize;
+  },
+  get MAX_PAGE_SIZE() {
+    return paginationConfig.maxPageSize;
+  },
 
   // 金额格式化精度
   AMOUNT_DECIMAL_PLACES: 2,
 
-  // 统计数据缓存时间（分钟）
-  STATISTICS_CACHE_MINUTES: 15,
+  // 统计数据缓存时间（秒） - 已迁移到环境配置
+  get STATISTICS_CACHE_SECONDS() {
+    return financeConfig.cacheTtl;
+  },
 } as const;
 
 // 财务模块权限配置

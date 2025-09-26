@@ -1,13 +1,13 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
+import { paginationConfig } from '@/lib/env';
+import { prisma } from '@/lib/prisma';
 import {
   createRefundRecordSchema,
   refundQuerySchema,
 } from '@/lib/validations/refund';
-
-import { prisma } from '@/lib/prisma';
 
 /**
  * GET /api/refunds - 获取退款记录列表
@@ -28,7 +28,10 @@ export async function GET(request: NextRequest) {
     const searchParams = new URL(request.url).searchParams;
     const queryResult = refundQuerySchema.safeParse({
       page: parseInt(searchParams.get('page') || '1'),
-      pageSize: parseInt(searchParams.get('pageSize') || '20'),
+      pageSize: parseInt(
+        searchParams.get('pageSize') ||
+          paginationConfig.defaultPageSize.toString()
+      ),
       search: searchParams.get('search') || undefined,
       status: searchParams.get('status') || undefined,
       refundType: searchParams.get('refundType') || undefined,
@@ -217,7 +220,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 生成退款单号
-    const refundNumber = `REF${Date.now()}`;
+    const refundNumber = `${returnRefundConfig.refundOrderPrefix}${Date.now()}`;
 
     // 计算剩余金额
     const remainingAmount = data.refundAmount;

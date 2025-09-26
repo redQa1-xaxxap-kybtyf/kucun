@@ -264,6 +264,49 @@ const envSchema = z.object({
     .default('1000')
     .describe('厂家发货表单查询限制'),
 
+  // 退货/退款模块配置
+  REFUND_ORDER_PREFIX: z
+    .string()
+    .min(1, 'REFUND_ORDER_PREFIX 不能为空')
+    .max(10, 'REFUND_ORDER_PREFIX 不能超过10个字符')
+    .default('REF')
+    .describe('退款单号前缀'),
+
+  RETURN_ORDER_PREFIX: z
+    .string()
+    .min(1, 'RETURN_ORDER_PREFIX 不能为空')
+    .max(10, 'RETURN_ORDER_PREFIX 不能超过10个字符')
+    .default('RT')
+    .describe('退货单号前缀'),
+
+  RETURN_ORDER_ITEMS_LIMIT: z
+    .string()
+    .regex(/^[\d]+$/, 'RETURN_ORDER_ITEMS_LIMIT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('50')
+    .describe('退货明细上限'),
+
+  REFUND_BATCH_LIMIT: z
+    .string()
+    .regex(/^[\d]+$/, 'REFUND_BATCH_LIMIT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('50')
+    .describe('退款批量处理上限'),
+
+  FINANCE_CREDIT_LIMIT: z
+    .string()
+    .regex(/^[\d]+$/, 'FINANCE_CREDIT_LIMIT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('100000')
+    .describe('财务信用额度限制'),
+
+  FINANCE_CACHE_TTL: z
+    .string()
+    .regex(/^[\d]+$/, 'FINANCE_CACHE_TTL 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default('300')
+    .describe('财务数据缓存时间（秒）'),
+
   // 日志配置
   LOG_LEVEL: z
     .enum(['error', 'warn', 'info', 'debug'])
@@ -549,6 +592,24 @@ export const factoryShipmentConfig = {
 } as const;
 
 /**
+ * 退货/退款模块配置对象
+ */
+export const returnRefundConfig = {
+  refundOrderPrefix: env.REFUND_ORDER_PREFIX,
+  returnOrderPrefix: env.RETURN_ORDER_PREFIX,
+  returnOrderItemsLimit: env.RETURN_ORDER_ITEMS_LIMIT,
+  refundBatchLimit: env.REFUND_BATCH_LIMIT,
+} as const;
+
+/**
+ * 财务模块配置对象
+ */
+export const financeConfig = {
+  creditLimit: env.FINANCE_CREDIT_LIMIT,
+  cacheTtl: env.FINANCE_CACHE_TTL,
+} as const;
+
+/**
  * 日志配置
  */
 export const logConfig = {
@@ -606,6 +667,14 @@ if (isDevelopment) {
   // eslint-disable-next-line no-console
   console.log(
     `  - 厂家发货: 前缀${env.FACTORY_SHIPMENT_ORDER_PREFIX}/查询${env.FACTORY_SHIPMENT_QUERY_LIMIT}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 退货/退款: 退货前缀${env.RETURN_ORDER_PREFIX}/退款前缀${env.REFUND_ORDER_PREFIX}/明细上限${env.RETURN_ORDER_ITEMS_LIMIT}/批量上限${env.REFUND_BATCH_LIMIT}`
+  );
+  // eslint-disable-next-line no-console
+  console.log(
+    `  - 财务配置: 信用额度${env.FINANCE_CREDIT_LIMIT}/缓存${env.FINANCE_CACHE_TTL}s`
   );
   // eslint-disable-next-line no-console
   console.log(`  - 日志级别: ${env.LOG_LEVEL}`);
