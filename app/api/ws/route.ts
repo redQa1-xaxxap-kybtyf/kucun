@@ -8,12 +8,12 @@ export async function GET() {
     wsServer.ensureStarted();
     return NextResponse.json({
       success: true,
-      message: 'WebSocket服务器正在运行',
+      message: 'WebSocket server is running',
     });
   } catch (error) {
-    console.error('WebSocket服务器错误:', error);
+    console.error('WebSocket server error:', error);
     return NextResponse.json(
-      { success: false, error: 'WebSocket服务器启动失败' },
+      { success: false, error: 'Failed to start WebSocket server' },
       { status: 500 }
     );
   }

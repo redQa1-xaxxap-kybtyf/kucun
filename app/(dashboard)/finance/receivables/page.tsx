@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import {
   AlertCircle,
   Calendar,
@@ -42,27 +41,47 @@ export default function ReceivablesPage() {
     sortOrder: 'desc' as 'asc' | 'desc',
   });
 
-  // 获取应收账款数据
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['receivables', queryParams],
-    queryFn: async () => {
-      const searchParams = new URLSearchParams();
-      searchParams.set('page', queryParams.page.toString());
-      searchParams.set('pageSize', queryParams.limit.toString());
-      if (queryParams.search) searchParams.set('search', queryParams.search);
-      if (queryParams.status) searchParams.set('status', queryParams.status);
-      searchParams.set('sortBy', queryParams.sortBy);
-      searchParams.set('sortOrder', queryParams.sortOrder);
-
-      const response = await fetch(`/api/finance/receivables?${searchParams}`);
-      if (!response.ok) {
-        throw new Error('获取应收账款失败');
-      }
-      return response.json();
+  // 模拟数据 - 实际项目中应该从API获取
+  const mockData = {
+    data: [
+      {
+        id: '1',
+        orderNumber: 'SO-2025-001',
+        customerName: '张三建材',
+        totalAmount: 25000.0,
+        paidAmount: 10000.0,
+        remainingAmount: 15000.0,
+        paymentStatus: 'partial',
+        orderDate: '2025-01-10',
+        dueDate: '2025-02-10',
+        overdueDays: 0,
+      },
+      {
+        id: '2',
+        orderNumber: 'SO-2025-002',
+        customerName: '李四装饰',
+        totalAmount: 18000.0,
+        paidAmount: 0.0,
+        remainingAmount: 18000.0,
+        paymentStatus: 'overdue',
+        orderDate: '2024-12-15',
+        dueDate: '2025-01-15',
+        overdueDays: 7,
+      },
+    ],
+    pagination: {
+      page: 1,
+      limit: 20,
+      total: 2,
+      totalPages: 1,
     },
-    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
-    refetchOnWindowFocus: false,
-  });
+    summary: {
+      totalReceivable: 125000.0,
+      totalOverdue: 15000.0,
+      receivableCount: 23,
+      overdueCount: 3,
+    },
+  };
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('zh-CN', {
@@ -76,15 +95,10 @@ export default function ReceivablesPage() {
       partial: { label: '部分收款', variant: 'secondary' as const },
       paid: { label: '已收款', variant: 'default' as const },
       overdue: { label: '逾期', variant: 'destructive' as const },
-      pending: { label: '待确认', variant: 'secondary' as const },
-      confirmed: { label: '已确认', variant: 'default' as const },
-      cancelled: { label: '已取消', variant: 'secondary' as const },
     };
     const config = statusConfig[status as keyof typeof statusConfig];
     return (
-      <Badge variant={config?.variant || 'secondary'}>
-        {config?.label || '未知状态'}
-      </Badge>
+      <Badge variant={config?.variant || 'secondary'}>{config?.label}</Badge>
     );
   };
 
@@ -129,10 +143,10 @@ export default function ReceivablesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(data?.data?.summary?.totalReceivable || 0)}
+              {formatCurrency(mockData.summary.totalReceivable)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {data?.data?.summary?.receivableCount || 0} 个应收订单
+              {mockData.summary.receivableCount} 个应收订单
             </p>
           </CardContent>
         </Card>
@@ -144,10 +158,10 @@ export default function ReceivablesPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-red-600">
-              {formatCurrency(data?.data?.summary?.totalOverdue || 0)}
+              {formatCurrency(mockData.summary.totalOverdue)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {data?.data?.summary?.overdueCount || 0} 个逾期订单
+              {mockData.summary.overdueCount} 个逾期订单
             </p>
           </CardContent>
         </Card>
@@ -208,151 +222,99 @@ export default function ReceivablesPage() {
                   <SelectItem value="overdue">逾期</SelectItem>
                 </SelectContent>
               </Select>
-
-              {/* 排序选择器 */}
-              <Select
-                value={queryParams.sortBy}
-                onValueChange={value =>
-                  setQueryParams(prev => ({ ...prev, sortBy: value, page: 1 }))
-                }
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="orderDate">订单日期</SelectItem>
-                  <SelectItem value="totalAmount">订单金额</SelectItem>
-                  <SelectItem value="customerName">客户名称</SelectItem>
-                  <SelectItem value="createdAt">创建时间</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* 排序方向 */}
-              <Select
-                value={queryParams.sortOrder}
-                onValueChange={value =>
-                  setQueryParams(prev => ({
-                    ...prev,
-                    sortOrder: value as 'asc' | 'desc',
-                    page: 1,
-                  }))
-                }
-              >
-                <SelectTrigger className="w-[100px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="desc">降序</SelectItem>
-                  <SelectItem value="asc">升序</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
 
           {/* 应收账款列表 */}
           <div className="mt-6 space-y-4">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-muted-foreground">加载中...</div>
-              </div>
-            ) : error ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-red-600">加载失败: {error.message}</div>
-              </div>
-            ) : !data?.data?.receivables?.length ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-muted-foreground">暂无应收账款数据</div>
-              </div>
-            ) : (
-              data.data.receivables.map((receivable: unknown) => (
-                <Card
-                  key={receivable.id}
-                  className="transition-shadow hover:shadow-md"
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-semibold">
-                            {receivable.orderNumber}
-                          </h3>
-                          {getStatusBadge(receivable.paymentStatus)}
-                          {receivable.overdueDays > 0 && (
-                            <Badge variant="destructive">
-                              逾期 {receivable.overdueDays} 天
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          客户：{receivable.customerName}
-                        </p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>订单日期：{receivable.orderDate}</span>
-                          {receivable.dueDate && (
-                            <span>到期日期：{receivable.dueDate}</span>
-                          )}
-                        </div>
+            {mockData.data.map(receivable => (
+              <Card
+                key={receivable.id}
+                className="transition-shadow hover:shadow-md"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-semibold">
+                          {receivable.orderNumber}
+                        </h3>
+                        {getStatusBadge(receivable.paymentStatus)}
+                        {receivable.overdueDays > 0 && (
+                          <Badge variant="destructive">
+                            逾期 {receivable.overdueDays} 天
+                          </Badge>
+                        )}
                       </div>
-                      <div className="space-y-2 text-right">
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            订单金额
-                          </p>
-                          <p className="font-semibold">
-                            {formatCurrency(receivable.totalAmount)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            已收金额
-                          </p>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(receivable.paidAmount)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            待收金额
-                          </p>
-                          <p className="font-semibold text-orange-600">
-                            {formatCurrency(receivable.remainingAmount)}
-                          </p>
-                        </div>
+                      <p className="text-sm text-muted-foreground">
+                        客户：{receivable.customerName}
+                      </p>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>订单日期：{receivable.orderDate}</span>
+                        {receivable.dueDate && (
+                          <span>到期日期：{receivable.dueDate}</span>
+                        )}
                       </div>
                     </div>
-                    <div className="mt-4 flex justify-end gap-2">
+                    <div className="space-y-2 text-right">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          订单金额
+                        </p>
+                        <p className="font-semibold">
+                          {formatCurrency(receivable.totalAmount)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          已收金额
+                        </p>
+                        <p className="font-semibold text-green-600">
+                          {formatCurrency(receivable.paidAmount)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          待收金额
+                        </p>
+                        <p className="font-semibold text-orange-600">
+                          {formatCurrency(receivable.remainingAmount)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        router.push(`/sales-orders/${receivable.id}`)
+                      }
+                    >
+                      查看详情
+                    </Button>
+                    {receivable.remainingAmount > 0 && (
                       <Button
-                        variant="outline"
                         size="sm"
                         onClick={() =>
-                          router.push(`/sales-orders/${receivable.id}`)
+                          router.push(
+                            `/payments/create?orderId=${receivable.id}`
+                          )
                         }
                       >
-                        查看详情
+                        收款
                       </Button>
-                      {receivable.remainingAmount > 0 && (
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            router.push(
-                              `/payments/create?orderId=${receivable.id}`
-                            )
-                          }
-                        >
-                          收款
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           {/* 分页 */}
           <div className="mt-6 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              共 {data?.data?.pagination?.total || 0} 条记录
+              共 {mockData.pagination.total} 条记录
             </p>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" disabled>

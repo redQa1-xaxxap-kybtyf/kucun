@@ -1,8 +1,8 @@
 // 产品搜索API路由
 // 为入库表单提供产品搜索功能
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -62,8 +62,7 @@ async function searchProducts(search: string, limit: number) {
     ],
   };
 
-  // 使用聚合查询优化库存统计
-  const products = await prisma.product.findMany({
+  return await prisma.product.findMany({
     where,
     select: {
       id: true,
@@ -72,34 +71,15 @@ async function searchProducts(search: string, limit: number) {
       specification: true,
       unit: true,
       piecesPerUnit: true,
+      inventory: {
+        select: {
+          quantity: true,
+        },
+      },
     },
     take: limit,
     orderBy: [{ name: 'asc' }, { code: 'asc' }],
   });
-
-  // 批量获取库存汇总，避免 N+1 查询
-  const productIds = products.map(p => p.id);
-  const inventorySummary = await prisma.inventory.groupBy({
-    by: ['productId'],
-    where: {
-      productId: { in: productIds },
-    },
-    _sum: {
-      quantity: true,
-    },
-  });
-
-  // 创建库存映射
-  const inventoryMap = new Map<string, number>();
-  inventorySummary.forEach(item => {
-    inventoryMap.set(item.productId, item._sum.quantity || 0);
-  });
-
-  // 返回带库存信息的产品数据
-  return products.map(product => ({
-    ...product,
-    currentStock: inventoryMap.get(product.id) || 0,
-  }));
 }
 
 // 转换产品数据为选项格式
@@ -111,17 +91,24 @@ function transformToOptions(
     specification: string | null;
     unit: string;
     piecesPerUnit: number;
-    currentStock: number;
+    inventory: Array<{ quantity: number }>;
   }>
 ): ProductOption[] {
-  return products.map(product => ({
-    value: product.id,
-    label: `${product.name}${product.specification ? ` (${product.specification})` : ''}`,
-    code: product.code,
-    unit: product.unit,
-    piecesPerUnit: product.piecesPerUnit,
-    currentStock: product.currentStock,
-  }));
+  return products.map(product => {
+    const currentStock = product.inventory.reduce(
+      (sum: number, inv: { quantity: number }) => sum + inv.quantity,
+      0
+    );
+
+    return {
+      value: product.id,
+      label: `${product.name}${product.specification ? ` (${product.specification})` : ''}`,
+      code: product.code,
+      unit: product.unit,
+      piecesPerUnit: product.piecesPerUnit,
+      currentStock,
+    };
+  });
 }
 
 // GET /api/products/search - 搜索产品

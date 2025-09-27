@@ -42,19 +42,18 @@ export function getStockStatusColor(
 export function getStockDisplayData(record: Inventory) {
   const availableQuantity = record.quantity - (record.reservedQuantity || 0);
 
-  // 如果没有产品信息或piecesPerUnit，使用简单的数量显示
-  const hasProductInfo = record.product && record.product.piecesPerUnit;
-
   return {
     availableQuantity,
     totalQuantity: record.quantity,
     reservedQuantity: record.reservedQuantity || 0,
-    formattedQuantity: hasProductInfo
-      ? formatInventoryQuantity(record.quantity, record.product, false)
-      : `${record.quantity} ${PRODUCT_UNIT_LABELS[record.unit as keyof typeof PRODUCT_UNIT_LABELS] || record.unit || '件'}`,
-    formattedAvailable: hasProductInfo
-      ? formatInventoryQuantity(availableQuantity, record.product, false)
-      : `${availableQuantity} ${PRODUCT_UNIT_LABELS[record.unit as keyof typeof PRODUCT_UNIT_LABELS] || record.unit || '件'}`,
+    formattedQuantity: formatInventoryQuantity(
+      record.quantity,
+      record.unit || 'piece'
+    ),
+    formattedAvailable: formatInventoryQuantity(
+      availableQuantity,
+      record.unit || 'piece'
+    ),
     unitLabel:
       PRODUCT_UNIT_LABELS[record.unit as keyof typeof PRODUCT_UNIT_LABELS] ||
       record.unit,

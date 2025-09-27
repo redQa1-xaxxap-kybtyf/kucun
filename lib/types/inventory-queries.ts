@@ -22,14 +22,14 @@ export interface InventoryQueryParams {
   sortBy?: 'productName' | 'quantity' | 'reservedQuantity' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
   productId?: string;
-  // variantId?: string; // 移除：当前系统不支持产品变体
+  variantId?: string; // 产品变体ID筛选
   batchNumber?: string; // 批次号筛选
   location?: string; // 存储位置筛选
   categoryId?: string; // 产品分类筛选
   lowStock?: boolean;
   hasStock?: boolean;
-  // groupByVariant?: boolean; // 移除：当前系统不支持产品变体
-  // includeVariants?: boolean; // 移除：当前系统不支持产品变体
+  groupByVariant?: boolean; // 是否按变体分组显示
+  includeVariants?: boolean; // 是否包含变体信息
 }
 
 export interface InboundRecordQueryParams {

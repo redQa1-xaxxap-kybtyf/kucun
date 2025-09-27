@@ -1,7 +1,5 @@
 import { z } from 'zod';
 
-import { paginationConfig } from '@/lib/env';
-
 // 基础验证规则已迁移到 lib/validations/base.ts
 // 遵循唯一真理源原则，请使用 lib/validations/base.ts 中的验证规则
 
@@ -31,11 +29,8 @@ export const paginationValidations = {
       .number()
       .int()
       .min(1, '每页数量必须大于0')
-      .max(
-        paginationConfig.maxPageSize,
-        `每页数量不能超过${paginationConfig.maxPageSize}`
-      )
-      .default(paginationConfig.defaultPageSize),
+      .max(100, '每页数量不能超过100')
+      .default(20),
     sortBy: z.string().optional(),
     sortOrder: z.enum(['asc', 'desc']).default('desc'),
     search: z.string().max(100, '搜索关键词不能超过100个字符').optional(),

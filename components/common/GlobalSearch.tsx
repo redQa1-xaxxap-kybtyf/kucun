@@ -1,13 +1,13 @@
 'use client';
 
 import {
-  Clock,
-  FileText,
-  Package,
   Search,
+  Package,
   ShoppingCart,
-  TrendingUp,
   Users,
+  FileText,
+  Clock,
+  TrendingUp,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
@@ -55,13 +55,40 @@ interface GlobalSearchProps {
 }
 
 /**
- * 搜索建议数据 - 可以从用户历史搜索或热门搜索中获取
+ * 模拟搜索数据
  */
-const getSearchSuggestions = (): SearchSuggestion[] => [
-  { id: '1', text: '产品搜索', type: 'popular' },
-  { id: '2', text: '销售订单', type: 'popular' },
-  { id: '3', text: '库存查询', type: 'popular' },
-  { id: '4', text: '客户管理', type: 'popular' },
+const mockSearchResults: SearchResultItem[] = [
+  {
+    id: '1',
+    title: '白色瓷砖 W001',
+    description: '规格: 600x600mm, 库存: 120片',
+    type: 'product',
+    href: '/products/1',
+    metadata: { stock: 120, price: 45.0 },
+  },
+  {
+    id: '2',
+    title: '销售订单 #SO-2024-001',
+    description: '客户: 张三装饰公司, 金额: ¥12,500',
+    type: 'order',
+    href: '/sales-orders/2',
+    metadata: { amount: 12500, status: 'confirmed' },
+  },
+  {
+    id: '3',
+    title: '张三装饰公司',
+    description: '联系人: 张三, 电话: 138****1234',
+    type: 'customer',
+    href: '/customers/3',
+    metadata: { phone: '138****1234' },
+  },
+];
+
+const mockSuggestions: SearchSuggestion[] = [
+  { id: '1', text: '白色瓷砖', type: 'recent' },
+  { id: '2', text: '销售订单', type: 'recent' },
+  { id: '3', text: '库存不足', type: 'popular' },
+  { id: '4', text: '待发货订单', type: 'popular' },
 ];
 
 /**
@@ -76,9 +103,8 @@ export function GlobalSearch({
   const router = useRouter();
   const [query, setQuery] = React.useState('');
   const [results, setResults] = React.useState<SearchResultItem[]>([]);
-  const [suggestions] = React.useState<SearchSuggestion[]>(
-    getSearchSuggestions()
-  );
+  const [suggestions, setSuggestions] =
+    React.useState<SearchSuggestion[]>(mockSuggestions);
   const [isLoading, setIsLoading] = React.useState(false);
   const [selectedIndex, setSelectedIndex] = React.useState(-1);
 
@@ -94,105 +120,19 @@ export function GlobalSearch({
 
     setIsLoading(true);
 
-    try {
-      // 待办：实现真实的全局搜索API调用
-      // 可以并行搜索产品、订单、客户等多个数据源
-      const [productResults, orderResults, customerResults] = await Promise.all(
-        [
-          searchProducts(searchQuery),
-          searchOrders(searchQuery),
-          searchCustomers(searchQuery),
-        ]
-      );
+    // 模拟API调用延迟
+    await new Promise(resolve => setTimeout(resolve, 300));
 
-      const allResults = [
-        ...productResults,
-        ...orderResults,
-        ...customerResults,
-      ];
+    // 模拟搜索结果过滤
+    const filteredResults = mockSearchResults.filter(
+      item =>
+        item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
-      setResults(allResults);
-    } catch (error) {
-      console.error('搜索失败:', error);
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
+    setResults(filteredResults);
+    setIsLoading(false);
   }, []);
-
-  // 搜索产品
-  const searchProducts = async (query: string): Promise<SearchResultItem[]> => {
-    try {
-      const response = await fetch(
-        `/api/products/search?search=${encodeURIComponent(query)}&limit=5`
-      );
-      if (!response.ok) return [];
-
-      const data = await response.json();
-      return data.map((product: any) => ({
-        id: product.id,
-        title: `${product.name} ${product.code}`,
-        description: `规格: ${product.specification || '无'}, 库存: ${product.inventory?.reduce((sum: number, inv: any) => sum + inv.quantity, 0) || 0}${product.unit}`,
-        type: 'product' as const,
-        href: `/products/${product.id}`,
-        metadata: {
-          stock:
-            product.inventory?.reduce(
-              (sum: number, inv: any) => sum + inv.quantity,
-              0
-            ) || 0,
-        },
-      }));
-    } catch {
-      return [];
-    }
-  };
-
-  // 搜索订单
-  const searchOrders = async (query: string): Promise<SearchResultItem[]> => {
-    try {
-      const response = await fetch(
-        `/api/sales-orders?search=${encodeURIComponent(query)}&limit=5`
-      );
-      if (!response.ok) return [];
-
-      const data = await response.json();
-      return (data.orders || []).map((order: any) => ({
-        id: order.id,
-        title: `销售订单 #${order.orderNumber}`,
-        description: `客户: ${order.customer?.name || '未知'}, 金额: ¥${order.totalAmount?.toLocaleString() || '0'}`,
-        type: 'order' as const,
-        href: `/sales-orders/${order.id}`,
-        metadata: { amount: order.totalAmount, status: order.status },
-      }));
-    } catch {
-      return [];
-    }
-  };
-
-  // 搜索客户
-  const searchCustomers = async (
-    query: string
-  ): Promise<SearchResultItem[]> => {
-    try {
-      const response = await fetch(
-        `/api/customers/search?q=${encodeURIComponent(query)}&limit=5`
-      );
-      if (!response.ok) return [];
-
-      const data = await response.json();
-      return data.map((customer: any) => ({
-        id: customer.id,
-        title: customer.name,
-        description: `联系人: ${customer.contactPerson || customer.name}, 电话: ${customer.phone || '未提供'}`,
-        type: 'customer' as const,
-        href: `/customers/${customer.id}`,
-        metadata: { phone: customer.phone },
-      }));
-    } catch {
-      return [];
-    }
-  };
 
   // 防抖搜索
   React.useEffect(() => {

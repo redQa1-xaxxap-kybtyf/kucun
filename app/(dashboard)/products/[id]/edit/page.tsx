@@ -1,12 +1,12 @@
 import { notFound } from 'next/navigation';
 
-import { ProductEditClient } from '@/components/products/product-edit-client';
+import { ProductForm } from '@/components/products/product-form';
 import { getProductById } from '@/lib/api/handlers/products';
 
 interface ProductEditPageProps {
-  params: Promise<{
+  params: {
     id: string;
-  }>;
+  };
 }
 
 /**
@@ -16,8 +16,7 @@ interface ProductEditPageProps {
 export default async function ProductEditPage({
   params,
 }: ProductEditPageProps) {
-  const { id } = await params;
-  const product = await getProductById(id);
+  const product = await getProductById(params.id);
 
   if (!product) {
     notFound();
@@ -25,7 +24,12 @@ export default async function ProductEditPage({
 
   return (
     <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      <ProductEditClient productId={id} initialData={product} />
+      <ProductForm
+        mode="edit"
+        productId={params.id}
+        initialData={product}
+        variant="erp"
+      />
     </div>
   );
 }

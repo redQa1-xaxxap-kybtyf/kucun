@@ -33,7 +33,7 @@ export function ProductListSkeleton() {
             </div>
           </div>
         </div>
-
+        
         {/* 表头骨架 */}
         <div className="border-b bg-muted/10 px-3 py-2">
           <div className="grid grid-cols-8 gap-4">

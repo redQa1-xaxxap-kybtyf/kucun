@@ -96,13 +96,12 @@ export function buildInboundWhereClause(queryData: {
 }) {
   const where: Record<string, unknown> = {};
 
-  // 搜索条件 - 支持产品名称、编码、批次号搜索
+  // 搜索条件
   if (queryData.search) {
     where.OR = [
       { recordNumber: { contains: queryData.search } },
       { product: { name: { contains: queryData.search } } },
       { product: { code: { contains: queryData.search } } }, // 使用 code 字段而不是 sku
-      { batchNumber: { contains: queryData.search } }, // 新增批次号搜索
       { remarks: { contains: queryData.search } },
     ];
   }
@@ -163,7 +162,6 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
     reason: record.reason,
     remarks: record.remarks || '',
     userId: record.userId,
-    batchNumber: record.batchNumber || '', // 新增批次号字段
     colorCode: record.colorCode || '',
     productionDate: record.productionDate
       ? toISOString(record.productionDate)?.split('T')[0] || ''
@@ -179,22 +177,7 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
       name: record.product.name,
       code: record.product.code,
       unit: record.product.unit,
-      // 优先使用批次级规格参数，回退到产品默认参数
-      piecesPerUnit:
-        record.batchSpecification?.piecesPerUnit ||
-        record.product.piecesPerUnit,
-      weight: record.batchSpecification?.weight || record.product.weight,
     },
-
-    // 批次规格参数信息（如果存在）
-    batchSpecification: record.batchSpecification
-      ? {
-          id: record.batchSpecification.id,
-          piecesPerUnit: record.batchSpecification.piecesPerUnit,
-          weight: record.batchSpecification.weight,
-          thickness: record.batchSpecification.thickness,
-        }
-      : undefined,
 
     // 嵌套的用户对象（前端组件期望的结构）
     user: {
@@ -245,16 +228,6 @@ export async function getInboundRecords(queryData: {
             name: true,
             code: true, // 使用 code 字段而不是 sku
             unit: true,
-            piecesPerUnit: true, // 产品默认每单位片数
-            weight: true, // 产品默认重量
-          },
-        },
-        batchSpecification: {
-          select: {
-            id: true,
-            piecesPerUnit: true, // 批次级每单位片数
-            weight: true, // 批次级重量
-            thickness: true, // 批次级厚度
           },
         },
         user: {
@@ -300,7 +273,7 @@ export async function validateProductExists(productId: string) {
 }
 
 /**
- * 创建入库记录（使用批次规格参数管理）
+ * 创建入库记录
  */
 export async function createInboundRecord(
   data: {
@@ -312,48 +285,22 @@ export async function createInboundRecord(
     quantity: number;
     reason: string;
     remarks?: string;
-    piecesPerUnit?: number; // 每单位片数（入库时确定）
-    weight?: number; // 产品重量（入库时确定）
   },
-  userId: string,
-  tx?: any // 事务上下文
+  userId: string
 ) {
   // 验证产品存在
   await validateProductExists(data.productId);
-
-  const prismaClient = tx || prisma;
-  let batchSpecificationId: string | null = null;
-
-  // 如果提供了批次号和规格参数，创建或更新批次规格参数
-  if (data.batchNumber && (data.piecesPerUnit || data.weight)) {
-    const { upsertBatchSpecification } = await import(
-      './batch-specification-handlers'
-    );
-
-    const batchSpec = await upsertBatchSpecification(
-      {
-        productId: data.productId,
-        batchNumber: data.batchNumber,
-        piecesPerUnit: data.piecesPerUnit || 1,
-        weight: data.weight,
-      },
-      prismaClient
-    );
-
-    batchSpecificationId = batchSpec.id;
-  }
 
   // 生成记录编号
   const recordNumber = generateInboundRecordNumber();
 
   // 创建入库记录
-  const inboundRecord = await prismaClient.inboundRecord.create({
+  const inboundRecord = await prisma.inboundRecord.create({
     data: {
       recordNumber,
       productId: data.productId,
       variantId: data.variantId || null,
       batchNumber: data.batchNumber || null,
-      batchSpecificationId, // 关联批次规格参数
       quantity: data.quantity,
       reason: data.reason,
       remarks: cleanRemarks(data.remarks),
@@ -425,13 +372,10 @@ export async function updateInventoryQuantity(
   quantity: number,
   options?: {
     variantId?: string;
-  },
-  tx?: any // 事务上下文
+  }
 ) {
-  const prismaClient = tx || prisma;
-
   // 查找现有库存记录
-  const existingInventory = await prismaClient.inventory.findFirst({
+  const existingInventory = await prisma.inventory.findFirst({
     where: {
       productId,
       variantId: options?.variantId || null,
@@ -441,7 +385,7 @@ export async function updateInventoryQuantity(
 
   if (existingInventory) {
     // 更新现有库存
-    await prismaClient.inventory.update({
+    await prisma.inventory.update({
       where: { id: existingInventory.id },
       data: {
         quantity: existingInventory.quantity + quantity,
@@ -450,7 +394,7 @@ export async function updateInventoryQuantity(
     });
   } else {
     // 创建新库存记录
-    await prismaClient.inventory.create({
+    await prisma.inventory.create({
       data: {
         productId,
         variantId: options?.variantId || null,

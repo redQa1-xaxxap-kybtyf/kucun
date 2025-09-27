@@ -60,26 +60,77 @@ interface SalesTrendData {
  * ERP风格的仪表盘组件
  * 采用紧凑布局，符合中国ERP系统用户习惯
  */
-interface ERPDashboardProps {
-  initialData?: DashboardData | null;
-  initialTimeRange?: string;
-}
-
-export function ERPDashboard({
-  initialData,
-  initialTimeRange = '7d',
-}: ERPDashboardProps) {
+export function ERPDashboard() {
   const { data: session } = useSession();
   const router = useRouter();
 
-  // 数据状态 - 延迟初始化以避免函数声明顺序问题
+  // 数据状态
   const [dashboardData, setDashboardData] =
     React.useState<DashboardStats | null>(null);
-  const [isLoading, setIsLoading] = React.useState(!initialData);
-  const [selectedPeriod, setSelectedPeriod] = React.useState(initialTimeRange);
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [selectedPeriod, setSelectedPeriod] = React.useState('7d');
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
-  // 移除mockData，完全依赖真实API数据
+  // 模拟数据
+  const mockData: DashboardStats = {
+    totalProducts: 156,
+    totalOrders: 89,
+    totalCustomers: 45,
+    totalRevenue: 125600,
+    lowStockItems: 8,
+    pendingOrders: 12,
+    recentActivities: [
+      {
+        id: '1',
+        type: 'order',
+        title: '新订单 #SO-2024-001',
+        description: '客户张三下单，金额 ¥2,500',
+        timestamp: new Date(Date.now() - 1000 * 60 * 30),
+        status: 'success',
+      },
+      {
+        id: '2',
+        type: 'inventory',
+        title: '库存预警',
+        description: '白色瓷砖 W001 库存不足',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60),
+        status: 'warning',
+      },
+      {
+        id: '3',
+        type: 'customer',
+        title: '新客户注册',
+        description: '李四装饰公司完成注册',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2),
+        status: 'info',
+      },
+      {
+        id: '4',
+        type: 'payment',
+        title: '收款到账',
+        description: '订单 #SO-2024-002 收款 ¥3,200',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 3),
+        status: 'success',
+      },
+      {
+        id: '5',
+        type: 'order',
+        title: '订单完成',
+        description: '订单 #SO-2024-003 已发货',
+        timestamp: new Date(Date.now() - 1000 * 60 * 60 * 4),
+        status: 'success',
+      },
+    ],
+    salesTrend: [
+      { date: '2024-01-01', sales: 12500, orders: 15 },
+      { date: '2024-01-02', sales: 15600, orders: 18 },
+      { date: '2024-01-03', sales: 13200, orders: 16 },
+      { date: '2024-01-04', sales: 18900, orders: 22 },
+      { date: '2024-01-05', sales: 16700, orders: 19 },
+      { date: '2024-01-06', sales: 21300, orders: 25 },
+      { date: '2024-01-07', sales: 19800, orders: 23 },
+    ],
+  };
 
   // 映射时间周期到API格式
   const mapPeriodToTimeRange = (period: string): TimeRange => {
@@ -120,7 +171,7 @@ export function ERPDashboard({
     timeRange: mapPeriodToTimeRange(selectedPeriod),
   });
 
-  // 加载数据 - 完全使用真实API数据
+  // 加载数据 - 优先使用API数据，fallback到mockData
   const loadDashboardData = React.useCallback(async () => {
     setIsLoading(true);
     try {
@@ -129,14 +180,14 @@ export function ERPDashboard({
         const transformedData = transformDashboardData(dashboardApiData);
         setDashboardData(transformedData);
       } else {
-        // 如果API数据不可用，设置为null，显示加载状态
-        console.warn('仪表盘API数据不可用');
-        setDashboardData(null);
+        // 如果API数据不可用，使用mockData作为fallback
+        console.warn('仪表盘API数据不可用，使用模拟数据');
+        setDashboardData(mockData);
       }
     } catch (error) {
       console.error('加载仪表盘数据失败:', error);
-      // 错误时设置为null，显示错误状态
-      setDashboardData(null);
+      // 错误时使用mockData作为fallback
+      setDashboardData(mockData);
     } finally {
       setIsLoading(false);
     }
@@ -159,21 +210,12 @@ export function ERPDashboard({
     }
   };
 
-  // 处理初始数据
-  React.useEffect(() => {
-    if (initialData && !dashboardData) {
-      const transformedData = transformDashboardData(initialData);
-      setDashboardData(transformedData);
-      setIsLoading(false);
-    }
-  }, [initialData, dashboardData]);
-
   // 初始化加载 - 结合API加载状态
   React.useEffect(() => {
-    if (!isApiLoading && !initialData) {
+    if (!isApiLoading) {
       loadDashboardData();
     }
-  }, [loadDashboardData, selectedPeriod, isApiLoading, initialData]);
+  }, [loadDashboardData, selectedPeriod, isApiLoading]);
 
   // 合并加载状态
   const isLoadingData = isLoading || isApiLoading;

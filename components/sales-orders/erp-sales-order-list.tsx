@@ -32,7 +32,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import { type PaginatedResponse } from '@/lib/types/api';
 import {
   SALES_ORDER_STATUS_LABELS,
   SALES_ORDER_STATUS_VARIANTS,
@@ -43,40 +42,27 @@ import {
 
 interface ERPSalesOrderListProps {
   onOrderSelect?: (order: SalesOrder) => void;
-  initialData?: PaginatedResponse<SalesOrder>;
-  initialParams?: SalesOrderQueryParams;
 }
 
 /**
  * ERP风格销售订单列表组件
  * 符合中国ERP系统的标准布局和用户体验
  */
-export function ERPSalesOrderList({
-  onOrderSelect,
-  initialData,
-  initialParams,
-}: ERPSalesOrderListProps) {
+export function ERPSalesOrderList({ onOrderSelect }: ERPSalesOrderListProps) {
   const router = useRouter();
-  const [queryParams, setQueryParams] = React.useState<SalesOrderQueryParams>(
-    initialParams || {
-      page: 1,
-      limit: paginationConfig.defaultPageSize, // 使用统一的分页配置
-      search: '',
-      status: undefined,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    }
-  );
+  const [queryParams, setQueryParams] = React.useState<SalesOrderQueryParams>({
+    page: 1,
+    limit: paginationConfig.defaultPageSize, // 使用统一的分页配置
+    search: '',
+    status: undefined,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+  });
 
-  // 获取销售订单列表数据 - 使用服务器端提供的初始数据
-  const { data, isLoading, error, isPreviousData } = useQuery({
+  // 获取销售订单列表数据
+  const { data, isLoading, error } = useQuery({
     queryKey: salesOrderQueryKeys.list(queryParams),
     queryFn: () => getSalesOrders(queryParams),
-    initialData: initialData,
-    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
-    refetchOnWindowFocus: false, // 避免不必要的重新获取
-    keepPreviousData: true, // 保持之前的数据，避免加载时闪烁
-    refetchOnMount: false, // 避免挂载时重新获取
   });
 
   // 搜索处理

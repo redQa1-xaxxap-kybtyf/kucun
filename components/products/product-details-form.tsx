@@ -28,6 +28,58 @@ export function ProductDetailsForm({
 }: ProductDetailsFormProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+      {/* 每单位片数 */}
+      <FormField
+        control={control}
+        name="piecesPerUnit"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>每单位片数</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                min="1"
+                step="1"
+                disabled={isLoading}
+                {...field}
+                onChange={e => field.onChange(Number(e.target.value))}
+              />
+            </FormControl>
+            <FormDescription>
+              每个销售单位包含的产品片数，用于库存计算
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      {/* 产品重量 */}
+      <FormField
+        control={control}
+        name="weight"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>重量 (kg)</FormLabel>
+            <FormControl>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="0.00"
+                disabled={isLoading}
+                {...field}
+                onChange={e => {
+                  const value = e.target.value;
+                  field.onChange(value === '' ? undefined : Number(value));
+                }}
+              />
+            </FormControl>
+            <FormDescription>产品单位重量，单位：千克</FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       {/* 产品厚度 */}
       <FormField
         control={control}

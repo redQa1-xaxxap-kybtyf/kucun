@@ -1,6 +1,5 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
 import {
   Calendar,
   CheckCircle,
@@ -14,6 +13,8 @@ import {
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { paginationConfig } from '@/lib/env';
+
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +26,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { paginationConfig } from '@/lib/env';
 
 /**
  * 应退货款管理页面
@@ -38,45 +38,53 @@ export default function RefundsPage() {
     limit: paginationConfig.defaultPageSize,
     search: '',
     status: undefined as string | undefined,
-    sortBy: 'refundDate',
+    sortBy: 'returnDate',
     sortOrder: 'desc' as 'asc' | 'desc',
   });
 
-  // 获取退款记录数据
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['refunds', queryParams],
-    queryFn: async () => {
-      const searchParams = new URLSearchParams();
-      searchParams.set('page', queryParams.page.toString());
-      searchParams.set('pageSize', queryParams.limit.toString());
-      if (queryParams.search) searchParams.set('search', queryParams.search);
-      if (queryParams.status) searchParams.set('status', queryParams.status);
-      searchParams.set('sortBy', queryParams.sortBy);
-      searchParams.set('sortOrder', queryParams.sortOrder);
-
-      const response = await fetch(`/api/finance/refunds?${searchParams}`);
-      if (!response.ok) {
-        throw new Error('获取退款记录失败');
-      }
-      return response.json();
+  // 模拟数据 - 实际项目中应该从API获取
+  const mockData = {
+    data: [
+      {
+        id: '1',
+        returnNumber: 'RT-2025-001',
+        salesOrderNumber: 'SO-2025-001',
+        customerName: '张三建材',
+        refundAmount: 5000.0,
+        processedAmount: 0.0,
+        remainingAmount: 5000.0,
+        status: 'pending',
+        returnDate: '2025-01-15',
+        reason: '产品质量问题',
+        type: 'refund',
+      },
+      {
+        id: '2',
+        returnNumber: 'RT-2025-002',
+        salesOrderNumber: 'SO-2024-089',
+        customerName: '李四装饰',
+        refundAmount: 3500.0,
+        processedAmount: 3500.0,
+        remainingAmount: 0.0,
+        status: 'completed',
+        returnDate: '2025-01-12',
+        reason: '规格不符',
+        type: 'refund',
+      },
+    ],
+    pagination: {
+      page: 1,
+      limit: 20,
+      total: 2,
+      totalPages: 1,
     },
-    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
-    refetchOnWindowFocus: false,
-  });
-
-  // 获取财务概览数据
-  const { data: financeOverview } = useQuery({
-    queryKey: ['finance-overview'],
-    queryFn: async () => {
-      const response = await fetch('/api/finance');
-      if (!response.ok) {
-        throw new Error('获取财务概览失败');
-      }
-      return response.json();
+    summary: {
+      totalRefundable: 8500.0,
+      totalProcessed: 3500.0,
+      pendingCount: 5,
+      completedCount: 12,
     },
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
+  };
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('zh-CN', {
@@ -90,13 +98,10 @@ export default function RefundsPage() {
       processing: { label: '处理中', variant: 'default' as const },
       completed: { label: '已完成', variant: 'default' as const },
       rejected: { label: '已拒绝', variant: 'destructive' as const },
-      cancelled: { label: '已取消', variant: 'secondary' as const },
     };
     const config = statusConfig[status as keyof typeof statusConfig];
     return (
-      <Badge variant={config?.variant || 'secondary'}>
-        {config?.label || '未知状态'}
-      </Badge>
+      <Badge variant={config?.variant || 'secondary'}>{config?.label}</Badge>
     );
   };
 
@@ -105,11 +110,8 @@ export default function RefundsPage() {
       refund: '退款',
       exchange: '换货',
       return: '退货',
-      partial_refund: '部分退款',
-      full_refund: '全额退款',
-      exchange_refund: '换货退款',
     };
-    return typeConfig[type as keyof typeof typeConfig] || '其他类型';
+    return typeConfig[type as keyof typeof typeConfig] || type;
   };
 
   const handleSearch = (value: string) => {
@@ -123,43 +125,6 @@ export default function RefundsPage() {
       page: 1,
     }));
   };
-
-  // 处理加载状态
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">应退货款</h1>
-            <p className="text-muted-foreground">管理退货订单产生的应退账款</p>
-          </div>
-        </div>
-        <div className="py-8 text-center">
-          <p>正在加载退款记录...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // 处理错误状态
-  if (error) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">应退货款</h1>
-            <p className="text-muted-foreground">管理退货订单产生的应退账款</p>
-          </div>
-        </div>
-        <div className="py-8 text-center">
-          <p className="text-red-600">加载失败: {error.message}</p>
-        </div>
-      </div>
-    );
-  }
-
-  const refundsData = data?.data || { refunds: [], pagination: { total: 0 } };
-  const overviewData = financeOverview?.data || {};
 
   return (
     <div className="space-y-6">
@@ -190,10 +155,10 @@ export default function RefundsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {formatCurrency(overviewData.totalRefundable || 0)}
+              {formatCurrency(mockData.summary.totalRefundable)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {overviewData.refundCount || 0} 个待处理
+              {mockData.summary.pendingCount} 个待处理
             </p>
           </CardContent>
         </Card>
@@ -205,10 +170,10 @@ export default function RefundsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(overviewData.summary?.paidAmount || 0)}
+              {formatCurrency(mockData.summary.totalProcessed)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {overviewData.receivableCount || 0} 个已完成
+              {mockData.summary.completedCount} 个已完成
             </p>
           </CardContent>
         </Card>
@@ -219,29 +184,19 @@ export default function RefundsPage() {
             <DollarSign className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {overviewData.summary?.paymentRate
-                ? `${overviewData.summary.paymentRate.toFixed(1)}%`
-                : '0.0%'}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              {overviewData.summary?.paymentRate > 50
-                ? '较上月提升'
-                : '需要改进'}
-            </p>
+            <div className="text-2xl font-bold text-blue-600">70.6%</div>
+            <p className="text-xs text-muted-foreground">较上月提升 8%</p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">本月收款</CardTitle>
+            <CardTitle className="text-sm font-medium">平均处理时间</CardTitle>
             <Calendar className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
-              {formatCurrency(overviewData.monthlyReceived || 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">本月已收款金额</p>
+            <div className="text-2xl font-bold text-purple-600">3天</div>
+            <p className="text-xs text-muted-foreground">较上月减少 1天</p>
           </CardContent>
         </Card>
       </div>
@@ -284,125 +239,89 @@ export default function RefundsPage() {
 
           {/* 退款申请列表 */}
           <div className="mt-6 space-y-4">
-            {refundsData.refunds.length === 0 ? (
-              <div className="py-8 text-center">
-                <p className="text-muted-foreground">暂无退款记录</p>
-              </div>
-            ) : (
-              refundsData.refunds.map((refund: any) => (
-                <Card
-                  key={refund.id}
-                  className="transition-shadow hover:shadow-md"
-                >
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-semibold">
-                            {refund.refundNumber}
-                          </h3>
-                          {getStatusBadge(refund.status)}
-                          <Badge variant="outline">
-                            {getTypeLabel(refund.refundType || 'refund')}
-                          </Badge>
-                        </div>
-                        <p className="text-sm text-muted-foreground">
-                          客户：
-                          {refund.customer?.name ||
-                            refund.customerName ||
-                            '未知客户'}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          原订单：
-                          {refund.salesOrder?.orderNumber ||
-                            refund.salesOrderNumber ||
-                            '未知订单'}
-                        </p>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>退款日期：{refund.refundDate}</span>
-                          <span>退款原因：{refund.reason}</span>
-                        </div>
+            {mockData.data.map(refund => (
+              <Card
+                key={refund.id}
+                className="transition-shadow hover:shadow-md"
+              >
+                <CardContent className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3">
+                        <h3 className="font-semibold">{refund.returnNumber}</h3>
+                        {getStatusBadge(refund.status)}
+                        <Badge variant="outline">
+                          {getTypeLabel(refund.type)}
+                        </Badge>
                       </div>
-                      <div className="space-y-2 text-right">
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            退款金额
-                          </p>
-                          <p className="font-semibold">
-                            {formatCurrency(refund.refundAmount)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            已处理
-                          </p>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(refund.processedAmount)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            待处理
-                          </p>
-                          <p className="font-semibold text-orange-600">
-                            {formatCurrency(refund.remainingAmount)}
-                          </p>
-                        </div>
+                      <p className="text-sm text-muted-foreground">
+                        客户：{refund.customerName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        原订单：{refund.salesOrderNumber}
+                      </p>
+                      <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                        <span>退货日期：{refund.returnDate}</span>
+                        <span>退货原因：{refund.reason}</span>
                       </div>
                     </div>
-                    <div className="mt-4 flex justify-end gap-2">
+                    <div className="space-y-2 text-right">
+                      <div>
+                        <p className="text-sm text-muted-foreground">
+                          退款金额
+                        </p>
+                        <p className="font-semibold">
+                          {formatCurrency(refund.refundAmount)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">已处理</p>
+                        <p className="font-semibold text-green-600">
+                          {formatCurrency(refund.processedAmount)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-sm text-muted-foreground">待处理</p>
+                        <p className="font-semibold text-orange-600">
+                          {formatCurrency(refund.remainingAmount)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="mt-4 flex justify-end gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => router.push(`/return-orders/${refund.id}`)}
+                    >
+                      查看详情
+                    </Button>
+                    {refund.status === 'pending' && (
                       <Button
-                        variant="outline"
                         size="sm"
                         onClick={() =>
-                          router.push(`/return-orders/${refund.id}`)
+                          router.push(`/finance/refunds/${refund.id}/process`)
                         }
                       >
-                        查看详情
+                        处理退款
                       </Button>
-                      {refund.status === 'pending' && (
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            router.push(`/finance/refunds/${refund.id}/process`)
-                          }
-                        >
-                          处理退款
-                        </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
           </div>
 
           {/* 分页 */}
           <div className="mt-6 flex items-center justify-between">
             <p className="text-sm text-muted-foreground">
-              共 {refundsData.pagination?.total || 0} 条记录
+              共 {mockData.pagination.total} 条记录
             </p>
             <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={queryParams.page <= 1}
-                onClick={() =>
-                  setQueryParams(prev => ({ ...prev, page: prev.page - 1 }))
-                }
-              >
+              <Button variant="outline" size="sm" disabled>
                 上一页
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={
-                  queryParams.page >= (refundsData.pagination?.totalPages || 1)
-                }
-                onClick={() =>
-                  setQueryParams(prev => ({ ...prev, page: prev.page + 1 }))
-                }
-              >
+              <Button variant="outline" size="sm" disabled>
                 下一页
               </Button>
             </div>

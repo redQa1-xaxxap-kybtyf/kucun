@@ -4,9 +4,9 @@ import { ERPProductDetail } from '@/components/products/erp-product-detail';
 import { getProductById } from '@/lib/api/handlers/products';
 
 interface ProductDetailPageProps {
-  params: Promise<{
+  params: {
     id: string;
-  }>;
+  };
 }
 
 /**
@@ -16,8 +16,7 @@ interface ProductDetailPageProps {
 export default async function ProductDetailPage({
   params,
 }: ProductDetailPageProps) {
-  const { id } = await params;
-  const product = await getProductById(id);
+  const product = await getProductById(params.id);
 
   if (!product) {
     notFound();

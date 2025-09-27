@@ -1,9 +1,9 @@
-import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 
-import { badRequestResponse, unauthorizedResponse } from './response';
+import { unauthorizedResponse } from './response';
 
 /**
  * 认证中间件类型
@@ -68,7 +68,7 @@ export function withValidation<T>(
       return await handler(request, context, validatedData);
     } catch (error) {
       console.error('验证中间件错误:', error);
-      return badRequestResponse('数据验证失败');
+      return unauthorizedResponse('数据验证失败');
     }
   };
 }
@@ -93,7 +93,7 @@ export function withAuthAndValidation<T>(
       return await handler(request, context, session, validatedData);
     } catch (error) {
       console.error('验证错误:', error);
-      return badRequestResponse('数据验证失败');
+      return unauthorizedResponse('数据验证失败');
     }
   });
 }
@@ -115,7 +115,7 @@ export function withErrorHandling(
       return await handler(request, context);
     } catch (error) {
       console.error('API处理器错误:', error);
-      return serverErrorResponse('服务器内部错误');
+      return unauthorizedResponse('服务器内部错误');
     }
   };
 }

@@ -80,18 +80,17 @@ export const inventoryQuerySchema = z.object({
     .optional()
     .transform(val => val === 'true'),
 
-  // 移除悬空的变体相关参数，因为当前系统不支持产品变体功能
-  // groupByVariant: z
-  //   .string()
-  //   .nullable()
-  //   .optional()
-  //   .transform(val => val === 'true'),
+  groupByVariant: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val === 'true'),
 
-  // includeVariants: z
-  //   .string()
-  //   .nullable()
-  //   .optional()
-  //   .transform(val => val === 'true'),
+  includeVariants: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val === 'true'),
 });
 
 // 库存搜索表单验证

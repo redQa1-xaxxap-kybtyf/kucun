@@ -21,9 +21,8 @@ export default function InventoryPage() {
     categoryId: '',
     lowStock: false,
     hasStock: false,
-    // 移除悬空的变体相关参数，因为后端不支持
-    // groupByVariant: false,
-    // includeVariants: true,
+    groupByVariant: false,
+    includeVariants: true,
     sortBy: 'updatedAt',
     sortOrder: 'desc',
   });

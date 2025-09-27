@@ -38,10 +38,6 @@ const PATH_TITLES: Record<string, string> = {
   '/return-orders': '退货订单',
   '/customers': '客户管理',
   '/customers/create': '新建客户',
-  '/suppliers': '供应商管理',
-  '/suppliers/create': '新建供应商',
-  '/factory-shipments': '厂家发货',
-  '/factory-shipments/create': '新建发货',
   '/payments': '支付管理',
   '/categories': '分类管理',
   '/categories/create': '新建分类',
@@ -53,27 +49,11 @@ const PATH_TITLES: Record<string, string> = {
   '/products/edit': '编辑产品',
   '/categories/edit': '编辑分类',
   '/customers/edit': '编辑客户',
-  '/suppliers/edit': '编辑供应商',
   '/inbound': '入库管理',
   '/inbound/create': '新建入库',
   '/outbound': '出库管理',
   '/adjust': '库存调整',
   '/test-api': '接口测试',
-  // 财务管理模块路径映射
-  '/finance': '财务管理',
-  '/finance/receivables': '应收货款',
-  '/finance/receivables/create': '新建应收',
-  '/finance/refunds': '应退货款',
-  '/finance/refunds/create': '新建退款',
-  '/finance/statements': '往来账单',
-  '/finance/statements/create': '新建账单',
-  '/finance/payments': '收款记录',
-  '/finance/payments/create': '新建收款',
-  // 财务管理子路由
-  receivables: '应收货款',
-  refunds: '应退货款',
-  statements: '往来账单',
-  payments: '收款记录',
 };
 
 /**

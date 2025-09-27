@@ -50,7 +50,7 @@ export function createWsClient(): WsClient {
           const message = JSON.parse(event.data) as WsMessage;
           messageCallback?.(message);
         } catch {
-          // 忽略格式错误的消息
+          // ignore malformed messages
         }
       };
 
@@ -67,7 +67,7 @@ export function createWsClient(): WsClient {
       };
 
       ws.onerror = () => {
-        // 连接错误，将触发onclose事件
+        // Connection error, will trigger onclose
       };
     } catch {
       // Connection failed

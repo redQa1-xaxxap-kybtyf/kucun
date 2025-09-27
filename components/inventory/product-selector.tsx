@@ -1,7 +1,7 @@
 'use client';
 
-import { Check, ChevronDown, Package } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
+import { Check, ChevronDown, Package } from 'lucide-react';
 
 // UI Components
 import { Badge } from '@/components/ui/badge';
@@ -86,17 +86,8 @@ export function ProductSelector({
 
   // 处理产品选择
   const handleSelect = (product: ProductOption) => {
-    console.log('ProductSelector handleSelect called:', product);
     setSelectedProduct(product);
-
-    // 确保 onChange 被调用
-    try {
-      onChange(product.value, product);
-      console.log('ProductSelector onChange called with:', product.value);
-    } catch (error) {
-      console.error('ProductSelector onChange error:', error);
-    }
-
+    onChange(product.value, product);
     setOpen(false);
   };
 
@@ -170,96 +161,82 @@ export function ProductSelector({
   }, []);
 
   return (
-    <>
-      <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className={cn(
-              'h-auto min-h-[2.5rem] w-full justify-between p-3',
-              !selectedProduct && 'text-muted-foreground',
-              className
-            )}
-            disabled={disabled}
-          >
-            {renderSelectedProduct()}
-            <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0" align="start">
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="搜索产品名称或编码..."
-              onValueChange={handleSearchChange}
-            />
-            <CommandList>
-              {isLoading ? (
-                <div className="space-y-2 p-4">
-                  {[...Array(3)].map((_, i) => (
-                    <div key={i} className="flex items-center space-x-2">
-                      <Skeleton className="h-4 w-4 rounded" />
-                      <div className="flex-1 space-y-1">
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-3 w-1/2" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : error ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  搜索失败，请重试
-                </div>
-              ) : products.length === 0 && searchQuery ? (
-                <CommandEmpty>未找到相关产品</CommandEmpty>
-              ) : products.length === 0 ? (
-                <div className="p-4 text-center text-sm text-muted-foreground">
-                  请输入关键词搜索产品
-                </div>
-              ) : (
-                <CommandGroup>
-                  {products.map((product, index) => (
-                    <CommandItem
-                      key={`${product.value}-${product.code}-${index}`}
-                      value={`${product.code}-${product.value}`}
-                      onSelect={value => {
-                        console.log('CommandItem onSelect value:', value);
-                        // 从 value 中提取产品ID（格式：CODE-ID）
-                        const productId = value.split('-').slice(1).join('-');
-                        console.log('Extracted productId:', productId);
-                        const selectedProduct = products.find(
-                          p => p.value === productId
-                        );
-                        console.log('Found product:', selectedProduct);
-                        if (selectedProduct) {
-                          handleSelect(selectedProduct);
-                        }
-                      }}
-                      className="p-3"
-                    >
-                      {renderProductOption(product)}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              )}
-            </CommandList>
-          </Command>
-
-          {selectedProduct && (
-            <div className="border-t p-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={handleClear}
-                className="w-full"
-              >
-                清除选择
-              </Button>
-            </div>
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            'h-auto min-h-[2.5rem] w-full justify-between p-3',
+            !selectedProduct && 'text-muted-foreground',
+            className
           )}
-        </PopoverContent>
-      </Popover>
-    </>
+          disabled={disabled}
+        >
+          {renderSelectedProduct()}
+          <ChevronDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[400px] p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="搜索产品名称或编码..."
+            onValueChange={handleSearchChange}
+          />
+          <CommandList>
+            {isLoading ? (
+              <div className="space-y-2 p-4">
+                {[...Array(3)].map((_, i) => (
+                  <div key={i} className="flex items-center space-x-2">
+                    <Skeleton className="h-4 w-4 rounded" />
+                    <div className="flex-1 space-y-1">
+                      <Skeleton className="h-4 w-3/4" />
+                      <Skeleton className="h-3 w-1/2" />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : error ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                搜索失败，请重试
+              </div>
+            ) : products.length === 0 && searchQuery ? (
+              <CommandEmpty>未找到相关产品</CommandEmpty>
+            ) : products.length === 0 ? (
+              <div className="p-4 text-center text-sm text-muted-foreground">
+                请输入关键词搜索产品
+              </div>
+            ) : (
+              <CommandGroup>
+                {products.map(product => (
+                  <CommandItem
+                    key={product.value}
+                    value={product.value}
+                    onSelect={() => handleSelect(product)}
+                    className="p-3"
+                  >
+                    {renderProductOption(product)}
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            )}
+          </CommandList>
+        </Command>
+
+        {selectedProduct && (
+          <div className="border-t p-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleClear}
+              className="w-full"
+            >
+              清除选择
+            </Button>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
   );
 }

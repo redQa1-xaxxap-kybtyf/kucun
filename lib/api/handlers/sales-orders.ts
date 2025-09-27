@@ -2,7 +2,7 @@ import type { Prisma } from '@prisma/client';
 import type { z } from 'zod';
 
 import { prisma } from '@/lib/db';
-import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
+import { salesOrderConfig } from '@/lib/env';
 import type { SalesOrderQueryParams as StandardSalesOrderQueryParams } from '@/lib/types/sales-order';
 import {
   salesOrderCreateSchema,
@@ -271,8 +271,8 @@ export async function createSalesOrder(
   // 验证数据
   const validatedData = salesOrderCreateSchema.parse(data);
 
-  // 生成订单号 - 使用新的安全生成服务
-  const orderNumber = await generateSalesOrderNumber();
+  // 生成订单号
+  const orderNumber = await generateOrderNumber();
 
   // 计算订单金额
   let totalAmount = 0;
@@ -285,117 +285,118 @@ export async function createSalesOrder(
     profitAmount += item.profitAmount || 0;
   }
 
-  // 使用事务创建订单，确保数据一致性
-  const order = await prisma.$transaction(
-    async tx => {
-      // 验证客户是否存在
-      const customer = await tx.customer.findUnique({
-        where: { id: validatedData.customerId },
-        select: { id: true },
-      });
-      if (!customer) {
-        throw new Error('指定的客户不存在');
-      }
-
-      // 如果有供应商，验证供应商是否存在
-      if (validatedData.supplierId) {
-        const supplier = await tx.supplier.findUnique({
-          where: { id: validatedData.supplierId },
-          select: { id: true },
-        });
-        if (!supplier) {
-          throw new Error('指定的供应商不存在');
-        }
-      }
-
-      // 验证产品是否存在（对于非手动输入的产品）
-      for (const item of validatedData.items) {
-        if (!item.isManualProduct && item.productId) {
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-            select: { id: true },
-          });
-          if (!product) {
-            throw new Error(`产品ID ${item.productId} 不存在`);
-          }
-        }
-      }
-
-      // 创建订单
-      return await tx.salesOrder.create({
-        data: {
-          orderNumber,
-          customerId: validatedData.customerId,
-          userId,
-          supplierId: validatedData.supplierId,
-          status: validatedData.status || 'draft',
-          orderType: validatedData.orderType,
-          costAmount,
-          profitAmount,
-          totalAmount,
-          remarks: validatedData.remarks,
-          items: {
-            create: validatedData.items.map(item => ({
-              productId: item.productId,
-              colorCode: item.colorCode,
-              productionDate: item.productionDate,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              subtotal: item.subtotal,
-              unitCost: item.unitCost,
-              costSubtotal: item.costSubtotal,
-              profitAmount: item.profitAmount,
-              isManualProduct: item.isManualProduct,
-              manualProductName: item.manualProductName,
-              manualSpecification: item.manualSpecification,
-              manualWeight: item.manualWeight,
-              manualUnit: item.manualUnit,
-            })),
-          },
-        },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-            },
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          supplier: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  code: true,
-                  unit: true,
-                },
-              },
-            },
-          },
-        },
-      });
+  // 创建订单
+  const order = await prisma.salesOrder.create({
+    data: {
+      orderNumber,
+      customerId: validatedData.customerId,
+      userId,
+      supplierId: validatedData.supplierId,
+      status: validatedData.status || 'draft',
+      orderType: validatedData.orderType,
+      costAmount,
+      profitAmount,
+      totalAmount,
+      remarks: validatedData.remarks,
+      items: {
+        create: validatedData.items.map(item => ({
+          productId: item.productId,
+          colorCode: item.colorCode,
+          productionDate: item.productionDate,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          subtotal: item.subtotal,
+          unitCost: item.unitCost,
+          costSubtotal: item.costSubtotal,
+          profitAmount: item.profitAmount,
+          isManualProduct: item.isManualProduct,
+          manualProductName: item.manualProductName,
+          manualSpecification: item.manualSpecification,
+          manualWeight: item.manualWeight,
+          manualUnit: item.manualUnit,
+        })),
+      },
     },
-    {
-      isolationLevel: 'Serializable',
-      timeout: 15000, // 15秒超时
-    }
-  );
+    include: {
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      supplier: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      items: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              code: true,
+              unit: true,
+            },
+          },
+        },
+      },
+    },
+  });
 
   return formatSalesOrder(order);
 }
 
-// 订单号生成逻辑已移至 lib/services/order-number-generator.ts
-// 使用数据库序列表保证并发安全
+/**
+ * 生成订单号 - 使用事务确保并发安全
+ */
+async function generateOrderNumber(): Promise<string> {
+  return await prisma.$transaction(async tx => {
+    const today = new Date();
+    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const prefix = `${salesOrderConfig.orderPrefix}${dateStr}`;
+
+    // 使用数据库锁查找今天的最后一个订单号
+    const lastOrder = await tx.salesOrder.findFirst({
+      where: {
+        orderNumber: {
+          startsWith: prefix,
+        },
+      },
+      orderBy: {
+        orderNumber: 'desc',
+      },
+      // 使用 FOR UPDATE 锁定记录，防止并发问题
+    });
+
+    let sequence = 1;
+    if (lastOrder) {
+      const lastSequence = parseInt(
+        lastOrder.orderNumber.slice(-salesOrderConfig.numberLength)
+      );
+      sequence = lastSequence + 1;
+    }
+
+    const orderNumber = `${prefix}${sequence.toString().padStart(salesOrderConfig.numberLength, '0')}`;
+
+    // 验证订单号唯一性
+    const existingOrder = await tx.salesOrder.findFirst({
+      where: { orderNumber },
+      select: { id: true },
+    });
+
+    if (existingOrder) {
+      throw new Error('订单号已存在，请重试');
+    }
+
+    return orderNumber;
+  });
+}

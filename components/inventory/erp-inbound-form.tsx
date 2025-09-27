@@ -67,8 +67,6 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       reason: 'purchase',
       remarks: '',
       batchNumber: '',
-      piecesPerUnit: 1,
-      weight: 0.01, // 修复：设置为符合验证规则的最小值
     },
   });
 
@@ -78,26 +76,14 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   // 监听表单变化
   const watchedInputQuantity = form.watch('inputQuantity');
   const watchedInputUnit = form.watch('inputUnit');
-  const watchedPiecesPerUnit = form.watch('piecesPerUnit');
 
   // 处理产品选择
   const handleProductSelect = (product: ProductOption) => {
     setSelectedProduct(product);
-    // 不在这里设置 productId，让 field.onChange 处理
+    form.setValue('productId', product.value);
     form.setValue('inputQuantity', 1);
     form.setValue('quantity', 1);
-
-    // 自动填充产品默认规格参数，用户可根据实际批次情况调整
-    form.setValue('piecesPerUnit', product.piecesPerUnit || 1);
-    form.setValue('weight', product.weight || 0.01);
-
-    form.clearErrors([
-      'productId',
-      'inputQuantity',
-      'quantity',
-      'piecesPerUnit',
-      'weight',
-    ]);
+    form.clearErrors(['inputQuantity', 'quantity']);
   };
 
   // 计算最终片数
@@ -107,15 +93,9 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     piecesPerUnit: number
   ): number => {
     try {
-      // 确保 piecesPerUnit 是有效的正整数
-      const validPiecesPerUnit =
-        Number.isInteger(piecesPerUnit) && piecesPerUnit > 0
-          ? piecesPerUnit
-          : 1;
-
       return calculateTotalPieces(
         { value: inputQuantity, unit: inputUnit },
-        validPiecesPerUnit
+        piecesPerUnit
       );
     } catch (error) {
       // TODO: 使用统一的错误处理机制替代console.error
@@ -129,35 +109,35 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
 
   // 实时计算并更新最终片数
   React.useEffect(() => {
-    if (watchedInputQuantity > 0 && watchedPiecesPerUnit > 0) {
+    if (selectedProduct && watchedInputQuantity > 0) {
       const finalQuantity = calculateFinalQuantity(
         watchedInputQuantity,
         watchedInputUnit,
-        watchedPiecesPerUnit
+        selectedProduct.piecesPerUnit
       );
       form.setValue('quantity', finalQuantity);
     }
-  }, [watchedInputQuantity, watchedInputUnit, watchedPiecesPerUnit, form]);
+  }, [watchedInputQuantity, watchedInputUnit, selectedProduct, form]);
 
   // 表单提交处理
   const onSubmit = async (data: InboundFormData) => {
     try {
       setIsSubmitting(true);
 
-      // 构造请求数据，确保必填字段有默认值，避免请求体缺失字段导致 Zod 校验失败
+      if (!data.productId) {
+        throw new Error('请选择产品');
+      }
+
+      if (!data.quantity || data.quantity < 1) {
+        throw new Error('请输入有效的入库数量');
+      }
+
       const requestData = {
         productId: data.productId,
         inputQuantity: data.inputQuantity,
         inputUnit: data.inputUnit,
         quantity: data.quantity,
         reason: data.reason,
-        // 确保规格参数字段始终有值，避免 "Required" 错误
-        piecesPerUnit:
-          data.piecesPerUnit || selectedProduct?.piecesPerUnit || 1,
-        weight: data.weight || selectedProduct?.weight || 0.01,
-        ...(data.batchNumber?.trim() && {
-          batchNumber: data.batchNumber.trim(),
-        }),
         ...(data.remarks?.trim() && { remarks: data.remarks.trim() }),
       };
 
@@ -201,8 +181,6 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       reason: 'purchase',
       remarks: '',
       batchNumber: '',
-      piecesPerUnit: 1,
-      weight: 0,
     });
     setSelectedProduct(null);
   };
@@ -243,16 +221,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                       <ProductSelector
                         value={field.value}
                         onChange={(value, product) => {
-                          console.log('Form ProductSelector onChange:', {
-                            value,
-                            product,
-                          });
-                          console.log('field.onChange before:', field.value);
-
                           field.onChange(value);
-
-                          console.log('field.onChange after:', value);
-
                           if (product) {
                             handleProductSelect(product);
                           }
@@ -262,7 +231,8 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                     </FormControl>
                     {selectedProduct && (
                       <div className="text-xs text-muted-foreground">
-                        已选择：{selectedProduct.label}
+                        {selectedProduct.label} | 每件
+                        {selectedProduct.piecesPerUnit}片
                       </div>
                     )}
                     <FormMessage />
@@ -325,15 +295,15 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                             disabled={
                               option.value === 'units' &&
                               (!selectedProduct ||
-                                !(selectedProduct.piecesPerUnit || 1) ||
-                                (selectedProduct.piecesPerUnit || 1) <= 1)
+                                !selectedProduct.piecesPerUnit ||
+                                selectedProduct.piecesPerUnit <= 1)
                             }
                           >
                             {option.label}
                             {option.value === 'units' &&
                               selectedProduct &&
-                              (selectedProduct.piecesPerUnit || 1) > 1 &&
-                              ` (每件${selectedProduct.piecesPerUnit || 1}片)`}
+                              selectedProduct.piecesPerUnit > 1 &&
+                              ` (每件${selectedProduct.piecesPerUnit}片)`}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -384,117 +354,9 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                   </FormItem>
                 )}
               />
-
-              {/* 隐藏字段：最终片数 - 确保 quantity 字段被注册到表单中 */}
-              <FormField
-                control={form.control}
-                name="quantity"
-                render={({ field }) => (
-                  <FormItem className="hidden">
-                    <FormControl>
-                      <Input type="hidden" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              {/* 隐藏字段：产品ID - 确保 productId 字段被注册到表单中 */}
-              <FormField
-                control={form.control}
-                name="productId"
-                render={({ field }) => (
-                  <FormItem className="hidden">
-                    <FormControl>
-                      <Input type="hidden" {...field} />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
             </div>
 
-            {/* 第三行：产品参数 */}
-            <div className="space-y-3">
-              <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 text-xs">
-                <div className="flex items-start space-x-2">
-                  <div className="text-blue-600">📋</div>
-                  <div className="space-y-2">
-                    <div className="font-medium text-blue-900">
-                      批次规格参数设置
-                    </div>
-                    <div className="text-blue-800">
-                      系统将使用产品默认规格参数。如果当前批次的规格与默认值不同，请在下方调整：
-                    </div>
-                    {selectedProduct && (
-                      <div className="rounded bg-blue-100 p-2 text-xs text-blue-700">
-                        <div className="mb-1 font-medium">产品默认规格：</div>
-                        <div>
-                          • 每单位片数：{selectedProduct.piecesPerUnit || 1}片
-                        </div>
-                        <div>
-                          • 产品重量：{selectedProduct.weight || 0.01}kg
-                        </div>
-                        <div className="mt-1 text-blue-600">
-                          💡 如无特殊情况，建议保持默认值以确保库存计算准确
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
-                <FormField
-                  control={form.control}
-                  name="piecesPerUnit"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">每单位片数 *</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="1"
-                          step="1"
-                          className="h-8"
-                          placeholder="如与默认值不同请调整"
-                          {...field}
-                          onChange={e => {
-                            const value = e.target.value;
-                            field.onChange(value ? parseInt(value) : 1);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="weight"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-xs">产品重量 (kg) *</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          min="0.01"
-                          step="0.01"
-                          className="h-8"
-                          placeholder="如与默认值不同请调整"
-                          {...field}
-                          onChange={e => {
-                            const value = e.target.value;
-                            field.onChange(value ? parseFloat(value) : 0);
-                          }}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-            </div>
-
-            {/* 第四行：批次号 */}
+            {/* 第三行：批次号 */}
             <FormField
               control={form.control}
               name="batchNumber"
@@ -514,7 +376,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
               )}
             />
 
-            {/* 第五行：备注 */}
+            {/* 第四行：备注 */}
             <FormField
               control={form.control}
               name="remarks"

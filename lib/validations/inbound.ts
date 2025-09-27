@@ -19,7 +19,7 @@ export const inboundUnitSchema = z.enum(['pieces', 'units'] as const);
 
 // 创建入库记录验证规则
 export const createInboundSchema = z.object({
-  productId: z.string().min(1, '请选择产品'),
+  productId: z.string().min(1, '请选择产品').uuid('产品ID格式不正确'),
 
   variantId: z.string().uuid('产品变体ID格式不正确').optional(),
 
@@ -60,28 +60,6 @@ export const createInboundSchema = z.object({
     .min(1, '批次号不能为空')
     .max(50, '批次号不能超过50个字符')
     .optional(),
-
-  // 产品参数字段（入库时确定）
-  piecesPerUnit: z
-    .number({
-      required_error: '请输入每单位片数',
-      invalid_type_error: '每单位片数必须是数字',
-    })
-    .int('每单位片数必须是整数')
-    .min(1, '每单位片数至少为1')
-    .max(10000, '每单位片数不能超过10000')
-    .optional()
-    .default(1), // 提供默认值，避免字段缺失导致 "Required" 错误
-
-  weight: z
-    .number({
-      required_error: '请输入产品重量',
-      invalid_type_error: '重量必须是数字',
-    })
-    .min(0.01, '重量必须大于0')
-    .max(10000, '重量不能超过10000kg')
-    .optional()
-    .default(0.01), // 提供默认值，避免字段缺失导致 "Required" 错误
 });
 
 // 更新入库记录验证规则

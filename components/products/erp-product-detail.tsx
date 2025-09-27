@@ -65,7 +65,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
 
   // 删除确认处理
   const handleDelete = () => {
-    // 待办：使用更好的确认对话框组件替代window.confirm
+    // TODO: 使用更好的确认对话框组件替代window.confirm
     // eslint-disable-next-line no-alert
     if (
       window.confirm(`确定要删除产品 "${product.name}" 吗？此操作不可撤销。`)

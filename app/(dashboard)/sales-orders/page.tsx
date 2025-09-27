@@ -12,17 +12,16 @@ import { paginationConfig } from '@/lib/env';
 export default async function SalesOrdersPage({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: { [key: string]: string | string[] | undefined };
 }) {
-  // 等待并解析查询参数
-  const params = await searchParams;
-  const page = Number(params.page) || 1;
-  const limit = Number(params.limit) || paginationConfig.defaultPageSize;
-  const search = (params.search as string) || '';
-  const status = (params.status as string) || '';
-  const customerId = (params.customerId as string) || '';
-  const sortBy = (params.sortBy as string) || 'createdAt';
-  const sortOrder = (params.sortOrder as string) || 'desc';
+  // 解析查询参数
+  const page = Number(searchParams.page) || 1;
+  const limit = Number(searchParams.limit) || paginationConfig.defaultPageSize;
+  const search = (searchParams.search as string) || '';
+  const status = (searchParams.status as string) || '';
+  const customerId = (searchParams.customerId as string) || '';
+  const sortBy = (searchParams.sortBy as string) || 'createdAt';
+  const sortOrder = (searchParams.sortOrder as string) || 'desc';
 
   // 服务器端获取初始数据
   const initialData = await getSalesOrders({

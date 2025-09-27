@@ -60,7 +60,7 @@ export function useDebouncedSearch(
   const mountedRef = useRef(true);
 
   // 清理定时器
-  const clearDebounceTimeout = useCallback(() => {
+  const clearTimeout = useCallback(() => {
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
@@ -69,24 +69,24 @@ export function useDebouncedSearch(
 
   // 立即触发搜索
   const triggerSearch = useCallback(() => {
-    clearDebounceTimeout();
+    clearTimeout();
     setIsDebouncing(false);
     setDebouncedValue(inputValue);
-  }, [inputValue, clearDebounceTimeout]);
+  }, [inputValue, clearTimeout]);
 
   // 清空搜索
   const clearSearch = useCallback(() => {
-    clearDebounceTimeout();
+    clearTimeout();
     setInputValue('');
     setDebouncedValue('');
     setIsDebouncing(false);
-  }, [clearDebounceTimeout]);
+  }, [clearTimeout]);
 
   // 防抖逻辑
   useEffect(() => {
     // 如果输入值长度小于最小长度，直接清空防抖值
     if (inputValue.length < minLength) {
-      clearDebounceTimeout();
+      clearTimeout();
       setIsDebouncing(false);
       setDebouncedValue('');
       return;
@@ -108,19 +108,19 @@ export function useDebouncedSearch(
     }, delay);
 
     return () => {
-      clearDebounceTimeout();
+      clearTimeout();
     };
-  }, [inputValue, debouncedValue, delay, minLength, clearDebounceTimeout]);
+  }, [inputValue, debouncedValue, delay, minLength, clearTimeout]);
 
   // 组件卸载时清理
   useEffect(
     () => () => {
       mountedRef.current = false;
       if (cancelOnUnmount) {
-        clearDebounceTimeout();
+        clearTimeout();
       }
     },
-    [cancelOnUnmount, clearDebounceTimeout]
+    [cancelOnUnmount, clearTimeout]
   );
 
   return {

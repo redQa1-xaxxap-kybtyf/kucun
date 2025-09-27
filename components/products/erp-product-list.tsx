@@ -60,7 +60,6 @@ import {
   productQueryKeys,
 } from '@/lib/api/products';
 import { paginationConfig } from '@/lib/env';
-import { type PaginatedResponse } from '@/lib/types/api';
 import {
   PRODUCT_STATUS_LABELS,
   PRODUCT_UNIT_LABELS,
@@ -70,35 +69,27 @@ import {
 
 interface ERPProductListProps {
   onProductSelect?: (productId: string) => void;
-  initialData?: PaginatedResponse<Product>;
-  initialParams?: ProductQueryParams;
 }
 
 /**
  * ERP风格产品管理列表组件
  * 符合中国ERP系统的界面标准和用户习惯
  */
-export function ERPProductList({
-  onProductSelect,
-  initialData,
-  initialParams,
-}: ERPProductListProps) {
+export function ERPProductList({ onProductSelect }: ERPProductListProps) {
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const [queryParams, setQueryParams] = React.useState<ProductQueryParams>(
-    initialParams || {
-      page: 1,
-      limit: paginationConfig.defaultPageSize,
-      search: '',
-      status: undefined,
-      unit: undefined,
-      categoryId: undefined,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    }
-  );
+  const [queryParams, setQueryParams] = React.useState<ProductQueryParams>({
+    page: 1,
+    limit: paginationConfig.defaultPageSize,
+    search: '',
+    status: undefined,
+    unit: undefined,
+    categoryId: undefined,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+  });
 
   // 删除确认对话框状态
   const [deleteDialog, setDeleteDialog] = React.useState<{
@@ -135,15 +126,10 @@ export function ERPProductList({
 
   const categories = categoriesResponse?.data || [];
 
-  // 获取产品列表数据 - 使用服务器端提供的初始数据
-  const { data, isLoading, error, isPreviousData } = useQuery({
+  // 获取产品列表数据
+  const { data, isLoading, error } = useQuery({
     queryKey: productQueryKeys.list(queryParams),
     queryFn: () => getProducts(queryParams),
-    initialData: initialData,
-    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
-    refetchOnWindowFocus: false, // 避免不必要的重新获取
-    keepPreviousData: true, // 保持之前的数据，避免加载时闪烁
-    refetchOnMount: false, // 避免挂载时重新获取
   });
 
   // 批量删除mutation

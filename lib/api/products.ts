@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 产品API客户端
  * 严格遵循全栈项目统一约定规范
  */
@@ -119,24 +119,7 @@ export async function createProduct(
   });
 
   if (!response.ok) {
-    let errorMessage = `创建产品失败: ${response.statusText}`;
-
-    try {
-      const errorBody = await response.json();
-      if (errorBody?.error) {
-        errorMessage = `创建产品失败: ${errorBody.error}`;
-      }
-      if (Array.isArray(errorBody?.details) && errorBody.details.length > 0) {
-        const firstDetail = errorBody.details[0];
-        if (firstDetail?.message) {
-          errorMessage = `${errorMessage} (${firstDetail.message})`;
-        }
-      }
-    } catch {
-      // 忽略解析错误，保留原始状态码消息
-    }
-
-    throw new Error(errorMessage);
+    throw new Error(`创建产品失败: ${response.statusText}`);
   }
 
   const data: ApiResponse<Product> = await response.json();

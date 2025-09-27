@@ -7,7 +7,6 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma, withTransaction } from '@/lib/db';
-import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
 import type {
   SalesOrderCreateFormData,
   SalesOrderItemFormData,
@@ -217,8 +216,7 @@ export async function getSalesOrderById(id: string) {
 }
 
 /**
- * 生成订单号 - 已废弃，请使用 generateSalesOrderNumber
- * @deprecated 使用 lib/services/simple-order-number-generator.ts 中的 generateSalesOrderNumber
+ * 生成订单号
  */
 export function generateOrderNumber(): string {
   const now = new Date();
@@ -320,8 +318,8 @@ export async function createSalesOrder(
   userId: string
 ) {
   return await withTransaction(async tx => {
-    // 生成订单号 - 使用新的安全生成服务
-    const orderNumber = data.orderNumber || (await generateSalesOrderNumber());
+    // 生成订单号
+    const orderNumber = data.orderNumber || generateOrderNumber();
 
     // 处理订单明细
     const processedItems = processOrderItems(data.items, data.orderType);
