@@ -16,24 +16,21 @@ import {
   inventoryQueryKeys,
 } from '@/lib/api/inventory';
 import { getProduct } from '@/lib/api/products';
+import { type InboundFormData } from '@/lib/types/inbound';
 import {
-  INBOUND_TYPE_LABELS,
-  OUTBOUND_TYPE_LABELS,
   type InboundRecord,
   type Inventory,
   type OutboundRecord,
 } from '@/lib/types/inventory';
+import { createInboundSchema } from '@/lib/validations/inbound';
 import {
-  inboundCreateDefaults,
-  inboundCreateSchema,
   inventoryAdjustDefaults,
   inventoryAdjustSchema,
   outboundCreateDefaults,
   outboundCreateSchema,
-  type InboundCreateFormData,
   type InventoryAdjustFormData,
   type OutboundCreateFormData,
-} from '@/lib/validations/inventory';
+} from '@/lib/validations/inventory-operations';
 
 export type OperationMode = 'inbound' | 'outbound' | 'adjust';
 
@@ -54,8 +51,18 @@ export function useInventoryOperationForm({
     switch (mode) {
       case 'inbound':
         return {
-          schema: inboundCreateSchema,
-          defaultValues: inboundCreateDefaults,
+          schema: createInboundSchema,
+          defaultValues: {
+            productId: '',
+            inputQuantity: 1,
+            inputUnit: 'pieces' as const,
+            quantity: 1,
+            reason: 'purchase' as const,
+            remarks: '',
+            batchNumber: '',
+            piecesPerUnit: 1,
+            weight: 0.01,
+          },
           title: '库存入库',
           description: '添加新的库存记录',
         };
@@ -81,7 +88,7 @@ export function useInventoryOperationForm({
   const formConfig = getFormConfig();
 
   const form = useForm<
-    InboundCreateFormData | OutboundCreateFormData | InventoryAdjustFormData
+    InboundFormData | OutboundCreateFormData | InventoryAdjustFormData
   >({
     resolver: zodResolver(formConfig.schema),
     defaultValues: formConfig.defaultValues,
@@ -162,16 +169,13 @@ export function useInventoryOperationForm({
 
   // 表单提交
   const onSubmit = async (
-    data:
-      | InboundCreateFormData
-      | OutboundCreateFormData
-      | InventoryAdjustFormData
+    data: InboundFormData | OutboundCreateFormData | InventoryAdjustFormData
   ) => {
     try {
       setSubmitError('');
       switch (mode) {
         case 'inbound':
-          await inboundMutation.mutateAsync(data as InboundCreateFormData);
+          await inboundMutation.mutateAsync(data as InboundFormData);
           break;
         case 'outbound':
           await outboundMutation.mutateAsync(data as OutboundCreateFormData);
@@ -189,15 +193,19 @@ export function useInventoryOperationForm({
   const getTypeOptions = () => {
     switch (mode) {
       case 'inbound':
-        return Object.entries(INBOUND_TYPE_LABELS).map(([value, label]) => ({
-          value,
-          label,
-        }));
+        return [
+          { value: 'purchase', label: '采购入库' },
+          { value: 'return', label: '退货入库' },
+          { value: 'transfer', label: '调拨入库' },
+          { value: 'surplus', label: '盘盈入库' },
+          { value: 'other', label: '其他入库' },
+        ];
       case 'outbound':
-        return Object.entries(OUTBOUND_TYPE_LABELS).map(([value, label]) => ({
-          value,
-          label,
-        }));
+        return [
+          { value: 'normal_outbound', label: '正常出库' },
+          { value: 'sales_outbound', label: '销售出库' },
+          { value: 'adjust_outbound', label: '调整出库' },
+        ];
       default:
         return [];
     }

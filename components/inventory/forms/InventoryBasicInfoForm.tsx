@@ -109,20 +109,19 @@ export function InventoryBasicInfoForm<T extends FieldValues>({
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {/* 数量 */}
+        {/* 调整数量（仅调整模式） */}
+        {mode === 'adjust' && (
           <FormField
             control={control}
-            name={'quantity' as Path<T>}
+            name={'adjustQuantity' as Path<T>}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>数量</FormLabel>
+                <FormLabel>调整数量</FormLabel>
                 <FormControl>
                   <Input
                     type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="输入数量"
+                    step="1"
+                    placeholder="正数增加，负数减少"
                     disabled={isLoading}
                     {...field}
                     onChange={e => field.onChange(Number(e.target.value))}
@@ -132,49 +131,76 @@ export function InventoryBasicInfoForm<T extends FieldValues>({
               </FormItem>
             )}
           />
+        )}
 
-          {/* 单位 */}
-          <FormField
-            control={control}
-            name={'unit' as Path<T>}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>单位</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="如：件、箱、个"
-                    disabled={isLoading}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {/* 数量（非调整模式） */}
+        {mode !== 'adjust' && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <FormField
+              control={control}
+              name={'quantity' as Path<T>}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>数量</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="输入数量"
+                      disabled={isLoading}
+                      {...field}
+                      onChange={e => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          {/* 单价 */}
-          <FormField
-            control={control}
-            name={'unitPrice' as Path<T>}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>单价</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    placeholder="输入单价"
-                    disabled={isLoading}
-                    {...field}
-                    onChange={e => field.onChange(Number(e.target.value))}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        </div>
+            {/* 单位 */}
+            <FormField
+              control={control}
+              name={'unit' as Path<T>}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>单位</FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="如：件、箱、个"
+                      disabled={isLoading}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 单价 */}
+            <FormField
+              control={control}
+              name={'unitPrice' as Path<T>}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>单价</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      placeholder="输入单价"
+                      disabled={isLoading}
+                      {...field}
+                      onChange={e => field.onChange(Number(e.target.value))}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -33,6 +33,10 @@ model User {
   refundRecords         RefundRecord[]
   systemLogs            SystemLog[]
 
+  // 库存调整关联关系
+  operatedAdjustments   InventoryAdjustment[] @relation("InventoryAdjustmentOperator")
+  approvedAdjustments   InventoryAdjustment[] @relation("InventoryAdjustmentApprover")
+
   @@index([email])
   @@index([username])
   @@index([role])
@@ -133,6 +137,8 @@ model Product {
   salesOrderItems            SalesOrderItem[]
   inboundRecords             InboundRecord[]
   factoryShipmentOrderItems  FactoryShipmentOrderItem[]
+  batchSpecifications        BatchSpecification[]
+  inventoryAdjustments       InventoryAdjustment[]
 
   @@index([code])
   @@index([name])
@@ -159,6 +165,7 @@ model ProductVariant {
   product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   inventory     Inventory[]
   inboundRecords InboundRecord[]
+  inventoryAdjustments InventoryAdjustment[]
 
   @@unique([productId, colorCode], map: "uk_product_color")
   @@index([productId])
@@ -259,35 +266,105 @@ model Inventory {
   @@map("inventory")
 }
 
-// 入库记录表 - 入库操作记录，支持多种入库类型
-model InboundRecord {
-  id             String    @id @default(uuid())
-  recordNumber   String    @unique @map("record_number")
-  productId      String    @map("product_id")
-  variantId      String?   @map("variant_id") // 产品变体ID（可选）
-  batchNumber    String?   @map("batch_number") // 生产批次号
-  quantity       Float     // 支持小数点，最小值0.01
-  unitCost       Float?    @map("unit_cost") // 单位成本
-  totalCost      Float?    @map("total_cost") // 总成本
-  location       String?   // 存储位置
-  reason         String    @default("purchase") // purchase, return, transfer, surplus, other
-  remarks        String?   // 最大500字符
-  userId         String    @map("user_id")
-  createdAt      DateTime  @default(now()) @map("created_at")
-  updatedAt      DateTime  @updatedAt @map("updated_at")
+// 批次规格参数表 - 管理每个批次的具体规格参数
+model BatchSpecification {
+  id            String   @id @default(uuid())
+  productId     String   @map("product_id")
+  batchNumber   String   @map("batch_number")
+  piecesPerUnit Int      @default(1) @map("pieces_per_unit") // 每单位片数
+  weight        Float?   // 产品重量(kg)
+  thickness     Float?   // 产品厚度(mm)
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
 
   // 关联关系
-  product Product @relation(fields: [productId], references: [id])
-  variant ProductVariant? @relation(fields: [variantId], references: [id])
-  user    User    @relation(fields: [userId], references: [id])
+  product        Product         @relation(fields: [productId], references: [id])
+  inboundRecords InboundRecord[]
+
+  @@unique([productId, batchNumber], map: "uk_batch_spec_product_batch")
+  @@index([productId], map: "idx_batch_spec_product")
+  @@index([batchNumber], map: "idx_batch_spec_batch")
+  @@index([piecesPerUnit], map: "idx_batch_spec_pieces")
+  @@map("batch_specifications")
+}
+
+// 入库记录表 - 入库操作记录，支持多种入库类型
+model InboundRecord {
+  id                     String    @id @default(uuid())
+  recordNumber           String    @unique @map("record_number")
+  productId              String    @map("product_id")
+  variantId              String?   @map("variant_id") // 产品变体ID（可选）
+  batchNumber            String?   @map("batch_number") // 生产批次号
+  batchSpecificationId   String?   @map("batch_specification_id") // 批次规格参数ID
+  quantity               Float     // 支持小数点，最小值0.01
+  unitCost               Float?    @map("unit_cost") // 单位成本
+  totalCost              Float?    @map("total_cost") // 总成本
+  location               String?   // 存储位置
+  reason                 String    @default("purchase") // purchase, return, transfer, surplus, other
+  remarks                String?   // 最大500字符
+  userId                 String    @map("user_id")
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  // 关联关系
+  product            Product             @relation(fields: [productId], references: [id])
+  variant            ProductVariant?     @relation(fields: [variantId], references: [id])
+  user               User                @relation(fields: [userId], references: [id])
+  batchSpecification BatchSpecification? @relation(fields: [batchSpecificationId], references: [id])
 
   @@index([productId], map: "idx_inbound_records_product")
   @@index([variantId], map: "idx_inbound_records_variant")
   @@index([batchNumber], map: "idx_inbound_records_batch")
+  @@index([batchSpecificationId], map: "idx_inbound_records_batch_spec")
   @@index([userId], map: "idx_inbound_records_user")
   @@index([reason], map: "idx_inbound_records_reason")
   @@index([createdAt(sort: Desc)], map: "idx_inbound_records_date")
   @@map("inbound_records")
+}
+
+// 库存调整记录表 - 库存调整操作的审计追溯
+model InventoryAdjustment {
+  id               String   @id @default(uuid())
+  adjustmentNumber String   @unique @map("adjustment_number") // 调整单号：TZ-YYYYMMDD-序号
+  productId        String   @map("product_id")
+  variantId        String?  @map("variant_id") // 产品变体ID（可选）
+  batchNumber      String?  @map("batch_number") // 生产批次号
+
+  // 调整数量信息
+  beforeQuantity   Int      @map("before_quantity") // 调整前数量
+  adjustQuantity   Int      @map("adjust_quantity") // 调整数量（正数增加，负数减少）
+  afterQuantity    Int      @map("after_quantity") // 调整后数量
+
+  // 调整原因和备注
+  reason           String   // inventory_gain, inventory_loss, damage_loss, surplus_gain, transfer, other
+  notes            String?  // 备注信息
+
+  // 审批状态
+  status           String   @default("draft") // draft, pending, approved, rejected
+
+  // 操作人员信息
+  operatorId       String   @map("operator_id") // 制单人
+  approverId       String?  @map("approver_id") // 审批人
+  approvedAt       DateTime? @map("approved_at") // 审批时间
+
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  product   Product         @relation(fields: [productId], references: [id])
+  variant   ProductVariant? @relation(fields: [variantId], references: [id])
+  operator  User            @relation("InventoryAdjustmentOperator", fields: [operatorId], references: [id])
+  approver  User?           @relation("InventoryAdjustmentApprover", fields: [approverId], references: [id])
+
+  @@index([productId], map: "idx_inventory_adjustments_product")
+  @@index([variantId], map: "idx_inventory_adjustments_variant")
+  @@index([batchNumber], map: "idx_inventory_adjustments_batch")
+  @@index([reason], map: "idx_inventory_adjustments_reason")
+  @@index([status], map: "idx_inventory_adjustments_status")
+  @@index([operatorId], map: "idx_inventory_adjustments_operator")
+  @@index([approverId], map: "idx_inventory_adjustments_approver")
+  @@index([createdAt(sort: Desc)], map: "idx_inventory_adjustments_date")
+  @@map("inventory_adjustments")
 }
 
 // 收款记录表 - 收款管理，支持部分收款和分期收款
@@ -486,6 +563,21 @@ model StatementTransaction {
   @@index([transactionDate(sort: Desc)], map: "idx_statement_transactions_date")
   @@index([status], map: "idx_statement_transactions_status")
   @@map("statement_transactions")
+}
+
+// 订单序列表 - 用于生成唯一的订单号，保证并发安全
+model OrderSequence {
+  id              String   @id @default(uuid())
+  sequenceType    String   @map("sequence_type") // sales_order, purchase_order等
+  dateKey         String   @map("date_key") // YYYYMMDD格式的日期键
+  currentSequence Int      @default(0) @map("current_sequence") // 当前序列号
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  @@unique([sequenceType, dateKey], map: "uk_order_sequences_type_date")
+  @@index([sequenceType], map: "idx_order_sequences_type")
+  @@index([dateKey], map: "idx_order_sequences_date")
+  @@map("order_sequences")
 }
 
 // 系统设置表 - 系统配置参数管理

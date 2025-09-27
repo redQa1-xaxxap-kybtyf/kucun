@@ -35,6 +35,21 @@ export const outboundCreateSchema = z
     }
   );
 
+// 调整原因枚举
+export const adjustReasonSchema = z.enum(
+  [
+    'inventory_gain', // 盘盈
+    'inventory_loss', // 盘亏
+    'damage_loss', // 报损
+    'surplus_gain', // 报溢
+    'transfer', // 调拨
+    'other', // 其他
+  ],
+  {
+    errorMap: () => ({ message: '请选择正确的调整原因' }),
+  }
+);
+
 // 库存调整验证
 export const inventoryAdjustSchema = z.object({
   productId: baseValidations.productId,
@@ -45,11 +60,18 @@ export const inventoryAdjustSchema = z.object({
     .min(-999999, '调整数量不能小于-999,999')
     .max(999999, '调整数量不能超过999,999')
     .refine(val => val !== 0, '调整数量不能为0'),
-  reason: z
+  reason: adjustReasonSchema,
+  notes: z
     .string()
-    .min(1, '请填写调整原因')
-    .max(200, '调整原因不能超过200个字符'),
-  remarks: baseValidations.remarks,
+    .max(500, '备注信息不能超过500个字符')
+    .optional()
+    .or(z.literal('')),
+  // ERP必需字段
+  variantId: z
+    .string()
+    .uuid('产品变体ID格式不正确')
+    .optional()
+    .or(z.literal('')),
   // 新增字段用于边界检查
   currentQuantity: z.number().int().min(0).optional(),
   maxQuantity: z.number().int().min(0).optional(),
@@ -128,7 +150,18 @@ export const outboundCreateDefaults: Partial<OutboundCreateFormData> = {
 
 export const inventoryAdjustDefaults: Partial<InventoryAdjustFormData> = {
   batchNumber: '',
-  adjustQuantity: 0,
-  reason: '',
-  remarks: '',
+  adjustQuantity: undefined, // 修复：不设置默认值，让用户主动输入
+  reason: 'other' as const,
+  notes: '',
+  variantId: '',
 };
+
+// 调整原因标签映射
+export const ADJUST_REASON_LABELS = {
+  inventory_gain: '盘盈',
+  inventory_loss: '盘亏',
+  damage_loss: '报损',
+  surplus_gain: '报溢',
+  transfer: '调拨',
+  other: '其他',
+} as const;

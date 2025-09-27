@@ -53,27 +53,27 @@ export function InventoryDetailForm<T extends FieldValues>({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {/* 批次号 */}
-          <FormField
-            control={control}
-            name={'batchNumber' as Path<T>}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>批次号</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="输入批次号"
-                    disabled={isLoading}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        {/* 批次号 */}
+        <FormField
+          control={control}
+          name={'batchNumber' as Path<T>}
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>批次号</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="输入批次号"
+                  disabled={isLoading}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          {/* 位置 */}
+        {/* 存储位置（仅入库和出库模式） */}
+        {(mode === 'inbound' || mode === 'outbound') && (
           <FormField
             control={control}
             name={'location' as Path<T>}
@@ -91,7 +91,7 @@ export function InventoryDetailForm<T extends FieldValues>({
               </FormItem>
             )}
           />
-        </div>
+        )}
 
         {/* 供应商/客户选择 */}
         {(mode === 'inbound' || mode === 'outbound') && (
