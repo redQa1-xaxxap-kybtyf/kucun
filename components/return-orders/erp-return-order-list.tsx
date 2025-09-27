@@ -44,7 +44,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getReturnOrders, returnOrderQueryKeys } from '@/lib/api/return-orders';
 import type {
   ReturnOrder,
   ReturnOrderQueryParams,
@@ -83,140 +82,48 @@ export function ERPReturnOrderList({
   });
 
   // 获取退货订单数据
-  const { data, isLoading, error } = useQuery({
-    queryKey: returnOrderQueryKeys.list(queryParams),
-    queryFn: () => getReturnOrders(queryParams),
-    // 临时使用模拟数据，直到API实现
-    retry: false,
-    meta: {
-      errorBoundary: false,
+  const {
+    data: queryData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ['return-orders', queryParams],
+    queryFn: async () => {
+      // 待办：实现真实的退货订单API
+      // 目前返回空数据，等待后端API实现
+      return {
+        success: true,
+        data: {
+          returnOrders: [],
+          pagination: {
+            page: 1,
+            limit: 20,
+            total: 0,
+            totalPages: 1,
+          },
+        },
+      };
     },
+    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
+    refetchOnWindowFocus: false,
   });
 
   // 临时模拟数据（当API不可用时）
   const mockData = {
     success: true,
     data: {
-      returnOrders: [
-        {
-          id: '1',
-          returnNumber: 'RT202501001',
-          salesOrderId: 'SO202501001',
-          customerId: 'customer1',
-          userId: 'user1',
-          type: 'quality_issue' as const,
-          processType: 'refund' as const,
-          status: 'submitted' as const,
-          reason: '产品质量问题，需要退货处理',
-          totalAmount: 1580.0,
-          refundAmount: 1580.0,
-          remarks: '客户反馈产品有质量缺陷',
-          submittedAt: '2025-01-15T10:30:00Z',
-          createdAt: '2025-01-15T09:00:00Z',
-          updatedAt: '2025-01-15T10:30:00Z',
-          salesOrder: {
-            id: 'SO202501001',
-            orderNumber: 'SO202501001',
-            customerId: 'customer1',
-            userId: 'user1',
-            status: 'completed' as const,
-            totalAmount: 1580.0,
-            createdAt: '2025-01-10T14:20:00Z',
-            updatedAt: '2025-01-12T16:45:00Z',
-          },
-          customer: {
-            id: 'customer1',
-            name: '北京科技有限公司',
-            phone: '010-88888888',
-            address: '北京市朝阳区科技园区',
-            createdAt: '2024-12-01T00:00:00Z',
-            updatedAt: '2024-12-01T00:00:00Z',
-          },
-        },
-        {
-          id: '2',
-          returnNumber: 'RT202501002',
-          salesOrderId: 'SO202501002',
-          customerId: 'customer2',
-          userId: 'user1',
-          type: 'wrong_product' as const,
-          processType: 'exchange' as const,
-          status: 'approved' as const,
-          reason: '发错产品，需要换货',
-          totalAmount: 2350.0,
-          refundAmount: 0.0,
-          remarks: '已安排换货处理',
-          submittedAt: '2025-01-16T14:20:00Z',
-          approvedAt: '2025-01-16T15:30:00Z',
-          createdAt: '2025-01-16T13:45:00Z',
-          updatedAt: '2025-01-16T15:30:00Z',
-          salesOrder: {
-            id: 'SO202501002',
-            orderNumber: 'SO202501002',
-            customerId: 'customer2',
-            userId: 'user1',
-            status: 'completed' as const,
-            totalAmount: 2350.0,
-            createdAt: '2025-01-12T09:15:00Z',
-            updatedAt: '2025-01-14T11:20:00Z',
-          },
-          customer: {
-            id: 'customer2',
-            name: '上海贸易公司',
-            phone: '021-66666666',
-            address: '上海市浦东新区商务区',
-            createdAt: '2024-11-15T00:00:00Z',
-            updatedAt: '2024-11-15T00:00:00Z',
-          },
-        },
-        {
-          id: '3',
-          returnNumber: 'RT202501003',
-          salesOrderId: 'SO202501003',
-          customerId: 'customer3',
-          userId: 'user1',
-          type: 'customer_change' as const,
-          processType: 'refund' as const,
-          status: 'processing' as const,
-          reason: '客户需求变更，申请退货',
-          totalAmount: 890.0,
-          refundAmount: 890.0,
-          remarks: '正在处理退款',
-          submittedAt: '2025-01-17T11:10:00Z',
-          approvedAt: '2025-01-17T14:20:00Z',
-          createdAt: '2025-01-17T10:30:00Z',
-          updatedAt: '2025-01-17T14:20:00Z',
-          salesOrder: {
-            id: 'SO202501003',
-            orderNumber: 'SO202501003',
-            customerId: 'customer3',
-            userId: 'user1',
-            status: 'completed' as const,
-            totalAmount: 890.0,
-            createdAt: '2025-01-14T16:30:00Z',
-            updatedAt: '2025-01-16T10:15:00Z',
-          },
-          customer: {
-            id: 'customer3',
-            name: '深圳制造企业',
-            phone: '0755-99999999',
-            address: '深圳市南山区高新园',
-            createdAt: '2024-10-20T00:00:00Z',
-            updatedAt: '2024-10-20T00:00:00Z',
-          },
-        },
-      ],
+      returnOrders: [],
       pagination: {
         page: 1,
         limit: 20,
-        total: 3,
+        total: 0,
         totalPages: 1,
       },
     },
   };
 
   // 如果API失败，使用模拟数据
-  const displayData = error ? mockData : data;
+  const displayData = error ? mockData : queryData;
 
   // 处理搜索
   const handleSearch = (search: string) => {

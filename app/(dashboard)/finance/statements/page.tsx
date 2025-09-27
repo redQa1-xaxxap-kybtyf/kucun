@@ -1,5 +1,6 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import {
   Download,
   Eye,
@@ -26,6 +27,42 @@ import {
 } from '@/components/ui/select';
 import { paginationConfig } from '@/lib/env';
 
+// 数据类型定义
+interface StatementSummary {
+  id: string;
+  name: string;
+  type: 'customer' | 'supplier';
+  totalOrders: number;
+  totalAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  overdueAmount: number;
+  lastTransactionDate: string | null;
+  creditLimit: number;
+  paymentTerms: string;
+}
+
+interface FinanceSummary {
+  totalCustomers: number;
+  totalSuppliers: number;
+  totalReceivable: number;
+  totalPayable: number;
+}
+
+interface StatementsResponse {
+  success: boolean;
+  data: {
+    statements: StatementSummary[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+    summary: FinanceSummary;
+  };
+}
+
 /**
  * 往来账单管理页面
  * 管理客户和供应商的综合账务往来
@@ -41,48 +78,49 @@ export default function StatementsPage() {
     sortOrder: 'desc' as 'asc' | 'desc',
   });
 
-  // 模拟数据 - 实际项目中应该从API获取
-  const mockData = {
-    data: [
-      {
-        id: '1',
-        name: '张三建材',
-        type: 'customer',
-        totalOrders: 15,
-        totalAmount: 125000.0,
-        paidAmount: 85000.0,
-        pendingAmount: 40000.0,
-        overdueAmount: 15000.0,
-        lastTransactionDate: '2025-01-15',
-        creditLimit: 50000.0,
-        paymentTerms: '30天',
-      },
-      {
-        id: '2',
-        name: '李四装饰',
-        type: 'customer',
-        totalOrders: 8,
-        totalAmount: 68000.0,
-        paidAmount: 68000.0,
-        pendingAmount: 0.0,
-        overdueAmount: 0.0,
-        lastTransactionDate: '2025-01-12',
-        creditLimit: 30000.0,
-        paymentTerms: '15天',
-      },
-    ],
-    pagination: {
-      page: 1,
-      limit: 20,
-      total: 2,
-      totalPages: 1,
-    },
-    summary: {
-      totalCustomers: 25,
-      totalSuppliers: 8,
-      totalReceivable: 125000.0,
-      totalPayable: 45000.0,
-    },
+  // API 调用函数
+  const fetchStatements = async (): Promise<StatementsResponse> => {
+    const searchParams = new URLSearchParams({
+      page: queryParams.page.toString(),
+      limit: queryParams.limit.toString(),
+      search: queryParams.search,
+      type: queryParams.type,
+      sortBy: queryParams.sortBy,
+      sortOrder: queryParams.sortOrder,
+    });
+
+    const response = await fetch(`/api/statements?${searchParams}`);
+    if (!response.ok) {
+      throw new Error('获取往来账单失败');
+    }
+    return response.json();
+  };
+
+  // 使用 TanStack Query 获取数据
+  const {
+    data: statementsData,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['statements', queryParams],
+    queryFn: fetchStatements,
+    staleTime: 5 * 60 * 1000, // 5分钟
+  });
+
+  // 从响应中提取数据
+  const statements = statementsData?.data?.statements || [];
+  const pagination = statementsData?.data?.pagination || {
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+  };
+  const summary = statementsData?.data?.summary || {
+    totalCustomers: 0,
+    totalSuppliers: 0,
+    totalReceivable: 0,
+    totalPayable: 0,
   };
 
   const formatCurrency = (amount: number) =>
@@ -144,7 +182,7 @@ export default function StatementsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {mockData.summary.totalCustomers}
+              {isLoading ? '-' : summary.totalCustomers}
             </div>
             <p className="text-xs text-muted-foreground">活跃客户</p>
           </CardContent>
@@ -157,7 +195,7 @@ export default function StatementsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(mockData.summary.totalReceivable)}
+              {isLoading ? '-' : formatCurrency(summary.totalReceivable)}
             </div>
             <p className="text-xs text-muted-foreground">客户应收账款</p>
           </CardContent>
@@ -170,7 +208,7 @@ export default function StatementsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">
-              {mockData.summary.totalSuppliers}
+              {isLoading ? '-' : summary.totalSuppliers}
             </div>
             <p className="text-xs text-muted-foreground">合作供应商</p>
           </CardContent>
@@ -183,7 +221,7 @@ export default function StatementsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {formatCurrency(mockData.summary.totalPayable)}
+              {isLoading ? '-' : formatCurrency(summary.totalPayable)}
             </div>
             <p className="text-xs text-muted-foreground">供应商应付账款</p>
           </CardContent>
@@ -222,135 +260,206 @@ export default function StatementsPage() {
 
           {/* 往来账单列表 */}
           <div className="mt-6 space-y-4">
-            {mockData.data.map(statement => {
-              const balanceStatus = getBalanceStatus(
-                statement.pendingAmount,
-                statement.overdueAmount
-              );
-              return (
-                <Card
-                  key={statement.id}
-                  className="transition-shadow hover:shadow-md"
+            {isError && (
+              <div className="py-8 text-center">
+                <p className="text-red-600">
+                  加载失败: {error?.message || '未知错误'}
+                </p>
+                <Button
+                  variant="outline"
+                  onClick={() => window.location.reload()}
+                  className="mt-2"
                 >
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-semibold">{statement.name}</h3>
-                          <Badge variant={balanceStatus.variant}>
-                            {balanceStatus.label}
-                          </Badge>
-                          <Badge variant="outline">
-                            {statement.type === 'customer' ? '客户' : '供应商'}
-                          </Badge>
+                  重试
+                </Button>
+              </div>
+            )}
+
+            {isLoading && (
+              <div className="space-y-4">
+                {[...Array(3)].map((_, index) => (
+                  <Card key={index} className="animate-pulse">
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <div className="h-4 w-32 rounded bg-gray-200"></div>
+                          <div className="h-3 w-48 rounded bg-gray-200"></div>
+                          <div className="h-3 w-24 rounded bg-gray-200"></div>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>总订单：{statement.totalOrders} 个</span>
-                          <span>账期：{statement.paymentTerms}</span>
-                          <span>
-                            信用额度：{formatCurrency(statement.creditLimit)}
-                          </span>
+                        <div className="space-y-2 text-right">
+                          <div className="h-4 w-24 rounded bg-gray-200"></div>
+                          <div className="h-4 w-20 rounded bg-gray-200"></div>
+                          <div className="h-4 w-16 rounded bg-gray-200"></div>
                         </div>
-                        <p className="text-sm text-muted-foreground">
-                          最后交易：{statement.lastTransactionDate}
-                        </p>
                       </div>
-                      <div className="space-y-2 text-right">
-                        <div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+
+            {!isLoading && !isError && statements.length === 0 && (
+              <div className="py-8 text-center">
+                <p className="text-muted-foreground">暂无往来账单数据</p>
+              </div>
+            )}
+
+            {!isLoading &&
+              !isError &&
+              statements.map(statement => {
+                const balanceStatus = getBalanceStatus(
+                  statement.pendingAmount,
+                  statement.overdueAmount
+                );
+                return (
+                  <Card
+                    key={statement.id}
+                    className="transition-shadow hover:shadow-md"
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-semibold">{statement.name}</h3>
+                            <Badge variant={balanceStatus.variant}>
+                              {balanceStatus.label}
+                            </Badge>
+                            <Badge variant="outline">
+                              {statement.type === 'customer'
+                                ? '客户'
+                                : '供应商'}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>总订单：{statement.totalOrders} 个</span>
+                            <span>账期：{statement.paymentTerms}</span>
+                            <span>
+                              信用额度：{formatCurrency(statement.creditLimit)}
+                            </span>
+                          </div>
                           <p className="text-sm text-muted-foreground">
-                            总交易金额
-                          </p>
-                          <p className="font-semibold">
-                            {formatCurrency(statement.totalAmount)}
+                            最后交易：{statement.lastTransactionDate}
                           </p>
                         </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            已付金额
-                          </p>
-                          <p className="font-semibold text-green-600">
-                            {formatCurrency(statement.paidAmount)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-sm text-muted-foreground">
-                            {statement.type === 'customer'
-                              ? '待收金额'
-                              : '待付金额'}
-                          </p>
-                          <p className="font-semibold text-orange-600">
-                            {formatCurrency(statement.pendingAmount)}
-                          </p>
-                        </div>
-                        {statement.overdueAmount > 0 && (
+                        <div className="space-y-2 text-right">
                           <div>
                             <p className="text-sm text-muted-foreground">
-                              逾期金额
+                              总交易金额
                             </p>
-                            <p className="font-semibold text-red-600">
-                              {formatCurrency(statement.overdueAmount)}
+                            <p className="font-semibold">
+                              {formatCurrency(statement.totalAmount)}
                             </p>
                           </div>
-                        )}
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              已付金额
+                            </p>
+                            <p className="font-semibold text-green-600">
+                              {formatCurrency(statement.paidAmount)}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              {statement.type === 'customer'
+                                ? '待收金额'
+                                : '待付金额'}
+                            </p>
+                            <p className="font-semibold text-orange-600">
+                              {formatCurrency(statement.pendingAmount)}
+                            </p>
+                          </div>
+                          {statement.overdueAmount > 0 && (
+                            <div>
+                              <p className="text-sm text-muted-foreground">
+                                逾期金额
+                              </p>
+                              <p className="font-semibold text-red-600">
+                                {formatCurrency(statement.overdueAmount)}
+                              </p>
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                    <div className="mt-4 flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          router.push(`/finance/statements/${statement.id}`)
-                        }
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        查看明细
-                      </Button>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          router.push(
-                            `/finance/statements/${statement.id}/export`
-                          )
-                        }
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        导出对账单
-                      </Button>
-                      {statement.type === 'customer' &&
-                        statement.pendingAmount > 0 && (
-                          <Button
-                            size="sm"
-                            onClick={() =>
-                              router.push(
-                                `/payments/create?customerId=${statement.id}`
-                              )
-                            }
-                          >
-                            收款
-                          </Button>
-                        )}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
+                      <div className="mt-4 flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            router.push(`/finance/statements/${statement.id}`)
+                          }
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          查看明细
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() =>
+                            router.push(
+                              `/finance/statements/${statement.id}/export`
+                            )
+                          }
+                        >
+                          <Download className="mr-2 h-4 w-4" />
+                          导出对账单
+                        </Button>
+                        {statement.type === 'customer' &&
+                          statement.pendingAmount > 0 && (
+                            <Button
+                              size="sm"
+                              onClick={() =>
+                                router.push(
+                                  `/payments/create?customerId=${statement.id}`
+                                )
+                              }
+                            >
+                              收款
+                            </Button>
+                          )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
           </div>
 
           {/* 分页 */}
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
-              共 {mockData.pagination.total} 条记录
-            </p>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" disabled>
-                上一页
-              </Button>
-              <Button variant="outline" size="sm" disabled>
-                下一页
-              </Button>
+          {!isLoading && !isError && (
+            <div className="mt-6 flex items-center justify-between">
+              <p className="text-sm text-muted-foreground">
+                共 {pagination.total} 条记录，第 {pagination.page} 页，共{' '}
+                {pagination.totalPages} 页
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page <= 1}
+                  onClick={() =>
+                    setQueryParams(prev => ({
+                      ...prev,
+                      page: Math.max(1, prev.page - 1),
+                    }))
+                  }
+                >
+                  上一页
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page >= pagination.totalPages}
+                  onClick={() =>
+                    setQueryParams(prev => ({
+                      ...prev,
+                      page: Math.min(pagination.totalPages, prev.page + 1),
+                    }))
+                  }
+                >
+                  下一页
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

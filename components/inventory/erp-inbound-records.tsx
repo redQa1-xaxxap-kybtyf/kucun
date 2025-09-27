@@ -194,7 +194,20 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
             <Filter className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs font-medium">筛选条件</span>
           </div>
-          <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-4">
+          <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-5">
+            {/* 搜索框 */}
+            <div>
+              <label className="text-xs text-muted-foreground">搜索</label>
+              <Input
+                type="text"
+                placeholder="搜索产品名称、编码或批次号..."
+                value={queryParams.search || ''}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                  handleFilter('search', e.target.value || undefined)
+                }
+                className="h-7 text-xs"
+              />
+            </div>
             <div>
               <label className="text-xs text-muted-foreground">开始日期</label>
               <Input
@@ -281,8 +294,11 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
               <TableHeader>
                 <TableRow className="h-8">
                   <TableHead className="text-xs">产品信息</TableHead>
+                  <TableHead className="text-xs">批次号</TableHead>
                   <TableHead className="text-xs">操作类型</TableHead>
                   <TableHead className="text-xs">数量</TableHead>
+                  <TableHead className="text-xs">每单位片数</TableHead>
+                  <TableHead className="text-xs">重量(kg)</TableHead>
                   <TableHead className="text-xs">操作人</TableHead>
                   <TableHead className="text-xs">操作时间</TableHead>
                   <TableHead className="text-xs">备注</TableHead>
@@ -305,6 +321,11 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
                       </div>
                     </TableCell>
                     <TableCell className="py-1">
+                      <span className="text-xs text-muted-foreground">
+                        {record.batchNumber || '-'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="py-1">
                       <Badge
                         variant={getOperationTypeVariant(record.reason)}
                         className="text-xs"
@@ -314,6 +335,19 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
                     </TableCell>
                     <TableCell className="py-1 text-xs font-medium">
                       +{record.quantity}片
+                    </TableCell>
+                    <TableCell className="py-1 text-xs">
+                      {/* 优先显示批次级规格参数，回退到产品级参数 */}
+                      {record.batchSpecification?.piecesPerUnit ||
+                        record.product?.piecesPerUnit ||
+                        '-'}
+                    </TableCell>
+                    <TableCell className="py-1 text-xs">
+                      {/* 优先显示批次级重量，回退到产品级重量 */}
+                      {record.batchSpecification?.weight ||
+                      record.product?.weight
+                        ? `${record.batchSpecification?.weight || record.product?.weight}kg`
+                        : '-'}
                     </TableCell>
                     <TableCell className="py-1">
                       <div className="flex items-center gap-1">

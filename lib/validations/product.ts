@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 产品表单验证规则
  * 遵循全栈开发执行手册：使用Zod进行表单验证，与React Hook Form集成
  *
@@ -47,15 +47,15 @@ const baseValidations = {
     errorMap: () => ({ message: '请选择有效的计量单位' }),
   }),
 
-  /** 每件片数验证：必填正整数，范围1-10000 */
+  /** 每件片数验证：可选正整数，范围1-10000，入库时确定 */
   piecesPerUnit: z
     .number({
-      required_error: '每件片数不能为空',
       invalid_type_error: '每件片数必须是数字',
     })
     .int('每件片数必须是整数')
     .min(1, '每件片数至少为1')
-    .max(10000, '每件片数不能超过10000'),
+    .max(10000, '每件片数不能超过10000')
+    .optional(),
 
   /** 重量验证：可选正数，最大100000kg */
   weight: z
@@ -81,15 +81,13 @@ const baseValidations = {
   }),
 };
 
-// 产品创建表单验证
+// 产品创建表单验证 - 移除重量和每单位片数字段
 export const productCreateSchema = z.object({
   code: baseValidations.code,
   name: baseValidations.name,
   specification: baseValidations.specification,
   description: baseValidations.description,
   unit: baseValidations.unit.default('piece'),
-  piecesPerUnit: baseValidations.piecesPerUnit.default(1),
-  weight: baseValidations.weight,
   thickness: baseValidations.thickness,
   status: baseValidations.status.default('active'),
   categoryId: z.string().optional(),
@@ -159,14 +157,13 @@ export type ProductSearchFormData = z.infer<typeof productSearchSchema>;
 export type BatchDeleteProductsData = z.infer<typeof batchDeleteProductsSchema>;
 export type ProductQueryParams = z.infer<typeof productQuerySchema>;
 
-// 表单默认值
+// 表单默认值 - 移除重量和每单位片数的默认值
 export const productCreateDefaults: Partial<ProductCreateFormData> = {
   unit: 'piece',
-  piecesPerUnit: 1,
   specification: '',
-  weight: undefined, // 修复：厚度和重量字段应该是可选的，使用 undefined 而不是 0
-  thickness: undefined, // 修复：厚度字段应该是可选的，使用 undefined 而不是 0
+  thickness: undefined, // 厚度字段是可选的
   images: [],
+  categoryId: 'uncategorized',
 };
 
 export const productSearchDefaults: ProductSearchFormData = {

@@ -34,7 +34,6 @@ import {
 import {
   OUTBOUND_TYPE_LABELS,
   OUTBOUND_TYPE_VARIANTS,
-  type OutboundRecord,
   type OutboundType,
 } from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
@@ -61,93 +60,14 @@ export function ERPOutboundRecords({ onCreateNew }: ERPOutboundRecordsProps) {
   const { data, isLoading } = useQuery({
     queryKey: ['outbound-records', filters],
     queryFn: async () => {
-      // 模拟API调用 - 实际项目中替换为真实API
-      const mockData: OutboundRecord[] = [
-        {
-          id: '1',
-          recordNumber: 'OUT001',
-          type: 'sales_outbound',
-          productId: 'prod1',
-          quantity: 50,
-          userId: 'user1',
-          remarks: '销售订单出库',
-          createdAt: '2025-09-20T14:30:00Z',
-          product: {
-            id: 'prod1',
-            name: '豪华大理石纹瓷砖',
-            code: 'TEST001',
-            unit: '片',
-            categoryId: 'cat1',
-            supplierId: 'sup1',
-            createdAt: '2025-09-20T10:00:00Z',
-            updatedAt: '2025-09-20T10:00:00Z',
-          },
-          user: {
-            id: 'user1',
-            name: '系统管理员',
-            email: 'admin@example.com',
-            role: 'admin',
-            createdAt: '2025-09-20T10:00:00Z',
-            updatedAt: '2025-09-20T10:00:00Z',
-          },
-        },
-        {
-          id: '2',
-          recordNumber: 'OUT002',
-          type: 'normal_outbound',
-          productId: 'prod2',
-          quantity: 25,
-          userId: 'user1',
-          remarks: '正常出库',
-          createdAt: '2025-09-19T16:45:00Z',
-          product: {
-            id: 'prod2',
-            name: '测试分类重置问题',
-            code: '3605',
-            unit: '片',
-            categoryId: 'cat1',
-            supplierId: 'sup1',
-            createdAt: '2025-09-19T10:00:00Z',
-            updatedAt: '2025-09-19T10:00:00Z',
-          },
-          user: {
-            id: 'user1',
-            name: '系统管理员',
-            email: 'admin@example.com',
-            role: 'admin',
-            createdAt: '2025-09-20T10:00:00Z',
-            updatedAt: '2025-09-20T10:00:00Z',
-          },
-        },
-      ];
-
-      // 应用筛选
-      let filteredData = mockData;
-
-      if (filters.type) {
-        filteredData = filteredData.filter(
-          record => record.type === filters.type
-        );
-      }
-
-      if (filters.startDate) {
-        filteredData = filteredData.filter(
-          record => new Date(record.createdAt) >= new Date(filters.startDate)
-        );
-      }
-
-      if (filters.endDate) {
-        filteredData = filteredData.filter(
-          record => new Date(record.createdAt) <= new Date(filters.endDate)
-        );
-      }
-
+      // 待办：实现真实的出库记录API
+      // 目前返回空数组，等待后端API实现
       return {
-        data: filteredData,
+        data: [],
         pagination: {
           page: 1,
           limit: 50,
-          total: filteredData.length,
+          total: 0,
           totalPages: 1,
         },
       };

@@ -1,6 +1,7 @@
 import { WebSocketServer, type WebSocket } from 'ws';
 
 import { appConfig, isDevelopment, wsConfig } from '@/lib/env';
+import { redis } from '@/lib/redis/redis-client';
 
 interface ClientInfo {
   socket: WebSocket;
@@ -23,8 +24,16 @@ function createServer(): ServerApi {
   const channels = new Map<string, Set<WebSocket>>();
   const clients = new Set<ClientInfo>();
 
+  // Redis 订阅客户端用于跨实例通信
+  const redisSubscriber = redis.getClient();
+  const redisPublisher = redis.getClient();
+
   function subscribe(client: ClientInfo, channel: string) {
-    if (!channels.has(channel)) channels.set(channel, new Set());
+    if (!channels.has(channel)) {
+      channels.set(channel, new Set());
+      // 首次订阅该频道时，订阅 Redis 频道
+      redisSubscriber.subscribe(`ws:${channel}`);
+    }
     channels.get(channel)?.add(client.socket);
     client.channels.add(channel);
   }
@@ -32,6 +41,12 @@ function createServer(): ServerApi {
   function unsubscribe(client: ClientInfo, channel: string) {
     channels.get(channel)?.delete(client.socket);
     client.channels.delete(channel);
+
+    // 如果该频道没有客户端了，取消 Redis 订阅
+    if (channels.get(channel)?.size === 0) {
+      channels.delete(channel);
+      redisSubscriber.unsubscribe(`ws:${channel}`);
+    }
   }
 
   function broadcast(channel: string, message: unknown) {
@@ -40,6 +55,19 @@ function createServer(): ServerApi {
       if (ws.readyState === ws.OPEN) ws.send(payload);
     });
   }
+
+  // 处理来自 Redis 的消息
+  redisSubscriber.on('message', (redisChannel: string, message: string) => {
+    if (redisChannel.startsWith('ws:')) {
+      const channel = redisChannel.slice(3); // 移除 'ws:' 前缀
+      try {
+        const data = JSON.parse(message);
+        broadcast(channel, data);
+      } catch (error) {
+        console.error('解析Redis消息失败:', error);
+      }
+    }
+  });
 
   // Simple auth: verify Next-Auth session via internal fetch using request cookies
   async function isAuthenticated(
@@ -68,7 +96,7 @@ function createServer(): ServerApi {
     if (wsConfig.allowedOrigins.length > 0) {
       const origin = request.headers.origin || '';
       if (!wsConfig.allowedOrigins.includes(origin)) {
-        socket.close(1008, 'Origin not allowed');
+        socket.close(1008, '禁止的来源');
         return;
       }
     }
@@ -76,7 +104,7 @@ function createServer(): ServerApi {
     // Auth
     const auth = await isAuthenticated(request.headers.cookie);
     if (!auth.ok) {
-      socket.close(1008, 'Unauthorized');
+      socket.close(1008, '未授权');
       return;
     }
 
@@ -138,7 +166,10 @@ function createServer(): ServerApi {
       // server already started
     },
     publish(channel, payload) {
+      // 本地广播
       broadcast(channel, payload);
+      // 通过 Redis 发布到其他实例
+      redisPublisher.publish(`ws:${channel}`, JSON.stringify(payload));
     },
   };
 }

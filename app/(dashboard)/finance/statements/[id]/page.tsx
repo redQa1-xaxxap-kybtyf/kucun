@@ -1,5 +1,6 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import {
   ArrowLeft,
   DollarSign,
@@ -12,6 +13,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,8 +28,47 @@ import {
 } from '@/components/ui/table';
 
 interface StatementDetailPageProps {
-  params: {
+  params: Promise<{
     id: string;
+  }>;
+}
+
+// 数据类型定义
+interface StatementDetail {
+  id: string;
+  name: string;
+  type: 'customer' | 'supplier';
+  totalOrders: number;
+  totalAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+  overdueAmount: number;
+  creditLimit: number;
+  paymentTerms: string;
+  status: string;
+  lastTransactionDate: string | null;
+  lastPaymentDate: string | null;
+  contact: {
+    phone: string;
+    address: string;
+  };
+  transactions: Array<{
+    id: string;
+    type: string;
+    referenceNumber: string;
+    amount: number;
+    balance: number;
+    description: string;
+    transactionDate: string;
+    dueDate?: string;
+    status: string;
+  }>;
+  summary: {
+    currentMonthAmount: number;
+    lastMonthAmount: number;
+    averageMonthlyAmount: number;
+    paymentRate: number;
+    averagePaymentDays: number;
   };
 }
 
@@ -39,8 +80,41 @@ export default function StatementDetailPage({
   params,
 }: StatementDetailPageProps) {
   const router = useRouter();
+  const [id, setId] = React.useState<string>('');
 
-  // 模拟数据 - 实际项目中应该从API获取
+  // 解析 params
+  React.useEffect(() => {
+    params.then(resolvedParams => {
+      setId(resolvedParams.id);
+    });
+  }, [params]);
+
+  // API 调用函数
+  const fetchStatementDetail = async (): Promise<StatementDetail> => {
+    if (!id) throw new Error('ID 不能为空');
+
+    const response = await fetch(`/api/statements/${id}`);
+    if (!response.ok) {
+      throw new Error('获取账单详情失败');
+    }
+    const result = await response.json();
+    return result.data;
+  };
+
+  // 使用 TanStack Query 获取数据
+  const {
+    data: statement,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['statement-detail', id],
+    queryFn: fetchStatementDetail,
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000, // 5分钟
+  });
+
+  // 保留原有的 mockStatement 作为加载状态的占位符
   const mockStatement = {
     id: params.id,
     name: '张三建材',
@@ -165,6 +239,85 @@ export default function StatementDetailPage({
     );
   };
 
+  // 加载和错误状态处理
+  if (isLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="sm" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            返回
+          </Button>
+          <div className="animate-pulse">
+            <div className="h-8 w-48 rounded bg-gray-200"></div>
+            <div className="mt-2 flex gap-2">
+              <div className="h-6 w-16 rounded bg-gray-200"></div>
+              <div className="h-6 w-16 rounded bg-gray-200"></div>
+            </div>
+          </div>
+        </div>
+        <div className="grid gap-6 lg:grid-cols-3">
+          {[...Array(3)].map((_, index) => (
+            <Card key={index} className="animate-pulse">
+              <CardHeader>
+                <div className="h-6 w-24 rounded bg-gray-200"></div>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {[...Array(6)].map((_, i) => (
+                  <div key={i} className="flex justify-between">
+                    <div className="h-4 w-20 rounded bg-gray-200"></div>
+                    <div className="h-4 w-16 rounded bg-gray-200"></div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="sm" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            返回
+          </Button>
+        </div>
+        <div className="py-8 text-center">
+          <p className="text-red-600">
+            加载失败: {error?.message || '未知错误'}
+          </p>
+          <Button
+            variant="outline"
+            onClick={() => window.location.reload()}
+            className="mt-2"
+          >
+            重试
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!statement) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Button variant="outline" size="sm" onClick={() => router.back()}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            返回
+          </Button>
+        </div>
+        <div className="py-8 text-center">
+          <p className="text-muted-foreground">账单不存在</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* 页面标题和操作 */}
@@ -176,13 +329,13 @@ export default function StatementDetailPage({
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight">
-              {mockStatement.name}
+              {statement.name}
             </h1>
             <div className="mt-1 flex items-center gap-2">
               <Badge variant="outline">
-                {mockStatement.type === 'customer' ? '客户' : '供应商'}
+                {statement.type === 'customer' ? '客户' : '供应商'}
               </Badge>
-              {getStatusBadge(mockStatement.status)}
+              {getStatusBadge(statement.status)}
             </div>
           </div>
         </div>
@@ -195,13 +348,12 @@ export default function StatementDetailPage({
             <Receipt className="mr-2 h-4 w-4" />
             生成报表
           </Button>
-          {mockStatement.type === 'customer' &&
-            mockStatement.pendingAmount > 0 && (
-              <Button size="sm">
-                <DollarSign className="mr-2 h-4 w-4" />
-                收款
-              </Button>
-            )}
+          {statement.type === 'customer' && statement.pendingAmount > 0 && (
+            <Button size="sm">
+              <DollarSign className="mr-2 h-4 w-4" />
+              收款
+            </Button>
+          )}
         </div>
       </div>
 
@@ -218,34 +370,36 @@ export default function StatementDetailPage({
           <CardContent className="space-y-3">
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">联系电话</span>
-              <span className="font-medium">{mockStatement.contact.phone}</span>
+              <span className="font-medium">
+                {statement.contact.phone || '-'}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">地址</span>
               <span className="text-right text-sm font-medium">
-                {mockStatement.contact.address}
+                {statement.contact.address || '-'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">信用额度</span>
               <span className="font-medium">
-                {formatCurrency(mockStatement.creditLimit)}
+                {formatCurrency(statement.creditLimit)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">付款条件</span>
-              <span className="font-medium">{mockStatement.paymentTerms}</span>
+              <span className="font-medium">{statement.paymentTerms}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">最后交易</span>
               <span className="font-medium">
-                {mockStatement.lastTransactionDate}
+                {statement.lastTransactionDate || '-'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">最后付款</span>
               <span className="font-medium">
-                {mockStatement.lastPaymentDate}
+                {statement.lastPaymentDate || '-'}
               </span>
             </div>
           </CardContent>
@@ -263,35 +417,35 @@ export default function StatementDetailPage({
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">总交易金额</span>
               <span className="font-bold">
-                {formatCurrency(mockStatement.totalAmount)}
+                {formatCurrency(statement.totalAmount)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">已付金额</span>
               <span className="font-medium text-green-600">
-                {formatCurrency(mockStatement.paidAmount)}
+                {formatCurrency(statement.paidAmount)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">待收金额</span>
               <span className="font-medium text-orange-600">
-                {formatCurrency(mockStatement.pendingAmount)}
+                {formatCurrency(statement.pendingAmount)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">逾期金额</span>
               <span className="font-medium text-red-600">
-                {formatCurrency(mockStatement.overdueAmount)}
+                {formatCurrency(statement.overdueAmount)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">总订单数</span>
-              <span className="font-medium">{mockStatement.totalOrders}</span>
+              <span className="font-medium">{statement.totalOrders}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">收款率</span>
               <span className="font-medium">
-                {mockStatement.summary.paymentRate}%
+                {statement.summary.paymentRate}%
               </span>
             </div>
           </CardContent>
@@ -309,38 +463,50 @@ export default function StatementDetailPage({
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">本月交易</span>
               <span className="font-medium">
-                {formatCurrency(mockStatement.summary.currentMonthAmount)}
+                {formatCurrency(statement.summary.currentMonthAmount)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">上月交易</span>
               <span className="font-medium">
-                {formatCurrency(mockStatement.summary.lastMonthAmount)}
+                {formatCurrency(statement.summary.lastMonthAmount)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">月均交易</span>
               <span className="font-medium">
-                {formatCurrency(mockStatement.summary.averageMonthlyAmount)}
+                {formatCurrency(statement.summary.averageMonthlyAmount)}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">平均账期</span>
               <span className="font-medium">
-                {mockStatement.summary.averagePaymentDays}天
+                {statement.summary.averagePaymentDays}天
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-sm text-muted-foreground">环比增长</span>
               <span className="font-medium text-green-600">
-                +
-                {(
-                  ((mockStatement.summary.currentMonthAmount -
-                    mockStatement.summary.lastMonthAmount) /
-                    mockStatement.summary.lastMonthAmount) *
-                  100
-                ).toFixed(1)}
-                %
+                {statement.summary.lastMonthAmount > 0 ? (
+                  <>
+                    {((statement.summary.currentMonthAmount -
+                      statement.summary.lastMonthAmount) /
+                      statement.summary.lastMonthAmount) *
+                      100 >
+                    0
+                      ? '+'
+                      : ''}
+                    {(
+                      ((statement.summary.currentMonthAmount -
+                        statement.summary.lastMonthAmount) /
+                        statement.summary.lastMonthAmount) *
+                      100
+                    ).toFixed(1)}
+                    %
+                  </>
+                ) : (
+                  '-'
+                )}
               </span>
             </div>
           </CardContent>
@@ -371,7 +537,7 @@ export default function StatementDetailPage({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {mockStatement.transactions.map(transaction => (
+              {statement.transactions.map(transaction => (
                 <TableRow key={transaction.id}>
                   <TableCell>
                     {getTransactionTypeBadge(transaction.type)}

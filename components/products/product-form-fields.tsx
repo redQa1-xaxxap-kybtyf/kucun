@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 产品表单字段组件
  * 提供可复用的产品表单字段，遵循唯一真理源原则
  */
@@ -25,7 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { getCategories } from '@/lib/api/categories';
+import { categoryQueryKeys, getCategories } from '@/lib/api/categories';
 import {
   PRODUCT_STATUS_OPTIONS,
   PRODUCT_UNIT_OPTIONS,
@@ -313,8 +313,9 @@ export function ProductCategoryField<T extends FieldValues>({
   disabled,
 }: ProductFormFieldProps<T>) {
   const { data: categories, isLoading } = useQuery({
-    queryKey: ['categories'],
-    queryFn: () => getCategories({ status: 'active' }),
+    queryKey: categoryQueryKeys.options(),
+    queryFn: () => getCategories({ status: 'active', limit: 100 }),
+    staleTime: 5 * 60 * 1000,
   });
 
   return (
@@ -326,7 +327,11 @@ export function ProductCategoryField<T extends FieldValues>({
           <FormLabel>产品分类</FormLabel>
           <Select
             onValueChange={field.onChange}
-            defaultValue={field.value}
+            value={
+              field.value === ''
+                ? 'uncategorized'
+                : (field.value ?? 'uncategorized')
+            }
             disabled={disabled || isLoading}
           >
             <FormControl>
@@ -335,7 +340,7 @@ export function ProductCategoryField<T extends FieldValues>({
               </SelectTrigger>
             </FormControl>
             <SelectContent>
-              <SelectItem value="">无分类</SelectItem>
+              <SelectItem value="uncategorized">无分类</SelectItem>
               {categories?.data?.map(category => (
                 <SelectItem key={category.id} value={category.id}>
                   {category.name}

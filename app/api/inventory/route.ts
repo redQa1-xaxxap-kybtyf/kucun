@@ -1,9 +1,10 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
+import { cacheConfig } from '@/lib/env';
 import { INVENTORY_THRESHOLDS } from '@/lib/types/inventory-status';
 import {
   inventoryAdjustSchema,
@@ -38,8 +39,9 @@ export async function GET(request: NextRequest) {
 
       lowStock: searchParams.get('lowStock'),
       hasStock: searchParams.get('hasStock'),
-      groupByVariant: searchParams.get('groupByVariant'),
-      includeVariants: searchParams.get('includeVariants'),
+      // 移除悬空的变体相关参数
+      // groupByVariant: searchParams.get('groupByVariant'),
+      // includeVariants: searchParams.get('includeVariants'),
     };
 
     // 验证查询参数 - 使用专门的库存查询验证规则
@@ -205,7 +207,7 @@ export async function GET(request: NextRequest) {
           },
         } as const;
       },
-      60
+      cacheConfig.inventoryTtl // 使用配置的库存缓存TTL
     );
 
     return NextResponse.json({ success: true, data: cached });
@@ -363,6 +365,18 @@ export async function POST(request: NextRequest) {
           return { formattedInventory, message } as const;
         }
       );
+
+      // 清除相关缓存
+      await invalidateInventoryCache(pid);
+
+      // WebSocket 推送更新
+      publishWs('inventory', {
+        type: 'adjust',
+        productId: pid,
+        adjustmentType,
+        quantity,
+        inventoryId: formattedInventory.id,
+      });
 
       return NextResponse.json({
         success: true,

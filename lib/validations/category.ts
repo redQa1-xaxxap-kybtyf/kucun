@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 分类验证规则
  * 遵循全栈开发执行手册：使用Zod进行表单验证
  *
@@ -47,7 +47,7 @@ const baseValidations = {
  */
 export const CreateCategorySchema = z.object({
   name: baseValidations.name,
-  code: baseValidations.code,
+  code: baseValidations.code.optional(),
   parentId: baseValidations.parentId,
   sortOrder: baseValidations.sortOrder,
   status: baseValidations.status.default('active'),

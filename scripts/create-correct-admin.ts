@@ -24,9 +24,9 @@ async function createCorrectAdmin() {
 
     // 创建正确的管理员用户
     console.log('👤 创建新的管理员用户...');
-    
+
     const passwordHash = await bcrypt.hash('admin123456', 10);
-    
+
     const adminUser = await prisma.user.create({
       data: {
         email: 'admin@inventory.com',
@@ -47,14 +47,17 @@ async function createCorrectAdmin() {
 
     // 验证密码
     console.log('\n🔐 验证密码...');
-    const isPasswordValid = await bcrypt.compare('admin123456', adminUser.passwordHash);
+    const isPasswordValid = await bcrypt.compare(
+      'admin123456',
+      adminUser.passwordHash
+    );
     console.log(`   密码验证: ${isPasswordValid ? '✅ 正确' : '❌ 错误'}`);
 
     // 同样创建销售员用户
     console.log('\n👤 创建销售员用户...');
-    
+
     const salesPasswordHash = await bcrypt.hash('sales123456', 10);
-    
+
     const salesUser = await prisma.user.upsert({
       where: { username: 'sales' },
       update: {},
@@ -74,7 +77,6 @@ async function createCorrectAdmin() {
     console.log('\n📋 登录信息:');
     console.log('管理员: admin / admin123456');
     console.log('销售员: sales / sales123456');
-
   } catch (error) {
     console.error('❌ 创建用户失败:', error);
   } finally {
