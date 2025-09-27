@@ -1,5 +1,6 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { Prisma } from '@prisma/client';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -28,8 +29,44 @@ export async function GET(request: NextRequest) {
     const customerId = searchParams.get('customerId');
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
-    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortBy = searchParams.get('sortBy') || 'orderDate';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
+
+    // 参数验证
+    if (page < 1 || pageSize < 1 || pageSize > 100) {
+      return NextResponse.json(
+        { success: false, error: '分页参数无效' },
+        { status: 400 }
+      );
+    }
+
+    if (sortOrder !== 'asc' && sortOrder !== 'desc') {
+      return NextResponse.json(
+        { success: false, error: '排序方向参数无效' },
+        { status: 400 }
+      );
+    }
+
+    // 建立前端字段与数据库字段的映射关系
+    const sortFieldMapping: Record<
+      string,
+      keyof Prisma.SalesOrderOrderByWithRelationInput
+    > = {
+      orderDate: 'createdAt', // 订单日期 -> 创建时间
+      totalAmount: 'totalAmount', // 订单金额
+      customerName: 'customer', // 客户名称（需要特殊处理）
+      createdAt: 'createdAt', // 创建时间
+      updatedAt: 'updatedAt', // 更新时间
+    };
+
+    // 验证并获取实际的排序字段，如果字段不存在则使用默认值
+    const actualSortField = sortFieldMapping[sortBy] || 'createdAt';
+
+    // 对于客户名称排序，需要特殊处理
+    const orderByClause =
+      sortBy === 'customerName'
+        ? { customer: { name: sortOrder as 'asc' | 'desc' } }
+        : { [actualSortField]: sortOrder as 'asc' | 'desc' };
 
     // 构建查询条件
     const whereConditions = {
@@ -58,33 +95,42 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * pageSize;
 
     // 查询销售订单和相关的收款记录
-    const [salesOrders, total] = await Promise.all([
-      prisma.salesOrder.findMany({
-        where: whereConditions,
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
+    let salesOrders, total;
+    try {
+      [salesOrders, total] = await Promise.all([
+        prisma.salesOrder.findMany({
+          where: whereConditions,
+          include: {
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+              },
+            },
+            payments: {
+              where: {
+                status: 'confirmed',
+              },
+              select: {
+                paymentAmount: true,
+                paymentDate: true,
+              },
             },
           },
-          payments: {
-            where: {
-              status: 'confirmed',
-            },
-            select: {
-              paymentAmount: true,
-              paymentDate: true,
-            },
-          },
-        },
-        orderBy: { [sortBy]: sortOrder },
-        skip,
-        take: pageSize,
-      }),
-      prisma.salesOrder.count({ where: whereConditions }),
-    ]);
+          orderBy: orderByClause,
+          skip,
+          take: pageSize,
+        }),
+        prisma.salesOrder.count({ where: whereConditions }),
+      ]);
+    } catch (error) {
+      console.error('数据库查询错误:', error);
+      return NextResponse.json(
+        { success: false, error: '查询应收账款数据失败' },
+        { status: 500 }
+      );
+    }
 
     // 转换为应收账款格式
     const receivables = salesOrders.map(order => {
@@ -148,6 +194,12 @@ export async function GET(request: NextRequest) {
       ? receivables.filter(r => r.paymentStatus === status)
       : receivables;
 
+    // 应用分页到筛选后的结果
+    const paginatedReceivables = filteredReceivables.slice(
+      (page - 1) * pageSize,
+      page * pageSize
+    );
+
     // 计算统计数据
     const summary = {
       totalReceivable: filteredReceivables.reduce(
@@ -166,14 +218,12 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({
       success: true,
       data: {
-        receivables: filteredReceivables,
+        receivables: paginatedReceivables,
         pagination: {
           page,
           pageSize,
-          total: status ? filteredReceivables.length : total,
-          totalPages: Math.ceil(
-            (status ? filteredReceivables.length : total) / pageSize
-          ),
+          total: filteredReceivables.length,
+          totalPages: Math.ceil(filteredReceivables.length / pageSize),
         },
         summary,
       },

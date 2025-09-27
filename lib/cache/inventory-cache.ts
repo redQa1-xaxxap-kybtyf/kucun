@@ -39,15 +39,20 @@ export async function setCachedInventory(
 }
 
 /**
+ * 库存汇总类型定义
+ */
+export interface InventorySummary {
+  totalQuantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+}
+
+/**
  * 获取产品库存汇总缓存
  */
 export async function getCachedProductInventorySummary(
   productId: string
-): Promise<{
-  totalQuantity: number;
-  reservedQuantity: number;
-  availableQuantity: number;
-} | null> {
+): Promise<InventorySummary | null> {
   const cacheKey = `inventory:summary:${productId}`;
   return getOrSetJSON(
     cacheKey,
@@ -71,6 +76,95 @@ export async function getCachedProductInventorySummary(
     },
     cacheConfig.inventoryTtl
   );
+}
+
+/**
+ * 批量获取产品库存汇总缓存
+ */
+export async function getBatchCachedInventorySummary(
+  productIds: string[]
+): Promise<Map<string, InventorySummary>> {
+  if (productIds.length === 0) return new Map();
+
+  const inventoryMap = new Map<string, InventorySummary>();
+  const uncachedIds: string[] = [];
+
+  // 批量从缓存获取，避免 N+1 查询
+  const cacheKeys = productIds.map(id => `inventory:summary:${id}`);
+  const cachedResults = await Promise.all(
+    cacheKeys.map(async (key, index) => {
+      const productId = productIds[index];
+      try {
+        const cached = await getJSON<InventorySummary>(key);
+        return { productId, cached };
+      } catch {
+        return { productId, cached: null };
+      }
+    })
+  );
+
+  // 分离已缓存和未缓存的产品ID
+  cachedResults.forEach(({ productId, cached }) => {
+    if (cached) {
+      inventoryMap.set(productId, cached);
+    } else {
+      uncachedIds.push(productId);
+    }
+  });
+
+  // 对于未缓存的数据，批量查询数据库
+  if (uncachedIds.length > 0) {
+    const inventorySummary = await prisma.inventory.groupBy({
+      by: ['productId'],
+      where: {
+        productId: { in: uncachedIds },
+      },
+      _sum: {
+        quantity: true,
+        reservedQuantity: true,
+      },
+    });
+
+    // 处理查询结果并设置缓存
+    const setCachePromises = inventorySummary.map(async item => {
+      const summary: InventorySummary = {
+        totalQuantity: item._sum.quantity || 0,
+        reservedQuantity: item._sum.reservedQuantity || 0,
+        availableQuantity:
+          (item._sum.quantity || 0) - (item._sum.reservedQuantity || 0),
+      };
+
+      inventoryMap.set(item.productId, summary);
+
+      // 异步设置缓存
+      const cacheKey = `inventory:summary:${item.productId}`;
+      getOrSetJSON(cacheKey, async () => summary, cacheConfig.inventoryTtl);
+    });
+
+    await Promise.all(setCachePromises);
+
+    // 为没有库存记录的产品设置默认值
+    uncachedIds.forEach(productId => {
+      if (!inventoryMap.has(productId)) {
+        const defaultSummary: InventorySummary = {
+          totalQuantity: 0,
+          reservedQuantity: 0,
+          availableQuantity: 0,
+        };
+        inventoryMap.set(productId, defaultSummary);
+
+        // 异步设置缓存
+        const cacheKey = `inventory:summary:${productId}`;
+        getOrSetJSON(
+          cacheKey,
+          async () => defaultSummary,
+          cacheConfig.inventoryTtl
+        );
+      }
+    });
+  }
+
+  return inventoryMap;
 }
 
 /**

@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import {
@@ -7,7 +7,7 @@ import {
   paymentRecordQuerySchema,
 } from '@/lib/validations/payment';
 
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 
 /**
  * GET /api/payments - 获取收款记录列表

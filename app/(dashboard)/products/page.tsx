@@ -2,8 +2,59 @@ import { Suspense } from 'react';
 
 import { ERPProductList } from '@/components/products/erp-product-list';
 import { ProductListSkeleton } from '@/components/products/product-list-skeleton';
-import { getProducts } from '@/lib/api/handlers/products';
 import { paginationConfig, productConfig } from '@/lib/env';
+
+// 临时创建一个服务器端的产品获取函数
+async function getProducts(params: {
+  page: number;
+  limit: number;
+  search: string;
+  categoryId: string;
+  status: string;
+  sortBy: string;
+  sortOrder: string;
+  includeInventory: boolean;
+  includeStatistics: boolean;
+}) {
+  // 构建查询参数
+  const searchParams = new URLSearchParams({
+    page: params.page.toString(),
+    limit: params.limit.toString(),
+    search: params.search,
+    categoryId: params.categoryId,
+    status: params.status,
+    sortBy: params.sortBy,
+    sortOrder: params.sortOrder,
+    includeInventory: params.includeInventory.toString(),
+    includeStatistics: params.includeStatistics.toString(),
+  });
+
+  // 调用内部 API - 使用相对路径避免端口硬编码
+  const baseUrl =
+    process.env.NODE_ENV === 'development'
+      ? `http://localhost:${process.env.PORT || 3001}`
+      : '';
+  const response = await fetch(
+    `${baseUrl}/api/products?${searchParams.toString()}`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error(`获取产品列表失败: ${response.statusText}`);
+  }
+
+  const result = await response.json();
+  if (!result.success) {
+    throw new Error(result.error || '获取产品列表失败');
+  }
+
+  return result.data;
+}
 
 /**
  * 产品管理页面 - 使用服务器组件优化首屏加载
@@ -12,21 +63,21 @@ import { paginationConfig, productConfig } from '@/lib/env';
 export default async function ProductsPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  // 解析查询参数
-  const page = Number(searchParams.page) || 1;
-  const limit = Number(searchParams.limit) || paginationConfig.defaultPageSize;
-  const search = (searchParams.search as string) || '';
-  const categoryId = (searchParams.categoryId as string) || '';
-  const status = (searchParams.status as string) || 'active';
-  const sortBy = (searchParams.sortBy as string) || 'createdAt';
-  const sortOrder = (searchParams.sortOrder as string) || 'desc';
+  // 等待并解析查询参数
+  const params = await searchParams;
+  const page = Number(params.page) || 1;
+  const limit = Number(params.limit) || paginationConfig.defaultPageSize;
+  const search = (params.search as string) || '';
+  const categoryId = (params.categoryId as string) || '';
+  const status = (params.status as string) || 'active';
+  const sortBy = (params.sortBy as string) || 'createdAt';
+  const sortOrder = (params.sortOrder as string) || 'desc';
   const includeInventory =
-    searchParams.includeInventory === 'true' ||
-    productConfig.defaultIncludeInventory;
+    params.includeInventory === 'true' || productConfig.defaultIncludeInventory;
   const includeStatistics =
-    searchParams.includeStatistics === 'true' ||
+    params.includeStatistics === 'true' ||
     productConfig.defaultIncludeStatistics;
 
   // 服务器端获取初始数据

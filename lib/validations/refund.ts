@@ -3,7 +3,7 @@
 
 import { z } from 'zod';
 
-import { paginationConfig } from '@/lib/env';
+import { paginationConfig, returnRefundConfig } from '@/lib/env';
 
 // 退款方式验证规则
 export const refundMethodSchema = z.enum(

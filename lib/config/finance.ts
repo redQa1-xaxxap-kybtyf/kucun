@@ -5,6 +5,76 @@
  * 请使用 paginationConfig 和 financeConfig 替代硬编码值
  */
 
+// 支付方式中文标签映射
+export const PAYMENT_METHOD_LABELS = {
+  [PAYMENT_METHODS.CASH]: '现金',
+  [PAYMENT_METHODS.BANK_TRANSFER]: '银行转账',
+  [PAYMENT_METHODS.CHECK]: '支票',
+  [PAYMENT_METHODS.OTHER]: '其他',
+} as const;
+
+// 支付状态中文标签映射
+export const PAYMENT_STATUS_LABELS = {
+  [PAYMENT_STATUSES.PENDING]: '待确认',
+  [PAYMENT_STATUSES.CONFIRMED]: '已确认',
+  [PAYMENT_STATUSES.CANCELLED]: '已取消',
+} as const;
+
+// 退款类型中文标签映射
+export const REFUND_TYPE_LABELS = {
+  [REFUND_TYPES.FULL_REFUND]: '全额退款',
+  [REFUND_TYPES.PARTIAL_REFUND]: '部分退款',
+  [REFUND_TYPES.EXCHANGE_REFUND]: '换货退款',
+} as const;
+
+// 退款方式中文标签映射
+export const REFUND_METHOD_LABELS = {
+  [REFUND_METHODS.CASH]: '现金',
+  [REFUND_METHODS.BANK_TRANSFER]: '银行转账',
+  [REFUND_METHODS.ORIGINAL_PAYMENT]: '原支付方式',
+  [REFUND_METHODS.OTHER]: '其他',
+} as const;
+
+// 退款状态中文标签映射
+export const REFUND_STATUS_LABELS = {
+  [REFUND_STATUSES.PENDING]: '待处理',
+  [REFUND_STATUSES.PROCESSING]: '处理中',
+  [REFUND_STATUSES.COMPLETED]: '已完成',
+  [REFUND_STATUSES.REJECTED]: '已拒绝',
+  [REFUND_STATUSES.CANCELLED]: '已取消',
+} as const;
+
+// 账单实体类型中文标签映射
+export const ENTITY_TYPE_LABELS = {
+  [ENTITY_TYPES.CUSTOMER]: '客户',
+  [ENTITY_TYPES.SUPPLIER]: '供应商',
+} as const;
+
+// 账单状态中文标签映射
+export const STATEMENT_STATUS_LABELS = {
+  [STATEMENT_STATUSES.ACTIVE]: '活跃',
+  [STATEMENT_STATUSES.SETTLED]: '已结清',
+  [STATEMENT_STATUSES.OVERDUE]: '逾期',
+  [STATEMENT_STATUSES.SUSPENDED]: '暂停',
+} as const;
+
+// 交易类型中文标签映射
+export const TRANSACTION_TYPE_LABELS = {
+  [TRANSACTION_TYPES.SALE]: '销售',
+  [TRANSACTION_TYPES.PAYMENT]: '收款',
+  [TRANSACTION_TYPES.REFUND]: '退款',
+  [TRANSACTION_TYPES.PURCHASE]: '采购',
+  [TRANSACTION_TYPES.PAYMENT_OUT]: '付款',
+  [TRANSACTION_TYPES.ADJUSTMENT]: '调整',
+} as const;
+
+// 交易状态中文标签映射
+export const TRANSACTION_STATUS_LABELS = {
+  [TRANSACTION_STATUSES.PENDING]: '待处理',
+  [TRANSACTION_STATUSES.COMPLETED]: '已完成',
+  [TRANSACTION_STATUSES.OVERDUE]: '逾期',
+} as const;
+
 // 支付方式枚举
 export const PAYMENT_METHODS = {
   CASH: 'cash',

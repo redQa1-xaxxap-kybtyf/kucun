@@ -61,6 +61,16 @@ export function validationErrorResponse(
 }
 
 /**
+ * 创建请求错误响应
+ */
+export function badRequestResponse(
+  error: string,
+  details?: unknown
+): NextResponse {
+  return errorResponse(error, 400, details);
+}
+
+/**
  * 创建认证错误响应
  */
 export function unauthorizedResponse(

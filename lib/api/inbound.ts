@@ -220,6 +220,7 @@ export function useProductSearch(query: string) {
         throw new Error(result.error || '搜索产品失败');
       }
 
+      // API 已经返回了正确格式的 ProductOption 数据，直接使用
       return result.data;
     },
     enabled: !!query.trim(),

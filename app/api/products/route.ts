@@ -173,28 +173,11 @@ export async function GET(request: NextRequest) {
         let inventoryMap = new Map<string, typeof DEFAULT_INVENTORY>();
         if (includeInventory && products.length > 0) {
           const productIds = products.map(product => product.id as string);
-          const inventorySummary = await prisma.inventory.groupBy({
-            by: ['productId'],
-            where: {
-              productId: { in: productIds },
-            },
-            _sum: {
-              quantity: true,
-              reservedQuantity: true,
-            },
-          });
-
-          inventoryMap = new Map(
-            inventorySummary.map(item => [
-              item.productId,
-              {
-                totalQuantity: item._sum.quantity || 0,
-                reservedQuantity: item._sum.reservedQuantity || 0,
-                availableQuantity:
-                  (item._sum.quantity || 0) - (item._sum.reservedQuantity || 0),
-              },
-            ])
+          // 使用缓存优化的批量库存查询
+          const { getBatchCachedInventorySummary } = await import(
+            '@/lib/cache/inventory-cache'
           );
+          inventoryMap = await getBatchCachedInventorySummary(productIds);
         }
 
         const formattedProducts = products.map(product => {

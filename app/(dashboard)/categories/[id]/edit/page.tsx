@@ -9,7 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import React from 'react';
+import React, { use } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 
@@ -57,7 +57,7 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
   const { toast } = useToast();
 
   // 解析动态路由参数 (Next.js 15.4 要求)
-  const { id: categoryId } = React.use(params);
+  const { id: categoryId } = use(params);
 
   // 获取分类数据
   const {

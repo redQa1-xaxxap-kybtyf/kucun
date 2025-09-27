@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 产品数据处理工具函数
  * 遵循唯一真理源原则，统一产品数据的处理逻辑
  */
@@ -20,10 +20,15 @@ export class ProductDataTransformer {
   static toCreateApiData(
     formData: ProductCreateFormData
   ): ProductCreateFormData {
+    const normalizedCategoryId =
+      !formData.categoryId || formData.categoryId === 'uncategorized'
+        ? undefined
+        : formData.categoryId;
+
     return {
       ...formData,
+      categoryId: normalizedCategoryId,
       // 处理数值字段：0值转为undefined，避免不必要的存储
-      weight: formData.weight === 0 ? undefined : formData.weight,
       thickness: formData.thickness === 0 ? undefined : formData.thickness,
     };
   }
@@ -34,10 +39,15 @@ export class ProductDataTransformer {
   static toUpdateApiData(
     formData: ProductUpdateFormData
   ): ProductUpdateFormData {
+    const normalizedCategoryId =
+      !formData.categoryId || formData.categoryId === 'uncategorized'
+        ? undefined
+        : formData.categoryId;
+
     return {
       ...formData,
+      categoryId: normalizedCategoryId,
       // 处理数值字段：0值转为undefined
-      weight: formData.weight === 0 ? undefined : formData.weight,
       thickness: formData.thickness === 0 ? undefined : formData.thickness,
     };
   }
@@ -45,18 +55,22 @@ export class ProductDataTransformer {
   /**
    * 将API产品数据转换为表单数据
    */
-  static toFormData(product: Product): Partial<ProductCreateFormData> {
+  static toFormData(
+    product: Product
+  ): Partial<ProductCreateFormData> & { id?: string } {
     return {
+      id: product.id, // 添加 id 字段用于更新操作
       code: product.code,
       name: product.name,
       specification: product.specification || '',
       description: (product as any).description || '',
       unit: product.unit,
-      piecesPerUnit: product.piecesPerUnit,
-      weight: product.weight || undefined,
       thickness: product.thickness || undefined,
       status: product.status,
-      categoryId: product.categoryId || undefined,
+      categoryId:
+        product.categoryId === null || product.categoryId === undefined
+          ? 'uncategorized'
+          : product.categoryId,
     };
   }
 }
@@ -77,7 +91,6 @@ export class ProductDataValidator {
       typeof data.code === 'string' &&
       typeof data.name === 'string' &&
       typeof data.unit === 'string' &&
-      typeof data.piecesPerUnit === 'number' &&
       typeof data.status === 'string' &&
       typeof data.createdAt === 'string' &&
       typeof data.updatedAt === 'string'
@@ -157,11 +170,10 @@ export class ProductDataDefaults {
       specification: '',
       description: '',
       unit: 'piece',
-      piecesPerUnit: 1,
       status: 'active',
-      weight: undefined,
       thickness: undefined,
       images: [],
+      categoryId: 'uncategorized',
     };
   }
 
@@ -172,7 +184,6 @@ export class ProductDataDefaults {
     return {
       specification: '',
       description: '',
-      weight: undefined,
       thickness: undefined,
     };
   }

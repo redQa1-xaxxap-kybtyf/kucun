@@ -54,6 +54,7 @@ export interface InboundRecord {
   colorCode?: string; // 色号
   unitCost?: number; // 单位成本
   location?: string; // 存储位置
+  batchSpecificationId?: string; // 批次规格参数ID
 
   createdAt: string;
   updatedAt: string;
@@ -62,6 +63,7 @@ export interface InboundRecord {
   product?: Product;
   variant?: import('./product').ProductVariant;
   user?: User;
+  batchSpecification?: import('./batch-specification').BatchSpecification;
 }
 
 // 创建入库记录的请求数据
@@ -78,6 +80,11 @@ export interface CreateInboundRequest {
   colorCode?: string; // 色号
   unitCost?: number; // 单位成本
   location?: string; // 存储位置
+
+  // 批次规格参数（入库时确定）
+  piecesPerUnit?: number; // 每单位片数
+  weight?: number; // 产品重量(kg)
+  thickness?: number; // 产品厚度(mm)
 }
 
 // 更新入库记录的请求数据
@@ -145,6 +152,8 @@ export interface InboundFormData {
 
   // 批次管理字段
   batchNumber?: string; // 批次号
+  piecesPerUnit: number; // 每单位片数（入库时确定）
+  weight: number; // 产品重量（入库时确定）
   unitCost?: number; // 单位成本
   location?: string; // 存储位置
 }
