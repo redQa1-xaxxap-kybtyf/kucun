@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
     // 构建查询条件
-    const where: Record<string, unknown> = {};
+    const where: any = {};
 
     if (search) {
       where.OR = [
@@ -73,7 +73,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 构建排序条件
-    const orderBy: Record<string, string> = {};
+    const orderBy: any = {};
     if (sortBy === 'customerName') {
       orderBy.customer = { name: sortOrder };
     } else if (sortBy === 'refundAmount') {
@@ -89,26 +89,7 @@ export async function GET(request: NextRequest) {
     const [refunds, total] = await Promise.all([
       prisma.refundRecord.findMany({
         where,
-        select: {
-          id: true,
-          refundNumber: true,
-          salesOrderId: true,
-          customerId: true,
-          userId: true,
-          refundType: true,
-          refundMethod: true,
-          refundAmount: true,
-          processedAmount: true,
-          remainingAmount: true,
-          refundDate: true,
-          processedDate: true,
-          status: true,
-          reason: true,
-          remarks: true,
-          bankInfo: true,
-          receiptNumber: true,
-          createdAt: true,
-          updatedAt: true,
+        include: {
           customer: {
             select: {
               id: true,
@@ -142,8 +123,8 @@ export async function GET(request: NextRequest) {
     const formattedRefunds = refunds.map(refund => ({
       id: refund.id,
       refundNumber: refund.refundNumber,
-      returnOrderId: null, // 暂时设为null，等数据库字段创建后再启用
-      returnOrderNumber: null, // 暂时设为null，等数据库字段创建后再启用
+      returnOrderId: refund.returnOrderId,
+      returnOrderNumber: refund.returnOrderNumber,
       salesOrderId: refund.salesOrderId,
       salesOrderNumber: refund.salesOrder?.orderNumber || '',
       customerId: refund.customerId,
@@ -213,13 +194,12 @@ export async function POST(request: NextRequest) {
 
     // 使用事务创建退款记录，确保数据一致性
     const newRefund = await prisma.$transaction(async tx => {
-      // 1. 验证退货订单信息（如果提供）
-      if (validatedData.returnOrderId || validatedData.returnOrderNumber) {
-        // 由于没有退货订单表，我们只验证格式一致性
-        // 实际项目中应该验证退货订单是否存在
-        console.log(
-          `关联退货订单: ${validatedData.returnOrderId} - ${validatedData.returnOrderNumber}`
-        );
+      // 1. 验证退货订单号（如果提供）
+      if (validatedData.returnOrderId) {
+        // 由于没有退货订单表，我们只验证退货订单号格式
+        if (!validatedData.returnOrderNumber) {
+          throw new Error('退货订单ID和退货订单号必须同时提供');
+        }
       }
 
       // 2. 验证销售订单是否存在
@@ -240,53 +220,16 @@ export async function POST(request: NextRequest) {
         throw new Error('指定的客户不存在');
       }
 
-      // 4. 检查退款金额限制
-      // 计算该销售订单已有的退款总额
-      const existingRefunds = await tx.refundRecord.findMany({
+      // 4. 检查是否已经有相同的退款记录
+      const existingRefund = await tx.refundRecord.findFirst({
         where: {
           salesOrderId: validatedData.salesOrderId,
+          returnOrderId: validatedData.returnOrderId,
           status: { in: ['pending', 'processing', 'completed'] },
         },
-        select: {
-          refundAmount: true,
-          processedAmount: true,
-          status: true,
-        },
       });
-
-      // 计算已申请的退款总额（包括待处理和已处理）
-      const totalAppliedRefund = existingRefunds.reduce(
-        (sum, refund) => sum + refund.refundAmount,
-        0
-      );
-
-      // 计算已处理的退款总额（用于验证，但不在此处使用）
-      const _totalProcessedRefund = existingRefunds.reduce(
-        (sum, refund) => sum + refund.processedAmount,
-        0
-      );
-
-      // 检查是否超过销售订单总金额
-      if (
-        totalAppliedRefund + validatedData.refundAmount >
-        salesOrder.totalAmount
-      ) {
-        throw new Error(
-          `退款金额超限：已申请退款 ¥${totalAppliedRefund.toFixed(2)}，本次申请 ¥${validatedData.refundAmount.toFixed(2)}，订单总额 ¥${salesOrder.totalAmount.toFixed(2)}`
-        );
-      }
-
-      // 如果指定了退货订单ID，检查是否已有相同退货订单的退款记录
-      if (validatedData.returnOrderId) {
-        const existingReturnRefund = await tx.refundRecord.findFirst({
-          where: {
-            returnOrderId: validatedData.returnOrderId,
-            status: { in: ['pending', 'processing', 'completed'] },
-          },
-        });
-        if (existingReturnRefund) {
-          throw new Error('该退货订单已存在退款记录');
-        }
+      if (existingRefund) {
+        throw new Error('该订单已存在退款记录');
       }
 
       // 5. 生成退款单号

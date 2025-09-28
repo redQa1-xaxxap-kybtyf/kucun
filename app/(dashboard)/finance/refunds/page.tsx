@@ -18,7 +18,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-
 import {
   Select,
   SelectContent,
@@ -27,7 +26,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { paginationConfig } from '@/lib/env';
-import type { RefundRecord } from '@/lib/types/refund';
 
 /**
  * 应退货款管理页面
@@ -66,19 +64,17 @@ export default function RefundsPage() {
     refetchOnWindowFocus: false,
   });
 
-  // 获取退款概要统计数据
-  const { data: refundSummary } = useQuery({
-    queryKey: ['refund-summary'],
+  // 获取财务概览数据
+  const { data: financeOverview } = useQuery({
+    queryKey: ['finance-overview'],
     queryFn: async () => {
-      const response = await fetch('/api/finance/refunds/statistics', {
-        method: 'POST',
-      });
+      const response = await fetch('/api/finance');
       if (!response.ok) {
-        throw new Error('获取退款统计失败');
+        throw new Error('获取财务概览失败');
       }
       return response.json();
     },
-    staleTime: 2 * 60 * 1000,
+    staleTime: 5 * 60 * 1000,
     refetchOnWindowFocus: false,
   });
 
@@ -163,12 +159,7 @@ export default function RefundsPage() {
   }
 
   const refundsData = data?.data || { refunds: [], pagination: { total: 0 } };
-  const summaryData = refundSummary?.data || {
-    today: { count: 0, amount: 0, processed: 0 },
-    month: { count: 0, amount: 0, processed: 0 },
-    year: { count: 0, amount: 0, processed: 0 },
-    urgent: 0,
-  };
+  const overviewData = financeOverview?.data || {};
 
   return (
     <div className="space-y-6">
@@ -194,15 +185,15 @@ export default function RefundsPage() {
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">本月退款</CardTitle>
+            <CardTitle className="text-sm font-medium">总应退金额</CardTitle>
             <TrendingDown className="h-4 w-4 text-orange-600" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">
-              {formatCurrency(summaryData.month.amount)}
+              {formatCurrency(overviewData.totalRefundable || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {summaryData.month.count} 个退款申请
+              {overviewData.refundCount || 0} 个待处理
             </p>
           </CardContent>
         </Card>
@@ -214,9 +205,11 @@ export default function RefundsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(summaryData.month.processed)}
+              {formatCurrency(overviewData.summary?.paidAmount || 0)}
             </div>
-            <p className="text-xs text-muted-foreground">本月已处理退款</p>
+            <p className="text-xs text-muted-foreground">
+              {overviewData.receivableCount || 0} 个已完成
+            </p>
           </CardContent>
         </Card>
 
@@ -227,24 +220,28 @@ export default function RefundsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">
-              {summaryData.month.amount > 0
-                ? `${((summaryData.month.processed / summaryData.month.amount) * 100).toFixed(1)}%`
+              {overviewData.summary?.paymentRate
+                ? `${overviewData.summary.paymentRate.toFixed(1)}%`
                 : '0.0%'}
             </div>
-            <p className="text-xs text-muted-foreground">本月退款处理率</p>
+            <p className="text-xs text-muted-foreground">
+              {overviewData.summary?.paymentRate > 50
+                ? '较上月提升'
+                : '需要改进'}
+            </p>
           </CardContent>
         </Card>
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">紧急处理</CardTitle>
-            <Calendar className="h-4 w-4 text-red-600" />
+            <CardTitle className="text-sm font-medium">本月收款</CardTitle>
+            <Calendar className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
-              {summaryData.urgent}
+            <div className="text-2xl font-bold text-purple-600">
+              {formatCurrency(overviewData.monthlyReceived || 0)}
             </div>
-            <p className="text-xs text-muted-foreground">超过7天未处理</p>
+            <p className="text-xs text-muted-foreground">本月已收款金额</p>
           </CardContent>
         </Card>
       </div>
@@ -292,7 +289,7 @@ export default function RefundsPage() {
                 <p className="text-muted-foreground">暂无退款记录</p>
               </div>
             ) : (
-              refundsData.refunds.map((refund: RefundRecord) => (
+              refundsData.refunds.map((refund: any) => (
                 <Card
                   key={refund.id}
                   className="transition-shadow hover:shadow-md"

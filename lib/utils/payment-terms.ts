@@ -1,261 +1,241 @@
 /**
- * 付款条款和应收账款业务逻辑工具
- * 支持不同客户的个性化付款条款和逾期判断
+ * 付款条款管理工具
+ * 支持个性化付款条款和宽限期管理
  */
 
-export interface PaymentTerms {
-  /** 付款期限（天数） */
-  paymentDays: number;
-  /** 宽限期（天数） */
-  gracePeriod: number;
-  /** 早付折扣率（%） */
-  earlyPaymentDiscount?: number;
-  /** 早付期限（天数） */
-  earlyPaymentDays?: number;
-  /** 滞纳金率（%/天） */
-  lateFeeRate?: number;
+export interface PaymentTerm {
+  id: string;
+  name: string;
+  description: string;
+  daysToPayment: number;
+  gracePeriodDays: number;
+  isDefault: boolean;
+  isActive: boolean;
 }
 
-export interface CustomerPaymentTerms extends PaymentTerms {
+export interface CustomerPaymentTerm {
   customerId: string;
-  /** 信用额度 */
-  creditLimit?: number;
-  /** 风险等级 */
-  riskLevel: 'low' | 'medium' | 'high';
+  paymentTermId: string;
+  effectiveDate: Date;
+  notes?: string;
+}
+
+// 标准付款条款
+export const STANDARD_PAYMENT_TERMS: PaymentTerm[] = [
+  {
+    id: 'net-30',
+    name: 'Net 30',
+    description: '30天内付款',
+    daysToPayment: 30,
+    gracePeriodDays: 5,
+    isDefault: true,
+    isActive: true,
+  },
+  {
+    id: 'net-15',
+    name: 'Net 15',
+    description: '15天内付款',
+    daysToPayment: 15,
+    gracePeriodDays: 3,
+    isDefault: false,
+    isActive: true,
+  },
+  {
+    id: 'net-60',
+    name: 'Net 60',
+    description: '60天内付款',
+    daysToPayment: 60,
+    gracePeriodDays: 7,
+    isDefault: false,
+    isActive: true,
+  },
+  {
+    id: 'immediate',
+    name: '即时付款',
+    description: '立即付款',
+    daysToPayment: 0,
+    gracePeriodDays: 0,
+    isDefault: false,
+    isActive: true,
+  },
+];
+
+/**
+ * 获取默认付款条款
+ */
+export function getDefaultPaymentTerm(): PaymentTerm {
+  return STANDARD_PAYMENT_TERMS.find(term => term.isDefault) || STANDARD_PAYMENT_TERMS[0];
 }
 
 /**
- * 默认付款条款配置
+ * 根据ID获取付款条款
  */
-export const DEFAULT_PAYMENT_TERMS: PaymentTerms = {
-  paymentDays: 30,
-  gracePeriod: 3,
-  earlyPaymentDiscount: 2,
-  earlyPaymentDays: 10,
-  lateFeeRate: 0.05,
-};
+export function getPaymentTermById(id: string): PaymentTerm | undefined {
+  return STANDARD_PAYMENT_TERMS.find(term => term.id === id);
+}
 
 /**
- * 常用付款条款预设
+ * 获取所有活跃的付款条款
  */
-export const COMMON_PAYMENT_TERMS = {
-  NET_15: { paymentDays: 15, gracePeriod: 2 },
-  NET_30: { paymentDays: 30, gracePeriod: 3 },
-  NET_45: { paymentDays: 45, gracePeriod: 5 },
-  NET_60: { paymentDays: 60, gracePeriod: 7 },
-  COD: { paymentDays: 0, gracePeriod: 0 }, // 货到付款
-  PREPAID: { paymentDays: -1, gracePeriod: 0 }, // 预付款
-} as const;
+export function getActivePaymentTerms(): PaymentTerm[] {
+  return STANDARD_PAYMENT_TERMS.filter(term => term.isActive);
+}
 
 /**
- * 计算订单到期日期
+ * 计算付款到期日
  */
 export function calculateDueDate(
   orderDate: Date,
-  paymentTerms: PaymentTerms = DEFAULT_PAYMENT_TERMS
+  paymentTerm: PaymentTerm
 ): Date {
   const dueDate = new Date(orderDate);
-  dueDate.setDate(dueDate.getDate() + paymentTerms.paymentDays);
+  dueDate.setDate(dueDate.getDate() + paymentTerm.daysToPayment);
   return dueDate;
 }
 
 /**
- * 计算早付截止日期
+ * 计算宽限期结束日期
  */
-export function calculateEarlyPaymentDate(
-  orderDate: Date,
-  paymentTerms: PaymentTerms = DEFAULT_PAYMENT_TERMS
-): Date | null {
-  if (!paymentTerms.earlyPaymentDays) return null;
-  
-  const earlyDate = new Date(orderDate);
-  earlyDate.setDate(earlyDate.getDate() + paymentTerms.earlyPaymentDays);
-  return earlyDate;
+export function calculateGracePeriodEndDate(
+  dueDate: Date,
+  paymentTerm: PaymentTerm
+): Date {
+  const gracePeriodEndDate = new Date(dueDate);
+  gracePeriodEndDate.setDate(gracePeriodEndDate.getDate() + paymentTerm.gracePeriodDays);
+  return gracePeriodEndDate;
 }
 
 /**
- * 判断付款状态
+ * 判断是否逾期
  */
-export function getPaymentStatus(
-  totalAmount: number,
-  paidAmount: number,
-  orderDate: Date,
-  paymentTerms: PaymentTerms = DEFAULT_PAYMENT_TERMS
-): {
-  status: 'unpaid' | 'partial' | 'paid' | 'overdue' | 'overpaid';
-  isOverdue: boolean;
-  overdueDays: number;
-  remainingAmount: number;
-  overpaidAmount: number;
-} {
-  const dueDate = calculateDueDate(orderDate, paymentTerms);
-  const gracePeriodEnd = new Date(dueDate);
-  gracePeriodEnd.setDate(gracePeriodEnd.getDate() + paymentTerms.gracePeriod);
-  
-  const now = new Date();
-  const isOverdue = now > gracePeriodEnd && paidAmount < totalAmount;
-  const overdueDays = isOverdue 
-    ? Math.floor((now.getTime() - gracePeriodEnd.getTime()) / (1000 * 60 * 60 * 24))
-    : 0;
-  
-  const remainingAmount = Math.max(0, totalAmount - paidAmount);
-  const overpaidAmount = Math.max(0, paidAmount - totalAmount);
-  
-  let status: 'unpaid' | 'partial' | 'paid' | 'overdue' | 'overpaid';
-  
-  if (paidAmount === 0) {
-    status = isOverdue ? 'overdue' : 'unpaid';
-  } else if (paidAmount >= totalAmount) {
-    status = overpaidAmount > 0 ? 'overpaid' : 'paid';
-  } else {
-    status = isOverdue ? 'overdue' : 'partial';
-  }
-  
-  return {
-    status,
-    isOverdue,
-    overdueDays,
-    remainingAmount,
-    overpaidAmount,
-  };
+export function isOverdue(
+  dueDate: Date,
+  paymentTerm: PaymentTerm,
+  currentDate: Date = new Date()
+): boolean {
+  const gracePeriodEndDate = calculateGracePeriodEndDate(dueDate, paymentTerm);
+  return currentDate > gracePeriodEndDate;
 }
 
 /**
- * 计算早付折扣金额
+ * 计算逾期天数
  */
-export function calculateEarlyPaymentDiscount(
-  totalAmount: number,
-  paymentDate: Date,
-  orderDate: Date,
-  paymentTerms: PaymentTerms = DEFAULT_PAYMENT_TERMS
+export function calculateOverdueDays(
+  dueDate: Date,
+  paymentTerm: PaymentTerm,
+  currentDate: Date = new Date()
 ): number {
-  if (!paymentTerms.earlyPaymentDiscount || !paymentTerms.earlyPaymentDays) {
+  const gracePeriodEndDate = calculateGracePeriodEndDate(dueDate, paymentTerm);
+  
+  if (currentDate <= gracePeriodEndDate) {
     return 0;
   }
   
-  const earlyPaymentDate = calculateEarlyPaymentDate(orderDate, paymentTerms);
-  if (!earlyPaymentDate || paymentDate > earlyPaymentDate) {
-    return 0;
+  const diffTime = currentDate.getTime() - gracePeriodEndDate.getTime();
+  return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+}
+
+/**
+ * 获取客户的付款条款
+ * 如果客户没有特定条款，返回默认条款
+ */
+export function getCustomerPaymentTerm(
+  _customerId: string,
+  customerPaymentTerms: CustomerPaymentTerm[] = []
+): PaymentTerm {
+  // 这里可以根据客户ID查找特定的付款条款
+  // 目前返回默认条款
+  const customerTerm = customerPaymentTerms.find(
+    term => term.customerId === _customerId
+  );
+  
+  if (customerTerm) {
+    const paymentTerm = getPaymentTermById(customerTerm.paymentTermId);
+    if (paymentTerm) {
+      return paymentTerm;
+    }
   }
   
-  return totalAmount * (paymentTerms.earlyPaymentDiscount / 100);
+  return getDefaultPaymentTerm();
 }
 
 /**
- * 计算滞纳金
+ * 格式化付款条款显示文本
  */
-export function calculateLateFee(
-  remainingAmount: number,
-  overdueDays: number,
-  paymentTerms: PaymentTerms = DEFAULT_PAYMENT_TERMS
-): number {
-  if (!paymentTerms.lateFeeRate || overdueDays <= 0) {
-    return 0;
+export function formatPaymentTermDisplay(paymentTerm: PaymentTerm): string {
+  if (paymentTerm.daysToPayment === 0) {
+    return '即时付款';
   }
   
-  return remainingAmount * (paymentTerms.lateFeeRate / 100) * overdueDays;
-}
-
-/**
- * 获取客户付款条款（模拟从数据库获取）
- * 实际项目中应该从数据库的客户表或付款条款表中获取
- */
-export function getCustomerPaymentTerms(customerId: string): PaymentTerms {
-  // 这里可以根据客户ID从数据库获取个性化付款条款
-  // 暂时返回默认条款
-  return DEFAULT_PAYMENT_TERMS;
-}
-
-/**
- * 批量计算应收账款状态
- */
-export function calculateReceivablesStatus(orders: Array<{
-  id: string;
-  customerId: string;
-  totalAmount: number;
-  paidAmount: number;
-  createdAt: Date;
-}>) {
-  return orders.map(order => {
-    const paymentTerms = getCustomerPaymentTerms(order.customerId);
-    const paymentStatus = getPaymentStatus(
-      order.totalAmount,
-      order.paidAmount,
-      order.createdAt,
-      paymentTerms
-    );
+  const graceText = paymentTerm.gracePeriodDays > 0 
+    ? ` (宽限期${paymentTerm.gracePeriodDays}天)` 
+    : '';
     
-    return {
-      ...order,
-      ...paymentStatus,
-      dueDate: calculateDueDate(order.createdAt, paymentTerms),
-      paymentTerms,
-    };
-  });
+  return `${paymentTerm.daysToPayment}天内付款${graceText}`;
 }
 
 /**
- * 风险评估
+ * 获取付款状态文本
  */
-export function assessPaymentRisk(
-  customerId: string,
-  overdueDays: number,
-  overdueAmount: number,
-  totalOutstanding: number
-): {
-  riskLevel: 'low' | 'medium' | 'high' | 'critical';
-  riskScore: number;
-  recommendations: string[];
-} {
-  let riskScore = 0;
-  const recommendations: string[] = [];
-  
-  // 逾期天数评分
-  if (overdueDays > 90) {
-    riskScore += 40;
-    recommendations.push('客户逾期超过90天，建议立即催收');
-  } else if (overdueDays > 60) {
-    riskScore += 30;
-    recommendations.push('客户逾期超过60天，建议加强催收');
-  } else if (overdueDays > 30) {
-    riskScore += 20;
-    recommendations.push('客户逾期超过30天，建议及时跟进');
+export function getPaymentStatusText(
+  dueDate: Date,
+  paymentTerm: PaymentTerm,
+  isPaid: boolean = false,
+  currentDate: Date = new Date()
+): string {
+  if (isPaid) {
+    return '已付款';
   }
   
-  // 逾期金额占比评分
-  const overdueRatio = totalOutstanding > 0 ? (overdueAmount / totalOutstanding) * 100 : 0;
-  if (overdueRatio > 80) {
-    riskScore += 30;
-    recommendations.push('逾期金额占比过高，建议暂停新订单');
-  } else if (overdueRatio > 50) {
-    riskScore += 20;
-    recommendations.push('逾期金额占比较高，建议控制信用额度');
+  if (isOverdue(dueDate, paymentTerm, currentDate)) {
+    const overdueDays = calculateOverdueDays(dueDate, paymentTerm, currentDate);
+    return `逾期 ${overdueDays} 天`;
   }
   
-  // 绝对逾期金额评分
-  if (overdueAmount > 100000) {
-    riskScore += 20;
-    recommendations.push('逾期金额较大，建议法务介入');
-  } else if (overdueAmount > 50000) {
-    riskScore += 10;
-    recommendations.push('逾期金额较大，建议高级管理层关注');
-  }
+  const daysUntilDue = Math.ceil(
+    (dueDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
   
-  // 确定风险等级
-  let riskLevel: 'low' | 'medium' | 'high' | 'critical';
-  if (riskScore >= 70) {
-    riskLevel = 'critical';
-  } else if (riskScore >= 50) {
-    riskLevel = 'high';
-  } else if (riskScore >= 30) {
-    riskLevel = 'medium';
+  if (daysUntilDue <= 0) {
+    return '今日到期';
+  } else if (daysUntilDue <= 3) {
+    return `${daysUntilDue}天后到期`;
   } else {
-    riskLevel = 'low';
+    return '未到期';
+  }
+}
+
+/**
+ * 获取付款风险等级
+ */
+export function getPaymentRiskLevel(
+  dueDate: Date,
+  paymentTerm: PaymentTerm,
+  isPaid: boolean = false,
+  currentDate: Date = new Date()
+): 'low' | 'medium' | 'high' | 'critical' {
+  if (isPaid) {
+    return 'low';
   }
   
-  return {
-    riskLevel,
-    riskScore,
-    recommendations,
-  };
+  if (isOverdue(dueDate, paymentTerm, currentDate)) {
+    const overdueDays = calculateOverdueDays(dueDate, paymentTerm, currentDate);
+    if (overdueDays > 30) {
+      return 'critical';
+    } else if (overdueDays > 7) {
+      return 'high';
+    } else {
+      return 'medium';
+    }
+  }
+  
+  const daysUntilDue = Math.ceil(
+    (dueDate.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)
+  );
+  
+  if (daysUntilDue <= 3) {
+    return 'medium';
+  }
+  
+  return 'low';
 }
