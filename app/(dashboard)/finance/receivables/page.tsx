@@ -335,7 +335,7 @@ export default function ReceivablesPage() {
                           size="sm"
                           onClick={() =>
                             router.push(
-                              `/payments/create?orderId=${receivable.id}`
+                              `/finance/payments/create?orderId=${receivable.id}`
                             )
                           }
                         >

@@ -170,6 +170,7 @@ export async function getBatchCachedInventorySummary(
 
 /**
  * 清除库存相关缓存
+ * 修复：完善缓存失效策略，确保相关统计数据一致性
  */
 export async function invalidateInventoryCache(
   productId?: string
@@ -178,8 +179,18 @@ export async function invalidateInventoryCache(
     // 清除特定产品的库存汇总缓存
     await invalidateNamespace(`inventory:summary:${productId}`);
   }
-  // 清除库存列表缓存
-  await invalidateNamespace('inventory:list:*');
+
+  // 修复：清除所有相关的缓存，确保数据一致性
+  const cachePatterns = [
+    'inventory:list:*', // 库存列表缓存
+    'inventory:stats:*', // 库存统计缓存
+    'inventory:summary:*', // 库存汇总缓存（如果没有指定productId）
+    'finance:receivables:*', // 财务应收账款缓存（库存变更可能影响订单状态）
+    'dashboard:stats:*', // 仪表盘统计缓存
+  ];
+
+  // 并行清除所有相关缓存
+  await Promise.all(cachePatterns.map(pattern => invalidateNamespace(pattern)));
 }
 
 /**

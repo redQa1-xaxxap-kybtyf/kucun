@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma, withTransaction } from '@/lib/db';
@@ -244,14 +244,12 @@ export async function PUT(
 
         // 更新库存（减少可用库存）
         for (const item of existingOrder.items) {
-          // 查找对应的库存记录
+          // 修复：使用正确的字段查找库存记录
           const inventory = await tx.inventory.findFirst({
             where: {
               productId: item.productId,
-              colorCode: item.colorCode,
-              productionDate: item.productionDate
-                ? new Date(item.productionDate)
-                : null,
+              variantId: item.variantId || null,
+              batchNumber: item.batchNumber || null,
             },
           });
 
@@ -265,16 +263,24 @@ export async function PUT(
               );
             }
 
-            // 减少库存
+            // 修复：减少库存时同步减少预留量
             await tx.inventory.update({
               where: { id: inventory.id },
               data: {
                 quantity: inventory.quantity - item.quantity,
+                // 同步减少预留量，确保预留量不超过实际库存
+                reservedQuantity: Math.max(
+                  0,
+                  Math.min(
+                    inventory.reservedQuantity,
+                    inventory.quantity - item.quantity
+                  )
+                ),
               },
             });
           } else {
             throw new Error(
-              `产品 ${item.product.name} (色号: ${item.colorCode || '无'}) 库存记录不存在`
+              `产品 ${item.product.name} (变体: ${item.variantId || '无'}, 批次: ${item.batchNumber || '无'}) 库存记录不存在`
             );
           }
         }

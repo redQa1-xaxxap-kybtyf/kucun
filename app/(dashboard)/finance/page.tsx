@@ -4,6 +4,7 @@ import {
   AlertCircle,
   ArrowRight,
   Calendar,
+  CreditCard,
   DollarSign,
   Receipt,
   TrendingDown,
@@ -62,6 +63,20 @@ export default function FinancePage() {
       },
     },
     {
+      id: 'payments',
+      title: '收款记录',
+      description: '管理销售订单的收款记录和确认',
+      href: '/finance/payments',
+      icon: CreditCard,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+      stats: {
+        amount: mockStats.monthlyReceived,
+        count: mockStats.paymentCount || 0,
+        label: '本月收款',
+      },
+    },
+    {
       id: 'statements',
       title: '往来账单',
       description: '管理客户和供应商的综合账务往来',
@@ -70,9 +85,9 @@ export default function FinancePage() {
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       stats: {
-        amount: mockStats.monthlyReceived,
-        count: 0,
-        label: '本月收款',
+        amount: mockStats.totalStatements || 0,
+        count: mockStats.statementCount || 0,
+        label: '账单总数',
       },
     },
   ];

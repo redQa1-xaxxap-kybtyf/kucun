@@ -212,37 +212,70 @@ export async function POST(request: NextRequest) {
     // 生成收款单号
     const paymentNumber = `PAY${Date.now()}`;
 
-    // 创建收款记录
-    const payment = await prisma.paymentRecord.create({
-      data: {
-        ...data,
-        paymentNumber,
-        userId: session.user.id,
-        paymentDate: new Date(data.paymentDate),
-      },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
+    // 修复：使用事务确保收款记录创建和订单状态更新的一致性
+    const payment = await prisma.$transaction(async tx => {
+      // 创建收款记录
+      const newPayment = await tx.paymentRecord.create({
+        data: {
+          ...data,
+          paymentNumber,
+          userId: session.user.id,
+          paymentDate: new Date(data.paymentDate),
+        },
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+          salesOrder: {
+            select: {
+              id: true,
+              orderNumber: true,
+              totalAmount: true,
+              status: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-        salesOrder: {
-          select: {
-            id: true,
-            orderNumber: true,
-            totalAmount: true,
-            status: true,
-          },
+      });
+
+      // 检查订单的总收款金额，如果全额收款则更新订单状态
+      const totalPayments = await tx.paymentRecord.aggregate({
+        where: {
+          salesOrderId: data.salesOrderId,
+          status: 'confirmed',
         },
-        user: {
-          select: {
-            id: true,
-            name: true,
-          },
+        _sum: {
+          paymentAmount: true,
         },
-      },
+      });
+
+      const totalPaid =
+        (totalPayments._sum.paymentAmount || 0) + data.paymentAmount;
+
+      // 如果收款金额达到或超过订单总额，更新订单支付状态
+      if (
+        totalPaid >= salesOrder.totalAmount &&
+        salesOrder.status === 'confirmed'
+      ) {
+        await tx.salesOrder.update({
+          where: { id: data.salesOrderId },
+          data: {
+            status: 'shipped', // 全额收款后可以发货
+            updatedAt: new Date(),
+          },
+        });
+      }
+
+      return newPayment;
     });
 
     return NextResponse.json({

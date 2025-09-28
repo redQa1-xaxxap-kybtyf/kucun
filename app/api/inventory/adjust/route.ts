@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
@@ -42,12 +42,20 @@ async function executeAdjustmentTransaction(
       });
 
       const beforeQuantity = existingInventory?.quantity || 0;
+      const reservedQuantity = existingInventory?.reservedQuantity || 0;
       const afterQuantity = beforeQuantity + adjustQuantity;
 
       // 防止库存变为负数
       if (afterQuantity < 0) {
         throw new Error(
           `调整后库存不能为负数。当前库存: ${beforeQuantity}, 调整数量: ${adjustQuantity}`
+        );
+      }
+
+      // 修复：检查调整后的可用库存是否低于预留量
+      if (afterQuantity < reservedQuantity) {
+        throw new Error(
+          `调整后可用库存(${afterQuantity})不能低于预留数量(${reservedQuantity})。请先释放预留量或减少调整数量。`
         );
       }
 

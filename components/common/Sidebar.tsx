@@ -4,6 +4,7 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CreditCard,
   DollarSign,
   HelpCircle,
   LayoutDashboard,
@@ -19,9 +20,9 @@ import {
   Users,
   Warehouse,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -129,6 +130,12 @@ const navigationItems: NavigationItem[] = [
         title: '应退货款',
         href: '/finance/refunds',
         icon: TrendingDown,
+      },
+      {
+        id: 'finance-payments',
+        title: '收款记录',
+        href: '/finance/payments',
+        icon: CreditCard,
       },
       {
         id: 'finance-statements',
