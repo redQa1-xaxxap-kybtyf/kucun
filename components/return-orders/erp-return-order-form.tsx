@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -78,6 +79,8 @@ export function ERPReturnOrderForm({
 }: ERPReturnOrderFormProps) {
   const router = useRouter();
   const [selectedSalesOrderId, setSelectedSalesOrderId] = useState<string>('');
+  const [salesOrderNumber, setSalesOrderNumber] = useState<string>('');
+  const [isSearchingSalesOrder, setIsSearchingSalesOrder] = useState(false);
 
   // 表单设置
   const form = useForm<CreateReturnOrderFormData | UpdateReturnOrderFormData>({
@@ -112,6 +115,50 @@ export function ERPReturnOrderForm({
     control: form.control,
     name: 'items',
   });
+
+  // 根据订单号查询销售订单
+  const searchSalesOrderByNumber = async (orderNumber: string) => {
+    if (!orderNumber.trim()) return;
+
+    setIsSearchingSalesOrder(true);
+    try {
+      const response = await fetch(
+        `/api/sales-orders?search=${encodeURIComponent(orderNumber)}&limit=1`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include', // 包含cookies以传递会话信息
+        }
+      );
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success && result.data?.length > 0) {
+          const order = result.data[0];
+          if (order.orderNumber === orderNumber) {
+            setSelectedSalesOrderId(order.id);
+            form.setValue('salesOrderId', order.id);
+            // 清空现有明细
+            form.setValue('items', []);
+            toast.success(`已找到销售订单：${order.orderNumber}`);
+          } else {
+            toast.error('未找到匹配的销售订单');
+          }
+        } else {
+          toast.error('未找到销售订单');
+        }
+      } else {
+        const errorData = await response.json().catch(() => ({}));
+        toast.error(errorData.error || '查询销售订单失败');
+      }
+    } catch (error) {
+      console.error('查询销售订单失败:', error);
+      toast.error('查询销售订单失败');
+    } finally {
+      setIsSearchingSalesOrder(false);
+    }
+  };
 
   // 监听销售订单变化
   const watchedSalesOrderId = form.watch('salesOrderId');
@@ -267,26 +314,44 @@ export function ERPReturnOrderForm({
           </div>
           <div className="px-3 py-3">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
-              <FormField
-                control={form.control}
-                name="salesOrderId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-xs">关联销售订单 *</FormLabel>
-                    <FormControl>
-                      <div className="relative">
-                        <ShoppingCart className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
-                        <Input
-                          placeholder="请输入销售订单号"
-                          className="h-7 pl-7 text-xs"
-                          {...field}
-                        />
+              <FormItem>
+                <FormLabel className="text-xs">关联销售订单 *</FormLabel>
+                <FormControl>
+                  <div className="relative">
+                    <ShoppingCart className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                    <Input
+                      placeholder="请输入销售订单号"
+                      className="h-7 pl-7 text-xs"
+                      value={salesOrderNumber}
+                      onChange={e => setSalesOrderNumber(e.target.value)}
+                      onBlur={() => {
+                        if (salesOrderNumber.trim()) {
+                          searchSalesOrderByNumber(salesOrderNumber.trim());
+                        }
+                      }}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          if (salesOrderNumber.trim()) {
+                            searchSalesOrderByNumber(salesOrderNumber.trim());
+                          }
+                        }
+                      }}
+                      disabled={isSearchingSalesOrder}
+                    />
+                    {isSearchingSalesOrder && (
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2">
+                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
                       </div>
-                    </FormControl>
-                    <FormMessage className="text-xs" />
-                  </FormItem>
+                    )}
+                  </div>
+                </FormControl>
+                {form.formState.errors.salesOrderId && (
+                  <p className="text-xs text-destructive">
+                    {form.formState.errors.salesOrderId.message}
+                  </p>
                 )}
-              />
+              </FormItem>
               <FormField
                 control={form.control}
                 name="type"

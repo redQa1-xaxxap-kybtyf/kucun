@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Toaster as SonnerToaster } from 'sonner';
 
 import QueryProvider from '@/components/providers/query-provider';
 import AuthSessionProvider from '@/components/providers/session-provider';
@@ -27,6 +28,7 @@ export default function RootLayout({
             <WebSocketProvider>
               <div className="min-h-screen bg-background">{children}</div>
               <Toaster />
+              <SonnerToaster position="top-right" richColors />
             </WebSocketProvider>
           </QueryProvider>
         </AuthSessionProvider>

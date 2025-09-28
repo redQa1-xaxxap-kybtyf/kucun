@@ -2,24 +2,23 @@
 // 使用 TanStack Query 进行状态管理和缓存
 
 import type {
-  UseQueryOptions,
   UseMutationOptions,
+  UseQueryOptions,
 } from '@tanstack/react-query';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import type {
+  ReturnOrderListResponse,
   ReturnOrderQueryParams,
   ReturnOrderResponse,
-  ReturnOrderListResponse,
   ReturnOrderStatsResponse,
 } from '@/lib/types/return-order';
-import { ReturnOrder } from '@/lib/types/return-order';
 import type {
+  BatchReturnOrderFormData,
   CreateReturnOrderFormData,
+  ReturnOrderApprovalFormData,
   UpdateReturnOrderFormData,
   UpdateReturnStatusFormData,
-  ReturnOrderApprovalFormData,
-  BatchReturnOrderFormData,
 } from '@/lib/validations/return-order';
 
 // API 基础路径
@@ -267,7 +266,14 @@ export async function getSalesOrderReturnableItems(
   salesOrderId: string
 ): Promise<any> {
   const response = await fetch(
-    `/api/sales-orders/${salesOrderId}/returnable-items`
+    `/api/sales-orders/${salesOrderId}/returnable-items`,
+    {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include', // 包含cookies以传递会话信息
+    }
   );
 
   if (!response.ok) {
