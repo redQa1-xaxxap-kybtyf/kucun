@@ -473,10 +473,11 @@ model FactoryShipmentOrderItem {
 
 // 退款记录表 - 退款管理，支持全额退款、部分退款和换货退款
 model RefundRecord {
-  id              String   @id @default(uuid())
-  refundNumber    String   @unique @map("refund_number")
-  returnOrderId   String   @map("return_order_id")
-  salesOrderId    String   @map("sales_order_id")
+  id                String   @id @default(uuid())
+  refundNumber      String   @unique @map("refund_number")
+  returnOrderId     String?  @map("return_order_id")
+  returnOrderNumber String?  @map("return_order_number")
+  salesOrderId      String   @map("sales_order_id")
   customerId      String   @map("customer_id")
   userId          String   @map("user_id")
   refundType      String   @map("refund_type") // full_refund, partial_refund, exchange_refund

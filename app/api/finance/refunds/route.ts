@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
@@ -30,6 +30,7 @@ export async function GET(request: NextRequest) {
       searchParams.get('pageSize') ||
         paginationConfig.defaultPageSize.toString()
     );
+
     const search = searchParams.get('search') || '';
     const status = searchParams.get('status');
     const customerId = searchParams.get('customerId');
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
     // 构建查询条件
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (search) {
       where.OR = [
@@ -65,15 +66,15 @@ export async function GET(request: NextRequest) {
     if (startDate || endDate) {
       where.refundDate = {};
       if (startDate) {
-        where.refundDate.gte = new Date(startDate);
+        (where.refundDate as Record<string, unknown>).gte = new Date(startDate);
       }
       if (endDate) {
-        where.refundDate.lte = new Date(endDate);
+        (where.refundDate as Record<string, unknown>).lte = new Date(endDate);
       }
     }
 
     // 构建排序条件
-    const orderBy: any = {};
+    const orderBy: Record<string, unknown> = {};
     if (sortBy === 'customerName') {
       orderBy.customer = { name: sortOrder };
     } else if (sortBy === 'refundAmount') {
@@ -161,7 +162,6 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('获取退款记录失败:', error);
     return NextResponse.json(
       {
         success: false,

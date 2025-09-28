@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
@@ -12,7 +12,11 @@ export async function GET(request: NextRequest) {
     }
 
     const now = new Date();
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate()
+    );
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const startOfYear = new Date(now.getFullYear(), 0, 1);
 
@@ -82,9 +86,8 @@ export async function GET(request: NextRequest) {
     ]);
 
     // 计算处理率
-    const calculateProcessingRate = (processed: number, total: number) => {
-      return total > 0 ? Math.round((processed / total) * 100) : 0;
-    };
+    const calculateProcessingRate = (processed: number, total: number) =>
+      total > 0 ? Math.round((processed / total) * 100) : 0;
 
     const statistics = {
       today: {
@@ -115,13 +118,13 @@ export async function GET(request: NextRequest) {
         ),
       },
       urgent: urgentCount,
-      statusBreakdown: statusStats.map((stat) => ({
+      statusBreakdown: statusStats.map(stat => ({
         status: stat.status,
         count: stat._count,
         totalAmount: stat._sum.refundAmount || 0,
         processedAmount: stat._sum.processedAmount || 0,
       })),
-      recentRefunds: recentRefunds.map((refund) => ({
+      recentRefunds: recentRefunds.map(refund => ({
         id: refund.id,
         refundNumber: refund.refundNumber,
         customerName: refund.salesOrder?.customer?.name || '未知客户',
@@ -137,9 +140,6 @@ export async function GET(request: NextRequest) {
     });
   } catch (error) {
     console.error('获取退款统计数据失败:', error);
-    return NextResponse.json(
-      { error: '获取统计数据失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '获取统计数据失败' }, { status: 500 });
   }
 }
