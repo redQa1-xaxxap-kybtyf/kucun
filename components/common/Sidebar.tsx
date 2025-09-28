@@ -1,6 +1,7 @@
 'use client';
 
 import {
+  ArrowUpRight,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -126,16 +127,28 @@ const navigationItems: NavigationItem[] = [
         icon: TrendingUp,
       },
       {
+        id: 'finance-payables',
+        title: '应付货款',
+        href: '/finance/payables',
+        icon: TrendingDown,
+      },
+      {
         id: 'finance-refunds',
         title: '应退货款',
         href: '/finance/refunds',
-        icon: TrendingDown,
+        icon: RotateCcw,
       },
       {
         id: 'finance-payments',
         title: '收款记录',
         href: '/finance/payments',
         icon: CreditCard,
+      },
+      {
+        id: 'finance-payments-out',
+        title: '付款记录',
+        href: '/finance/payments-out',
+        icon: ArrowUpRight,
       },
       {
         id: 'finance-statements',

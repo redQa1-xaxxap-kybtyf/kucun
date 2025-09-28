@@ -38,6 +38,10 @@ model User {
   operatedAdjustments   InventoryAdjustment[] @relation("InventoryAdjustmentOperator")
   approvedAdjustments   InventoryAdjustment[] @relation("InventoryAdjustmentApprover")
 
+  // 应付款关联关系
+  payableRecords        PayableRecord[]
+  paymentOutRecords     PaymentOutRecord[]
+
   @@index([email])
   @@index([username])
   @@index([role])
@@ -85,6 +89,8 @@ model Supplier {
   // 关联关系
   salesOrders               SalesOrder[]
   factoryShipmentOrderItems FactoryShipmentOrderItem[]
+  payableRecords            PayableRecord[]
+  paymentOutRecords         PaymentOutRecord[]
 
   @@index([name])
   @@index([phone])
@@ -672,4 +678,69 @@ model SystemLog {
   @@index([userId], map: "idx_system_logs_user")
   @@index([createdAt(sort: Desc)], map: "idx_system_logs_created")
   @@map("system_logs")
+}
+
+// 应付款记录表 - 应付款管理，支持部分付款和分期付款
+model PayableRecord {
+  id                String   @id @default(uuid())
+  payableNumber     String   @unique @map("payable_number")
+  supplierId        String   @map("supplier_id")
+  userId            String   @map("user_id")
+  sourceType        String   @map("source_type") // purchase_order, factory_shipment, service, other
+  sourceId          String?  @map("source_id") // 关联的源单据ID
+  sourceNumber      String?  @map("source_number") // 关联的源单据号
+  payableAmount     Float    @map("payable_amount")
+  paidAmount        Float    @default(0) @map("paid_amount")
+  remainingAmount   Float    @map("remaining_amount")
+  dueDate           DateTime? @map("due_date")
+  status            String   @default("pending") // pending, partial, paid, overdue, cancelled
+  paymentTerms      String   @default("30天") @map("payment_terms")
+  description       String?
+  remarks           String?
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  supplier         Supplier           @relation(fields: [supplierId], references: [id])
+  user             User               @relation(fields: [userId], references: [id])
+  paymentOutRecords PaymentOutRecord[]
+
+  @@index([supplierId], map: "idx_payable_records_supplier")
+  @@index([userId], map: "idx_payable_records_user")
+  @@index([status], map: "idx_payable_records_status")
+  @@index([dueDate], map: "idx_payable_records_due_date")
+  @@index([sourceType], map: "idx_payable_records_source_type")
+  @@index([createdAt(sort: Desc)], map: "idx_payable_records_date")
+  @@map("payable_records")
+}
+
+// 付款记录表 - 付款管理，支持部分付款和分期付款
+model PaymentOutRecord {
+  id              String   @id @default(uuid())
+  paymentNumber   String   @unique @map("payment_number")
+  payableRecordId String?  @map("payable_record_id")
+  supplierId      String   @map("supplier_id")
+  userId          String   @map("user_id")
+  paymentMethod   String   @default("bank_transfer") // cash, bank_transfer, check, other
+  paymentAmount   Float    @map("payment_amount")
+  paymentDate     DateTime @map("payment_date")
+  status          String   @default("pending") // pending, confirmed, cancelled
+  remarks         String?
+  voucherNumber   String?  @map("voucher_number") // 付款凭证号
+  bankInfo        String?  @map("bank_info") // 银行信息（转账时使用）
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  payableRecord PayableRecord? @relation(fields: [payableRecordId], references: [id])
+  supplier      Supplier       @relation(fields: [supplierId], references: [id])
+  user          User           @relation(fields: [userId], references: [id])
+
+  @@index([payableRecordId], map: "idx_payment_out_records_payable")
+  @@index([supplierId], map: "idx_payment_out_records_supplier")
+  @@index([userId], map: "idx_payment_out_records_user")
+  @@index([status], map: "idx_payment_out_records_status")
+  @@index([paymentDate(sort: Desc)], map: "idx_payment_out_records_date")
+  @@index([paymentMethod], map: "idx_payment_out_records_method")
+  @@map("payment_out_records")
 }
