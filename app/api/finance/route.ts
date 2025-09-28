@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -36,11 +36,11 @@ export async function GET(_request: NextRequest) {
         WHERE so.status IN ('confirmed', 'shipped', 'completed')
       `,
 
-      // 总应退金额 - 基于退款记录计算
+      // 总应退金额 - 修复：基于remainingAmount计算真实待付金额
       prisma.$queryRaw`
-        SELECT COALESCE(SUM(refund_amount), 0) as total_refundable
+        SELECT COALESCE(SUM(remaining_amount), 0) as total_refundable
         FROM refund_records
-        WHERE status IN ('pending', 'processing', 'completed')
+        WHERE status IN ('pending', 'processing') AND remaining_amount > 0
       `,
 
       // 逾期金额 - 基于销售订单创建时间超过30天的未付款订单

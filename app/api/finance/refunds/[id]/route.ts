@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { updateRefundSchema } from '@/lib/validations/refund';
+import { updateRefundRecordSchema } from '@/lib/validations/refund';
 
 // GET /api/finance/refunds/[id] - 获取单个退款记录详情
 export async function GET(
@@ -37,10 +37,7 @@ export async function GET(
     });
   } catch (error) {
     console.error('获取退款记录失败:', error);
-    return NextResponse.json(
-      { error: '获取退款记录失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '获取退款记录失败' }, { status: 500 });
   }
 }
 
@@ -56,14 +53,44 @@ export async function PUT(
     }
 
     const body = await request.json();
-    const validatedData = updateRefundSchema.parse(body);
+    const validatedData = updateRefundRecordSchema.parse(body);
+
+    // 修复：在更新时重新计算金额字段
+    const updateData = { ...validatedData, updatedAt: new Date() };
+
+    // 如果更新了processedAmount，需要重新计算remainingAmount
+    if (validatedData.processedAmount !== undefined) {
+      // 获取当前退款记录以获取refundAmount
+      const currentRefund = await prisma.refundRecord.findUnique({
+        where: { id: params.id },
+        select: { refundAmount: true },
+      });
+
+      if (currentRefund) {
+        updateData.remainingAmount = Math.max(
+          0,
+          (validatedData.refundAmount || currentRefund.refundAmount) -
+            validatedData.processedAmount
+        );
+      }
+    } else if (validatedData.refundAmount !== undefined) {
+      // 如果更新了refundAmount但没有更新processedAmount，获取当前processedAmount
+      const currentRefund = await prisma.refundRecord.findUnique({
+        where: { id: params.id },
+        select: { processedAmount: true },
+      });
+
+      if (currentRefund) {
+        updateData.remainingAmount = Math.max(
+          0,
+          validatedData.refundAmount - (currentRefund.processedAmount || 0)
+        );
+      }
+    }
 
     const refund = await prisma.refundRecord.update({
       where: { id: params.id },
-      data: {
-        ...validatedData,
-        updatedAt: new Date(),
-      },
+      data: updateData,
       include: {
         salesOrder: {
           include: {
@@ -80,10 +107,7 @@ export async function PUT(
     });
   } catch (error) {
     console.error('更新退款记录失败:', error);
-    return NextResponse.json(
-      { error: '更新退款记录失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '更新退款记录失败' }, { status: 500 });
   }
 }
 
@@ -124,9 +148,6 @@ export async function DELETE(
     });
   } catch (error) {
     console.error('删除退款记录失败:', error);
-    return NextResponse.json(
-      { error: '删除退款记录失败' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: '删除退款记录失败' }, { status: 500 });
   }
 }

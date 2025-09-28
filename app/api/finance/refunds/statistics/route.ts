@@ -93,6 +93,10 @@ export async function GET(_request: NextRequest) {
       today: {
         totalAmount: todayStats._sum.refundAmount || 0,
         processedAmount: todayStats._sum.processedAmount || 0,
+        // 修复：添加待处理金额字段
+        pendingAmount:
+          (todayStats._sum.refundAmount || 0) -
+          (todayStats._sum.processedAmount || 0),
         count: todayStats._count,
         processingRate: calculateProcessingRate(
           todayStats._sum.processedAmount || 0,
@@ -102,6 +106,10 @@ export async function GET(_request: NextRequest) {
       month: {
         totalAmount: monthStats._sum.refundAmount || 0,
         processedAmount: monthStats._sum.processedAmount || 0,
+        // 修复：添加待处理金额字段
+        pendingAmount:
+          (monthStats._sum.refundAmount || 0) -
+          (monthStats._sum.processedAmount || 0),
         count: monthStats._count,
         processingRate: calculateProcessingRate(
           monthStats._sum.processedAmount || 0,
@@ -111,6 +119,10 @@ export async function GET(_request: NextRequest) {
       year: {
         totalAmount: yearStats._sum.refundAmount || 0,
         processedAmount: yearStats._sum.processedAmount || 0,
+        // 修复：添加待处理金额字段
+        pendingAmount:
+          (yearStats._sum.refundAmount || 0) -
+          (yearStats._sum.processedAmount || 0),
         count: yearStats._count,
         processingRate: calculateProcessingRate(
           yearStats._sum.processedAmount || 0,

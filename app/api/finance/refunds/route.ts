@@ -194,11 +194,26 @@ export async function POST(request: NextRequest) {
 
     // 使用事务创建退款记录，确保数据一致性
     const newRefund = await prisma.$transaction(async tx => {
-      // 1. 验证退货订单号（如果提供）
+      // 1. 验证退货订单信息（如果提供）
       if (validatedData.returnOrderId) {
-        // 由于没有退货订单表，我们只验证退货订单号格式
+        // 修复：验证退货订单号必须同时提供
         if (!validatedData.returnOrderNumber) {
           throw new Error('退货订单ID和退货订单号必须同时提供');
+        }
+
+        // 修复：检查是否已存在相同退货单的退款记录，防止重复退款
+        const existingRefundForReturn = await tx.refundRecord.findFirst({
+          where: {
+            returnOrderId: validatedData.returnOrderId,
+            returnOrderNumber: validatedData.returnOrderNumber,
+            status: { in: ['pending', 'processing', 'completed'] },
+          },
+        });
+
+        if (existingRefundForReturn) {
+          throw new Error(
+            `退货单 ${validatedData.returnOrderNumber} 已存在退款记录，不能重复退款`
+          );
         }
       }
 
