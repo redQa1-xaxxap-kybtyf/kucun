@@ -2,10 +2,20 @@
 // 遵循全栈类型安全原则，确保数据库模型、API接口与前端组件的类型一致性
 
 // 应付款状态枚举
-export type PayableStatus = 'pending' | 'partial' | 'paid' | 'overdue' | 'cancelled';
+export type PayableStatus =
+  | 'pending'
+  | 'partial'
+  | 'paid'
+  | 'overdue'
+  | 'cancelled';
 
 // 应付款来源类型
-export type PayableSourceType = 'purchase_order' | 'factory_shipment' | 'service' | 'other';
+export type PayableSourceType =
+  | 'purchase_order'
+  | 'factory_shipment'
+  | 'sales_order'
+  | 'service'
+  | 'other';
 
 // 付款方式枚举
 export type PaymentOutMethod = 'cash' | 'bank_transfer' | 'check' | 'other';
@@ -232,6 +242,7 @@ export const PAYABLE_STATUS_LABELS: Record<PayableStatus, string> = {
 export const PAYABLE_SOURCE_TYPE_LABELS: Record<PayableSourceType, string> = {
   purchase_order: '采购订单',
   factory_shipment: '厂家发货',
+  sales_order: '调货销售',
   service: '服务费用',
   other: '其他',
 };

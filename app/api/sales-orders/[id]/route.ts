@@ -351,12 +351,63 @@ export async function PUT(
       }
     } else {
       // 普通状态更新，不涉及库存
-      _updatedOrder = await prisma.salesOrder.update({
-        where: { id },
-        data: {
-          ...(status && { status }),
-          ...(remarks !== undefined && { remarks }),
-        },
+      // 但需要检查是否需要创建应付款记录
+      _updatedOrder = await prisma.$transaction(async tx => {
+        // 更新订单状态
+        const updatedOrder = await tx.salesOrder.update({
+          where: { id },
+          data: {
+            ...(status && { status }),
+            ...(remarks !== undefined && { remarks }),
+          },
+        });
+
+        // 如果是调货销售且状态变更为confirmed，检查是否需要创建应付款记录
+        if (
+          status === 'confirmed' &&
+          existingOrder.orderType === 'TRANSFER' &&
+          existingOrder.supplierId &&
+          existingOrder.costAmount > 0
+        ) {
+          // 检查是否已经存在应付款记录
+          const existingPayable = await tx.payableRecord.findFirst({
+            where: {
+              sourceType: 'sales_order',
+              sourceId: existingOrder.id,
+            },
+          });
+
+          // 如果不存在应付款记录，则创建
+          if (!existingPayable) {
+            // 生成应付款单号
+            const payableNumber = `PAY-${Date.now()}-${existingOrder.id.slice(-6)}`;
+
+            // 计算应付款到期日期（默认30天后）
+            const dueDate = new Date();
+            dueDate.setDate(dueDate.getDate() + 30);
+
+            // 创建应付款记录
+            await tx.payableRecord.create({
+              data: {
+                payableNumber,
+                supplierId: existingOrder.supplierId,
+                userId: existingOrder.userId,
+                sourceType: 'sales_order',
+                sourceId: existingOrder.id,
+                sourceNumber: existingOrder.orderNumber,
+                payableAmount: existingOrder.costAmount,
+                remainingAmount: existingOrder.costAmount,
+                dueDate,
+                status: 'pending',
+                paymentTerms: '30天',
+                description: `调货销售订单 ${existingOrder.orderNumber} 确认后自动生成应付款`,
+                remarks: `关联销售订单：${existingOrder.orderNumber}，成本金额：¥${existingOrder.costAmount.toFixed(2)}`,
+              },
+            });
+          }
+        }
+
+        return updatedOrder;
       });
     }
 

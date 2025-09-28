@@ -324,7 +324,7 @@ export async function createSalesOrder(
       }
 
       // 创建订单
-      return await tx.salesOrder.create({
+      const salesOrder = await tx.salesOrder.create({
         data: {
           orderNumber,
           customerId: validatedData.customerId,
@@ -389,6 +389,43 @@ export async function createSalesOrder(
           },
         },
       });
+
+      // 如果是调货销售且状态为confirmed，自动创建应付款记录
+      if (
+        validatedData.orderType === 'TRANSFER' &&
+        validatedData.supplierId &&
+        costAmount > 0 &&
+        (validatedData.status === 'confirmed' ||
+          validatedData.status === 'draft')
+      ) {
+        // 生成应付款单号
+        const payableNumber = `PAY-${Date.now()}-${salesOrder.id.slice(-6)}`;
+
+        // 计算应付款到期日期（默认30天后）
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 30);
+
+        // 创建应付款记录
+        await tx.payableRecord.create({
+          data: {
+            payableNumber,
+            supplierId: validatedData.supplierId,
+            userId,
+            sourceType: 'sales_order',
+            sourceId: salesOrder.id,
+            sourceNumber: salesOrder.orderNumber,
+            payableAmount: costAmount,
+            remainingAmount: costAmount,
+            dueDate,
+            status: 'pending',
+            paymentTerms: '30天',
+            description: `调货销售订单 ${salesOrder.orderNumber} 自动生成应付款`,
+            remarks: `关联销售订单：${salesOrder.orderNumber}，成本金额：¥${costAmount.toFixed(2)}`,
+          },
+        });
+      }
+
+      return salesOrder;
     },
     {
       isolationLevel: 'Serializable',
