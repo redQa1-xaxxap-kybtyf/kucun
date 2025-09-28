@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
@@ -10,7 +10,7 @@ import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-gen
  */
 
 // 生成订单号API
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // 验证用户权限
     const session = await getServerSession(authOptions);

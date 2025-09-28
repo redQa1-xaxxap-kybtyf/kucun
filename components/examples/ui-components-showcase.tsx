@@ -13,8 +13,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-
-// 瓷砖行业特色组件
 import {
   ColorCodeDisplay,
   ColorCodeGrid,
@@ -26,8 +24,6 @@ import {
   QuickStatusToggle,
   type InventoryStatus,
 } from '@/components/ui/inventory-status-indicator';
-
-// 移动端优化组件
 import {
   MobileDataTable,
   createDateColumn,
@@ -63,7 +59,7 @@ const sampleSpecification: TileSpecification = {
   coverageArea: 1.44,
 };
 
-const sampleBatches: ProductionBatch[] = [
+const _sampleBatches: ProductionBatch[] = [
   {
     date: '2024-01-15',
     batchNumber: 'B20240115001',
@@ -116,7 +112,7 @@ const sampleProducts = [
 export default function UIComponentsShowcase() {
   // 状态管理
   const [selectedColorCode, setSelectedColorCode] = React.useState('W001');
-  const [productionDate, setProductionDate] = React.useState('2024-01-15');
+  const [_productionDate, _setProductionDate] = React.useState('2024-01-15');
   const [inventoryStatus, setInventoryStatus] =
     React.useState<InventoryStatus>('in_stock');
   const [searchState, setSearchState] = React.useState<SearchState>({

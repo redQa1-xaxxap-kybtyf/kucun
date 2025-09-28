@@ -244,7 +244,7 @@ export async function getTodoItems() {
 /**
  * 获取销售趋势数据
  */
-export async function getSalesTrend(timeRange: TimeRange = '7d') {
+export async function getSalesTrend(_timeRange: TimeRange = '7d') {
   // 简化实现，返回模拟数据
   return [];
 }
@@ -252,7 +252,7 @@ export async function getSalesTrend(timeRange: TimeRange = '7d') {
 /**
  * 获取库存趋势数据
  */
-export async function getInventoryTrend(timeRange: TimeRange = '7d') {
+export async function getInventoryTrend(_timeRange: TimeRange = '7d') {
   // 简化实现，返回模拟数据
   return [];
 }
@@ -260,7 +260,7 @@ export async function getInventoryTrend(timeRange: TimeRange = '7d') {
 /**
  * 获取产品排名
  */
-export async function getProductRanking(timeRange: TimeRange = '7d') {
+export async function getProductRanking(_timeRange: TimeRange = '7d') {
   // 简化实现，返回模拟数据
   return [];
 }
@@ -268,7 +268,7 @@ export async function getProductRanking(timeRange: TimeRange = '7d') {
 /**
  * 获取客户排名
  */
-export async function getCustomerRanking(timeRange: TimeRange = '7d') {
+export async function getCustomerRanking(_timeRange: TimeRange = '7d') {
   // 简化实现，返回模拟数据
   return [];
 }

@@ -14,7 +14,8 @@ import {
   Package,
   XCircle,
 } from 'lucide-react';
-import { Metadata } from 'next';
+import type { Metadata } from 'next';
+import Link from 'next/link';
 import { notFound } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +24,6 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { prisma } from '@/lib/db';
 import { formatCurrency } from '@/lib/utils';
-import Link from 'next/link';
 
 interface RefundDetailPageProps {
   params: {

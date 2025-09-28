@@ -1,8 +1,8 @@
 // 退货订单详情API路由
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -159,7 +159,7 @@ export async function PUT(
     }
 
     // 使用事务更新退货订单
-    const updatedReturnOrder = await prisma.$transaction(async (tx) => {
+    const updatedReturnOrder = await prisma.$transaction(async tx => {
       // 更新退货订单基本信息
       const updateData: any = {
         updatedAt: new Date(),
@@ -195,7 +195,10 @@ export async function PUT(
         });
 
         // 重新计算总金额
-        const totalAmount = data.items.reduce((sum, item) => sum + item.subtotal, 0);
+        const totalAmount = data.items.reduce(
+          (sum, item) => sum + item.subtotal,
+          0
+        );
         updateData.totalAmount = totalAmount;
         updateData.refundAmount = totalAmount;
       }
@@ -295,7 +298,7 @@ export async function DELETE(
     }
 
     // 使用事务删除退货订单
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       // 删除退货明细
       await tx.returnOrderItem.deleteMany({
         where: { returnOrderId: id },

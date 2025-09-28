@@ -1,11 +1,20 @@
 'use client';
 
-import { AlertCircle, Image as ImageIcon, Upload, X } from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle,
+  Image as ImageIcon,
+  Loader2,
+  Upload,
+  X,
+} from 'lucide-react';
+import Image from 'next/image';
 import { useRef, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 interface ImageUploadProps {
   value?: string[];
@@ -165,10 +174,11 @@ export function ImageUpload({
             <Card key={index} className="group relative">
               <CardContent className="p-2">
                 <div className="relative aspect-square overflow-hidden rounded-md">
-                  <img
+                  <Image
                     src={url}
                     alt={`产品图片 ${index + 1}`}
-                    className="h-full w-full object-cover"
+                    fill
+                    className="object-cover"
                   />
                   <Button
                     type="button"

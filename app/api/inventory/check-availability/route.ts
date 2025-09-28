@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
@@ -151,7 +151,7 @@ export async function POST(request: NextRequest) {
         const available = availableStock >= quantity;
 
         // 如果可用，计算具体的分配方案
-        let allocationPlan: any[] = [];
+        const allocationPlan: any[] = [];
         if (available) {
           let remainingQuantity = quantity;
           for (const record of inventoryRecords) {

@@ -1,8 +1,8 @@
 // 单个应付款记录 API 路由
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -142,10 +142,11 @@ export async function PUT(
     }
 
     // 如果更新应付金额，需要重新计算剩余金额
-    let remainingAmount = existingPayable.payableAmount - existingPayable.paidAmount;
+    let remainingAmount =
+      existingPayable.payableAmount - existingPayable.paidAmount;
     if (updateData.payableAmount !== undefined) {
       remainingAmount = updateData.payableAmount - existingPayable.paidAmount;
-      
+
       // 检查应付金额不能小于已付金额
       if (updateData.payableAmount < existingPayable.paidAmount) {
         return NextResponse.json(
@@ -249,7 +250,10 @@ export async function DELETE(
     }
 
     // 检查是否已有付款记录
-    if (existingPayable.paidAmount > 0 || existingPayable.paymentOutRecords.length > 0) {
+    if (
+      existingPayable.paidAmount > 0 ||
+      existingPayable.paymentOutRecords.length > 0
+    ) {
       return NextResponse.json(
         { success: false, error: '已有付款记录的应付款不能删除' },
         { status: 400 }

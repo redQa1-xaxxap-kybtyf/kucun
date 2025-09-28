@@ -2,11 +2,10 @@
 
 import {
   ChevronLeft,
-  ChevronRight,
-  MoreHorizontal,
+  Filter,
   Grid3X3,
   List,
-  Filter,
+  MoreHorizontal,
   Search,
 } from 'lucide-react';
 import * as React from 'react';
@@ -20,7 +19,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { useMediaQuery } from '@/hooks/use-media-query';
 import { cn } from '@/lib/utils';
 
@@ -335,7 +333,7 @@ export function MobileViewSwitcher({
   onSearch,
   className,
 }: MobileViewSwitcherProps) {
-  const isMobile = useMediaQuery('(max-width: 768px)');
+  const _isMobile = useMediaQuery('(max-width: 768px)');
 
   return (
     <div

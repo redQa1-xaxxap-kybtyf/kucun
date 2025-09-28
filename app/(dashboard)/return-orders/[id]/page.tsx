@@ -1,23 +1,32 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Edit, Printer, Download, MoreHorizontal, CheckCircle, XCircle } from 'lucide-react';
+import {
+  ArrowLeft,
+  CheckCircle,
+  Download,
+  Edit,
+  MoreHorizontal,
+  Printer,
+  XCircle,
+} from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { ErrorMessage } from '@/components/ui/error-message';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 import { RETURN_ORDER_STATUS_LABELS } from '@/lib/types/return-order';
+import { formatCurrency, formatDate } from '@/lib/utils';
+
+import { ErrorMessage } from '@/components/ui/error-message';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ReturnOrderDetail {
   id: string;
@@ -96,7 +105,7 @@ export default function ReturnOrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -106,7 +115,9 @@ export default function ReturnOrderDetailPage() {
     return (
       <ErrorMessage
         title="加载失败"
-        message={error instanceof Error ? error.message : '获取退货订单详情失败'}
+        message={
+          error instanceof Error ? error.message : '获取退货订单详情失败'
+        }
         onRetry={() => window.location.reload()}
       />
     );
@@ -166,22 +177,24 @@ export default function ReturnOrderDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">退货订单详情</h1>
-            <p className="text-muted-foreground">退货单号：{order.returnNumber}</p>
+            <p className="text-muted-foreground">
+              退货单号：{order.returnNumber}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm">
-            <Printer className="h-4 w-4 mr-2" />
+            <Printer className="mr-2 h-4 w-4" />
             打印
           </Button>
           <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="mr-2 h-4 w-4" />
             导出
           </Button>
           {order.status === 'pending' && (
             <Button variant="outline" size="sm">
-              <Edit className="h-4 w-4 mr-2" />
+              <Edit className="mr-2 h-4 w-4" />
               编辑
             </Button>
           )}
@@ -195,11 +208,11 @@ export default function ReturnOrderDetailPage() {
               {order.status === 'pending' && (
                 <>
                   <DropdownMenuItem>
-                    <CheckCircle className="h-4 w-4 mr-2" />
+                    <CheckCircle className="mr-2 h-4 w-4" />
                     批准退货
                   </DropdownMenuItem>
                   <DropdownMenuItem className="text-destructive">
-                    <XCircle className="h-4 w-4 mr-2" />
+                    <XCircle className="mr-2 h-4 w-4" />
                     拒绝退货
                   </DropdownMenuItem>
                 </>
@@ -211,9 +224,9 @@ export default function ReturnOrderDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* 基本信息 */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle>基本信息</CardTitle>
@@ -228,7 +241,8 @@ export default function ReturnOrderDetailPage() {
                     <Badge variant={getStatusBadgeVariant(order.status)}>
                       {getStatusIcon(order.status)}
                       <span className="ml-1">
-                        {RETURN_ORDER_STATUS_LABELS[order.status] || order.status}
+                        {RETURN_ORDER_STATUS_LABELS[order.status] ||
+                          order.status}
                       </span>
                     </Badge>
                   </div>
@@ -240,8 +254,10 @@ export default function ReturnOrderDetailPage() {
                   <p className="mt-1">
                     <Button
                       variant="link"
-                      className="p-0 h-auto"
-                      onClick={() => router.push(`/sales-orders/${order.salesOrder.id}`)}
+                      className="h-auto p-0"
+                      onClick={() =>
+                        router.push(`/sales-orders/${order.salesOrder.id}`)
+                      }
                     >
                       {order.salesOrder.orderNumber}
                     </Button>
@@ -304,10 +320,10 @@ export default function ReturnOrderDetailPage() {
               <div className="space-y-4">
                 {order.items.map((item, index) => (
                   <div key={item.id}>
-                    <div className="flex justify-between items-start">
+                    <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-medium">{item.product.name}</h4>
-                        <div className="text-sm text-muted-foreground space-y-1">
+                        <div className="space-y-1 text-sm text-muted-foreground">
                           <p>产品编码：{item.product.code}</p>
                           <p>单位：{item.product.unit}</p>
                           {item.returnReason && (
@@ -315,12 +331,13 @@ export default function ReturnOrderDetailPage() {
                           )}
                         </div>
                       </div>
-                      <div className="text-right space-y-1">
+                      <div className="space-y-1 text-right">
                         <p className="font-medium">
                           {formatCurrency(item.subtotal)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {item.returnQuantity} × {formatCurrency(item.unitPrice)}
+                          {item.returnQuantity} ×{' '}
+                          {formatCurrency(item.unitPrice)}
                         </p>
                       </div>
                     </div>
@@ -369,7 +386,7 @@ export default function ReturnOrderDetailPage() {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">退货申请创建</p>
                     <p className="text-xs text-muted-foreground">
@@ -379,13 +396,16 @@ export default function ReturnOrderDetailPage() {
                 </div>
                 {order.updatedAt !== order.createdAt && (
                   <div className="flex items-center space-x-3">
-                    <div className={`w-2 h-2 rounded-full ${
-                      order.status === 'approved' || order.status === 'completed'
-                        ? 'bg-green-500'
-                        : order.status === 'rejected'
-                        ? 'bg-red-500'
-                        : 'bg-yellow-500'
-                    }`}></div>
+                    <div
+                      className={`h-2 w-2 rounded-full ${
+                        order.status === 'approved' ||
+                        order.status === 'completed'
+                          ? 'bg-green-500'
+                          : order.status === 'rejected'
+                            ? 'bg-red-500'
+                            : 'bg-yellow-500'
+                      }`}
+                    ></div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">
                         状态更新为：{RETURN_ORDER_STATUS_LABELS[order.status]}
@@ -408,11 +428,11 @@ export default function ReturnOrderDetailPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button className="w-full" size="sm">
-                  <CheckCircle className="h-4 w-4 mr-2" />
+                  <CheckCircle className="mr-2 h-4 w-4" />
                   批准退货
                 </Button>
                 <Button variant="destructive" className="w-full" size="sm">
-                  <XCircle className="h-4 w-4 mr-2" />
+                  <XCircle className="mr-2 h-4 w-4" />
                   拒绝退货
                 </Button>
               </CardContent>

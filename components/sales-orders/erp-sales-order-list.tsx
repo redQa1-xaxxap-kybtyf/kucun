@@ -5,8 +5,6 @@ import { Edit, Eye, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { paginationConfig } from '@/lib/env';
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -32,6 +30,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
+import { paginationConfig } from '@/lib/env';
 import { type PaginatedResponse } from '@/lib/types/api';
 import {
   SALES_ORDER_STATUS_LABELS,
@@ -69,10 +68,10 @@ export function ERPSalesOrderList({
   );
 
   // 获取销售订单列表数据 - 使用服务器端提供的初始数据
-  const { data, isLoading, error, isPreviousData } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: salesOrderQueryKeys.list(queryParams),
     queryFn: () => getSalesOrders(queryParams),
-    initialData: initialData,
+    initialData,
     staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
     refetchOnWindowFocus: false, // 避免不必要的重新获取
     keepPreviousData: true, // 保持之前的数据，避免加载时闪烁

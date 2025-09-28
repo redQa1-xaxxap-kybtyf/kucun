@@ -171,11 +171,9 @@ export function useOptimizedInventoryQuery({
       },
 
       // 获取缓存数据
-      getData: (queryParams: InventoryQueryParams) => {
-        return queryClient.getQueryData<InventoryListResponse>(
+      getData: (queryParams: InventoryQueryParams) => queryClient.getQueryData<InventoryListResponse>(
           inventoryQueryKeys.list(queryParams)
-        );
-      },
+        ),
 
       // 预取指定页面
       prefetch: prefetchPage,

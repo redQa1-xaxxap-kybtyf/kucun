@@ -51,27 +51,22 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
-
-// Icons
-
 // API and Types
 import {
   useCreateReturnOrder,
   useSalesOrderReturnableItems,
   useUpdateReturnOrder,
 } from '@/lib/api/return-orders';
-import type { ReturnOrder } from '@/lib/types/return-order';
 import {
+  type ReturnOrder,
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
   calculateReturnItemsTotal,
   formatReturnAmount,
 } from '@/lib/types/return-order';
-import type {
-  CreateReturnOrderFormData,
-  UpdateReturnOrderFormData,
-} from '@/lib/validations/return-order';
 import {
+  type CreateReturnOrderFormData,
+  type UpdateReturnOrderFormData,
   calculateReturnItemSubtotal,
   createReturnOrderDefaults,
   createReturnOrderSchema,

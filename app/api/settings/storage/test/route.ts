@@ -3,11 +3,12 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { QiniuStorageTestSchema } from '@/lib/schemas/settings';
+import { testQiniuConnection } from '@/lib/services/qiniu-upload';
 import type {
   QiniuStorageTestResponse,
   SettingsApiResponse,
@@ -39,7 +40,7 @@ export async function POST(
 
     // 解析请求体
     const body = await request.json();
-    const validatedData = QiniuStorageTestSchema.parse(body);
+    const _validatedData = QiniuStorageTestSchema.parse(body);
 
     // 使用真实的七牛云连接测试
     const testResult = await realQiniuConnectionTest();
@@ -167,7 +168,6 @@ function getRegionDisplayName(region: string): string {
 /**
  * 真实的七牛云连接测试实现
  */
-import { testQiniuConnection } from '@/lib/services/qiniu-upload';
 
 async function realQiniuConnectionTest(): Promise<QiniuStorageTestResponse> {
   try {

@@ -1,8 +1,8 @@
 // 产品搜索API路由
 // 为入库表单提供产品搜索功能
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';

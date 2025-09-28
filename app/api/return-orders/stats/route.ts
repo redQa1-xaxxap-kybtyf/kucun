@@ -1,8 +1,8 @@
 // 退货订单统计API路由
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -10,7 +10,7 @@ import { prisma } from '@/lib/db';
 /**
  * GET /api/return-orders/stats - 获取退货订单统计信息
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // 身份验证
     const session = await getServerSession(authOptions);
@@ -24,7 +24,14 @@ export async function GET(request: NextRequest) {
     // 获取当前月份的开始和结束时间
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-    const currentMonthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
+    const currentMonthEnd = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59
+    );
 
     // 并行查询各种统计数据
     const [
@@ -39,14 +46,14 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       // 总退货数量
       prisma.returnOrder.count(),
-      
+
       // 总退款金额
       prisma.returnOrder.aggregate({
         _sum: {
           refundAmount: true,
         },
       }),
-      
+
       // 待处理数量
       prisma.returnOrder.count({
         where: {
@@ -55,28 +62,28 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      
+
       // 已审核数量
       prisma.returnOrder.count({
         where: {
           status: 'approved',
         },
       }),
-      
+
       // 已拒绝数量
       prisma.returnOrder.count({
         where: {
           status: 'rejected',
         },
       }),
-      
+
       // 已完成数量
       prisma.returnOrder.count({
         where: {
           status: 'completed',
         },
       }),
-      
+
       // 本月退货数量
       prisma.returnOrder.count({
         where: {
@@ -86,7 +93,7 @@ export async function GET(request: NextRequest) {
           },
         },
       }),
-      
+
       // 本月退款金额
       prisma.returnOrder.aggregate({
         where: {

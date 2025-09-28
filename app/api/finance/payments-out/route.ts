@@ -1,8 +1,8 @@
 // 付款记录 API 路由
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -245,7 +245,7 @@ export async function POST(request: NextRequest) {
     const paymentNumber = `PAYOUT-${Date.now()}`;
 
     // 使用事务创建付款记录并更新应付款
-    const payment = await prisma.$transaction(async (tx) => {
+    const payment = await prisma.$transaction(async tx => {
       // 创建付款记录
       const newPayment = await tx.paymentOutRecord.create({
         data: {
@@ -285,7 +285,7 @@ export async function POST(request: NextRequest) {
       if (payableRecord) {
         const newPaidAmount = payableRecord.paidAmount + data.paymentAmount;
         const newRemainingAmount = payableRecord.payableAmount - newPaidAmount;
-        
+
         let newStatus = payableRecord.status;
         if (newRemainingAmount <= 0) {
           newStatus = 'paid';

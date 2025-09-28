@@ -1,8 +1,8 @@
 // 应付款统计 API 路由
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -11,7 +11,7 @@ import type { PayableStatistics } from '@/lib/types/payable';
 /**
  * GET /api/finance/payables/statistics - 获取应付款统计数据
  */
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   try {
     // 身份验证
     const session = await getServerSession(authOptions);
@@ -128,16 +128,20 @@ export async function GET(request: NextRequest) {
     ]);
 
     // 处理状态统计
-    const statusCountMap = statusCounts.reduce((acc, item) => {
-      acc[item.status] = item._count.id;
-      return acc;
-    }, {} as Record<string, number>);
+    const statusCountMap = statusCounts.reduce(
+      (acc, item) => {
+        acc[item.status] = item._count.id;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // 构建统计数据
     const statistics: PayableStatistics = {
       totalPayables: totalPayablesResult._sum.payableAmount || 0,
       totalPaidAmount: totalPaidAmountResult._sum.paidAmount || 0,
-      totalRemainingAmount: totalRemainingAmountResult._sum.remainingAmount || 0,
+      totalRemainingAmount:
+        totalRemainingAmountResult._sum.remainingAmount || 0,
       overdueAmount: overdueAmountResult._sum.remainingAmount || 0,
       pendingCount: statusCountMap.pending || 0,
       paidCount: statusCountMap.paid || 0,

@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
 import { authOptions } from '@/lib/auth';

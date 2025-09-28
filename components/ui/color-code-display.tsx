@@ -4,7 +4,6 @@
 import { cva, type VariantProps } from 'class-variance-authority';
 import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 
 // 色号显示器变体定义
@@ -317,9 +316,9 @@ const ColorCodeGrid = React.forwardRef<HTMLDivElement, ColorCodeGridProps>(
 ColorCodeGrid.displayName = 'ColorCodeGrid';
 
 export {
-  ColorCodeDisplay,
-  ColorCodeSelector,
-  ColorCodeGrid,
-  colorCodeDisplayVariants,
   COLOR_CODE_COLORS,
+  ColorCodeDisplay,
+  colorCodeDisplayVariants,
+  ColorCodeGrid,
+  ColorCodeSelector,
 };

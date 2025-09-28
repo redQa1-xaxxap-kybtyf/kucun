@@ -1,16 +1,26 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Calendar, ShoppingCart, RotateCcw } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  Edit,
+  Mail,
+  MapPin,
+  Phone,
+  RotateCcw,
+  ShoppingCart,
+} from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { ErrorMessage } from '@/components/ui/error-message';
 import { formatCurrency, formatDate } from '@/lib/utils';
+
+import { ErrorMessage } from '@/components/ui/error-message';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface CustomerDetail {
   id: string;
@@ -79,7 +89,7 @@ export default function CustomerDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -182,17 +192,17 @@ export default function CustomerDetailPage() {
             size="sm"
             onClick={() => router.push(`/customers/${id}/edit`)}
           >
-            <Edit className="h-4 w-4 mr-2" />
+            <Edit className="mr-2 h-4 w-4" />
             编辑
           </Button>
           <Button size="sm">
-            <ShoppingCart className="h-4 w-4 mr-2" />
+            <ShoppingCart className="mr-2 h-4 w-4" />
             创建订单
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* 基本信息 */}
         <div className="lg:col-span-2">
           <Card>
@@ -254,7 +264,7 @@ export default function CustomerDetailPage() {
                   <div className="mt-1 flex items-start space-x-2">
                     {customer.address ? (
                       <>
-                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
                         <span>{customer.address}</span>
                       </>
                     ) : (
@@ -323,11 +333,15 @@ export default function CustomerDetailPage() {
               </div>
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <p className="text-lg font-semibold">{customer._count.salesOrders}</p>
+                  <p className="text-lg font-semibold">
+                    {customer._count.salesOrders}
+                  </p>
                   <p className="text-xs text-muted-foreground">销售订单</p>
                 </div>
                 <div>
-                  <p className="text-lg font-semibold">{customer._count.returnOrders}</p>
+                  <p className="text-lg font-semibold">
+                    {customer._count.returnOrders}
+                  </p>
                   <p className="text-xs text-muted-foreground">退货订单</p>
                 </div>
               </div>
@@ -352,11 +366,17 @@ export default function CustomerDetailPage() {
         <CardContent>
           <Tabs defaultValue="sales" className="w-full">
             <TabsList>
-              <TabsTrigger value="sales" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="sales"
+                className="flex items-center space-x-2"
+              >
                 <ShoppingCart className="h-4 w-4" />
                 <span>销售订单 ({customer._count.salesOrders})</span>
               </TabsTrigger>
-              <TabsTrigger value="returns" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="returns"
+                className="flex items-center space-x-2"
+              >
                 <RotateCcw className="h-4 w-4" />
                 <span>退货订单 ({customer._count.returnOrders})</span>
               </TabsTrigger>
@@ -365,10 +385,10 @@ export default function CustomerDetailPage() {
             <TabsContent value="sales" className="space-y-4">
               {customer.salesOrders.length > 0 ? (
                 <div className="space-y-3">
-                  {customer.salesOrders.map((order) => (
+                  {customer.salesOrders.map(order => (
                     <div
                       key={order.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                      className="flex cursor-pointer items-center justify-between rounded-lg border p-4 hover:bg-muted/50"
                       onClick={() => router.push(`/sales-orders/${order.id}`)}
                     >
                       <div>
@@ -377,7 +397,7 @@ export default function CustomerDetailPage() {
                           {formatDate(order.createdAt)}
                         </p>
                       </div>
-                      <div className="text-right space-y-1">
+                      <div className="space-y-1 text-right">
                         <p className="font-medium">
                           {formatCurrency(order.totalAmount)}
                         </p>
@@ -387,7 +407,7 @@ export default function CustomerDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="py-8 text-center text-muted-foreground">
                   暂无销售订单
                 </div>
               )}
@@ -396,10 +416,10 @@ export default function CustomerDetailPage() {
             <TabsContent value="returns" className="space-y-4">
               {customer.returnOrders.length > 0 ? (
                 <div className="space-y-3">
-                  {customer.returnOrders.map((order) => (
+                  {customer.returnOrders.map(order => (
                     <div
                       key={order.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
+                      className="flex cursor-pointer items-center justify-between rounded-lg border p-4 hover:bg-muted/50"
                       onClick={() => router.push(`/return-orders/${order.id}`)}
                     >
                       <div>
@@ -408,7 +428,7 @@ export default function CustomerDetailPage() {
                           {formatDate(order.createdAt)}
                         </p>
                       </div>
-                      <div className="text-right space-y-1">
+                      <div className="space-y-1 text-right">
                         <p className="font-medium text-red-600">
                           -{formatCurrency(order.totalAmount)}
                         </p>
@@ -418,7 +438,7 @@ export default function CustomerDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="py-8 text-center text-muted-foreground">
                   暂无退货订单
                 </div>
               )}

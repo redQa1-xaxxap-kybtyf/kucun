@@ -1,13 +1,12 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
 import {
   paymentRecordCreateSchema,
   paymentRecordQuerySchema,
 } from '@/lib/validations/payment';
-
-import { prisma } from '@/lib/db';
 
 /**
  * GET /api/payments - 获取收款记录列表

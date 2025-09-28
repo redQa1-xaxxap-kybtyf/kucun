@@ -1,8 +1,8 @@
 // 退货订单API路由
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
     // 解析查询参数
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams.entries());
-    
+
     const validationResult = returnOrderQuerySchema.safeParse(queryParams);
     if (!validationResult.success) {
       return NextResponse.json(
@@ -65,7 +65,11 @@ export async function GET(request: NextRequest) {
         { returnNumber: { contains: search, mode: 'insensitive' } },
         { reason: { contains: search, mode: 'insensitive' } },
         { customer: { name: { contains: search, mode: 'insensitive' } } },
-        { salesOrder: { orderNumber: { contains: search, mode: 'insensitive' } } },
+        {
+          salesOrder: {
+            orderNumber: { contains: search, mode: 'insensitive' },
+          },
+        },
       ];
     }
 
@@ -226,21 +230,24 @@ export async function POST(request: NextRequest) {
     const allowedStatuses = ['confirmed', 'shipped', 'completed'];
     if (!allowedStatuses.includes(salesOrder.status)) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `订单状态为 ${salesOrder.status}，不允许退货` 
+        {
+          success: false,
+          error: `订单状态为 ${salesOrder.status}，不允许退货`,
         },
         { status: 400 }
       );
     }
 
     // 使用事务创建退货订单
-    const returnOrder = await prisma.$transaction(async (tx) => {
+    const returnOrder = await prisma.$transaction(async tx => {
       // 生成退货单号
       const returnNumber = `RT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
 
       // 计算退货总金额
-      const totalAmount = data.items.reduce((sum, item) => sum + item.subtotal, 0);
+      const totalAmount = data.items.reduce(
+        (sum, item) => sum + item.subtotal,
+        0
+      );
       const refundAmount = totalAmount; // 默认退款金额等于退货金额
 
       // 创建退货订单

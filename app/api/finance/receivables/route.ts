@@ -1,6 +1,6 @@
-import { Prisma } from '@prisma/client';
-import { getServerSession } from 'next-auth';
+import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -95,9 +95,9 @@ export async function GET(request: NextRequest) {
     const skip = (page - 1) * pageSize;
 
     // 查询销售订单和相关的收款记录
-    let salesOrders, total;
+    let salesOrders, _total;
     try {
-      [salesOrders, total] = await Promise.all([
+      [salesOrders, _total] = await Promise.all([
         prisma.salesOrder.findMany({
           where: whereConditions,
           include: {

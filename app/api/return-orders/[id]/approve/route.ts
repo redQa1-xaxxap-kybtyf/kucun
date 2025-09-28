@@ -1,8 +1,8 @@
 // 退货订单审批API路由
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -69,7 +69,7 @@ export async function POST(
     }
 
     // 使用事务处理审批
-    const updatedReturnOrder = await prisma.$transaction(async (tx) => {
+    const updatedReturnOrder = await prisma.$transaction(async tx => {
       // 准备更新数据
       const updateData: any = {
         status: approved ? 'approved' : 'rejected',

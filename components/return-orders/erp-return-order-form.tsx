@@ -45,16 +45,14 @@ import {
   useSalesOrderReturnableItems,
   useUpdateReturnOrder,
 } from '@/lib/api/return-orders';
-import type { ReturnOrder } from '@/lib/types/return-order';
 import {
+  type ReturnOrder,
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
-import type {
-  CreateReturnOrderFormData,
-  UpdateReturnOrderFormData,
-} from '@/lib/validations/return-order';
 import {
+  type CreateReturnOrderFormData,
+  type UpdateReturnOrderFormData,
   createReturnOrderDefaults,
   createReturnOrderSchema,
   updateReturnOrderSchema,
@@ -171,7 +169,7 @@ export function ERPReturnOrderForm({
   }, [watchedSalesOrderId, selectedSalesOrderId, form]);
 
   // 获取可退货明细
-  const { data: returnableItemsData, isLoading: isLoadingItems } =
+  const { data: _returnableItemsData, isLoading: _isLoadingItems } =
     useSalesOrderReturnableItems(selectedSalesOrderId, {
       enabled: !!selectedSalesOrderId,
     });
@@ -190,7 +188,7 @@ export function ERPReturnOrderForm({
   });
 
   // 添加退货明细
-  const addReturnItem = (salesOrderItem: any) => {
+  const _addReturnItem = (salesOrderItem: any) => {
     const newItem = {
       salesOrderItemId: salesOrderItem.id,
       productId: salesOrderItem.productId,

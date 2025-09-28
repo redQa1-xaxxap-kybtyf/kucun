@@ -9,19 +9,38 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { ArrowLeft, DollarSign, Save, User, Package } from 'lucide-react';
+import { ArrowLeft, DollarSign, Package, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { z } from 'zod';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { formatCurrency } from '@/lib/utils';
@@ -30,9 +49,12 @@ import { formatCurrency } from '@/lib/utils';
 const createPaymentSchema = z.object({
   salesOrderId: z.string().min(1, '请选择销售订单'),
   customerId: z.string().min(1, '请选择客户'),
-  paymentMethod: z.enum(['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'], {
-    required_error: '请选择收款方式',
-  }),
+  paymentMethod: z.enum(
+    ['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'],
+    {
+      required_error: '请选择收款方式',
+    }
+  ),
   paymentAmount: z.number().min(0.01, '收款金额必须大于0'),
   paymentDate: z.string().min(1, '请选择收款日期'),
   receiptNumber: z.string().optional(),
@@ -86,7 +108,7 @@ export default function CreatePaymentPage() {
   const watchedPaymentMethod = form.watch('paymentMethod');
 
   // 获取销售订单信息
-  const { data: orderData, isLoading: orderLoading } = useQuery({
+  const { data: orderData, isLoading: _orderLoading } = useQuery({
     queryKey: ['salesOrder', watchedOrderId],
     queryFn: async () => {
       if (!watchedOrderId) return null;
@@ -105,7 +127,9 @@ export default function CreatePaymentPage() {
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
     queryKey: ['salesOrders', 'unpaid'],
     queryFn: async () => {
-      const response = await fetch('/api/sales-orders?status=confirmed,shipped&hasUnpaidAmount=true');
+      const response = await fetch(
+        '/api/sales-orders?status=confirmed,shipped&hasUnpaidAmount=true'
+      );
       if (!response.ok) {
         throw new Error('获取订单列表失败');
       }
@@ -133,11 +157,11 @@ export default function CreatePaymentPage() {
 
       return response.json();
     },
-    onSuccess: (data) => {
+    onSuccess: data => {
       toast.success('收款记录创建成功');
       router.push(`/finance/payments/${data.data.id}`);
     },
-    onError: (error) => {
+    onError: error => {
       toast.error((error as Error).message);
     },
   });
@@ -157,7 +181,7 @@ export default function CreatePaymentPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
+    <div className="container mx-auto max-w-4xl px-4 py-6">
       {/* 页面标题 */}
       <div className="mb-6 flex items-center gap-4">
         <Button variant="ghost" size="sm" asChild>
@@ -172,7 +196,7 @@ export default function CreatePaymentPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* 主要表单 */}
         <div className="lg:col-span-2">
           <Card>
@@ -181,13 +205,14 @@ export default function CreatePaymentPage() {
                 <DollarSign className="h-5 w-5" />
                 收款信息
               </CardTitle>
-              <CardDescription>
-                请填写收款记录的详细信息
-              </CardDescription>
+              <CardDescription>请填写收款记录的详细信息</CardDescription>
             </CardHeader>
             <CardContent>
               <Form {...form}>
-                <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+                <form
+                  onSubmit={form.handleSubmit(onSubmit)}
+                  className="space-y-6"
+                >
                   {/* 销售订单选择 */}
                   <FormField
                     control={form.control}
@@ -195,9 +220,9 @@ export default function CreatePaymentPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>销售订单 *</FormLabel>
-                        <Select 
-                          value={field.value} 
-                          onValueChange={(value) => {
+                        <Select
+                          value={field.value}
+                          onValueChange={value => {
                             field.onChange(value);
                             handleOrderSelect(value);
                           }}
@@ -209,12 +234,13 @@ export default function CreatePaymentPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {availableOrders.map((order) => (
+                            {availableOrders.map(order => (
                               <SelectItem key={order.id} value={order.id}>
-                                <div className="flex items-center justify-between w-full">
+                                <div className="flex w-full items-center justify-between">
                                   <span>{order.orderNumber}</span>
                                   <span className="ml-2 text-sm text-gray-500">
-                                    {order.customer.name} - 待收：{formatCurrency(order.remainingAmount)}
+                                    {order.customer.name} - 待收：
+                                    {formatCurrency(order.remainingAmount)}
                                   </span>
                                 </div>
                               </SelectItem>
@@ -236,7 +262,10 @@ export default function CreatePaymentPage() {
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>收款方式 *</FormLabel>
-                        <Select value={field.value} onValueChange={field.onChange}>
+                        <Select
+                          value={field.value}
+                          onValueChange={field.onChange}
+                        >
                           <FormControl>
                             <SelectTrigger>
                               <SelectValue placeholder="选择收款方式" />
@@ -244,7 +273,9 @@ export default function CreatePaymentPage() {
                           </FormControl>
                           <SelectContent>
                             <SelectItem value="cash">现金</SelectItem>
-                            <SelectItem value="bank_transfer">银行转账</SelectItem>
+                            <SelectItem value="bank_transfer">
+                              银行转账
+                            </SelectItem>
                             <SelectItem value="alipay">支付宝</SelectItem>
                             <SelectItem value="wechat">微信支付</SelectItem>
                             <SelectItem value="check">支票</SelectItem>
@@ -270,12 +301,12 @@ export default function CreatePaymentPage() {
                             min="0"
                             placeholder="0.00"
                             {...field}
-                            onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                            onChange={e =>
+                              field.onChange(parseFloat(e.target.value) || 0)
+                            }
                           />
                         </FormControl>
-                        <FormDescription>
-                          实际收到的金额
-                        </FormDescription>
+                        <FormDescription>实际收到的金额</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -315,7 +346,8 @@ export default function CreatePaymentPage() {
                   />
 
                   {/* 银行信息 */}
-                  {(watchedPaymentMethod === 'bank_transfer' || watchedPaymentMethod === 'check') && (
+                  {(watchedPaymentMethod === 'bank_transfer' ||
+                    watchedPaymentMethod === 'check') && (
                     <FormField
                       control={form.control}
                       name="bankInfo"
@@ -323,7 +355,10 @@ export default function CreatePaymentPage() {
                         <FormItem>
                           <FormLabel>银行信息</FormLabel>
                           <FormControl>
-                            <Input placeholder="银行名称、账号等信息" {...field} />
+                            <Input
+                              placeholder="银行名称、账号等信息"
+                              {...field}
+                            />
                           </FormControl>
                           <FormDescription>
                             银行转账或支票的相关信息
@@ -342,10 +377,10 @@ export default function CreatePaymentPage() {
                       <FormItem>
                         <FormLabel>备注</FormLabel>
                         <FormControl>
-                          <Textarea 
+                          <Textarea
                             placeholder="收款相关的备注信息"
                             className="min-h-[80px]"
-                            {...field} 
+                            {...field}
                           />
                         </FormControl>
                         <FormMessage />
@@ -355,8 +390,8 @@ export default function CreatePaymentPage() {
 
                   {/* 提交按钮 */}
                   <div className="flex gap-4">
-                    <Button 
-                      type="submit" 
+                    <Button
+                      type="submit"
                       disabled={createMutation.isPending}
                       className="flex-1"
                     >
@@ -386,22 +421,36 @@ export default function CreatePaymentPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">订单号</label>
-                  <p className="text-sm font-medium">{salesOrder.orderNumber}</p>
-                </div>
-                
-                <div>
-                  <label className="text-sm font-medium text-gray-500">订单金额</label>
-                  <p className="text-lg font-bold">{formatCurrency(salesOrder.totalAmount)}</p>
-                </div>
-
-                <div>
-                  <label className="text-sm font-medium text-gray-500">已收金额</label>
-                  <p className="text-sm text-green-600">{formatCurrency(salesOrder.paidAmount)}</p>
+                  <label className="text-sm font-medium text-gray-500">
+                    订单号
+                  </label>
+                  <p className="text-sm font-medium">
+                    {salesOrder.orderNumber}
+                  </p>
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">待收金额</label>
+                  <label className="text-sm font-medium text-gray-500">
+                    订单金额
+                  </label>
+                  <p className="text-lg font-bold">
+                    {formatCurrency(salesOrder.totalAmount)}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-500">
+                    已收金额
+                  </label>
+                  <p className="text-sm text-green-600">
+                    {formatCurrency(salesOrder.paidAmount)}
+                  </p>
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-500">
+                    待收金额
+                  </label>
                   <p className="text-lg font-bold text-orange-600">
                     {formatCurrency(salesOrder.remainingAmount)}
                   </p>
@@ -410,14 +459,22 @@ export default function CreatePaymentPage() {
                 <Separator />
 
                 <div>
-                  <label className="text-sm font-medium text-gray-500">客户信息</label>
+                  <label className="text-sm font-medium text-gray-500">
+                    客户信息
+                  </label>
                   <div className="mt-1 space-y-1">
-                    <p className="text-sm font-medium">{salesOrder.customer.name}</p>
+                    <p className="text-sm font-medium">
+                      {salesOrder.customer.name}
+                    </p>
                     {salesOrder.customer.phone && (
-                      <p className="text-sm text-gray-600">电话：{salesOrder.customer.phone}</p>
+                      <p className="text-sm text-gray-600">
+                        电话：{salesOrder.customer.phone}
+                      </p>
                     )}
                     {salesOrder.customer.email && (
-                      <p className="text-sm text-gray-600">邮箱：{salesOrder.customer.email}</p>
+                      <p className="text-sm text-gray-600">
+                        邮箱：{salesOrder.customer.email}
+                      </p>
                     )}
                   </div>
                 </div>
@@ -432,15 +489,15 @@ export default function CreatePaymentPage() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex items-start gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                 <p>请确认收款金额与实际到账金额一致</p>
               </div>
               <div className="flex items-start gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                 <p>建议保留收款凭证并填写收据号码</p>
               </div>
               <div className="flex items-start gap-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                 <p>收款记录创建后可在列表中查看和管理</p>
               </div>
             </CardContent>

@@ -2,7 +2,6 @@
 
 import { ArrowLeft, CheckCircle, Package, PenTool } from 'lucide-react';
 import Link from 'next/link';
-import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -99,7 +98,7 @@ export default function ManualProductTestPage() {
               <div>
                 <p className="font-medium">创建调货销售订单</p>
                 <p className="text-sm text-muted-foreground">
-                  访问销售订单创建页面，选择"调货销售"类型
+                  访问销售订单创建页面，选择&ldquo;调货销售&rdquo;类型
                 </p>
               </div>
             </div>
@@ -111,7 +110,7 @@ export default function ManualProductTestPage() {
               <div>
                 <p className="font-medium">测试产品选择模式切换</p>
                 <p className="text-sm text-muted-foreground">
-                  在产品明细中，观察"库存选择"和"手动输入"两个切换按钮
+                  在产品明细中，观察&ldquo;库存选择&rdquo;和&ldquo;手动输入&rdquo;两个切换按钮
                 </p>
               </div>
             </div>
@@ -123,7 +122,7 @@ export default function ManualProductTestPage() {
               <div>
                 <p className="font-medium">测试库存选择模式</p>
                 <p className="text-sm text-muted-foreground">
-                  点击"库存选择"，测试现有的产品搜索和选择功能
+                  点击&ldquo;库存选择&rdquo;，测试现有的产品搜索和选择功能
                 </p>
               </div>
             </div>
@@ -135,7 +134,7 @@ export default function ManualProductTestPage() {
               <div>
                 <p className="font-medium">测试手动输入模式</p>
                 <p className="text-sm text-muted-foreground">
-                  点击"手动输入"，填写商品名称、规格、重量、单位等信息
+                  点击&ldquo;手动输入&rdquo;，填写商品名称、规格、重量、单位等信息
                 </p>
               </div>
             </div>

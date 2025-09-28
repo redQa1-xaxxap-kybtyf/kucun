@@ -54,7 +54,7 @@ import { formatSupplierStatus } from '@/lib/schemas/supplier';
 import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
 
 export default function SuppliersPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const queryClient = useQueryClient();
 
   // 查询参数状态
@@ -185,7 +185,7 @@ export default function SuppliersPage() {
   const pagination = data?.pagination;
   const isAllSelected =
     selectedSuppliers.length === suppliers.length && suppliers.length > 0;
-  const isPartialSelected =
+  const _isPartialSelected =
     selectedSuppliers.length > 0 && selectedSuppliers.length < suppliers.length;
 
   if (error) {

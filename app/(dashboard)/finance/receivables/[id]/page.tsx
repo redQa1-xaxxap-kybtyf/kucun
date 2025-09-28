@@ -1,16 +1,24 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Edit, DollarSign, Calendar, FileText, Users } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  DollarSign,
+  Edit,
+  FileText,
+  Users,
+} from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { ErrorMessage } from '@/components/ui/error-message';
 import { formatCurrency, formatDate } from '@/lib/utils';
+
+import { ErrorMessage } from '@/components/ui/error-message';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ReceivableDetail {
   id: string;
@@ -95,7 +103,7 @@ export default function ReceivableDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -136,10 +144,13 @@ export default function ReceivableDetailPage() {
     }
   };
 
-  const isOverdue = new Date(receivable.dueDate) < new Date() && receivable.status !== 'received';
-  const paymentProgress = receivable.receivableAmount > 0 
-    ? (receivable.receivedAmount / receivable.receivableAmount) * 100 
-    : 0;
+  const isOverdue =
+    new Date(receivable.dueDate) < new Date() &&
+    receivable.status !== 'received';
+  const paymentProgress =
+    receivable.receivableAmount > 0
+      ? (receivable.receivedAmount / receivable.receivableAmount) * 100
+      : 0;
 
   return (
     <div className="space-y-6">
@@ -157,27 +168,29 @@ export default function ReceivableDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold">应收款详情</h1>
-            <p className="text-muted-foreground">应收款单号：{receivable.receivableNumber}</p>
+            <p className="text-muted-foreground">
+              应收款单号：{receivable.receivableNumber}
+            </p>
           </div>
         </div>
 
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm">
-            <Edit className="h-4 w-4 mr-2" />
+            <Edit className="mr-2 h-4 w-4" />
             编辑
           </Button>
           {receivable.status !== 'received' && (
             <Button size="sm">
-              <DollarSign className="h-4 w-4 mr-2" />
+              <DollarSign className="mr-2 h-4 w-4" />
               记录收款
             </Button>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* 基本信息 */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle>基本信息</CardTitle>
@@ -190,11 +203,10 @@ export default function ReceivableDetailPage() {
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
                     <Badge variant={getStatusBadgeVariant(receivable.status)}>
-                      {RECEIVABLE_STATUS_LABELS[receivable.status] || receivable.status}
+                      {RECEIVABLE_STATUS_LABELS[receivable.status] ||
+                        receivable.status}
                     </Badge>
-                    {isOverdue && (
-                      <Badge variant="destructive">逾期</Badge>
-                    )}
+                    {isOverdue && <Badge variant="destructive">逾期</Badge>}
                   </div>
                 </div>
                 <div>
@@ -204,8 +216,10 @@ export default function ReceivableDetailPage() {
                   <p className="mt-1">
                     <Button
                       variant="link"
-                      className="p-0 h-auto"
-                      onClick={() => router.push(`/sales-orders/${receivable.salesOrder.id}`)}
+                      className="h-auto p-0"
+                      onClick={() =>
+                        router.push(`/sales-orders/${receivable.salesOrder.id}`)
+                      }
                     >
                       {receivable.salesOrder.orderNumber}
                     </Button>
@@ -224,7 +238,9 @@ export default function ReceivableDetailPage() {
                   <label className="text-sm font-medium text-muted-foreground">
                     联系人
                   </label>
-                  <p className="mt-1">{receivable.customer.contactPerson || '-'}</p>
+                  <p className="mt-1">
+                    {receivable.customer.contactPerson || '-'}
+                  </p>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
@@ -294,10 +310,12 @@ export default function ReceivableDetailPage() {
                 <div className="space-y-4">
                   {receivable.paymentRecords.map((payment, index) => (
                     <div key={payment.id}>
-                      <div className="flex justify-between items-start">
+                      <div className="flex items-start justify-between">
                         <div className="flex-1">
-                          <h4 className="font-medium">{payment.paymentNumber}</h4>
-                          <div className="text-sm text-muted-foreground space-y-1">
+                          <h4 className="font-medium">
+                            {payment.paymentNumber}
+                          </h4>
+                          <div className="space-y-1 text-sm text-muted-foreground">
                             <p>收款方式：{payment.paymentMethod}</p>
                             <p>收款日期：{formatDate(payment.paymentDate)}</p>
                             {payment.remarks && <p>备注：{payment.remarks}</p>}
@@ -316,7 +334,7 @@ export default function ReceivableDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="py-8 text-center text-muted-foreground">
                   暂无收款记录
                 </div>
               )}
@@ -355,9 +373,9 @@ export default function ReceivableDetailPage() {
                   <span>收款进度</span>
                   <span>{paymentProgress.toFixed(1)}%</span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="h-2 w-full rounded-full bg-gray-200">
                   <div
-                    className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                    className="h-2 rounded-full bg-green-600 transition-all duration-300"
                     style={{ width: `${paymentProgress}%` }}
                   ></div>
                 </div>
@@ -378,11 +396,11 @@ export default function ReceivableDetailPage() {
               </CardHeader>
               <CardContent className="space-y-2">
                 <Button className="w-full" size="sm">
-                  <DollarSign className="h-4 w-4 mr-2" />
+                  <DollarSign className="mr-2 h-4 w-4" />
                   记录收款
                 </Button>
                 <Button variant="outline" className="w-full" size="sm">
-                  <Edit className="h-4 w-4 mr-2" />
+                  <Edit className="mr-2 h-4 w-4" />
                   编辑应收款
                 </Button>
               </CardContent>
@@ -412,7 +430,9 @@ export default function ReceivableDetailPage() {
                 variant="outline"
                 size="sm"
                 className="w-full"
-                onClick={() => router.push(`/customers/${receivable.customer.id}`)}
+                onClick={() =>
+                  router.push(`/customers/${receivable.customer.id}`)
+                }
               >
                 查看客户详情
               </Button>

@@ -5,7 +5,7 @@ import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { useMediaQuery } from '@/hooks/use-media-query';
-import type { SidebarState, LayoutConfig } from '@/lib/types/layout';
+import type { LayoutConfig, SidebarState } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 
 import { Header } from './Header';
@@ -142,7 +142,7 @@ export function DashboardLayout({
     return null;
   }
 
-  const layoutConfig: LayoutConfig = {
+  const _layoutConfig: LayoutConfig = {
     showSidebar,
     showHeader,
     sidebarCollapsed: sidebarState.isCollapsed,

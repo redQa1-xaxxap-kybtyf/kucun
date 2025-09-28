@@ -161,13 +161,11 @@ export function ProductSelector({
   );
 
   // 组件卸载时清理搜索定时器，避免内存泄漏
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       if (searchTimeoutRef.current) {
         clearTimeout(searchTimeoutRef.current);
       }
-    };
-  }, []);
+    }, []);
 
   return (
     <>

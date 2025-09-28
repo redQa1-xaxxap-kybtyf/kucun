@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { AlertTriangle, CheckCircle, Package, XCircle } from 'lucide-react';
+import Link from 'next/link';
 import * as React from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -318,30 +319,33 @@ export default function SalesOrderTestPage() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <Button asChild className="h-auto p-4">
-              <a
+              <Link
                 href="/sales-orders/create"
                 className="flex flex-col items-center gap-2"
               >
                 <Package className="h-6 w-6" />
                 <span>创建销售订单</span>
-              </a>
+              </Link>
             </Button>
 
             <Button asChild variant="outline" className="h-auto p-4">
-              <a
+              <Link
                 href="/sales-orders"
                 className="flex flex-col items-center gap-2"
               >
                 <Package className="h-6 w-6" />
                 <span>订单列表</span>
-              </a>
+              </Link>
             </Button>
 
             <Button asChild variant="outline" className="h-auto p-4">
-              <a href="/customers" className="flex flex-col items-center gap-2">
+              <Link
+                href="/customers"
+                className="flex flex-col items-center gap-2"
+              >
                 <Package className="h-6 w-6" />
                 <span>客户管理</span>
-              </a>
+              </Link>
             </Button>
           </div>
         </CardContent>

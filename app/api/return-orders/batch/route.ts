@@ -1,8 +1,8 @@
 // 退货订单批量操作API路由
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -99,8 +99,10 @@ export async function POST(request: NextRequest) {
  * 批量审批通过
  */
 async function batchApprove(returnOrders: any[], remarks?: string) {
-  const validOrders = returnOrders.filter(order => order.status === 'submitted');
-  
+  const validOrders = returnOrders.filter(
+    order => order.status === 'submitted'
+  );
+
   if (validOrders.length === 0) {
     throw new Error('没有可审批的退货订单');
   }
@@ -130,8 +132,10 @@ async function batchApprove(returnOrders: any[], remarks?: string) {
  * 批量审批拒绝
  */
 async function batchReject(returnOrders: any[], remarks?: string) {
-  const validOrders = returnOrders.filter(order => order.status === 'submitted');
-  
+  const validOrders = returnOrders.filter(
+    order => order.status === 'submitted'
+  );
+
   if (validOrders.length === 0) {
     throw new Error('没有可拒绝的退货订单');
   }
@@ -161,10 +165,10 @@ async function batchReject(returnOrders: any[], remarks?: string) {
  * 批量取消
  */
 async function batchCancel(returnOrders: any[], remarks?: string) {
-  const validOrders = returnOrders.filter(order => 
+  const validOrders = returnOrders.filter(order =>
     ['draft', 'submitted', 'approved'].includes(order.status)
   );
-  
+
   if (validOrders.length === 0) {
     throw new Error('没有可取消的退货订单');
   }
@@ -195,7 +199,7 @@ async function batchCancel(returnOrders: any[], remarks?: string) {
 async function batchExport(returnOrders: any[]) {
   // 这里可以实现导出逻辑
   // 例如生成Excel文件、CSV文件等
-  
+
   return {
     processed: returnOrders.length,
     skipped: 0,
@@ -214,6 +218,6 @@ function getActionName(action: string): string {
     cancel: '取消',
     export: '导出',
   };
-  
+
   return actionNames[action] || action;
 }

@@ -11,8 +11,8 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -98,8 +98,7 @@ export function ERPDashboard({
   };
 
   // 转换API数据到组件数据格式
-  const transformDashboardData = (apiData: DashboardData): DashboardStats => {
-    return {
+  const transformDashboardData = (apiData: DashboardData): DashboardStats => ({
       totalProducts: apiData.overview.inventory.totalProducts,
       totalOrders: apiData.overview.sales.totalOrders,
       totalCustomers: apiData.overview.customers.totalCustomers,
@@ -108,8 +107,7 @@ export function ERPDashboard({
       pendingOrders: apiData.overview.sales.monthlyOrders, // 使用月订单数作为待处理订单
       recentActivities: [], // 暂时为空，后续可以从API获取
       salesTrend: [], // 暂时为空，后续可以从API获取
-    };
-  };
+    });
 
   // 使用真实API获取仪表盘数据
   const {

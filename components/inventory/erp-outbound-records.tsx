@@ -59,10 +59,10 @@ export function ERPOutboundRecords({ onCreateNew }: ERPOutboundRecordsProps) {
   // 获取出库记录数据
   const { data, isLoading } = useQuery({
     queryKey: ['outbound-records', filters],
-    queryFn: async () => {
+    queryFn: async () => 
       // 待办：实现真实的出库记录API
       // 目前返回空数组，等待后端API实现
-      return {
+       ({
         data: [],
         pagination: {
           page: 1,
@@ -70,8 +70,8 @@ export function ERPOutboundRecords({ onCreateNew }: ERPOutboundRecordsProps) {
           total: 0,
           totalPages: 1,
         },
-      };
-    },
+      })
+    ,
   });
 
   const outboundRecords = data?.data || [];

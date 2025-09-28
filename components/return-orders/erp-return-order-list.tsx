@@ -18,8 +18,6 @@ import {
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
-import { paginationConfig } from '@/lib/env';
-
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -44,11 +42,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type {
-  ReturnOrder,
-  ReturnOrderQueryParams,
-} from '@/lib/types/return-order';
+import { paginationConfig } from '@/lib/env';
 import {
+  type ReturnOrder,
+  type ReturnOrderQueryParams,
   RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
@@ -88,10 +85,10 @@ export function ERPReturnOrderList({
     error,
   } = useQuery({
     queryKey: ['return-orders', queryParams],
-    queryFn: async () => {
+    queryFn: async () =>
       // 待办：实现真实的退货订单API
       // 目前返回空数据，等待后端API实现
-      return {
+      ({
         success: true,
         data: {
           returnOrders: [],
@@ -102,8 +99,7 @@ export function ERPReturnOrderList({
             totalPages: 1,
           },
         },
-      };
-    },
+      }),
     staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
     refetchOnWindowFocus: false,
   });

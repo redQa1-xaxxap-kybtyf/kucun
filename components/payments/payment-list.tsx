@@ -40,11 +40,9 @@ import {
 } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
 import { paymentUtils } from '@/lib/api/payments';
-import type {
-  PaymentRecordDetail,
-  PaymentRecordQuery,
-} from '@/lib/types/payment';
 import {
+  type PaymentRecordDetail,
+  type PaymentRecordQuery,
   DEFAULT_PAYMENT_METHODS,
   DEFAULT_PAYMENT_STATUSES,
 } from '@/lib/types/payment';

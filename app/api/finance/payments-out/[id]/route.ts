@@ -1,8 +1,8 @@
 // 单个付款记录 API 路由
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -136,8 +136,11 @@ export async function PUT(
     }
 
     // 如果付款记录已确认，不允许修改关键信息
-    if (existingPayment.status === 'confirmed' && 
-        (updateData.paymentAmount !== undefined || updateData.status === 'cancelled')) {
+    if (
+      existingPayment.status === 'confirmed' &&
+      (updateData.paymentAmount !== undefined ||
+        updateData.status === 'cancelled')
+    ) {
       return NextResponse.json(
         { success: false, error: '已确认的付款记录不能修改金额或取消' },
         { status: 400 }
@@ -145,11 +148,13 @@ export async function PUT(
     }
 
     // 使用事务更新付款记录和相关应付款
-    const updatedPayment = await prisma.$transaction(async (tx) => {
+    const updatedPayment = await prisma.$transaction(async tx => {
       // 如果修改付款金额或状态，需要更新关联的应付款记录
-      if (existingPayment.payableRecordId && 
-          (updateData.paymentAmount !== undefined || updateData.status !== undefined)) {
-        
+      if (
+        existingPayment.payableRecordId &&
+        (updateData.paymentAmount !== undefined ||
+          updateData.status !== undefined)
+      ) {
         const payableRecord = await tx.payableRecord.findUnique({
           where: { id: existingPayment.payableRecordId },
           select: {
@@ -161,20 +166,22 @@ export async function PUT(
 
         if (payableRecord) {
           let newPaidAmount = payableRecord.paidAmount;
-          
+
           // 如果修改付款金额
           if (updateData.paymentAmount !== undefined) {
-            const amountDiff = updateData.paymentAmount - existingPayment.paymentAmount;
+            const amountDiff =
+              updateData.paymentAmount - existingPayment.paymentAmount;
             newPaidAmount += amountDiff;
           }
-          
+
           // 如果取消付款
           if (updateData.status === 'cancelled') {
             newPaidAmount -= existingPayment.paymentAmount;
           }
 
-          const newRemainingAmount = payableRecord.payableAmount - newPaidAmount;
-          
+          const newRemainingAmount =
+            payableRecord.payableAmount - newPaidAmount;
+
           let newStatus = 'pending';
           if (newRemainingAmount <= 0) {
             newStatus = 'paid';
@@ -198,7 +205,9 @@ export async function PUT(
         where: { id },
         data: {
           ...updateData,
-          ...(updateData.paymentDate && { paymentDate: new Date(updateData.paymentDate) }),
+          ...(updateData.paymentDate && {
+            paymentDate: new Date(updateData.paymentDate),
+          }),
         },
         include: {
           payableRecord: {
@@ -288,7 +297,7 @@ export async function DELETE(
     }
 
     // 使用事务删除付款记录并更新应付款
-    await prisma.$transaction(async (tx) => {
+    await prisma.$transaction(async tx => {
       // 如果关联应付款记录，需要更新应付款状态
       if (existingPayment.payableRecordId) {
         const payableRecord = await tx.payableRecord.findUnique({
@@ -301,9 +310,11 @@ export async function DELETE(
         });
 
         if (payableRecord) {
-          const newPaidAmount = payableRecord.paidAmount - existingPayment.paymentAmount;
-          const newRemainingAmount = payableRecord.payableAmount - newPaidAmount;
-          
+          const newPaidAmount =
+            payableRecord.paidAmount - existingPayment.paymentAmount;
+          const newRemainingAmount =
+            payableRecord.payableAmount - newPaidAmount;
+
           let newStatus = 'pending';
           if (newRemainingAmount <= 0) {
             newStatus = 'paid';

@@ -5,8 +5,8 @@
 
 'use client';
 
-import * as React from 'react';
 import { Package } from 'lucide-react';
+import * as React from 'react';
 
 import { InventoryTableRow } from '@/components/inventory/InventoryTableRow';
 import {

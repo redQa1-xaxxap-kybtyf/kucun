@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -103,10 +104,10 @@ export default function FactoryShipmentTestPage() {
                 <h3 className="mb-3 font-semibold text-gray-900">快速导航</h3>
                 <div className="flex flex-wrap gap-2">
                   <Button asChild size="sm">
-                    <a href="/factory-shipments">厂家发货列表</a>
+                    <Link href="/factory-shipments">厂家发货列表</Link>
                   </Button>
                   <Button asChild size="sm" variant="outline">
-                    <a href="/factory-shipments/create">创建发货订单</a>
+                    <Link href="/factory-shipments/create">创建发货订单</Link>
                   </Button>
                 </div>
               </div>

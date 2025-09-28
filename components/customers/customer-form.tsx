@@ -52,20 +52,16 @@ import {
   customerQueryKeys,
   updateCustomer,
 } from '@/lib/api/customers';
-import type {
-  Customer,
-  CustomerCreateInput,
-  CustomerUpdateInput,
-} from '@/lib/types/customer';
 import {
+  type Customer,
+  type CustomerCreateInput,
+  type CustomerUpdateInput,
   CUSTOMER_LEVEL_LABELS,
   CUSTOMER_TYPE_LABELS,
 } from '@/lib/types/customer';
-import type {
-  CustomerCreateFormData,
-  CustomerUpdateFormData,
-} from '@/lib/validations/customer';
 import {
+  type CustomerCreateFormData,
+  type CustomerUpdateFormData,
   customerCreateDefaults,
   customerCreateSchema,
   customerUpdateSchema,

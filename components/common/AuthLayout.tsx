@@ -1,10 +1,9 @@
 'use client';
 
-import { useRouter, usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
-import { cn } from '@/lib/utils';
 import { canAccessPath } from '@/lib/utils/permissions';
 
 import { Breadcrumb } from './Breadcrumb';

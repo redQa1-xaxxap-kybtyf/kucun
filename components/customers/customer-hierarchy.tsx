@@ -11,8 +11,7 @@ import {
   User,
 } from 'lucide-react';
 import { useState } from 'react';
-import type { Control } from 'react-hook-form';
-import { useController } from 'react-hook-form';
+import { type Control, useController } from 'react-hook-form';
 
 // UI Components
 import { Badge } from '@/components/ui/badge';
@@ -35,8 +34,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 // API and Types
 import { searchCustomers } from '@/lib/api/customers';
-import type { Customer } from '@/lib/types/customer';
 import {
+  type Customer,
   CUSTOMER_TYPE_LABELS,
   CUSTOMER_TYPE_VARIANTS,
 } from '@/lib/types/customer';

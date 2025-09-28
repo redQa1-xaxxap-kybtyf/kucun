@@ -105,7 +105,7 @@ const SpecificationDisplay = React.forwardRef<
   (
     {
       className,
-      variant,
+      variant: _variant,
       size,
       specification,
       showAll = false,

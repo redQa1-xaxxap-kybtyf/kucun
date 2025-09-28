@@ -1,8 +1,8 @@
 // 退货订单状态更新API路由
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -41,7 +41,8 @@ export async function PATCH(
       );
     }
 
-    const { status, remarks, refundAmount, processedAt } = validationResult.data;
+    const { status, remarks, refundAmount, processedAt } =
+      validationResult.data;
 
     // 检查退货订单是否存在
     const existingReturnOrder = await prisma.returnOrder.findUnique({
@@ -70,7 +71,8 @@ export async function PATCH(
       cancelled: [], // 已取消的订单不能再变更状态
     };
 
-    const allowedStatuses = validStatusTransitions[existingReturnOrder.status] || [];
+    const allowedStatuses =
+      validStatusTransitions[existingReturnOrder.status] || [];
     if (!allowedStatuses.includes(status)) {
       return NextResponse.json(
         {
@@ -82,7 +84,7 @@ export async function PATCH(
     }
 
     // 使用事务更新状态
-    const updatedReturnOrder = await prisma.$transaction(async (tx) => {
+    const updatedReturnOrder = await prisma.$transaction(async tx => {
       // 准备更新数据
       const updateData: any = {
         status,
@@ -106,7 +108,9 @@ export async function PATCH(
           updateData.approvedAt = new Date();
           break;
         case 'processing':
-          updateData.processedAt = processedAt ? new Date(processedAt) : new Date();
+          updateData.processedAt = processedAt
+            ? new Date(processedAt)
+            : new Date();
           break;
         case 'completed':
           updateData.completedAt = new Date();
@@ -175,11 +179,7 @@ export async function PATCH(
 /**
  * 创建退款记录
  */
-async function createRefundRecord(
-  tx: any,
-  returnOrder: any,
-  userId: string
-) {
+async function createRefundRecord(tx: any, returnOrder: any, userId: string) {
   // 生成退款单号
   const refundNumber = `RF-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
 

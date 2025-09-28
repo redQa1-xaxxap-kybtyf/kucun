@@ -1,16 +1,26 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Edit, Phone, Mail, MapPin, Calendar, Truck, DollarSign } from 'lucide-react';
+import {
+  ArrowLeft,
+  Calendar,
+  DollarSign,
+  Edit,
+  Mail,
+  MapPin,
+  Phone,
+  Truck,
+} from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { ErrorMessage } from '@/components/ui/error-message';
 import { formatCurrency, formatDate } from '@/lib/utils';
+
+import { ErrorMessage } from '@/components/ui/error-message';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface SupplierDetail {
   id: string;
@@ -80,7 +90,7 @@ export default function SupplierDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -188,17 +198,17 @@ export default function SupplierDetailPage() {
             size="sm"
             onClick={() => router.push(`/suppliers/${id}/edit`)}
           >
-            <Edit className="h-4 w-4 mr-2" />
+            <Edit className="mr-2 h-4 w-4" />
             编辑
           </Button>
           <Button size="sm">
-            <Truck className="h-4 w-4 mr-2" />
+            <Truck className="mr-2 h-4 w-4" />
             创建发货
           </Button>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* 基本信息 */}
         <div className="lg:col-span-2">
           <Card>
@@ -260,7 +270,7 @@ export default function SupplierDetailPage() {
                   <div className="mt-1 flex items-start space-x-2">
                     {supplier.address ? (
                       <>
-                        <MapPin className="h-4 w-4 text-muted-foreground mt-0.5" />
+                        <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
                         <span>{supplier.address}</span>
                       </>
                     ) : (
@@ -311,11 +321,15 @@ export default function SupplierDetailPage() {
               </div>
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
-                  <p className="text-lg font-semibold">{supplier._count.factoryShipments}</p>
+                  <p className="text-lg font-semibold">
+                    {supplier._count.factoryShipments}
+                  </p>
                   <p className="text-xs text-muted-foreground">发货记录</p>
                 </div>
                 <div>
-                  <p className="text-lg font-semibold">{supplier._count.payableRecords}</p>
+                  <p className="text-lg font-semibold">
+                    {supplier._count.payableRecords}
+                  </p>
                   <p className="text-xs text-muted-foreground">应付记录</p>
                 </div>
               </div>
@@ -352,11 +366,17 @@ export default function SupplierDetailPage() {
         <CardContent>
           <Tabs defaultValue="shipments" className="w-full">
             <TabsList>
-              <TabsTrigger value="shipments" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="shipments"
+                className="flex items-center space-x-2"
+              >
                 <Truck className="h-4 w-4" />
                 <span>厂家发货 ({supplier._count.factoryShipments})</span>
               </TabsTrigger>
-              <TabsTrigger value="payables" className="flex items-center space-x-2">
+              <TabsTrigger
+                value="payables"
+                className="flex items-center space-x-2"
+              >
                 <DollarSign className="h-4 w-4" />
                 <span>应付款 ({supplier._count.payableRecords})</span>
               </TabsTrigger>
@@ -365,11 +385,13 @@ export default function SupplierDetailPage() {
             <TabsContent value="shipments" className="space-y-4">
               {supplier.factoryShipments.length > 0 ? (
                 <div className="space-y-3">
-                  {supplier.factoryShipments.map((shipment) => (
+                  {supplier.factoryShipments.map(shipment => (
                     <div
                       key={shipment.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                      onClick={() => router.push(`/factory-shipments/${shipment.id}`)}
+                      className="flex cursor-pointer items-center justify-between rounded-lg border p-4 hover:bg-muted/50"
+                      onClick={() =>
+                        router.push(`/factory-shipments/${shipment.id}`)
+                      }
                     >
                       <div>
                         <p className="font-medium">{shipment.shipmentNumber}</p>
@@ -377,7 +399,7 @@ export default function SupplierDetailPage() {
                           {formatDate(shipment.createdAt)}
                         </p>
                       </div>
-                      <div className="text-right space-y-1">
+                      <div className="space-y-1 text-right">
                         <p className="font-medium">
                           {formatCurrency(shipment.totalAmount)}
                         </p>
@@ -387,7 +409,7 @@ export default function SupplierDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="py-8 text-center text-muted-foreground">
                   暂无发货记录
                 </div>
               )}
@@ -396,11 +418,13 @@ export default function SupplierDetailPage() {
             <TabsContent value="payables" className="space-y-4">
               {supplier.payableRecords.length > 0 ? (
                 <div className="space-y-3">
-                  {supplier.payableRecords.map((record) => (
+                  {supplier.payableRecords.map(record => (
                     <div
                       key={record.id}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 cursor-pointer"
-                      onClick={() => router.push(`/finance/payables/${record.id}`)}
+                      className="flex cursor-pointer items-center justify-between rounded-lg border p-4 hover:bg-muted/50"
+                      onClick={() =>
+                        router.push(`/finance/payables/${record.id}`)
+                      }
                     >
                       <div>
                         <p className="font-medium">{record.payableNumber}</p>
@@ -408,7 +432,7 @@ export default function SupplierDetailPage() {
                           到期：{formatDate(record.dueDate)}
                         </p>
                       </div>
-                      <div className="text-right space-y-1">
+                      <div className="space-y-1 text-right">
                         <p className="font-medium">
                           {formatCurrency(record.remainingAmount)}
                         </p>
@@ -421,7 +445,7 @@ export default function SupplierDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8 text-muted-foreground">
+                <div className="py-8 text-center text-muted-foreground">
                   暂无应付款记录
                 </div>
               )}

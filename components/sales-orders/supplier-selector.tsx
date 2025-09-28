@@ -2,7 +2,6 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Check, ChevronsUpDown, Search, Truck } from 'lucide-react';
-
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';

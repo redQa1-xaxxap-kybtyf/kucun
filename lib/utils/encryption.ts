@@ -24,7 +24,7 @@ export function encrypt(text: string): string {
     const authTag = cipher.getAuthTag();
 
     // 将 IV、认证标签和加密数据组合
-    return iv.toString('hex') + ':' + authTag.toString('hex') + ':' + encrypted;
+    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
   } catch (error) {
     console.error('加密失败:', error);
     throw new Error('数据加密失败');

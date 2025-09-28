@@ -212,7 +212,7 @@ export function Breadcrumb({
  */
 export function CompactBreadcrumb({
   items,
-  showHome = false,
+  showHome: _showHome = false,
   className,
 }: Omit<BreadcrumbProps, 'separator'>) {
   const pathname = usePathname();

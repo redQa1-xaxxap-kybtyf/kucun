@@ -150,7 +150,7 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
         <div>
           <h1 className="text-2xl font-bold">编辑供应商</h1>
           <p className="text-muted-foreground">
-            修改供应商 "{supplier.name}" 的信息
+            修改供应商 &ldquo;{supplier.name}&rdquo; 的信息
           </p>
         </div>
       </div>

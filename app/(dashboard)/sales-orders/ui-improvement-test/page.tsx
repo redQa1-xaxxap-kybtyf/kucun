@@ -9,7 +9,6 @@ import {
   Zap,
 } from 'lucide-react';
 import Link from 'next/link';
-import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -166,7 +165,7 @@ export default function UIImprovementTestPage() {
             <div className="border-l-4 border-blue-500 pl-4">
               <h4 className="font-medium text-blue-700">1. 统一搜索入口</h4>
               <p className="mt-1 text-sm text-muted-foreground">
-                主搜索框提示"搜索并选择商品，或在下方手动输入"，给用户明确的操作指引
+                主搜索框提示&ldquo;搜索并选择商品，或在下方手动输入&rdquo;，给用户明确的操作指引
               </p>
             </div>
 
@@ -180,7 +179,7 @@ export default function UIImprovementTestPage() {
             <div className="border-l-4 border-purple-500 pl-4">
               <h4 className="font-medium text-purple-700">3. 渐进式显示</h4>
               <p className="mt-1 text-sm text-muted-foreground">
-                手动输入字段默认隐藏，通过"手动输入临时商品信息"按钮按需展开
+                手动输入字段默认隐藏，通过&ldquo;手动输入临时商品信息&rdquo;按钮按需展开
               </p>
             </div>
 
@@ -238,7 +237,7 @@ export default function UIImprovementTestPage() {
               <div>
                 <p className="font-medium">访问销售订单创建页面</p>
                 <p className="text-sm text-muted-foreground">
-                  选择"调货销售"类型，观察新的产品选择界面
+                  选择&ldquo;调货销售&rdquo;类型，观察新的产品选择界面
                 </p>
               </div>
             </div>
@@ -262,7 +261,7 @@ export default function UIImprovementTestPage() {
               <div>
                 <p className="font-medium">测试手动输入功能</p>
                 <p className="text-sm text-muted-foreground">
-                  点击"手动输入临时商品信息"按钮，体验渐进式显示
+                  点击&ldquo;手动输入临时商品信息&rdquo;按钮，体验渐进式显示
                 </p>
               </div>
             </div>

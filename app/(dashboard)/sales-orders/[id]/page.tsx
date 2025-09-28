@@ -1,23 +1,30 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Edit, Printer, Download, MoreHorizontal } from 'lucide-react';
+import {
+  ArrowLeft,
+  Download,
+  Edit,
+  MoreHorizontal,
+  Printer,
+} from 'lucide-react';
+import { useParams, useRouter } from 'next/navigation';
 
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
-import { ErrorMessage } from '@/components/ui/error-message';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { Separator } from '@/components/ui/separator';
 import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
+import { formatCurrency, formatDate } from '@/lib/utils';
+
+import { ErrorMessage } from '@/components/ui/error-message';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface SalesOrderDetail {
   id: string;
@@ -105,7 +112,7 @@ export default function SalesOrderDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex min-h-[400px] items-center justify-center">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -115,7 +122,9 @@ export default function SalesOrderDetailPage() {
     return (
       <ErrorMessage
         title="加载失败"
-        message={error instanceof Error ? error.message : '获取销售订单详情失败'}
+        message={
+          error instanceof Error ? error.message : '获取销售订单详情失败'
+        }
         onRetry={() => window.location.reload()}
       />
     );
@@ -146,13 +155,12 @@ export default function SalesOrderDetailPage() {
     }
   };
 
-  const getOrderTypeBadge = (orderType: string) => {
-    return orderType === 'TRANSFER' ? (
+  const getOrderTypeBadge = (orderType: string) =>
+    orderType === 'TRANSFER' ? (
       <Badge variant="secondary">调货销售</Badge>
     ) : (
       <Badge variant="outline">正常销售</Badge>
     );
-  };
 
   return (
     <div className="space-y-6">
@@ -176,15 +184,15 @@ export default function SalesOrderDetailPage() {
 
         <div className="flex items-center space-x-2">
           <Button variant="outline" size="sm">
-            <Printer className="h-4 w-4 mr-2" />
+            <Printer className="mr-2 h-4 w-4" />
             打印
           </Button>
           <Button variant="outline" size="sm">
-            <Download className="h-4 w-4 mr-2" />
+            <Download className="mr-2 h-4 w-4" />
             导出
           </Button>
           <Button variant="outline" size="sm">
-            <Edit className="h-4 w-4 mr-2" />
+            <Edit className="mr-2 h-4 w-4" />
             编辑
           </Button>
           <DropdownMenu>
@@ -204,9 +212,9 @@ export default function SalesOrderDetailPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* 基本信息 */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           <Card>
             <CardHeader>
               <CardTitle>基本信息</CardTitle>
@@ -227,7 +235,9 @@ export default function SalesOrderDetailPage() {
                   <label className="text-sm font-medium text-muted-foreground">
                     订单类型
                   </label>
-                  <div className="mt-1">{getOrderTypeBadge(order.orderType)}</div>
+                  <div className="mt-1">
+                    {getOrderTypeBadge(order.orderType)}
+                  </div>
                 </div>
                 <div>
                   <label className="text-sm font-medium text-muted-foreground">
@@ -290,14 +300,14 @@ export default function SalesOrderDetailPage() {
               <div className="space-y-4">
                 {order.items.map((item, index) => (
                   <div key={item.id}>
-                    <div className="flex justify-between items-start">
+                    <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-medium">
                           {item.isManualProduct
                             ? item.manualProductName
                             : item.product?.name}
                         </h4>
-                        <div className="text-sm text-muted-foreground space-y-1">
+                        <div className="space-y-1 text-sm text-muted-foreground">
                           {!item.isManualProduct && (
                             <p>产品编码：{item.product?.code}</p>
                           )}
@@ -310,13 +320,12 @@ export default function SalesOrderDetailPage() {
                           )}
                         </div>
                       </div>
-                      <div className="text-right space-y-1">
+                      <div className="space-y-1 text-right">
                         <p className="font-medium">
                           {formatCurrency(item.subtotal)}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          {item.quantity} ×{' '}
-                          {formatCurrency(item.unitPrice)}
+                          {item.quantity} × {formatCurrency(item.unitPrice)}
                         </p>
                         {item.costSubtotal && (
                           <p className="text-xs text-muted-foreground">
@@ -366,8 +375,12 @@ export default function SalesOrderDetailPage() {
                     <span className="text-muted-foreground">毛利率</span>
                     <span className="font-medium text-green-600">
                       {order.totalAmount > 0
-                        ? ((order.profitAmount / order.totalAmount) * 100).toFixed(1)
-                        : '0.0'}%
+                        ? (
+                            (order.profitAmount / order.totalAmount) *
+                            100
+                          ).toFixed(1)
+                        : '0.0'}
+                      %
                     </span>
                   </div>
                 </>
@@ -383,7 +396,7 @@ export default function SalesOrderDetailPage() {
             <CardContent>
               <div className="space-y-3">
                 <div className="flex items-center space-x-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">订单创建</p>
                     <p className="text-xs text-muted-foreground">
@@ -393,7 +406,7 @@ export default function SalesOrderDetailPage() {
                 </div>
                 {order.updatedAt !== order.createdAt && (
                   <div className="flex items-center space-x-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">订单更新</p>
                       <p className="text-xs text-muted-foreground">

@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -13,7 +13,7 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  
+
   try {
     // 验证用户权限
     const session = await getServerSession(authOptions);
@@ -65,9 +65,9 @@ export async function GET(
     const allowedStatuses = ['confirmed', 'shipped', 'completed'];
     if (!allowedStatuses.includes(salesOrder.status)) {
       return NextResponse.json(
-        { 
-          success: false, 
-          error: `订单状态为 ${salesOrder.status}，不允许退货` 
+        {
+          success: false,
+          error: `订单状态为 ${salesOrder.status}，不允许退货`,
         },
         { status: 400 }
       );
@@ -90,11 +90,14 @@ export async function GET(
     });
 
     // 计算每个明细项的已退货数量
-    const returnedQuantities = existingReturns.reduce((acc, item) => {
-      const key = item.salesOrderItemId;
-      acc[key] = (acc[key] || 0) + item.returnQuantity;
-      return acc;
-    }, {} as Record<string, number>);
+    const returnedQuantities = existingReturns.reduce(
+      (acc, item) => {
+        const key = item.salesOrderItemId;
+        acc[key] = (acc[key] || 0) + item.returnQuantity;
+        return acc;
+      },
+      {} as Record<string, number>
+    );
 
     // 构建可退货明细
     const returnableItems = salesOrder.items

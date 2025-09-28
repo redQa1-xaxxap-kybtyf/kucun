@@ -3,9 +3,9 @@
 // 付款记录管理页面
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import React, { useState } from 'react';
 import { Download, Eye, Plus, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -19,8 +19,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { usePaymentOutRecords } from '@/lib/api/payables';
-import type { PaymentOutRecordQuery } from '@/lib/types/payable';
 import {
+  type PaymentOutRecordQuery,
   PAYMENT_OUT_METHOD_LABELS,
   PAYMENT_OUT_STATUS_LABELS,
   PAYMENT_OUT_STATUS_VARIANTS,
@@ -37,7 +37,8 @@ export default function PaymentsOutPage() {
   });
 
   // 获取付款记录列表
-  const { data: paymentsData, isLoading: paymentsLoading } = usePaymentOutRecords(query);
+  const { data: paymentsData, isLoading: paymentsLoading } =
+    usePaymentOutRecords(query);
 
   // 处理搜索
   const handleSearch = (search: string) => {
@@ -57,7 +58,8 @@ export default function PaymentsOutPage() {
   const handleMethodFilter = (paymentMethod: string) => {
     setQuery(prev => ({
       ...prev,
-      paymentMethod: paymentMethod === 'all' ? undefined : (paymentMethod as any),
+      paymentMethod:
+        paymentMethod === 'all' ? undefined : (paymentMethod as any),
       page: 1,
     }));
   };
@@ -68,7 +70,7 @@ export default function PaymentsOutPage() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="container mx-auto max-w-7xl px-4 py-6">
       {/* 页面标题 */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -80,7 +82,10 @@ export default function PaymentsOutPage() {
             <Download className="mr-2 h-4 w-4" />
             导出
           </Button>
-          <Button size="sm" onClick={() => router.push('/finance/payments-out/create')}>
+          <Button
+            size="sm"
+            onClick={() => router.push('/finance/payments-out/create')}
+          >
             <Plus className="mr-2 h-4 w-4" />
             新建付款
           </Button>
@@ -102,12 +107,15 @@ export default function PaymentsOutPage() {
               <Input
                 placeholder="付款单号或供应商名称"
                 value={query.search || ''}
-                onChange={(e) => handleSearch(e.target.value)}
+                onChange={e => handleSearch(e.target.value)}
               />
             </div>
             <div>
               <label className="text-sm font-medium">状态</label>
-              <Select value={query.status || 'all'} onValueChange={handleStatusFilter}>
+              <Select
+                value={query.status || 'all'}
+                onValueChange={handleStatusFilter}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="全部状态" />
                 </SelectTrigger>
@@ -121,7 +129,10 @@ export default function PaymentsOutPage() {
             </div>
             <div>
               <label className="text-sm font-medium">付款方式</label>
-              <Select value={query.paymentMethod || 'all'} onValueChange={handleMethodFilter}>
+              <Select
+                value={query.paymentMethod || 'all'}
+                onValueChange={handleMethodFilter}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="全部方式" />
                 </SelectTrigger>
@@ -136,7 +147,10 @@ export default function PaymentsOutPage() {
             </div>
             <div>
               <label className="text-sm font-medium">排序方式</label>
-              <Select value={query.sortBy || 'createdAt'} onValueChange={handleSort}>
+              <Select
+                value={query.sortBy || 'createdAt'}
+                onValueChange={handleSort}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="创建时间" />
                 </SelectTrigger>
@@ -158,44 +172,59 @@ export default function PaymentsOutPage() {
         </CardHeader>
         <CardContent>
           {paymentsLoading ? (
-            <div className="text-center py-8">正在加载付款记录...</div>
+            <div className="py-8 text-center">正在加载付款记录...</div>
           ) : !paymentsData?.data?.length ? (
-            <div className="text-center py-8 text-gray-500">暂无付款记录</div>
+            <div className="py-8 text-center text-gray-500">暂无付款记录</div>
           ) : (
             <div className="space-y-4">
-              {paymentsData.data.map((payment) => (
-                <Card key={payment.id} className="border-l-4 border-l-green-500">
+              {paymentsData.data.map(payment => (
+                <Card
+                  key={payment.id}
+                  className="border-l-4 border-l-green-500"
+                >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <div className="flex items-center gap-3 mb-2">
-                          <h3 className="font-semibold">{payment.paymentNumber}</h3>
-                          <Badge variant={PAYMENT_OUT_STATUS_VARIANTS[payment.status]}>
+                        <div className="mb-2 flex items-center gap-3">
+                          <h3 className="font-semibold">
+                            {payment.paymentNumber}
+                          </h3>
+                          <Badge
+                            variant={
+                              PAYMENT_OUT_STATUS_VARIANTS[payment.status]
+                            }
+                          >
                             {PAYMENT_OUT_STATUS_LABELS[payment.status]}
                           </Badge>
                           <Badge variant="outline">
                             {PAYMENT_OUT_METHOD_LABELS[payment.paymentMethod]}
                           </Badge>
                         </div>
-                        <p className="text-sm text-gray-600 mb-1">
+                        <p className="mb-1 text-sm text-gray-600">
                           供应商：{payment.supplier.name}
                         </p>
                         {payment.payableRecord && (
-                          <p className="text-sm text-gray-600 mb-1">
+                          <p className="mb-1 text-sm text-gray-600">
                             关联应付款：{payment.payableRecord.payableNumber}
                           </p>
                         )}
                         {payment.voucherNumber && (
-                          <p className="text-sm text-gray-600 mb-1">
+                          <p className="mb-1 text-sm text-gray-600">
                             凭证号：{payment.voucherNumber}
                           </p>
                         )}
                         <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span>付款日期：{new Date(payment.paymentDate).toLocaleDateString()}</span>
-                          <span>创建时间：{new Date(payment.createdAt).toLocaleDateString()}</span>
+                          <span>
+                            付款日期：
+                            {new Date(payment.paymentDate).toLocaleDateString()}
+                          </span>
+                          <span>
+                            创建时间：
+                            {new Date(payment.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
                         {payment.remarks && (
-                          <p className="text-sm text-gray-600 mt-2">
+                          <p className="mt-2 text-sm text-gray-600">
                             备注：{payment.remarks}
                           </p>
                         )}
@@ -203,16 +232,22 @@ export default function PaymentsOutPage() {
                       <div className="text-right">
                         <div className="space-y-1">
                           <div>
-                            <span className="text-sm text-gray-500">付款金额</span>
+                            <span className="text-sm text-gray-500">
+                              付款金额
+                            </span>
                             <p className="text-xl font-bold text-green-600">
                               {formatCurrency(payment.paymentAmount)}
                             </p>
                           </div>
                           {payment.payableRecord && (
                             <div>
-                              <span className="text-sm text-gray-500">剩余应付</span>
+                              <span className="text-sm text-gray-500">
+                                剩余应付
+                              </span>
                               <p className="text-sm font-medium text-red-600">
-                                {formatCurrency(payment.payableRecord.remainingAmount)}
+                                {formatCurrency(
+                                  payment.payableRecord.remainingAmount
+                                )}
                               </p>
                             </div>
                           )}
@@ -223,7 +258,9 @@ export default function PaymentsOutPage() {
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() => router.push(`/finance/payments-out/${payment.id}`)}
+                        onClick={() =>
+                          router.push(`/finance/payments-out/${payment.id}`)
+                        }
                       >
                         <Eye className="mr-2 h-4 w-4" />
                         查看详情
@@ -231,7 +268,11 @@ export default function PaymentsOutPage() {
                       {payment.status === 'pending' && (
                         <Button
                           size="sm"
-                          onClick={() => router.push(`/finance/payments-out/${payment.id}/edit`)}
+                          onClick={() =>
+                            router.push(
+                              `/finance/payments-out/${payment.id}/edit`
+                            )
+                          }
                         >
                           编辑
                         </Button>

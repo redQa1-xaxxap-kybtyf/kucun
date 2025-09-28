@@ -1,16 +1,15 @@
 // 应付款记录 API 路由
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { paginationConfig } from '@/lib/env';
+// import { paginationConfig } from '@/lib/env'; // 未使用
 import type {
   PayableRecordDetail,
   PayableRecordListResponse,
-  PayableStatistics,
 } from '@/lib/types/payable';
 import {
   createPayableRecordSchema,

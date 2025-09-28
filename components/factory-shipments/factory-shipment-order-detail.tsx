@@ -40,7 +40,7 @@ interface FactoryShipmentOrderDetailProps {
 
 // 模拟API调用 - 后续替换为真实API
 const getFactoryShipmentOrder = async (
-  id: string
+  _id: string
 ): Promise<FactoryShipmentOrder | null> =>
   // TODO: 实现真实API调用
   // 这里应该调用真实的API
