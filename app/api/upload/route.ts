@@ -1,9 +1,5 @@
-import { existsSync } from 'fs';
-import { mkdir, writeFile } from 'fs/promises';
-import { join } from 'path';
-
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 import sharp from 'sharp';
 import { z } from 'zod';
 
@@ -81,25 +77,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 生成文件名
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 15);
-    const fileExtension = file.name.split('.').pop()?.toLowerCase() || 'jpg';
-    const fileName = `${type}_${timestamp}_${randomString}.${fileExtension}`;
-
-    // 创建上传目录
-    const uploadDir = join(process.cwd(), uploadConfig.directory, type);
-    if (!existsSync(uploadDir)) {
-      await mkdir(uploadDir, { recursive: true });
-    }
-
-    // 文件路径
-    const filePath = join(uploadDir, fileName);
-    const publicUrl = `/${uploadConfig.directory.replace('./public/', '')}/${type}/${fileName}`;
-
     // 读取文件内容
     const bytes = await file.arrayBuffer();
-    const buffer = Buffer.from(bytes);
+    let buffer = Buffer.from(bytes);
 
     // 如果是图片，使用 sharp 进行优化
     if (file.type.startsWith('image/')) {
@@ -140,31 +120,40 @@ export async function POST(request: NextRequest) {
               .jpeg({ quality: 80 });
         }
 
-        const optimizedBuffer = await sharpInstance.toBuffer();
-        await writeFile(filePath, optimizedBuffer);
+        buffer = await sharpInstance.toBuffer();
 
         console.log(
-          `图片优化完成: ${fileName}, 原始大小: ${buffer.length}, 优化后大小: ${optimizedBuffer.length}`
+          `图片优化完成: ${file.name}, 原始大小: ${bytes.byteLength}, 优化后大小: ${buffer.length}`
         );
       } catch (sharpError) {
         console.error('图片优化失败，使用原始文件:', sharpError);
-        // 如果优化失败，保存原始文件
-        await writeFile(filePath, buffer);
+        // 如果优化失败，使用原始buffer
       }
-    } else {
-      // 非图片文件直接保存
-      await writeFile(filePath, buffer);
+    }
+
+    // 上传到七牛云
+    const uploadResult = await uploadToQiniu(buffer, file.name, type);
+
+    if (!uploadResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: uploadResult.error || '上传失败',
+        },
+        { status: 500 }
+      );
     }
 
     // 返回成功响应
     return NextResponse.json({
       success: true,
       data: {
-        fileName,
+        fileName: uploadResult.key?.split('/').pop() || file.name,
         originalName: file.name,
         size: file.size,
         type: file.type,
-        url: publicUrl,
+        url: uploadResult.url,
+        key: uploadResult.key,
         uploadedAt: new Date().toISOString(),
         uploadedBy: session.user.id,
       },
@@ -203,7 +192,8 @@ export async function GET(request: NextRequest) {
       data: {
         maxFileSize: uploadConfig.maxSize,
         supportedTypes: SUPPORTED_IMAGE_TYPES,
-        uploadPath: `/${uploadConfig.directory.replace('./public/', '')}/${type}/`,
+        storageType: 'qiniu', // 标识使用七牛云存储
+        uploadPath: `qiniu://${type}/`, // 七牛云路径前缀
       },
     });
   } catch (error) {

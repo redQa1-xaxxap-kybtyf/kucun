@@ -1,7 +1,7 @@
 'use client';
 
-import { Upload, X, Image as ImageIcon, AlertCircle } from 'lucide-react';
-import { useState, useRef } from 'react';
+import { AlertCircle, Image as ImageIcon, Upload, X } from 'lucide-react';
+import { useRef, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -27,15 +27,21 @@ export function ImageUpload({
   className = '',
 }: ImageUploadProps) {
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStatus, setUploadStatus] = useState<
+    'idle' | 'uploading' | 'success' | 'error'
+  >('idle');
   const [error, setError] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileSelect = async (files: FileList) => {
     setError('');
+    setUploadStatus('idle');
 
     // 检查文件数量限制
     if (value.length + files.length > maxFiles) {
       setError(`最多只能上传 ${maxFiles} 张图片`);
+      setUploadStatus('error');
       return;
     }
 
@@ -48,12 +54,14 @@ export function ImageUpload({
       // 检查文件类型
       if (!file.type.startsWith('image/')) {
         setError(`文件 ${file.name} 不是有效的图片格式`);
+        setUploadStatus('error');
         return;
       }
 
       // 检查文件大小
       if (file.size > maxSize * 1024 * 1024) {
         setError(`文件 ${file.name} 大小超过 ${maxSize}MB`);
+        setUploadStatus('error');
         return;
       }
 
@@ -63,9 +71,11 @@ export function ImageUpload({
     if (validFiles.length === 0) return;
 
     setUploading(true);
+    setUploadStatus('uploading');
+    setUploadProgress(0);
 
     try {
-      const uploadPromises = validFiles.map(async file => {
+      const uploadPromises = validFiles.map(async (file, index) => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('type', 'product');
@@ -81,13 +91,26 @@ export function ImageUpload({
         }
 
         const result = await response.json();
+
+        // 更新进度
+        const progress = ((index + 1) / validFiles.length) * 100;
+        setUploadProgress(progress);
+
         return result.data.url;
       });
 
       const uploadedUrls = await Promise.all(uploadPromises);
       onChange([...value, ...uploadedUrls]);
+      setUploadStatus('success');
+
+      // 3秒后重置状态
+      setTimeout(() => {
+        setUploadStatus('idle');
+        setUploadProgress(0);
+      }, 3000);
     } catch (err) {
       setError(err instanceof Error ? err.message : '上传失败');
+      setUploadStatus('error');
     } finally {
       setUploading(false);
     }
@@ -178,8 +201,12 @@ export function ImageUpload({
         >
           <CardContent className="flex flex-col items-center justify-center py-8 text-center">
             <div className="mb-4">
-              {uploading ? (
-                <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+              {uploadStatus === 'uploading' ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              ) : uploadStatus === 'success' ? (
+                <CheckCircle className="h-8 w-8 text-green-500" />
+              ) : uploadStatus === 'error' ? (
+                <AlertCircle className="h-8 w-8 text-red-500" />
               ) : (
                 <ImageIcon className="h-8 w-8 text-muted-foreground" />
               )}
@@ -187,13 +214,32 @@ export function ImageUpload({
 
             <div className="space-y-2">
               <p className="text-sm font-medium">
-                {uploading ? '正在上传...' : '点击或拖拽上传图片'}
+                {uploadStatus === 'uploading'
+                  ? '正在上传到七牛云...'
+                  : uploadStatus === 'success'
+                    ? '上传成功！'
+                    : uploadStatus === 'error'
+                      ? '上传失败'
+                      : '点击或拖拽上传图片'}
               </p>
+
+              {uploadStatus === 'uploading' && (
+                <div className="w-full max-w-xs">
+                  <Progress value={uploadProgress} className="h-2" />
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {Math.round(uploadProgress)}% 完成
+                  </p>
+                </div>
+              )}
+
               <p className="text-xs text-muted-foreground">
                 支持 JPG、PNG、GIF 格式，单个文件不超过 {maxSize}MB
               </p>
               <p className="text-xs text-muted-foreground">
                 最多可上传 {maxFiles} 张图片 ({value.length}/{maxFiles})
+              </p>
+              <p className="text-xs text-green-600">
+                ✓ 图片将自动上传到七牛云CDN
               </p>
             </div>
 

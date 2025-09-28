@@ -3,8 +3,8 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { QiniuStorageTestSchema } from '@/lib/schemas/settings';
@@ -41,9 +41,11 @@ export async function POST(
     const body = await request.json();
     const validatedData = QiniuStorageTestSchema.parse(body);
 
-    // 模拟七牛云连接测试
-    // 在实际项目中，这里应该使用七牛云SDK进行真实的连接测试
-    const testResult = await simulateQiniuConnectionTest(validatedData);
+    // 使用真实的七牛云连接测试
+    const testResult = await realQiniuConnectionTest();
+
+    // 如果需要模拟测试（开发环境），可以使用：
+    // const testResult = await simulateQiniuConnectionTest(validatedData);
 
     return NextResponse.json({
       success: true,
@@ -163,71 +165,30 @@ function getRegionDisplayName(region: string): string {
 }
 
 /**
- * 真实的七牛云连接测试实现示例
- * 需要安装七牛云SDK: npm install qiniu
+ * 真实的七牛云连接测试实现
  */
-/*
-import qiniu from 'qiniu';
+import { testQiniuConnection } from '@/lib/services/qiniu-upload';
 
-async function realQiniuConnectionTest(config: {
-  accessKey: string;
-  secretKey: string;
-  bucket: string;
-  region?: string | null;
-}): Promise<QiniuStorageTestResponse> {
+async function realQiniuConnectionTest(): Promise<QiniuStorageTestResponse> {
   try {
-    // 创建七牛云配置
-    const mac = new qiniu.auth.digest.Mac(config.accessKey, config.secretKey);
-    const bucketManager = new qiniu.rs.BucketManager(mac, new qiniu.conf.Config({
-      zone: getQiniuZone(config.region || 'z0'),
-    }));
+    const result = await testQiniuConnection();
 
-    // 测试存储空间是否存在
-    return new Promise((resolve) => {
-      bucketManager.getBucketInfo(config.bucket, (err, respBody, respInfo) => {
-        if (err) {
-          resolve({
-            success: false,
-            message: `连接失败: ${err.message}`,
-          });
-          return;
-        }
-
-        if (respInfo.statusCode === 200) {
-          resolve({
-            success: true,
-            message: '七牛云存储连接测试成功',
-            bucketInfo: {
-              name: config.bucket,
-              region: getRegionDisplayName(config.region || 'z0'),
-              private: respBody.private === 1,
-            },
-          });
-        } else {
-          resolve({
-            success: false,
-            message: `连接失败: HTTP ${respInfo.statusCode}`,
-          });
-        }
-      });
-    });
+    return {
+      success: result.success,
+      message: result.message,
+      details: {
+        timestamp: new Date().toISOString(),
+        storageType: 'qiniu',
+      },
+    };
   } catch (error) {
     return {
       success: false,
-      message: `连接测试异常: ${error instanceof Error ? error.message : '未知错误'}`,
+      message: `连接异常: ${error instanceof Error ? error.message : '未知错误'}`,
+      details: {
+        error: error instanceof Error ? error.message : '未知错误',
+        timestamp: new Date().toISOString(),
+      },
     };
   }
 }
-
-function getQiniuZone(region: string) {
-  const zoneMap: Record<string, any> = {
-    'z0': qiniu.zone.Zone_z0,
-    'z1': qiniu.zone.Zone_z1,
-    'z2': qiniu.zone.Zone_z2,
-    'na0': qiniu.zone.Zone_na0,
-    'as0': qiniu.zone.Zone_as0,
-  };
-  
-  return zoneMap[region] || qiniu.zone.Zone_z0;
-}
-*/
