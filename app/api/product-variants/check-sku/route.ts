@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
     const { sku, excludeId } = validationResult.data;
 
     // 构建查询条件
-    const where: any = { sku };
+    const where: Prisma.ProductVariantWhereInput = { sku };
     if (excludeId) {
       where.id = { not: excludeId };
     }

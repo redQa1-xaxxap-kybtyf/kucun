@@ -3,6 +3,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Edit, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,6 +27,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
   const router = useRouter();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   // 删除产品 Mutation
   const deleteMutation = useMutation({
@@ -65,13 +67,13 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
 
   // 删除确认处理
   const handleDelete = () => {
-    // 待办：使用更好的确认对话框组件替代window.confirm
-    // eslint-disable-next-line no-alert
-    if (
-      window.confirm(`确定要删除产品 "${product.name}" 吗？此操作不可撤销。`)
-    ) {
-      deleteMutation.mutate();
-    }
+    setDeleteDialogOpen(true);
+  };
+
+  // 确认删除
+  const confirmDelete = () => {
+    deleteMutation.mutate();
+    setDeleteDialogOpen(false);
   };
 
   return (
@@ -256,6 +258,34 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
           </div>
         </div>
       </div>
+
+      {/* 删除确认对话框 */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除产品</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除产品 &quot;{product.name}&quot; 吗？
+              <br />
+              <span className="font-medium text-red-600">
+                此操作不可撤销，删除后将无法恢复产品数据。
+              </span>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteMutation.isPending}>
+              取消
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              {deleteMutation.isPending ? '删除中...' : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

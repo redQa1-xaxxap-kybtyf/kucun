@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
@@ -223,7 +223,9 @@ export async function POST(request: NextRequest) {
 }
 
 // 处理批量操作
-async function handleBatchOperation(body: any) {
+async function handleBatchOperation(
+  body: z.infer<typeof BatchOperationSchema>
+) {
   try {
     // 验证批量操作输入数据
     const validationResult = BatchOperationSchema.safeParse(body);
@@ -253,7 +255,7 @@ async function handleBatchOperation(body: any) {
       );
     }
 
-    let results: any[] = [];
+    let results: Array<{ id: string; operation: string }> = [];
 
     switch (operation) {
       case 'delete':
