@@ -31,6 +31,7 @@ model User {
   paymentRecords        PaymentRecord[]
   factoryShipmentOrders FactoryShipmentOrder[]
   refundRecords         RefundRecord[]
+  returnOrders          ReturnOrder[]
   systemLogs            SystemLog[]
   outboundRecords       OutboundRecord[] @relation("OutboundRecordOperator")
 
@@ -68,6 +69,7 @@ model Customer {
   paymentRecords        PaymentRecord[]
   factoryShipmentOrders FactoryShipmentOrder[]
   refundRecords         RefundRecord[]
+  returnOrders          ReturnOrder[]
   outboundRecords       OutboundRecord[]
 
   @@index([name])
@@ -149,6 +151,7 @@ model Product {
   variants                   ProductVariant[]
   inventory                  Inventory[]
   salesOrderItems            SalesOrderItem[]
+  returnOrderItems           ReturnOrderItem[]
   inboundRecords             InboundRecord[]
   outboundRecords            OutboundRecord[]
   factoryShipmentOrderItems  FactoryShipmentOrderItem[]
@@ -207,12 +210,13 @@ model SalesOrder {
   updatedAt    DateTime @updatedAt @map("updated_at")
 
   // 关联关系
-  customer Customer         @relation(fields: [customerId], references: [id])
-  user     User             @relation(fields: [userId], references: [id])
-  supplier Supplier?        @relation(fields: [supplierId], references: [id])
-  items    SalesOrderItem[]
-  payments PaymentRecord[]
-  refunds  RefundRecord[]
+  customer     Customer         @relation(fields: [customerId], references: [id])
+  user         User             @relation(fields: [userId], references: [id])
+  supplier     Supplier?        @relation(fields: [supplierId], references: [id])
+  items        SalesOrderItem[]
+  payments     PaymentRecord[]
+  refunds      RefundRecord[]
+  returnOrders ReturnOrder[]
   outboundRecords OutboundRecord[]
 
   @@index([customerId], map: "idx_sales_orders_customer")
@@ -248,8 +252,9 @@ model SalesOrderItem {
   manualUnit           String?  @map("manual_unit") // 手动输入的单位
 
   // 关联关系
-  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
-  product    Product?   @relation(fields: [productId], references: [id])
+  salesOrder       SalesOrder        @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  product          Product?          @relation(fields: [productId], references: [id])
+  returnOrderItems ReturnOrderItem[]
 
   @@index([salesOrderId], map: "idx_sales_order_items_order")
   @@index([productId], map: "idx_sales_order_items_product")
@@ -528,6 +533,71 @@ model FactoryShipmentOrderItem {
   @@map("factory_shipment_order_items")
 }
 
+// 退货订单表 - 退货管理，支持质量问题、产品错误、客户变更等退货类型
+model ReturnOrder {
+  id            String    @id @default(uuid())
+  returnNumber  String    @unique @map("return_number")
+  salesOrderId  String    @map("sales_order_id")
+  customerId    String    @map("customer_id")
+  userId        String    @map("user_id")
+  type          String    @map("type") // quality_issue, wrong_product, customer_change, damage_in_transit, other
+  processType   String    @map("process_type") // refund, exchange, repair, credit
+  status        String    @default("draft") // draft, submitted, approved, rejected, processing, completed, cancelled
+  reason        String
+  totalAmount   Float     @map("total_amount")
+  refundAmount  Float     @map("refund_amount")
+  remarks       String?
+  submittedAt   DateTime? @map("submitted_at")
+  approvedAt    DateTime? @map("approved_at")
+  processedAt   DateTime? @map("processed_at")
+  completedAt   DateTime? @map("completed_at")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  // 关联关系
+  salesOrder    SalesOrder        @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  customer      Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items         ReturnOrderItem[]
+  refundRecords RefundRecord[]
+
+  @@index([salesOrderId], map: "idx_return_orders_sales_order")
+  @@index([customerId], map: "idx_return_orders_customer")
+  @@index([userId], map: "idx_return_orders_user")
+  @@index([status], map: "idx_return_orders_status")
+  @@index([type], map: "idx_return_orders_type")
+  @@index([createdAt(sort: Desc)], map: "idx_return_orders_created")
+  @@map("return_orders")
+}
+
+// 退货订单明细表 - 退货明细项，记录具体退货的产品和数量
+model ReturnOrderItem {
+  id                String  @id @default(uuid())
+  returnOrderId     String  @map("return_order_id")
+  salesOrderItemId  String  @map("sales_order_item_id")
+  productId         String  @map("product_id")
+  colorCode         String? @map("color_code")
+  productionDate    String? @map("production_date")
+  returnQuantity    Float   @map("return_quantity")
+  originalQuantity  Float   @map("original_quantity")
+  unitPrice         Float   @map("unit_price")
+  subtotal          Float
+  reason            String?
+  condition         String  @default("good") // good, damaged, defective
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  returnOrder     ReturnOrder     @relation(fields: [returnOrderId], references: [id], onDelete: Cascade)
+  salesOrderItem  SalesOrderItem  @relation(fields: [salesOrderItemId], references: [id], onDelete: Cascade)
+  product         Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([returnOrderId], map: "idx_return_order_items_return_order")
+  @@index([salesOrderItemId], map: "idx_return_order_items_sales_order_item")
+  @@index([productId], map: "idx_return_order_items_product")
+  @@map("return_order_items")
+}
+
 // 退款记录表 - 退款管理，支持全额退款、部分退款和换货退款
 model RefundRecord {
   id                String   @id @default(uuid())
@@ -553,9 +623,10 @@ model RefundRecord {
   updatedAt       DateTime @updatedAt @map("updated_at")
 
   // 关联关系
-  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id])
-  customer   Customer   @relation(fields: [customerId], references: [id])
-  user       User       @relation(fields: [userId], references: [id])
+  returnOrder ReturnOrder? @relation(fields: [returnOrderId], references: [id], onDelete: SetNull)
+  salesOrder  SalesOrder   @relation(fields: [salesOrderId], references: [id])
+  customer    Customer     @relation(fields: [customerId], references: [id])
+  user        User         @relation(fields: [userId], references: [id])
 
   @@index([salesOrderId], map: "idx_refund_records_order")
   @@index([customerId], map: "idx_refund_records_customer")

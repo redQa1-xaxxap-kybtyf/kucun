@@ -145,6 +145,42 @@ export const updateReturnStatusSchema = z.object({
   processedAt: z.string().optional(),
 });
 
+// 退货订单查询验证规则（API使用）
+export const returnOrderQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).default(1),
+  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  search: z.string().optional(),
+  customerId: z.string().optional(),
+  salesOrderId: z.string().optional(),
+  status: z
+    .enum([
+      'draft',
+      'submitted',
+      'approved',
+      'rejected',
+      'processing',
+      'completed',
+      'cancelled',
+    ])
+    .optional(),
+  type: z
+    .enum([
+      'quality_issue',
+      'wrong_product',
+      'customer_change',
+      'damage_in_transit',
+      'other',
+    ])
+    .optional(),
+  processType: z.enum(['refund', 'exchange', 'repair', 'credit']).optional(),
+  startDate: z.string().optional(),
+  endDate: z.string().optional(),
+  sortBy: z
+    .enum(['createdAt', 'returnNumber', 'totalAmount', 'status'])
+    .default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
 // 退货搜索表单验证规则
 export const returnOrderSearchSchema = z
   .object({
