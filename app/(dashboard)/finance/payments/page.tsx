@@ -8,18 +8,18 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { 
-  DollarSign, 
-  Search, 
-  Filter, 
-  Plus, 
-  Eye,
+import {
   Calendar,
-  User,
-  CreditCard,
   CheckCircle,
   Clock,
-  XCircle
+  CreditCard,
+  DollarSign,
+  Eye,
+  Filter,
+  Plus,
+  Search,
+  User,
+  XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -27,10 +27,21 @@ import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Separator } from '@/components/ui/separator';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { formatCurrency } from '@/lib/utils';
 
 interface PaymentRecord {
@@ -73,11 +84,20 @@ interface PaymentSummary {
 function StatusBadge({ status }: { status: string }) {
   const statusConfig = {
     pending: { label: '待确认', variant: 'secondary' as const, icon: Clock },
-    confirmed: { label: '已确认', variant: 'secondary' as const, icon: CheckCircle },
-    cancelled: { label: '已取消', variant: 'destructive' as const, icon: XCircle },
+    confirmed: {
+      label: '已确认',
+      variant: 'secondary' as const,
+      icon: CheckCircle,
+    },
+    cancelled: {
+      label: '已取消',
+      variant: 'destructive' as const,
+      icon: XCircle,
+    },
   };
 
-  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+  const config =
+    statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
   const IconComponent = config.icon;
 
   return (
@@ -101,13 +121,10 @@ function PaymentMethodBadge({ method }: { method: string }) {
     other: { label: '其他', color: 'bg-gray-100 text-gray-800' },
   };
 
-  const config = methodConfig[method as keyof typeof methodConfig] || methodConfig.other;
+  const config =
+    methodConfig[method as keyof typeof methodConfig] || methodConfig.other;
 
-  return (
-    <Badge className={config.color}>
-      {config.label}
-    </Badge>
-  );
+  return <Badge className={config.color}>{config.label}</Badge>;
 }
 
 /**
@@ -116,11 +133,13 @@ function PaymentMethodBadge({ method }: { method: string }) {
 export default function PaymentsPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  
+
   // 查询参数状态
   const [search, setSearch] = useState(searchParams.get('search') || '');
-  const [status, setStatus] = useState(searchParams.get('status') || '');
-  const [paymentMethod, setPaymentMethod] = useState(searchParams.get('paymentMethod') || '');
+  const [status, setStatus] = useState(searchParams.get('status') || 'all');
+  const [paymentMethod, setPaymentMethod] = useState(
+    searchParams.get('paymentMethod') || 'all'
+  );
   const [page, setPage] = useState(Number(searchParams.get('page')) || 1);
   const [pageSize] = useState(20);
 
@@ -132,8 +151,9 @@ export default function PaymentsPage() {
       params.set('page', page.toString());
       params.set('pageSize', pageSize.toString());
       if (search) params.set('search', search);
-      if (status) params.set('status', status);
-      if (paymentMethod) params.set('paymentMethod', paymentMethod);
+      if (status && status !== 'all') params.set('status', status);
+      if (paymentMethod && paymentMethod !== 'all')
+        params.set('paymentMethod', paymentMethod);
 
       const response = await fetch(`/api/payments?${params}`);
       if (!response.ok) {
@@ -159,22 +179,23 @@ export default function PaymentsPage() {
     setPage(1);
     const params = new URLSearchParams();
     if (search) params.set('search', search);
-    if (status) params.set('status', status);
-    if (paymentMethod) params.set('paymentMethod', paymentMethod);
+    if (status && status !== 'all') params.set('status', status);
+    if (paymentMethod && paymentMethod !== 'all')
+      params.set('paymentMethod', paymentMethod);
     router.push(`/finance/payments?${params}`);
   };
 
   // 重置筛选
   const handleReset = () => {
     setSearch('');
-    setStatus('');
-    setPaymentMethod('');
+    setStatus('all');
+    setPaymentMethod('all');
     setPage(1);
     router.push('/finance/payments');
   };
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-7xl">
+    <div className="container mx-auto max-w-7xl px-4 py-6">
       {/* 页面标题 */}
       <div className="mb-6 flex items-center justify-between">
         <div>
@@ -215,9 +236,7 @@ export default function PaymentsPage() {
             <div className="text-2xl font-bold">
               {formatCurrency(summary.confirmedAmount)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              已确认收款
-            </p>
+            <p className="text-xs text-muted-foreground">已确认收款</p>
           </CardContent>
         </Card>
 
@@ -230,9 +249,7 @@ export default function PaymentsPage() {
             <div className="text-2xl font-bold text-orange-600">
               {formatCurrency(summary.pendingAmount)}
             </div>
-            <p className="text-xs text-muted-foreground">
-              待确认收款
-            </p>
+            <p className="text-xs text-muted-foreground">待确认收款</p>
           </CardContent>
         </Card>
 
@@ -243,13 +260,14 @@ export default function PaymentsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary.totalAmount > 0 
-                ? Math.round((summary.confirmedAmount / summary.totalAmount) * 100)
-                : 0}%
+              {summary.totalAmount > 0
+                ? Math.round(
+                    (summary.confirmedAmount / summary.totalAmount) * 100
+                  )
+                : 0}
+              %
             </div>
-            <p className="text-xs text-muted-foreground">
-              收款确认率
-            </p>
+            <p className="text-xs text-muted-foreground">收款确认率</p>
           </CardContent>
         </Card>
       </div>
@@ -271,9 +289,9 @@ export default function PaymentsPage() {
                 <Input
                   placeholder="收款单号、客户名称..."
                   value={search}
-                  onChange={(e) => setSearch(e.target.value)}
+                  onChange={e => setSearch(e.target.value)}
                   className="pl-10"
-                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
                 />
               </div>
             </div>
@@ -285,7 +303,7 @@ export default function PaymentsPage() {
                   <SelectValue placeholder="全部状态" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">全部状态</SelectItem>
+                  <SelectItem value="all">全部状态</SelectItem>
                   <SelectItem value="pending">待确认</SelectItem>
                   <SelectItem value="confirmed">已确认</SelectItem>
                   <SelectItem value="cancelled">已取消</SelectItem>
@@ -300,7 +318,7 @@ export default function PaymentsPage() {
                   <SelectValue placeholder="全部方式" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">全部方式</SelectItem>
+                  <SelectItem value="all">全部方式</SelectItem>
                   <SelectItem value="cash">现金</SelectItem>
                   <SelectItem value="bank_transfer">银行转账</SelectItem>
                   <SelectItem value="alipay">支付宝</SelectItem>
@@ -328,9 +346,7 @@ export default function PaymentsPage() {
       <Card>
         <CardHeader>
           <CardTitle>收款记录</CardTitle>
-          <CardDescription>
-            共 {pagination.total} 条记录
-          </CardDescription>
+          <CardDescription>共 {pagination.total} 条记录</CardDescription>
         </CardHeader>
         <CardContent>
           {isLoading ? (
@@ -339,7 +355,9 @@ export default function PaymentsPage() {
             </div>
           ) : error ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-red-600">加载失败: {(error as Error).message}</div>
+              <div className="text-red-600">
+                加载失败: {(error as Error).message}
+              </div>
             </div>
           ) : !payments.length ? (
             <div className="flex items-center justify-center py-8">
@@ -356,35 +374,48 @@ export default function PaymentsPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {payments.map((payment) => (
-                <Card key={payment.id} className="transition-shadow hover:shadow-md">
+              {payments.map(payment => (
+                <Card
+                  key={payment.id}
+                  className="transition-shadow hover:shadow-md"
+                >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
                       <div className="space-y-2">
                         <div className="flex items-center gap-3">
-                          <h3 className="font-semibold">{payment.paymentNumber}</h3>
+                          <h3 className="font-semibold">
+                            {payment.paymentNumber}
+                          </h3>
                           <StatusBadge status={payment.status} />
                           <PaymentMethodBadge method={payment.paymentMethod} />
                         </div>
-                        
+
                         <div className="grid gap-2 text-sm text-gray-600 md:grid-cols-2">
                           <div className="flex items-center gap-2">
                             <User className="h-4 w-4" />
                             <span>{payment.customer.name}</span>
                             {payment.customer.phone && (
-                              <span className="text-gray-400">({payment.customer.phone})</span>
+                              <span className="text-gray-400">
+                                ({payment.customer.phone})
+                              </span>
                             )}
                           </div>
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4" />
-                            <span>{format(new Date(payment.paymentDate), 'yyyy-MM-dd')}</span>
+                            <span>
+                              {format(
+                                new Date(payment.paymentDate),
+                                'yyyy-MM-dd'
+                              )}
+                            </span>
                           </div>
                         </div>
 
                         <div className="text-sm text-gray-600">
                           关联订单：{payment.salesOrder.orderNumber}
                           <span className="ml-2 text-gray-400">
-                            (订单金额：{formatCurrency(payment.salesOrder.totalAmount)})
+                            (订单金额：
+                            {formatCurrency(payment.salesOrder.totalAmount)})
                           </span>
                         </div>
 
@@ -416,20 +447,21 @@ export default function PaymentsPage() {
               {/* 分页 */}
               <div className="mt-6 flex items-center justify-between">
                 <p className="text-sm text-muted-foreground">
-                  共 {pagination.total} 条记录，第 {page} 页，共 {pagination.pages} 页
+                  共 {pagination.total} 条记录，第 {page} 页，共{' '}
+                  {pagination.pages} 页
                 </p>
                 <div className="flex items-center gap-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     disabled={page <= 1}
                     onClick={() => setPage(page - 1)}
                   >
                     上一页
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     disabled={page >= pagination.pages}
                     onClick={() => setPage(page + 1)}
                   >
