@@ -112,21 +112,40 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
     setLoading(true);
 
     try {
-      // 这里应该调用API处理退款
-      // TODO: 实现实际的API调用
-      // await processRefund(params.id, {
-      //   ...formData,
-      //   processedAmount: parseFloat(formData.processedAmount),
-      // });
+      // 调用退款处理API
+      const response = await fetch(
+        `/api/finance/refunds/${params.id}/process`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            processedAmount: parseFloat(formData.processedAmount),
+            processedDate: formData.processedDate,
+            status: formData.status,
+            remarks: formData.remarks,
+          }),
+        }
+      );
 
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      const result = await response.json();
+
+      if (!result.success) {
+        throw new Error(result.error || '处理退款失败');
+      }
 
       // 处理成功后跳转
       router.push('/finance/refunds');
     } catch (error) {
-      // TODO: 实现错误处理和用户提示
-      // setError('处理退款失败，请重试');
+      // 使用toast替代console和alert
+      // TODO: 实现toast错误提示
+      const errorMessage =
+        error instanceof Error ? error.message : '处理退款失败，请重试';
+      // 临时使用window.alert，生产环境应使用toast组件
+      if (typeof window !== 'undefined') {
+        window.alert(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

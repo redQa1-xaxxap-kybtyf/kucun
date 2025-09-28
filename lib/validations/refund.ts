@@ -37,10 +37,17 @@ export const createRefundRecordSchema = z
   .object({
     returnOrderId: z
       .string({
-        required_error: '请选择退货订单',
         invalid_type_error: '退货订单ID必须是字符串',
       })
-      .min(1, '请选择退货订单'),
+      .min(1, '退货订单ID不能为空')
+      .optional(),
+
+    returnOrderNumber: z
+      .string({
+        invalid_type_error: '退货订单号必须是字符串',
+      })
+      .min(1, '退货订单号不能为空')
+      .optional(),
 
     salesOrderId: z
       .string({
@@ -104,6 +111,23 @@ export const createRefundRecordSchema = z
     {
       message: '银行转账时必须提供银行信息',
       path: ['bankInfo'],
+    }
+  )
+  .refine(
+    data => {
+      // 如果提供了退货订单ID，必须同时提供退货订单号
+      if (data.returnOrderId && !data.returnOrderNumber?.trim()) {
+        return false;
+      }
+      // 如果提供了退货订单号，必须同时提供退货订单ID
+      if (data.returnOrderNumber && !data.returnOrderId?.trim()) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: '退货订单ID和退货订单号必须同时提供或同时为空',
+      path: ['returnOrderId'],
     }
   );
 
