@@ -20,156 +20,190 @@ const globalKey = Symbol.for('kucun.ws.server');
 const g = globalThis as any;
 
 function createServer(): ServerApi {
-  const wss = new WebSocketServer({ port: wsConfig.port });
+  let wss: WebSocketServer | null = null;
   const channels = new Map<string, Set<WebSocket>>();
   const clients = new Set<ClientInfo>();
 
   // Redis 订阅客户端用于跨实例通信
-  const redisSubscriber = redis.getClient();
-  const redisPublisher = redis.getClient();
+  let redisSubscriber: any = null;
+  let redisPublisher: any = null;
 
-  function subscribe(client: ClientInfo, channel: string) {
-    if (!channels.has(channel)) {
-      channels.set(channel, new Set());
-      // 首次订阅该频道时，订阅 Redis 频道
-      redisSubscriber.subscribe(`ws:${channel}`);
-    }
-    channels.get(channel)?.add(client.socket);
-    client.channels.add(channel);
-  }
+  function initializeServer() {
+    try {
+      if (wss) return; // Already initialized
 
-  function unsubscribe(client: ClientInfo, channel: string) {
-    channels.get(channel)?.delete(client.socket);
-    client.channels.delete(channel);
+      wss = new WebSocketServer({ port: wsConfig.port });
+      redisSubscriber = redis.getClient();
+      redisPublisher = redis.getClient();
 
-    // 如果该频道没有客户端了，取消 Redis 订阅
-    if (channels.get(channel)?.size === 0) {
-      channels.delete(channel);
-      redisSubscriber.unsubscribe(`ws:${channel}`);
+      if (isDevelopment) {
+        console.log(
+          `🔌 WebSocket server starting on ws://localhost:${wsConfig.port}`
+        );
+      }
+
+      setupWebSocketHandlers();
+    } catch (error) {
+      console.error('Failed to initialize WebSocket server:', error);
+      throw error;
     }
   }
 
   function broadcast(channel: string, message: unknown) {
-    const payload = JSON.stringify({ channel, data: message, ts: Date.now() });
+    const payload = JSON.stringify({
+      channel,
+      data: message,
+      ts: Date.now(),
+    });
     channels.get(channel)?.forEach(ws => {
       if (ws.readyState === ws.OPEN) ws.send(payload);
     });
   }
 
-  // 处理来自 Redis 的消息
-  redisSubscriber.on('message', (redisChannel: string, message: string) => {
-    if (redisChannel.startsWith('ws:')) {
-      const channel = redisChannel.slice(3); // 移除 'ws:' 前缀
-      try {
-        const data = JSON.parse(message);
-        broadcast(channel, data);
-      } catch (error) {
-        console.error('解析Redis消息失败:', error);
+  function setupWebSocketHandlers() {
+    if (!wss || !redisSubscriber || !redisPublisher) return;
+
+    function subscribe(client: ClientInfo, channel: string) {
+      if (!channels.has(channel)) {
+        channels.set(channel, new Set());
+        // 首次订阅该频道时，订阅 Redis 频道
+        redisSubscriber.subscribe(`ws:${channel}`);
+      }
+      channels.get(channel)?.add(client.socket);
+      client.channels.add(channel);
+    }
+
+    function unsubscribe(client: ClientInfo, channel: string) {
+      channels.get(channel)?.delete(client.socket);
+      client.channels.delete(channel);
+
+      // 如果该频道没有客户端了，取消 Redis 订阅
+      if (channels.get(channel)?.size === 0) {
+        channels.delete(channel);
+        redisSubscriber.unsubscribe(`ws:${channel}`);
       }
     }
-  });
 
-  // Simple auth: verify Next-Auth session via internal fetch using request cookies
-  async function isAuthenticated(
-    cookieHeader: string | undefined
-  ): Promise<{ ok: boolean; userId?: string }> {
-    if (!cookieHeader) return { ok: false };
-    try {
-      const res = await fetch(
-        `http://localhost:${appConfig.port}/api/auth/session`,
-        {
-          headers: { cookie: cookieHeader },
+    // 处理来自 Redis 的消息
+    redisSubscriber.on('message', (redisChannel: string, message: string) => {
+      if (redisChannel.startsWith('ws:')) {
+        const channel = redisChannel.slice(3); // 移除 'ws:' 前缀
+        try {
+          const data = JSON.parse(message);
+          broadcast(channel, data);
+        } catch (error) {
+          console.error('解析Redis消息失败:', error);
         }
-      );
-      if (!res.ok) return { ok: false };
-      const json = (await res.json()) as { user?: { id?: string } };
-      return json?.user?.id
-        ? { ok: true, userId: json.user.id }
-        : { ok: false };
-    } catch {
-      return { ok: false };
-    }
-  }
+      }
+    });
 
-  wss.on('connection', async (socket, request) => {
-    // Origin check
-    if (wsConfig.allowedOrigins.length > 0) {
-      const origin = request.headers.origin || '';
-      if (!wsConfig.allowedOrigins.includes(origin)) {
-        socket.close(1008, '禁止的来源');
-        return;
+    // Simple auth: verify Next-Auth session via internal fetch using request cookies
+    async function isAuthenticated(
+      cookieHeader: string | undefined
+    ): Promise<{ ok: boolean; userId?: string }> {
+      if (!cookieHeader) return { ok: false };
+      try {
+        const res = await fetch(
+          `http://localhost:${appConfig.port}/api/auth/session`,
+          {
+            headers: { cookie: cookieHeader },
+          }
+        );
+        if (!res.ok) return { ok: false };
+        const json = (await res.json()) as { user?: { id?: string } };
+        return json?.user?.id
+          ? { ok: true, userId: json.user.id }
+          : { ok: false };
+      } catch {
+        return { ok: false };
       }
     }
 
-    // Auth
-    const auth = await isAuthenticated(request.headers.cookie);
-    if (!auth.ok) {
-      socket.close(1008, '未授权');
-      return;
-    }
+    wss.on('connection', async (socket, request) => {
+      // Origin check
+      if (wsConfig.allowedOrigins.length > 0) {
+        const origin = request.headers.origin || '';
+        if (!wsConfig.allowedOrigins.includes(origin)) {
+          socket.close(1008, '禁止的来源');
+          return;
+        }
+      }
 
-    const client: ClientInfo = {
-      socket,
-      channels: new Set(),
-      userId: auth.userId,
-    };
-    clients.add(client);
+      // Auth
+      const auth = await isAuthenticated(request.headers.cookie);
+      if (!auth.ok) {
+        socket.close(1008, '未授权');
+        return;
+      }
 
-    // Heartbeat
-    let alive = true;
-    socket.on('pong', () => {
-      alive = true;
-    });
-    const interval = setInterval(() => {
-      if (!alive) {
-        socket.terminate();
+      const client: ClientInfo = {
+        socket,
+        channels: new Set(),
+        userId: auth.userId,
+      };
+      clients.add(client);
+
+      // Heartbeat
+      let alive = true;
+      socket.on('pong', () => {
+        alive = true;
+      });
+      const interval = setInterval(() => {
+        if (!alive) {
+          socket.terminate();
+          clearInterval(interval);
+          return;
+        }
+        alive = false;
+        try {
+          socket.ping();
+        } catch {
+          /* noop */
+        }
+      }, 25_000);
+
+      socket.on('message', data => {
+        try {
+          const msg = JSON.parse(String(data)) as {
+            type: 'subscribe' | 'unsubscribe';
+            channel: string;
+          };
+          if (msg.type === 'subscribe') subscribe(client, msg.channel);
+          if (msg.type === 'unsubscribe') unsubscribe(client, msg.channel);
+        } catch {
+          // ignore
+        }
+      });
+
+      socket.on('close', () => {
+        client.channels.forEach(ch => channels.get(ch)?.delete(socket));
+        clients.delete(client);
         clearInterval(interval);
-        return;
-      }
-      alive = false;
-      try {
-        socket.ping();
-      } catch {
-        /* noop */
-      }
-    }, 25_000);
-
-    socket.on('message', data => {
-      try {
-        const msg = JSON.parse(String(data)) as {
-          type: 'subscribe' | 'unsubscribe';
-          channel: string;
-        };
-        if (msg.type === 'subscribe') subscribe(client, msg.channel);
-        if (msg.type === 'unsubscribe') unsubscribe(client, msg.channel);
-      } catch {
-        // ignore
-      }
+      });
     });
 
-    socket.on('close', () => {
-      client.channels.forEach(ch => channels.get(ch)?.delete(socket));
-      clients.delete(client);
-      clearInterval(interval);
-    });
-  });
-
-  if (isDevelopment) {
-    // eslint-disable-next-line no-console
-    console.log(
-      `🔌 WebSocket server listening on ws://localhost:${wsConfig.port}`
-    );
+    if (isDevelopment) {
+      console.log(
+        `🔌 WebSocket server listening on ws://localhost:${wsConfig.port}`
+      );
+    }
   }
 
   return {
     ensureStarted() {
-      // server already started
+      initializeServer();
     },
     publish(channel, payload) {
+      // 确保服务器已初始化
+      if (!redisPublisher) {
+        initializeServer();
+      }
       // 本地广播
       broadcast(channel, payload);
       // 通过 Redis 发布到其他实例
-      redisPublisher.publish(`ws:${channel}`, JSON.stringify(payload));
+      if (redisPublisher) {
+        redisPublisher.publish(`ws:${channel}`, JSON.stringify(payload));
+      }
     },
   };
 }

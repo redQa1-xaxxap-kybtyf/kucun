@@ -32,6 +32,7 @@ model User {
   factoryShipmentOrders FactoryShipmentOrder[]
   refundRecords         RefundRecord[]
   systemLogs            SystemLog[]
+  outboundRecords       OutboundRecord[] @relation("OutboundRecordOperator")
 
   // 库存调整关联关系
   operatedAdjustments   InventoryAdjustment[] @relation("InventoryAdjustmentOperator")
@@ -63,6 +64,7 @@ model Customer {
   paymentRecords        PaymentRecord[]
   factoryShipmentOrders FactoryShipmentOrder[]
   refundRecords         RefundRecord[]
+  outboundRecords       OutboundRecord[]
 
   @@index([name])
   @@index([phone])
@@ -142,6 +144,7 @@ model Product {
   inventory                  Inventory[]
   salesOrderItems            SalesOrderItem[]
   inboundRecords             InboundRecord[]
+  outboundRecords            OutboundRecord[]
   factoryShipmentOrderItems  FactoryShipmentOrderItem[]
   batchSpecifications        BatchSpecification[]
   inventoryAdjustments       InventoryAdjustment[]
@@ -171,6 +174,7 @@ model ProductVariant {
   product       Product @relation(fields: [productId], references: [id], onDelete: Cascade)
   inventory     Inventory[]
   inboundRecords InboundRecord[]
+  outboundRecords OutboundRecord[]
   inventoryAdjustments InventoryAdjustment[]
 
   @@unique([productId, colorCode], map: "uk_product_color")
@@ -203,6 +207,7 @@ model SalesOrder {
   items    SalesOrderItem[]
   payments PaymentRecord[]
   refunds  RefundRecord[]
+  outboundRecords OutboundRecord[]
 
   @@index([customerId], map: "idx_sales_orders_customer")
   @@index([userId], map: "idx_sales_orders_user")
@@ -263,6 +268,7 @@ model Inventory {
   // 关联关系
   product Product @relation(fields: [productId], references: [id])
   variant ProductVariant? @relation(fields: [variantId], references: [id])
+  outboundRecords OutboundRecord[]
 
   @@unique([productId, variantId, batchNumber], map: "uk_inventory_variant_batch")
   @@index([productId], map: "idx_inventory_product")
@@ -326,6 +332,45 @@ model InboundRecord {
   @@index([reason], map: "idx_inbound_records_reason")
   @@index([createdAt(sort: Desc)], map: "idx_inbound_records_date")
   @@map("inbound_records")
+}
+
+// 出库记录表 - 出库操作记录，支持多种出库类型
+model OutboundRecord {
+  id                     String    @id @default(uuid())
+  recordNumber           String    @unique @map("record_number")
+  productId              String    @map("product_id")
+  variantId              String?   @map("variant_id") // 产品变体ID（可选）
+  batchNumber            String?   @map("batch_number") // 生产批次号
+  inventoryId            String    @map("inventory_id") // 关联的库存记录ID
+  quantity               Float     // 支持小数点，最小值0.01
+  unitCost               Float?    @map("unit_cost") // 单位成本
+  totalCost              Float?    @map("total_cost") // 总成本
+  reason                 String    @default("manual_outbound") // manual_outbound, sales_outbound, transfer, damage, other
+  notes                  String?   // 备注信息
+  customerId             String?   @map("customer_id") // 客户ID（销售出库时）
+  salesOrderId           String?   @map("sales_order_id") // 销售订单ID（销售出库时）
+  operatorId             String    @map("operator_id") // 操作员ID
+  createdAt              DateTime  @default(now()) @map("created_at")
+  updatedAt              DateTime  @updatedAt @map("updated_at")
+
+  // 关联关系
+  product            Product         @relation(fields: [productId], references: [id])
+  variant            ProductVariant? @relation(fields: [variantId], references: [id])
+  inventory          Inventory       @relation(fields: [inventoryId], references: [id])
+  customer           Customer?       @relation(fields: [customerId], references: [id])
+  salesOrder         SalesOrder?     @relation(fields: [salesOrderId], references: [id])
+  operator           User            @relation("OutboundRecordOperator", fields: [operatorId], references: [id])
+
+  @@index([productId], map: "idx_outbound_records_product")
+  @@index([variantId], map: "idx_outbound_records_variant")
+  @@index([batchNumber], map: "idx_outbound_records_batch")
+  @@index([inventoryId], map: "idx_outbound_records_inventory")
+  @@index([customerId], map: "idx_outbound_records_customer")
+  @@index([salesOrderId], map: "idx_outbound_records_sales_order")
+  @@index([operatorId], map: "idx_outbound_records_operator")
+  @@index([reason], map: "idx_outbound_records_reason")
+  @@index([createdAt(sort: Desc)], map: "idx_outbound_records_date")
+  @@map("outbound_records")
 }
 
 // 库存调整记录表 - 库存调整操作的审计追溯

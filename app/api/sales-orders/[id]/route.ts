@@ -229,6 +229,12 @@ export async function PUT(
       ['shipped', 'completed'].includes(status) &&
       existingOrder.status === 'confirmed';
 
+    // 如果状态变更为已取消，需要释放预留库存
+    const shouldReleaseReservedInventory =
+      status &&
+      status === 'cancelled' &&
+      ['confirmed'].includes(existingOrder.status);
+
     let _updatedOrder;
     if (shouldUpdateInventory) {
       // 使用事务处理库存更新
@@ -287,6 +293,62 @@ export async function PUT(
 
         return order;
       });
+
+      // 修复：库存变更后清除缓存
+      const { invalidateInventoryCache } = await import(
+        '@/lib/cache/inventory-cache'
+      );
+      for (const item of existingOrder.items) {
+        await invalidateInventoryCache(item.productId);
+      }
+    } else if (shouldReleaseReservedInventory) {
+      // 订单取消时释放预留库存
+      _updatedOrder = await withTransaction(async tx => {
+        // 更新订单状态
+        const order = await tx.salesOrder.update({
+          where: { id },
+          data: {
+            ...(status && { status }),
+            ...(remarks !== undefined && { remarks }),
+          },
+        });
+
+        // 释放预留库存
+        for (const item of existingOrder.items) {
+          const inventory = await tx.inventory.findFirst({
+            where: {
+              productId: item.productId,
+              variantId: item.variantId || null,
+              batchNumber: item.batchNumber || null,
+            },
+          });
+
+          if (inventory && inventory.reservedQuantity > 0) {
+            // 释放预留量，但不能超过当前预留量
+            const releaseQuantity = Math.min(
+              item.quantity,
+              inventory.reservedQuantity
+            );
+
+            await tx.inventory.update({
+              where: { id: inventory.id },
+              data: {
+                reservedQuantity: inventory.reservedQuantity - releaseQuantity,
+              },
+            });
+          }
+        }
+
+        return order;
+      });
+
+      // 修复：预留库存释放后清除缓存
+      const { invalidateInventoryCache } = await import(
+        '@/lib/cache/inventory-cache'
+      );
+      for (const item of existingOrder.items) {
+        await invalidateInventoryCache(item.productId);
+      }
     } else {
       // 普通状态更新，不涉及库存
       _updatedOrder = await prisma.salesOrder.update({

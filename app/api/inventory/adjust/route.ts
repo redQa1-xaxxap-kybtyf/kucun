@@ -116,7 +116,10 @@ async function executeAdjustmentTransaction(
       return { inventory: updatedInventory, adjustment: adjustmentRecord };
     },
     {
-      isolationLevel: 'Serializable', // 防止并发冲突
+      // 修复：SQLite不支持Serializable隔离级别，根据数据库类型动态设置
+      ...(process.env.DATABASE_URL?.includes('mysql') && {
+        isolationLevel: 'Serializable' as const,
+      }),
       timeout: 10000,
     }
   );

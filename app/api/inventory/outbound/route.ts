@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
@@ -112,21 +112,22 @@ export async function POST(request: NextRequest) {
         },
       });
 
-      // 3. 创建出库记录 - 暂时注释，因为数据库中没有outboundRecord表
-      // TODO: 需要在数据库schema中添加OutboundRecord表
-      // await tx.outboundRecord.create({
-      //   data: {
-      //     productId,
-      //     inventoryId: availableInventory.id,
-      //     quantity,
-      //     reason: reason || 'manual_outbound',
-      //     batchNumber: availableInventory.batchNumber,
-      //     variantId: availableInventory.variantId,
-      //     notes,
-      //     operatorId: 'system', // TODO: 使用实际用户ID
-      //     createdAt: new Date(),
-      //   },
-      // });
+      // 3. 创建出库记录 - 修复：现在数据库中已有OutboundRecord表
+      const recordNumber = `OUT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-6)}`;
+
+      await tx.outboundRecord.create({
+        data: {
+          recordNumber,
+          productId,
+          inventoryId: availableInventory.id,
+          quantity,
+          reason: validationResult.data.reason || 'manual_outbound',
+          batchNumber: availableInventory.batchNumber,
+          variantId: availableInventory.variantId,
+          notes: validationResult.data.notes,
+          operatorId: 'system', // TODO: 使用实际用户ID
+        },
+      });
 
       return updatedInventory;
     });
