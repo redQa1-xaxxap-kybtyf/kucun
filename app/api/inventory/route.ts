@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
@@ -251,8 +251,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { productId, batchNumber, adjustmentType, quantity } =
-      validationResult.data;
+    const { productId, batchNumber, adjustQuantity } = validationResult.data;
+
+    // 根据adjustQuantity的正负值确定调整类型
+    const adjustmentType = adjustQuantity > 0 ? 'increase' : 'decrease';
+    const quantity = Math.abs(adjustQuantity);
 
     const pid = productId as string;
     const bn = (batchNumber || null) as string | null;

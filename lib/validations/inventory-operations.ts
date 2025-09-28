@@ -20,6 +20,16 @@ export const outboundCreateSchema = z
     customerId: baseValidations.customerId,
     salesOrderId: baseValidations.salesOrderId,
     remarks: baseValidations.remarks,
+    // 修复：添加variantId字段支持
+    variantId: z
+      .string()
+      .uuid('产品变体ID格式不正确')
+      .optional()
+      .or(z.literal('')),
+    // 添加出库原因字段
+    reason: z.string().max(200, '出库原因不能超过200个字符').optional(),
+    // 添加备注字段
+    notes: z.string().max(500, '备注信息不能超过500个字符').optional(),
   })
   .refine(
     data => {

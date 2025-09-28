@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
@@ -43,36 +43,61 @@ export async function POST(request: NextRequest) {
     const {
       productId,
       quantity,
-      reason,
       batchNumber,
       variantId, // 修复：使用正确的字段名
-      notes,
     } = validationResult.data;
 
     // 使用事务确保数据一致性
     const result = await prisma.$transaction(async tx => {
-      // 1. 查找可用库存
+      // 1. 查找可用库存 - 修复：使用variantId精确定位库存记录
+      const whereCondition: {
+        productId: string;
+        variantId?: string;
+        batchNumber?: string;
+      } = {
+        productId,
+      };
+
+      // 如果提供了variantId，优先使用variantId查找
+      if (variantId) {
+        whereCondition.variantId = variantId;
+      } else if (batchNumber) {
+        whereCondition.batchNumber = batchNumber;
+      }
+
       const availableInventory = await tx.inventory.findFirst({
-        where: {
-          productId,
-          quantity: { gte: quantity },
-          ...(batchNumber && { batchNumber }),
-          ...(variantId && { variantId }), // 修复：使用正确的字段名
-        },
+        where: whereCondition,
         orderBy: [
-          { updatedAt: 'asc' }, // 修复：使用存在的字段，按更新时间排序
+          { updatedAt: 'asc' }, // 按更新时间排序，优先使用较早的库存
         ],
       });
 
       if (!availableInventory) {
-        throw new Error('库存不足或未找到匹配的库存记录');
+        throw new Error('未找到匹配的库存记录');
       }
 
-      // 2. 更新库存数量
+      // 检查可用库存是否足够（总库存 - 预留库存）
+      const availableQuantity =
+        availableInventory.quantity - availableInventory.reservedQuantity;
+      if (availableQuantity < quantity) {
+        throw new Error(
+          `可用库存不足，当前可用库存：${availableQuantity}，需要出库：${quantity}`
+        );
+      }
+
+      // 2. 更新库存数量 - 修复：同时更新quantity和reservedQuantity
       const updatedInventory = await tx.inventory.update({
         where: { id: availableInventory.id },
         data: {
           quantity: availableInventory.quantity - quantity,
+          // 修复：出库时同步减少预留量，确保预留量不超过实际库存
+          reservedQuantity: Math.max(
+            0,
+            Math.min(
+              availableInventory.reservedQuantity,
+              availableInventory.quantity - quantity
+            )
+          ),
           updatedAt: new Date(),
         },
         include: {

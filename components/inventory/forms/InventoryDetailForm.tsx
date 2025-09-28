@@ -22,6 +22,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 
 import { type OperationMode } from '../hooks/useInventoryOperationForm';
@@ -126,13 +133,25 @@ export function InventoryDetailForm<T extends FieldValues>({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>调整原因</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="输入调整原因"
-                    disabled={isLoading}
-                    {...field}
-                  />
-                </FormControl>
+                <Select
+                  onValueChange={field.onChange}
+                  defaultValue={field.value}
+                  disabled={isLoading}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="请选择调整原因" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="inventory_gain">盘盈</SelectItem>
+                    <SelectItem value="inventory_loss">盘亏</SelectItem>
+                    <SelectItem value="damage_loss">报损</SelectItem>
+                    <SelectItem value="surplus_gain">报溢</SelectItem>
+                    <SelectItem value="transfer">调拨</SelectItem>
+                    <SelectItem value="other">其他</SelectItem>
+                  </SelectContent>
+                </Select>
                 <FormMessage />
               </FormItem>
             )}
