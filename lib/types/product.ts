@@ -19,6 +19,27 @@ export type ProductUnit = 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
 export type ProductStatus = 'active' | 'inactive';
 
 /**
+ * 产品图片类型枚举
+ * 定义了产品图片的分类
+ */
+export type ProductImageType = 'main' | 'effect';
+
+/**
+ * 产品图片信息
+ * 包含图片的URL、类型、描述等信息
+ */
+export interface ProductImage {
+  /** 图片URL地址 */
+  url: string;
+  /** 图片类型：主图或效果图 */
+  type: ProductImageType;
+  /** 图片描述/替代文本 */
+  alt?: string;
+  /** 图片排序顺序 */
+  order?: number;
+}
+
+/**
  * 产品分类信息
  * 用于产品的分类管理和层级结构
  */
@@ -70,6 +91,8 @@ export interface Product {
   name: string;
   /** 产品规格描述（文本格式） */
   specification?: string;
+  /** 产品详细描述 */
+  description?: string;
   /** 产品计量单位 */
   unit: ProductUnit;
   /** 每件包含的片数，用于单位换算 */
@@ -84,6 +107,10 @@ export interface Product {
   categoryId?: string;
   /** 所属分类信息（关联查询时包含） */
   category?: ProductCategory;
+  /** 产品缩略图URL */
+  thumbnailUrl?: string;
+  /** 产品图片数组 */
+  images?: ProductImage[];
   /** 创建时间 */
   createdAt: string;
   /** 更新时间 */

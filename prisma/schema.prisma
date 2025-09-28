@@ -127,6 +127,12 @@ model Product {
   thickness      Float?   // 产品厚度(mm)，瓷砖行业特有字段
   categoryId     String?  @map("category_id") // 产品分类ID
   status         String   @default("active") // active, inactive
+
+  // 图片相关字段
+  thumbnailUrl   String?  @map("thumbnail_url") // 缩略图URL
+  images         String?  // 产品图片数组JSON字符串 [{"url": "...", "type": "main|effect", "alt": "..."}]
+  description    String?  // 产品描述
+
   createdAt      DateTime @default(now()) @map("created_at")
   updatedAt      DateTime @updatedAt @map("updated_at")
 

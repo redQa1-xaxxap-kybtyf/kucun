@@ -6,10 +6,10 @@
 import { AlertCircle, ArrowLeft, Package } from 'lucide-react';
 
 // UI组件
-import { ImageUpload } from '@/components/common/image-upload';
 import { ProductBasicInfoForm } from '@/components/products/product-basic-info-form';
 import { ProductDetailsForm } from '@/components/products/product-details-form';
 import { ProductFormActions } from '@/components/products/product-form-actions';
+import { ProductImageUpload } from '@/components/products/product-image-upload';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -117,15 +117,18 @@ export function ProductForm({
             <CardHeader>
               <CardTitle>产品图片</CardTitle>
               <CardDescription>
-                上传产品的展示图片，支持多张图片上传
+                上传产品的缩略图、主图和效果图，支持多张图片上传
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <ImageUpload
-                value={form.watch('images') || []}
-                onChange={urls => form.setValue('images', urls)}
-                maxFiles={5}
+              <ProductImageUpload
+                thumbnailUrl={form.watch('thumbnailUrl') || ''}
+                images={form.watch('images') || []}
+                onThumbnailChange={url => form.setValue('thumbnailUrl', url)}
+                onImagesChange={images => form.setValue('images', images)}
                 disabled={isLoading}
+                maxFiles={8}
+                maxSize={5}
               />
             </CardContent>
           </Card>

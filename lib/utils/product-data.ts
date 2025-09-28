@@ -30,6 +30,12 @@ export class ProductDataTransformer {
       categoryId: normalizedCategoryId,
       // 处理数值字段：0值转为undefined，避免不必要的存储
       thickness: formData.thickness === 0 ? undefined : formData.thickness,
+      // 处理图片字段
+      thumbnailUrl: formData.thumbnailUrl || undefined,
+      images:
+        formData.images && formData.images.length > 0
+          ? formData.images
+          : undefined,
     };
   }
 
@@ -63,7 +69,7 @@ export class ProductDataTransformer {
       code: product.code,
       name: product.name,
       specification: product.specification || '',
-      description: (product as any).description || '',
+      description: product.description || '',
       unit: product.unit,
       thickness: product.thickness || undefined,
       status: product.status,
@@ -71,6 +77,9 @@ export class ProductDataTransformer {
         product.categoryId === null || product.categoryId === undefined
           ? 'uncategorized'
           : product.categoryId,
+      // 处理图片字段
+      thumbnailUrl: product.thumbnailUrl || '',
+      images: product.images || [],
     };
   }
 }

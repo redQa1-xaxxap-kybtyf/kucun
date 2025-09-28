@@ -294,11 +294,14 @@ export async function POST(request: NextRequest) {
       code,
       name,
       specification,
+      description,
       unit,
       piecesPerUnit,
       weight,
       thickness,
       categoryId,
+      thumbnailUrl,
+      images,
     } = validationResult.data;
 
     // 检查产品编码是否已存在
@@ -341,11 +344,14 @@ export async function POST(request: NextRequest) {
           code,
           name,
           specification,
+          description,
           unit,
           piecesPerUnit,
           weight,
           thickness,
           categoryId: processedCategoryId,
+          thumbnailUrl,
+          images: images ? JSON.stringify(images) : null,
           status: 'active',
         },
         select: {
@@ -353,12 +359,15 @@ export async function POST(request: NextRequest) {
           code: true,
           name: true,
           specification: true,
+          description: true,
           unit: true,
           piecesPerUnit: true,
           weight: true,
           thickness: true,
           status: true,
           categoryId: true,
+          thumbnailUrl: true,
+          images: true,
           category: {
             select: {
               id: true,
@@ -378,12 +387,15 @@ export async function POST(request: NextRequest) {
       code: product.code,
       name: product.name,
       specification: product.specification,
+      description: product.description,
       unit: product.unit,
       piecesPerUnit: product.piecesPerUnit,
       weight: product.weight,
       thickness: product.thickness,
       status: product.status,
       categoryId: product.categoryId,
+      thumbnailUrl: product.thumbnailUrl,
+      images: product.images ? JSON.parse(product.images as string) : [],
       category: product.category
         ? {
             id: product.category.id,

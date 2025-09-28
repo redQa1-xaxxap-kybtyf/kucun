@@ -79,6 +79,28 @@ const baseValidations = {
   status: z.enum(['active', 'inactive'], {
     errorMap: () => ({ message: '请选择有效的产品状态' }),
   }),
+
+  /** 缩略图URL验证：可选，必须是有效的URL */
+  thumbnailUrl: z
+    .string()
+    .url('缩略图URL格式不正确')
+    .optional()
+    .or(z.literal('')),
+
+  /** 产品图片验证：支持主图和效果图 */
+  images: z
+    .array(
+      z.object({
+        url: z.string().url('图片URL格式不正确'),
+        type: z.enum(['main', 'effect'], {
+          errorMap: () => ({ message: '图片类型必须是主图或效果图' }),
+        }),
+        alt: z.string().max(200, '图片描述不能超过200个字符').optional(),
+        order: z.number().int().min(0).optional(), // 图片排序
+      })
+    )
+    .max(10, '最多只能上传10张图片')
+    .optional(),
 };
 
 // 产品创建表单验证 - 移除重量和每单位片数字段
@@ -92,7 +114,8 @@ export const productCreateSchema = z.object({
   status: baseValidations.status.default('active'),
   categoryId: z.string().optional(),
   // 产品图片
-  images: z.array(z.string().url('图片URL格式不正确')).optional(),
+  thumbnailUrl: baseValidations.thumbnailUrl,
+  images: baseValidations.images,
 });
 
 // 产品更新表单验证
@@ -109,7 +132,8 @@ export const productUpdateSchema = z.object({
   status: baseValidations.status.optional(),
   categoryId: z.string().optional(),
   // 产品图片
-  images: z.array(z.string().url('图片URL格式不正确')).optional(),
+  thumbnailUrl: baseValidations.thumbnailUrl,
+  images: baseValidations.images,
 });
 
 // 产品搜索表单验证
@@ -161,7 +185,9 @@ export type ProductQueryParams = z.infer<typeof productQuerySchema>;
 export const productCreateDefaults: Partial<ProductCreateFormData> = {
   unit: 'piece',
   specification: '',
+  description: '',
   thickness: undefined, // 厚度字段是可选的
+  thumbnailUrl: '',
   images: [],
   categoryId: 'uncategorized',
 };
