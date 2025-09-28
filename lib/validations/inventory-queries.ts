@@ -36,7 +36,19 @@ export const inventoryQuerySchema = z.object({
     .string()
     .nullable()
     .optional()
-    .transform(val => val || 'updatedAt'),
+    .transform(val => val || 'updatedAt')
+    .refine(
+      val =>
+        [
+          'updatedAt',
+          'createdAt',
+          'quantity',
+          'reservedQuantity',
+          'batchNumber',
+          'productId',
+        ].includes(val),
+      { message: '排序字段不支持' }
+    ),
 
   sortOrder: z
     .string()

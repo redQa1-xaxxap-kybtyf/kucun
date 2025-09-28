@@ -58,10 +58,11 @@ export async function POST(request: NextRequest) {
         productId,
       };
 
-      // 如果提供了variantId，优先使用variantId查找
+      // 修复：同时提供variantId和batchNumber时，应同时应用两个过滤条件
       if (variantId) {
         whereCondition.variantId = variantId;
-      } else if (batchNumber) {
+      }
+      if (batchNumber) {
         whereCondition.batchNumber = batchNumber;
       }
 

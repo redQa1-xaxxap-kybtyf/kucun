@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
@@ -251,141 +251,34 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { productId, batchNumber, adjustQuantity } = validationResult.data;
-
-    // 根据adjustQuantity的正负值确定调整类型
-    const adjustmentType = adjustQuantity > 0 ? 'increase' : 'decrease';
-    const quantity = Math.abs(adjustQuantity);
+    const { productId } = validationResult.data;
 
     const pid = productId as string;
-    const bn = (batchNumber || null) as string | null;
 
     try {
-      const { formattedInventory, message } = await prisma.$transaction(
-        async tx => {
-          // 验证产品是否存在（事务内保证一致性）
-          const product = await tx.product.findUnique({
-            where: { id: pid },
-          });
-          if (!product) {
-            throw new Error('BAD_REQUEST: 指定的产品不存在');
-          }
-
-          // 查找或创建库存记录
-          let inventory = await tx.inventory.findFirst({
-            where: {
-              productId: pid,
-              batchNumber: bn,
-            },
-          });
-
-          if (!inventory) {
-            // 如果是减少库存但记录不存在，报错
-            if (adjustmentType === 'decrease') {
-              throw new Error('BAD_REQUEST: 库存记录不存在，无法减少库存');
-            }
-
-            // 创建新的库存记录
-            inventory = await tx.inventory.create({
-              data: {
-                productId: pid,
-                batchNumber: bn,
-                quantity: adjustmentType === 'increase' ? quantity : 0,
-                reservedQuantity: 0,
-              },
-            });
-          } else {
-            // 更新现有库存记录
-            const newQuantity =
-              adjustmentType === 'increase'
-                ? inventory.quantity + quantity
-                : inventory.quantity - quantity;
-
-            // 检查库存不能为负数
-            if (newQuantity < 0) {
-              throw new Error('BAD_REQUEST: 库存不足，无法减少指定数量');
-            }
-
-            // 检查可用库存（减少时不能低于预留库存）
-            if (
-              adjustmentType === 'decrease' &&
-              newQuantity < inventory.reservedQuantity
-            ) {
-              throw new Error(
-                `BAD_REQUEST: 可用库存不足，当前预留库存为 ${inventory.reservedQuantity}`
-              );
-            }
-
-            inventory = await tx.inventory.update({
-              where: { id: inventory.id },
-              data: { quantity: newQuantity },
-            });
-          }
-
-          // 获取更新后的库存信息
-          const updatedInventory = await tx.inventory.findUnique({
-            where: { id: inventory.id },
-            select: {
-              id: true,
-              productId: true,
-              batchNumber: true,
-              quantity: true,
-              reservedQuantity: true,
-              updatedAt: true,
-              product: {
-                select: {
-                  id: true,
-                  code: true,
-                  name: true,
-                  specification: true,
-                  unit: true,
-                  piecesPerUnit: true,
-                },
-              },
-            },
-          });
-
-          if (!updatedInventory) {
-            throw new Error('BAD_REQUEST: 获取更新后的库存信息失败');
-          }
-
-          const formattedInventory = {
-            id: updatedInventory.id,
-            productId: updatedInventory.productId,
-            batchNumber: updatedInventory.batchNumber,
-            quantity: updatedInventory.quantity,
-            reservedQuantity: updatedInventory.reservedQuantity,
-            availableQuantity:
-              updatedInventory.quantity - updatedInventory.reservedQuantity,
-            product: updatedInventory.product,
-            updatedAt: updatedInventory.updatedAt,
-          };
-
-          const message = `库存${
-            adjustmentType === 'increase' ? '增加' : '减少'
-          }成功`;
-
-          return { formattedInventory, message } as const;
+      await prisma.$transaction(async tx => {
+        // 验证产品是否存在（事务内保证一致性）
+        const product = await tx.product.findUnique({
+          where: { id: pid },
+        });
+        if (!product) {
+          throw new Error('BAD_REQUEST: 指定的产品不存在');
         }
+
+        // 修复：库存调整应通过专用的 /api/inventory/adjust 端点处理
+        // 这里只保留基本的库存查询功能，移除调整逻辑
+        throw new Error(
+          'BAD_REQUEST: 库存调整请使用 /api/inventory/adjust 端点'
+        );
+      });
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: '库存调整请使用 /api/inventory/adjust 端点',
+        },
+        { status: 400 }
       );
-
-      // 清除相关缓存
-      await invalidateInventoryCache(pid);
-
-      // WebSocket 推送更新
-      publishWs('inventory', {
-        type: 'adjust',
-        productId: pid,
-        adjustmentType,
-        quantity,
-        inventoryId: formattedInventory.id,
-      });
-
-      return NextResponse.json({
-        success: true,
-        data: formattedInventory,
-        message,
-      });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       if (msg.startsWith('BAD_REQUEST:')) {

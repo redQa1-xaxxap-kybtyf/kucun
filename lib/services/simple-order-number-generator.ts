@@ -91,7 +91,7 @@ export async function generateSalesOrderNumber(): Promise<string> {
           return orderNumber;
         },
         {
-          isolationLevel: 'Serializable',
+          // 修复：SQLite不支持Serializable隔离级别，移除该设置
           timeout: 10000, // 10秒超时
         }
       );

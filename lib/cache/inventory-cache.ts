@@ -5,6 +5,7 @@ import {
 } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { cacheConfig } from '@/lib/env';
+import { redis } from '@/lib/redis/redis-client';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 
@@ -95,7 +96,7 @@ export async function getBatchCachedInventorySummary(
     cacheKeys.map(async (key, index) => {
       const productId = productIds[index];
       try {
-        const cached = await getJSON<InventorySummary>(key);
+        const cached = await redis.getJson<InventorySummary>(key);
         return { productId, cached };
       } catch {
         return { productId, cached: null };

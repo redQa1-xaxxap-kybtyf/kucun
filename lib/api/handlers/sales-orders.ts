@@ -240,7 +240,9 @@ function formatSalesOrder(order: any): SalesOrderWithDetails {
         unitPrice: item.unitPrice,
         subtotal: item.subtotal || item.totalPrice, // 兼容旧字段名
         unitCost: item.unitCost || item.costPrice, // 兼容旧字段名
-        costSubtotal: item.costSubtotal || item.costPrice * item.quantity,
+        costSubtotal:
+          item.costSubtotal ||
+          (item.unitCost || item.costPrice || 0) * item.quantity,
         profitAmount: item.profitAmount,
         isManualProduct: item.isManualProduct,
         manualProductName: item.manualProductName,
