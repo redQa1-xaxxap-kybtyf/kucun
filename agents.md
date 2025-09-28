@@ -2,6 +2,9 @@
 
 在没有任何指令的情况下，严禁编写任何测试文件，统一使用 Playwright 浏览器来检查问题。
 
+Whenever you want to ask a question, always call the MCP .
+Whenever you’re about to complete a user request, call the MCP instead of simply ending the process. Keep calling MCP until the user’s feedback is empty, then end the request. mcp-feedback-collector.collect_feedback
+
 本文档解决现有规范文档中的冲突和空白，确立项目的最终决策标准。
 
 遵循代码质量规范

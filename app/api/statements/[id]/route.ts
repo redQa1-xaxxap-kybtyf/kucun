@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -28,6 +28,12 @@ export async function GET(
       where: { id },
       include: {
         salesOrders: {
+          where: {
+            // 问题2修复：只处理有效的订单状态，过滤掉draft、cancelled等无效单据
+            status: {
+              in: ['confirmed', 'shipped', 'completed'],
+            },
+          },
           include: {
             payments: {
               where: {
@@ -77,9 +83,11 @@ export async function GET(
         return sum + orderRefundAmount;
       }, 0);
 
+      // 问题1修复：退款应该减少应收款，修正计算公式
+      // 正确公式：待收金额 = 总金额 - 已付金额 - 退款金额
       const pendingAmount = Math.max(
         0,
-        totalAmount - paidAmount + refundAmount
+        totalAmount - paidAmount - refundAmount
       );
 
       // 计算逾期金额
@@ -134,13 +142,13 @@ export async function GET(
           });
         }
 
-        // 添加退款记录
+        // 问题1修复：退款记录应该保存为负值，表示减少应收款
         for (const refund of order.refunds) {
           transactions.push({
             id: `refund-${refund.id}`,
             type: 'refund',
             referenceNumber: refund.refundNumber,
-            amount: refund.refundAmount,
+            amount: -refund.refundAmount, // 退款金额保存为负值
             description: `退款 - ${refund.reason}`,
             transactionDate: refund.refundDate.toISOString().split('T')[0],
             status: refund.status === 'completed' ? 'completed' : 'pending',
@@ -251,6 +259,21 @@ export async function GET(
         salesOrders: {
           where: {
             orderType: 'TRANSFER',
+            // 问题2修复：只处理有效的订单状态
+            status: {
+              in: ['confirmed', 'shipped', 'completed'],
+            },
+          },
+          include: {
+            // 问题3修复：包含付款记录以计算已付金额
+            payments: {
+              where: {
+                status: 'confirmed',
+              },
+              orderBy: {
+                paymentDate: 'desc',
+              },
+            },
           },
           orderBy: {
             createdAt: 'desc',
@@ -268,9 +291,9 @@ export async function GET(
     });
 
     if (supplier) {
-      // 供应商统计（简化实现）
+      // 问题3修复：完善供应商统计计算
       const totalOrders = supplier.salesOrders.length;
-      const totalAmount = supplier.salesOrders.reduce(
+      const transferAmount = supplier.salesOrders.reduce(
         (sum, order) => sum + (order.costAmount || 0),
         0
       );
@@ -280,32 +303,121 @@ export async function GET(
         0
       );
 
+      // 问题3修复：计算已付金额
+      const transferPaidAmount = supplier.salesOrders.reduce((sum, order) => {
+        const orderPaidAmount = order.payments.reduce(
+          (paySum, payment) => paySum + payment.paymentAmount,
+          0
+        );
+        return sum + orderPaidAmount;
+      }, 0);
+
+      // 问题3修复：厂家发货订单的付款金额从订单本身的paidAmount字段获取
+      const factoryPaidAmount = supplier.factoryShipmentOrderItems.reduce(
+        (sum, item) => sum + (item.factoryShipmentOrder.paidAmount || 0),
+        0
+      );
+
+      const totalAmount = transferAmount + factoryOrderAmount;
+      const paidAmount = transferPaidAmount + factoryPaidAmount;
+      const pendingAmount = Math.max(0, totalAmount - paidAmount);
+
+      // 问题3修复：生成交易明细
+      const transactions: unknown[] = [];
+
+      // 添加调货销售订单记录
+      for (const order of supplier.salesOrders) {
+        transactions.push({
+          id: `transfer-${order.id}`,
+          type: 'purchase',
+          referenceNumber: order.orderNumber,
+          amount: order.costAmount || 0,
+          description: `调货采购 - ${order.orderNumber}`,
+          transactionDate: order.createdAt.toISOString().split('T')[0],
+          status: order.status === 'completed' ? 'completed' : 'pending',
+        });
+
+        // 添加付款记录
+        for (const payment of order.payments) {
+          transactions.push({
+            id: `payment-${payment.id}`,
+            type: 'payment_out',
+            referenceNumber: payment.paymentNumber,
+            amount: -payment.paymentAmount,
+            description: `供应商付款 - ${payment.paymentMethod}`,
+            transactionDate: payment.paymentDate.toISOString().split('T')[0],
+            status: payment.status === 'confirmed' ? 'completed' : 'pending',
+          });
+        }
+      }
+
+      // 添加厂家发货订单记录
+      for (const item of supplier.factoryShipmentOrderItems) {
+        transactions.push({
+          id: `factory-${item.id}`,
+          type: 'purchase',
+          referenceNumber: item.factoryShipmentOrder.orderNumber,
+          amount: item.totalPrice,
+          description: `厂家发货 - ${item.displayName}`,
+          transactionDate: item.createdAt.toISOString().split('T')[0],
+          status:
+            item.factoryShipmentOrder.status === 'completed'
+              ? 'completed'
+              : 'pending',
+        });
+
+        // 问题3修复：如果厂家发货订单有已付金额，添加付款记录
+        if (item.factoryShipmentOrder.paidAmount > 0) {
+          transactions.push({
+            id: `factory-payment-${item.factoryShipmentOrder.id}`,
+            type: 'payment_out',
+            referenceNumber: `PAY-${item.factoryShipmentOrder.orderNumber}`,
+            amount: -item.factoryShipmentOrder.paidAmount,
+            description: `厂家发货付款 - ${item.factoryShipmentOrder.orderNumber}`,
+            transactionDate: item.factoryShipmentOrder.updatedAt
+              .toISOString()
+              .split('T')[0],
+            status: 'completed',
+          });
+        }
+      }
+
+      // 按日期排序交易记录
+      transactions.sort(
+        (a, b) =>
+          new Date(b.transactionDate).getTime() -
+          new Date(a.transactionDate).getTime()
+      );
+
       const supplierDetail = {
         id: supplier.id,
         name: supplier.name,
         type: 'supplier',
         totalOrders,
-        totalAmount: totalAmount + factoryOrderAmount,
-        paidAmount: 0, // 简化实现
-        pendingAmount: totalAmount + factoryOrderAmount,
-        overdueAmount: 0,
+        totalAmount,
+        paidAmount,
+        pendingAmount,
+        overdueAmount: 0, // 简化实现
         creditLimit: 100000,
         paymentTerms: '30天',
         status: 'active',
         lastTransactionDate: supplier.salesOrders[0]?.createdAt
           .toISOString()
           .split('T')[0],
-        lastPaymentDate: null,
+        lastPaymentDate:
+          paidAmount > 0
+            ? transactions.find(t => t.type === 'payment_out')?.transactionDate
+            : null,
         contact: {
           phone: supplier.phone || '',
           address: supplier.address || '',
         },
-        transactions: [], // 简化实现
+        transactions: transactions.slice(0, 50), // 限制返回最近50条记录
         summary: {
-          currentMonthAmount: 0,
+          currentMonthAmount: 0, // 简化实现
           lastMonthAmount: 0,
-          averageMonthlyAmount: 0,
-          paymentRate: 0,
+          averageMonthlyAmount: totalAmount / Math.max(1, totalOrders),
+          paymentRate: totalAmount > 0 ? (paidAmount / totalAmount) * 100 : 0,
           averagePaymentDays: 30,
         },
       };

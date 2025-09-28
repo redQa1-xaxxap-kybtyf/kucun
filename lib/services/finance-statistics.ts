@@ -51,6 +51,12 @@ export async function calculateCustomerStatements(
     where: whereClause,
     include: {
       salesOrders: {
+        where: {
+          // 问题2修复：只处理有效的订单状态，过滤掉draft、cancelled等无效单据
+          status: {
+            in: ['confirmed', 'shipped', 'completed'],
+          },
+        },
         include: {
           payments: true,
           refunds: true,
@@ -85,8 +91,9 @@ export async function calculateCustomerStatements(
       return sum + orderRefundAmount;
     }, 0);
 
-    // 计算待收金额（总金额 - 已付金额 + 退款金额）
-    const pendingAmount = Math.max(0, totalAmount - paidAmount + refundAmount);
+    // 问题1修复：退款应该减少应收款，修正计算公式
+    // 正确公式：待收金额 = 总金额 - 已付金额 - 退款金额
+    const pendingAmount = Math.max(0, totalAmount - paidAmount - refundAmount);
 
     // 计算逾期金额（简化逻辑：假设超过30天未付款的为逾期）
     const overdueAmount = await calculateOverdueAmount(customer.id, 'customer');
@@ -129,6 +136,18 @@ export async function calculateSupplierStatements(
       salesOrders: {
         where: {
           orderType: 'TRANSFER', // 调货销售订单
+          // 问题2修复：只处理有效的订单状态
+          status: {
+            in: ['confirmed', 'shipped', 'completed'],
+          },
+        },
+        include: {
+          // 问题3修复：包含付款记录以计算已付金额
+          payments: {
+            where: {
+              status: 'confirmed',
+            },
+          },
         },
       },
       factoryShipmentOrderItems: {
@@ -145,10 +164,19 @@ export async function calculateSupplierStatements(
     // 计算调货销售订单统计
     const transferOrders = supplier.salesOrders;
     const totalOrders = transferOrders.length;
-    const totalAmount = transferOrders.reduce(
+    const transferAmount = transferOrders.reduce(
       (sum, order) => sum + (order.costAmount || 0),
       0
     );
+
+    // 问题3修复：计算调货销售订单的已付金额
+    const transferPaidAmount = transferOrders.reduce((sum, order) => {
+      const orderPaidAmount = order.payments.reduce(
+        (paySum, payment) => paySum + payment.paymentAmount,
+        0
+      );
+      return sum + orderPaidAmount;
+    }, 0);
 
     // 计算厂家发货订单统计
     const factoryOrderAmount = supplier.factoryShipmentOrderItems.reduce(
@@ -156,9 +184,15 @@ export async function calculateSupplierStatements(
       0
     );
 
-    // 供应商的应付金额（简化逻辑）
-    const pendingAmount = totalAmount + factoryOrderAmount;
-    const paidAmount = 0; // 简化逻辑，实际需要从付款记录中计算
+    // 问题3修复：厂家发货订单的付款金额从订单本身的paidAmount字段获取
+    const factoryPaidAmount = supplier.factoryShipmentOrderItems.reduce(
+      (sum, item) => sum + (item.factoryShipmentOrder.paidAmount || 0),
+      0
+    );
+
+    const totalAmount = transferAmount + factoryOrderAmount;
+    const paidAmount = transferPaidAmount + factoryPaidAmount;
+    const pendingAmount = Math.max(0, totalAmount - paidAmount);
     const overdueAmount = await calculateOverdueAmount(supplier.id, 'supplier');
 
     // 获取最后交易日期
@@ -172,7 +206,7 @@ export async function calculateSupplierStatements(
       name: supplier.name,
       type: 'supplier',
       totalOrders,
-      totalAmount: totalAmount + factoryOrderAmount,
+      totalAmount,
       paidAmount,
       pendingAmount,
       overdueAmount,
@@ -271,13 +305,22 @@ async function getLastTransactionDate(
 
 /**
  * 获取财务汇总统计
+ * 问题4修复：支持按类型筛选的财务汇总
  */
-export async function getFinanceSummary(): Promise<FinanceSummary> {
-  // 获取客户和供应商统计
-  const [customerStatements, supplierStatements] = await Promise.all([
-    calculateCustomerStatements(),
-    calculateSupplierStatements(),
-  ]);
+export async function getFinanceSummary(
+  type?: 'customer' | 'supplier'
+): Promise<FinanceSummary> {
+  let customerStatements: StatementSummary[] = [];
+  let supplierStatements: StatementSummary[] = [];
+
+  // 根据筛选条件分别计算客户和供应商的财务汇总数据
+  if (!type || type === 'customer') {
+    customerStatements = await calculateCustomerStatements();
+  }
+
+  if (!type || type === 'supplier') {
+    supplierStatements = await calculateSupplierStatements();
+  }
 
   const totalCustomers = customerStatements.length;
   const totalSuppliers = supplierStatements.length;
@@ -366,8 +409,8 @@ export async function getStatementsList(params: StatementQueryParams): Promise<{
   const endIndex = startIndex + limit;
   const data = allStatements.slice(startIndex, endIndex);
 
-  // 获取汇总统计
-  const summary = await getFinanceSummary();
+  // 问题4修复：根据筛选条件计算对应的财务汇总数据
+  const summary = await getFinanceSummary(type);
 
   return {
     data,
