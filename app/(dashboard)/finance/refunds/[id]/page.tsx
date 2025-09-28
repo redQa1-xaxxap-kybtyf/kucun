@@ -4,27 +4,26 @@
  * 严格遵循全局约定规范和ESLint规范遵循指南
  */
 
+import {
+  AlertCircle,
+  ArrowLeft,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  FileText,
+  Package,
+  XCircle,
+} from 'lucide-react';
 import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { 
-  ArrowLeft, 
-  Calendar, 
-  DollarSign, 
-  FileText, 
-  User, 
-  Package,
-  Clock,
-  CheckCircle,
-  XCircle,
-  AlertCircle
-} from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { formatCurrency } from '@/lib/utils';
 import { prisma } from '@/lib/db';
+import { formatCurrency } from '@/lib/utils';
+import Link from 'next/link';
 
 interface RefundDetailPageProps {
   params: {
@@ -32,7 +31,9 @@ interface RefundDetailPageProps {
   };
 }
 
-export async function generateMetadata({ params }: RefundDetailPageProps): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: RefundDetailPageProps): Promise<Metadata> {
   return {
     title: `退款详情 #${params.id} - 库存管理工具`,
     description: '查看退款记录详细信息和处理状态',
@@ -79,7 +80,10 @@ async function getRefundDetail(id: string) {
 
     return refund;
   } catch (error) {
-    console.error('获取退款详情失败:', error);
+    // 记录错误但不在生产环境输出
+    if (process.env.NODE_ENV === 'development') {
+      console.error('获取退款详情失败:', error);
+    }
     return null;
   }
 }
@@ -90,12 +94,25 @@ async function getRefundDetail(id: string) {
 function StatusBadge({ status }: { status: string }) {
   const statusConfig = {
     pending: { label: '待处理', variant: 'secondary' as const, icon: Clock },
-    processing: { label: '处理中', variant: 'default' as const, icon: AlertCircle },
-    completed: { label: '已完成', variant: 'secondary' as const, icon: CheckCircle },
-    cancelled: { label: '已取消', variant: 'destructive' as const, icon: XCircle },
+    processing: {
+      label: '处理中',
+      variant: 'default' as const,
+      icon: AlertCircle,
+    },
+    completed: {
+      label: '已完成',
+      variant: 'secondary' as const,
+      icon: CheckCircle,
+    },
+    cancelled: {
+      label: '已取消',
+      variant: 'destructive' as const,
+      icon: XCircle,
+    },
   };
 
-  const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+  const config =
+    statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
   const IconComponent = config.icon;
 
   return (
@@ -109,7 +126,9 @@ function StatusBadge({ status }: { status: string }) {
 /**
  * 退款详情页面组件
  */
-export default async function RefundDetailPage({ params }: RefundDetailPageProps) {
+export default async function RefundDetailPage({
+  params,
+}: RefundDetailPageProps) {
   const refund = await getRefundDetail(params.id);
 
   if (!refund) {
@@ -117,15 +136,15 @@ export default async function RefundDetailPage({ params }: RefundDetailPageProps
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
+    <div className="container mx-auto max-w-4xl px-4 py-6">
       {/* 页面标题和操作 */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" asChild>
-            <a href="/finance/refunds">
-              <ArrowLeft className="h-4 w-4 mr-2" />
+            <Link href="/finance/refunds">
+              <ArrowLeft className="mr-2 h-4 w-4" />
               返回列表
-            </a>
+            </Link>
           </Button>
           <div>
             <h1 className="text-2xl font-bold">退款详情</h1>
@@ -136,17 +155,17 @@ export default async function RefundDetailPage({ params }: RefundDetailPageProps
           <StatusBadge status={refund.status} />
           {refund.status === 'pending' && (
             <Button asChild>
-              <a href={`/finance/refunds/${refund.id}/process`}>
+              <Link href={`/finance/refunds/${refund.id}/process`}>
                 处理退款
-              </a>
+              </Link>
             </Button>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* 主要信息 */}
-        <div className="lg:col-span-2 space-y-6">
+        <div className="space-y-6 lg:col-span-2">
           {/* 退款信息 */}
           <Card>
             <CardHeader>
@@ -158,25 +177,33 @@ export default async function RefundDetailPage({ params }: RefundDetailPageProps
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-500">退款金额</label>
+                  <label className="text-sm font-medium text-gray-500">
+                    退款金额
+                  </label>
                   <p className="text-lg font-semibold text-red-600">
                     {formatCurrency(refund.refundAmount)}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">已处理金额</label>
+                  <label className="text-sm font-medium text-gray-500">
+                    已处理金额
+                  </label>
                   <p className="text-lg font-semibold text-green-600">
                     {formatCurrency(refund.processedAmount)}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">剩余金额</label>
+                  <label className="text-sm font-medium text-gray-500">
+                    剩余金额
+                  </label>
                   <p className="text-lg font-semibold">
                     {formatCurrency(refund.remainingAmount)}
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-gray-500">退款方式</label>
+                  <label className="text-sm font-medium text-gray-500">
+                    退款方式
+                  </label>
                   <p className="text-sm">{refund.refundMethod || '未指定'}</p>
                 </div>
               </div>
@@ -185,16 +212,20 @@ export default async function RefundDetailPage({ params }: RefundDetailPageProps
                 <>
                   <Separator />
                   <div>
-                    <label className="text-sm font-medium text-gray-500">退款原因</label>
-                    <p className="text-sm mt-1">{refund.reason}</p>
+                    <label className="text-sm font-medium text-gray-500">
+                      退款原因
+                    </label>
+                    <p className="mt-1 text-sm">{refund.reason}</p>
                   </div>
                 </>
               )}
 
               {refund.notes && (
                 <div>
-                  <label className="text-sm font-medium text-gray-500">备注说明</label>
-                  <p className="text-sm mt-1">{refund.notes}</p>
+                  <label className="text-sm font-medium text-gray-500">
+                    备注说明
+                  </label>
+                  <p className="mt-1 text-sm">{refund.notes}</p>
                 </div>
               )}
             </CardContent>
@@ -212,12 +243,18 @@ export default async function RefundDetailPage({ params }: RefundDetailPageProps
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">退货单号</label>
-                    <p className="text-sm font-medium">{refund.returnOrderNumber}</p>
+                    <label className="text-sm font-medium text-gray-500">
+                      退货单号
+                    </label>
+                    <p className="text-sm font-medium">
+                      {refund.returnOrderNumber}
+                    </p>
                   </div>
                   {refund.returnOrder.salesOrder && (
                     <div>
-                      <label className="text-sm font-medium text-gray-500">原销售订单</label>
+                      <label className="text-sm font-medium text-gray-500">
+                        原销售订单
+                      </label>
                       <p className="text-sm font-medium">
                         {refund.returnOrder.salesOrder.orderNumber}
                       </p>
@@ -229,9 +266,13 @@ export default async function RefundDetailPage({ params }: RefundDetailPageProps
                   <>
                     <Separator />
                     <div>
-                      <label className="text-sm font-medium text-gray-500">客户信息</label>
+                      <label className="text-sm font-medium text-gray-500">
+                        客户信息
+                      </label>
                       <div className="mt-2 space-y-1">
-                        <p className="text-sm font-medium">{refund.returnOrder.customer.name}</p>
+                        <p className="text-sm font-medium">
+                          {refund.returnOrder.customer.name}
+                        </p>
                         {refund.returnOrder.customer.phone && (
                           <p className="text-sm text-gray-600">
                             电话：{refund.returnOrder.customer.phone}
@@ -271,16 +312,22 @@ export default async function RefundDetailPage({ params }: RefundDetailPageProps
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-500">创建时间</span>
-                  <span>{new Date(refund.createdAt).toLocaleString('zh-CN')}</span>
+                  <span>
+                    {new Date(refund.createdAt).toLocaleString('zh-CN')}
+                  </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">更新时间</span>
-                  <span>{new Date(refund.updatedAt).toLocaleString('zh-CN')}</span>
+                  <span>
+                    {new Date(refund.updatedAt).toLocaleString('zh-CN')}
+                  </span>
                 </div>
                 {refund.processedAt && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">处理时间</span>
-                    <span>{new Date(refund.processedAt).toLocaleString('zh-CN')}</span>
+                    <span>
+                      {new Date(refund.processedAt).toLocaleString('zh-CN')}
+                    </span>
                   </div>
                 )}
               </div>
@@ -289,8 +336,10 @@ export default async function RefundDetailPage({ params }: RefundDetailPageProps
                 <>
                   <Separator />
                   <div>
-                    <label className="text-sm font-medium text-gray-500">处理人员</label>
-                    <p className="text-sm mt-1">{refund.processedBy.name}</p>
+                    <label className="text-sm font-medium text-gray-500">
+                      处理人员
+                    </label>
+                    <p className="mt-1 text-sm">{refund.processedBy.name}</p>
                   </div>
                 </>
               )}
@@ -308,7 +357,7 @@ export default async function RefundDetailPage({ params }: RefundDetailPageProps
             <CardContent>
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full mt-2 flex-shrink-0" />
+                  <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
                   <div>
                     <p className="font-medium">退款申请已创建</p>
                     <p className="text-gray-500">
@@ -319,7 +368,7 @@ export default async function RefundDetailPage({ params }: RefundDetailPageProps
 
                 {refund.processedAt && (
                   <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2 flex-shrink-0" />
+                    <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
                     <div>
                       <p className="font-medium">退款处理完成</p>
                       <p className="text-gray-500">
