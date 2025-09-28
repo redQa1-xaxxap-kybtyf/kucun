@@ -33,9 +33,6 @@ import {
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-
-// Icons
-
 // API and Types
 import { searchCustomers } from '@/lib/api/customers';
 import type { Customer } from '@/lib/types/customer';

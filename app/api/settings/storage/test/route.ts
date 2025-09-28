@@ -72,7 +72,7 @@ export async function POST(
  * 模拟七牛云连接测试
  * 在实际项目中应该替换为真实的七牛云SDK调用
  */
-async function simulateQiniuConnectionTest(config: {
+async function _simulateQiniuConnectionTest(_config: {
   accessKey: string;
   secretKey: string;
   bucket: string;

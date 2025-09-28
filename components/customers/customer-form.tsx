@@ -46,11 +46,6 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-
-// Icons
-
-// Custom Components
-
 // API and Types
 import {
   createCustomer,

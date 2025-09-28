@@ -3,30 +3,24 @@
 import {
   AlertCircle,
   CheckCircle,
-  Image as ImageIcon,
+  // Image as ImageIcon, // 未使用
   Loader2,
-  Move,
-  Plus,
+  // Move, // 未使用
+  // Plus, // 未使用
   Trash2,
   Upload,
   X,
 } from 'lucide-react';
+import Image from 'next/image';
 import { useRef, useState } from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 interface ProductImage {
@@ -62,7 +56,7 @@ export function ProductImageUpload({
   >('idle');
   const [error, setError] = useState<string>('');
   const [activeTab, setActiveTab] = useState('thumbnail');
-  
+
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
   const mainImageInputRef = useRef<HTMLInputElement>(null);
   const effectImageInputRef = useRef<HTMLInputElement>(null);
@@ -221,15 +215,19 @@ export function ProductImageUpload({
     </Card>
   );
 
-  const renderImageGrid = (imageList: ProductImage[], type: 'main' | 'effect') => (
+  const renderImageGrid = (
+    imageList: ProductImage[],
+    type: 'main' | 'effect'
+  ) => (
     <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
       {imageList.map((image, index) => (
         <Card key={`${type}-${index}`} className="relative overflow-hidden">
-          <div className="aspect-square relative">
-            <img
+          <div className="relative aspect-square">
+            <Image
               src={image.url}
               alt={image.alt || `${type}图片`}
-              className="h-full w-full object-cover"
+              fill
+              className="object-cover"
             />
             <div className="absolute inset-0 bg-black/50 opacity-0 transition-opacity hover:opacity-100">
               <div className="absolute right-2 top-2">
@@ -271,18 +269,26 @@ export function ProductImageUpload({
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="thumbnail">
             缩略图
-            {thumbnailUrl && <Badge variant="secondary" className="ml-2">1</Badge>}
+            {thumbnailUrl && (
+              <Badge variant="secondary" className="ml-2">
+                1
+              </Badge>
+            )}
           </TabsTrigger>
           <TabsTrigger value="main">
             主图
             {mainImages.length > 0 && (
-              <Badge variant="secondary" className="ml-2">{mainImages.length}</Badge>
+              <Badge variant="secondary" className="ml-2">
+                {mainImages.length}
+              </Badge>
             )}
           </TabsTrigger>
           <TabsTrigger value="effect">
             效果图
             {effectImages.length > 0 && (
-              <Badge variant="secondary" className="ml-2">{effectImages.length}</Badge>
+              <Badge variant="secondary" className="ml-2">
+                {effectImages.length}
+              </Badge>
             )}
           </TabsTrigger>
         </TabsList>
@@ -295,13 +301,15 @@ export function ProductImageUpload({
                 用于产品列表显示的小尺寸图片，建议尺寸 200x200px
               </p>
             </div>
-            
+
             {thumbnailUrl ? (
-              <Card className="relative w-32 h-32">
-                <img
+              <Card className="relative h-32 w-32">
+                <Image
                   src={thumbnailUrl}
                   alt="产品缩略图"
-                  className="h-full w-full object-cover rounded-lg"
+                  width={128}
+                  height={128}
+                  className="rounded-lg object-cover"
                 />
                 <Button
                   size="sm"
@@ -332,18 +340,17 @@ export function ProductImageUpload({
                 展示产品主要特征的高质量图片，建议尺寸 800x800px
               </p>
             </div>
-            
+
             {mainImages.length > 0 && renderImageGrid(mainImages, 'main')}
-            
-            {mainImages.length < maxFiles && (
+
+            {mainImages.length < maxFiles &&
               renderUploadArea(
                 '上传主图',
                 '点击或拖拽图片到此处上传产品主图（支持多选）',
                 mainImageInputRef,
                 files => handleFileUpload(files, 'main'),
                 true
-              )
-            )}
+              )}
           </div>
         </TabsContent>
 
@@ -355,18 +362,17 @@ export function ProductImageUpload({
                 展示产品实际使用效果的图片，如装修效果、应用场景等
               </p>
             </div>
-            
+
             {effectImages.length > 0 && renderImageGrid(effectImages, 'effect')}
-            
-            {effectImages.length < maxFiles && (
+
+            {effectImages.length < maxFiles &&
               renderUploadArea(
                 '上传效果图',
                 '点击或拖拽图片到此处上传产品效果图（支持多选）',
                 effectImageInputRef,
                 files => handleFileUpload(files, 'effect'),
                 true
-              )
-            )}
+              )}
           </div>
         </TabsContent>
       </Tabs>

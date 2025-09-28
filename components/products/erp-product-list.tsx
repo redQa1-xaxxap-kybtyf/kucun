@@ -136,10 +136,15 @@ export function ERPProductList({
   const categories = categoriesResponse?.data || [];
 
   // 获取产品列表数据 - 使用服务器端提供的初始数据
-  const { data, isLoading, error, isPreviousData } = useQuery({
+  const {
+    data,
+    isLoading,
+    error,
+    isPreviousData: _isPreviousData,
+  } = useQuery({
     queryKey: productQueryKeys.list(queryParams),
     queryFn: () => getProducts(queryParams),
-    initialData: initialData,
+    initialData,
     staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
     refetchOnWindowFocus: false, // 避免不必要的重新获取
     keepPreviousData: true, // 保持之前的数据，避免加载时闪烁
