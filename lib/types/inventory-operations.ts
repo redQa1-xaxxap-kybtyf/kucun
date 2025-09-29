@@ -163,3 +163,120 @@ export const calculateTotalCost = (
   quantity: number,
   unitCost: number
 ): number => Math.round(quantity * unitCost * 100) / 100;
+
+// 库存调整原因枚举
+export type AdjustmentReason =
+  | 'inventory_gain'
+  | 'inventory_loss'
+  | 'damage_loss'
+  | 'surplus_gain'
+  | 'transfer'
+  | 'other';
+
+// 库存调整状态枚举
+export type AdjustmentStatus = 'draft' | 'pending' | 'approved' | 'rejected';
+
+// 库存调整记录类型
+export interface InventoryAdjustment {
+  id: string;
+  adjustmentNumber: string;
+  productId: string;
+  variantId?: string;
+  batchNumber?: string;
+  beforeQuantity: number;
+  adjustQuantity: number;
+  afterQuantity: number;
+  reason: AdjustmentReason;
+  notes?: string;
+  status: AdjustmentStatus;
+  operatorId: string;
+  approverId?: string;
+  approvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+
+  // 关联数据（可选）
+  product?: Product;
+  variant?: import('./product').ProductVariant;
+  operator?: User;
+  approver?: User;
+}
+
+// 库存调整记录查询参数
+export interface AdjustmentQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  sortBy?: 'createdAt' | 'adjustmentNumber' | 'adjustQuantity' | 'reason';
+  sortOrder?: 'asc' | 'desc';
+  productId?: string;
+  variantId?: string;
+  batchNumber?: string;
+  reason?: AdjustmentReason;
+  status?: AdjustmentStatus;
+  operatorId?: string;
+  startDate?: string;
+  endDate?: string;
+}
+
+// 库存调整记录列表响应
+export interface AdjustmentListResponse {
+  success: boolean;
+  data: {
+    adjustments: InventoryAdjustment[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+  message?: string;
+}
+
+// 库存调整记录详情响应
+export interface AdjustmentDetailResponse {
+  success: boolean;
+  data: InventoryAdjustment;
+  message?: string;
+}
+
+// 调整原因标签映射
+export const ADJUSTMENT_REASON_LABELS: Record<AdjustmentReason, string> = {
+  inventory_gain: '盘盈',
+  inventory_loss: '盘亏',
+  damage_loss: '报损',
+  surplus_gain: '报溢',
+  transfer: '调拨',
+  other: '其他',
+};
+
+// 调整状态标签映射
+export const ADJUSTMENT_STATUS_LABELS: Record<AdjustmentStatus, string> = {
+  draft: '草稿',
+  pending: '待审批',
+  approved: '已审批',
+  rejected: '已拒绝',
+};
+
+// 调整状态颜色映射
+export const ADJUSTMENT_STATUS_VARIANTS: Record<
+  AdjustmentStatus,
+  'default' | 'secondary' | 'destructive' | 'outline'
+> = {
+  draft: 'outline',
+  pending: 'secondary',
+  approved: 'default',
+  rejected: 'destructive',
+};
+
+// 调整记录排序选项
+export const ADJUSTMENT_SORT_OPTIONS = [
+  { value: 'createdAt', label: '调整时间' },
+  { value: 'adjustmentNumber', label: '调整单号' },
+  { value: 'adjustQuantity', label: '调整数量' },
+  { value: 'reason', label: '调整原因' },
+] as const;
+
+// 调整记录号生成规则说明
+export const ADJUSTMENT_NUMBER_FORMAT = 'TZ + YYYYMMDD + 6位序号';

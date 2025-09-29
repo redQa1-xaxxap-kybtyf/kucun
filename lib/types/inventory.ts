@@ -26,10 +26,14 @@ export {
 
 // 库存操作相关类型
 export type {
+  AdjustmentQueryParams,
+  AdjustmentReason,
+  AdjustmentStatus,
   InboundCreateInput,
   InboundRecord,
   InboundType,
   InventoryAdjustInput,
+  InventoryAdjustment,
   InventoryCountInput,
   InventoryCountItem,
   OutboundCreateInput,
@@ -38,6 +42,11 @@ export type {
 } from './inventory-operations';
 
 export {
+  ADJUSTMENT_NUMBER_FORMAT,
+  ADJUSTMENT_REASON_LABELS,
+  ADJUSTMENT_SORT_OPTIONS,
+  ADJUSTMENT_STATUS_LABELS,
+  ADJUSTMENT_STATUS_VARIANTS,
   INBOUND_NUMBER_FORMAT,
   INBOUND_SORT_OPTIONS,
   INBOUND_TYPE_LABELS,
