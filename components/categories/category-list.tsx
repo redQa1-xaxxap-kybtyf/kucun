@@ -5,16 +5,9 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import {
-  Edit,
-  Eye,
-  EyeOff,
-  MoreHorizontal,
-  Trash2,
-} from 'lucide-react';
+import { Edit, Eye, EyeOff, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -109,17 +102,12 @@ export function CategoryList({
                     <Checkbox
                       checked={selectedCategoryIds.includes(category.id)}
                       onCheckedChange={checked =>
-                        onSelectCategory(
-                          category.id,
-                          checked as boolean
-                        )
+                        onSelectCategory(category.id, checked as boolean)
                       }
                       aria-label={`选择分类 ${category.name}`}
                     />
                   </TableCell>
-                  <TableCell className="font-medium">
-                    {category.name}
-                  </TableCell>
+                  <TableCell className="font-medium">{category.name}</TableCell>
                   <TableCell>{category.productCount || 0}</TableCell>
                   <TableCell>
                     <span

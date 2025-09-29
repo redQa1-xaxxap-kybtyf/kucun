@@ -95,7 +95,7 @@ export function useCategories() {
       setSelectedCategoryIds([]);
       toast({
         title: '批量删除成功',
-        description: `成功删除 ${deletedIds.length} 个分类！`,
+        description: `成功删除 ${deletedIds.categoryIds.length} 个分类！`,
       });
     },
     onError: (error: Error) => {
@@ -108,7 +108,13 @@ export function useCategories() {
   });
 
   const statusMutation = useMutation({
-    mutationFn: updateCategoryStatus,
+    mutationFn: ({
+      id,
+      status,
+    }: {
+      id: string;
+      status: 'active' | 'inactive';
+    }) => updateCategoryStatus(id, status),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories'] });
       setUpdatingStatusId(null);
@@ -137,14 +143,14 @@ export function useCategories() {
     deleteDialog,
     batchDeleteDialog,
     updatingStatusId,
-    
+
     // 状态设置
     setQueryParams,
     setSelectedCategoryIds,
     setDeleteDialog,
     setBatchDeleteDialog,
     setUpdatingStatusId,
-    
+
     // 变更操作
     deleteMutation,
     batchDeleteMutation,

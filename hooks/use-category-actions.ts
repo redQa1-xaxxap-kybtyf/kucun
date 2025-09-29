@@ -48,7 +48,9 @@ export function useCategoryActions({
       limit: Number(params.get('limit')) || 10,
       search: params.get('search') || '',
       status: (params.get('status') as 'active' | 'inactive') || undefined,
-      sortBy: params.get('sortBy') || 'createdAt',
+      sortBy:
+        (params.get('sortBy') as 'name' | 'code' | 'sortOrder' | 'createdAt') ||
+        'createdAt',
       sortOrder: (params.get('sortOrder') as 'asc' | 'desc') || 'desc',
     };
 

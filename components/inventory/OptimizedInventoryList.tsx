@@ -7,7 +7,7 @@
 
 import * as React from 'react';
 
-import { InventoryListActions } from '@/components/inventory/inventory-list-actions';
+import { InventoryListActions } from '@/components/inventory/erp/inventory-list-actions';
 import { InventorySearchToolbar } from '@/components/inventory/InventorySearchToolbar';
 import { VirtualizedInventoryTable } from '@/components/inventory/VirtualizedInventoryTable';
 import { useOptimizedInventoryList } from '@/hooks/use-optimized-inventory-list';

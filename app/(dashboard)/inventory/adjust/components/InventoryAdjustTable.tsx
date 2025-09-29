@@ -76,7 +76,6 @@ export function InventoryAdjustTable({
           <TableHead>产品信息</TableHead>
           <TableHead>批次号</TableHead>
           <TableHead>当前库存</TableHead>
-          <TableHead>存储位置</TableHead>
           <TableHead>最后更新</TableHead>
         </TableRow>
       </TableHeader>
@@ -93,6 +92,14 @@ export function InventoryAdjustTable({
                     编码: {record.product.code}
                   </span>
                 )}
+                {record.product?.specification && (
+                  <span className="text-sm text-muted-foreground">
+                    规格:{' '}
+                    {record.product.specification.length > 11
+                      ? `${record.product.specification.slice(0, 11)}...`
+                      : record.product.specification}
+                  </span>
+                )}
                 {record.variant?.sku && (
                   <span className="text-sm text-muted-foreground">
                     SKU: {record.variant.sku}
@@ -106,11 +113,6 @@ export function InventoryAdjustTable({
               )}
             </TableCell>
             <TableCell>{renderStockDisplay(record)}</TableCell>
-            <TableCell>
-              {record.location || (
-                <span className="text-muted-foreground">未指定</span>
-              )}
-            </TableCell>
             <TableCell>
               <div className="text-sm">{formatDate(record.updatedAt)}</div>
             </TableCell>

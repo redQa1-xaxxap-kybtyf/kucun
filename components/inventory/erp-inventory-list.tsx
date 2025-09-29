@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 
-import { InventoryListActions } from '@/components/inventory/erp/inventory-list-actions';
 import { InventoryPagination } from '@/components/inventory/erp/inventory-pagination';
 import { InventoryTable } from '@/components/inventory/erp/inventory-table';
 import { InventorySearchToolbar } from '@/components/inventory/InventorySearchToolbar';
@@ -46,7 +45,6 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     isLoading: _isLoading = false,
   }) => {
     const {
-      selectedCount,
       hasData,
       canSelectAll,
       isAllSelected,
@@ -68,14 +66,6 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
           categoryOptions={categoryOptions}
           onSearch={onSearch}
           onFilter={onFilter}
-          onInbound={handleInbound}
-          onOutbound={handleOutbound}
-          onAdjust={() => handleAdjust()}
-        />
-
-        {/* 操作栏 */}
-        <InventoryListActions
-          selectedCount={selectedCount}
           onInbound={handleInbound}
           onOutbound={handleOutbound}
           onAdjust={() => handleAdjust()}
