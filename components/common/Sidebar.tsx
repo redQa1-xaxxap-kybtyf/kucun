@@ -7,6 +7,7 @@ import {
   ChevronRight,
   CreditCard,
   DollarSign,
+  Edit,
   FolderTree,
   HelpCircle,
   LayoutDashboard,
@@ -22,9 +23,9 @@ import {
   Users,
   Warehouse,
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -77,6 +78,12 @@ const navigationItems: NavigationItem[] = [
         title: '出库记录',
         href: '/inventory/outbound',
         icon: TrendingDown,
+      },
+      {
+        id: 'inventory-adjustments',
+        title: '调整记录',
+        href: '/inventory/adjustments',
+        icon: Edit,
       },
     ],
   },

@@ -54,7 +54,6 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
       handleAdjust,
       handleInbound,
       handleOutbound,
-      handleAdjustmentRecords,
       handlePrevPage,
       handleNextPage,
     } = useERPInventoryList(data, onPageChange);
@@ -70,7 +69,6 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
           onInbound={handleInbound}
           onOutbound={handleOutbound}
           onAdjust={() => handleAdjust()}
-          onAdjustmentRecords={handleAdjustmentRecords}
         />
 
         {/* 库存表格 */}

@@ -71,11 +71,6 @@ export function useERPInventoryList(
     router.push('/inventory/outbound');
   }, [router]);
 
-  // 调整记录处理函数
-  const handleAdjustmentRecords = React.useCallback(() => {
-    router.push('/inventory/adjustments');
-  }, [router]);
-
   // 分页处理函数
   const handlePrevPage = React.useCallback(() => {
     if (data.pagination && data.pagination.page > 1) {
@@ -107,7 +102,6 @@ export function useERPInventoryList(
     handleAdjust,
     handleInbound,
     handleOutbound,
-    handleAdjustmentRecords,
     handlePrevPage,
     handleNextPage,
   };

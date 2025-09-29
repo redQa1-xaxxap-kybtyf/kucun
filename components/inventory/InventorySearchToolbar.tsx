@@ -5,14 +5,7 @@
 
 'use client';
 
-import {
-  AlertTriangle,
-  Edit,
-  FileText,
-  Package,
-  Plus,
-  Search,
-} from 'lucide-react';
+import { AlertTriangle, Edit, Package, Plus, Search } from 'lucide-react';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -38,7 +31,6 @@ interface InventorySearchToolbarProps {
   onInbound: () => void;
   onOutbound: () => void;
   onAdjust: () => void;
-  onAdjustmentRecords: () => void;
   selectedCount?: number;
 }
 
@@ -56,7 +48,6 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
     onInbound,
     onOutbound,
     onAdjust,
-    onAdjustmentRecords,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     selectedCount = 0, // 保留参数但不使用
   }) => {
@@ -130,16 +121,6 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
             <Edit className="mr-1 h-3 w-3" />
             调整
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            className="h-7"
-            onClick={onAdjustmentRecords}
-          >
-            <FileText className="mr-1 h-3 w-3" />
-            调整记录
-          </Button>
-
           <div className="mx-2 h-4 w-px bg-border" />
 
           {/* 防抖搜索框 */}
