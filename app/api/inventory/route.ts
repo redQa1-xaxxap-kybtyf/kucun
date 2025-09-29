@@ -1,11 +1,15 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
+import { formatPaginatedResponse } from '@/lib/api/inventory-formatter';
+import {
+  getInventoryCount,
+  getOptimizedInventoryList,
+} from '@/lib/api/inventory-query-builder';
 import { authOptions } from '@/lib/auth';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { cacheConfig } from '@/lib/env';
-import { INVENTORY_THRESHOLDS } from '@/lib/types/inventory-status';
 import {
   inventoryAdjustSchema,
   inventoryQuerySchema,
@@ -57,182 +61,28 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const {
-      page,
-      limit,
-      search,
-      sortBy,
-      sortOrder,
-      productId,
-      batchNumber,
-      location,
-      categoryId,
-
-      lowStock,
-      hasStock,
-    } = validationResult.data;
-
-    // 构建查询条件
-    const where: Record<string, unknown> = {};
-
-    if (search) {
-      where.OR = [
-        { product: { code: { contains: search } } },
-        { product: { name: { contains: search } } },
-        { batchNumber: { contains: search } },
-        { location: { contains: search } },
-      ];
-    }
-
-    if (productId) {
-      where.productId = productId;
-    }
-
-    if (batchNumber) {
-      where.batchNumber = batchNumber;
-    }
-
-    if (location) {
-      where.location = location;
-    }
-
-    if (categoryId) {
-      where.product = {
-        ...((where.product as Record<string, unknown>) || {}),
-        categoryId,
-      };
-    }
-
-    // 处理库存筛选条件 - 避免条件冲突
-    if (lowStock && hasStock) {
-      // 同时筛选低库存和有库存：0 < 数量 <= 默认最小库存阈值
-      where.quantity = {
-        gt: 0,
-        lte: INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY,
-      };
-    } else if (lowStock) {
-      // 仅筛选低库存：数量 <= 默认最小库存阈值
-      where.quantity = { lte: INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY };
-    } else if (hasStock) {
-      // 仅筛选有库存：数量 > 0
-      where.quantity = { gt: 0 };
-    }
+    const queryParams = validationResult.data;
 
     // Redis 缓存键
-    const cacheKey = buildCacheKey('inventory:list', {
-      page,
-      limit,
-      search,
-      sortBy,
-      sortOrder,
-      productId,
-      batchNumber,
-      location,
-      categoryId,
-      lowStock,
-      hasStock,
-    });
+    const cacheKey = buildCacheKey('inventory:list', queryParams);
 
+    // 使用优化的查询构建器，解决N+1问题
     const cached = await getOrSetJSON(
       cacheKey,
       async () => {
+        // 并行查询库存记录和总数
         const [inventoryRecords, total] = await Promise.all([
-          prisma.inventory.findMany({
-            where,
-            select: {
-              id: true,
-              productId: true,
-              batchNumber: true,
-              quantity: true,
-              reservedQuantity: true,
-              location: true,
-              unitCost: true,
-              updatedAt: true,
-              product: {
-                select: {
-                  id: true,
-                  code: true,
-                  name: true,
-                  specification: true,
-                  unit: true,
-                  piecesPerUnit: true,
-                  status: true,
-                  categoryId: true,
-                  category: {
-                    select: {
-                      id: true,
-                      name: true,
-                      code: true,
-                    },
-                  },
-                },
-              },
-            },
-            orderBy: { [sortBy as string]: sortOrder },
-            skip: (page - 1) * limit,
-            take: limit,
-          }),
-          prisma.inventory.count({ where }),
+          getOptimizedInventoryList(queryParams),
+          getInventoryCount(queryParams),
         ]);
 
-        const totalPages = Math.ceil(total / limit);
-
-        const formattedInventory = inventoryRecords.map(record => {
-          // 优化规格数据处理 - 提取关键信息而不是完整JSON
-          const formattedSpecification = record.product?.specification;
-          let specificationSummary = null;
-
-          if (
-            formattedSpecification &&
-            formattedSpecification.startsWith('{')
-          ) {
-            try {
-              const parsed = JSON.parse(formattedSpecification);
-              // 提取尺寸作为主要显示信息
-              specificationSummary = parsed.size || '规格详情';
-              // 保留原始规格用于详情查看
-            } catch {
-              // JSON解析失败，使用原始字符串
-              specificationSummary =
-                formattedSpecification.length > 20
-                  ? `${formattedSpecification.slice(0, 20)}...`
-                  : formattedSpecification;
-            }
-          } else {
-            specificationSummary = formattedSpecification;
-          }
-
-          return {
-            id: record.id,
-            productId: record.productId,
-            batchNumber: record.batchNumber,
-            quantity: record.quantity,
-            reservedQuantity: record.reservedQuantity,
-            availableQuantity: record.quantity - record.reservedQuantity,
-            location: record.location,
-            unitCost: record.unitCost,
-            product: record.product
-              ? {
-                  ...record.product,
-                  // 使用处理后的规格摘要而不是完整JSON
-                  specification: specificationSummary,
-                  // 保留原始规格用于详情查看（如果需要）
-                  fullSpecification: record.product.specification,
-                }
-              : null,
-            updatedAt: record.updatedAt,
-          };
-        });
-
-        return {
-          data: formattedInventory,
-          pagination: {
-            page,
-            limit,
-            total,
-            totalPages,
-          },
-        } as const;
+        // 格式化响应数据
+        return formatPaginatedResponse(
+          inventoryRecords,
+          total,
+          queryParams.page,
+          queryParams.limit
+        );
       },
       cacheConfig.inventoryTtl // 使用配置的库存缓存TTL
     );
