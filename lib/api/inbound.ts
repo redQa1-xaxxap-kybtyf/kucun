@@ -53,6 +53,15 @@ export function useInboundRecords(params: InboundQueryParams = {}) {
       }
 
       const result = await response.json();
+
+      // 检查响应格式 - API直接返回数据而不是包装在success字段中
+      if (result.data && result.pagination) {
+        return {
+          data: result.data,
+          pagination: result.pagination,
+        };
+      }
+
       if (!result.success) {
         throw new Error(result.error || '获取入库记录失败');
       }
