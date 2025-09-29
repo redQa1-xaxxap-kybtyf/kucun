@@ -32,6 +32,49 @@ interface ProductTableProps {
   onDeleteProduct: (productId: string, productCode: string) => void;
 }
 
+// 单位映射：英文 -> 中文
+const UNIT_MAP: Record<string, string> = {
+  piece: '片',
+  box: '箱',
+  pallet: '托',
+  sqm: '平方米',
+  m2: '平方米',
+  kg: '千克',
+  ton: '吨',
+  sheet: '张',
+};
+
+// 获取中文单位
+function getChineseUnit(unit: string): string {
+  return UNIT_MAP[unit.toLowerCase()] || unit;
+}
+
+// 格式化规格字段，提取关键信息
+function formatSpecification(specification: string | null): string {
+  if (!specification) return '-';
+
+  // 如果是JSON字符串，尝试解析并提取尺寸信息
+  if (specification.startsWith('{') && specification.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(specification);
+      // 提取尺寸信息作为主要显示内容
+      if (parsed.size) {
+        return parsed.size;
+      }
+      // 如果没有尺寸，返回简化的规格信息
+      return '规格详情';
+    } catch {
+      // JSON解析失败，截断显示
+      return specification.length > 20
+        ? `${specification.slice(0, 20)}...`
+        : specification;
+    }
+  }
+
+  // 普通字符串，直接返回
+  return specification;
+}
+
 export function ProductTable({
   products,
   selectedProductIds,
@@ -99,9 +142,9 @@ export function ProductTable({
               <TableCell className="font-medium">{product.code}</TableCell>
               <TableCell>{product.name}</TableCell>
               <TableCell className="text-muted-foreground">
-                {product.specification || '-'}
+                {formatSpecification(product.specification)}
               </TableCell>
-              <TableCell>{product.unit}</TableCell>
+              <TableCell>{getChineseUnit(product.unit)}</TableCell>
               <TableCell>{getStatusBadge(product.status)}</TableCell>
               <TableCell>{product.category?.name || '-'}</TableCell>
               <TableCell className="text-right">
