@@ -177,25 +177,52 @@ export async function GET(request: NextRequest) {
 
         const totalPages = Math.ceil(total / limit);
 
-        const formattedInventory = inventoryRecords.map(record => ({
-          id: record.id,
-          productId: record.productId,
-          batchNumber: record.batchNumber,
-          quantity: record.quantity,
-          reservedQuantity: record.reservedQuantity,
-          availableQuantity: record.quantity - record.reservedQuantity,
-          location: record.location,
-          unitCost: record.unitCost,
-          product: record.product
-            ? {
-                ...record.product,
-                specifications: record.product.specification
-                  ? JSON.parse(record.product.specification as string)
-                  : null,
-              }
-            : null,
-          updatedAt: record.updatedAt,
-        }));
+        const formattedInventory = inventoryRecords.map(record => {
+          // 优化规格数据处理 - 提取关键信息而不是完整JSON
+          const formattedSpecification = record.product?.specification;
+          let specificationSummary = null;
+
+          if (
+            formattedSpecification &&
+            formattedSpecification.startsWith('{')
+          ) {
+            try {
+              const parsed = JSON.parse(formattedSpecification);
+              // 提取尺寸作为主要显示信息
+              specificationSummary = parsed.size || '规格详情';
+              // 保留原始规格用于详情查看
+            } catch {
+              // JSON解析失败，使用原始字符串
+              specificationSummary =
+                formattedSpecification.length > 20
+                  ? `${formattedSpecification.slice(0, 20)}...`
+                  : formattedSpecification;
+            }
+          } else {
+            specificationSummary = formattedSpecification;
+          }
+
+          return {
+            id: record.id,
+            productId: record.productId,
+            batchNumber: record.batchNumber,
+            quantity: record.quantity,
+            reservedQuantity: record.reservedQuantity,
+            availableQuantity: record.quantity - record.reservedQuantity,
+            location: record.location,
+            unitCost: record.unitCost,
+            product: record.product
+              ? {
+                  ...record.product,
+                  // 使用处理后的规格摘要而不是完整JSON
+                  specification: specificationSummary,
+                  // 保留原始规格用于详情查看（如果需要）
+                  fullSpecification: record.product.specification,
+                }
+              : null,
+            updatedAt: record.updatedAt,
+          };
+        });
 
         return {
           data: formattedInventory,

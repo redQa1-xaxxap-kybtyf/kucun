@@ -80,6 +80,33 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
       [item.quantity, item.reservedQuantity]
     );
 
+    // 格式化规格显示（限制11个字符，避免JSON字符串显示）
+    const formattedSpecification = React.useMemo(() => {
+      const spec = item.product?.specification;
+      if (!spec) return '-';
+
+      // 如果是JSON字符串，尝试解析并提取关键信息
+      if (spec.startsWith('{') && spec.endsWith('}')) {
+        try {
+          const parsed = JSON.parse(spec);
+          // 提取尺寸信息作为主要显示内容
+          if (parsed.size) {
+            return parsed.size.length > 11
+              ? `${parsed.size.slice(0, 11)}...`
+              : parsed.size;
+          }
+          // 如果没有尺寸，显示简化的规格信息
+          return '规格详情...';
+        } catch {
+          // JSON解析失败，截断显示
+          return spec.length > 11 ? `${spec.slice(0, 11)}...` : spec;
+        }
+      }
+
+      // 普通字符串，直接截断
+      return spec.length > 11 ? `${spec.slice(0, 11)}...` : spec;
+    }, [item.product?.specification]);
+
     const availableQuantity = React.useMemo(
       () => item.quantity - (item.reservedQuantity || 0),
       [item.quantity, item.reservedQuantity]
@@ -104,7 +131,7 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
         <TableCell className="font-medium">
           {item.product?.name || '-'}
         </TableCell>
-        <TableCell>{item.product?.specification || '-'}</TableCell>
+        <TableCell>{formattedSpecification}</TableCell>
         <TableCell className="font-mono">{item.batchNumber || '-'}</TableCell>
         <TableCell className="font-medium">{quantityDisplay}</TableCell>
         <TableCell>{item.reservedQuantity || 0}</TableCell>
