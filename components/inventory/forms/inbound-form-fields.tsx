@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import { type UseFormReturn } from 'react-hook-form';
 
 import {
@@ -142,7 +141,9 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
         name="weight"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium">重量(kg) *</FormLabel>
+            <FormLabel className="text-sm font-medium">
+              重量（千克） *
+            </FormLabel>
             <FormControl>
               <Input
                 type="number"
