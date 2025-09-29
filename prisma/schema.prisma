@@ -289,6 +289,8 @@ model Inventory {
   @@index([variantId], map: "idx_inventory_variant")
   @@index([quantity], map: "idx_inventory_quantity")
   @@index([batchNumber], map: "idx_inventory_batch")
+  @@index([location], map: "idx_inventory_location")
+  @@index([updatedAt], map: "idx_inventory_updated_at")
   @@map("inventory")
 }
 
