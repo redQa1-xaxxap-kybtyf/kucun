@@ -25,7 +25,7 @@ async function getProducts(params: ProductListQueryParams) {
   // 调用内部 API - 使用相对路径避免端口硬编码
   const baseUrl =
     process.env.NODE_ENV === 'development'
-      ? `http://localhost:${process.env.PORT || 3001}`
+      ? `http://localhost:${process.env.PORT || 3000}`
       : '';
   const response = await fetch(
     `${baseUrl}/api/products?${searchParams.toString()}`,

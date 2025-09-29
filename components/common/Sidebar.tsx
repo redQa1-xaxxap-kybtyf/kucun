@@ -7,6 +7,7 @@ import {
   ChevronRight,
   CreditCard,
   DollarSign,
+  FolderTree,
   HelpCircle,
   LayoutDashboard,
   Package,
@@ -21,9 +22,9 @@ import {
   Users,
   Warehouse,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -84,6 +85,12 @@ const navigationItems: NavigationItem[] = [
     title: '产品管理',
     href: '/products',
     icon: Package,
+  },
+  {
+    id: 'categories',
+    title: '分类管理',
+    href: '/categories',
+    icon: FolderTree,
   },
   {
     id: 'sales-orders',
