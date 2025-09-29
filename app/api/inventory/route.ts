@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
 
     // 直接传递字符串参数给验证器，让验证器自己转换
-    const queryParams = {
+    const rawQueryParams = {
       page: searchParams.get('page'),
       limit: searchParams.get('limit'),
       search: searchParams.get('search'),
@@ -49,7 +49,7 @@ export async function GET(request: NextRequest) {
     };
 
     // 验证查询参数 - 使用专门的库存查询验证规则
-    const validationResult = inventoryQuerySchema.safeParse(queryParams);
+    const validationResult = inventoryQuerySchema.safeParse(rawQueryParams);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -90,6 +90,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: true, data: cached });
   } catch (error) {
     console.error('获取库存列表错误:', error);
+    // 添加更详细的错误信息
+    if (error instanceof Error) {
+      console.error('错误堆栈:', error.stack);
+    }
 
     return NextResponse.json(
       {

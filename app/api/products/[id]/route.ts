@@ -1,4 +1,5 @@
-﻿import { getServerSession } from 'next-auth';
+﻿import { type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import {
   deleteProduct,
@@ -17,6 +18,10 @@ import { authOptions } from '@/lib/auth';
 import { env } from '@/lib/env';
 import { productUpdateSchema } from '@/lib/validations/product';
 
+type RouteContext = {
+  params: Promise<{ id: string }>;
+};
+
 async function ensureAuthorized() {
   if (env.NODE_ENV === 'development') {
     return true;
@@ -26,7 +31,7 @@ async function ensureAuthorized() {
   return Boolean(session?.user?.id);
 }
 
-async function resolveParams(context: { params?: Record<string, string> }) {
+async function resolveParams(context: RouteContext) {
   const params = await context.params;
   if (!params) {
     return null;
@@ -38,77 +43,83 @@ async function resolveParams(context: { params?: Record<string, string> }) {
 /**
  * 获取单个产品信息
  */
-export const GET = withErrorHandling(async (request: any, context: any) => {
-  if (!(await ensureAuthorized())) {
-    return unauthorizedResponse('请先登录');
-  }
+export const GET = withErrorHandling<{ id: string }>(
+  async (request: NextRequest, context: RouteContext) => {
+    if (!(await ensureAuthorized())) {
+      return unauthorizedResponse('请先登录');
+    }
 
-  const params = await resolveParams(context);
-  if (!params) {
-    return errorResponse('参数缺失', 400);
-  }
+    const params = await resolveParams(context);
+    if (!params) {
+      return errorResponse('参数缺失', 400);
+    }
 
-  const product = await getProductById(params.id);
-  if (!product) {
-    return notFoundResponse('产品不存在');
-  }
+    const product = await getProductById(params.id);
+    if (!product) {
+      return notFoundResponse('产品不存在');
+    }
 
-  return successResponse(product);
-});
+    return successResponse(product);
+  }
+);
 
 /**
  * 更新产品信息
  */
-export const PUT = withErrorHandling(async (request: any, context: any) => {
-  if (!(await ensureAuthorized())) {
-    return unauthorizedResponse('请先登录');
-  }
+export const PUT = withErrorHandling<{ id: string }>(
+  async (request: NextRequest, context: RouteContext) => {
+    if (!(await ensureAuthorized())) {
+      return unauthorizedResponse('请先登录');
+    }
 
-  const params = await resolveParams(context);
-  if (!params) {
-    return errorResponse('参数缺失', 400);
-  }
+    const params = await resolveParams(context);
+    if (!params) {
+      return errorResponse('参数缺失', 400);
+    }
 
-  const body = await request.json();
-  const validationResult = productUpdateSchema.safeParse(body);
-  if (!validationResult.success) {
-    return validationErrorResponse(
-      '产品数据格式不正确',
-      validationResult.error.errors
-    );
-  }
+    const body = await request.json();
+    const validationResult = productUpdateSchema.safeParse(body);
+    if (!validationResult.success) {
+      return validationErrorResponse(
+        '产品数据格式不正确',
+        validationResult.error.errors
+      );
+    }
 
-  try {
-    const product = await updateProduct(params.id, validationResult.data);
-    return successResponse(product, 200, '产品更新成功');
-  } catch (error) {
-    return errorResponse(
-      error instanceof Error ? error.message : '产品更新失败',
-      400
-    );
+    try {
+      const product = await updateProduct(params.id, validationResult.data);
+      return successResponse(product, 200, '产品更新成功');
+    } catch (error) {
+      return errorResponse(
+        error instanceof Error ? error.message : '产品更新失败',
+        400
+      );
+    }
   }
-});
+);
 
 /**
  * 删除产品
  */
-export const DELETE = withErrorHandling(async (request: any, context: any) => {
-  if (!(await ensureAuthorized())) {
-    return unauthorizedResponse('请先登录');
-  }
+export const DELETE = withErrorHandling<{ id: string }>(
+  async (request: NextRequest, context: RouteContext) => {
+    if (!(await ensureAuthorized())) {
+      return unauthorizedResponse('请先登录');
+    }
 
-  const params = await resolveParams(context);
-  if (!params) {
-    return errorResponse('参数缺失', 400);
-  }
+    const params = await resolveParams(context);
+    if (!params) {
+      return errorResponse('参数缺失', 400);
+    }
 
-  try {
-    const result = await deleteProduct(params.id);
-    return successResponse(result, 200, '产品删除成功');
-  } catch (error) {
-    return errorResponse(
-      error instanceof Error ? error.message : '产品删除失败',
-      400
-    );
+    try {
+      const result = await deleteProduct(params.id);
+      return successResponse(result, 200, '产品删除成功');
+    } catch (error) {
+      return errorResponse(
+        error instanceof Error ? error.message : '产品删除失败',
+        400
+      );
+    }
   }
-});
+);

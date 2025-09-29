@@ -34,7 +34,7 @@ export function OutboundRecordsFilters({
   // 将filters转换为FilterValues格式
   const filterValues: FilterValues = {
     search: filters.search,
-    type: filters.type === 'all' ? undefined : filters.type,
+    type: filters.type === '' ? undefined : filters.type,
     startDate: filters.startDate,
     endDate: filters.endDate,
   };

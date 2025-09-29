@@ -45,7 +45,7 @@ export async function GET(request: NextRequest) {
       endDate: searchParams.get('endDate') || undefined,
     };
 
-    const { page, limit, search, sortBy, sortOrder } = queryParams;
+    const { page = 1, limit = 20, search, sortBy, sortOrder } = queryParams;
     const offset = (page - 1) * limit;
 
     // 构建查询条件
@@ -88,25 +88,27 @@ export async function GET(request: NextRequest) {
 
     // 日期范围筛选
     if (queryParams.startDate || queryParams.endDate) {
-      where.createdAt = {};
+      const createdAtFilter: { gte?: Date; lte?: Date } = {};
       if (queryParams.startDate) {
-        where.createdAt.gte = new Date(queryParams.startDate);
+        createdAtFilter.gte = new Date(queryParams.startDate);
       }
       if (queryParams.endDate) {
-        where.createdAt.lte = new Date(queryParams.endDate);
+        createdAtFilter.lte = new Date(queryParams.endDate);
       }
+      where.createdAt = createdAtFilter;
     }
 
     // 排序配置
     const orderBy: Record<string, 'asc' | 'desc'> = {};
+    const finalSortOrder = sortOrder || 'desc'; // 默认降序
     if (sortBy === 'createdAt') {
-      orderBy.createdAt = sortOrder;
+      orderBy.createdAt = finalSortOrder;
     } else if (sortBy === 'adjustmentNumber') {
-      orderBy.adjustmentNumber = sortOrder;
+      orderBy.adjustmentNumber = finalSortOrder;
     } else if (sortBy === 'adjustQuantity') {
-      orderBy.adjustQuantity = sortOrder;
+      orderBy.adjustQuantity = finalSortOrder;
     } else if (sortBy === 'reason') {
-      orderBy.reason = sortOrder;
+      orderBy.reason = finalSortOrder;
     }
 
     // 查询数据

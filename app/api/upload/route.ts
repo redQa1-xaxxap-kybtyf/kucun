@@ -1,4 +1,4 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import sharp from 'sharp';
 import { z } from 'zod';
@@ -57,7 +57,11 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证文件类型
-    if (!SUPPORTED_IMAGE_TYPES.includes(file.type as any)) {
+    if (
+      !SUPPORTED_IMAGE_TYPES.includes(
+        file.type as (typeof SUPPORTED_IMAGE_TYPES)[number]
+      )
+    ) {
       return NextResponse.json(
         {
           success: false,

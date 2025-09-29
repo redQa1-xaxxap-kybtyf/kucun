@@ -45,7 +45,7 @@ function getChineseUnit(unit: string): string {
 }
 
 // 格式化规格字段，提取关键信息
-function formatSpecification(specification: string | null): string {
+function formatSpecification(specification: string | null | undefined): string {
   if (!specification) return '-';
 
   // 如果是JSON字符串，尝试解析并提取尺寸信息

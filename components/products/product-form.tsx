@@ -94,6 +94,7 @@ export function ProductForm({
               <ProductBasicInfoForm
                 control={form.control}
                 isLoading={isLoading}
+                isCreateMode={mode === 'create'}
               />
             </CardContent>
           </Card>

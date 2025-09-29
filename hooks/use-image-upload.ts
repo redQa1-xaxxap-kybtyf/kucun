@@ -48,11 +48,15 @@ export function useImageUpload({
 
     if (!response.ok) {
       const errorData = await response.json();
-      throw new Error(errorData.message || '上传失败');
+      throw new Error(errorData.error || errorData.message || '上传失败');
     }
 
     const data = await response.json();
-    return data.url;
+    // API返回结构: { success: true, data: { url: "..." }, message: "..." }
+    if (!data.success || !data.data?.url) {
+      throw new Error(data.error || '上传失败：未返回图片URL');
+    }
+    return data.data.url;
   };
 
   const handleFileUpload = async (

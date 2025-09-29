@@ -167,6 +167,9 @@ model Product {
   @@index([status])
   @@index([status, categoryId], map: "idx_products_status_category")
   @@index([createdAt])
+  // 性能优化：添加复合索引支持常见查询模式
+  @@index([status, createdAt], map: "idx_products_status_created")
+  @@index([status, name], map: "idx_products_status_name")
   @@map("products")
 }
 

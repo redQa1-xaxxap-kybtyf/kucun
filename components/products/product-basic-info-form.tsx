@@ -36,6 +36,7 @@ type ProductFormControl = Control<
 interface ProductBasicInfoFormProps {
   control: ProductFormControl;
   isLoading: boolean;
+  isCreateMode?: boolean;
 }
 
 function ProductCodeInput({
@@ -166,9 +167,11 @@ function ProductCategorySelect({
 function ProductUnitSelect({
   control,
   disabled,
+  isCreateMode = false,
 }: {
   control: ProductFormControl;
   disabled: boolean;
+  isCreateMode?: boolean;
 }) {
   return (
     <FormField
@@ -180,7 +183,7 @@ function ProductUnitSelect({
           <Select
             onValueChange={field.onChange}
             value={field.value || undefined}
-            disabled={disabled}
+            disabled={disabled || isCreateMode}
             name={field.name}
           >
             <FormControl>
@@ -198,7 +201,11 @@ function ProductUnitSelect({
           </Select>
           {/* 添加隐藏的 input 来确保表单数据包含此字段 */}
           <input type="hidden" name={field.name} value={field.value || ''} />
-          <FormDescription>产品的销售计量单位</FormDescription>
+          <FormDescription>
+            {isCreateMode
+              ? '系统默认以"件"为单位。入库时可选择按"件"或"片"入库，系统会自动换算。'
+              : '产品的销售计量单位'}
+          </FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -277,13 +284,18 @@ function ProductStatusSelect({
 export function ProductBasicInfoForm({
   control,
   isLoading,
+  isCreateMode = false,
 }: ProductBasicInfoFormProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       <ProductCodeInput control={control} disabled={isLoading} />
       <ProductNameInput control={control} disabled={isLoading} />
       <ProductCategorySelect control={control} disabled={isLoading} />
-      <ProductUnitSelect control={control} disabled={isLoading} />
+      <ProductUnitSelect
+        control={control}
+        disabled={isLoading}
+        isCreateMode={isCreateMode}
+      />
       <ProductSpecificationInput control={control} disabled={isLoading} />
       <ProductStatusSelect control={control} disabled={isLoading} />
     </div>

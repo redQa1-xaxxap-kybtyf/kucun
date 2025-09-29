@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
 import { authOptions } from '@/lib/auth';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
+import { getBatchCachedInventorySummary } from '@/lib/cache/inventory-cache';
 import { invalidateProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
 import { env, paginationConfig, productConfig } from '@/lib/env';
@@ -44,7 +45,8 @@ export async function GET(request: NextRequest) {
     const requestLimit = parseInt(
       searchParams.get('limit') || paginationConfig.defaultPageSize.toString()
     );
-    const shouldLimitAggregation = requestLimit > 50; // 超过50条记录时限制聚合查询
+    // 降低阈值以减少数据库负载，统计数据通常只在详情页需要
+    const shouldLimitAggregation = requestLimit > 20; // 超过20条记录时限制聚合查询
 
     const finalIncludeStatistics = includeStatistics && !shouldLimitAggregation;
 
@@ -83,11 +85,13 @@ export async function GET(request: NextRequest) {
     // 构建查询条件
     const where: Record<string, unknown> = {};
 
+    // 搜索条件 - 优化为使用索引的查询
+    // code使用startsWith可以利用索引，name使用contains有索引支持
+    // 移除specification搜索以避免全表扫描
     if (search) {
       where.OR = [
-        { code: { contains: search } },
-        { name: { contains: search } },
-        { specification: { contains: search } },
+        { code: { startsWith: search } }, // 可以使用索引的前缀匹配
+        { name: { contains: search } }, // name字段有索引
       ];
     }
 
@@ -119,6 +123,9 @@ export async function GET(request: NextRequest) {
       includeStatistics: finalIncludeStatistics,
       uncategorized: filterUncategorized,
     });
+
+    // 性能监控：记录查询开始时间
+    const queryStartTime = Date.now();
 
     // 命中缓存则直接返回
     const cached = await getOrSetJSON(
@@ -173,10 +180,7 @@ export async function GET(request: NextRequest) {
         let inventoryMap = new Map<string, typeof DEFAULT_INVENTORY>();
         if (includeInventory && products.length > 0) {
           const productIds = products.map(product => product.id as string);
-          // 使用缓存优化的批量库存查询
-          const { getBatchCachedInventorySummary } = await import(
-            '@/lib/cache/inventory-cache'
-          );
+          // 使用缓存优化的批量库存查询（已在顶部导入，避免动态导入延迟）
           inventoryMap = await getBatchCachedInventorySummary(productIds);
         }
 
@@ -247,6 +251,19 @@ export async function GET(request: NextRequest) {
         ? productConfig.cacheWithInventoryTtl
         : productConfig.cacheWithoutInventoryTtl
     );
+
+    // 性能监控：记录慢查询
+    const queryDuration = Date.now() - queryStartTime;
+    if (queryDuration > 1000) {
+      console.warn(`[性能警告] 产品列表查询耗时过长: ${queryDuration}ms`, {
+        cacheKey,
+        includeInventory,
+        includeStatistics: finalIncludeStatistics,
+        search,
+        page,
+        limit,
+      });
+    }
 
     return createDateTimeResponse(cached);
   } catch (error) {

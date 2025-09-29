@@ -95,9 +95,11 @@ export function ProductCombobox({
   // 处理命令项选择
   const handleCommandSelect = React.useCallback(
     (commandValue: string) => {
-      // 从 value 中提取产品ID（格式：CODE-ID）
-      const productId = commandValue.split('-').slice(1).join('-');
-      const selectedProductItem = products.find(p => p.value === productId);
+      // commandValue 格式：CODE-PRODUCTID
+      // 由于 CODE 可能包含连字符，我们需要找到匹配的产品
+      const selectedProductItem = products.find(
+        p => commandValue === `${p.code}-${p.value}`
+      );
 
       if (selectedProductItem) {
         handleSelect(selectedProductItem);

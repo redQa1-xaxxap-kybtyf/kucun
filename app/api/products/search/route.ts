@@ -102,32 +102,6 @@ async function searchProducts(search: string, limit: number) {
   }));
 }
 
-// 格式化规格字段，提取关键信息
-function formatSpecification(specification: string | null): string | null {
-  if (!specification) return null;
-
-  // 如果是JSON字符串，尝试解析并提取尺寸信息
-  if (specification.startsWith('{') && specification.endsWith('}')) {
-    try {
-      const parsed = JSON.parse(specification);
-      // 提取尺寸信息作为主要显示内容
-      if (parsed.size) {
-        return parsed.size;
-      }
-      // 如果没有尺寸，返回简化的规格信息
-      return '规格详情';
-    } catch {
-      // JSON解析失败，截断显示
-      return specification.length > 20
-        ? `${specification.slice(0, 20)}...`
-        : specification;
-    }
-  }
-
-  // 普通字符串，直接返回
-  return specification;
-}
-
 // 转换产品数据为选项格式
 function transformToOptions(
   products: Array<{
@@ -140,18 +114,15 @@ function transformToOptions(
     currentStock: number;
   }>
 ): ProductOption[] {
-  return products.map(product => {
-    const formattedSpec = formatSpecification(product.specification);
-    return {
-      value: product.id,
-      label: product.name,
-      code: product.code,
-      specification: formattedSpec,
-      unit: product.unit,
-      piecesPerUnit: product.piecesPerUnit,
-      currentStock: product.currentStock,
-    };
-  });
+  return products.map(product => ({
+    value: product.id,
+    label: product.name,
+    code: product.code,
+    specification: product.specification ?? undefined,
+    unit: product.unit,
+    piecesPerUnit: product.piecesPerUnit,
+    currentStock: product.currentStock,
+  }));
 }
 
 // GET /api/products/search - 搜索产品
