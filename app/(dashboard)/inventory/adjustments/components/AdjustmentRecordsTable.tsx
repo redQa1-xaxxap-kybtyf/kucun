@@ -49,9 +49,31 @@ export function AdjustmentRecordsTable({
     }
   };
 
-  // 格式化产品规格显示（限制11个字符）
+  // 格式化产品规格显示（限制11个字符，避免JSON字符串显示）
   const formatSpecification = (specification?: string) => {
     if (!specification) return null;
+
+    // 如果是JSON字符串，尝试解析并提取关键信息
+    if (specification.startsWith('{') && specification.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(specification);
+        // 提取尺寸信息作为主要显示内容
+        if (parsed.size) {
+          return parsed.size.length > 11
+            ? `${parsed.size.slice(0, 11)}...`
+            : parsed.size;
+        }
+        // 如果没有尺寸，显示简化的规格信息
+        return '规格详情...';
+      } catch {
+        // JSON解析失败，截断显示
+        return specification.length > 11
+          ? `${specification.slice(0, 11)}...`
+          : specification;
+      }
+    }
+
+    // 普通字符串，直接截断
     return specification.length > 11
       ? `${specification.slice(0, 11)}...`
       : specification;

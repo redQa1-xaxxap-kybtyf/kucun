@@ -95,9 +95,32 @@ export function InventoryAdjustTable({
                 {record.product?.specification && (
                   <span className="text-sm text-muted-foreground">
                     规格:{' '}
-                    {record.product.specification.length > 11
-                      ? `${record.product.specification.slice(0, 11)}...`
-                      : record.product.specification}
+                    {(() => {
+                      const spec = record.product.specification;
+                      // 如果是JSON字符串，尝试解析并提取关键信息
+                      if (spec.startsWith('{') && spec.endsWith('}')) {
+                        try {
+                          const parsed = JSON.parse(spec);
+                          // 提取尺寸信息作为主要显示内容
+                          if (parsed.size) {
+                            return parsed.size.length > 11
+                              ? `${parsed.size.slice(0, 11)}...`
+                              : parsed.size;
+                          }
+                          // 如果没有尺寸，显示简化的规格信息
+                          return '规格详情...';
+                        } catch {
+                          // JSON解析失败，截断显示
+                          return spec.length > 11
+                            ? `${spec.slice(0, 11)}...`
+                            : spec;
+                        }
+                      }
+                      // 普通字符串，直接截断
+                      return spec.length > 11
+                        ? `${spec.slice(0, 11)}...`
+                        : spec;
+                    })()}
                   </span>
                 )}
                 {record.variant?.sku && (

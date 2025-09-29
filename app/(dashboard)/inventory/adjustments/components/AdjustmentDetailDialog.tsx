@@ -120,7 +120,26 @@ export function AdjustmentDetailDialog({
                     产品规格
                   </Label>
                   <p className="mt-1 text-sm">
-                    {adjustment.product.specification}
+                    {(() => {
+                      const spec = adjustment.product.specification;
+                      // 如果是JSON字符串，尝试解析并提取关键信息
+                      if (spec.startsWith('{') && spec.endsWith('}')) {
+                        try {
+                          const parsed = JSON.parse(spec);
+                          // 提取尺寸信息作为主要显示内容
+                          if (parsed.size) {
+                            return parsed.size;
+                          }
+                          // 如果没有尺寸，显示简化的规格信息
+                          return '规格详情...';
+                        } catch {
+                          // JSON解析失败，显示原始字符串
+                          return spec;
+                        }
+                      }
+                      // 普通字符串，直接显示
+                      return spec;
+                    })()}
                   </p>
                 </div>
               )}
