@@ -115,7 +115,13 @@ export async function PUT(
     // 检查记录是否存在
     const existingRecord = await prisma.inboundRecord.findUnique({
       where: { id: recordId },
-      select: { id: true, quantity: true, productId: true },
+      select: {
+        id: true,
+        quantity: true,
+        productId: true,
+        variantId: true,
+        batchNumber: true,
+      },
     });
 
     if (!existingRecord) {
@@ -174,12 +180,11 @@ export async function PUT(
 
       await prisma.inventory.upsert({
         where: {
-          productId_variantId_colorCode_productionDate: {
+          productId_variantId_batchNumber: {
             productId: existingRecord.productId,
-            variantId: null,
-            colorCode: null,
-            productionDate: null,
-          },
+            variantId: existingRecord.variantId,
+            batchNumber: existingRecord.batchNumber,
+          } as any,
         },
         update: {
           quantity: {
@@ -188,6 +193,8 @@ export async function PUT(
         },
         create: {
           productId: existingRecord.productId,
+          variantId: existingRecord.variantId,
+          batchNumber: existingRecord.batchNumber,
           quantity: Math.max(0, quantityDiff),
         },
       });
@@ -261,9 +268,8 @@ export async function DELETE(
     await prisma.inventory.updateMany({
       where: {
         productId: record.productId,
-        variantId: null,
-        colorCode: null,
-        productionDate: null,
+        variantId: undefined,
+        batchNumber: undefined,
       },
       data: {
         quantity: {

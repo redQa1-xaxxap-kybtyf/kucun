@@ -241,7 +241,7 @@ export function ERPSalesOrderForm({
   });
 
   const { data: productsData, isLoading: _productsLoading } = useQuery({
-    queryKey: productQueryKeys.list(),
+    queryKey: productQueryKeys.list({}),
     queryFn: () => getProducts(),
   });
 
@@ -392,7 +392,7 @@ export function ERPSalesOrderForm({
           : undefined,
     };
 
-    createMutation.mutate(processedData);
+    createMutation.mutate(processedData as any);
   };
 
   return (
@@ -1294,9 +1294,9 @@ export function ERPSalesOrderForm({
           {fields.length > 0 && (
             <InventoryChecker
               items={fields.map(item => ({
-                productId: item.productId,
+                productId: item.productId || '',
                 quantity: item.quantity,
-                batchNumber: item.batchNumber,
+                batchNumber: (item as any).batchNumber || '',
               }))}
               products={productsData?.data || []}
               onInventoryCheck={results => {

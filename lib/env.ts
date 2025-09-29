@@ -674,6 +674,10 @@ export const inventoryConfig = {
   averageDailySales: env.INVENTORY_AVERAGE_DAILY_SALES,
   alertRefreshInterval: env.INVENTORY_ALERT_REFRESH_INTERVAL,
   alertLimit: env.INVENTORY_ALERT_LIMIT,
+
+  // 兼容性别名
+  lowStockThreshold: env.INVENTORY_DEFAULT_MIN_QUANTITY,
+  criticalStockThreshold: env.INVENTORY_CRITICAL_MIN_QUANTITY,
 } as const;
 
 /**

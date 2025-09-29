@@ -80,13 +80,14 @@ model Customer {
 
 // 供应商表 - 供应商信息管理
 model Supplier {
-  id        String   @id @default(uuid())
-  name      String
-  phone     String?
-  address   String?
-  status    String   @default("active") // active, inactive
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id           String   @id @default(uuid())
+  name         String
+  supplierCode String?  @unique @map("supplier_code") // 供应商编码
+  phone        String?
+  address      String?
+  status       String   @default("active") // active, inactive
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // 关联关系
   salesOrders               SalesOrder[]
@@ -97,6 +98,7 @@ model Supplier {
   @@index([name])
   @@index([phone])
   @@index([status])
+  @@index([supplierCode], map: "idx_suppliers_code")
   @@map("suppliers")
 }
 
@@ -105,6 +107,7 @@ model Category {
   id          String   @id @default(uuid())
   name        String
   code        String   @unique
+  description String?  // 分类描述
   parentId    String?  @map("parent_id")
   sortOrder   Int      @default(0) @map("sort_order")
   status      String   @default("active") // active, inactive

@@ -189,8 +189,8 @@ export async function GET(request: NextRequest) {
           product: record.product
             ? {
                 ...record.product,
-                specifications: record.product.specifications
-                  ? JSON.parse(record.product.specifications as string)
+                specifications: record.product.specification
+                  ? JSON.parse(record.product.specification as string)
                   : null,
               }
             : null,

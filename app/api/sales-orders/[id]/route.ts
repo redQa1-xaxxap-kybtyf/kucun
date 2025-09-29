@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma, withTransaction } from '@/lib/db';
+import { salesOrderUpdateSchema } from '@/lib/validations/sales-order';
 
 // 获取单个销售订单信息
 export async function GET(
@@ -103,27 +104,16 @@ export async function GET(
       remarks: salesOrder.remarks,
       customer: salesOrder.customer,
       user: salesOrder.user,
-      items: salesOrder.items.map(
-        (item: {
-          id: string;
-          productId: string;
-          colorCode: string;
-          productionDate: Date;
-          quantity: number;
-          unitPrice: number;
-          subtotal: number;
-          product: unknown;
-        }) => ({
-          id: item.id,
-          productId: item.productId,
-          colorCode: item.colorCode,
-          productionDate: item.productionDate,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          subtotal: item.subtotal,
-          product: item.product,
-        })
-      ),
+      items: salesOrder.items.map((item: any) => ({
+        id: item.id,
+        productId: item.productId,
+        colorCode: item.colorCode,
+        productionDate: item.productionDate,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        subtotal: item.subtotal,
+        product: item.product,
+      })),
       createdAt: salesOrder.createdAt,
       updatedAt: salesOrder.updatedAt,
     };
@@ -253,9 +243,9 @@ export async function PUT(
           // 修复：使用正确的字段查找库存记录
           const inventory = await tx.inventory.findFirst({
             where: {
-              productId: item.productId,
-              variantId: item.variantId || null,
-              batchNumber: item.batchNumber || null,
+              productId: item.productId || undefined,
+              variantId: (item as any).variantId || null,
+              batchNumber: (item as any).batchNumber || null,
             },
           });
 
@@ -265,7 +255,7 @@ export async function PUT(
               inventory.quantity - inventory.reservedQuantity;
             if (availableQuantity < item.quantity) {
               throw new Error(
-                `产品 ${item.product.name} (色号: ${item.colorCode || '无'}) 库存不足`
+                `产品 ${item.product?.name || '未知产品'} (色号: ${item.colorCode || '无'}) 库存不足`
               );
             }
 
@@ -286,7 +276,7 @@ export async function PUT(
             });
           } else {
             throw new Error(
-              `产品 ${item.product.name} (变体: ${item.variantId || '无'}, 批次: ${item.batchNumber || '无'}) 库存记录不存在`
+              `产品 ${item.product?.name || '未知产品'} (变体: ${(item as any).variantId || '无'}, 批次: ${(item as any).batchNumber || '无'}) 库存记录不存在`
             );
           }
         }
@@ -299,7 +289,7 @@ export async function PUT(
         '@/lib/cache/inventory-cache'
       );
       for (const item of existingOrder.items) {
-        await invalidateInventoryCache(item.productId);
+        await invalidateInventoryCache(item.productId || undefined);
       }
     } else if (shouldReleaseReservedInventory) {
       // 订单取消时释放预留库存
@@ -317,9 +307,9 @@ export async function PUT(
         for (const item of existingOrder.items) {
           const inventory = await tx.inventory.findFirst({
             where: {
-              productId: item.productId,
-              variantId: item.variantId || null,
-              batchNumber: item.batchNumber || null,
+              productId: item.productId || undefined,
+              variantId: (item as any).variantId || null,
+              batchNumber: (item as any).batchNumber || null,
             },
           });
 
@@ -347,7 +337,7 @@ export async function PUT(
         '@/lib/cache/inventory-cache'
       );
       for (const item of existingOrder.items) {
-        await invalidateInventoryCache(item.productId);
+        await invalidateInventoryCache(item.productId || undefined);
       }
     } else {
       // 普通状态更新，不涉及库存
@@ -367,7 +357,7 @@ export async function PUT(
           status === 'confirmed' &&
           existingOrder.orderType === 'TRANSFER' &&
           existingOrder.supplierId &&
-          existingOrder.costAmount > 0
+          (existingOrder.costAmount || 0) > 0
         ) {
           // 检查是否已经存在应付款记录
           const existingPayable = await tx.payableRecord.findFirst({
@@ -395,13 +385,13 @@ export async function PUT(
                 sourceType: 'sales_order',
                 sourceId: existingOrder.id,
                 sourceNumber: existingOrder.orderNumber,
-                payableAmount: existingOrder.costAmount,
-                remainingAmount: existingOrder.costAmount,
+                payableAmount: existingOrder.costAmount || 0,
+                remainingAmount: existingOrder.costAmount || 0,
                 dueDate,
                 status: 'pending',
                 paymentTerms: '30天',
                 description: `调货销售订单 ${existingOrder.orderNumber} 确认后自动生成应付款`,
-                remarks: `关联销售订单：${existingOrder.orderNumber}，成本金额：¥${existingOrder.costAmount.toFixed(2)}`,
+                remarks: `关联销售订单：${existingOrder.orderNumber}，成本金额：¥${(existingOrder.costAmount || 0).toFixed(2)}`,
               },
             });
           }

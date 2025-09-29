@@ -115,7 +115,10 @@ export async function GET(_request: NextRequest) {
         WHERE so.status IN ('confirmed', 'shipped', 'completed')
         AND so.created_at < datetime('now', '-30 days')
         AND (so.total_amount - COALESCE(pr.paid_amount, 0)) > 0
-      `.then((result: any[]) => Number(result[0]?.count || 0)),
+      `.then((result: unknown) => {
+        const typedResult = result as any[];
+        return Number(typedResult[0]?.count || 0);
+      }),
     ]);
 
     const financeOverview = {
@@ -216,7 +219,7 @@ export async function POST(request: NextRequest) {
     });
 
     // 构建响应数据
-    const statisticsData = {
+    const statisticsData: any = {
       period: {
         startDate,
         endDate,

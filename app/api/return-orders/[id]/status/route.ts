@@ -153,7 +153,7 @@ export async function PATCH(
                 select: {
                   id: true,
                   name: true,
-                  sku: true,
+                  code: true,
                 },
               },
             },

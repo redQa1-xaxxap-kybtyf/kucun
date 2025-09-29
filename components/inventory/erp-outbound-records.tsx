@@ -59,10 +59,10 @@ export function ERPOutboundRecords({ onCreateNew }: ERPOutboundRecordsProps) {
   // 获取出库记录数据
   const { data, isLoading } = useQuery({
     queryKey: ['outbound-records', filters],
-    queryFn: async () => 
+    queryFn: async () =>
       // 待办：实现真实的出库记录API
       // 目前返回空数组，等待后端API实现
-       ({
+      ({
         data: [],
         pagination: {
           page: 1,
@@ -70,8 +70,7 @@ export function ERPOutboundRecords({ onCreateNew }: ERPOutboundRecordsProps) {
           total: 0,
           totalPages: 1,
         },
-      })
-    ,
+      }),
   });
 
   const outboundRecords = data?.data || [];
@@ -234,52 +233,63 @@ export function ERPOutboundRecords({ onCreateNew }: ERPOutboundRecordsProps) {
                   </TableCell>
                 </TableRow>
               ) : (
-                outboundRecords.map(record => (
-                  <TableRow key={record.id} className="h-10">
-                    <TableCell className="px-2 py-1">
-                      <div className="flex items-center gap-2">
-                        <Package className="h-3 w-3 text-muted-foreground" />
-                        <div>
-                          <div className="text-xs font-medium">
-                            {record.product?.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            编码: {record.product?.code}
+                outboundRecords.map(record => {
+                  const outboundRecord = record as any; // 临时类型断言，等待真实API实现
+                  return (
+                    <TableRow key={outboundRecord.id} className="h-10">
+                      <TableCell className="px-2 py-1">
+                        <div className="flex items-center gap-2">
+                          <Package className="h-3 w-3 text-muted-foreground" />
+                          <div>
+                            <div className="text-xs font-medium">
+                              {outboundRecord.product?.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground">
+                              编码: {outboundRecord.product?.code}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-2 py-1">
-                      <Badge
-                        variant={OUTBOUND_TYPE_VARIANTS[record.type]}
-                        className="text-xs"
-                      >
-                        {OUTBOUND_TYPE_LABELS[record.type]}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-2 py-1 text-xs font-medium">
-                      -{record.quantity}
-                      {record.product?.unit}
-                    </TableCell>
-                    <TableCell className="px-2 py-1">
-                      <div className="flex items-center gap-1">
-                        <User className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs">{record.user?.name}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-2 py-1">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs">
-                          {formatDate(record.createdAt)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-2 py-1 text-xs">
-                      {record.remarks || '-'}
-                    </TableCell>
-                  </TableRow>
-                ))
+                      </TableCell>
+                      <TableCell className="px-2 py-1">
+                        <Badge
+                          variant={
+                            OUTBOUND_TYPE_VARIANTS[
+                              outboundRecord.type as keyof typeof OUTBOUND_TYPE_VARIANTS
+                            ] || 'default'
+                          }
+                          className="text-xs"
+                        >
+                          {OUTBOUND_TYPE_LABELS[
+                            outboundRecord.type as keyof typeof OUTBOUND_TYPE_LABELS
+                          ] || '未知'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="px-2 py-1 text-xs font-medium">
+                        -{outboundRecord.quantity}
+                        {outboundRecord.product?.unit}
+                      </TableCell>
+                      <TableCell className="px-2 py-1">
+                        <div className="flex items-center gap-1">
+                          <User className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs">
+                            {outboundRecord.user?.name}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-2 py-1">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3 text-muted-foreground" />
+                          <span className="text-xs">
+                            {formatDate(outboundRecord.createdAt)}
+                          </span>
+                        </div>
+                      </TableCell>
+                      <TableCell className="px-2 py-1 text-xs">
+                        {outboundRecord.remarks || '-'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
               )}
             </TableBody>
           </Table>

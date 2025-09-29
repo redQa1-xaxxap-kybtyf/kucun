@@ -102,7 +102,7 @@ export function VariantInventorySummary({
   }
 
   const { variant, inventory, breakdown } =
-    summary as VariantInventorySummaryData;
+    summary as unknown as VariantInventorySummaryData;
   const stockPercentage =
     inventory.totalQuantity > 0
       ? (inventory.availableQuantity / inventory.totalQuantity) * 100

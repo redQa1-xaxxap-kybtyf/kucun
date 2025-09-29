@@ -18,7 +18,9 @@ import type {
   SettingsApiResponse,
   SystemLog,
   SystemLogFilters,
+  SystemLogLevel,
   SystemLogListResponse,
+  SystemLogType,
 } from '@/lib/types/settings';
 
 /**

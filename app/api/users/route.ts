@@ -111,7 +111,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = userValidations.create.safeParse(body);
+    const validationResult = userValidations.register.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -123,15 +123,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, name, password, role } = validationResult.data;
+    const { email, name, password, username } = validationResult.data;
 
     // 创建用户
     const user = await createUser({
       email,
-      username: email, // 使用email作为默认username
+      username,
       name,
       password,
-      role,
     });
 
     return NextResponse.json({

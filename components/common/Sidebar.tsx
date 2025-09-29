@@ -32,6 +32,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { useNavigationBadges } from '@/hooks/use-navigation-badges';
 import type { NavigationItem, SidebarState } from '@/lib/types/layout';
+import type { UserRole } from '@/lib/types/user';
 import { cn } from '@/lib/utils';
 import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
@@ -235,20 +236,20 @@ export function Sidebar({ state, className }: SidebarProps) {
     if (!session?.user?.role) return [];
 
     const filteredItems = getAccessibleNavItems(
-      navigationItems,
-      session.user.role
+      navigationItems as Array<{ requiredRoles?: UserRole[] }>,
+      session.user.role as UserRole
     );
-    return addBadgesToNavItems(filteredItems);
+    return addBadgesToNavItems(filteredItems as NavigationItem[]);
   }, [session?.user?.role, addBadgesToNavItems]);
 
   const accessibleBottomNavItems = React.useMemo(() => {
     if (!session?.user?.role) return [];
 
     const filteredItems = getAccessibleNavItems(
-      bottomNavigationItems,
-      session.user.role
+      bottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
+      session.user.role as UserRole
     );
-    return addBadgesToNavItems(filteredItems);
+    return addBadgesToNavItems(filteredItems as NavigationItem[]);
   }, [session?.user?.role, addBadgesToNavItems]);
 
   // 键盘导航处理

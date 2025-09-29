@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 
@@ -64,8 +65,8 @@ export async function GET(request: NextRequest) {
     const transformedSuppliers: Supplier[] = suppliers.map(supplier => ({
       id: supplier.id,
       name: supplier.name,
-      phone: supplier.phone,
-      address: supplier.address,
+      phone: supplier.phone || undefined,
+      address: supplier.address || undefined,
       status: supplier.status as 'active' | 'inactive',
       createdAt: supplier.createdAt.toISOString(),
       updatedAt: supplier.updatedAt.toISOString(),
@@ -137,8 +138,8 @@ export async function POST(request: NextRequest) {
     const transformedSupplier: Supplier = {
       id: supplier.id,
       name: supplier.name,
-      phone: supplier.phone,
-      address: supplier.address,
+      phone: supplier.phone || undefined,
+      address: supplier.address || undefined,
       status: supplier.status as 'active' | 'inactive',
       createdAt: supplier.createdAt.toISOString(),
       updatedAt: supplier.updatedAt.toISOString(),

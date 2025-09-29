@@ -20,7 +20,10 @@ import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 export async function getCachedInventory(
   params: InventoryQueryParams
 ): Promise<PaginatedResponse<Inventory> | null> {
-  const cacheKey = buildCacheKey('inventory:list', params);
+  const cacheKey = buildCacheKey(
+    'inventory:list',
+    params as Record<string, unknown>
+  );
   return getOrSetJSON(cacheKey, null);
 }
 
@@ -31,7 +34,10 @@ export async function setCachedInventory(
   params: InventoryQueryParams,
   data: PaginatedResponse<Inventory>
 ): Promise<void> {
-  const cacheKey = buildCacheKey('inventory:list', params);
+  const cacheKey = buildCacheKey(
+    'inventory:list',
+    params as Record<string, unknown>
+  );
   await getOrSetJSON(
     cacheKey,
     () => Promise.resolve(data),

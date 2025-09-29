@@ -154,7 +154,6 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
     const clientIp =
       request.headers.get('x-forwarded-for') ||
       request.headers.get('x-real-ip') ||
-      request.ip ||
       '127.0.0.1';
 
     // 存储验证码会话到内存

@@ -4,7 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import {
-  paymentRecordCreateSchema,
+  createPaymentRecordSchema,
   paymentRecordQuerySchema,
 } from '@/lib/validations/payment';
 
@@ -55,7 +55,6 @@ export async function GET(request: NextRequest) {
       status,
       paymentMethod,
       customerId,
-      salesOrderId,
       startDate,
       endDate,
     } = queryResult.data;
@@ -85,18 +84,15 @@ export async function GET(request: NextRequest) {
       where.customerId = customerId;
     }
 
-    if (salesOrderId) {
-      where.salesOrderId = salesOrderId;
-    }
-
     if (startDate || endDate) {
-      where.paymentDate = {};
+      const paymentDateFilter: any = {};
       if (startDate) {
-        where.paymentDate.gte = new Date(startDate);
+        paymentDateFilter.gte = new Date(startDate);
       }
       if (endDate) {
-        where.paymentDate.lte = new Date(endDate);
+        paymentDateFilter.lte = new Date(endDate);
       }
+      where.paymentDate = paymentDateFilter;
     }
 
     // 查询数据
@@ -172,7 +168,7 @@ export async function POST(request: NextRequest) {
 
     // 解析请求体
     const body = await request.json();
-    const validationResult = paymentRecordCreateSchema.safeParse(body);
+    const validationResult = createPaymentRecordSchema.safeParse(body);
 
     if (!validationResult.success) {
       return NextResponse.json(

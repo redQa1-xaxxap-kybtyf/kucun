@@ -47,7 +47,7 @@ interface FactoryShipmentOrderListProps {
 }
 
 // 模拟API调用 - 后续替换为真实API
-const fetchFactoryShipmentOrders = async () =>
+const fetchFactoryShipmentOrders = async (_params?: any) =>
   // TODO: 实现真实API调用
   ({
     orders: [],
@@ -238,51 +238,64 @@ export function FactoryShipmentOrderList({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.map(order => (
-                    <TableRow key={order.id}>
-                      <TableCell className="font-medium">
-                        {order.orderNumber}
-                      </TableCell>
-                      <TableCell>{order.containerNumber}</TableCell>
-                      <TableCell>{order.customer.name}</TableCell>
-                      <TableCell>
-                        <Badge variant={getStatusBadgeVariant(order.status)}>
-                          {FACTORY_SHIPMENT_STATUS_LABELS[order.status]}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />¥
-                          {order.totalAmount.toLocaleString()}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />¥
-                          {order.receivableAmount.toLocaleString()}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          {format(new Date(order.createdAt), 'yyyy-MM-dd', {
-                            locale: zhCN,
-                          })}
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => onOrderSelect?.(order)}
+                  {orders.map(order => {
+                    const orderData = order as any; // 临时类型断言，等待真实API实现
+                    return (
+                      <TableRow key={orderData.id}>
+                        <TableCell className="font-medium">
+                          {orderData.orderNumber}
+                        </TableCell>
+                        <TableCell>{orderData.containerNumber}</TableCell>
+                        <TableCell>{orderData.customer.name}</TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={getStatusBadgeVariant(orderData.status)}
                           >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                            {
+                              FACTORY_SHIPMENT_STATUS_LABELS[
+                                orderData.status as FactoryShipmentStatus
+                              ]
+                            }
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />¥
+                            {orderData.totalAmount.toLocaleString()}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <DollarSign className="h-3 w-3" />¥
+                            {orderData.receivableAmount.toLocaleString()}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            {format(
+                              new Date(orderData.createdAt),
+                              'yyyy-MM-dd',
+                              {
+                                locale: zhCN,
+                              }
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => onOrderSelect?.(orderData)}
+                            >
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
             </div>

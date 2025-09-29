@@ -148,6 +148,7 @@ export const Captcha = React.forwardRef<HTMLCanvasElement, CaptchaProps>(
 
         return () => clearTimeout(timer);
       }
+      return undefined;
     }, [width, height, length, drawCaptcha]);
 
     return (

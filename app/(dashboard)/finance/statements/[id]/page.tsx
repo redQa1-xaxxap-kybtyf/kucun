@@ -116,7 +116,7 @@ export default function StatementDetailPage({
 
   // 保留原有的 mockStatement 作为加载状态的占位符
   const _mockStatement = {
-    id: params.id,
+    id,
     name: '张三建材',
     type: 'customer',
     totalOrders: 15,

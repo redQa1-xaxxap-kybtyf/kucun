@@ -89,7 +89,11 @@ export function ERPCustomerList({
 
   // 排序处理
   const handleSort = (sortBy: string) => {
-    setQueryParams(prev => ({ ...prev, sortBy, page: 1 }));
+    setQueryParams(prev => ({
+      ...prev,
+      sortBy: sortBy as CustomerQueryParams['sortBy'],
+      page: 1,
+    }));
   };
 
   // 重置筛选

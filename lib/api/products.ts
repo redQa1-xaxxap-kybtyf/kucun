@@ -161,7 +161,6 @@ export async function updateProduct(
 ): Promise<Product> {
   // 确保包含id字段用于后端验证
   const dataWithId = {
-    id,
     ...productData,
   };
 

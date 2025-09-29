@@ -2,32 +2,25 @@ import { Suspense } from 'react';
 
 import { ERPProductList } from '@/components/products/erp-product-list';
 import { ProductListSkeleton } from '@/components/products/product-list-skeleton';
+import type { ProductListQueryParams } from '@/lib/api/products';
 import { paginationConfig, productConfig } from '@/lib/env';
 
 // 临时创建一个服务器端的产品获取函数
-async function getProducts(params: {
-  page: number;
-  limit: number;
-  search: string;
-  categoryId: string;
-  status: string;
-  sortBy: string;
-  sortOrder: string;
-  includeInventory: boolean;
-  includeStatistics: boolean;
-}) {
+async function getProducts(params: ProductListQueryParams) {
   // 构建查询参数
-  const searchParams = new URLSearchParams({
-    page: params.page.toString(),
-    limit: params.limit.toString(),
-    search: params.search,
-    categoryId: params.categoryId,
-    status: params.status,
-    sortBy: params.sortBy,
-    sortOrder: params.sortOrder,
-    includeInventory: params.includeInventory.toString(),
-    includeStatistics: params.includeStatistics.toString(),
-  });
+  const searchParams = new URLSearchParams();
+
+  if (params.page) searchParams.set('page', params.page.toString());
+  if (params.limit) searchParams.set('limit', params.limit.toString());
+  if (params.search) searchParams.set('search', params.search);
+  if (params.categoryId) searchParams.set('categoryId', params.categoryId);
+  if (params.status) searchParams.set('status', params.status);
+  if (params.sortBy) searchParams.set('sortBy', params.sortBy);
+  if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+  if (params.includeInventory !== undefined)
+    searchParams.set('includeInventory', params.includeInventory.toString());
+  if (params.includeStatistics !== undefined)
+    searchParams.set('includeStatistics', params.includeStatistics.toString());
 
   // 调用内部 API - 使用相对路径避免端口硬编码
   const baseUrl =
@@ -71,9 +64,9 @@ export default async function ProductsPage({
   const limit = Number(params.limit) || paginationConfig.defaultPageSize;
   const search = (params.search as string) || '';
   const categoryId = (params.categoryId as string) || '';
-  const status = (params.status as string) || 'active';
+  const status = (params.status as 'active' | 'inactive') || 'active';
   const sortBy = (params.sortBy as string) || 'createdAt';
-  const sortOrder = (params.sortOrder as string) || 'desc';
+  const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
   const includeInventory =
     params.includeInventory === 'true' || productConfig.defaultIncludeInventory;
   const includeStatistics =
@@ -98,7 +91,7 @@ export default async function ProductsPage({
       <div className="space-y-4">
         <Suspense fallback={<ProductListSkeleton />}>
           <ERPProductList
-            initialData={initialData}
+            _initialData={initialData}
             initialParams={{
               page,
               limit,
@@ -107,8 +100,6 @@ export default async function ProductsPage({
               status,
               sortBy,
               sortOrder,
-              includeInventory,
-              includeStatistics,
             }}
           />
         </Suspense>

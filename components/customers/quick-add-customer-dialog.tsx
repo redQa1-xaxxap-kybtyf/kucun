@@ -7,10 +7,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import {
-  AddressSelector,
-  formatAddressString,
-} from '@/components/ui/address-selector';
+import { AddressSelector } from '@/components/ui/address-selector';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -64,7 +61,7 @@ export function QuickAddCustomerDialog({
     defaultValues: {
       name: '',
       phone: '',
-      address: { province: '', city: '', district: '', detail: '' },
+      address: '',
       extendedInfo: {},
       notes: '',
     },
@@ -105,11 +102,8 @@ export function QuickAddCustomerDialog({
   const onSubmit = (data: CreateCustomerData & { notes: string }) => {
     const { notes, ...customerData } = data;
 
-    // 将地址对象转换为字符串以保持API兼容性
-    const addressString =
-      typeof customerData.address === 'string'
-        ? customerData.address
-        : formatAddressString(customerData.address);
+    // 地址已经是字符串类型
+    const addressString = customerData.address || '';
 
     // 将备注信息存储到 extendedInfo 中
     const submitData: CreateCustomerData = {
@@ -148,10 +142,13 @@ export function QuickAddCustomerDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit as any)}
+            className="space-y-4"
+          >
             {/* 客户名称 */}
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="name"
               render={({ field }) => (
                 <FormItem>
@@ -170,7 +167,7 @@ export function QuickAddCustomerDialog({
 
             {/* 联系电话 */}
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="phone"
               render={({ field }) => (
                 <FormItem>
@@ -189,7 +186,7 @@ export function QuickAddCustomerDialog({
 
             {/* 客户地址 */}
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="address"
               render={({ field }) => (
                 <FormItem>
@@ -209,7 +206,7 @@ export function QuickAddCustomerDialog({
 
             {/* 备注信息 */}
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="notes"
               render={({ field }) => (
                 <FormItem>

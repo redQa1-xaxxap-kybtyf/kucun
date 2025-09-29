@@ -126,7 +126,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
 
       if (onSuccess) {
-        onSuccess(data);
+        onSuccess(data as any);
       } else {
         router.push('/sales-orders');
       }
@@ -154,7 +154,11 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
 
   // 计算订单总金额
   const totalAmount = React.useMemo(
-    () => fields.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
+    () =>
+      fields.reduce(
+        (sum, item) => sum + item.quantity * (item.unitPrice || 0),
+        0
+      ),
     [fields]
   );
 
@@ -164,6 +168,8 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
       productId: '',
       quantity: 1,
       unitPrice: 0,
+      displayUnit: '件' as const,
+      displayQuantity: 1,
     });
   };
 
@@ -183,14 +189,15 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
 
     // 自动计算小计
     if (field === 'quantity' || field === 'unitPrice') {
-      updatedItem.subtotal = updatedItem.quantity * updatedItem.unitPrice;
+      updatedItem.subtotal =
+        updatedItem.quantity * (updatedItem.unitPrice || 0);
     }
 
     update(index, updatedItem);
 
     // 检查库存
     if (field === 'productId' && value) {
-      checkProductStock(value, index);
+      checkProductStock(String(value), index);
     }
   };
 
@@ -198,7 +205,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
   const checkProductStock = (productId: string, itemIndex: number) => {
     const product = productsData?.data?.find(p => p.id === productId);
     if (product?.inventory) {
-      const availableStock = product.inventory.availableInventory || 0;
+      const availableStock = product.inventory.availableQuantity || 0;
       const requestedQuantity = fields[itemIndex]?.quantity || 0;
 
       if (requestedQuantity > availableStock) {
@@ -235,11 +242,11 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
       totalAmount,
       items: submitData.items.map(item => ({
         ...item,
-        subtotal: item.quantity * item.unitPrice,
+        subtotal: item.quantity * (item.unitPrice || 0),
       })),
     };
 
-    createMutation.mutate(orderData);
+    createMutation.mutate(orderData as any);
   };
 
   return (
@@ -426,7 +433,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                         const selectedProduct = productsData?.data?.find(
                           p => p.id === item.productId
                         );
-                        const subtotal = item.quantity * item.unitPrice;
+                        const subtotal = item.quantity * (item.unitPrice || 0);
                         const hasStockWarning = stockWarnings[index];
 
                         return (
@@ -446,7 +453,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                             {/* 产品名称 */}
                             <TableCell className="border-r">
                               <EnhancedProductSelector
-                                products={productsData?.data || []}
+                                products={(productsData?.data as any) || []}
                                 value={item.productId}
                                 onValueChange={value =>
                                   handleProductSelect(value, index)

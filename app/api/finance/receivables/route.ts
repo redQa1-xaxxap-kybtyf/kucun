@@ -69,9 +69,9 @@ export async function GET(request: NextRequest) {
         : { [actualSortField]: sortOrder as 'asc' | 'desc' };
 
     // 构建查询条件
-    const whereConditions = {
+    const whereConditions: any = {
       status: { in: ['confirmed', 'shipped', 'completed'] }, // 只查询已确认的订单
-    } as const;
+    };
 
     if (search) {
       whereConditions.OR = [
@@ -133,9 +133,9 @@ export async function GET(request: NextRequest) {
     }
 
     // 转换为应收账款格式
-    const receivables = salesOrders.map(order => {
+    const receivables = salesOrders.map((order: any) => {
       const paidAmount = order.payments.reduce(
-        (sum, payment) => sum + payment.paymentAmount,
+        (sum: number, payment: any) => sum + payment.paymentAmount,
         0
       );
       const remainingAmount = order.totalAmount - paidAmount;
@@ -162,7 +162,7 @@ export async function GET(request: NextRequest) {
       const lastPaymentDate =
         order.payments.length > 0
           ? order.payments.sort(
-              (a, b) =>
+              (a: any, b: any) =>
                 new Date(b.paymentDate).getTime() -
                 new Date(a.paymentDate).getTime()
             )[0].paymentDate

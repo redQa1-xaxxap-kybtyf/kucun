@@ -1,4 +1,4 @@
-import { prisma, testDatabaseConnection, getDatabaseStats } from './db';
+import { getDatabaseStats, prisma, testDatabaseConnection } from './db';
 
 async function testDatabase() {
   console.log('🧪 开始数据库测试...');
@@ -89,7 +89,7 @@ async function testDatabase() {
     console.log(`✅ 查询到 ${inventory.length} 条库存记录:`);
     inventory.forEach(item => {
       console.log(
-        `   - ${item.product.code}: ${item.colorCode || '无色号'} - 数量: ${item.quantity}`
+        `   - ${item.product.code}: ${item.variantId ? '有变体' : '无变体'} - 数量: ${item.quantity}`
       );
     });
 
@@ -123,7 +123,6 @@ async function testDatabase() {
       include: {
         inventory: {
           select: {
-            colorCode: true,
             quantity: true,
             reservedQuantity: true,
           },

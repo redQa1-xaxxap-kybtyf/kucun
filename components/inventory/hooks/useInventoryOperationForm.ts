@@ -109,7 +109,10 @@ export function useInventoryOperationForm({
   const { data: availabilityData } = useQuery({
     queryKey: ['inventory', 'availability', watchedProductId, watchedQuantity],
     queryFn: () =>
-      checkInventoryAvailability(watchedProductId, watchedQuantity || 0),
+      checkInventoryAvailability(
+        watchedProductId,
+        Number(watchedQuantity) || 0
+      ),
     enabled: mode === 'outbound' && !!watchedProductId && !!watchedQuantity,
     staleTime: 30000, // 30秒内不重新获取
   });
@@ -124,7 +127,7 @@ export function useInventoryOperationForm({
       });
       form.reset();
       setSubmitError('');
-      onSuccess?.(response.data);
+      onSuccess?.(response as any);
     },
     onError: error => {
       setSubmitError(error instanceof Error ? error.message : '入库失败');
@@ -141,7 +144,7 @@ export function useInventoryOperationForm({
       });
       form.reset();
       setSubmitError('');
-      onSuccess?.(response.data);
+      onSuccess?.(response as any);
     },
     onError: error => {
       setSubmitError(error instanceof Error ? error.message : '出库失败');
@@ -155,7 +158,7 @@ export function useInventoryOperationForm({
       queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.lists() });
       form.reset();
       setSubmitError('');
-      onSuccess?.(response.data);
+      onSuccess?.(response as any);
     },
     onError: error => {
       setSubmitError(error instanceof Error ? error.message : '调整失败');
@@ -175,7 +178,10 @@ export function useInventoryOperationForm({
       setSubmitError('');
       switch (mode) {
         case 'inbound':
-          await inboundMutation.mutateAsync(data as InboundFormData);
+          await inboundMutation.mutateAsync({
+            ...(data as InboundFormData),
+            type: 'normal_inbound' as const,
+          });
           break;
         case 'outbound':
           await outboundMutation.mutateAsync(data as OutboundCreateFormData);

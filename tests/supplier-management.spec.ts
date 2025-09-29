@@ -1,12 +1,13 @@
-import { test, expect } from '@playwright/test';
+// @ts-ignore - Playwright types not configured
+import { expect, test } from '@playwright/test';
 
 test.describe('供应商管理功能', () => {
-  test.beforeEach(async ({ page }) => {
+  test.beforeEach(async ({ page }: any) => {
     // 导航到供应商管理页面
     await page.goto('/suppliers');
   });
 
-  test('应该显示供应商管理页面', async ({ page }) => {
+  test('应该显示供应商管理页面', async ({ page }: any) => {
     // 检查页面标题
     await expect(page.locator('h1')).toContainText('供应商管理');
 
@@ -22,7 +23,7 @@ test.describe('供应商管理功能', () => {
     await expect(page.locator('text=全部状态')).toBeVisible();
   });
 
-  test('应该能够创建新供应商', async ({ page }) => {
+  test('应该能够创建新供应商', async ({ page }: any) => {
     // 点击新建供应商按钮
     await page.click('text=新建供应商');
 
@@ -48,7 +49,7 @@ test.describe('供应商管理功能', () => {
     await expect(page.locator('text=测试供应商')).toBeVisible();
   });
 
-  test('应该能够搜索供应商', async ({ page }) => {
+  test('应该能够搜索供应商', async ({ page }: any) => {
     // 先创建一个供应商用于搜索
     await page.click('text=新建供应商');
     await page.fill('input[placeholder="请输入供应商名称"]', '搜索测试供应商');
@@ -65,7 +66,7 @@ test.describe('供应商管理功能', () => {
     await expect(page.locator('text=搜索测试供应商')).toBeVisible();
   });
 
-  test('应该能够编辑供应商', async ({ page }) => {
+  test('应该能够编辑供应商', async ({ page }: any) => {
     // 先创建一个供应商
     await page.click('text=新建供应商');
     await page.fill('input[placeholder="请输入供应商名称"]', '编辑测试供应商');
@@ -94,7 +95,7 @@ test.describe('供应商管理功能', () => {
     await expect(page.locator('text=编辑后的供应商')).toBeVisible();
   });
 
-  test('应该能够删除供应商', async ({ page }) => {
+  test('应该能够删除供应商', async ({ page }: any) => {
     // 先创建一个供应商
     await page.click('text=新建供应商');
     await page.fill('input[placeholder="请输入供应商名称"]', '删除测试供应商');
@@ -115,7 +116,7 @@ test.describe('供应商管理功能', () => {
     await expect(page.locator('text=删除测试供应商')).not.toBeVisible();
   });
 
-  test('应该能够筛选供应商状态', async ({ page }) => {
+  test('应该能够筛选供应商状态', async ({ page }: any) => {
     // 先创建一个供应商
     await page.click('text=新建供应商');
     await page.fill('input[placeholder="请输入供应商名称"]', '状态测试供应商');
@@ -139,7 +140,7 @@ test.describe('供应商管理功能', () => {
     await expect(page.locator('text=暂无供应商数据')).toBeVisible();
   });
 
-  test('应该验证表单输入', async ({ page }) => {
+  test('应该验证表单输入', async ({ page }: any) => {
     // 导航到创建页面
     await page.click('text=新建供应商');
 
@@ -160,7 +161,7 @@ test.describe('供应商管理功能', () => {
     ).toBeVisible();
   });
 
-  test('应该支持批量操作', async ({ page }) => {
+  test('应该支持批量操作', async ({ page }: any) => {
     // 先创建两个供应商
     await page.click('text=新建供应商');
     await page.fill('input[placeholder="请输入供应商名称"]', '批量测试供应商1');

@@ -75,8 +75,8 @@ export function useOptimizedInventoryQuery({
     },
     enabled,
     staleTime,
-    cacheTime,
-    keepPreviousData: true,
+    gcTime: cacheTime,
+    placeholderData: previousData => previousData,
     // 错误重试配置
     retry: (failureCount, error) => {
       // 4xx错误不重试
@@ -119,9 +119,9 @@ export function useOptimizedInventoryQuery({
 
   // 自动预取相邻页面
   React.useEffect(() => {
-    if (!query.data?.pagination || !enabled) return;
+    if (!(query.data as any)?.pagination || !enabled) return;
 
-    const { page, totalPages } = query.data.pagination;
+    const { page, totalPages } = (query.data as any).pagination;
 
     // 预取下一页
     if (prefetchNext && page < totalPages) {
@@ -135,7 +135,7 @@ export function useOptimizedInventoryQuery({
       prefetchPage(prevParams);
     }
   }, [
-    query.data?.pagination,
+    (query.data as any)?.pagination,
     params,
     prefetchNext,
     prefetchPrev,
@@ -171,7 +171,8 @@ export function useOptimizedInventoryQuery({
       },
 
       // 获取缓存数据
-      getData: (queryParams: InventoryQueryParams) => queryClient.getQueryData<InventoryListResponse>(
+      getData: (queryParams: InventoryQueryParams) =>
+        queryClient.getQueryData<InventoryListResponse>(
           inventoryQueryKeys.list(queryParams)
         ),
 
@@ -207,7 +208,7 @@ export function useInventoryDetail(id: string, enabled = true) {
     },
     enabled: enabled && !!id,
     staleTime: 2 * 60 * 1000, // 2分钟
-    cacheTime: 5 * 60 * 1000, // 5分钟
+    gcTime: 5 * 60 * 1000, // 5分钟
   });
 }
 
@@ -226,7 +227,7 @@ export function useInventoryStats(enabled = true) {
     },
     enabled,
     staleTime: 5 * 60 * 1000, // 5分钟
-    cacheTime: 10 * 60 * 1000, // 10分钟
+    gcTime: 10 * 60 * 1000, // 10分钟
   });
 }
 
@@ -245,7 +246,7 @@ export function useInventoryAlerts(enabled = true) {
     },
     enabled,
     staleTime: 2 * 60 * 1000, // 2分钟
-    cacheTime: 5 * 60 * 1000, // 5分钟
+    gcTime: 5 * 60 * 1000, // 5分钟
     refetchInterval: 5 * 60 * 1000, // 每5分钟自动刷新
   });
 }

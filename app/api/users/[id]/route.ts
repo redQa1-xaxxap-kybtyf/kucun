@@ -102,7 +102,7 @@ export async function PUT(
       );
     }
 
-    const { name, role, status } = validationResult.data;
+    const { status } = validationResult.data;
 
     // 检查用户是否存在
     const existingUser = await prisma.user.findUnique({
@@ -120,9 +120,7 @@ export async function PUT(
     const updatedUser = await prisma.user.update({
       where: { id: params.id },
       data: {
-        ...(name && { name }),
-        ...(role && { role }),
-        ...(status && { status }),
+        status,
       },
       select: {
         id: true,

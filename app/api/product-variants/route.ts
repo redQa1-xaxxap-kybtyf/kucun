@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { z } from 'zod';

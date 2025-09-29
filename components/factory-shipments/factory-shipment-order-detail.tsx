@@ -46,7 +46,7 @@ const getFactoryShipmentOrder = async (
   // 这里应该调用真实的API
   null;
 export function FactoryShipmentOrderDetail({
-  orderId: _orderId,
+  orderId,
   onEdit,
   onBack,
 }: FactoryShipmentOrderDetailProps) {

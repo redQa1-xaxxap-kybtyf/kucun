@@ -60,7 +60,7 @@ export async function GET(
               select: {
                 id: true,
                 name: true,
-                sku: true,
+                code: true,
                 category: true,
               },
             },
@@ -235,7 +235,7 @@ export async function PUT(
                 select: {
                   id: true,
                   name: true,
-                  sku: true,
+                  code: true,
                 },
               },
             },

@@ -82,7 +82,7 @@ export function InventoryOperationForm({
 
       {/* 库存可用性检查结果 */}
       <InventoryAvailabilityAlert
-        availabilityData={availabilityData}
+        availabilityData={availabilityData || null}
         mode={mode}
       />
 

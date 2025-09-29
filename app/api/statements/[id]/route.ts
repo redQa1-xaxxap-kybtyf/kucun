@@ -110,7 +110,17 @@ export async function GET(
       }, 0);
 
       // 构建交易记录
-      const transactions = [];
+      const transactions: Array<{
+        id: string;
+        type: string;
+        referenceNumber: string;
+        amount: number;
+        description: string;
+        transactionDate: string;
+        dueDate?: string;
+        status: string;
+        balance?: number;
+      }> = [];
 
       // 添加销售订单记录
       for (const order of customer.salesOrders) {
@@ -323,7 +333,15 @@ export async function GET(
       const pendingAmount = Math.max(0, totalAmount - paidAmount);
 
       // 问题3修复：生成交易明细
-      const transactions: unknown[] = [];
+      const transactions: Array<{
+        id: string;
+        type: string;
+        referenceNumber: string;
+        amount: number;
+        description: string;
+        transactionDate: string;
+        status: string;
+      }> = [];
 
       // 添加调货销售订单记录
       for (const order of supplier.salesOrders) {
@@ -406,7 +424,8 @@ export async function GET(
           .split('T')[0],
         lastPaymentDate:
           paidAmount > 0
-            ? transactions.find(t => t.type === 'payment_out')?.transactionDate
+            ? transactions.find((t: any) => t.type === 'payment_out')
+                ?.transactionDate
             : null,
         contact: {
           phone: supplier.phone || '',

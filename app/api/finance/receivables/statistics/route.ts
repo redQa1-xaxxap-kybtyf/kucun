@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
     const customerId = searchParams.get('customerId');
 
     // 构建查询条件
-    const whereConditions = {
+    const whereConditions: any = {
       status: { in: ['confirmed', 'shipped', 'completed'] },
-    } as const;
+    };
 
     if (startDate && endDate) {
       whereConditions.createdAt = {

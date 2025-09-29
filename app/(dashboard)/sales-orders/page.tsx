@@ -19,10 +19,22 @@ export default async function SalesOrdersPage({
   const page = Number(params.page) || 1;
   const limit = Number(params.limit) || paginationConfig.defaultPageSize;
   const search = (params.search as string) || '';
-  const status = (params.status as string) || '';
+  const status = params.status as
+    | 'draft'
+    | 'confirmed'
+    | 'shipped'
+    | 'completed'
+    | 'cancelled'
+    | undefined;
   const customerId = (params.customerId as string) || '';
-  const sortBy = (params.sortBy as string) || 'createdAt';
-  const sortOrder = (params.sortOrder as string) || 'desc';
+  const sortBy =
+    (params.sortBy as
+      | 'orderNumber'
+      | 'createdAt'
+      | 'updatedAt'
+      | 'totalAmount'
+      | 'status') || 'createdAt';
+  const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
 
   // 服务器端获取初始数据
   const initialData = await getSalesOrders({
@@ -39,7 +51,10 @@ export default async function SalesOrdersPage({
     <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
       <Suspense fallback={<SalesOrderListSkeleton />}>
         <ERPSalesOrderList
-          initialData={initialData}
+          _initialData={{
+            data: initialData.data,
+            pagination: initialData.pagination,
+          }}
           initialParams={{
             page,
             limit,

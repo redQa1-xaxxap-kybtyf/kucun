@@ -4,8 +4,16 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
-interface DateSummary {
-  productionDate: string;
+interface BatchSummary {
+  batchNumber: string;
+  quantity: number;
+  reservedQuantity: number;
+  availableQuantity: number;
+  records: number;
+}
+
+interface LocationSummary {
+  location: string;
   quantity: number;
   reservedQuantity: number;
   availableQuantity: number;
@@ -69,14 +77,13 @@ export async function GET(
         quantity: true,
         reservedQuantity: true,
         location: true,
-        productionDate: true,
         batchNumber: true,
         unitCost: true,
         updatedAt: true,
       },
       orderBy: [
         { location: 'asc' },
-        { productionDate: 'desc' },
+        { batchNumber: 'desc' },
         { batchNumber: 'asc' },
       ],
     });
@@ -112,44 +119,39 @@ export async function GET(
         acc[location].batches += 1;
         return acc;
       },
-      {} as Record<string, DateSummary>
+      {} as Record<string, LocationSummary>
     );
 
     const locations = Object.values(locationSummary);
 
     // 按生产日期分组统计
-    const dateSummary = inventoryRecords.reduce(
+    const batchSummary = inventoryRecords.reduce(
       (acc, record) => {
-        const dateKey = record.productionDate
-          ? record.productionDate.toString()
-          : '未指定日期';
-        if (!acc[dateKey]) {
-          acc[dateKey] = {
-            productionDate: dateKey,
+        const batchKey = record.batchNumber || '未指定批次';
+        if (!acc[batchKey]) {
+          acc[batchKey] = {
+            batchNumber: batchKey,
             quantity: 0,
             reservedQuantity: 0,
             availableQuantity: 0,
-            batches: 0,
+            records: 0,
           };
         }
-        acc[dateKey].quantity += record.quantity;
-        acc[dateKey].reservedQuantity += record.reservedQuantity;
-        acc[dateKey].availableQuantity +=
+        acc[batchKey].quantity += record.quantity;
+        acc[batchKey].reservedQuantity += record.reservedQuantity;
+        acc[batchKey].availableQuantity +=
           record.quantity - record.reservedQuantity;
-        acc[dateKey].batches += 1;
+        acc[batchKey].records += 1;
         return acc;
       },
-      {} as Record<string, DateSummary>
+      {} as Record<string, BatchSummary>
     );
 
-    const productionDates = Object.values(dateSummary).sort(
-      (a: DateSummary, b: DateSummary) => {
-        if (a.productionDate === '未指定日期') return 1;
-        if (b.productionDate === '未指定日期') return -1;
-        return (
-          new Date(b.productionDate).getTime() -
-          new Date(a.productionDate).getTime()
-        );
+    const batches = Object.values(batchSummary).sort(
+      (a: BatchSummary, b: BatchSummary) => {
+        if (a.batchNumber === '未指定批次') return 1;
+        if (b.batchNumber === '未指定批次') return -1;
+        return a.batchNumber.localeCompare(b.batchNumber);
       }
     );
 
@@ -197,7 +199,7 @@ export async function GET(
       },
       breakdown: {
         locations,
-        productionDates,
+        batches,
         totalBatches: inventoryRecords.length,
         totalLocations: locations.length,
       },
@@ -207,7 +209,6 @@ export async function GET(
         reservedQuantity: record.reservedQuantity,
         availableQuantity: record.quantity - record.reservedQuantity,
         location: record.location,
-        productionDate: record.productionDate,
         batchNumber: record.batchNumber,
         unitCost: record.unitCost,
         updatedAt: record.updatedAt,

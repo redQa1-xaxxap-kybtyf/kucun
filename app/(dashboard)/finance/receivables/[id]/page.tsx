@@ -14,11 +14,10 @@ import { useParams, useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { formatCurrency, formatDate } from '@/lib/utils';
-
 import { ErrorMessage } from '@/components/ui/error-message';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { Separator } from '@/components/ui/separator';
+import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface ReceivableDetail {
   id: string;
@@ -203,8 +202,9 @@ export default function ReceivableDetailPage() {
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
                     <Badge variant={getStatusBadgeVariant(receivable.status)}>
-                      {RECEIVABLE_STATUS_LABELS[receivable.status] ||
-                        receivable.status}
+                      {RECEIVABLE_STATUS_LABELS[
+                        receivable.status as keyof typeof RECEIVABLE_STATUS_LABELS
+                      ] || receivable.status}
                     </Badge>
                     {isOverdue && <Badge variant="destructive">逾期</Badge>}
                   </div>

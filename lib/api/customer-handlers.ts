@@ -94,8 +94,8 @@ export async function getCustomerDetail(id: string): Promise<Customer> {
     parentCustomerId: customer.parentCustomerId || undefined,
     createdAt: customer.createdAt.toISOString(),
     updatedAt: customer.updatedAt.toISOString(),
-    parentCustomer: customer.parentCustomer || undefined,
-    childCustomers: customer.childCustomers || undefined,
+    parentCustomer: (customer.parentCustomer as any) || undefined,
+    childCustomers: (customer.childCustomers as any) || undefined,
     totalOrders,
     totalAmount,
     lastOrderDate,
@@ -141,7 +141,7 @@ export async function createCustomer(
     parentCustomerId: customer.parentCustomerId || undefined,
     createdAt: customer.createdAt.toISOString(),
     updatedAt: customer.updatedAt.toISOString(),
-    parentCustomer: customer.parentCustomer || undefined,
+    parentCustomer: (customer.parentCustomer as any) || undefined,
   };
 }
 
@@ -200,7 +200,7 @@ export async function updateCustomer(
     parentCustomerId: customer.parentCustomerId || undefined,
     createdAt: customer.createdAt.toISOString(),
     updatedAt: customer.updatedAt.toISOString(),
-    parentCustomer: customer.parentCustomer || undefined,
+    parentCustomer: (customer.parentCustomer as any) || undefined,
   };
 }
 
@@ -309,7 +309,7 @@ export async function getCustomerList(params: CustomerQueryParams) {
   ]);
 
   // 转换数据格式
-  const transformedCustomers: Customer[] = customers.map(customer => {
+  const transformedCustomers: any[] = customers.map(customer => {
     const extendedInfo = parseExtendedInfo(customer.extendedInfo || undefined);
     const totalOrders = customer.salesOrders.length;
     const totalAmount = customer.salesOrders.reduce(

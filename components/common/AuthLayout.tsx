@@ -4,6 +4,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
+import type { UserRole } from '@/lib/types/user';
 import { canAccessPath } from '@/lib/utils/permissions';
 
 import { Breadcrumb } from './Breadcrumb';
@@ -73,7 +74,7 @@ export function AuthLayout({
 
     if (session?.user) {
       // 检查路径访问权限
-      const canAccess = canAccessPath(session.user.role, pathname);
+      const canAccess = canAccessPath(session.user.role as UserRole, pathname);
       if (!canAccess) {
         router.push('/auth/error?error=AccessDenied');
         return;

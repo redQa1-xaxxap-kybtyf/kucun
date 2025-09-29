@@ -117,13 +117,14 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
     // 优化的选择处理函数
     const handleSelectAll = React.useCallback(
       (checked: boolean) => {
-        if (checked && data?.data) {
-          setSelectedIds(data.data.map(item => item.id));
+        const inventoryData = data as any; // 临时类型断言
+        if (checked && inventoryData?.data) {
+          setSelectedIds(inventoryData.data.map((item: any) => item.id));
         } else {
           setSelectedIds([]);
         }
       },
-      [data?.data]
+      [data]
     );
 
     const handleSelectRow = React.useCallback(
@@ -140,11 +141,14 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
     );
 
     // 使用useMemo优化计算
-    const inventoryData = React.useMemo(() => data?.data || [], [data?.data]);
-    const pagination = React.useMemo(
-      () => data?.pagination,
-      [data?.pagination]
-    );
+    const inventoryData = React.useMemo(() => {
+      const responseData = data as any; // 临时类型断言
+      return responseData?.data || [];
+    }, [data]);
+    const pagination = React.useMemo(() => {
+      const responseData = data as any; // 临时类型断言
+      return responseData?.pagination;
+    }, [data]);
 
     // 错误处理
     if (isError) {

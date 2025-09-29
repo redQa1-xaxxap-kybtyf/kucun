@@ -6,27 +6,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
+import { type Category } from '@/lib/api/categories';
 import { prisma } from '@/lib/db';
 import { UpdateCategorySchema } from '@/lib/schemas/category';
 import type { ApiResponse } from '@/lib/types/api';
-
-// 分类类型定义
-interface Category {
-  id: string;
-  name: string;
-  code: string;
-
-  parentId?: string;
-  sortOrder: number;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
-
-  // 关联数据
-  parent?: Category;
-  children?: Category[];
-  productCount?: number;
-}
 
 /**
  * GET /api/categories/[id] - 获取单个分类详情
@@ -78,7 +61,7 @@ export async function GET(
       id: category.id,
       name: category.name,
       code: category.code,
-      parentId: category.parentId,
+      parentId: category.parentId || undefined,
       sortOrder: category.sortOrder,
       status: category.status as 'active' | 'inactive',
       createdAt: category.createdAt.toISOString(),
@@ -232,7 +215,7 @@ export async function PUT(
       id: updatedCategory.id,
       name: updatedCategory.name,
       code: updatedCategory.code,
-      parentId: updatedCategory.parentId,
+      parentId: updatedCategory.parentId || undefined,
       sortOrder: updatedCategory.sortOrder,
       status: updatedCategory.status as 'active' | 'inactive',
       createdAt: updatedCategory.createdAt.toISOString(),

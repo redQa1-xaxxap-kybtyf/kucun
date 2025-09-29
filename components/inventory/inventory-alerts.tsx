@@ -77,8 +77,9 @@ export function InventoryAlerts({
   const alertStats = useMemo(
     () =>
       alerts.reduce(
-        (acc: Record<string, number>, alert: { type: string }) => {
-          acc[alert.type] = (acc[alert.type] || 0) + 1;
+        (acc: Record<string, number>, alert: InventoryAlert) => {
+          const alertType = (alert as any).type || 'unknown';
+          acc[alertType] = (acc[alertType] || 0) + 1;
           return acc;
         },
         {} as Record<string, number>
@@ -191,9 +192,14 @@ export function InventoryAlerts({
                     <TableRow key={alert.id}>
                       <TableCell>
                         <Badge
-                          variant={INVENTORY_ALERT_TYPE_VARIANTS[alert.type]}
+                          variant={
+                            INVENTORY_ALERT_TYPE_VARIANTS[
+                              (alert as any).type
+                            ] || 'default'
+                          }
                         >
-                          {INVENTORY_ALERT_TYPE_LABELS[alert.type]}
+                          {INVENTORY_ALERT_TYPE_LABELS[(alert as any).type] ||
+                            '未知'}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -259,10 +265,14 @@ export function InventoryAlerts({
                   <CardContent className="p-4">
                     <div className="mb-3 flex items-center justify-between">
                       <Badge
-                        variant={INVENTORY_ALERT_TYPE_VARIANTS[alert.type]}
+                        variant={
+                          INVENTORY_ALERT_TYPE_VARIANTS[(alert as any).type] ||
+                          'default'
+                        }
                         className="text-xs"
                       >
-                        {INVENTORY_ALERT_TYPE_LABELS[alert.type]}
+                        {INVENTORY_ALERT_TYPE_LABELS[(alert as any).type] ||
+                          '未知'}
                       </Badge>
                       <Button
                         variant="outline"

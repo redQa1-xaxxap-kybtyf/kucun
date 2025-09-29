@@ -14,7 +14,10 @@ import type { Product, ProductQueryParams } from '@/lib/types/product';
 export async function getCachedProducts(
   params: ProductQueryParams
 ): Promise<PaginatedResponse<Product> | null> {
-  const cacheKey = buildCacheKey('products:list', params);
+  const cacheKey = buildCacheKey(
+    'products:list',
+    params as Record<string, unknown>
+  );
   // 只获取缓存，不设置新值
   return getOrSetJSON(cacheKey, null);
 }
@@ -26,7 +29,10 @@ export async function setCachedProducts(
   params: ProductQueryParams,
   data: PaginatedResponse<Product>
 ): Promise<void> {
-  const cacheKey = buildCacheKey('products:list', params);
+  const cacheKey = buildCacheKey(
+    'products:list',
+    params as Record<string, unknown>
+  );
   await getOrSetJSON(
     cacheKey,
     () => Promise.resolve(data),
@@ -73,7 +79,7 @@ export async function getCachedProduct(
           salesOrderItems: product._count.salesOrderItems,
           inboundRecords: product._count.inboundRecords,
         },
-      } as Product;
+      } as unknown as Product;
     },
     cacheConfig.productTtl
   );

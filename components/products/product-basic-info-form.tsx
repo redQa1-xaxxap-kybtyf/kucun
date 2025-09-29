@@ -179,7 +179,7 @@ function ProductUnitSelect({
           <FormLabel>计量单位</FormLabel>
           <Select
             onValueChange={field.onChange}
-            value={field.value === '' ? undefined : field.value}
+            value={field.value || undefined}
             disabled={disabled}
             name={field.name}
           >
@@ -247,7 +247,7 @@ function ProductStatusSelect({
           <FormLabel>产品状态</FormLabel>
           <Select
             onValueChange={field.onChange}
-            value={field.value === '' ? undefined : field.value}
+            value={field.value || undefined}
             disabled={disabled}
             name={field.name}
           >

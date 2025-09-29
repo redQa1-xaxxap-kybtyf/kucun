@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/sheet';
 import { useNavigationBadges } from '@/hooks/use-navigation-badges';
 import type { NavigationItem } from '@/lib/types/layout';
+import type { UserRole } from '@/lib/types/user';
 import { cn } from '@/lib/utils';
 import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
@@ -128,20 +129,20 @@ export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
     if (!session?.user?.role) return [];
 
     const filteredItems = getAccessibleNavItems(
-      mobileNavigationItems,
-      session.user.role
+      mobileNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
+      session.user.role as UserRole
     );
-    return addBadgesToNavItems(filteredItems);
+    return addBadgesToNavItems(filteredItems as NavigationItem[]);
   }, [session?.user?.role, addBadgesToNavItems]);
 
   const accessibleBottomNavItems = React.useMemo(() => {
     if (!session?.user?.role) return [];
 
     const filteredItems = getAccessibleNavItems(
-      mobileBottomNavigationItems,
-      session.user.role
+      mobileBottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
+      session.user.role as UserRole
     );
-    return addBadgesToNavItems(filteredItems);
+    return addBadgesToNavItems(filteredItems as NavigationItem[]);
   }, [session?.user?.role, addBadgesToNavItems]);
 
   const handleNavItemClick = () => {

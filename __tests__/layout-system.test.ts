@@ -18,6 +18,7 @@ import type {
   NotificationItem,
   UserInfo,
 } from '@/lib/types/layout';
+import type { UserRole } from '@/lib/types/user';
 import {
   canAccessPath,
   getAccessibleNavItems,
@@ -204,9 +205,9 @@ describe('权限系统测试', () => {
   describe('hasRole', () => {
     it('应该正确检查用户角色', () => {
       expect(hasRole('admin', 'admin')).toBe(true);
-      expect(hasRole('user', 'admin')).toBe(false);
-      expect(hasRole('admin', 'user')).toBe(false);
-      expect(hasRole('user', 'user')).toBe(true);
+      expect(hasRole('sales', 'admin')).toBe(false);
+      expect(hasRole('admin', 'sales')).toBe(false);
+      expect(hasRole('sales', 'sales')).toBe(true);
     });
   });
 

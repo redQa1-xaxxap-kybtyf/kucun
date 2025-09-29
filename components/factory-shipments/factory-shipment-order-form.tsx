@@ -198,18 +198,17 @@ export function FactoryShipmentOrderForm({
   // 填充编辑数据
   useEffect(() => {
     if (orderDetail && isEditing) {
+      const order = orderDetail as any; // 临时类型断言，等待真实API实现
       form.reset({
-        containerNumber: orderDetail.containerNumber,
-        customerId: orderDetail.customerId,
-        status: orderDetail.status,
-        totalAmount: orderDetail.totalAmount,
-        receivableAmount: orderDetail.receivableAmount,
-        depositAmount: orderDetail.depositAmount,
-        remarks: orderDetail.remarks || '',
-        planDate: orderDetail.planDate
-          ? new Date(orderDetail.planDate)
-          : undefined,
-        items: orderDetail.items.map((item: any) => ({
+        containerNumber: order.containerNumber,
+        customerId: order.customerId,
+        status: order.status,
+        totalAmount: order.totalAmount,
+        receivableAmount: order.receivableAmount,
+        depositAmount: order.depositAmount,
+        remarks: order.remarks || '',
+        planDate: order.planDate ? new Date(order.planDate) : undefined,
+        items: order.items.map((item: any) => ({
           productId: item.productId || '',
           supplierId: item.supplierId,
           quantity: item.quantity,

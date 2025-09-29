@@ -219,7 +219,7 @@ export function TransferProductSelector({
 
                       {/* 价格信息 */}
                       <div className="text-xs text-muted-foreground">
-                        价格：¥{product.price.toFixed(2)}
+                        价格：¥{(product as any).price?.toFixed(2) || '0.00'}
                       </div>
 
                       {/* 库存状态提示（调货销售特有） */}

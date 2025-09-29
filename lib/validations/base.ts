@@ -136,9 +136,5 @@ export type UserRegisterInput = z.infer<typeof userValidations.register>;
 // 客户相关类型 - 已迁移到 lib/types/customer.ts
 // 遵循唯一真理源原则，请从 lib/types/customer.ts 导入相关类型
 
-export type InboundRecordCreateInput = z.infer<
-  typeof inboundRecordValidations.create
->;
-export type InboundRecordUpdateInput = z.infer<
-  typeof inboundRecordValidations.update
->;
+// 入库记录类型已迁移到 lib/validations/inbound.ts
+// 请从该文件导入 CreateInboundData 和 UpdateInboundData 类型

@@ -8,6 +8,7 @@ import type {
   BatchSpecification,
   BatchSpecificationListResponse,
   CreateBatchSpecificationRequest,
+  UpdateBatchSpecificationRequest,
 } from '@/lib/types/batch-specification';
 import { toISOString } from '@/lib/utils/datetime';
 
@@ -80,7 +81,7 @@ function formatBatchSpecifications(
         id: spec.product.id,
         name: spec.product.name,
         code: spec.product.code,
-        unit: spec.product.unit,
+        unit: spec.product.unit as any,
         piecesPerUnit: spec.piecesPerUnit, // 使用批次级别的片数
         weight: spec.weight || undefined, // 使用批次级别的重量
         status: 'active',

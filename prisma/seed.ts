@@ -51,8 +51,7 @@ async function main() {
       create: {
         code: 'TC001',
         name: '抛光砖',
-        specification: '800x800mm',
-        specifications: JSON.stringify({
+        specification: JSON.stringify({
           size: '800x800mm',
           thickness: '10mm',
           surface: 'polished',
@@ -75,8 +74,7 @@ async function main() {
       create: {
         code: 'TC002',
         name: '仿古砖',
-        specification: '600x600mm',
-        specifications: JSON.stringify({
+        specification: JSON.stringify({
           size: '600x600mm',
           thickness: '9mm',
           surface: 'matte',
@@ -99,8 +97,7 @@ async function main() {
       create: {
         code: 'TC003',
         name: '马赛克',
-        specification: '300x300mm',
-        specifications: JSON.stringify({
+        specification: JSON.stringify({
           size: '300x300mm',
           thickness: '8mm',
           surface: 'textured',

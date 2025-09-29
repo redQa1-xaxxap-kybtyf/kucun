@@ -35,7 +35,7 @@ interface Product {
 }
 
 interface EnhancedProductSelectorProps {
-  products: Product[];
+  products: any[];
   value?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;

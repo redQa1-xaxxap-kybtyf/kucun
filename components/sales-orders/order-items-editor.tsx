@@ -24,13 +24,14 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
-import type { Product } from '@/lib/types/product';
-
+import { getProducts, productQueryKeys } from '@/lib/api/products';
 import {
   calculateItemSubtotal,
   calculateOrderTotal,
   type SalesOrderItemData,
 } from '@/lib/schemas/sales-order';
+import type { Product } from '@/lib/types/product';
+
 
 // API
 
@@ -43,10 +44,7 @@ type SalesOrderItemUpdateFormData = SalesOrderItemData & {
 
 // 订单明细编辑器属性
 interface OrderItemsEditorProps {
-  control: Control<{
-    items: SalesOrderItemData[];
-    [key: string]: unknown;
-  }>;
+  control: Control<any>;
   name: string;
   disabled?: boolean;
   mode?: 'create' | 'edit';
@@ -61,7 +59,7 @@ export function OrderItemsEditor({
 }: OrderItemsEditorProps) {
   const { fields, append, remove, update } = useFieldArray({
     control,
-    name,
+    name: 'items',
   });
 
   // 获取产品列表（包含库存信息）
@@ -169,7 +167,7 @@ export function OrderItemsEditor({
                     onRestore={() => restoreItem(index)}
                     disabled={disabled}
                     isDeleted={isDeleted}
-                    mode={mode}
+                    _mode={mode}
                     products={products}
                   />
                 );
@@ -226,7 +224,7 @@ interface OrderItemRowProps {
 function OrderItemRow({
   control,
   name,
-  _index,
+  // _index,
   onRemove,
   onRestore,
   disabled = false,

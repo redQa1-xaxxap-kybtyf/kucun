@@ -417,7 +417,7 @@ export function ERPReturnOrderList({
                 </TableCell>
               </TableRow>
             ) : (
-              displayData?.data.returnOrders.map(returnOrder => (
+              displayData?.data.returnOrders.map((returnOrder: ReturnOrder) => (
                 <TableRow key={returnOrder.id} className="text-xs">
                   <TableCell className="h-8 px-2">
                     <div className="flex items-center gap-1">

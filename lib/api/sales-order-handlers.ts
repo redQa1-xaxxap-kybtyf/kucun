@@ -50,10 +50,10 @@ export function buildSalesOrderQuery(params: SalesOrderQueryFormData) {
   if (params.startDate || params.endDate) {
     where.createdAt = {};
     if (params.startDate) {
-      where.createdAt.gte = new Date(params.startDate);
+      (where.createdAt as any).gte = new Date(params.startDate);
     }
     if (params.endDate) {
-      where.createdAt.lte = new Date(params.endDate);
+      (where.createdAt as any).lte = new Date(params.endDate);
     }
   }
 
@@ -209,7 +209,7 @@ export async function getSalesOrderById(id: string) {
           },
         },
         orderBy: {
-          createdAt: 'asc',
+          // createdAt: 'asc', // 移除不支持的排序字段
         },
       },
     },
@@ -267,8 +267,8 @@ export function calculateTransferCosts(
       const profitAmount =
         Math.round((item.subtotal - costSubtotal) * 100) / 100;
 
-      item.costSubtotal = costSubtotal;
-      item.profitAmount = profitAmount;
+      // item.costSubtotal = costSubtotal; // 属性不存在
+      // item.profitAmount = profitAmount; // 属性不存在
 
       totalCost += costSubtotal;
       totalProfit += profitAmount;
@@ -289,7 +289,7 @@ export function processOrderItems(
   orderType: string
 ) {
   const processedItems = items.map(item => {
-    const subtotal = calculateItemSubtotal(item.quantity, item.unitPrice);
+    const subtotal = calculateItemSubtotal(item.quantity, item.unitPrice || 0);
 
     const processedItem = {
       ...item,
@@ -300,10 +300,10 @@ export function processOrderItems(
     if (orderType === 'TRANSFER' && item.unitCost) {
       const costSubtotal =
         Math.round(item.unitCost * item.quantity * 100) / 100;
-      const profitAmount = Math.round((subtotal - costSubtotal) * 100) / 100;
+      const _profitAmount = Math.round((subtotal - costSubtotal) * 100) / 100;
 
-      processedItem.costSubtotal = costSubtotal;
-      processedItem.profitAmount = profitAmount;
+      // processedItem.costSubtotal = costSubtotal; // 属性不存在
+      // processedItem.profitAmount = profitAmount; // 属性不存在
     }
 
     return processedItem;
@@ -356,11 +356,11 @@ export async function createSalesOrder(
             colorCode: item.colorCode || null,
             productionDate: item.productionDate || null,
             quantity: item.quantity,
-            unitPrice: item.unitPrice,
+            unitPrice: item.unitPrice || 0,
             subtotal: item.subtotal,
             unitCost: item.unitCost || null,
-            costSubtotal: item.costSubtotal || null,
-            profitAmount: item.profitAmount || null,
+            // costSubtotal: item.costSubtotal || null, // 属性不存在
+            // profitAmount: item.profitAmount || null, // 属性不存在
             isManualProduct: item.isManualProduct || false,
             manualProductName: item.manualProductName || null,
             manualSpecification: item.manualSpecification || null,

@@ -6,6 +6,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
+import { type Category } from '@/lib/api/categories';
 import { prisma } from '@/lib/db';
 import type { ApiResponse } from '@/lib/types/api';
 
@@ -16,24 +17,6 @@ const UpdateStatusSchema = z.object({
     invalid_type_error: '状态值无效',
   }),
 });
-
-// 分类类型定义
-interface Category {
-  id: string;
-  name: string;
-  code: string;
-  description?: string;
-  parentId?: string;
-  sortOrder: number;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
-
-  // 关联数据
-  parent?: Category;
-  children?: Category[];
-  productCount?: number;
-}
 
 /**
  * PUT /api/categories/[id]/status - 更新分类状态
@@ -117,8 +100,8 @@ export async function PUT(
       id: updatedCategory.id,
       name: updatedCategory.name,
       code: updatedCategory.code,
-      description: updatedCategory.description,
-      parentId: updatedCategory.parentId,
+
+      parentId: updatedCategory.parentId || undefined,
       sortOrder: updatedCategory.sortOrder,
       status: updatedCategory.status as 'active' | 'inactive',
       createdAt: updatedCategory.createdAt.toISOString(),

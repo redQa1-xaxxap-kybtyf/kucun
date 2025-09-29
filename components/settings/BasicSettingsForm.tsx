@@ -48,8 +48,8 @@ const fetchBasicSettings = async (): Promise<BasicSettings> => {
 
   if (!data.success) {
     // 如果有详细的验证错误信息，显示具体错误
-    if (data.details && Array.isArray(data.details)) {
-      const errorMessages = data.details
+    if ((data as any).details && Array.isArray((data as any).details)) {
+      const errorMessages = (data as any).details
         .map((detail: any) => `${detail.field}: ${detail.message}`)
         .join('; ');
       throw new Error(`设置数据验证失败：${errorMessages}`);
@@ -79,8 +79,8 @@ const updateBasicSettings = async (
 
   if (!data.success) {
     // 如果有详细的验证错误信息，显示具体错误
-    if (data.details && Array.isArray(data.details)) {
-      const errorMessages = data.details
+    if ((data as any).details && Array.isArray((data as any).details)) {
+      const errorMessages = (data as any).details
         .map((detail: any) => `${detail.field}: ${detail.message}`)
         .join('; ');
       throw new Error(`数据验证失败：${errorMessages}`);

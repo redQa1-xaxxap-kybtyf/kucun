@@ -72,7 +72,7 @@ export default function FinancePage() {
       bgColor: 'bg-purple-50',
       stats: {
         amount: mockStats.monthlyReceived,
-        count: mockStats.paymentCount || 0,
+        count: mockStats.receivableCount,
         label: '本月收款',
       },
     },
@@ -85,8 +85,8 @@ export default function FinancePage() {
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
       stats: {
-        amount: mockStats.totalStatements || 0,
-        count: mockStats.statementCount || 0,
+        amount: mockStats.totalReceivable + mockStats.totalRefundable,
+        count: mockStats.receivableCount + mockStats.refundCount,
         label: '账单总数',
       },
     },

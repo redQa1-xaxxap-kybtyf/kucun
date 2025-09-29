@@ -181,6 +181,8 @@ export function EnhancedSalesOrderForm({
       productId: '',
       quantity: 1,
       unitPrice: 0,
+      displayUnit: '件' as const,
+      displayQuantity: 1,
     });
   };
 
@@ -200,14 +202,15 @@ export function EnhancedSalesOrderForm({
 
     // 自动计算小计
     if (field === 'quantity' || field === 'unitPrice') {
-      updatedItem.subtotal = updatedItem.quantity * updatedItem.unitPrice;
+      updatedItem.subtotal =
+        updatedItem.quantity * (updatedItem.unitPrice || 0);
     }
 
     update(index, updatedItem);
 
     // 检查库存
     if (field === 'productId' && value) {
-      checkProductStock(value, index);
+      checkProductStock(String(value), index);
     }
   };
 
@@ -215,7 +218,7 @@ export function EnhancedSalesOrderForm({
   const checkProductStock = (productId: string, itemIndex: number) => {
     const product = productsData?.data?.find(p => p.id === productId);
     if (product?.inventory) {
-      const availableStock = product.inventory.availableInventory || 0;
+      const availableStock = product.inventory.availableQuantity || 0;
       const requestedQuantity = fields[itemIndex]?.quantity || 0;
 
       if (requestedQuantity > availableStock) {
@@ -245,7 +248,11 @@ export function EnhancedSalesOrderForm({
 
   // 计算订单总金额
   const totalAmount = React.useMemo(
-    () => fields.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0),
+    () =>
+      fields.reduce(
+        (sum, item) => sum + item.quantity * (item.unitPrice || 0),
+        0
+      ),
     [fields]
   );
 
@@ -269,11 +276,11 @@ export function EnhancedSalesOrderForm({
       totalAmount,
       items: submitData.items.map(item => ({
         ...item,
-        subtotal: item.quantity * item.unitPrice,
+        subtotal: item.quantity * (item.unitPrice || 0),
       })),
     };
 
-    createMutation.mutate(orderData);
+    createMutation.mutate(orderData as any);
   };
 
   return (
@@ -565,9 +572,9 @@ export function EnhancedSalesOrderForm({
           {fields.length > 0 && (
             <InventoryChecker
               items={fields.map(item => ({
-                productId: item.productId,
+                productId: item.productId || '',
                 quantity: item.quantity,
-                batchNumber: item.batchNumber,
+                batchNumber: (item as any).batchNumber || '',
               }))}
               products={productsData?.data || []}
               onInventoryCheck={results => {
@@ -637,7 +644,8 @@ export function EnhancedSalesOrderForm({
                           const selectedProduct = productsData?.data?.find(
                             p => p.id === item.productId
                           );
-                          const subtotal = item.quantity * item.unitPrice;
+                          const subtotal =
+                            item.quantity * (item.unitPrice || 0);
                           const hasStockWarning = stockWarnings[index];
 
                           return (
@@ -673,7 +681,7 @@ export function EnhancedSalesOrderForm({
                               <TableCell>
                                 <Input
                                   placeholder="批次号"
-                                  value={item.batchNumber || ''}
+                                  value={(item as any).batchNumber || ''}
                                   onChange={e =>
                                     updateOrderItem(
                                       index,

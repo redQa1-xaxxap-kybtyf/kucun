@@ -73,7 +73,7 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
   // 处理筛选条件变化
   const handleFilter = (
     key: keyof InboundQueryParams,
-    value: string | number | boolean
+    value: string | number | boolean | undefined
   ) => {
     setQueryParams(prev => ({
       ...prev,

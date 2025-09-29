@@ -18,7 +18,7 @@ export async function getDashboardData(
     totalRevenue,
     lowStockCount,
     monthlyOrders,
-    recentOrders,
+    _recentOrders,
   ] = await Promise.all([
     // 产品总数
     prisma.product.count({
@@ -95,26 +95,71 @@ export async function getDashboardData(
     overview: {
       inventory: {
         totalProducts,
+        totalStock: 0,
         lowStockCount,
+        outOfStockCount: 0,
+        inventoryValue: 0,
+        turnoverRate: 0,
+        stockHealth: 0,
       },
       sales: {
-        totalOrders,
         totalRevenue: totalRevenue._sum.totalAmount || 0,
+        monthlyRevenue: 0,
+        totalOrders,
         monthlyOrders,
+        averageOrderValue: 0,
+        revenueGrowth: 0,
+        ordersGrowth: 0,
       },
       customers: {
         totalCustomers,
+        activeCustomers: 0,
+        newCustomers: 0,
+        customerGrowth: 0,
+      },
+      returns: {
+        totalReturns: 0,
+        monthlyReturns: 0,
+        returnRate: 0,
+        returnValue: 0,
+        pendingReturns: 0,
       },
     },
-    recentOrders: recentOrders.map(order => ({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      customerName: order.customer?.name || '未知客户',
-      totalAmount: order.totalAmount,
-      status: order.status,
-      createdAt: order.createdAt,
-    })),
+    // recentOrders: recentOrders.map(order => ({
+    //   id: order.id,
+    //   orderNumber: order.orderNumber,
+    //   customerName: order.customer?.name || '未知客户',
+    //   totalAmount: order.totalAmount,
+    //   status: order.status,
+    //   createdAt: order.createdAt,
+    // })),
     alerts: [], // 暂时为空，后续可以添加库存警告等
+    todos: [], // 待办事项
+    salesTrend: {
+      daily: [],
+      weekly: [],
+      monthly: [],
+      yearly: [],
+    },
+    inventoryTrend: {
+      stockLevels: [],
+      stockMovements: [],
+      categoryDistribution: [],
+    },
+    productRanking: [], // 产品排名
+    customerRanking: [], // 客户排名
+    config: {
+      refreshInterval: 30000,
+      showAlerts: true,
+      showTodos: true,
+      showCharts: true,
+      showQuickActions: true,
+      layout: 'grid' as const,
+      theme: 'light' as const,
+    },
+    lastUpdated: new Date().toISOString(),
+    // recentActivities: [], // 最近活动
+    // notifications: [], // 通知
     quickActions: [
       {
         id: 'create-order',
@@ -122,6 +167,7 @@ export async function getDashboardData(
         description: '快速创建新的销售订单',
         icon: 'plus',
         href: '/sales-orders/create',
+        color: 'blue',
       },
       {
         id: 'add-product',
@@ -129,6 +175,7 @@ export async function getDashboardData(
         description: '向库存中添加新产品',
         icon: 'package',
         href: '/products/create',
+        color: 'green',
       },
       {
         id: 'inventory-check',
@@ -136,6 +183,7 @@ export async function getDashboardData(
         description: '进行库存盘点和调整',
         icon: 'clipboard',
         href: '/inventory',
+        color: 'orange',
       },
     ],
   };

@@ -57,7 +57,7 @@ export function ProductSelector({
       product =>
         product.name.toLowerCase().includes(search) ||
         product.code.toLowerCase().includes(search) ||
-        product.specification.toLowerCase().includes(search)
+        product.specification?.toLowerCase().includes(search)
     );
   }, [products, searchValue]);
 
@@ -149,15 +149,15 @@ export function ProductSelector({
                         <span
                           className={cn(
                             'font-medium',
-                            product.inventory.availableInventory > 0
+                            product.inventory.availableQuantity > 0
                               ? 'text-green-600'
                               : 'text-red-600'
                           )}
                         >
-                          库存: {product.inventory.availableInventory}
+                          库存: {product.inventory.availableQuantity}
                           {product.unit}
                         </span>
-                        {product.inventory.availableInventory <= 10 && (
+                        {product.inventory.availableQuantity <= 10 && (
                           <Badge variant="destructive" className="text-xs">
                             库存不足
                           </Badge>
@@ -213,16 +213,16 @@ export function ProductInfo({ product, className }: ProductInfoProps) {
           <span className="text-xs font-medium">库存状态:</span>
           <Badge
             variant={
-              product.inventory.availableInventory > 0
+              product.inventory.availableQuantity > 0
                 ? 'default'
                 : 'destructive'
             }
             className="text-xs"
           >
-            {product.inventory.availableInventory}
+            {product.inventory.availableQuantity}
             {product.unit}
           </Badge>
-          {product.inventory.availableInventory <= 10 && (
+          {product.inventory.availableQuantity <= 10 && (
             <Badge variant="outline" className="text-xs text-orange-600">
               库存预警
             </Badge>
@@ -230,21 +230,21 @@ export function ProductInfo({ product, className }: ProductInfoProps) {
         </div>
       )}
 
-      {product.tileSpecifications && (
+      {(product as any).tileSpecifications && (
         <div className="border-t pt-2">
           <div className="mb-1 text-xs font-medium">瓷砖规格:</div>
           <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
-            {product.tileSpecifications.size && (
-              <div>尺寸: {product.tileSpecifications.size}</div>
+            {(product as any).tileSpecifications.size && (
+              <div>尺寸: {(product as any).tileSpecifications.size}</div>
             )}
-            {product.tileSpecifications.thickness && (
-              <div>厚度: {product.tileSpecifications.thickness}mm</div>
+            {(product as any).tileSpecifications.thickness && (
+              <div>厚度: {(product as any).tileSpecifications.thickness}mm</div>
             )}
-            {product.tileSpecifications.surface && (
-              <div>表面: {product.tileSpecifications.surface}</div>
+            {(product as any).tileSpecifications.surface && (
+              <div>表面: {(product as any).tileSpecifications.surface}</div>
             )}
-            {product.tileSpecifications.grade && (
-              <div>等级: {product.tileSpecifications.grade}</div>
+            {(product as any).tileSpecifications.grade && (
+              <div>等级: {(product as any).tileSpecifications.grade}</div>
             )}
           </div>
         </div>
@@ -284,7 +284,7 @@ export function BatchProductSelector({
       product =>
         product.name.toLowerCase().includes(search) ||
         product.code.toLowerCase().includes(search) ||
-        product.specification.toLowerCase().includes(search)
+        product.specification?.toLowerCase().includes(search)
     );
   }, [products, searchValue]);
 

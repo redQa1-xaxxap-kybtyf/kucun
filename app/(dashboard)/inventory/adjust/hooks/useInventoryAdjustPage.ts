@@ -17,7 +17,6 @@ export function useInventoryAdjustPage() {
     page: 1,
     limit: 50,
     hasStock: true, // 只显示有库存的记录
-    includeVariants: true, // 包含变体信息以显示SKU
     sortBy: 'updatedAt',
     sortOrder: 'desc',
   };

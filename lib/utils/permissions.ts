@@ -306,7 +306,8 @@ export function getAccessibleNavItems(
     }
 
     // 检查用户角色是否在允许的角色列表中
-    return item.requiredRoles.includes(role);
+    const userRole = role || ('user' as any);
+    return item.requiredRoles.includes(userRole);
   });
 }
 

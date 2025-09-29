@@ -21,9 +21,9 @@ export default async function DashboardPage({
   const timeRange = (searchParams.timeRange as string) || '7d';
 
   // 服务器端获取初始数据
-  const initialData = await getDashboardData({
-    timeRange: timeRange as '1d' | '7d' | '30d' | '90d' | '1y' | 'all',
-  });
+  const initialData = await getDashboardData(
+    timeRange as '1d' | '7d' | '30d' | '90d' | '1y' | 'all'
+  );
 
   return (
     <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">

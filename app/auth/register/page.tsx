@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { z } from 'zod';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -25,10 +26,14 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  userValidations,
-  type UserRegisterInput,
-} from '@/lib/validations/base';
+import { userValidations } from '@/lib/validations/base';
+
+// 扩展注册表单类型以包含确认密码
+const registerFormSchema = userValidations.register.extend({
+  confirmPassword: z.string().min(1, '请确认密码'),
+});
+
+type RegisterFormInput = z.infer<typeof registerFormSchema>;
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -37,8 +42,8 @@ export default function RegisterPage() {
   const [successMessage, setSuccessMessage] = useState('');
 
   // 表单配置
-  const form = useForm<UserRegisterInput>({
-    resolver: zodResolver(userValidations.register),
+  const form = useForm<RegisterFormInput>({
+    resolver: zodResolver(registerFormSchema),
     defaultValues: {
       email: '',
       username: '',
@@ -48,7 +53,7 @@ export default function RegisterPage() {
     },
   });
 
-  const handleSubmit = async (data: UserRegisterInput) => {
+  const handleSubmit = async (data: RegisterFormInput) => {
     setIsLoading(true);
     setFormError('');
     setSuccessMessage('');

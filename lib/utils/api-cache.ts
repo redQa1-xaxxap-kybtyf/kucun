@@ -133,7 +133,7 @@ class ApiCacheManager {
     // 检查是否有正在进行的相同请求（请求去重）
     const pendingRequest = this.pendingRequests.get(cacheKey);
     if (pendingRequest) {
-      return pendingRequest.promise;
+      return pendingRequest.promise as Promise<T>;
     }
 
     // 发起新请求

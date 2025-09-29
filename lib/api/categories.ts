@@ -5,6 +5,13 @@
 
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 
+// 简化的分类信息（用于关联数据）
+export interface CategorySummary {
+  id: string;
+  name: string;
+  code: string;
+}
+
 // 分类类型定义
 export interface Category {
   id: string;
@@ -18,8 +25,8 @@ export interface Category {
   updatedAt: string;
 
   // 关联数据
-  parent?: Category;
-  children?: Category[];
+  parent?: CategorySummary;
+  children?: CategorySummary[];
   productCount?: number;
 }
 

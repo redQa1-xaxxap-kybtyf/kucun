@@ -41,8 +41,8 @@ export async function GET(
     const transformedSupplier: Supplier = {
       id: supplier.id,
       name: supplier.name,
-      phone: supplier.phone,
-      address: supplier.address,
+      phone: supplier.phone || undefined,
+      address: supplier.address || undefined,
       status: supplier.status as 'active' | 'inactive',
       createdAt: supplier.createdAt.toISOString(),
       updatedAt: supplier.updatedAt.toISOString(),
@@ -135,8 +135,8 @@ export async function PUT(
     const transformedSupplier: Supplier = {
       id: updatedSupplier.id,
       name: updatedSupplier.name,
-      phone: updatedSupplier.phone,
-      address: updatedSupplier.address,
+      phone: updatedSupplier.phone || undefined,
+      address: updatedSupplier.address || undefined,
       status: updatedSupplier.status as 'active' | 'inactive',
       createdAt: updatedSupplier.createdAt.toISOString(),
       updatedAt: updatedSupplier.updatedAt.toISOString(),

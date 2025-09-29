@@ -106,7 +106,10 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
         ? {
             paymentMethod: initialData.paymentMethod,
             paymentAmount: initialData.paymentAmount,
-            paymentDate: initialData.paymentDate.split('T')[0],
+            paymentDate:
+              typeof initialData.paymentDate === 'string'
+                ? initialData.paymentDate.split('T')[0]
+                : initialData.paymentDate.toISOString().split('T')[0],
             status: initialData.status,
             remarks: initialData.remarks || '',
             receiptNumber: initialData.receiptNumber || '',

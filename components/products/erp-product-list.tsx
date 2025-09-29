@@ -70,7 +70,7 @@ import {
 
 interface ERPProductListProps {
   onProductSelect?: (productId: string) => void;
-  initialData?: PaginatedResponse<Product>;
+  _initialData?: PaginatedResponse<Product>;
   initialParams?: ProductQueryParams;
 }
 
@@ -80,7 +80,7 @@ interface ERPProductListProps {
  */
 export function ERPProductList({
   onProductSelect,
-  initialData,
+  _initialData,
   initialParams,
 }: ERPProductListProps) {
   const router = useRouter();
@@ -140,14 +140,14 @@ export function ERPProductList({
     data,
     isLoading,
     error,
-    isPreviousData: _isPreviousData,
+    // isPreviousData: _isPreviousData, // TanStack Query v5 中已移除
   } = useQuery({
     queryKey: productQueryKeys.list(queryParams),
     queryFn: () => getProducts(queryParams),
-    initialData,
+    // initialData, // 移除 initialData 以避免类型冲突
     staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
     refetchOnWindowFocus: false, // 避免不必要的重新获取
-    keepPreviousData: true, // 保持之前的数据，避免加载时闪烁
+    // keepPreviousData: true, // TanStack Query v5 中已移除，使用 placeholderData
     refetchOnMount: false, // 避免挂载时重新获取
   });
 
@@ -203,7 +203,7 @@ export function ERPProductList({
   // 筛选处理
   const handleFilter = (
     key: keyof ProductQueryParams,
-    value: string | number | boolean
+    value: string | number | boolean | undefined
   ) => {
     setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
   };
@@ -455,7 +455,7 @@ export function ERPProductList({
         ) : error ? (
           <div className="p-8 text-center">
             <div className="text-sm text-red-600">
-              加载产品列表失败: {error.message}
+              加载产品列表失败: {(error as Error)?.message || '未知错误'}
             </div>
             <Button
               variant="outline"
@@ -531,7 +531,10 @@ export function ERPProductList({
                       />
                     </TableCell>
                     <TableCell className="py-1 text-xs text-muted-foreground">
-                      {(queryParams.page - 1) * queryParams.limit + index + 1}
+                      {((queryParams.page || 1) - 1) *
+                        (queryParams.limit || 10) +
+                        index +
+                        1}
                     </TableCell>
                     <TableCell className="py-1 text-xs font-medium">
                       {product.code}

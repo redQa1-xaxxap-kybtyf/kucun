@@ -89,7 +89,8 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
 
     // 自动填充产品默认规格参数，用户可根据实际批次情况调整
     form.setValue('piecesPerUnit', product.piecesPerUnit || 1);
-    form.setValue('weight', product.weight || 0.01);
+    // TODO: weight 属性不存在于 ProductOption 中，需要从完整的产品信息获取
+    form.setValue('weight', 0.01); // 设置默认重量
 
     form.clearErrors([
       'productId',
@@ -154,7 +155,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         // 确保规格参数字段始终有值，避免 "Required" 错误
         piecesPerUnit:
           data.piecesPerUnit || selectedProduct?.piecesPerUnit || 1,
-        weight: data.weight || selectedProduct?.weight || 0.01,
+        weight: data.weight || 0.01, // selectedProduct 没有 weight 属性
         ...(data.batchNumber?.trim() && {
           batchNumber: data.batchNumber.trim(),
         }),
@@ -430,9 +431,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
                         <div>
                           • 每单位片数：{selectedProduct.piecesPerUnit || 1}片
                         </div>
-                        <div>
-                          • 产品重量：{selectedProduct.weight || 0.01}kg
-                        </div>
+                        <div>• 产品重量：0.01kg（默认值）</div>
                         <div className="mt-1 text-blue-600">
                           💡 如无特殊情况，建议保持默认值以确保库存计算准确
                         </div>

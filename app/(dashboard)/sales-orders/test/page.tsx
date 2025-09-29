@@ -208,7 +208,7 @@ export default function SalesOrderTestPage() {
                     : 'pending',
               '订单号生成API',
               orderNumberTest.result
-                ? `生成订单号: ${orderNumberTest.result.data?.orderNumber}`
+                ? `生成订单号: ${(orderNumberTest.result as any)?.data?.orderNumber || '未知'}`
                 : orderNumberTest.error
                   ? orderNumberTest.error
                   : '点击按钮测试'
@@ -269,13 +269,13 @@ export default function SalesOrderTestPage() {
                     const products = productsData.data;
                     const totalProducts = products.length;
                     const inStock = products.filter(
-                      p => p.inventory && p.inventory.availableInventory > 0
+                      p => p.inventory && p.inventory.availableQuantity > 0
                     ).length;
                     const lowStock = products.filter(
                       p =>
                         p.inventory &&
-                        p.inventory.availableInventory > 0 &&
-                        p.inventory.availableInventory <= 10
+                        p.inventory.availableQuantity > 0 &&
+                        p.inventory.availableQuantity <= 10
                     ).length;
                     const outOfStock = totalProducts - inStock;
 

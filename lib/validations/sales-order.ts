@@ -290,15 +290,28 @@ export const salesOrderQuerySchema = z.object({
     .optional()
     .transform(val => val?.trim() || undefined),
   sortBy: z
-    .enum(['orderNumber', 'totalAmount', 'createdAt', 'updatedAt'])
+    .enum(['orderNumber', 'totalAmount', 'createdAt', 'updatedAt', 'status'])
     .nullable()
     .optional()
-    .default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).nullable().optional().default('desc'),
-  status: salesOrderStatusSchema.nullable().optional(),
-  customerId: z.string().nullable().optional(),
-  startDate: z.string().nullable().optional(),
-  endDate: z.string().nullable().optional(),
+    .default('createdAt')
+    .transform(val => val ?? 'createdAt'),
+  sortOrder: z
+    .enum(['asc', 'desc'])
+    .nullable()
+    .optional()
+    .default('desc')
+    .transform(val => val ?? 'desc'),
+  status: salesOrderStatusSchema
+    .nullable()
+    .optional()
+    .transform(val => val ?? undefined),
+  customerId: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val ?? undefined),
+  startDate: z.string().nullable().optional().transform(val => val || undefined),
+  endDate: z.string().nullable().optional().transform(val => val || undefined),
 });
 
 /**

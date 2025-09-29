@@ -55,7 +55,6 @@ async function getRefundDetail(id: string) {
                 id: true,
                 name: true,
                 phone: true,
-                email: true,
               },
             },
             salesOrder: {
@@ -66,13 +65,6 @@ async function getRefundDetail(id: string) {
                 createdAt: true,
               },
             },
-          },
-        },
-        processedBy: {
-          select: {
-            id: true,
-            name: true,
-            username: true,
           },
         },
       },
@@ -220,12 +212,12 @@ export default async function RefundDetailPage({
                 </>
               )}
 
-              {refund.notes && (
+              {refund.remarks && (
                 <div>
                   <label className="text-sm font-medium text-gray-500">
                     备注说明
                   </label>
-                  <p className="mt-1 text-sm">{refund.notes}</p>
+                  <p className="mt-1 text-sm">{refund.remarks}</p>
                 </div>
               )}
             </CardContent>
@@ -250,7 +242,7 @@ export default async function RefundDetailPage({
                       {refund.returnOrderNumber}
                     </p>
                   </div>
-                  {refund.returnOrder.salesOrder && (
+                  {refund.returnOrder?.salesOrder && (
                     <div>
                       <label className="text-sm font-medium text-gray-500">
                         原销售订单
@@ -262,7 +254,7 @@ export default async function RefundDetailPage({
                   )}
                 </div>
 
-                {refund.returnOrder.customer && (
+                {refund.returnOrder?.customer && (
                   <>
                     <Separator />
                     <div>
@@ -271,16 +263,11 @@ export default async function RefundDetailPage({
                       </label>
                       <div className="mt-2 space-y-1">
                         <p className="text-sm font-medium">
-                          {refund.returnOrder.customer.name}
+                          {refund.returnOrder?.customer?.name}
                         </p>
-                        {refund.returnOrder.customer.phone && (
+                        {refund.returnOrder?.customer?.phone && (
                           <p className="text-sm text-gray-600">
                             电话：{refund.returnOrder.customer.phone}
-                          </p>
-                        )}
-                        {refund.returnOrder.customer.email && (
-                          <p className="text-sm text-gray-600">
-                            邮箱：{refund.returnOrder.customer.email}
                           </p>
                         )}
                       </div>
@@ -322,27 +309,15 @@ export default async function RefundDetailPage({
                     {new Date(refund.updatedAt).toLocaleString('zh-CN')}
                   </span>
                 </div>
-                {refund.processedAt && (
+                {refund.processedDate && (
                   <div className="flex justify-between">
                     <span className="text-gray-500">处理时间</span>
                     <span>
-                      {new Date(refund.processedAt).toLocaleString('zh-CN')}
+                      {new Date(refund.processedDate).toLocaleString('zh-CN')}
                     </span>
                   </div>
                 )}
               </div>
-
-              {refund.processedBy && (
-                <>
-                  <Separator />
-                  <div>
-                    <label className="text-sm font-medium text-gray-500">
-                      处理人员
-                    </label>
-                    <p className="mt-1 text-sm">{refund.processedBy.name}</p>
-                  </div>
-                </>
-              )}
             </CardContent>
           </Card>
 
@@ -366,13 +341,13 @@ export default async function RefundDetailPage({
                   </div>
                 </div>
 
-                {refund.processedAt && (
+                {refund.processedDate && (
                   <div className="flex items-start gap-3">
                     <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
                     <div>
                       <p className="font-medium">退款处理完成</p>
                       <p className="text-gray-500">
-                        {new Date(refund.processedAt).toLocaleString('zh-CN')}
+                        {new Date(refund.processedDate).toLocaleString('zh-CN')}
                       </p>
                     </div>
                   </div>

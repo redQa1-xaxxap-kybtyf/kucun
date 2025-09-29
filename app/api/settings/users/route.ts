@@ -17,6 +17,7 @@ import {
   UserListQuerySchema,
 } from '@/lib/schemas/settings';
 import type {
+  UpdateUserRequest,
   UserListResponse,
   UserManagementUser,
 } from '@/lib/types/settings';
@@ -37,8 +38,8 @@ function transformUser(user: {
     username: user.username,
     email: user.email,
     name: user.name,
-    role: user.role,
-    status: user.status,
+    role: user.role as 'admin' | 'sales',
+    status: user.status as 'active' | 'inactive',
     createdAt: user.createdAt.toISOString(),
     updatedAt: user.updatedAt.toISOString(),
   };
@@ -351,7 +352,7 @@ export async function PUT(request: NextRequest) {
     const validation = await validateUserUpdate(
       userId,
       session.user.id,
-      updateData
+      validatedData
     );
     if (!validation.success) {
       return NextResponse.json(

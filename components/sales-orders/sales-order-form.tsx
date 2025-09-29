@@ -49,6 +49,8 @@ import {
   salesOrderQueryKeys,
   updateSalesOrder,
 } from '@/lib/api/sales-orders';
+import { salesOrderFormDefaults } from '@/lib/schemas/sales-order';
+// 重复导入已删除
 import {
   SALES_ORDER_STATUS_LABELS,
   SALES_ORDER_STATUS_TRANSITIONS,
@@ -157,9 +159,7 @@ export function SalesOrderForm({
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   // 表单提交
-  const onSubmit = async (
-    data: SalesOrderCreateFormData | SalesOrderUpdateFormData
-  ) => {
+  const onSubmit = async (data: any) => {
     setSubmitError('');
 
     try {
@@ -346,7 +346,7 @@ export function SalesOrderForm({
 
           {/* 订单明细 */}
           <OrderItemsEditor
-            control={form.control}
+            control={form.control as any}
             name="items"
             disabled={isLoading}
             mode={mode}

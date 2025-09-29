@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { uploadConfig } from '@/lib/env';
+import { uploadToQiniu } from '@/lib/services/qiniu-upload';
 
 // 文件上传验证
 const uploadValidation = z.object({
@@ -56,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证文件类型
-    if (!SUPPORTED_IMAGE_TYPES.includes(file.type)) {
+    if (!SUPPORTED_IMAGE_TYPES.includes(file.type as any)) {
       return NextResponse.json(
         {
           success: false,

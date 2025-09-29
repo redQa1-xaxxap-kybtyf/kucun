@@ -63,12 +63,7 @@ export function CustomerCreateDialog({
     defaultValues: {
       name: '',
       phone: '',
-      address: {
-        province: '',
-        city: '',
-        district: '',
-        detail: '',
-      },
+      address: '',
       extendedInfo: {},
     },
   });
@@ -118,12 +113,7 @@ export function CustomerCreateDialog({
     form.reset({
       name: '',
       phone: '',
-      address: {
-        province: '',
-        city: '',
-        district: '',
-        detail: '',
-      },
+      address: '',
       extendedInfo: {},
     });
     onOpenChange(false);
@@ -150,10 +140,13 @@ export function CustomerCreateDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+          <form
+            onSubmit={form.handleSubmit(onSubmit as any)}
+            className="space-y-4"
+          >
             {/* 客户名称 */}
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="name"
               render={({ field }) => (
                 <FormItem>
@@ -172,7 +165,7 @@ export function CustomerCreateDialog({
 
             {/* 联系电话 */}
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="phone"
               render={({ field }) => (
                 <FormItem>
@@ -191,7 +184,7 @@ export function CustomerCreateDialog({
 
             {/* 客户地址 */}
             <FormField
-              control={form.control}
+              control={form.control as any}
               name="address"
               render={({ field }) => (
                 <AddressSelector

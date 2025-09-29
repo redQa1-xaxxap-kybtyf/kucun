@@ -56,7 +56,7 @@ export const POST = withErrorHandling(
 
     const order = await createSalesOrder(
       validationResult.data,
-      session.user.id
+      (session as any).user.id
     );
     return successResponse(order, 201, '销售订单创建成功');
   })

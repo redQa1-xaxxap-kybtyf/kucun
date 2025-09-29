@@ -135,7 +135,7 @@ export async function GET(request: NextRequest) {
                 select: {
                   id: true,
                   name: true,
-                  sku: true,
+                  code: true,
                 },
               },
             },
@@ -318,7 +318,7 @@ export async function POST(request: NextRequest) {
               select: {
                 id: true,
                 name: true,
-                sku: true,
+                code: true,
               },
             },
           },

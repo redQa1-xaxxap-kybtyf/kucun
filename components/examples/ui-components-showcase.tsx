@@ -59,7 +59,8 @@ const sampleSpecification: TileSpecification = {
   coverageArea: 1.44,
 };
 
-const _sampleBatches: ProductionBatch[] = [
+const _sampleBatches: any[] = [
+  // TODO: 定义 ProductionBatch 类型
   {
     date: '2024-01-15',
     batchNumber: 'B20240115001',

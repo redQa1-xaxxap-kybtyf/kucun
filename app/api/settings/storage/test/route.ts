@@ -85,7 +85,7 @@ async function _simulateQiniuConnectionTest(_config: {
   );
 
   // 基本参数验证
-  if (!config.accessKey || !config.secretKey || !config.bucket) {
+  if (!_config.accessKey || !_config.secretKey || !_config.bucket) {
     return {
       success: false,
       message: '缺少必要的配置参数',
@@ -93,7 +93,7 @@ async function _simulateQiniuConnectionTest(_config: {
   }
 
   // 模拟Access Key格式验证
-  if (config.accessKey.length < 20) {
+  if (_config.accessKey.length < 20) {
     return {
       success: false,
       message: 'Access Key格式不正确，长度过短',
@@ -101,7 +101,7 @@ async function _simulateQiniuConnectionTest(_config: {
   }
 
   // 模拟Secret Key格式验证
-  if (config.secretKey.length < 30) {
+  if (_config.secretKey.length < 30) {
     return {
       success: false,
       message: 'Secret Key格式不正确，长度过短',
@@ -109,7 +109,7 @@ async function _simulateQiniuConnectionTest(_config: {
   }
 
   // 模拟存储空间名称验证
-  if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(config.bucket)) {
+  if (!/^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(_config.bucket)) {
     return {
       success: false,
       message: '存储空间名称格式不正确',
@@ -121,13 +121,13 @@ async function _simulateQiniuConnectionTest(_config: {
 
   if (isSuccess) {
     // 获取区域显示名称
-    const regionName = getRegionDisplayName(config.region || 'z0');
+    const regionName = getRegionDisplayName(_config.region || 'z0');
 
     return {
       success: true,
       message: '七牛云存储连接测试成功',
       bucketInfo: {
-        name: config.bucket,
+        name: _config.bucket,
         region: regionName,
         private: Math.random() > 0.5, // 随机模拟公开/私有状态
       },
@@ -176,19 +176,14 @@ async function realQiniuConnectionTest(): Promise<QiniuStorageTestResponse> {
     return {
       success: result.success,
       message: result.message,
-      details: {
-        timestamp: new Date().toISOString(),
-        storageType: 'qiniu',
-      },
+      ...((result as any).bucketInfo && {
+        bucketInfo: (result as any).bucketInfo,
+      }),
     };
   } catch (error) {
     return {
       success: false,
       message: `连接异常: ${error instanceof Error ? error.message : '未知错误'}`,
-      details: {
-        error: error instanceof Error ? error.message : '未知错误',
-        timestamp: new Date().toISOString(),
-      },
     };
   }
 }

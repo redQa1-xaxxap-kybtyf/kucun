@@ -19,12 +19,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ErrorMessage } from '@/components/ui/error-message';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Separator } from '@/components/ui/separator';
 import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
 import { formatCurrency, formatDate } from '@/lib/utils';
-
-import { ErrorMessage } from '@/components/ui/error-message';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface SalesOrderDetail {
   id: string;
@@ -227,7 +226,9 @@ export default function SalesOrderDetailPage() {
                   </label>
                   <div className="mt-1">
                     <Badge variant={getStatusBadgeVariant(order.status)}>
-                      {SALES_ORDER_STATUS_LABELS[order.status] || order.status}
+                      {SALES_ORDER_STATUS_LABELS[
+                        order.status as keyof typeof SALES_ORDER_STATUS_LABELS
+                      ] || order.status}
                     </Badge>
                   </div>
                 </div>

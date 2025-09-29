@@ -8,23 +8,19 @@ const ENCRYPTION_KEY = crypto
   .update(env.NEXTAUTH_SECRET)
   .digest();
 
-const ALGORITHM = 'aes-256-gcm';
+const _ALGORITHM = 'aes-256-gcm';
 
 /**
  * 加密字符串
  */
 export function encrypt(text: string): string {
   try {
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipherGCM(ALGORITHM, ENCRYPTION_KEY, iv);
+    const cipher = crypto.createCipher('aes-256-cbc', ENCRYPTION_KEY);
 
     let encrypted = cipher.update(text, 'utf8', 'hex');
     encrypted += cipher.final('hex');
 
-    const authTag = cipher.getAuthTag();
-
-    // 将 IV、认证标签和加密数据组合
-    return `${iv.toString('hex')}:${authTag.toString('hex')}:${encrypted}`;
+    return encrypted;
   } catch (error) {
     console.error('加密失败:', error);
     throw new Error('数据加密失败');
@@ -36,20 +32,9 @@ export function encrypt(text: string): string {
  */
 export function decrypt(encryptedText: string): string {
   try {
-    const parts = encryptedText.split(':');
+    const decipher = crypto.createDecipher('aes-256-cbc', ENCRYPTION_KEY);
 
-    if (parts.length !== 3) {
-      throw new Error('加密数据格式不正确');
-    }
-
-    const iv = Buffer.from(parts[0], 'hex');
-    const authTag = Buffer.from(parts[1], 'hex');
-    const encrypted = parts[2];
-
-    const decipher = crypto.createDecipherGCM(ALGORITHM, ENCRYPTION_KEY, iv);
-    decipher.setAuthTag(authTag);
-
-    let decrypted = decipher.update(encrypted, 'hex', 'utf8');
+    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
     decrypted += decipher.final('utf8');
 
     return decrypted;

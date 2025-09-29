@@ -42,6 +42,12 @@ export const createRefundRecordSchema = z
       })
       .min(1, '请选择退货订单'),
 
+    returnOrderNumber: z
+      .string({
+        invalid_type_error: '退货订单号必须是字符串',
+      })
+      .optional(),
+
     salesOrderId: z
       .string({
         required_error: '请选择销售订单',

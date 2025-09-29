@@ -13,14 +13,15 @@ import { customerUpdateSchema } from '@/lib/validations/customer';
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证用户会话
     await validateUserSession();
 
     // 获取客户详情
-    const customer = await getCustomerDetail(params.id);
+    const { id } = await params;
+    const customer = await getCustomerDetail(id);
 
     return NextResponse.json({
       success: true,
@@ -37,12 +38,13 @@ export async function GET(
       },
       {
         status:
-          error instanceof Error &&
-          (error.message === '未授权访问'
-            ? 401
-            : error.message === '客户不存在'
-              ? 404
-              : 500),
+          error instanceof Error
+            ? error.message === '未授权访问'
+              ? 401
+              : error.message === '客户不存在'
+                ? 404
+                : 500
+            : 500,
       }
     );
   }
@@ -53,7 +55,7 @@ export async function GET(
  */
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证用户会话
@@ -61,9 +63,12 @@ export async function PUT(
 
     const body = await request.json();
 
+    // 获取参数
+    const { id } = await params;
+
     // 验证输入数据
     const validationResult = customerUpdateSchema.safeParse({
-      id: params.id,
+      id,
       ...body,
     });
 
@@ -75,7 +80,7 @@ export async function PUT(
     }
 
     // 更新客户
-    const customer = await updateCustomer(params.id, validationResult.data);
+    const customer = await updateCustomer(id, validationResult.data);
 
     return NextResponse.json({
       success: true,
@@ -90,12 +95,13 @@ export async function PUT(
       },
       {
         status:
-          error instanceof Error &&
-          (error.message === '未授权访问'
-            ? 401
-            : error.message === '客户不存在'
-              ? 404
-              : 500),
+          error instanceof Error
+            ? error.message === '未授权访问'
+              ? 401
+              : error.message === '客户不存在'
+                ? 404
+                : 500
+            : 500,
       }
     );
   }
@@ -106,14 +112,15 @@ export async function PUT(
  */
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // 验证用户会话
     await validateUserSession();
 
-    // 删除客户
-    await deleteCustomer(params.id);
+    // 获取参数并删除客户
+    const { id } = await params;
+    await deleteCustomer(id);
 
     return NextResponse.json({
       success: true,
@@ -128,12 +135,13 @@ export async function DELETE(
       },
       {
         status:
-          error instanceof Error &&
-          (error.message === '未授权访问'
-            ? 401
-            : error.message === '客户不存在'
-              ? 404
-              : 500),
+          error instanceof Error
+            ? error.message === '未授权访问'
+              ? 401
+              : error.message === '客户不存在'
+                ? 404
+                : 500
+            : 500,
       }
     );
   }

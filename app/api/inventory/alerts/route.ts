@@ -237,14 +237,18 @@ export async function GET(request: NextRequest) {
       cacheConfig.inventoryTtl // 使用库存缓存TTL
     );
 
+    const alertsData = alerts || [];
+
     return NextResponse.json({
       success: true,
-      data: alerts,
-      total: alerts.length,
+      data: alertsData,
+      total: alertsData.length,
       summary: {
-        critical: alerts.filter(a => a.severity === 'critical').length,
-        warning: alerts.filter(a => a.severity === 'warning').length,
-        info: alerts.filter(a => a.severity === 'info').length,
+        critical: alertsData.filter(a => a.severity === 'critical').length,
+        warning: alertsData.filter(a => a.severity === 'warning').length,
+        info: alertsData.filter(
+          a => a.severity === 'warning' || a.severity === 'critical'
+        ).length,
       },
     });
   } catch (error) {

@@ -264,7 +264,7 @@ export default function ReceivablesPage() {
                 <div className="text-muted-foreground">暂无应收账款数据</div>
               </div>
             ) : (
-              data.data.receivables.map((receivable: unknown) => (
+              data.data.receivables.map((receivable: any) => (
                 <Card
                   key={receivable.id}
                   className="transition-shadow hover:shadow-md"

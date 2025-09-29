@@ -254,7 +254,6 @@ export function ERPCustomerForm({
                       <AddressSelector
                         value={field.value}
                         onChange={field.onChange}
-                        placeholder="请选择客户地址"
                         className="text-xs"
                         showLabel={false}
                         disabled={

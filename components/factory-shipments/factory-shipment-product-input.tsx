@@ -30,10 +30,8 @@ export function FactoryShipmentProductInput({
       // 更新产品ID
       form.setValue(`items.${index}.productId`, productId);
 
-      // 可以设置默认单价（如果产品有默认价格）
-      if (product.defaultPrice) {
-        form.setValue(`items.${index}.unitPrice`, product.defaultPrice);
-      }
+      // TODO: 可以设置默认单价（如果产品有默认价格）
+      // 暂时不设置默认价格，等待产品模型添加价格字段
 
       // 清除手动输入的产品信息
       form.setValue(`items.${index}.isManualProduct`, false);
@@ -53,9 +51,9 @@ export function FactoryShipmentProductInput({
           <FormLabel>选择产品</FormLabel>
           <FormControl>
             <SmartProductSearch
-              products={products}
+              products={products as any}
               value={field.value || ''}
-              onSelect={handleProductSelect}
+              onValueChange={handleProductSelect}
               placeholder="搜索或选择产品..."
               className="w-full"
             />

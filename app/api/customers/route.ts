@@ -33,7 +33,15 @@ export async function GET(request: NextRequest) {
 
     const { page, limit } = paginationResult.data;
     const search = searchParams.get('search') || '';
-    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortBy = (searchParams.get('sortBy') || 'createdAt') as
+      | 'name'
+      | 'createdAt'
+      | 'updatedAt'
+      | 'totalOrders'
+      | 'totalAmount'
+      | 'transactionCount'
+      | 'cooperationDays'
+      | 'returnOrderCount';
     const sortOrder = (searchParams.get('sortOrder') || 'desc') as
       | 'asc'
       | 'desc';

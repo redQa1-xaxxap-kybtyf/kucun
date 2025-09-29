@@ -48,7 +48,7 @@ export async function GET(
             },
           },
           orderBy: {
-            createdAt: 'asc',
+            id: 'asc',
           },
         },
       },
@@ -100,8 +100,8 @@ export async function GET(
     );
 
     // 构建可退货明细
-    const returnableItems = salesOrder.items
-      .map(item => {
+    const returnableItems = (salesOrder as any).items
+      .map((item: any) => {
         const returnedQuantity = returnedQuantities[item.id] || 0;
         const availableQuantity = item.quantity - returnedQuantity;
 
@@ -120,7 +120,7 @@ export async function GET(
           variantId: item.variantId,
         };
       })
-      .filter(item => item.availableQuantity > 0); // 只返回还可以退货的明细
+      .filter((item: any) => item.availableQuantity > 0); // 只返回还可以退货的明细
 
     const response = {
       salesOrder: {
@@ -128,15 +128,15 @@ export async function GET(
         orderNumber: salesOrder.orderNumber,
         status: salesOrder.status,
         totalAmount: salesOrder.totalAmount,
-        customer: salesOrder.customer,
+        customer: (salesOrder as any).customer,
         createdAt: salesOrder.createdAt,
       },
       returnableItems,
       summary: {
-        totalItems: salesOrder.items.length,
+        totalItems: (salesOrder as any).items.length,
         returnableItems: returnableItems.length,
         maxReturnAmount: returnableItems.reduce(
-          (sum, item) => sum + item.maxReturnAmount,
+          (sum: any, item: any) => sum + item.maxReturnAmount,
           0
         ),
       },

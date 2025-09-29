@@ -32,6 +32,9 @@ export async function generateSupplierCode(): Promise<string> {
     orderBy: {
       supplierCode: 'desc',
     },
+    select: {
+      supplierCode: true,
+    },
   });
 
   let sequence = 1;
@@ -62,7 +65,7 @@ export async function validateSupplierNameUniqueness(
 
   const existingSupplier = await prisma.supplier.findFirst({
     where: {
-      normalizedName,
+      name: normalizedName,
       ...(excludeId && { id: { not: excludeId } }),
     },
     select: {

@@ -113,8 +113,8 @@ export function InventoryDetailForm<T extends FieldValues>({
                 </FormLabel>
                 <FormControl>
                   <CustomerSelector
-                    value={field.value}
-                    onValueChange={field.onChange}
+                    control={control}
+                    name={field.name}
                     disabled={isLoading}
                     placeholder={`选择${mode === 'inbound' ? '供应商' : '客户'}`}
                   />

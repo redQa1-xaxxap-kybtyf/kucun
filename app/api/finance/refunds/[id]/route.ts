@@ -67,7 +67,7 @@ export async function PUT(
       });
 
       if (currentRefund) {
-        updateData.remainingAmount = Math.max(
+        (updateData as any).remainingAmount = Math.max(
           0,
           (validatedData.refundAmount || currentRefund.refundAmount) -
             validatedData.processedAmount
@@ -81,7 +81,7 @@ export async function PUT(
       });
 
       if (currentRefund) {
-        updateData.remainingAmount = Math.max(
+        (updateData as any).remainingAmount = Math.max(
           0,
           validatedData.refundAmount - (currentRefund.processedAmount || 0)
         );

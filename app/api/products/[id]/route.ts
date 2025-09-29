@@ -38,7 +38,7 @@ async function resolveParams(context: { params?: Record<string, string> }) {
 /**
  * 获取单个产品信息
  */
-export const GET = withErrorHandling(async (request, context) => {
+export const GET = withErrorHandling(async (request: any, context: any) => {
   if (!(await ensureAuthorized())) {
     return unauthorizedResponse('请先登录');
   }
@@ -59,7 +59,7 @@ export const GET = withErrorHandling(async (request, context) => {
 /**
  * 更新产品信息
  */
-export const PUT = withErrorHandling(async (request, context) => {
+export const PUT = withErrorHandling(async (request: any, context: any) => {
   if (!(await ensureAuthorized())) {
     return unauthorizedResponse('请先登录');
   }
@@ -92,7 +92,7 @@ export const PUT = withErrorHandling(async (request, context) => {
 /**
  * 删除产品
  */
-export const DELETE = withErrorHandling(async (request, context) => {
+export const DELETE = withErrorHandling(async (request: any, context: any) => {
   if (!(await ensureAuthorized())) {
     return unauthorizedResponse('请先登录');
   }

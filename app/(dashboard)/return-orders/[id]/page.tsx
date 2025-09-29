@@ -21,12 +21,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { ErrorMessage } from '@/components/ui/error-message';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Separator } from '@/components/ui/separator';
 import { RETURN_ORDER_STATUS_LABELS } from '@/lib/types/return-order';
 import { formatCurrency, formatDate } from '@/lib/utils';
-
-import { ErrorMessage } from '@/components/ui/error-message';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface ReturnOrderDetail {
   id: string;
@@ -241,8 +240,9 @@ export default function ReturnOrderDetailPage() {
                     <Badge variant={getStatusBadgeVariant(order.status)}>
                       {getStatusIcon(order.status)}
                       <span className="ml-1">
-                        {RETURN_ORDER_STATUS_LABELS[order.status] ||
-                          order.status}
+                        {RETURN_ORDER_STATUS_LABELS[
+                          order.status as keyof typeof RETURN_ORDER_STATUS_LABELS
+                        ] || order.status}
                       </span>
                     </Badge>
                   </div>
@@ -408,7 +408,12 @@ export default function ReturnOrderDetailPage() {
                     ></div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">
-                        状态更新为：{RETURN_ORDER_STATUS_LABELS[order.status]}
+                        状态更新为：
+                        {
+                          RETURN_ORDER_STATUS_LABELS[
+                            order.status as keyof typeof RETURN_ORDER_STATUS_LABELS
+                          ]
+                        }
                       </p>
                       <p className="text-xs text-muted-foreground">
                         {formatDate(order.updatedAt)}

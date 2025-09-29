@@ -64,7 +64,7 @@ export function InventoryChecker({
         };
       }
 
-      const availableQuantity = product.inventory?.availableInventory || 0;
+      const availableQuantity = product.inventory?.availableQuantity || 0;
       const isAvailable = availableQuantity >= item.quantity;
       const isLowStock = availableQuantity > 0 && availableQuantity <= 10;
 
@@ -242,7 +242,7 @@ export function InventoryStatus({
   requestedQuantity,
   className,
 }: InventoryStatusProps) {
-  const availableQuantity = product.inventory?.availableInventory || 0;
+  const availableQuantity = product.inventory?.availableQuantity || 0;
   const isAvailable = availableQuantity >= requestedQuantity;
   const isLowStock = availableQuantity > 0 && availableQuantity <= 10;
 

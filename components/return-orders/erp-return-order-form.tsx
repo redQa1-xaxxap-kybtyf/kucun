@@ -212,7 +212,7 @@ export function ERPReturnOrderForm({
   // 计算总金额
   const calculateTotal = () => {
     const items = form.watch('items');
-    return items.reduce((total, item) => total + (item.subtotal || 0), 0);
+    return items?.reduce((total, item) => total + (item.subtotal || 0), 0) || 0;
   };
 
   // 表单提交
@@ -220,9 +220,9 @@ export function ERPReturnOrderForm({
     data: CreateReturnOrderFormData | UpdateReturnOrderFormData
   ) => {
     if (mode === 'edit' && initialData) {
-      const updateData: UpdateReturnOrderFormData = {
+      const updateData = {
         id: initialData.id,
-        ...data,
+        data: data as UpdateReturnOrderFormData,
       };
       updateMutation.mutate(updateData);
     } else {

@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db';
 import { productUpdateSchema } from '@/lib/validations/product';
 
 // 定义产品查询结果类型
-type ProductWithRelations = Prisma.ProductGetPayload<{
+type _ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
     category: true;
     variants: true;
@@ -117,7 +117,6 @@ export async function updateProduct(
     data: {
       name: validatedData.name,
       specification: validatedData.specification,
-      specifications: validatedData.specifications,
       unit: validatedData.unit,
       piecesPerUnit: validatedData.piecesPerUnit,
       weight: validatedData.weight,
@@ -229,13 +228,12 @@ export async function deleteProduct(id: string) {
 /**
  * 格式化产品数据
  */
-function formatProduct(product: ProductWithRelations) {
+function formatProduct(product: any) {
   return {
     id: product.id,
     code: product.code,
     name: product.name,
     specification: product.specification,
-    specifications: product.specifications,
     unit: product.unit,
     piecesPerUnit: product.piecesPerUnit,
     weight: product.weight,

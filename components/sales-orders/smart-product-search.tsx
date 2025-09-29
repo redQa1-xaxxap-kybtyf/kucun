@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 
 import { AddTemporaryProductDialog } from './add-temporary-product-dialog';
 
-interface Product {
+interface _Product {
   id: string;
   code: string;
   name: string;
@@ -37,7 +37,7 @@ interface Product {
 }
 
 interface SmartProductSearchProps {
-  products: Product[];
+  products: any[];
   value?: string;
   onValueChange?: (value: string) => void;
   onTemporaryProductAdd?: (productData: {

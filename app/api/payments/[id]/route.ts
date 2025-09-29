@@ -124,15 +124,18 @@ export async function PUT(
 
     const updateData = validationResult.data;
 
-    // 处理日期字段
-    if (updateData.paymentDate) {
-      updateData.paymentDate = new Date(updateData.paymentDate);
-    }
+    // 处理日期字段并创建更新对象
+    const updateDataWithDate = {
+      ...updateData,
+      ...(updateData.paymentDate && {
+        paymentDate: new Date(updateData.paymentDate),
+      }),
+    };
 
     // 更新收款记录
     const updatedPayment = await prisma.paymentRecord.update({
       where: { id },
-      data: updateData,
+      data: updateDataWithDate,
       include: {
         customer: {
           select: {

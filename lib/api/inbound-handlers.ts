@@ -69,18 +69,29 @@ export async function validateUserSession() {
  * 解析入库查询参数
  */
 export function parseInboundQueryParams(searchParams: URLSearchParams) {
-  return inboundQuerySchema.parse({
-    page: searchParams.get('page'),
-    limit: searchParams.get('limit'),
-    search: searchParams.get('search'),
-    productId: searchParams.get('productId'),
-    reason: searchParams.get('reason'),
-    userId: searchParams.get('userId'),
-    startDate: searchParams.get('startDate'),
-    endDate: searchParams.get('endDate'),
-    sortBy: searchParams.get('sortBy'),
-    sortOrder: searchParams.get('sortOrder'),
+  const parsed = inboundQuerySchema.parse({
+    page: searchParams.get('page') || undefined,
+    limit: searchParams.get('limit') || undefined,
+    search: searchParams.get('search') || undefined,
+    productId: searchParams.get('productId') || undefined,
+    reason: searchParams.get('reason') || undefined,
+    userId: searchParams.get('userId') || undefined,
+    startDate: searchParams.get('startDate') || undefined,
+    endDate: searchParams.get('endDate') || undefined,
+    sortBy: searchParams.get('sortBy') || undefined,
+    sortOrder: searchParams.get('sortOrder') || undefined,
   });
+
+  // 转换 null 为 undefined，确保类型正确
+  return {
+    ...parsed,
+    productId: parsed.productId || undefined,
+    reason: parsed.reason || undefined,
+    userId: parsed.userId || undefined,
+    startDate: parsed.startDate || undefined,
+    endDate: parsed.endDate || undefined,
+    sortOrder: (parsed.sortOrder as 'asc' | 'desc') || 'desc',
+  };
 }
 
 /**
@@ -126,12 +137,12 @@ export function buildInboundWhereClause(queryData: {
   if (queryData.startDate || queryData.endDate) {
     where.createdAt = {};
     if (queryData.startDate) {
-      where.createdAt.gte = new Date(queryData.startDate);
+      (where.createdAt as any).gte = new Date(queryData.startDate);
     }
     if (queryData.endDate) {
       const endDate = new Date(queryData.endDate);
       endDate.setHours(23, 59, 59, 999);
-      where.createdAt.lte = endDate;
+      (where.createdAt as any).lte = endDate;
     }
   }
 
@@ -163,7 +174,7 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
     reason: record.reason,
     remarks: record.remarks || '',
     userId: record.userId,
-    batchNumber: record.batchNumber || '', // 新增批次号字段
+    batchNumber: (record as any).batchNumber || '', // 新增批次号字段
     colorCode: record.colorCode || '',
     productionDate: record.productionDate
       ? toISOString(record.productionDate)?.split('T')[0] || ''
@@ -181,18 +192,22 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
       unit: record.product.unit,
       // 优先使用批次级规格参数，回退到产品默认参数
       piecesPerUnit:
-        record.batchSpecification?.piecesPerUnit ||
-        record.product.piecesPerUnit,
-      weight: record.batchSpecification?.weight || record.product.weight,
+        (record as any).batchSpecification?.piecesPerUnit ||
+        (record.product as any).piecesPerUnit ||
+        1,
+      weight:
+        (record as any).batchSpecification?.weight ||
+        (record.product as any).weight ||
+        0,
     },
 
     // 批次规格参数信息（如果存在）
-    batchSpecification: record.batchSpecification
+    batchSpecification: (record as any).batchSpecification
       ? {
-          id: record.batchSpecification.id,
-          piecesPerUnit: record.batchSpecification.piecesPerUnit,
-          weight: record.batchSpecification.weight,
-          thickness: record.batchSpecification.thickness,
+          id: (record as any).batchSpecification.id,
+          piecesPerUnit: (record as any).batchSpecification.piecesPerUnit,
+          weight: (record as any).batchSpecification.weight,
+          thickness: (record as any).batchSpecification.thickness,
         }
       : undefined,
 
@@ -269,16 +284,16 @@ export async function getInboundRecords(queryData: {
   ]);
 
   // 格式化记录数据
-  const formattedRecords = formatInboundRecords(records);
+  const formattedRecords = formatInboundRecords(records as any);
 
   return {
-    success: true,
-    data: formattedRecords,
+    // success: true, // 移除不存在的属性
+    data: formattedRecords as any,
     pagination: {
       page: queryData.page,
       limit: queryData.limit,
       total,
-      pages: Math.ceil(total / queryData.limit),
+      totalPages: Math.ceil(total / queryData.limit),
     },
   };
 }

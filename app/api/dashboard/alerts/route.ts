@@ -75,7 +75,7 @@ export async function GET(_request: NextRequest) {
           productId: inventory.productId,
           productName: inventory.product.name,
           productCode: inventory.product.code,
-          colorCode: inventory.colorCode || undefined,
+
           currentStock,
           safetyStock,
           alertLevel,

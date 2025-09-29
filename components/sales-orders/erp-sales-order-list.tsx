@@ -42,7 +42,7 @@ import {
 
 interface ERPSalesOrderListProps {
   onOrderSelect?: (order: SalesOrder) => void;
-  initialData?: PaginatedResponse<SalesOrder>;
+  _initialData?: PaginatedResponse<SalesOrder>;
   initialParams?: SalesOrderQueryParams;
 }
 
@@ -52,7 +52,7 @@ interface ERPSalesOrderListProps {
  */
 export function ERPSalesOrderList({
   onOrderSelect,
-  initialData,
+  _initialData,
   initialParams,
 }: ERPSalesOrderListProps) {
   const router = useRouter();
@@ -71,10 +71,10 @@ export function ERPSalesOrderList({
   const { data, isLoading, error } = useQuery({
     queryKey: salesOrderQueryKeys.list(queryParams),
     queryFn: () => getSalesOrders(queryParams),
-    initialData,
+    // initialData, // 移除 initialData 以避免类型冲突
     staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
     refetchOnWindowFocus: false, // 避免不必要的重新获取
-    keepPreviousData: true, // 保持之前的数据，避免加载时闪烁
+    // keepPreviousData: true, // TanStack Query v5 中已移除
     refetchOnMount: false, // 避免挂载时重新获取
   });
 
@@ -167,7 +167,7 @@ export function ERPSalesOrderList({
             <Select
               value={queryParams.status || 'all'}
               onValueChange={value =>
-                handleFilter('status', value === 'all' ? undefined : value)
+                handleFilter('status', value === 'all' ? '' : (value as string))
               }
             >
               <SelectTrigger className="h-7 w-20 text-xs">
@@ -248,7 +248,9 @@ export function ERPSalesOrderList({
                   onClick={() => onOrderSelect?.(order)}
                 >
                   <TableCell className="h-8 text-xs text-muted-foreground">
-                    {(queryParams.page - 1) * queryParams.limit + index + 1}
+                    {((queryParams.page || 1) - 1) * (queryParams.limit || 10) +
+                      index +
+                      1}
                   </TableCell>
                   <TableCell className="h-8 text-xs font-medium">
                     {order.orderNumber}

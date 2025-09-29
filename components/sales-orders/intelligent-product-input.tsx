@@ -12,10 +12,8 @@ import type { Product } from '@/lib/types/product';
 
 import { SmartProductSearch } from './smart-product-search';
 
-import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
-
 interface IntelligentProductInputProps {
-  form: UseFormReturn<CreateSalesOrderData>;
+  form: UseFormReturn<any>;
   index: number;
   products: Product[];
   onProductChange?: (product: Product | null) => void;

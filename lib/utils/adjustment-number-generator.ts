@@ -25,19 +25,19 @@ export async function generateAdjustmentNumber(): Promise<string> {
         },
       },
       update: {
-        currentValue: {
+        currentSequence: {
           increment: 1,
         },
       },
       create: {
         sequenceType: 'adjustment',
         dateKey,
-        currentValue: 1,
+        currentSequence: 1,
       },
     });
 
     // 生成完整的调整单号
-    const sequenceNumber = sequence.currentValue.toString().padStart(3, '0');
+    const sequenceNumber = sequence.currentSequence.toString().padStart(3, '0');
     return `${prefix}-${sequenceNumber}`;
   });
 

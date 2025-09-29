@@ -60,7 +60,7 @@ async function testAuthentication() {
     };
 
     // 验证输入数据
-    const validationResult = userValidations.create.safeParse(testUserData);
+    const validationResult = userValidations.register.safeParse(testUserData);
     if (!validationResult.success) {
       throw new Error('用户数据验证失败');
     }
@@ -241,7 +241,7 @@ async function testAuthentication() {
     // 8. 测试密码强度验证
     console.log('\n8. 测试密码强度验证...');
 
-    const weakPasswordValidation = userValidations.create.safeParse({
+    const weakPasswordValidation = userValidations.register.safeParse({
       email: 'test2@inventory.com',
       name: '测试用户2',
       password: '123', // 太短的密码

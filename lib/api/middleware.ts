@@ -115,7 +115,10 @@ export function withErrorHandling(
       return await handler(request, context);
     } catch (error) {
       console.error('API处理器错误:', error);
-      return serverErrorResponse('服务器内部错误');
+      return new Response(JSON.stringify({ error: '服务器内部错误' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
   };
 }

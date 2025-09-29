@@ -113,7 +113,7 @@ export const updateReturnOrderSchema = z.object({
       'other',
     ])
     .optional(),
-  processType: z.enum(['refund', 'exchange', 'repair']).optional(),
+  processType: z.enum(['refund', 'exchange', 'repair', 'credit']).optional(),
   reason: z.string().optional(),
   remarks: z.string().optional(),
   items: z.array(returnOrderItemSchema).optional(),

@@ -14,15 +14,14 @@ import { useParams, useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { ErrorMessage } from '@/components/ui/error-message';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Separator } from '@/components/ui/separator';
 import {
   PAYABLE_SOURCE_TYPE_LABELS,
   PAYABLE_STATUS_LABELS,
 } from '@/lib/types/payable';
 import { formatCurrency, formatDate } from '@/lib/utils';
-
-import { ErrorMessage } from '@/components/ui/error-message';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 
 interface PayableDetail {
   id: string;
@@ -195,7 +194,9 @@ export default function PayableDetailPage() {
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
                     <Badge variant={getStatusBadgeVariant(payable.status)}>
-                      {PAYABLE_STATUS_LABELS[payable.status] || payable.status}
+                      {PAYABLE_STATUS_LABELS[
+                        payable.status as keyof typeof PAYABLE_STATUS_LABELS
+                      ] || payable.status}
                     </Badge>
                     {isOverdue && <Badge variant="destructive">逾期</Badge>}
                   </div>
@@ -205,8 +206,9 @@ export default function PayableDetailPage() {
                     来源类型
                   </label>
                   <p className="mt-1">
-                    {PAYABLE_SOURCE_TYPE_LABELS[payable.sourceType] ||
-                      payable.sourceType}
+                    {PAYABLE_SOURCE_TYPE_LABELS[
+                      payable.sourceType as keyof typeof PAYABLE_SOURCE_TYPE_LABELS
+                    ] || payable.sourceType}
                   </p>
                 </div>
                 <div>

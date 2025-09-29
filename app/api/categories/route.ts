@@ -3,34 +3,19 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
+import { type Category } from '@/lib/api/categories';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
-import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
+import type { ApiResponse } from '@/lib/types/api';
 import { generateCategoryCode } from '@/lib/utils/category-code-generator';
 import {
   CategoryQuerySchema,
   CreateCategorySchema,
 } from '@/lib/validations/category';
-
-// 分类类型定义
-interface Category {
-  id: string;
-  name: string;
-  code: string;
-  parentId?: string;
-  sortOrder: number;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
-
-  // 关联数据
-  parent?: Category;
-  children?: Category[];
-  productCount?: number;
-}
 
 /**
  * GET /api/categories - 获取分类列表
@@ -102,7 +87,7 @@ export async function GET(request: NextRequest) {
       id: category.id,
       name: category.name,
       code: category.code,
-      parentId: category.parentId,
+      parentId: category.parentId || undefined,
       sortOrder: category.sortOrder,
       status: category.status as 'active' | 'inactive',
       createdAt: category.createdAt.toISOString(),
@@ -125,7 +110,7 @@ export async function GET(request: NextRequest) {
     // 计算分页信息
     const totalPages = Math.ceil(total / validatedParams.limit);
 
-    const response: PaginatedResponse<Category> = {
+    const response = {
       success: true,
       data: transformedCategories,
       pagination: {
@@ -242,7 +227,7 @@ export async function POST(request: NextRequest) {
       id: category.id,
       name: category.name,
       code: category.code,
-      parentId: category.parentId,
+      parentId: category.parentId || undefined,
       sortOrder: category.sortOrder,
       status: category.status as 'active' | 'inactive',
       createdAt: category.createdAt.toISOString(),

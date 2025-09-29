@@ -66,7 +66,6 @@ export async function GET(
             id: true,
             quantity: true,
             reservedQuantity: true,
-            productionDate: true,
             batchNumber: true,
             location: true,
             unitCost: true,
@@ -88,11 +87,11 @@ export async function GET(
 
     // 计算库存汇总
     const totalInventory = variant.inventory.reduce(
-      (sum, inv) => sum + inv.quantity,
+      (sum: number, inv: any) => sum + inv.quantity,
       0
     );
     const reservedInventory = variant.inventory.reduce(
-      (sum, inv) => sum + inv.reservedQuantity,
+      (sum: number, inv: any) => sum + inv.reservedQuantity,
       0
     );
 
@@ -111,12 +110,11 @@ export async function GET(
       totalInventory,
       reservedInventory,
       availableInventory: totalInventory - reservedInventory,
-      inventory: variant.inventory.map(inv => ({
+      inventory: variant.inventory.map((inv: any) => ({
         id: inv.id,
         quantity: inv.quantity,
         reservedQuantity: inv.reservedQuantity,
         availableQuantity: inv.quantity - inv.reservedQuantity,
-        productionDate: inv.productionDate,
         batchNumber: inv.batchNumber,
         location: inv.location,
         unitCost: inv.unitCost,

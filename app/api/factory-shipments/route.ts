@@ -1,6 +1,7 @@
 // 厂家发货订单 API 路由
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
+import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 
@@ -50,8 +51,8 @@ export async function GET(request: NextRequest) {
     const validatedParams =
       factoryShipmentOrderListParamsSchema.parse(queryParams);
     const {
-      page,
-      pageSize,
+      page = 1,
+      pageSize = paginationConfig.defaultPageSize,
       status,
       customerId,
       containerNumber,
@@ -61,7 +62,7 @@ export async function GET(request: NextRequest) {
     } = validatedParams;
 
     // 构建查询条件
-    const where: Prisma.FactoryShipmentWhereInput = {};
+    const where: Prisma.FactoryShipmentOrderWhereInput = {};
     if (status) where.status = status;
     if (customerId) where.customerId = customerId;
     if (containerNumber) where.containerNumber = { contains: containerNumber };

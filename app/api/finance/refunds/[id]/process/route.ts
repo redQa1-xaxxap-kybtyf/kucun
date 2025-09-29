@@ -21,7 +21,7 @@ export async function POST(
     const refundId = params.id;
 
     // 使用事务处理退款
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async tx => {
       // 获取退款记录
       const refund = await tx.refundRecord.findUnique({
         where: { id: refundId },
@@ -40,17 +40,18 @@ export async function POST(
 
       // 验证处理金额
       const maxProcessAmount = refund.refundAmount - refund.processedAmount;
-      if (validatedData.processAmount > maxProcessAmount) {
+      if (validatedData.processedAmount > maxProcessAmount) {
         throw new Error(`处理金额不能超过剩余金额 ¥${maxProcessAmount}`);
       }
 
       // 计算新的已处理金额和剩余金额
-      const newProcessedAmount = refund.processedAmount + validatedData.processAmount;
+      const newProcessedAmount =
+        refund.processedAmount + validatedData.processedAmount;
       const newRemainingAmount = refund.refundAmount - newProcessedAmount;
 
       // 确定新状态
       let newStatus: string;
-      if (validatedData.action === 'approve') {
+      if (validatedData.status === 'completed') {
         if (newRemainingAmount <= 0) {
           newStatus = 'completed';
         } else {
@@ -67,10 +68,8 @@ export async function POST(
           status: newStatus,
           processedAmount: newProcessedAmount,
           remainingAmount: newRemainingAmount,
-          processedBy: session.user.id,
-          processedAt: new Date(),
-          processingNotes: validatedData.notes,
-          bankInfo: validatedData.bankInfo,
+          processedDate: new Date(validatedData.processedDate),
+          remarks: validatedData.remarks,
         },
         include: {
           salesOrder: {
@@ -87,7 +86,7 @@ export async function POST(
     return NextResponse.json({
       success: true,
       data: result,
-      message: `退款${validatedData.action === 'approve' ? '批准' : '拒绝'}成功`,
+      message: `退款${validatedData.status === 'completed' ? '批准' : '拒绝'}成功`,
     });
   } catch (error) {
     console.error('处理退款失败:', error);
