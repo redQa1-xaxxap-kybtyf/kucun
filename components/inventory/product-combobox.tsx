@@ -1,9 +1,8 @@
 'use client';
 
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Check, X } from 'lucide-react';
 import React from 'react';
 
-import { Button } from '@/components/ui/button';
 import {
   Command,
   CommandEmpty,
@@ -12,11 +11,7 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
+import { Popover } from '@/components/ui/popover';
 import { useProductSearch } from '@/lib/api/inbound';
 import type { ProductOption } from '@/lib/types/inbound';
 import { cn } from '@/lib/utils';
@@ -124,88 +119,83 @@ export function ProductCombobox({
   return (
     <div className={cn('relative', className)}>
       <Popover open={open} onOpenChange={setOpen}>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            role="combobox"
-            aria-expanded={open}
-            className="w-full justify-between"
-            disabled={disabled}
-          >
-            {selectedProduct ? (
-              <div className="flex min-w-0 flex-1 items-center gap-2 truncate">
-                <span className="truncate">
-                  {selectedProduct.label}
-                  {selectedProduct.specification && (
-                    <span className="ml-2 text-muted-foreground">
-                      {selectedProduct.specification}
-                    </span>
+        <Command
+          shouldFilter={false}
+          className="overflow-visible bg-transparent"
+        >
+          <div className="group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+            <div className="flex flex-wrap gap-1">
+              {selectedProduct && (
+                <div className="flex items-center gap-1 rounded-sm bg-secondary px-2 py-0.5">
+                  <span className="text-xs">{selectedProduct.label}</span>
+                  {!disabled && (
+                    <button
+                      type="button"
+                      onClick={handleClear}
+                      className="ml-1 rounded-sm hover:bg-secondary-foreground/20"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
                   )}
-                </span>
-              </div>
-            ) : (
-              <span className="truncate text-muted-foreground">
-                {placeholder}
-              </span>
-            )}
-            <div className="ml-2 flex shrink-0 items-center gap-1">
-              {selectedProduct && !disabled && (
-                <X
-                  className="h-4 w-4 opacity-50 hover:opacity-100"
-                  onClick={handleClear}
-                />
+                </div>
               )}
-              <ChevronsUpDown className="h-4 w-4 opacity-50" />
+              <CommandInput
+                placeholder={selectedProduct ? '' : placeholder}
+                onValueChange={handleSearchChange}
+                onFocus={() => setOpen(true)}
+                disabled={disabled}
+                className="ml-2 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+              />
             </div>
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0" align="start">
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder={placeholder}
-              onValueChange={handleSearchChange}
-            />
-            <CommandList>
-              <CommandEmpty>
-                {isLoading ? '搜索中...' : '未找到相关产品'}
-              </CommandEmpty>
-              <CommandGroup>
-                {products.map(product => (
-                  <CommandItem
-                    key={product.value}
-                    value={`${product.code}-${product.value}`}
-                    onSelect={handleCommandSelect}
-                  >
-                    <Check
-                      className={cn(
-                        'mr-2 h-4 w-4',
-                        value === product.value ? 'opacity-100' : 'opacity-0'
-                      )}
-                    />
-                    <div className="flex min-w-0 flex-1 flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-medium">{product.label}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {product.code}
-                        </span>
-                      </div>
-                      {product.specification && (
-                        <span className="text-xs text-muted-foreground">
-                          {product.specification}
-                        </span>
-                      )}
-                      {product.currentStock !== undefined && (
-                        <span className="text-xs text-muted-foreground">
-                          库存: {product.currentStock}片
-                        </span>
-                      )}
-                    </div>
-                  </CommandItem>
-                ))}
-              </CommandGroup>
-            </CommandList>
-          </Command>
-        </PopoverContent>
+          </div>
+          <div className="relative mt-2">
+            {open && (
+              <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
+                <CommandList>
+                  <CommandEmpty>
+                    {isLoading ? '搜索中...' : '未找到相关产品'}
+                  </CommandEmpty>
+                  <CommandGroup>
+                    {products.map(product => (
+                      <CommandItem
+                        key={product.value}
+                        value={`${product.code}-${product.value}`}
+                        onSelect={handleCommandSelect}
+                      >
+                        <Check
+                          className={cn(
+                            'mr-2 h-4 w-4',
+                            value === product.value
+                              ? 'opacity-100'
+                              : 'opacity-0'
+                          )}
+                        />
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{product.label}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {product.code}
+                            </span>
+                          </div>
+                          {product.specification && (
+                            <span className="text-xs text-muted-foreground">
+                              {product.specification}
+                            </span>
+                          )}
+                          {product.currentStock !== undefined && (
+                            <span className="text-xs text-muted-foreground">
+                              库存: {product.currentStock}片
+                            </span>
+                          )}
+                        </div>
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </div>
+            )}
+          </div>
+        </Command>
       </Popover>
     </div>
   );
