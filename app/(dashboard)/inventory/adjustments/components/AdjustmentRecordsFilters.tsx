@@ -25,10 +25,10 @@ export function AdjustmentRecordsFilters({
 }: AdjustmentRecordsFiltersProps) {
   // 将filters转换为FilterValues格式
   const filterValues: FilterValues = {
-    search: filters.search,
-    type: filters.reason,
-    startDate: filters.startDate,
-    endDate: filters.endDate,
+    search: filters?.search,
+    type: filters?.reason,
+    startDate: filters?.startDate,
+    endDate: filters?.endDate,
   };
 
   // 处理筛选变更
