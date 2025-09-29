@@ -67,7 +67,7 @@ export function formatDate(
   if (!date) return '';
 
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   if (isNaN(dateObj.getTime())) {
     return '';
   }
@@ -109,7 +109,7 @@ export function formatRelativeTime(date: Date | string): string {
   if (!date) return '';
 
   const dateObj = typeof date === 'string' ? new Date(date) : date;
-  
+
   if (isNaN(dateObj.getTime())) {
     return '';
   }
@@ -202,7 +202,7 @@ export function formatBankCard(cardNumber: string): string {
   if (!cardNumber) return '';
 
   const cleaned = cardNumber.replace(/\s/g, '');
-  
+
   if (cleaned.length >= 16) {
     return `${cleaned.slice(0, 4)} **** **** ${cleaned.slice(-4)}`;
   }
@@ -237,7 +237,9 @@ export function truncateText(
  * @returns 格式化后的地址字符串
  */
 export function formatAddress(
-  address: string | { province?: string; city?: string; district?: string; detail?: string }
+  address:
+    | string
+    | { province?: string; city?: string; district?: string; detail?: string }
 ): string {
   if (!address) return '';
 

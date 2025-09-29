@@ -6,23 +6,19 @@ import { ProductForm } from '@/components/products/product-form';
 import { useToast } from '@/hooks/use-toast';
 import type { Product } from '@/lib/types/product';
 
-interface ProductEditClientProps {
-  productId: string;
-  initialData: Product;
-}
-
-export function ProductEditClient({
-  productId,
-  initialData,
-}: ProductEditClientProps) {
+/**
+ * 产品创建客户端组件
+ * 处理产品创建成功后的提示和跳转
+ */
+export function ProductCreateClient() {
   const router = useRouter();
   const { toast } = useToast();
 
   const handleSuccess = (product: Product) => {
     // 显示成功提示
     toast({
-      title: '更新成功',
-      description: `产品编码 "${product.code}" 更新成功！所有修改已保存。`,
+      title: '创建成功',
+      description: `产品编码 "${product.code}" 创建成功！`,
       variant: 'success',
     });
 
@@ -32,13 +28,5 @@ export function ProductEditClient({
     }, 1500);
   };
 
-  return (
-    <ProductForm
-      mode="edit"
-      productId={productId}
-      initialData={initialData}
-      variant="erp"
-      onSuccess={handleSuccess}
-    />
-  );
+  return <ProductForm mode="create" variant="erp" onSuccess={handleSuccess} />;
 }

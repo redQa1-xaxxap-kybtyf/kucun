@@ -72,6 +72,37 @@ export const authOptions: NextAuthOptions = {
         }
 
         try {
+          // 验证验证码
+          const captchaSessionId = (credentials as any).captchaSessionId;
+          if (!captchaSessionId) {
+            throw new Error('验证码会话ID缺失');
+          }
+
+          // 调用验证码验证API
+          const captchaResponse = await fetch(
+            `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/captcha`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                sessionId: captchaSessionId,
+                captcha: credentials.captcha,
+              }),
+            }
+          );
+
+          if (!captchaResponse.ok) {
+            const captchaError = await captchaResponse.json();
+            throw new Error(captchaError.error || '验证码验证失败');
+          }
+
+          const captchaResult = await captchaResponse.json();
+          if (!captchaResult.success) {
+            throw new Error(captchaResult.error || '验证码错误');
+          }
+
           // 查找用户（支持用户名或邮箱登录）
           const user = await prisma.user.findFirst({
             where: {

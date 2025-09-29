@@ -164,7 +164,7 @@ export function ERPProductList({
       // 如果有失败的产品，显示详细信息
       if (result.failedProducts && result.failedProducts.length > 0) {
         const failedList = result.failedProducts
-          .map(p => `${p.name}: ${p.reason}`)
+          .map(p => `${p.code}: ${p.reason}`)
           .join('\n');
 
         setTimeout(() => {
@@ -214,11 +214,11 @@ export function ERPProductList({
   };
 
   // 删除产品处理
-  const handleDeleteProduct = (productId: string, productName: string) => {
+  const handleDeleteProduct = (productId: string, productCode: string) => {
     setDeleteDialog({
       open: true,
       productId,
-      productName,
+      productName: productCode, // 使用产品编码而不是名称
     });
   };
 
@@ -232,7 +232,7 @@ export function ERPProductList({
 
       toast({
         title: '删除成功',
-        description: `产品"${deleteDialog.productName}"已成功删除`,
+        description: `产品编码"${deleteDialog.productName}"已成功删除`,
         variant: 'success',
       });
 
@@ -601,7 +601,7 @@ export function ERPProductList({
                             className="text-red-600"
                             onClick={e => {
                               e.stopPropagation();
-                              handleDeleteProduct(product.id, product.name);
+                              handleDeleteProduct(product.id, product.code);
                             }}
                           >
                             <Trash2 className="mr-2 h-3 w-3" />
@@ -677,7 +677,7 @@ export function ERPProductList({
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除产品</AlertDialogTitle>
             <AlertDialogDescription>
-              您确定要删除产品 &ldquo;{deleteDialog.productName}&rdquo; 吗？
+              您确定要删除产品编码 &ldquo;{deleteDialog.productName}&rdquo; 吗？
               <br />
               <span className="font-medium text-red-600">
                 此操作不可撤销，删除后将无法恢复产品数据。
@@ -722,9 +722,9 @@ export function ERPProductList({
                   className="flex items-center justify-between rounded border p-2"
                 >
                   <div>
-                    <div className="text-sm font-medium">{product.name}</div>
+                    <div className="text-sm font-medium">{product.code}</div>
                     <div className="text-xs text-muted-foreground">
-                      编码: {product.code}
+                      名称: {product.name}
                       {product.category && (
                         <span className="ml-2">
                           分类: {product.category.name}

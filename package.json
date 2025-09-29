@@ -31,6 +31,9 @@
     "db:studio": "prisma studio",
     "db:reset": "prisma migrate reset"
   },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@next-auth/prisma-adapter": "^1.0.7",

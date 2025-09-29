@@ -321,7 +321,9 @@ export const useCreatePayableRecord = () => {
     mutationFn: payablesApi.createPayableRecord,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.statistics() });
+      queryClient.invalidateQueries({
+        queryKey: payableQueryKeys.statistics(),
+      });
     },
   });
 };
@@ -334,7 +336,9 @@ export const useUpdatePayableRecord = () => {
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
       queryClient.invalidateQueries({ queryKey: payableQueryKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.statistics() });
+      queryClient.invalidateQueries({
+        queryKey: payableQueryKeys.statistics(),
+      });
     },
   });
 };
@@ -345,7 +349,9 @@ export const useDeletePayableRecord = () => {
     mutationFn: payablesApi.deletePayableRecord,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.statistics() });
+      queryClient.invalidateQueries({
+        queryKey: payableQueryKeys.statistics(),
+      });
     },
   });
 };
@@ -357,7 +363,9 @@ export const useCreatePaymentOutRecord = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: paymentOutQueryKeys.lists() });
       queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.statistics() });
+      queryClient.invalidateQueries({
+        queryKey: payableQueryKeys.statistics(),
+      });
     },
   });
 };
@@ -365,13 +373,22 @@ export const useCreatePaymentOutRecord = () => {
 export const useUpdatePaymentOutRecord = () => {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdatePaymentOutRecordData }) =>
-      payablesApi.updatePaymentOutRecord(id, data),
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdatePaymentOutRecordData;
+    }) => payablesApi.updatePaymentOutRecord(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({ queryKey: paymentOutQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: paymentOutQueryKeys.detail(id) });
+      queryClient.invalidateQueries({
+        queryKey: paymentOutQueryKeys.detail(id),
+      });
       queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.statistics() });
+      queryClient.invalidateQueries({
+        queryKey: payableQueryKeys.statistics(),
+      });
     },
   });
 };
@@ -383,7 +400,9 @@ export const useDeletePaymentOutRecord = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: paymentOutQueryKeys.lists() });
       queryClient.invalidateQueries({ queryKey: payableQueryKeys.lists() });
-      queryClient.invalidateQueries({ queryKey: payableQueryKeys.statistics() });
+      queryClient.invalidateQueries({
+        queryKey: payableQueryKeys.statistics(),
+      });
     },
   });
 };

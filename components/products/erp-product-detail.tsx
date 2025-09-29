@@ -45,7 +45,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
     onSuccess: () => {
       toast({
         title: '删除成功',
-        description: `产品 "${product.name}" 已删除`,
+        description: `产品编码 "${product.code}" 已删除`,
         variant: 'success',
       });
 
@@ -275,7 +275,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>确认删除产品</AlertDialogTitle>
             <AlertDialogDescription>
-              确定要删除产品 &quot;{product.name}&quot; 吗？
+              确定要删除产品编码 &quot;{product.code}&quot; 吗？
               <br />
               <span className="font-medium text-red-600">
                 此操作不可撤销，删除后将无法恢复产品数据。

@@ -49,15 +49,20 @@ export function getStockDisplayData(record: Inventory) {
     availableQuantity,
     totalQuantity: record.quantity,
     reservedQuantity: record.reservedQuantity || 0,
-    formattedQuantity: hasProductInfo && record.product
-      ? formatInventoryQuantity(record.quantity, record.product, false)
-      : `${record.quantity} 件`,
-    formattedAvailable: hasProductInfo && record.product
-      ? formatInventoryQuantity(availableQuantity, record.product, false)
-      : `${availableQuantity} 件`,
-    unitLabel: hasProductInfo && record.product?.unit
-      ? PRODUCT_UNIT_LABELS[record.product.unit as keyof typeof PRODUCT_UNIT_LABELS] || record.product.unit
-      : '件',
+    formattedQuantity:
+      hasProductInfo && record.product
+        ? formatInventoryQuantity(record.quantity, record.product, false)
+        : `${record.quantity} 件`,
+    formattedAvailable:
+      hasProductInfo && record.product
+        ? formatInventoryQuantity(availableQuantity, record.product, false)
+        : `${availableQuantity} 件`,
+    unitLabel:
+      hasProductInfo && record.product?.unit
+        ? PRODUCT_UNIT_LABELS[
+            record.product.unit as keyof typeof PRODUCT_UNIT_LABELS
+          ] || record.product.unit
+        : '件',
     statusLabel: getStockStatusLabel(record.quantity, record.reservedQuantity),
     statusColor: getStockStatusColor(record.quantity, record.reservedQuantity),
   };

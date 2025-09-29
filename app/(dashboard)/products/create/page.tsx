@@ -1,4 +1,4 @@
-import { ProductForm } from '@/components/products/product-form';
+import { ProductCreateClient } from '@/components/products/product-create-client';
 
 /**
  * 新建产品页面 - ERP风格
@@ -7,7 +7,7 @@ import { ProductForm } from '@/components/products/product-form';
 export default async function CreateProductPage() {
   return (
     <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      <ProductForm mode="create" variant="erp" />
+      <ProductCreateClient />
     </div>
   );
 }

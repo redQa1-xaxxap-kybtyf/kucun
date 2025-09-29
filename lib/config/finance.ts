@@ -300,8 +300,10 @@ export type RefundType = (typeof REFUND_TYPES)[keyof typeof REFUND_TYPES];
 
 export type RefundMethod = (typeof REFUND_METHODS)[keyof typeof REFUND_METHODS];
 
-export type RefundStatus = (typeof REFUND_STATUSES)[keyof typeof REFUND_STATUSES];
+export type RefundStatus =
+  (typeof REFUND_STATUSES)[keyof typeof REFUND_STATUSES];
 
 export type EntityType = (typeof ENTITY_TYPES)[keyof typeof ENTITY_TYPES];
 
-export type StatementStatus = (typeof STATEMENT_STATUSES)[keyof typeof STATEMENT_STATUSES];
+export type StatementStatus =
+  (typeof STATEMENT_STATUSES)[keyof typeof STATEMENT_STATUSES];

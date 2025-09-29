@@ -14,31 +14,33 @@ export function LoadingSpinner({
   size = 'md',
   className,
   text,
-  variant = 'default'
+  variant = 'default',
 }: LoadingSpinnerProps) {
   const sizeStyles = {
     sm: 'h-4 w-4',
     md: 'h-6 w-6',
     lg: 'h-8 w-8',
-    xl: 'h-12 w-12'
+    xl: 'h-12 w-12',
   };
 
   const variantStyles = {
     default: 'text-gray-500',
     primary: 'text-blue-600',
-    secondary: 'text-gray-400'
+    secondary: 'text-gray-400',
   };
 
   const textSizeStyles = {
     sm: 'text-sm',
     md: 'text-base',
     lg: 'text-lg',
-    xl: 'text-xl'
+    xl: 'text-xl',
   };
 
   if (text) {
     return (
-      <div className={cn('flex items-center justify-center space-x-2', className)}>
+      <div
+        className={cn('flex items-center justify-center space-x-2', className)}
+      >
         <Loader2
           className={cn(
             'animate-spin',
@@ -56,11 +58,7 @@ export function LoadingSpinner({
   return (
     <div className={cn('flex justify-center', className)}>
       <Loader2
-        className={cn(
-          'animate-spin',
-          sizeStyles[size],
-          variantStyles[variant]
-        )}
+        className={cn('animate-spin', sizeStyles[size], variantStyles[variant])}
       />
     </div>
   );

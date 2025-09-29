@@ -66,7 +66,12 @@ async function getQiniuConfig(): Promise<QiniuConfig | null> {
     });
 
     // 验证必需的配置项
-    if (!config.accessKey || !config.secretKey || !config.bucket || !config.domain) {
+    if (
+      !config.accessKey ||
+      !config.secretKey ||
+      !config.bucket ||
+      !config.domain
+    ) {
       return null;
     }
 
@@ -97,7 +102,7 @@ function getQiniuZone(region: string = 'z0') {
  */
 function generateUploadToken(config: QiniuConfig, key: string): string {
   const mac = new qiniu.auth.digest.Mac(config.accessKey, config.secretKey);
-  
+
   const putPolicy = new qiniu.rs.PutPolicy({
     scope: `${config.bucket}:${key}`,
     expires: 3600, // 1小时过期
@@ -142,7 +147,7 @@ export async function uploadToQiniu(
     const putExtra = new qiniu.form_up.PutExtra();
 
     // 执行上传
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       formUploader.put(
         uploadToken,
         key,
@@ -203,7 +208,7 @@ export async function deleteFromQiniu(key: string): Promise<boolean> {
 
     const bucketManager = new qiniu.rs.BucketManager(mac, qiniuConfig);
 
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       bucketManager.delete(config.bucket, key, (err, respBody, respInfo) => {
         if (err) {
           console.error('七牛云删除文件失败:', err);
@@ -249,7 +254,7 @@ export async function testQiniuConnection(): Promise<{
 
     const bucketManager = new qiniu.rs.BucketManager(mac, qiniuConfig);
 
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       // 尝试获取存储空间信息
       bucketManager.getBucketInfo(config.bucket, (err, respBody, respInfo) => {
         if (err) {

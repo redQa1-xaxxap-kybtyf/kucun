@@ -310,8 +310,16 @@ export const salesOrderQuerySchema = z.object({
     .nullable()
     .optional()
     .transform(val => val ?? undefined),
-  startDate: z.string().nullable().optional().transform(val => val || undefined),
-  endDate: z.string().nullable().optional().transform(val => val || undefined),
+  startDate: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || undefined),
+  endDate: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || undefined),
 });
 
 /**

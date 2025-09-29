@@ -27,7 +27,6 @@ import type { Product } from '@/lib/types/product';
 
 import { EnhancedProductSelector } from './enhanced-product-selector';
 
-
 interface UnifiedProductInputProps {
   form: UseFormReturn<CreateSalesOrderData>;
   index: number;
