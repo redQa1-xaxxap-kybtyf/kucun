@@ -222,21 +222,16 @@ export type CreateProductData = ProductCreateInput;
 // UpdateProductData 现在从 lib/validations/product.ts 导入，遵循唯一真理源原则
 
 // 产品单位显示名称映射
+// 瓷砖行业专用：只使用"件"和"片"两种单位
 export const PRODUCT_UNIT_LABELS: Record<string, string> = {
   piece: '件',
   sheet: '片',
-  strip: '条',
-  box: '箱',
-  square_meter: '平方米',
 };
 
 // 产品单位选项（用于表单）
 export const PRODUCT_UNIT_OPTIONS = [
   { value: 'piece', label: '件' },
   { value: 'sheet', label: '片' },
-  { value: 'strip', label: '条' },
-  { value: 'box', label: '箱' },
-  { value: 'square_meter', label: '平方米' },
 ];
 
 // 产品状态显示名称映射

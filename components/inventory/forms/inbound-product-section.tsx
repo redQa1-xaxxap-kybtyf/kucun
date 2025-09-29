@@ -19,14 +19,10 @@ interface InboundProductSectionProps {
 }
 
 // 单位映射：英文 -> 中文
+// 瓷砖行业专用：只使用"件"和"片"两种单位
 const UNIT_MAP: Record<string, string> = {
-  piece: '片',
-  box: '箱',
-  pallet: '托',
-  sqm: '平方米',
-  m2: '平方米',
-  kg: '千克',
-  ton: '吨',
+  piece: '件',
+  sheet: '片',
 };
 
 // 获取中文单位

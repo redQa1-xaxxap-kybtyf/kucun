@@ -134,7 +134,7 @@ model Product {
   code           String   @unique
   name           String
   specification  String?
-  unit           String   @default("piece") // piece, sheet, strip
+  unit           String   @default("piece") // 瓷砖行业专用单位：piece(件), sheet(片)
   piecesPerUnit  Int      @default(1) @map("pieces_per_unit")
   weight         Float?
   thickness      Float?   // 产品厚度(mm)，瓷砖行业特有字段

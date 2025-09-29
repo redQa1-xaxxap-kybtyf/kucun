@@ -21,12 +21,10 @@ export const PRODUCT_STATUS_LABELS = {
 } as const;
 
 // 产品单位枚举
+// 瓷砖行业专用：只使用"件"和"片"两种单位
 export const PRODUCT_UNITS = {
-  PIECE: 'piece',
-  BOX: 'box',
-  SQUARE_METER: 'sqm',
-  KILOGRAM: 'kg',
-  METER: 'm',
+  PIECE: 'piece', // 件（整件/整箱）
+  SHEET: 'sheet', // 片（单片）
 } as const;
 
 export type ProductUnit = (typeof PRODUCT_UNITS)[keyof typeof PRODUCT_UNITS];
@@ -38,10 +36,7 @@ export const PRODUCT_UNIT_VALUES = Object.values(PRODUCT_UNITS);
 // 产品单位中文标签映射
 export const PRODUCT_UNIT_LABELS = {
   [PRODUCT_UNITS.PIECE]: '件',
-  [PRODUCT_UNITS.BOX]: '箱',
-  [PRODUCT_UNITS.SQUARE_METER]: '平方米',
-  [PRODUCT_UNITS.KILOGRAM]: '千克',
-  [PRODUCT_UNITS.METER]: '米',
+  [PRODUCT_UNITS.SHEET]: '片',
 } as const;
 
 // 产品排序字段枚举
@@ -85,18 +80,9 @@ export const PRODUCT_UNIT_OPTIONS = [
     value: PRODUCT_UNITS.PIECE,
     label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.PIECE],
   },
-  { value: PRODUCT_UNITS.BOX, label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.BOX] },
   {
-    value: PRODUCT_UNITS.SQUARE_METER,
-    label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.SQUARE_METER],
-  },
-  {
-    value: PRODUCT_UNITS.KILOGRAM,
-    label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.KILOGRAM],
-  },
-  {
-    value: PRODUCT_UNITS.METER,
-    label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.METER],
+    value: PRODUCT_UNITS.SHEET,
+    label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.SHEET],
   },
 ] as const;
 

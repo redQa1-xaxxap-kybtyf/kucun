@@ -56,13 +56,10 @@ const temporaryProductSchema = z.object({
 type TemporaryProductData = z.infer<typeof temporaryProductSchema>;
 
 // 常用单位选项
+// 瓷砖行业专用：只使用"件"和"片"两种单位
 const UNIT_OPTIONS = [
   { value: '片', label: '片' },
   { value: '件', label: '件' },
-  { value: '平方米', label: '平方米' },
-  { value: '米', label: '米' },
-  { value: '公斤', label: '公斤' },
-  { value: '吨', label: '吨' },
 ];
 
 interface AddTemporaryProductDialogProps {
