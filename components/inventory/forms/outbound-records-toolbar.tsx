@@ -1,18 +1,11 @@
 'use client';
 
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import React from 'react';
 
 import { Button } from '@/components/ui/button';
 
-interface OutboundRecordsToolbarProps {
-  onCreateNew: () => void;
-}
-
-export function OutboundRecordsToolbar({
-  onCreateNew,
-}: OutboundRecordsToolbarProps) {
+export function OutboundRecordsToolbar() {
   const router = useRouter();
 
   return (
@@ -30,10 +23,6 @@ export function OutboundRecordsToolbar({
           </Button>
           <h3 className="text-sm font-medium">出库记录</h3>
         </div>
-        <Button size="sm" className="h-7" onClick={onCreateNew}>
-          <Plus className="mr-1 h-3 w-3" />
-          新增出库
-        </Button>
       </div>
     </div>
   );

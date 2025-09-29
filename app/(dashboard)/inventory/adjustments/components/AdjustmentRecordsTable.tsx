@@ -1,9 +1,11 @@
 /**
  * 库存调整记录表格组件
- * 显示库存调整的历史记录
+ * 使用ERP风格的紧凑布局，符合中国用户习惯
  */
 
-import { Eye } from 'lucide-react';
+'use client';
+
+import { Eye, Package, User } from 'lucide-react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -18,7 +20,6 @@ import {
 } from '@/components/ui/table';
 import {
   ADJUSTMENT_REASON_LABELS,
-  ADJUSTMENT_STATUS_VARIANTS,
   type InventoryAdjustment,
 } from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
@@ -81,130 +82,120 @@ export function AdjustmentRecordsTable({
 
   if (isLoading) {
     return (
-      <div className="space-y-3">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <Skeleton key={index} className="h-16 w-full" />
-        ))}
+      <div className="rounded border bg-card">
+        <div className="border-b bg-muted/30 px-3 py-2">
+          <div className="flex items-center gap-2">
+            <Package className="h-4 w-4" />
+            <span className="text-sm font-medium">调整记录</span>
+          </div>
+        </div>
+        <div className="p-4">
+          <div className="space-y-3">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="flex items-center space-x-4">
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-4 w-16" />
+                <Skeleton className="h-4 w-24" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
 
-  if (!adjustments || adjustments.length === 0) {
-    return (
-      <div className="py-8 text-center text-muted-foreground">暂无调整记录</div>
-    );
-  }
-
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead>调整单号</TableHead>
-          <TableHead>产品信息</TableHead>
-          <TableHead>批次号</TableHead>
-          <TableHead>调整数量</TableHead>
-          <TableHead>调整原因</TableHead>
-          <TableHead>操作人员</TableHead>
-          <TableHead>调整时间</TableHead>
-          <TableHead>操作</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {(adjustments || []).map(adjustment => (
-          <TableRow key={adjustment.id}>
-            <TableCell>
-              <div className="flex flex-col">
-                <span className="text-sm font-medium">
-                  {adjustment.adjustmentNumber}
-                </span>
-                <Badge
-                  variant={ADJUSTMENT_STATUS_VARIANTS[adjustment.status]}
-                  className="mt-1 w-fit text-xs"
-                >
-                  {adjustment.status === 'approved'
-                    ? '已审批'
-                    : adjustment.status === 'pending'
-                      ? '待审批'
-                      : adjustment.status === 'rejected'
-                        ? '已拒绝'
-                        : '草稿'}
-                </Badge>
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="flex flex-col">
-                <span className="font-medium">
-                  {adjustment.product?.name || '未知产品'}
-                </span>
-                {adjustment.product?.code && (
-                  <span className="text-sm text-muted-foreground">
-                    编码: {adjustment.product.code}
-                  </span>
-                )}
-                {adjustment.product?.specification && (
-                  <span className="text-sm text-muted-foreground">
-                    规格:{' '}
-                    {formatSpecification(adjustment.product.specification)}
-                  </span>
-                )}
-                {adjustment.variant?.sku && (
-                  <span className="text-sm text-muted-foreground">
-                    SKU: {adjustment.variant.sku}
-                  </span>
-                )}
-              </div>
-            </TableCell>
-            <TableCell>
-              {adjustment.batchNumber || (
-                <span className="text-muted-foreground">无批次</span>
-              )}
-            </TableCell>
-            <TableCell>
-              <div className="flex flex-col">
-                <div className="flex items-center space-x-2">
-                  {formatAdjustQuantity(adjustment.adjustQuantity)}
-                </div>
-                <div className="text-xs text-muted-foreground">
-                  {adjustment.beforeQuantity} → {adjustment.afterQuantity}
-                </div>
-              </div>
-            </TableCell>
-            <TableCell>
-              <Badge variant="outline" className="text-xs">
-                {ADJUSTMENT_REASON_LABELS[
-                  adjustment.reason as keyof typeof ADJUSTMENT_REASON_LABELS
-                ] || adjustment.reason}
-              </Badge>
-            </TableCell>
-            <TableCell>
-              <div className="flex flex-col">
-                <span className="text-sm">
-                  {adjustment.operator?.name || '未知操作员'}
-                </span>
-                {adjustment.approver && (
-                  <span className="text-xs text-muted-foreground">
-                    审批: {adjustment.approver.name}
-                  </span>
-                )}
-              </div>
-            </TableCell>
-            <TableCell>
-              <div className="text-sm">{formatDate(adjustment.createdAt)}</div>
-            </TableCell>
-            <TableCell>
-              {onViewDetail && (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => onViewDetail(adjustment)}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
-              )}
-            </TableCell>
-          </TableRow>
-        ))}
-      </TableBody>
-    </Table>
+    <div className="rounded border bg-card">
+      <div className="border-b bg-muted/30 px-3 py-2">
+        <div className="flex items-center gap-2">
+          <Package className="h-4 w-4" />
+          <span className="text-sm font-medium">
+            调整记录 ({adjustments.length} 条)
+          </span>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50">
+              <TableHead className="h-9 text-xs">产品编码</TableHead>
+              <TableHead className="h-9 text-xs">产品名称</TableHead>
+              <TableHead className="h-9 text-xs">规格</TableHead>
+              <TableHead className="h-9 text-xs">批次号</TableHead>
+              <TableHead className="h-9 text-xs">调整数量</TableHead>
+              <TableHead className="h-9 text-xs">调整原因</TableHead>
+              <TableHead className="h-9 text-xs">操作时间</TableHead>
+              <TableHead className="h-9 text-xs">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {adjustments.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={8} className="h-24 text-center">
+                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                    <Package className="h-8 w-8" />
+                    <span className="text-sm">暂无调整记录</span>
+                  </div>
+                </TableCell>
+              </TableRow>
+            ) : (
+              adjustments.map(adjustment => (
+                <TableRow key={adjustment.id} className="h-10">
+                  <TableCell className="text-xs font-medium">
+                    {adjustment.product?.code || '-'}
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    {adjustment.product?.name || '未知产品'}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {formatSpecification(adjustment.product?.specification) ||
+                      '-'}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {adjustment.batchNumber || '-'}
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    <div className="flex flex-col gap-0.5">
+                      {formatAdjustQuantity(adjustment.adjustQuantity)}
+                      <span className="text-xs text-muted-foreground">
+                        {adjustment.beforeQuantity} → {adjustment.afterQuantity}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    <Badge variant="outline" className="text-xs">
+                      {ADJUSTMENT_REASON_LABELS[
+                        adjustment.reason as keyof typeof ADJUSTMENT_REASON_LABELS
+                      ] || adjustment.reason}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <User className="h-3 w-3" />
+                      {formatDate(adjustment.createdAt)}
+                    </div>
+                  </TableCell>
+                  <TableCell className="text-xs">
+                    {onViewDetail && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => onViewDetail(adjustment)}
+                        className="h-7 w-7 p-0"
+                      >
+                        <Eye className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))
+            )}
+          </TableBody>
+        </Table>
+      </div>
+    </div>
   );
 }

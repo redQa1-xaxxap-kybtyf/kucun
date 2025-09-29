@@ -259,6 +259,7 @@ export async function getInboundRecords(queryData: {
             id: true,
             name: true,
             code: true, // 使用 code 字段而不是 sku
+            specification: true, // 添加规格字段
             unit: true,
             piecesPerUnit: true, // 产品默认每单位片数
             weight: true, // 产品默认重量

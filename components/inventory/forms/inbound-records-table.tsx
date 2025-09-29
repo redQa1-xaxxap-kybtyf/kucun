@@ -29,6 +29,7 @@ interface InboundRecordWithProduct extends Omit<BaseInboundRecord, 'product'> {
   product?: {
     code: string;
     name: string;
+    specification?: string;
   };
 }
 
@@ -58,6 +59,36 @@ const getOperationTypeVariant = (reason: string) => {
     other: 'secondary',
   };
   return variants[reason] || 'secondary';
+};
+
+// 格式化产品规格显示（限制11个字符，避免JSON字符串显示）
+const formatSpecification = (specification?: string) => {
+  if (!specification) return null;
+
+  // 如果是JSON字符串，尝试解析并提取关键信息
+  if (specification.startsWith('{') && specification.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(specification);
+      // 提取尺寸信息作为主要显示内容
+      if (parsed.size) {
+        return parsed.size.length > 11
+          ? `${parsed.size.slice(0, 11)}...`
+          : parsed.size;
+      }
+      // 如果没有尺寸，显示简化的规格信息
+      return '规格详情...';
+    } catch {
+      // JSON解析失败，截断显示
+      return specification.length > 11
+        ? `${specification.slice(0, 11)}...`
+        : specification;
+    }
+  }
+
+  // 普通字符串，直接截断
+  return specification.length > 11
+    ? `${specification.slice(0, 11)}...`
+    : specification;
 };
 
 export function InboundRecordsTable({
@@ -107,6 +138,7 @@ export function InboundRecordsTable({
             <TableRow className="bg-muted/50">
               <TableHead className="h-9 text-xs">产品编码</TableHead>
               <TableHead className="h-9 text-xs">产品名称</TableHead>
+              <TableHead className="h-9 text-xs">规格</TableHead>
               <TableHead className="h-9 text-xs">入库数量</TableHead>
               <TableHead className="h-9 text-xs">操作类型</TableHead>
               <TableHead className="h-9 text-xs">批次号</TableHead>
@@ -117,7 +149,7 @@ export function InboundRecordsTable({
           <TableBody>
             {records.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell colSpan={8} className="h-24 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Package className="h-8 w-8" />
                     <span className="text-sm">暂无入库记录</span>
@@ -132,6 +164,9 @@ export function InboundRecordsTable({
                   </TableCell>
                   <TableCell className="text-xs">
                     {record.product?.name || '未知产品'}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {formatSpecification(record.product?.specification) || '-'}
                   </TableCell>
                   <TableCell className="text-xs">
                     <span className="font-medium">{record.quantity}</span> 片

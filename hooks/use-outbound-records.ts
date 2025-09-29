@@ -17,6 +17,7 @@ interface OutboundRecord {
   productId: string;
   productCode: string;
   productName: string;
+  productSpecification?: string;
   quantity: number;
   type: OutboundType;
   reason?: string;
@@ -36,16 +37,35 @@ export function useOutboundRecords() {
   const { data, isLoading, error } = useQuery({
     queryKey: ['outbound-records', filters],
     queryFn: async () => {
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // 构建查询参数
+      const searchParams = new URLSearchParams();
+      searchParams.append('page', '1');
+      searchParams.append('limit', '50');
+
+      if (filters.type) {
+        searchParams.append('type', filters.type);
+      }
+      if (filters.startDate) {
+        searchParams.append('startDate', filters.startDate);
+      }
+      if (filters.endDate) {
+        searchParams.append('endDate', filters.endDate);
+      }
+
+      // 调用API
+      const response = await fetch(
+        `/api/inventory/outbound?${searchParams.toString()}`
+      );
+
+      if (!response.ok) {
+        throw new Error('获取出库记录失败');
+      }
+
+      const result = await response.json();
+
       return {
-        data: [] as OutboundRecord[],
-        pagination: {
-          page: 1,
-          limit: 50,
-          total: 0,
-          totalPages: 0,
-        },
+        data: result.data as OutboundRecord[],
+        pagination: result.pagination,
       };
     },
     staleTime: 5 * 60 * 1000, // 5分钟

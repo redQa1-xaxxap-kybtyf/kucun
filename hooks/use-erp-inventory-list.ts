@@ -55,9 +55,9 @@ export function useERPInventoryList(
   const handleAdjust = React.useCallback(
     (inventoryId?: string) => {
       if (inventoryId) {
-        router.push(`/inventory/adjust?id=${inventoryId}`);
+        router.push(`/inventory/adjustments?id=${inventoryId}`);
       } else {
-        router.push('/inventory/adjust');
+        router.push('/inventory/adjustments');
       }
     },
     [router]

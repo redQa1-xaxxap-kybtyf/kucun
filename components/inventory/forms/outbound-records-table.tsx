@@ -1,7 +1,6 @@
 'use client';
 
 import { Package, User } from 'lucide-react';
-import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import {
@@ -25,6 +24,7 @@ interface OutboundRecord {
   productId: string;
   productCode: string;
   productName: string;
+  productSpecification?: string;
   quantity: number;
   type: OutboundType;
   reason?: string;
@@ -36,6 +36,36 @@ interface OutboundRecordsTableProps {
   records: OutboundRecord[];
   isLoading: boolean;
 }
+
+// 格式化产品规格显示（限制11个字符，避免JSON字符串显示）
+const formatSpecification = (specification?: string) => {
+  if (!specification) return null;
+
+  // 如果是JSON字符串，尝试解析并提取关键信息
+  if (specification.startsWith('{') && specification.endsWith('}')) {
+    try {
+      const parsed = JSON.parse(specification);
+      // 提取尺寸信息作为主要显示内容
+      if (parsed.size) {
+        return parsed.size.length > 11
+          ? `${parsed.size.slice(0, 11)}...`
+          : parsed.size;
+      }
+      // 如果没有尺寸，显示简化的规格信息
+      return '规格详情...';
+    } catch {
+      // JSON解析失败，截断显示
+      return specification.length > 11
+        ? `${specification.slice(0, 11)}...`
+        : specification;
+    }
+  }
+
+  // 普通字符串，直接截断
+  return specification.length > 11
+    ? `${specification.slice(0, 11)}...`
+    : specification;
+};
 
 export function OutboundRecordsTable({
   records,
@@ -84,6 +114,7 @@ export function OutboundRecordsTable({
             <TableRow className="bg-muted/50">
               <TableHead className="h-9 text-xs">产品编码</TableHead>
               <TableHead className="h-9 text-xs">产品名称</TableHead>
+              <TableHead className="h-9 text-xs">规格</TableHead>
               <TableHead className="h-9 text-xs">出库数量</TableHead>
               <TableHead className="h-9 text-xs">出库类型</TableHead>
               <TableHead className="h-9 text-xs">出库原因</TableHead>
@@ -93,7 +124,7 @@ export function OutboundRecordsTable({
           <TableBody>
             {records.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} className="h-24 text-center">
+                <TableCell colSpan={7} className="h-24 text-center">
                   <div className="flex flex-col items-center gap-2 text-muted-foreground">
                     <Package className="h-8 w-8" />
                     <span className="text-sm">暂无出库记录</span>
@@ -108,6 +139,9 @@ export function OutboundRecordsTable({
                   </TableCell>
                   <TableCell className="text-xs">
                     {record.productName}
+                  </TableCell>
+                  <TableCell className="text-xs text-muted-foreground">
+                    {formatSpecification(record.productSpecification) || '-'}
                   </TableCell>
                   <TableCell className="text-xs">
                     <span className="font-medium">{record.quantity}</span> 片
