@@ -18,6 +18,22 @@ interface InboundProductSectionProps {
   onProductSelect: (product: ProductOption) => void;
 }
 
+// 单位映射：英文 -> 中文
+const UNIT_MAP: Record<string, string> = {
+  piece: '片',
+  box: '箱',
+  pallet: '托',
+  sqm: '平方米',
+  m2: '平方米',
+  kg: '千克',
+  ton: '吨',
+};
+
+// 获取中文单位
+function getChineseUnit(unit: string): string {
+  return UNIT_MAP[unit.toLowerCase()] || unit;
+}
+
 export function InboundProductSection({
   form,
   selectedProduct,
@@ -67,7 +83,9 @@ export function InboundProductSection({
             </div>
             <div>
               <span className="text-muted-foreground">单位：</span>
-              <span className="font-medium">{selectedProduct.unit}</span>
+              <span className="font-medium">
+                {getChineseUnit(selectedProduct.unit)}
+              </span>
             </div>
             <div>
               <span className="text-muted-foreground">每件片数：</span>
