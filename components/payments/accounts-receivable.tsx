@@ -501,7 +501,7 @@ const AccountsReceivableComponent = React.forwardRef<
                     <SelectValue placeholder="付款状态" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">全部状态</SelectItem>
+                    <SelectItem value="all">全部状态</SelectItem>
                     <SelectItem value="unpaid">未付款</SelectItem>
                     <SelectItem value="partial">部分付款</SelectItem>
                     <SelectItem value="paid">已付款</SelectItem>

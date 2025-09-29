@@ -405,7 +405,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
                     <SelectValue placeholder="收款方式" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">全部方式</SelectItem>
+                    <SelectItem value="all">全部方式</SelectItem>
                     {DEFAULT_PAYMENT_METHODS.filter(
                       method => method.isActive
                     ).map(method => (
@@ -427,7 +427,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
                     <SelectValue placeholder="状态" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">全部状态</SelectItem>
+                    <SelectItem value="all">全部状态</SelectItem>
                     {DEFAULT_PAYMENT_STATUSES.filter(
                       status => status.isActive
                     ).map(status => (

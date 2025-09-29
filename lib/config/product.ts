@@ -31,6 +31,10 @@ export const PRODUCT_UNITS = {
 
 export type ProductUnit = (typeof PRODUCT_UNITS)[keyof typeof PRODUCT_UNITS];
 
+// 用于Zod验证的数组形式
+export const PRODUCT_STATUS_VALUES = Object.values(PRODUCT_STATUSES);
+export const PRODUCT_UNIT_VALUES = Object.values(PRODUCT_UNITS);
+
 // 产品单位中文标签映射
 export const PRODUCT_UNIT_LABELS = {
   [PRODUCT_UNITS.PIECE]: '件',
@@ -57,4 +61,48 @@ export const PRODUCT_SORT_FIELD_LABELS = {
   [PRODUCT_SORT_FIELDS.CODE]: '产品编码',
   [PRODUCT_SORT_FIELDS.CREATED_AT]: '创建时间',
   [PRODUCT_SORT_FIELDS.UPDATED_AT]: '更新时间',
+} as const;
+
+// 产品状态选项（用于下拉框）
+export const PRODUCT_STATUS_OPTIONS = [
+  {
+    value: PRODUCT_STATUSES.ACTIVE,
+    label: PRODUCT_STATUS_LABELS[PRODUCT_STATUSES.ACTIVE],
+  },
+  {
+    value: PRODUCT_STATUSES.INACTIVE,
+    label: PRODUCT_STATUS_LABELS[PRODUCT_STATUSES.INACTIVE],
+  },
+  {
+    value: PRODUCT_STATUSES.DISCONTINUED,
+    label: PRODUCT_STATUS_LABELS[PRODUCT_STATUSES.DISCONTINUED],
+  },
+] as const;
+
+// 产品单位选项（用于下拉框）
+export const PRODUCT_UNIT_OPTIONS = [
+  {
+    value: PRODUCT_UNITS.PIECE,
+    label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.PIECE],
+  },
+  { value: PRODUCT_UNITS.BOX, label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.BOX] },
+  {
+    value: PRODUCT_UNITS.SQUARE_METER,
+    label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.SQUARE_METER],
+  },
+  {
+    value: PRODUCT_UNITS.KILOGRAM,
+    label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.KILOGRAM],
+  },
+  {
+    value: PRODUCT_UNITS.METER,
+    label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.METER],
+  },
+] as const;
+
+// 分页配置
+export const paginationConfig = {
+  defaultPageSize: 20,
+  pageSizeOptions: [10, 20, 50, 100],
+  maxPageSize: 100,
 } as const;

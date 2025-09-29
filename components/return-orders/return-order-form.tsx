@@ -251,7 +251,7 @@ export function ReturnOrderForm({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">请选择销售订单</SelectItem>
+                          <SelectItem value="none">请选择销售订单</SelectItem>
                           {/* 这里应该显示销售订单列表，简化处理 */}
                           <SelectItem value="sales-order-1">
                             SO202501160001

@@ -1,27 +1,13 @@
 'use client';
 
-import {
-  AlertCircle,
-  CheckCircle,
-  // Image as ImageIcon, // 未使用
-  Loader2,
-  // Move, // 未使用
-  // Plus, // 未使用
-  Trash2,
-  Upload,
-  X,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle } from 'lucide-react';
 import Image from 'next/image';
-import { useRef, useState } from 'react';
 
+import { ProductImageCard } from '@/components/products/product-image-card';
+import { ProductImageUploadArea } from '@/components/products/product-image-upload-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { useImageUpload } from '@/hooks/use-image-upload';
 
 interface ProductImage {
   url: string;
@@ -49,339 +35,160 @@ export function ProductImageUpload({
   maxFiles = 8,
   maxSize = 5,
 }: ProductImageUploadProps) {
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStatus, setUploadStatus] = useState<
-    'idle' | 'uploading' | 'success' | 'error'
-  >('idle');
-  const [error, setError] = useState<string>('');
-  const [activeTab, setActiveTab] = useState('thumbnail');
+  // 使用自定义Hook处理图片上传逻辑
+  const {
+    uploading,
+    uploadProgress,
+    uploadError,
+    handleFileUpload,
+    removeImage,
+    updateImageAlt,
+  } = useImageUpload({
+    maxFiles,
+    maxSize,
+    onThumbnailChange,
+    onImagesChange,
+  });
 
-  const thumbnailInputRef = useRef<HTMLInputElement>(null);
-  const mainImageInputRef = useRef<HTMLInputElement>(null);
-  const effectImageInputRef = useRef<HTMLInputElement>(null);
-
-  // 获取主图和效果图
+  // 分离主图和效果图
   const mainImages = images.filter(img => img.type === 'main');
   const effectImages = images.filter(img => img.type === 'effect');
 
-  const validateFile = (file: File): string | null => {
-    if (file.size > maxSize * 1024 * 1024) {
-      return `文件大小不能超过 ${maxSize}MB`;
-    }
-    if (!file.type.startsWith('image/')) {
-      return '只能上传图片文件';
-    }
-    return null;
+  // 处理文件选择
+  const handleThumbnailUpload = (files: FileList) => {
+    handleFileUpload(files, 'thumbnail', images);
   };
 
-  const uploadFile = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
-    formData.append('type', 'product');
-
-    const response = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.error || '上传失败');
-    }
-
-    const data = await response.json();
-    return data.url;
+  const handleMainImageUpload = (files: FileList) => {
+    handleFileUpload(files, 'main', images);
   };
 
-  const handleFileUpload = async (
-    files: FileList | null,
-    imageType: 'thumbnail' | 'main' | 'effect'
-  ) => {
-    if (!files || files.length === 0) return;
-
-    setError('');
-    setUploading(true);
-    setUploadStatus('uploading');
-    setUploadProgress(0);
-
-    try {
-      const uploadPromises = Array.from(files).map(async (file, index) => {
-        const validationError = validateFile(file);
-        if (validationError) {
-          throw new Error(validationError);
-        }
-
-        const url = await uploadFile(file);
-        setUploadProgress(((index + 1) / files.length) * 100);
-        return url;
-      });
-
-      const uploadedUrls = await Promise.all(uploadPromises);
-
-      if (imageType === 'thumbnail') {
-        onThumbnailChange(uploadedUrls[0]);
-      } else {
-        const newImages = uploadedUrls.map((url, index) => ({
-          url,
-          type: imageType,
-          alt: `${imageType === 'main' ? '产品主图' : '产品效果图'} ${
-            images.length + index + 1
-          }`,
-          order: images.length + index,
-        }));
-
-        onImagesChange([...images, ...newImages]);
-      }
-
-      setUploadStatus('success');
-      setTimeout(() => setUploadStatus('idle'), 2000);
-    } catch (error) {
-      setError(error instanceof Error ? error.message : '上传失败');
-      setUploadStatus('error');
-      setTimeout(() => setUploadStatus('idle'), 3000);
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-    }
+  const handleEffectImageUpload = (files: FileList) => {
+    handleFileUpload(files, 'effect', images);
   };
-
-  const removeImage = (index: number, type: 'main' | 'effect') => {
-    const filteredImages = images.filter(
-      (img, i) => !(img.type === type && i === index)
-    );
-    onImagesChange(filteredImages);
-  };
-
-  const updateImageAlt = (index: number, alt: string) => {
-    const updatedImages = [...images];
-    updatedImages[index] = { ...updatedImages[index], alt };
-    onImagesChange(updatedImages);
-  };
-
-  const openFileDialog = (inputRef: React.RefObject<HTMLInputElement>) => {
-    if (!disabled && !uploading) {
-      inputRef.current?.click();
-    }
-  };
-
-  const renderUploadArea = (
-    title: string,
-    description: string,
-    inputRef: React.RefObject<HTMLInputElement>,
-    onFileChange: (files: FileList | null) => void,
-    multiple = false
-  ) => (
-    <Card
-      className={`border-2 border-dashed transition-colors ${
-        disabled || uploading
-          ? 'cursor-not-allowed border-muted bg-muted/50'
-          : 'cursor-pointer border-muted-foreground/25 hover:border-muted-foreground/50'
-      }`}
-      onClick={() => openFileDialog(inputRef)}
-    >
-      <CardContent className="flex flex-col items-center justify-center py-6 text-center">
-        <div className="mb-4">
-          {uploadStatus === 'uploading' ? (
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          ) : uploadStatus === 'success' ? (
-            <CheckCircle className="h-8 w-8 text-green-500" />
-          ) : uploadStatus === 'error' ? (
-            <AlertCircle className="h-8 w-8 text-red-500" />
-          ) : (
-            <Upload className="h-8 w-8 text-muted-foreground" />
-          )}
-        </div>
-        <h3 className="mb-2 font-medium">{title}</h3>
-        <p className="mb-4 text-sm text-muted-foreground">{description}</p>
-        {uploading && (
-          <div className="w-full max-w-xs">
-            <Progress value={uploadProgress} className="mb-2" />
-            <p className="text-xs text-muted-foreground">
-              正在上传到七牛云CDN... {Math.round(uploadProgress)}%
-            </p>
-          </div>
-        )}
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/*"
-          multiple={multiple}
-          onChange={e => onFileChange(e.target.files)}
-          className="hidden"
-          disabled={disabled || uploading}
-        />
-      </CardContent>
-    </Card>
-  );
-
-  const renderImageGrid = (
-    imageList: ProductImage[],
-    type: 'main' | 'effect'
-  ) => (
-    <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
-      {imageList.map((image, index) => (
-        <Card key={`${type}-${index}`} className="relative overflow-hidden">
-          <div className="relative aspect-square">
-            <Image
-              src={image.url}
-              alt={image.alt || `${type}图片`}
-              fill
-              className="object-cover"
-            />
-            <div className="absolute inset-0 bg-black/50 opacity-0 transition-opacity hover:opacity-100">
-              <div className="absolute right-2 top-2">
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  onClick={() => removeImage(index, type)}
-                  disabled={disabled}
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
-          </div>
-          <CardContent className="p-2">
-            <Input
-              placeholder="图片描述"
-              value={image.alt || ''}
-              onChange={e => updateImageAlt(index, e.target.value)}
-              disabled={disabled}
-              className="text-xs"
-            />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
 
   return (
     <div className="space-y-6">
-      {error && (
+      {/* 错误提示 */}
+      {uploadError && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
+          <AlertDescription>{uploadError}</AlertDescription>
         </Alert>
       )}
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
+      <Tabs defaultValue="thumbnail" className="w-full">
         <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="thumbnail">
-            缩略图
-            {thumbnailUrl && (
-              <Badge variant="secondary" className="ml-2">
-                1
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="main">
-            主图
-            {mainImages.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {mainImages.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="effect">
-            效果图
-            {effectImages.length > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {effectImages.length}
-              </Badge>
-            )}
-          </TabsTrigger>
+          <TabsTrigger value="thumbnail">缩略图</TabsTrigger>
+          <TabsTrigger value="main">主图</TabsTrigger>
+          <TabsTrigger value="effect">效果图</TabsTrigger>
         </TabsList>
 
+        {/* 缩略图上传 */}
         <TabsContent value="thumbnail" className="space-y-4">
-          <div className="space-y-4">
-            <div>
-              <Label className="text-base font-medium">产品缩略图</Label>
-              <p className="text-sm text-muted-foreground">
-                用于产品列表显示的小尺寸图片，建议尺寸 200x200px
-              </p>
-            </div>
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <ProductImageUploadArea
+              type="thumbnail"
+              title="上传缩略图"
+              description="建议尺寸 300x300px，支持 JPG、PNG 格式"
+              multiple={false}
+              disabled={disabled}
+              uploading={uploading}
+              uploadProgress={uploadProgress}
+              onFileSelect={handleThumbnailUpload}
+            />
 
-            {thumbnailUrl ? (
-              <Card className="relative h-32 w-32">
-                <Image
-                  src={thumbnailUrl}
-                  alt="产品缩略图"
-                  width={128}
-                  height={128}
-                  className="rounded-lg object-cover"
-                />
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  className="absolute -right-2 -top-2"
-                  onClick={() => onThumbnailChange('')}
-                  disabled={disabled}
-                >
-                  <X className="h-3 w-3" />
-                </Button>
-              </Card>
-            ) : (
-              renderUploadArea(
-                '上传缩略图',
-                '点击或拖拽图片到此处上传缩略图',
-                thumbnailInputRef,
-                files => handleFileUpload(files, 'thumbnail')
-              )
+            {thumbnailUrl && (
+              <div className="space-y-2">
+                <h4 className="text-sm font-medium">当前缩略图</h4>
+                <div className="relative aspect-square w-full max-w-[200px] overflow-hidden rounded-lg border">
+                  <Image
+                    src={thumbnailUrl}
+                    alt="产品缩略图"
+                    fill
+                    className="object-cover"
+                    sizes="200px"
+                  />
+                </div>
+              </div>
             )}
           </div>
         </TabsContent>
 
+        {/* 主图上传 */}
         <TabsContent value="main" className="space-y-4">
-          <div className="space-y-4">
-            <div>
-              <Label className="text-base font-medium">产品主图</Label>
-              <p className="text-sm text-muted-foreground">
-                展示产品主要特征的高质量图片，建议尺寸 800x800px
-              </p>
+          <ProductImageUploadArea
+            type="main"
+            title="上传主图"
+            description={`建议尺寸 800x800px，最多上传 ${maxFiles} 张`}
+            multiple={true}
+            disabled={disabled}
+            uploading={uploading}
+            uploadProgress={uploadProgress}
+            onFileSelect={handleMainImageUpload}
+          />
+
+          {mainImages.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">主图列表</h4>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {mainImages.map((image, index) => (
+                  <ProductImageCard
+                    key={`main-${index}`}
+                    image={image}
+                    index={index}
+                    onRemove={() => removeImage(images, index, 'main')}
+                    onUpdateAlt={(_, alt) => updateImageAlt(images, index, alt)}
+                    disabled={disabled}
+                  />
+                ))}
+              </div>
             </div>
-
-            {mainImages.length > 0 && renderImageGrid(mainImages, 'main')}
-
-            {mainImages.length < maxFiles &&
-              renderUploadArea(
-                '上传主图',
-                '点击或拖拽图片到此处上传产品主图（支持多选）',
-                mainImageInputRef,
-                files => handleFileUpload(files, 'main'),
-                true
-              )}
-          </div>
+          )}
         </TabsContent>
 
+        {/* 效果图上传 */}
         <TabsContent value="effect" className="space-y-4">
-          <div className="space-y-4">
-            <div>
-              <Label className="text-base font-medium">产品效果图</Label>
-              <p className="text-sm text-muted-foreground">
-                展示产品实际使用效果的图片，如装修效果、应用场景等
-              </p>
+          <ProductImageUploadArea
+            type="effect"
+            title="上传效果图"
+            description={`展示产品使用效果，最多上传 ${maxFiles} 张`}
+            multiple={true}
+            disabled={disabled}
+            uploading={uploading}
+            uploadProgress={uploadProgress}
+            onFileSelect={handleEffectImageUpload}
+          />
+
+          {effectImages.length > 0 && (
+            <div className="space-y-2">
+              <h4 className="text-sm font-medium">效果图列表</h4>
+              <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:grid-cols-4">
+                {effectImages.map((image, index) => (
+                  <ProductImageCard
+                    key={`effect-${index}`}
+                    image={image}
+                    index={index}
+                    onRemove={() => removeImage(images, index, 'effect')}
+                    onUpdateAlt={(_, alt) => updateImageAlt(images, index, alt)}
+                    disabled={disabled}
+                  />
+                ))}
+              </div>
             </div>
-
-            {effectImages.length > 0 && renderImageGrid(effectImages, 'effect')}
-
-            {effectImages.length < maxFiles &&
-              renderUploadArea(
-                '上传效果图',
-                '点击或拖拽图片到此处上传产品效果图（支持多选）',
-                effectImageInputRef,
-                files => handleFileUpload(files, 'effect'),
-                true
-              )}
-          </div>
+          )}
         </TabsContent>
       </Tabs>
 
-      <div className="text-xs text-muted-foreground">
-        <p>✓ 图片将自动上传到七牛云CDN，确保快速访问</p>
-        <p>✓ 支持 JPG、PNG、WebP 格式，单个文件最大 {maxSize}MB</p>
-        <p>✓ 建议图片尺寸：缩略图 200x200px，主图/效果图 800x800px</p>
-      </div>
+      {/* 上传成功提示 */}
+      {!uploading && !uploadError && images.length > 0 && (
+        <Alert>
+          <CheckCircle className="h-4 w-4" />
+          <AlertDescription>
+            图片上传成功！共 {images.length} 张图片
+          </AlertDescription>
+        </Alert>
+      )}
     </div>
   );
 }

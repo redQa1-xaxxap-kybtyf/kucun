@@ -6,17 +6,11 @@
  * 与 Prisma Schema 保持同步，确保类型安全
  */
 
-/**
- * 产品计量单位枚举
- * 定义了系统支持的所有产品计量单位
- */
-export type ProductUnit = 'piece' | 'sheet' | 'strip' | 'box' | 'square_meter';
+// 从配置文件导入类型定义，确保类型一致性
+import type { ProductStatus, ProductUnit } from '@/lib/config/product';
 
-/**
- * 产品状态枚举
- * 定义了产品的生命周期状态
- */
-export type ProductStatus = 'active' | 'inactive';
+// 重新导出类型以保持向后兼容性
+export type { ProductStatus, ProductUnit };
 
 /**
  * 产品图片类型枚举

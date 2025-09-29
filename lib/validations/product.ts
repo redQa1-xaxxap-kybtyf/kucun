@@ -8,6 +8,10 @@
 
 import { z } from 'zod';
 
+import {
+  PRODUCT_STATUS_VALUES,
+  PRODUCT_UNIT_VALUES,
+} from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
 
 /**
@@ -43,7 +47,7 @@ const baseValidations = {
     .or(z.literal('')),
 
   /** 计量单位验证：必须是预定义的枚举值 */
-  unit: z.enum(['piece', 'sheet', 'strip', 'box', 'square_meter'], {
+  unit: z.enum(PRODUCT_UNIT_VALUES as [string, ...string[]], {
     errorMap: () => ({ message: '请选择有效的计量单位' }),
   }),
 
@@ -76,7 +80,7 @@ const baseValidations = {
     .optional(),
 
   /** 产品状态验证：必须是active或inactive */
-  status: z.enum(['active', 'inactive'], {
+  status: z.enum(PRODUCT_STATUS_VALUES as [string, ...string[]], {
     errorMap: () => ({ message: '请选择有效的产品状态' }),
   }),
 

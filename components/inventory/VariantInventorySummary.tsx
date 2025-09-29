@@ -1,60 +1,32 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { AlertTriangle, MapPin, Package, TrendingUp } from 'lucide-react';
+import { Package } from 'lucide-react';
+import React from 'react';
 
-import { Badge } from '@/components/ui/badge';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Skeleton } from '@/components/ui/skeleton';
-import { getVariantInventorySummary } from '@/lib/api/product-variants';
+import { InventoryAlertCard } from '@/components/inventory/variant/inventory-alert-card';
+import { InventoryOverviewCard } from '@/components/inventory/variant/inventory-overview-card';
+import { InventoryStatsCard } from '@/components/inventory/variant/inventory-stats-card';
+import { InventorySummarySkeleton } from '@/components/inventory/variant/inventory-summary-skeleton';
+import { LocationDistributionCard } from '@/components/inventory/variant/location-distribution-card';
+import { Card, CardContent } from '@/components/ui/card';
+import { useVariantInventorySummary } from '@/hooks/use-variant-inventory-summary';
 
 interface VariantInventorySummaryProps {
   variantId: string;
   showDetails?: boolean;
 }
 
-interface VariantInventorySummaryData {
-  variant: {
-    id: string;
-    colorCode: string;
-    sku: string;
-    product: {
-      id: string;
-      code: string;
-      name: string;
-    };
-  };
-  inventory: {
-    totalQuantity: number;
-    reservedQuantity: number;
-    availableQuantity: number;
-    averageUnitCost: number;
-    stockStatus: string;
-    lastUpdated: string;
-  };
-  breakdown: {
-    locations: Array<{
-      location: string;
-      quantity: number;
-      reservedQuantity: number;
-      availableQuantity: number;
-      batches: number;
-    }>;
-    productionDates: Array<{
-      productionDate: string;
-      quantity: number;
-      batches: number;
-    }>;
-    totalBatches: number;
-    totalLocations: number;
-  };
+function ErrorState() {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="text-center text-muted-foreground">
+          <Package className="mx-auto mb-2 h-8 w-8" />
+          <p className="text-sm">加载库存汇总失败</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 export function VariantInventorySummary({
@@ -62,230 +34,48 @@ export function VariantInventorySummary({
   showDetails = true,
 }: VariantInventorySummaryProps) {
   const {
-    data: summary,
+    summaryData,
     isLoading,
     error,
-  } = useQuery({
-    queryKey: ['variant-inventory-summary', variantId],
-    queryFn: () => getVariantInventorySummary(variantId),
-    enabled: !!variantId,
-  });
+    stockPercentage,
+    getStockStatusColor,
+    getStockStatusText,
+  } = useVariantInventorySummary(variantId);
 
   if (isLoading) {
-    return (
-      <Card>
-        <CardHeader>
-          <Skeleton className="h-6 w-32" />
-          <Skeleton className="h-4 w-48" />
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <Skeleton className="h-20 w-full" />
-            <Skeleton className="h-16 w-full" />
-          </div>
-        </CardContent>
-      </Card>
-    );
+    return <InventorySummarySkeleton />;
   }
 
-  if (error || !summary) {
-    return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center text-muted-foreground">
-            <Package className="mx-auto mb-2 h-8 w-8" />
-            <p className="text-sm">加载库存汇总失败</p>
-          </div>
-        </CardContent>
-      </Card>
-    );
+  if (error || !summaryData) {
+    return <ErrorState />;
   }
 
-  const { variant, inventory, breakdown } =
-    summary as unknown as VariantInventorySummaryData;
-  const stockPercentage =
-    inventory.totalQuantity > 0
-      ? (inventory.availableQuantity / inventory.totalQuantity) * 100
-      : 0;
-
-  const getStockStatusColor = (status: string) => {
-    switch (status) {
-      case 'in_stock':
-        return 'bg-green-500';
-      case 'low_stock':
-        return 'bg-yellow-500';
-      case 'out_of_stock':
-        return 'bg-red-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  const getStockStatusText = (status: string) => {
-    switch (status) {
-      case 'in_stock':
-        return '库存充足';
-      case 'low_stock':
-        return '库存偏低';
-      case 'out_of_stock':
-        return '缺货';
-      default:
-        return '未知状态';
-    }
-  };
+  const { variant, inventory, breakdown } = summaryData;
 
   return (
     <div className="space-y-4">
       {/* 库存概览 */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <Package className="h-5 w-5" />
-            库存概览
-          </CardTitle>
-          <CardDescription>
-            {variant.product.name} ({variant.sku})
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-            <div className="text-center">
-              <div className="text-2xl font-bold text-primary">
-                {inventory.totalQuantity}
-              </div>
-              <div className="text-sm text-muted-foreground">总库存</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-green-600">
-                {inventory.availableQuantity}
-              </div>
-              <div className="text-sm text-muted-foreground">可用库存</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-orange-600">
-                {inventory.reservedQuantity}
-              </div>
-              <div className="text-sm text-muted-foreground">预留库存</div>
-            </div>
-            <div className="text-center">
-              <div className="text-2xl font-bold text-blue-600">
-                ¥{inventory.averageUnitCost?.toFixed(2) || '0.00'}
-              </div>
-              <div className="text-sm text-muted-foreground">平均成本</div>
-            </div>
-          </div>
-
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-sm font-medium">库存状态</span>
-              <Badge
-                variant="outline"
-                className={`${getStockStatusColor(inventory.stockStatus)} border-0 text-white`}
-              >
-                {getStockStatusText(inventory.stockStatus)}
-              </Badge>
-            </div>
-            <Progress value={stockPercentage} className="h-2" />
-            <div className="flex justify-between text-xs text-muted-foreground">
-              <span>可用: {inventory.availableQuantity}</span>
-              <span>总计: {inventory.totalQuantity}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <InventoryOverviewCard
+        variant={variant}
+        inventory={inventory}
+        stockPercentage={stockPercentage}
+        getStockStatusColor={getStockStatusColor}
+        getStockStatusText={getStockStatusText}
+      />
 
       {showDetails && (
         <>
           {/* 存储位置分布 */}
-          {breakdown.locations.length > 0 && (
-            <Card>
-              <CardHeader className="pb-3">
-                <CardTitle className="flex items-center gap-2 text-base">
-                  <MapPin className="h-4 w-4" />
-                  存储位置分布
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  {breakdown.locations.map((location, index: number) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="h-2 w-2 rounded-full bg-primary" />
-                        <span className="font-medium">{location.location}</span>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-medium">{location.quantity}</div>
-                        <div className="text-xs text-muted-foreground">
-                          {location.batches} 批次
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <LocationDistributionCard locations={breakdown.locations} />
 
           {/* 统计信息 */}
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <TrendingUp className="h-4 w-4" />
-                统计信息
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-lg bg-muted/50 p-3 text-center">
-                  <div className="text-lg font-bold">
-                    {breakdown.totalBatches}
-                  </div>
-                  <div className="text-sm text-muted-foreground">总批次数</div>
-                </div>
-                <div className="rounded-lg bg-muted/50 p-3 text-center">
-                  <div className="text-lg font-bold">
-                    {breakdown.totalLocations}
-                  </div>
-                  <div className="text-sm text-muted-foreground">存储位置</div>
-                </div>
-              </div>
-
-              {inventory.lastUpdated && (
-                <div className="mt-4 border-t pt-4">
-                  <div className="text-center text-sm text-muted-foreground">
-                    最后更新:{' '}
-                    {new Date(inventory.lastUpdated).toLocaleString('zh-CN')}
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <InventoryStatsCard
+            breakdown={breakdown}
+            lastUpdated={inventory.lastUpdated}
+          />
 
           {/* 库存预警 */}
-          {inventory.stockStatus !== 'in_stock' && (
-            <Card className="border-orange-200 bg-orange-50">
-              <CardContent className="pt-6">
-                <div className="flex items-center gap-3">
-                  <AlertTriangle className="h-5 w-5 text-orange-600" />
-                  <div>
-                    <div className="font-medium text-orange-800">
-                      {inventory.stockStatus === 'low_stock'
-                        ? '库存预警'
-                        : '缺货警告'}
-                    </div>
-                    <div className="text-sm text-orange-700">
-                      {inventory.stockStatus === 'low_stock'
-                        ? '当前库存偏低，建议及时补货'
-                        : '当前已无可用库存，请尽快补货'}
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+          <InventoryAlertCard stockStatus={inventory.stockStatus} />
         </>
       )}
     </div>
