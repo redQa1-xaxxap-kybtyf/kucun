@@ -2,7 +2,7 @@
 
 import { type UseFormReturn } from 'react-hook-form';
 
-import { ProductSelector } from '@/components/inventory/product-selector';
+import { ProductCombobox } from '@/components/inventory/product-combobox';
 import {
   FormControl,
   FormField,
@@ -27,15 +27,15 @@ export function InboundProductSection({
     <div className="space-y-4">
       <h3 className="text-base font-medium">产品信息</h3>
 
-      {/* 产品选择 */}
+      {/* 产品搜索 */}
       <FormField
         control={form.control}
         name="productId"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium">选择产品 *</FormLabel>
+            <FormLabel className="text-sm font-medium">搜索产品 *</FormLabel>
             <FormControl>
-              <ProductSelector
+              <ProductCombobox
                 value={field.value}
                 onChange={(productId, product) => {
                   field.onChange(productId);
@@ -43,7 +43,7 @@ export function InboundProductSection({
                     onProductSelect(product);
                   }
                 }}
-                placeholder="请选择要入库的产品"
+                placeholder="搜索产品名称、编码..."
                 className="h-9"
               />
             </FormControl>
