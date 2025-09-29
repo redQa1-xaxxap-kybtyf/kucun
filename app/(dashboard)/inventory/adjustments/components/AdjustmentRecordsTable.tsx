@@ -67,7 +67,7 @@ export function AdjustmentRecordsTable({
     );
   }
 
-  if (adjustments.length === 0) {
+  if (!adjustments || adjustments.length === 0) {
     return (
       <div className="py-8 text-center text-muted-foreground">暂无调整记录</div>
     );
@@ -88,7 +88,7 @@ export function AdjustmentRecordsTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {adjustments.map(adjustment => (
+        {(adjustments || []).map(adjustment => (
           <TableRow key={adjustment.id}>
             <TableCell>
               <div className="flex flex-col">

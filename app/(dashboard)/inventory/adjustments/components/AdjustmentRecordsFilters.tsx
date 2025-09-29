@@ -68,7 +68,7 @@ export function AdjustmentRecordsFilters({
           <Input
             id="search"
             placeholder="搜索调整单号、产品名称..."
-            value={filters.search || ''}
+            value={filters?.search || ''}
             onChange={e => handleFilterChange('search', e.target.value)}
           />
         </div>
@@ -77,7 +77,7 @@ export function AdjustmentRecordsFilters({
         <div className="space-y-2">
           <Label htmlFor="reason">调整原因</Label>
           <Select
-            value={filters.reason || 'all'}
+            value={filters?.reason || 'all'}
             onValueChange={value => handleFilterChange('reason', value)}
           >
             <SelectTrigger>
@@ -100,7 +100,7 @@ export function AdjustmentRecordsFilters({
           <Input
             id="startDate"
             type="date"
-            value={filters.startDate || ''}
+            value={filters?.startDate || ''}
             onChange={e => handleDateChange('startDate', e.target.value)}
           />
         </div>
@@ -111,7 +111,7 @@ export function AdjustmentRecordsFilters({
           <Input
             id="endDate"
             type="date"
-            value={filters.endDate || ''}
+            value={filters?.endDate || ''}
             onChange={e => handleDateChange('endDate', e.target.value)}
           />
         </div>
