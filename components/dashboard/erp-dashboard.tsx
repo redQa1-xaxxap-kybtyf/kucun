@@ -25,7 +25,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useBusinessOverview } from '@/lib/api/dashboard';
-import type { BusinessOverview, TimeRange } from '@/lib/types/dashboard';
+import type {
+  BusinessOverview,
+  DashboardData,
+  TimeRange,
+} from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
 
 /**

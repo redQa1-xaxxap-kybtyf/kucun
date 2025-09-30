@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 
 import {
   AddressSelector,
+  formatAddressString,
   type AddressData,
 } from '@/components/ui/address-selector';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,6 @@ import {
   customerQueryKeys,
   updateCustomer,
 } from '@/lib/api/customers';
-import { formatAddressString } from '@/lib/services/address-client';
 import type { Customer, CustomerUpdateInput } from '@/lib/types/customer';
 import {
   customerCreateSchema as CreateCustomerSchema,
@@ -253,7 +253,12 @@ export function ERPCustomerForm({
                     <FormControl>
                       <AddressSelector
                         value={field.value}
-                        onChange={field.onChange}
+                        onChange={addressData => {
+                          // 将 AddressData 对象转换为字符串
+                          const addressString =
+                            formatAddressString(addressData);
+                          field.onChange(addressString);
+                        }}
                         className="text-xs"
                         showLabel={false}
                         disabled={

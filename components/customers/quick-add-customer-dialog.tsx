@@ -7,7 +7,10 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { AddressSelector } from '@/components/ui/address-selector';
+import {
+  AddressSelector,
+  formatAddressString,
+} from '@/components/ui/address-selector';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -30,6 +33,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { createCustomer, customerQueryKeys } from '@/lib/api/customers';
+import type { AddressData } from '@/lib/types/address';
 import {
   customerCreateSchema as CreateCustomerSchema,
   type CustomerCreateFormData as CreateCustomerData,
@@ -102,8 +106,19 @@ export function QuickAddCustomerDialog({
   const onSubmit = (data: CreateCustomerData & { notes: string }) => {
     const { notes, ...customerData } = data;
 
-    // 地址已经是字符串类型
-    const addressString = customerData.address || '';
+    // 确保地址是字符串类型
+    // AddressSelector 可能返回 AddressData 对象或字符串
+    let addressString = '';
+    if (customerData.address) {
+      if (typeof customerData.address === 'string') {
+        addressString = customerData.address;
+      } else {
+        // 如果是对象，转换为字符串
+        addressString = formatAddressString(
+          customerData.address as unknown as AddressData
+        );
+      }
+    }
 
     // 将备注信息存储到 extendedInfo 中
     const submitData: CreateCustomerData = {
@@ -194,7 +209,11 @@ export function QuickAddCustomerDialog({
                   <FormControl>
                     <AddressSelector
                       value={field.value || undefined}
-                      onChange={field.onChange}
+                      onChange={addressData => {
+                        // 将 AddressData 对象转换为字符串
+                        const addressString = formatAddressString(addressData);
+                        field.onChange(addressString);
+                      }}
                       disabled={createMutation.isPending}
                       showLabel={false}
                     />

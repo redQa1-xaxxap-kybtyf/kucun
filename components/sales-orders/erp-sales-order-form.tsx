@@ -40,6 +40,7 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import {
+  getLatestPrice,
   useCustomerPriceHistory,
   type PriceType,
 } from '@/hooks/use-price-history';

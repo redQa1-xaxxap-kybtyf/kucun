@@ -5,10 +5,24 @@
 
 import type { ApiResponse } from '@/lib/types/api';
 import type {
-  AdjustmentListResponse,
   AdjustmentQueryParams,
   InventoryAdjustment,
-} from '@/lib/types/inventory';
+} from '@/lib/types/inventory-operations';
+
+// 定义 AdjustmentListResponse 类型
+interface AdjustmentListResponse {
+  success: boolean;
+  data: {
+    adjustments: InventoryAdjustment[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+  message?: string;
+}
 
 const API_BASE = '/api/inventory/adjustments';
 

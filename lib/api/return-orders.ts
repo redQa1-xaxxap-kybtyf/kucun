@@ -135,8 +135,12 @@ export async function updateReturnOrderStatus(
   remarks?: string,
   refundAmount?: number
 ): Promise<ReturnOrderResponse> {
+  // 生成幂等性键
+  const idempotencyKey = crypto.randomUUID();
+
   const data: UpdateReturnStatusFormData = {
-    status: status as any,
+    idempotencyKey,
+    status: status as UpdateReturnStatusFormData['status'],
     remarks,
     refundAmount,
   };

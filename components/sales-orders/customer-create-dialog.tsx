@@ -6,7 +6,10 @@ import { Loader2, Plus, User } from 'lucide-react';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 
-import { AddressSelector } from '@/components/ui/address-selector';
+import {
+  AddressSelector,
+  formatAddressString,
+} from '@/components/ui/address-selector';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -189,7 +192,11 @@ export function CustomerCreateDialog({
               render={({ field }) => (
                 <AddressSelector
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={addressData => {
+                    // 将 AddressData 对象转换为字符串
+                    const addressString = formatAddressString(addressData);
+                    field.onChange(addressString);
+                  }}
                   label="客户地址"
                   disabled={createMutation.isPending}
                 />

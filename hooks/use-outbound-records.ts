@@ -9,6 +9,7 @@ interface OutboundFilters {
   startDate: string;
   endDate: string;
   type: OutboundType | '';
+  search?: string;
 }
 
 interface OutboundRecord {

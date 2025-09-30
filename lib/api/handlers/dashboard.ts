@@ -101,6 +101,7 @@ export async function getDashboardData(
         inventoryValue: 0,
         turnoverRate: 0,
         stockHealth: 0,
+        productGrowth: 0,
       },
       sales: {
         totalRevenue: totalRevenue._sum.totalAmount || 0,

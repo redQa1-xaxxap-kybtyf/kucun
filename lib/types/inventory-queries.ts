@@ -19,7 +19,13 @@ export interface InventoryQueryParams {
   page?: number;
   limit?: number;
   search?: string;
-  sortBy?: 'productName' | 'quantity' | 'reservedQuantity' | 'updatedAt';
+  sortBy?:
+    | 'updatedAt'
+    | 'createdAt'
+    | 'quantity'
+    | 'reservedQuantity'
+    | 'batchNumber'
+    | 'productId';
   sortOrder?: 'asc' | 'desc';
   productId?: string;
   // variantId?: string; // 移除：当前系统不支持产品变体

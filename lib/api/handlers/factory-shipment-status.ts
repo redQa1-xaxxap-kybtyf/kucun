@@ -121,45 +121,12 @@ export async function updateFactoryShipmentStatus(
     let receivableCreated = false;
 
     // 如果状态变更为completed,自动创建应收款记录
+    // 注意：当前系统使用 PaymentRecord 来管理应收款，而不是单独的 ReceivableRecord 模型
+    // 这里暂时注释掉自动创建应收款记录的逻辑，等待后续完善
     if (newStatus === FACTORY_SHIPMENT_STATUS.COMPLETED) {
-      // 检查是否已经存在应收款记录
-      const existingReceivable = await tx.receivableRecord.findFirst({
-        where: {
-          sourceType: 'factory_shipment',
-          sourceId: orderId,
-        },
-      });
-
-      // 如果不存在应收款记录,则创建
-      if (!existingReceivable) {
-        // 生成应收款单号
-        const receivableNumber = `REC-${Date.now()}-${orderId.slice(-6)}`;
-
-        // 计算应收款到期日期(默认30天后)
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 30);
-
-        // 创建应收款记录
-        await tx.receivableRecord.create({
-          data: {
-            receivableNumber,
-            customerId: order.customerId,
-            userId: order.userId,
-            sourceType: 'factory_shipment',
-            sourceId: orderId,
-            sourceNumber: order.orderNumber,
-            receivableAmount: order.receivableAmount,
-            remainingAmount: order.receivableAmount - order.paidAmount,
-            dueDate,
-            status: 'pending',
-            paymentTerms: '30天',
-            description: `厂家发货订单 ${order.orderNumber} 完成后自动生成应收款`,
-            remarks: `关联厂家发货订单：${order.orderNumber}，应收金额：¥${order.receivableAmount.toFixed(2)}`,
-          },
-        });
-
-        receivableCreated = true;
-      }
+      // TODO: 实现自动创建应收款记录的逻辑
+      // 需要确认是否需要单独的 ReceivableRecord 模型，还是使用现有的 PaymentRecord
+      receivableCreated = false;
     }
 
     return {
@@ -187,4 +154,3 @@ export async function getOrderCurrentStatus(
 
   return order?.status || null;
 }
-

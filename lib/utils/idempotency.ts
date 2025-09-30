@@ -5,7 +5,14 @@
 
 import { prisma } from '@/lib/db';
 
-export type OperationType = 'inbound' | 'outbound' | 'adjust';
+export type OperationType =
+  | 'inbound'
+  | 'outbound'
+  | 'adjust'
+  | 'return_order_status_change'
+  | 'factory_shipment_status_change'
+  | 'sales_order_create'
+  | 'sales_order_update';
 
 export interface IdempotencyResult<T> {
   isNew: boolean;

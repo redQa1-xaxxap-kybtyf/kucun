@@ -443,10 +443,11 @@ async function checkHierarchyLoop(
     visited.add(currentParentId);
 
     // 查找父级的父级
-    const parent = await prisma.customer.findUnique({
-      where: { id: currentParentId },
-      select: { parentCustomerId: true },
-    });
+    const parent: { parentCustomerId: string | null } | null =
+      await prisma.customer.findUnique({
+        where: { id: currentParentId },
+        select: { parentCustomerId: true },
+      });
 
     currentParentId = parent?.parentCustomerId || null;
   }

@@ -132,6 +132,7 @@ export interface ProductOption {
   value: string;
   label: string;
   code: string;
+  specification?: string;
   unit: string;
   piecesPerUnit: number;
   currentStock?: number;

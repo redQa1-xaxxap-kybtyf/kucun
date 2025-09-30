@@ -129,10 +129,10 @@ export async function GET(request: NextRequest) {
     ]);
 
     // 格式化日志数据
-    const formattedLogs = logs.map(log => ({
+    const formattedLogs: SystemLog[] = logs.map(log => ({
       id: log.id,
-      type: log.type,
-      level: log.level,
+      type: log.type as SystemLogType,
+      level: log.level as SystemLogLevel,
       action: log.action,
       description: log.description,
       userId: log.userId,
