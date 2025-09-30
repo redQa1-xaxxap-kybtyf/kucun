@@ -85,6 +85,7 @@ export function ProductImageUploadArea({
               <p className="text-xs text-muted-foreground">{description}</p>
             </div>
             <Button
+              type="button"
               variant="outline"
               size="sm"
               disabled={disabled}

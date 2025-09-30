@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/table';
 import { PRODUCT_STATUS_LABELS } from '@/lib/config/product';
 import type { Product } from '@/lib/types/product';
+import { ProductDataUtils } from '@/lib/utils/product-data';
 
 interface ProductTableProps {
   products: Product[];
@@ -42,32 +43,6 @@ const UNIT_MAP: Record<string, string> = {
 // 获取中文单位
 function getChineseUnit(unit: string): string {
   return UNIT_MAP[unit.toLowerCase()] || unit;
-}
-
-// 格式化规格字段，提取关键信息
-function formatSpecification(specification: string | null | undefined): string {
-  if (!specification) return '-';
-
-  // 如果是JSON字符串，尝试解析并提取尺寸信息
-  if (specification.startsWith('{') && specification.endsWith('}')) {
-    try {
-      const parsed = JSON.parse(specification);
-      // 提取尺寸信息作为主要显示内容
-      if (parsed.size) {
-        return parsed.size;
-      }
-      // 如果没有尺寸，返回简化的规格信息
-      return '规格详情';
-    } catch {
-      // JSON解析失败，截断显示
-      return specification.length > 20
-        ? `${specification.slice(0, 20)}...`
-        : specification;
-    }
-  }
-
-  // 普通字符串，直接返回
-  return specification;
 }
 
 export function ProductTable({
@@ -138,7 +113,9 @@ export function ProductTable({
               <TableCell>{product.name}</TableCell>
               <TableCell>{product.category?.name || '-'}</TableCell>
               <TableCell className="text-muted-foreground">
-                {formatSpecification(product.specification)}
+                {ProductDataUtils.formatter.formatSpecification(
+                  product.specification
+                )}
               </TableCell>
               <TableCell>{getChineseUnit(product.unit)}</TableCell>
               <TableCell>{getStatusBadge(product.status)}</TableCell>
