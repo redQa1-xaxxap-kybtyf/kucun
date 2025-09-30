@@ -21,6 +21,8 @@ import {
 import { usePayableRecords, usePayableStatistics } from '@/lib/api/payables';
 import {
   type PayableRecordQuery,
+  type PayableSourceType,
+  type PayableStatus,
   PAYABLE_SOURCE_TYPE_LABELS,
   PAYABLE_STATUS_LABELS,
   PAYABLE_STATUS_VARIANTS,
@@ -53,7 +55,7 @@ export default function PayablesPage() {
   const handleStatusFilter = (status: string) => {
     setQuery(prev => ({
       ...prev,
-      status: status === 'all' ? undefined : (status as any),
+      status: status === 'all' ? undefined : (status as PayableStatus),
       page: 1,
     }));
   };
@@ -62,14 +64,23 @@ export default function PayablesPage() {
   const handleSourceTypeFilter = (sourceType: string) => {
     setQuery(prev => ({
       ...prev,
-      sourceType: sourceType === 'all' ? undefined : (sourceType as any),
+      sourceType:
+        sourceType === 'all' ? undefined : (sourceType as PayableSourceType),
       page: 1,
     }));
   };
 
   // 处理排序
   const handleSort = (sortBy: string) => {
-    setQuery(prev => ({ ...prev, sortBy: sortBy as any, page: 1 }));
+    setQuery(prev => ({
+      ...prev,
+      sortBy: sortBy as
+        | 'createdAt'
+        | 'payableAmount'
+        | 'dueDate'
+        | 'remainingAmount',
+      page: 1,
+    }));
   };
 
   return (

@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { paginationConfig } from '@/lib/env';
+import type { AccountsReceivable } from '@/lib/types/payment';
 
 /**
  * 应收货款管理页面
@@ -264,9 +265,9 @@ export default function ReceivablesPage() {
                 <div className="text-muted-foreground">暂无应收账款数据</div>
               </div>
             ) : (
-              data.data.receivables.map((receivable: any) => (
+              data.data.receivables.map((receivable: AccountsReceivable) => (
                 <Card
-                  key={receivable.id}
+                  key={receivable.salesOrderId}
                   className="transition-shadow hover:shadow-md"
                 >
                   <CardContent className="p-6">

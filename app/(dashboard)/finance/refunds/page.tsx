@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { paginationConfig } from '@/lib/env';
+import type { RefundRecord } from '@/lib/types/refund';
 
 /**
  * 应退货款管理页面
@@ -289,7 +290,7 @@ export default function RefundsPage() {
                 <p className="text-muted-foreground">暂无退款记录</p>
               </div>
             ) : (
-              refundsData.refunds.map((refund: any) => (
+              refundsData.refunds.map((refund: RefundRecord) => (
                 <Card
                   key={refund.id}
                   className="transition-shadow hover:shadow-md"

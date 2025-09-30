@@ -20,7 +20,9 @@ import {
 } from '@/components/ui/select';
 import { usePaymentOutRecords } from '@/lib/api/payables';
 import {
+  type PaymentOutMethod,
   type PaymentOutRecordQuery,
+  type PaymentOutStatus,
   PAYMENT_OUT_METHOD_LABELS,
   PAYMENT_OUT_STATUS_LABELS,
   PAYMENT_OUT_STATUS_VARIANTS,
@@ -49,7 +51,7 @@ export default function PaymentsOutPage() {
   const handleStatusFilter = (status: string) => {
     setQuery(prev => ({
       ...prev,
-      status: status === 'all' ? undefined : (status as any),
+      status: status === 'all' ? undefined : (status as PaymentOutStatus),
       page: 1,
     }));
   };
@@ -59,14 +61,20 @@ export default function PaymentsOutPage() {
     setQuery(prev => ({
       ...prev,
       paymentMethod:
-        paymentMethod === 'all' ? undefined : (paymentMethod as any),
+        paymentMethod === 'all'
+          ? undefined
+          : (paymentMethod as PaymentOutMethod),
       page: 1,
     }));
   };
 
   // 处理排序
   const handleSort = (sortBy: string) => {
-    setQuery(prev => ({ ...prev, sortBy: sortBy as any, page: 1 }));
+    setQuery(prev => ({
+      ...prev,
+      sortBy: sortBy as 'createdAt' | 'paymentAmount' | 'paymentDate',
+      page: 1,
+    }));
   };
 
   return (

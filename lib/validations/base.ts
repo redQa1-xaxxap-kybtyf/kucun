@@ -101,7 +101,7 @@ export const paginationValidations = {
 export const userValidations = {
   login: z.object({
     username: baseValidations.username,
-    password: baseValidations.password,
+    password: baseValidations.simplePassword, // 登录时使用简单密码验证
     captcha: z.string().min(1, '请输入验证码'),
   }),
 

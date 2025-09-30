@@ -72,10 +72,7 @@ async function getRefundDetail(id: string) {
 
     return refund;
   } catch (error) {
-    // 记录错误但不在生产环境输出
-    if (process.env.NODE_ENV === 'development') {
-      console.error('获取退款详情失败:', error);
-    }
+    // 错误已被捕获，返回 null 让组件显示错误状态
     return null;
   }
 }

@@ -9,19 +9,19 @@ import type { ReturnOrder } from '@/lib/types/return-order';
  */
 export default function ReturnOrdersPage() {
   // 操作处理函数
-  const handleViewDetail = (returnOrder: ReturnOrder) => {
+  const handleViewDetail = (_returnOrder: ReturnOrder) => {
     // 可以在这里添加详情对话框逻辑
-    console.log('查看退货订单详情:', returnOrder);
+    // TODO: 实现详情对话框
   };
 
-  const handleEdit = (returnOrder: ReturnOrder) => {
+  const handleEdit = (_returnOrder: ReturnOrder) => {
     // 可以在这里添加编辑对话框逻辑
-    console.log('编辑退货订单:', returnOrder);
+    // TODO: 实现编辑对话框
   };
 
-  const handleDelete = (returnOrder: ReturnOrder) => {
+  const handleDelete = (_returnOrder: ReturnOrder) => {
     // 可以在这里添加删除确认对话框逻辑
-    console.log('删除退货订单:', returnOrder);
+    // TODO: 实现删除确认对话框
   };
 
   return (
