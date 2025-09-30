@@ -84,6 +84,35 @@ const formatDate = (date: Date | string): string => {
   return format(dateObj, 'yyyy-MM-dd', { locale: zhCN });
 };
 
+// 单位中英文映射
+const UNIT_MAP: Record<string, string> = {
+  piece: '件',
+  box: '箱',
+  pcs: '个',
+  kg: '千克',
+  g: '克',
+  ton: '吨',
+  m: '米',
+  cm: '厘米',
+  mm: '毫米',
+  sqm: '平方米',
+  cbm: '立方米',
+  set: '套',
+  pair: '对',
+  dozen: '打',
+  pack: '包',
+  bag: '袋',
+  bottle: '瓶',
+  can: '罐',
+  roll: '卷',
+  sheet: '张',
+};
+
+// 格式化单位 - 将英文单位转换为中文
+const formatUnit = (unit: string): string => {
+  return UNIT_MAP[unit.toLowerCase()] || unit;
+};
+
 // 判断是否可以确认发货
 const canConfirmShipment = (status: FactoryShipmentStatus): boolean => {
   return ['draft', 'planning', 'waiting_deposit', 'deposit_paid'].includes(
@@ -337,36 +366,60 @@ export function FactoryShipmentOrderDetail({
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead>商品名称</TableHead>
-                  <TableHead>供应商</TableHead>
-                  <TableHead>规格</TableHead>
-                  <TableHead className="text-right">数量</TableHead>
-                  <TableHead>单位</TableHead>
-                  <TableHead className="text-right">单价</TableHead>
-                  <TableHead className="text-right">小计</TableHead>
+                <TableRow className="bg-gray-50">
+                  <TableHead className="font-semibold">序号</TableHead>
+                  <TableHead className="font-semibold">商品名称</TableHead>
+                  <TableHead className="font-semibold">供应商</TableHead>
+                  <TableHead className="font-semibold">规格</TableHead>
+                  <TableHead className="text-right font-semibold">
+                    数量
+                  </TableHead>
+                  <TableHead className="font-semibold">单位</TableHead>
+                  <TableHead className="text-right font-semibold">
+                    单价
+                  </TableHead>
+                  <TableHead className="text-right font-semibold">
+                    小计
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {order.items?.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">
+                  <TableRow key={index} className="hover:bg-gray-50">
+                    <TableCell className="text-gray-600">{index + 1}</TableCell>
+                    <TableCell className="font-medium text-gray-900">
                       {item.displayName}
                     </TableCell>
-                    <TableCell>{item.supplier?.name || '-'}</TableCell>
-                    <TableCell>{item.specification || '-'}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-gray-700">
+                      {item.supplier?.name || '-'}
+                    </TableCell>
+                    <TableCell className="text-gray-700">
+                      {item.specification || '-'}
+                    </TableCell>
+                    <TableCell className="text-right text-gray-900">
                       {item.quantity}
                     </TableCell>
-                    <TableCell>{item.unit}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-gray-700">
+                      {formatUnit(item.unit)}
+                    </TableCell>
+                    <TableCell className="text-right text-gray-900">
                       {formatAmount(item.unitPrice)}
                     </TableCell>
-                    <TableCell className="text-right font-medium">
+                    <TableCell className="text-right font-semibold text-gray-900">
                       {formatAmount(item.quantity * item.unitPrice)}
                     </TableCell>
                   </TableRow>
                 ))}
+                {order.items && order.items.length > 0 && (
+                  <TableRow className="border-t-2 bg-gray-50 font-semibold">
+                    <TableCell colSpan={7} className="text-right">
+                      合计金额：
+                    </TableCell>
+                    <TableCell className="text-right text-lg text-blue-600">
+                      {formatAmount(order.totalAmount)}
+                    </TableCell>
+                  </TableRow>
+                )}
               </TableBody>
             </Table>
           </div>
