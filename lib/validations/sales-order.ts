@@ -337,8 +337,12 @@ export const batchDeleteSalesOrdersSchema = z.object({
  */
 export const updateOrderStatusSchema = z.object({
   id: z.string().min(1, 'ID不能为空'),
+  idempotencyKey: z
+    .string()
+    .uuid('幂等性键格式不正确')
+    .describe('幂等性键,防止重复操作'),
   status: salesOrderStatusSchema,
-  notes: z.string().optional(),
+  remarks: z.string().optional(),
 });
 
 // 导出类型

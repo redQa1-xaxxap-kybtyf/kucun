@@ -1,9 +1,9 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
-import { prisma, withTransaction } from '@/lib/db';
-import { salesOrderUpdateSchema } from '@/lib/validations/sales-order';
+import { prisma } from '@/lib/db';
+import { updateOrderStatusSchema } from '@/lib/validations/sales-order';
 
 // 获取单个销售订单信息
 export async function GET(
@@ -153,8 +153,8 @@ export async function PUT(
 
     const body = await request.json();
 
-    // 验证输入数据
-    const validationResult = salesOrderUpdateSchema.safeParse({
+    // 验证输入数据 - 使用状态更新专用schema
+    const validationResult = updateOrderStatusSchema.safeParse({
       id,
       ...body,
     });
@@ -169,17 +169,18 @@ export async function PUT(
       );
     }
 
-    const { status, remarks } = validationResult.data;
+    const { idempotencyKey, status, remarks } = validationResult.data;
 
     // 检查订单是否存在
     const existingOrder = await prisma.salesOrder.findUnique({
       where: { id },
-      include: {
-        items: {
-          include: {
-            product: true,
-          },
-        },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        orderType: true,
+        supplierId: true,
+        costAmount: true,
       },
     });
 
@@ -199,7 +200,7 @@ export async function PUT(
       cancelled: [], // 已取消的订单不能再变更状态
     };
 
-    if (status && status !== existingOrder.status) {
+    if (status !== existingOrder.status) {
       const allowedStatuses =
         validStatusTransitions[existingOrder.status] || [];
       if (!allowedStatuses.includes(status)) {
@@ -213,191 +214,82 @@ export async function PUT(
       }
     }
 
-    // 如果状态变更为已发货或已完成，需要更新库存
-    const shouldUpdateInventory =
-      status &&
-      ['shipped', 'completed'].includes(status) &&
-      existingOrder.status === 'confirmed';
+    // 使用幂等性包装器执行状态更新
+    const { updateSalesOrderStatus, getAffectedProductIds } = await import(
+      '@/lib/api/handlers/sales-order-status'
+    );
 
-    // 如果状态变更为已取消，需要释放预留库存
-    const shouldReleaseReservedInventory =
-      status &&
-      status === 'cancelled' &&
-      ['confirmed'].includes(existingOrder.status);
+    const result = await withIdempotency(
+      idempotencyKey,
+      'sales_order_status_change',
+      id,
+      session.user.id,
+      { status, remarks },
+      async () => {
+        return await updateSalesOrderStatus(
+          id,
+          status,
+          existingOrder.status,
+          remarks
+        );
+      }
+    );
 
-    let _updatedOrder;
-    if (shouldUpdateInventory) {
-      // 使用事务处理库存更新
-      _updatedOrder = await withTransaction(async tx => {
-        // 更新订单状态
-        const order = await tx.salesOrder.update({
-          where: { id },
-          data: {
-            ...(status && { status }),
-            ...(remarks !== undefined && { remarks }),
-          },
-        });
-
-        // 更新库存（减少可用库存）
-        for (const item of existingOrder.items) {
-          // 修复：使用正确的字段查找库存记录
-          const inventory = await tx.inventory.findFirst({
-            where: {
-              productId: item.productId || undefined,
-              variantId: (item as any).variantId || null,
-              batchNumber: (item as any).batchNumber || null,
-            },
-          });
-
-          if (inventory) {
-            // 检查库存是否足够
-            const availableQuantity =
-              inventory.quantity - inventory.reservedQuantity;
-            if (availableQuantity < item.quantity) {
-              throw new Error(
-                `产品 ${item.product?.name || '未知产品'} (色号: ${item.colorCode || '无'}) 库存不足`
-              );
-            }
-
-            // 修复：减少库存时同步减少预留量
-            await tx.inventory.update({
-              where: { id: inventory.id },
-              data: {
-                quantity: inventory.quantity - item.quantity,
-                // 同步减少预留量，确保预留量不超过实际库存
-                reservedQuantity: Math.max(
-                  0,
-                  Math.min(
-                    inventory.reservedQuantity,
-                    inventory.quantity - item.quantity
-                  )
-                ),
-              },
-            });
-          } else {
-            throw new Error(
-              `产品 ${item.product?.name || '未知产品'} (变体: ${(item as any).variantId || '无'}, 批次: ${(item as any).batchNumber || '无'}) 库存记录不存在`
-            );
-          }
-        }
-
-        return order;
-      });
-
-      // 修复：库存变更后清除缓存
+    // 如果涉及库存变更,清除缓存
+    if (result.inventoryUpdated || result.reservedInventoryReleased) {
       const { invalidateInventoryCache } = await import(
         '@/lib/cache/inventory-cache'
       );
-      for (const item of existingOrder.items) {
-        await invalidateInventoryCache(item.productId || undefined);
+      const productIds = await getAffectedProductIds(id);
+      for (const productId of productIds) {
+        await invalidateInventoryCache(productId);
       }
-    } else if (shouldReleaseReservedInventory) {
-      // 订单取消时释放预留库存
-      _updatedOrder = await withTransaction(async tx => {
-        // 更新订单状态
-        const order = await tx.salesOrder.update({
-          where: { id },
-          data: {
-            ...(status && { status }),
-            ...(remarks !== undefined && { remarks }),
+    }
+
+    // 如果是调货销售且状态变更为confirmed,检查是否需要创建应付款记录
+    if (
+      status === 'confirmed' &&
+      existingOrder.orderType === 'TRANSFER' &&
+      existingOrder.supplierId &&
+      (existingOrder.costAmount || 0) > 0
+    ) {
+      await prisma.$transaction(async tx => {
+        // 检查是否已经存在应付款记录
+        const existingPayable = await tx.payableRecord.findFirst({
+          where: {
+            sourceType: 'sales_order',
+            sourceId: existingOrder.id,
           },
         });
 
-        // 释放预留库存
-        for (const item of existingOrder.items) {
-          const inventory = await tx.inventory.findFirst({
-            where: {
-              productId: item.productId || undefined,
-              variantId: (item as any).variantId || null,
-              batchNumber: (item as any).batchNumber || null,
-            },
-          });
+        // 如果不存在应付款记录,则创建
+        if (!existingPayable) {
+          // 生成应付款单号
+          const payableNumber = `PAY-${Date.now()}-${existingOrder.id.slice(-6)}`;
 
-          if (inventory && inventory.reservedQuantity > 0) {
-            // 释放预留量，但不能超过当前预留量
-            const releaseQuantity = Math.min(
-              item.quantity,
-              inventory.reservedQuantity
-            );
+          // 计算应付款到期日期(默认30天后)
+          const dueDate = new Date();
+          dueDate.setDate(dueDate.getDate() + 30);
 
-            await tx.inventory.update({
-              where: { id: inventory.id },
-              data: {
-                reservedQuantity: inventory.reservedQuantity - releaseQuantity,
-              },
-            });
-          }
-        }
-
-        return order;
-      });
-
-      // 修复：预留库存释放后清除缓存
-      const { invalidateInventoryCache } = await import(
-        '@/lib/cache/inventory-cache'
-      );
-      for (const item of existingOrder.items) {
-        await invalidateInventoryCache(item.productId || undefined);
-      }
-    } else {
-      // 普通状态更新，不涉及库存
-      // 但需要检查是否需要创建应付款记录
-      _updatedOrder = await prisma.$transaction(async tx => {
-        // 更新订单状态
-        const updatedOrder = await tx.salesOrder.update({
-          where: { id },
-          data: {
-            ...(status && { status }),
-            ...(remarks !== undefined && { remarks }),
-          },
-        });
-
-        // 如果是调货销售且状态变更为confirmed，检查是否需要创建应付款记录
-        if (
-          status === 'confirmed' &&
-          existingOrder.orderType === 'TRANSFER' &&
-          existingOrder.supplierId &&
-          (existingOrder.costAmount || 0) > 0
-        ) {
-          // 检查是否已经存在应付款记录
-          const existingPayable = await tx.payableRecord.findFirst({
-            where: {
+          // 创建应付款记录
+          await tx.payableRecord.create({
+            data: {
+              payableNumber,
+              supplierId: existingOrder.supplierId,
+              userId: session.user.id,
               sourceType: 'sales_order',
               sourceId: existingOrder.id,
+              sourceNumber: existingOrder.orderNumber,
+              payableAmount: existingOrder.costAmount || 0,
+              remainingAmount: existingOrder.costAmount || 0,
+              dueDate,
+              status: 'pending',
+              paymentTerms: '30天',
+              description: `调货销售订单 ${existingOrder.orderNumber} 确认后自动生成应付款`,
+              remarks: `关联销售订单：${existingOrder.orderNumber}，成本金额：¥${(existingOrder.costAmount || 0).toFixed(2)}`,
             },
           });
-
-          // 如果不存在应付款记录，则创建
-          if (!existingPayable) {
-            // 生成应付款单号
-            const payableNumber = `PAY-${Date.now()}-${existingOrder.id.slice(-6)}`;
-
-            // 计算应付款到期日期（默认30天后）
-            const dueDate = new Date();
-            dueDate.setDate(dueDate.getDate() + 30);
-
-            // 创建应付款记录
-            await tx.payableRecord.create({
-              data: {
-                payableNumber,
-                supplierId: existingOrder.supplierId,
-                userId: existingOrder.userId,
-                sourceType: 'sales_order',
-                sourceId: existingOrder.id,
-                sourceNumber: existingOrder.orderNumber,
-                payableAmount: existingOrder.costAmount || 0,
-                remainingAmount: existingOrder.costAmount || 0,
-                dueDate,
-                status: 'pending',
-                paymentTerms: '30天',
-                description: `调货销售订单 ${existingOrder.orderNumber} 确认后自动生成应付款`,
-                remarks: `关联销售订单：${existingOrder.orderNumber}，成本金额：¥${(existingOrder.costAmount || 0).toFixed(2)}`,
-              },
-            });
-          }
         }
-
-        return updatedOrder;
       });
     }
 
