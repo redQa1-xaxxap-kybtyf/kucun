@@ -3,16 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import {
-  Calendar,
-  DollarSign,
-  Eye,
-  Filter,
-  Package,
-  Plus,
-  Search,
-  Truck,
-} from 'lucide-react';
+import { Eye, Filter, Package, Plus, Search, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -46,8 +37,27 @@ interface FactoryShipmentOrderListProps {
   onOrderSelect?: (order: FactoryShipmentOrder) => void;
 }
 
+interface FetchOrdersParams {
+  page: number;
+  pageSize: number;
+  containerNumber?: string;
+  status?: FactoryShipmentStatus;
+}
+
+interface OrdersResponse {
+  orders: FactoryShipmentOrder[];
+  pagination: {
+    page: number;
+    pageSize: number;
+    totalCount: number;
+    totalPages: number;
+  };
+}
+
 // 模拟API调用 - 后续替换为真实API
-const fetchFactoryShipmentOrders = async (_params?: any) =>
+const fetchFactoryShipmentOrders = async (
+  _params?: FetchOrdersParams
+): Promise<OrdersResponse> =>
   // TODO: 实现真实API调用
   ({
     orders: [],
@@ -58,6 +68,43 @@ const fetchFactoryShipmentOrders = async (_params?: any) =>
       totalPages: 0,
     },
   });
+// 获取状态徽章样式 - 符合中国ERP系统的颜色规范
+const getStatusBadgeVariant = (
+  status: FactoryShipmentStatus
+): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  switch (status) {
+    case 'draft':
+      return 'secondary'; // 草稿 - 灰色
+    case 'planning':
+      return 'outline'; // 计划中 - 轮廓
+    case 'waiting_deposit':
+      return 'destructive'; // 等待定金 - 红色
+    case 'deposit_paid':
+    case 'factory_shipped':
+    case 'in_transit':
+    case 'arrived':
+    case 'delivered':
+    case 'completed':
+      return 'default'; // 其他状态 - 默认蓝色
+    default:
+      return 'secondary';
+  }
+};
+
+// 格式化金额 - 使用人民币符号和千分位分隔符
+const formatAmount = (amount: number): string => {
+  return `¥${amount.toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+// 格式化日期 - 统一使用 YYYY-MM-DD 格式
+const formatDate = (date: Date | string): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return format(dateObj, 'yyyy-MM-dd', { locale: zhCN });
+};
+
 export function FactoryShipmentOrderList({
   onOrderSelect,
 }: FactoryShipmentOrderListProps) {
@@ -88,32 +135,6 @@ export function FactoryShipmentOrderList({
 
   const orders = data?.orders || [];
   const pagination = data?.pagination;
-
-  // 获取状态徽章样式
-  const getStatusBadgeVariant = (status: FactoryShipmentStatus) => {
-    switch (status) {
-      case 'draft':
-        return 'secondary';
-      case 'planning':
-        return 'outline';
-      case 'waiting_deposit':
-        return 'destructive';
-      case 'deposit_paid':
-        return 'default';
-      case 'factory_shipped':
-        return 'default';
-      case 'in_transit':
-        return 'default';
-      case 'arrived':
-        return 'default';
-      case 'delivered':
-        return 'default';
-      case 'completed':
-        return 'default';
-      default:
-        return 'secondary';
-    }
-  };
 
   if (error) {
     return (
@@ -168,7 +189,9 @@ export function FactoryShipmentOrderList({
             </div>
             <Select
               value={statusFilter}
-              onValueChange={value => setStatusFilter(value as any)}
+              onValueChange={value =>
+                setStatusFilter(value as FactoryShipmentStatus | 'all')
+              }
             >
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="选择状态" />
@@ -238,64 +261,50 @@ export function FactoryShipmentOrderList({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {orders.map(order => {
-                    const orderData = order as any; // 临时类型断言，等待真实API实现
-                    return (
-                      <TableRow key={orderData.id}>
-                        <TableCell className="font-medium">
-                          {orderData.orderNumber}
-                        </TableCell>
-                        <TableCell>{orderData.containerNumber}</TableCell>
-                        <TableCell>{orderData.customer.name}</TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={getStatusBadgeVariant(orderData.status)}
-                          >
-                            {
-                              FACTORY_SHIPMENT_STATUS_LABELS[
-                                orderData.status as FactoryShipmentStatus
-                              ]
-                            }
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />¥
-                            {orderData.totalAmount.toLocaleString()}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />¥
-                            {orderData.receivableAmount.toLocaleString()}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            {format(
-                              new Date(orderData.createdAt),
-                              'yyyy-MM-dd',
-                              {
-                                locale: zhCN,
-                              }
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => onOrderSelect?.(orderData)}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                  {orders.map(order => (
+                    <TableRow key={order.id}>
+                      <TableCell className="font-medium">
+                        <Link
+                          href={`/factory-shipments/${order.id}`}
+                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {order.orderNumber}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        {order.containerNumber || (
+                          <span className="text-gray-400">未填写</span>
+                        )}
+                      </TableCell>
+                      <TableCell>{order.customer?.name || '-'}</TableCell>
+                      <TableCell>
+                        <Badge variant={getStatusBadgeVariant(order.status)}>
+                          {
+                            FACTORY_SHIPMENT_STATUS_LABELS[
+                              order.status as FactoryShipmentStatus
+                            ]
+                          }
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatAmount(order.totalAmount)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {formatAmount(order.receivableAmount)}
+                      </TableCell>
+                      <TableCell>{formatDate(order.createdAt)}</TableCell>
+                      <TableCell>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => onOrderSelect?.(order)}
+                          title="查看详情"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
                 </TableBody>
               </Table>
             </div>
