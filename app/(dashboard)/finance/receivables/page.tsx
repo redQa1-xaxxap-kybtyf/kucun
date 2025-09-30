@@ -278,19 +278,30 @@ export default function ReceivablesPage() {
                             {receivable.orderNumber}
                           </h3>
                           {getStatusBadge(receivable.paymentStatus)}
-                          {receivable.overdueDays > 0 && (
-                            <Badge variant="destructive">
-                              逾期 {receivable.overdueDays} 天
-                            </Badge>
-                          )}
+                          {receivable.overdueDays &&
+                            receivable.overdueDays > 0 && (
+                              <Badge variant="destructive">
+                                逾期 {receivable.overdueDays} 天
+                              </Badge>
+                            )}
                         </div>
                         <p className="text-sm text-muted-foreground">
                           客户：{receivable.customerName}
                         </p>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>订单日期：{receivable.orderDate}</span>
+                          <span>
+                            订单日期：
+                            {typeof receivable.orderDate === 'string'
+                              ? receivable.orderDate
+                              : receivable.orderDate.toLocaleDateString()}
+                          </span>
                           {receivable.dueDate && (
-                            <span>到期日期：{receivable.dueDate}</span>
+                            <span>
+                              到期日期：
+                              {typeof receivable.dueDate === 'string'
+                                ? receivable.dueDate
+                                : receivable.dueDate.toLocaleDateString()}
+                            </span>
                           )}
                         </div>
                       </div>
@@ -326,7 +337,9 @@ export default function ReceivablesPage() {
                         variant="outline"
                         size="sm"
                         onClick={() =>
-                          router.push(`/sales-orders/${receivable.id}`)
+                          router.push(
+                            `/sales-orders/${receivable.salesOrderId}`
+                          )
                         }
                       >
                         查看详情
@@ -336,7 +349,7 @@ export default function ReceivablesPage() {
                           size="sm"
                           onClick={() =>
                             router.push(
-                              `/finance/payments/create?orderId=${receivable.id}`
+                              `/finance/payments/create?orderId=${receivable.salesOrderId}`
                             )
                           }
                         >

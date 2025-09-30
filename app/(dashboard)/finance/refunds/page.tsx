@@ -308,19 +308,18 @@ export default function RefundsPage() {
                           </Badge>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          客户：
-                          {refund.customer?.name ||
-                            refund.customerName ||
-                            '未知客户'}
+                          客户ID：{refund.customerId}
                         </p>
                         <p className="text-sm text-muted-foreground">
-                          原订单：
-                          {refund.salesOrder?.orderNumber ||
-                            refund.salesOrderNumber ||
-                            '未知订单'}
+                          原订单ID：{refund.salesOrderId}
                         </p>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                          <span>退款日期：{refund.refundDate}</span>
+                          <span>
+                            退款日期：
+                            {typeof refund.refundDate === 'string'
+                              ? refund.refundDate
+                              : refund.refundDate.toLocaleDateString()}
+                          </span>
                           <span>退款原因：{refund.reason}</span>
                         </div>
                       </div>
