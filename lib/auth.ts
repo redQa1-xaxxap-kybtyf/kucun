@@ -5,6 +5,7 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { prisma } from './db';
 import { env } from './env';
+import { userValidations } from './validations/base';
 
 // 扩展 NextAuth 类型定义
 declare module 'next-auth' {

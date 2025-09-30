@@ -1,9 +1,8 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
-
-import { prisma } from '@/lib/prisma';
+import { prisma } from '@/lib/db';
 
 /**
  * GET /api/price-history/supplier
@@ -93,7 +92,9 @@ export async function GET(request: NextRequest) {
     `;
 
     // 获取产品信息
-    const productIds = latestPrices.map(p => p.productId);
+    const productIds = latestPrices.map(
+      (p: { productId: string }) => p.productId
+    );
     const products = await prisma.product.findMany({
       where: {
         id: {
@@ -110,10 +111,12 @@ export async function GET(request: NextRequest) {
     });
 
     // 组合数据
-    const result = latestPrices.map(price => ({
-      ...price,
-      product: products.find(p => p.id === price.productId),
-    }));
+    const result = latestPrices.map(
+      (price: { productId: string; unitPrice: number; createdAt: Date }) => ({
+        ...price,
+        product: products.find((p: { id: string }) => p.id === price.productId),
+      })
+    );
 
     return NextResponse.json({
       success: true,
