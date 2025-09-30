@@ -16,9 +16,9 @@ import {
 import { useEffect } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
+import { SupplierPriceSelector } from '@/components/factory-shipments/supplier-price-selector';
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
-import { SupplierSelector } from '@/components/sales-orders/supplier-selector';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -498,25 +498,17 @@ export function FactoryShipmentOrderForm({
                         />
                       </div>
 
-                      {/* 供应商选择 */}
+                      {/* 供应商选择（带价格自动填充） */}
                       <FormField
                         control={form.control}
                         name={`items.${index}.supplierId`}
                         render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs font-medium">
-                              供应商 *
-                            </FormLabel>
-                            <FormControl>
-                              <SupplierSelector
-                                value={field.value}
-                                onValueChange={field.onChange}
-                                placeholder="选择供应商"
-                                className="h-8 text-xs"
-                              />
-                            </FormControl>
-                            <FormMessage className="text-xs" />
-                          </FormItem>
+                          <SupplierPriceSelector
+                            form={form}
+                            index={index}
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
                         )}
                       />
 

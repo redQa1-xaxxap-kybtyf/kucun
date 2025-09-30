@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
@@ -7,7 +9,7 @@ import { prisma } from '@/lib/prisma';
 /**
  * GET /api/price-history/customer
  * 获取客户的产品历史价格
- * 
+ *
  * Query参数:
  * - customerId: 客户ID (必填)
  * - productId: 产品ID (可选，不传则返回该客户所有产品的最新价格)
@@ -27,10 +29,7 @@ export async function GET(request: NextRequest) {
     const priceType = searchParams.get('priceType');
 
     if (!customerId) {
-      return NextResponse.json(
-        { error: '客户ID不能为空' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '客户ID不能为空' }, { status: 400 });
     }
 
     // 构建查询条件
@@ -147,7 +146,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/price-history/customer
  * 记录客户产品价格历史
- * 
+ *
  * Body:
  * {
  *   customerId: string;
@@ -172,10 +171,7 @@ export async function POST(request: NextRequest) {
 
     // 验证必填字段
     if (!customerId || !productId || !priceType || unitPrice === undefined) {
-      return NextResponse.json(
-        { error: '缺少必填字段' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '缺少必填字段' }, { status: 400 });
     }
 
     // 验证价格类型
@@ -230,4 +226,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-

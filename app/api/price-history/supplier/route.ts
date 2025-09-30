@@ -1,4 +1,6 @@
-import { NextRequest, NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
+
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
@@ -7,7 +9,7 @@ import { prisma } from '@/lib/prisma';
 /**
  * GET /api/price-history/supplier
  * 获取供应商的产品历史价格
- * 
+ *
  * Query参数:
  * - supplierId: 供应商ID (必填)
  * - productId: 产品ID (可选，不传则返回该供应商所有产品的最新价格)
@@ -25,10 +27,7 @@ export async function GET(request: NextRequest) {
     const productId = searchParams.get('productId');
 
     if (!supplierId) {
-      return NextResponse.json(
-        { error: '供应商ID不能为空' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '供应商ID不能为空' }, { status: 400 });
     }
 
     // 构建查询条件
@@ -136,7 +135,7 @@ export async function GET(request: NextRequest) {
 /**
  * POST /api/price-history/supplier
  * 记录供应商产品价格历史
- * 
+ *
  * Body:
  * {
  *   supplierId: string;
@@ -158,10 +157,7 @@ export async function POST(request: NextRequest) {
 
     // 验证必填字段
     if (!supplierId || !productId || unitPrice === undefined) {
-      return NextResponse.json(
-        { error: '缺少必填字段' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: '缺少必填字段' }, { status: 400 });
     }
 
     // 创建价格历史记录
@@ -206,4 +202,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
