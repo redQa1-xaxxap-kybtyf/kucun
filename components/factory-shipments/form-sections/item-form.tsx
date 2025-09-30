@@ -65,177 +65,166 @@ export function ItemForm({
           )}
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {/* 商品选择 */}
-          <div className="sm:col-span-2 lg:col-span-1">
-            <IntelligentProductInput
-              form={form}
-              index={index}
-              products={products}
-              onProductChange={product => {
-                if (product && selectedCustomerId) {
-                  // 自动填充客户历史价格（厂家发货价格）
-                  const customerPrice = getLatestPrice(
-                    customerPriceHistoryData?.data,
-                    product.id,
-                    'FACTORY'
-                  );
-                  if (customerPrice !== undefined) {
-                    form.setValue(`items.${index}.unitPrice`, customerPrice);
-                    toast({
-                      title: '已自动填充客户历史价格',
-                      description: `产品 "${product.name}" 的上次厂家发货价格：¥${customerPrice.toFixed(2)}`,
-                      duration: 2000,
-                    });
+        <div className="space-y-4">
+          {/* 第一行：商品和供应商 */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* 商品选择 */}
+            <div>
+              <IntelligentProductInput
+                form={form}
+                index={index}
+                products={products}
+                onProductChange={product => {
+                  if (product && selectedCustomerId) {
+                    // 自动填充客户历史价格（厂家发货价格）
+                    const customerPrice = getLatestPrice(
+                      customerPriceHistoryData?.data,
+                      product.id,
+                      'FACTORY'
+                    );
+                    if (customerPrice !== undefined) {
+                      form.setValue(`items.${index}.unitPrice`, customerPrice);
+                      toast({
+                        title: '已自动填充客户历史价格',
+                        description: `产品 "${product.name}" 的上次厂家发货价格：¥${customerPrice.toFixed(2)}`,
+                        duration: 2000,
+                      });
+                    }
                   }
-                }
-              }}
+                }}
+              />
+            </div>
+
+            {/* 供应商选择（带价格自动填充） */}
+            <FormField
+              control={form.control}
+              name={`items.${index}.supplierId`}
+              render={({ field }) => (
+                <SupplierPriceSelector
+                  form={form}
+                  index={index}
+                  value={field.value}
+                  onChange={field.onChange}
+                />
+              )}
             />
           </div>
 
-          {/* 供应商选择（带价格自动填充） */}
-          <FormField
-            control={form.control}
-            name={`items.${index}.supplierId`}
-            render={({ field }) => (
-              <SupplierPriceSelector
-                form={form}
-                index={index}
-                value={field.value}
-                onChange={field.onChange}
-              />
-            )}
-          />
-
-          {/* 数量 */}
-          <FormField
-            control={form.control}
-            name={`items.${index}.quantity`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  数量 <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="请输入数量"
-                    {...field}
-                    onChange={e =>
-                      field.onChange(
-                        e.target.value ? parseFloat(e.target.value) : 0
-                      )
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* 单价 */}
-          <FormField
-            control={form.control}
-            name={`items.${index}.unitPrice`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  单价（¥） <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="请输入单价"
-                    {...field}
-                    onChange={e =>
-                      field.onChange(
-                        e.target.value ? parseFloat(e.target.value) : 0
-                      )
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* 单位 */}
-          <FormField
-            control={form.control}
-            name={`items.${index}.unit`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  单位 <span className="text-red-500">*</span>
-                </FormLabel>
-                <FormControl>
-                  <Input placeholder="请输入单位" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* 规格 */}
-          <FormField
-            control={form.control}
-            name={`items.${index}.specification`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>规格</FormLabel>
-                <FormControl>
-                  <Input placeholder="请输入规格" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* 重量 */}
-          <FormField
-            control={form.control}
-            name={`items.${index}.weight`}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>重量（kg）</FormLabel>
-                <FormControl>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="请输入重量"
-                    {...field}
-                    value={field.value ?? ''}
-                    onChange={e =>
-                      field.onChange(
-                        e.target.value ? parseFloat(e.target.value) : undefined
-                      )
-                    }
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          {/* 备注 */}
-          <div className="sm:col-span-2 lg:col-span-3">
+          {/* 第二行：数量、单价、单位 */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {/* 数量 */}
             <FormField
               control={form.control}
-              name={`items.${index}.remarks`}
+              name={`items.${index}.quantity`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>备注</FormLabel>
+                  <FormLabel>
+                    数量 <span className="text-red-500">*</span>
+                  </FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="请输入备注信息"
-                      className="resize-none"
-                      rows={2}
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="请输入数量"
                       {...field}
+                      onChange={e =>
+                        field.onChange(
+                          e.target.value ? parseFloat(e.target.value) : 0
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 单价 */}
+            <FormField
+              control={form.control}
+              name={`items.${index}.unitPrice`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    单价（¥） <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="请输入单价"
+                      {...field}
+                      onChange={e =>
+                        field.onChange(
+                          e.target.value ? parseFloat(e.target.value) : 0
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 单位 */}
+            <FormField
+              control={form.control}
+              name={`items.${index}.unit`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>
+                    单位 <span className="text-red-500">*</span>
+                  </FormLabel>
+                  <FormControl>
+                    <Input placeholder="如：件、箱、吨" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+
+          {/* 第三行：规格、重量 */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* 规格 */}
+            <FormField
+              control={form.control}
+              name={`items.${index}.specification`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>规格</FormLabel>
+                  <FormControl>
+                    <Input placeholder="请输入规格" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 重量 */}
+            <FormField
+              control={form.control}
+              name={`items.${index}.weight`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>重量（kg）</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="请输入重量"
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={e =>
+                        field.onChange(
+                          e.target.value
+                            ? parseFloat(e.target.value)
+                            : undefined
+                        )
+                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -243,9 +232,28 @@ export function ItemForm({
               )}
             />
           </div>
+
+          {/* 第四行：备注 */}
+          <FormField
+            control={form.control}
+            name={`items.${index}.remarks`}
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>备注</FormLabel>
+                <FormControl>
+                  <Textarea
+                    placeholder="请输入备注信息"
+                    className="resize-none"
+                    rows={2}
+                    {...field}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
         </div>
       </CardContent>
     </Card>
   );
 }
-

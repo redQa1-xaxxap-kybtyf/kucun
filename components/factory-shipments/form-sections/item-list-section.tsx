@@ -40,7 +40,7 @@ export function ItemListSection({
       unitPrice: 0,
       displayName: '',
       specification: '',
-      unit: 'piece',
+      unit: '件',
       remarks: '',
     });
   };
@@ -88,4 +88,3 @@ export function ItemListSection({
     </Card>
   );
 }
-

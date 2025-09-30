@@ -29,10 +29,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { CreateFactoryShipmentOrderData } from '@/lib/schemas/factory-shipment';
-import {
-  FACTORY_SHIPMENT_STATUS,
-  FACTORY_SHIPMENT_STATUS_LABELS,
-} from '@/lib/types/factory-shipment';
+import { FACTORY_SHIPMENT_STATUS_LABELS } from '@/lib/types/factory-shipment';
 import type { Customer } from '@/lib/types/models';
 import { cn } from '@/lib/utils';
 
@@ -55,8 +52,8 @@ export function BasicInfoSection({ form, customers }: BasicInfoSectionProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          {/* 客户选择 */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {/* 客户选择 - 占据更大空间 */}
           <FormField
             control={form.control}
             name="customerId"
@@ -124,7 +121,7 @@ export function BasicInfoSection({ form, customers }: BasicInfoSectionProps) {
                         )}
                       >
                         {field.value ? (
-                          format(field.value, 'yyyy-MM-dd', {
+                          format(field.value, 'yyyy年MM月dd日', {
                             locale: zhCN,
                           })
                         ) : (
@@ -154,4 +151,3 @@ export function BasicInfoSection({ form, customers }: BasicInfoSectionProps) {
     </Card>
   );
 }
-

@@ -20,8 +20,10 @@ import {
   createFactoryShipmentOrderSchema,
   type CreateFactoryShipmentOrderData,
 } from '@/lib/schemas/factory-shipment';
-import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
-import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
+import {
+  FACTORY_SHIPMENT_STATUS,
+  type FactoryShipmentOrder,
+} from '@/lib/types/factory-shipment';
 
 interface FactoryShipmentOrderFormProps {
   orderId?: string;
@@ -34,14 +36,14 @@ const createFactoryShipmentOrder = async (
   data: CreateFactoryShipmentOrderData
 ): Promise<FactoryShipmentOrder> =>
   // TODO: 实现真实API调用
-  ({ id: 'mock-id', ...data } as FactoryShipmentOrder);
+  ({ id: 'mock-id', ...data }) as FactoryShipmentOrder;
 
 const updateFactoryShipmentOrder = async (
   id: string,
   data: CreateFactoryShipmentOrderData
 ): Promise<FactoryShipmentOrder> =>
   // TODO: 实现真实API调用
-  ({ id, ...data } as FactoryShipmentOrder);
+  ({ id, ...data }) as FactoryShipmentOrder;
 
 const getFactoryShipmentOrder = async (
   _id: string
@@ -81,7 +83,7 @@ export function FactoryShipmentOrderForm({
           unitPrice: 0,
           displayName: '',
           specification: '',
-          unit: 'piece',
+          unit: '件',
           remarks: '',
         },
       ],
@@ -281,4 +283,3 @@ export function FactoryShipmentOrderForm({
     </Form>
   );
 }
-
