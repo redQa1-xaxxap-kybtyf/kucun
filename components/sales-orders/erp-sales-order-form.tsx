@@ -272,8 +272,8 @@ export function ERPSalesOrderForm({
   });
 
   // 获取客户的历史价格（根据订单类型决定价格类型）
-  const priceType: PriceType | undefined =
-    orderType === 'NORMAL' ? 'SALES' : undefined; // 普通销售用SALES价格，调货销售不限制
+  // 普通销售用SALES价格，调货销售用FACTORY价格
+  const priceType: PriceType = orderType === 'NORMAL' ? 'SALES' : 'FACTORY';
 
   const { data: priceHistoryData } = useCustomerPriceHistory({
     customerId: selectedCustomerId,
