@@ -1,7 +1,8 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
+import { clearCacheAfterPayment } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
@@ -271,20 +272,9 @@ export async function POST(request: NextRequest) {
           },
         });
 
-        // 使用乐观锁更新订单已付金额(并发控制)
-        const updateResult = await tx.salesOrder.updateMany({
-          where: {
-            id: data.salesOrderId,
-            totalAmount: { gte: totalPaid + data.paymentAmount },
-          },
-          data: {
-            paidAmount: { increment: data.paymentAmount },
-            updatedAt: new Date(),
-          },
-        });
-
-        if (updateResult.count === 0) {
-          throw new Error('收款失败,可能是并发冲突或金额超限');
+        // 验证收款金额不超过订单总额
+        if (totalPaid + data.paymentAmount > salesOrder.totalAmount) {
+          throw new Error('收款金额超过订单总额');
         }
 
         // 如果收款金额达到或超过订单总额,更新订单状态
