@@ -74,6 +74,7 @@ model Customer {
   refundRecords         RefundRecord[]
   returnOrders          ReturnOrder[]
   outboundRecords       OutboundRecord[]
+  productPrices         CustomerProductPrice[]
 
   @@index([name])
   @@index([phone])
@@ -97,6 +98,7 @@ model Supplier {
   factoryShipmentOrderItems FactoryShipmentOrderItem[]
   payableRecords            PayableRecord[]
   paymentOutRecords         PaymentOutRecord[]
+  productPrices             SupplierProductPrice[]
 
   @@index([name])
   @@index([phone])
@@ -163,6 +165,8 @@ model Product {
   factoryShipmentOrderItems  FactoryShipmentOrderItem[]
   batchSpecifications        BatchSpecification[]
   inventoryAdjustments       InventoryAdjustment[]
+  customerPrices             CustomerProductPrice[]
+  supplierPrices             SupplierProductPrice[]
 
   @@index([code])
   @@index([name])
@@ -271,6 +275,48 @@ model SalesOrderItem {
   @@index([unitCost], map: "idx_sales_order_items_unit_cost")
   @@index([profitAmount], map: "idx_sales_order_items_profit")
   @@map("sales_order_items")
+}
+
+// 客户产品价格历史表 - 记录客户购买产品的历史价格
+model CustomerProductPrice {
+  id          String   @id @default(uuid())
+  customerId  String   @map("customer_id")
+  productId   String   @map("product_id")
+  priceType   String   @map("price_type") // SALES: 销售发货价格, FACTORY: 厂家发货价格
+  unitPrice   Float    @map("unit_price")
+  orderId     String?  @map("order_id") // 关联的订单ID（销售订单或厂家发货订单）
+  orderType   String?  @map("order_type") // SALES_ORDER, FACTORY_SHIPMENT
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([customerId, productId, priceType], map: "idx_customer_product_price_lookup")
+  @@index([customerId, priceType, createdAt(sort: Desc)], map: "idx_customer_price_history")
+  @@index([productId], map: "idx_customer_product_price_product")
+  @@map("customer_product_prices")
+}
+
+// 供应商产品价格历史表 - 记录供应商产品的历史价格
+model SupplierProductPrice {
+  id          String   @id @default(uuid())
+  supplierId  String   @map("supplier_id")
+  productId   String   @map("product_id")
+  unitPrice   Float    @map("unit_price")
+  orderId     String?  @map("order_id") // 关联的厂家发货订单ID
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([supplierId, productId], map: "idx_supplier_product_price_lookup")
+  @@index([supplierId, createdAt(sort: Desc)], map: "idx_supplier_price_history")
+  @@index([productId], map: "idx_supplier_product_price_product")
+  @@map("supplier_product_prices")
 }
 
 // 库存表 - 产品库存管理，支持变体和生产批次维度

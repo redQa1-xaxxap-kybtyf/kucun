@@ -39,6 +39,10 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  useCustomerPriceHistory,
+  type PriceType,
+} from '@/hooks/use-price-history';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
@@ -223,6 +227,10 @@ export function ERPSalesOrderForm({
     name: 'items',
   });
 
+  // 监听客户ID变化
+  const selectedCustomerId = form.watch('customerId');
+  const orderType = form.watch('orderType');
+
   // 数据查询
   const { data: customersData, isLoading: customersLoading } = useQuery({
     queryKey: customerQueryKeys.list({
@@ -261,6 +269,15 @@ export function ERPSalesOrderForm({
         sortBy: 'name',
         sortOrder: 'asc',
       }),
+  });
+
+  // 获取客户的历史价格（根据订单类型决定价格类型）
+  const priceType: PriceType | undefined =
+    orderType === 'NORMAL' ? 'SALES' : undefined; // 普通销售用SALES价格，调货销售不限制
+
+  const { data: priceHistoryData } = useCustomerPriceHistory({
+    customerId: selectedCustomerId,
+    priceType,
   });
 
   // 创建订单
@@ -782,7 +799,7 @@ export function ERPSalesOrderForm({
                               products={productsData?.data || []}
                               onProductChange={product => {
                                 if (product) {
-                                  // 自动填充产品相关信息（不包括价格）
+                                  // 自动填充产品相关信息
                                   form.setValue(
                                     `items.${index}.specification`,
                                     product.specification || ''
@@ -809,6 +826,29 @@ export function ERPSalesOrderForm({
                                   form.setValue(`items.${index}.quantity`, 1);
                                   // 清空备注，让用户手动输入或自动生成
                                   form.setValue(`items.${index}.remarks`, '');
+
+                                  // 自动填充历史价格
+                                  if (
+                                    selectedCustomerId &&
+                                    priceHistoryData?.data
+                                  ) {
+                                    const latestPrice = getLatestPrice(
+                                      priceHistoryData.data,
+                                      product.id,
+                                      priceType
+                                    );
+                                    if (latestPrice !== undefined) {
+                                      form.setValue(
+                                        `items.${index}.unitPrice`,
+                                        latestPrice
+                                      );
+                                      toast({
+                                        title: '已自动填充历史价格',
+                                        description: `产品 "${product.name}" 的上次价格：¥${latestPrice}`,
+                                        duration: 2000,
+                                      });
+                                    }
+                                  }
                                 }
                               }}
                             />

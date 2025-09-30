@@ -437,6 +437,24 @@ export async function createSalesOrder(
         },
       });
 
+      // 记录客户产品价格历史（仅记录非手动输入的产品）
+      const priceType =
+        validatedData.orderType === 'NORMAL' ? 'SALES' : 'FACTORY';
+      for (const item of validatedData.items) {
+        if (!item.isManualProduct && item.productId && item.unitPrice) {
+          await tx.customerProductPrice.create({
+            data: {
+              customerId: validatedData.customerId,
+              productId: item.productId,
+              priceType,
+              unitPrice: item.unitPrice,
+              orderId: salesOrder.id,
+              orderType: 'SALES_ORDER',
+            },
+          });
+        }
+      }
+
       // 如果是调货销售且状态为confirmed，自动创建应付款记录
       if (
         validatedData.orderType === 'TRANSFER' &&
