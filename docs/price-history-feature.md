@@ -3,6 +3,7 @@
 ## 功能概述
 
 实现了销售订单和厂家发货订单的价格记忆功能，支持：
+
 1. **客户产品价格历史记录**：记录客户购买每个产品的历史价格
 2. **区分发货类型**：销售发货（SALES）和厂家发货（FACTORY）的价格分别记录
 3. **供应商产品价格历史**：记录供应商提供产品的历史价格
@@ -23,7 +24,7 @@ CREATE TABLE `customer_product_prices` (
   `order_type` VARCHAR(191) NULL,      -- SALES_ORDER, FACTORY_SHIPMENT
   `created_at` DATETIME(3) NOT NULL,
   `updated_at` DATETIME(3) NOT NULL,
-  
+
   INDEX `idx_customer_product_price_lookup` (`customer_id`, `product_id`, `price_type`),
   INDEX `idx_customer_price_history` (`customer_id`, `price_type`, `created_at` DESC),
   FOREIGN KEY (`customer_id`) REFERENCES `customers`(`id`) ON DELETE CASCADE,
@@ -42,7 +43,7 @@ CREATE TABLE `supplier_product_prices` (
   `order_id` VARCHAR(191) NULL,
   `created_at` DATETIME(3) NOT NULL,
   `updated_at` DATETIME(3) NOT NULL,
-  
+
   INDEX `idx_supplier_product_price_lookup` (`supplier_id`, `product_id`),
   INDEX `idx_supplier_price_history` (`supplier_id`, `created_at` DESC),
   FOREIGN KEY (`supplier_id`) REFERENCES `suppliers`(`id`) ON DELETE CASCADE,
@@ -57,11 +58,13 @@ CREATE TABLE `supplier_product_prices` (
 **GET** `/api/price-history/customer`
 
 **Query 参数：**
+
 - `customerId` (必填): 客户ID
 - `productId` (可选): 产品ID，不传则返回该客户所有产品的最新价格
 - `priceType` (可选): 价格类型 (SALES | FACTORY)
 
 **响应示例：**
+
 ```json
 {
   "success": true,
@@ -71,7 +74,7 @@ CREATE TABLE `supplier_product_prices` (
       "customerId": "xxx",
       "productId": "xxx",
       "priceType": "SALES",
-      "unitPrice": 100.00,
+      "unitPrice": 100.0,
       "createdAt": "2025-09-30T12:00:00.000Z",
       "product": {
         "id": "xxx",
@@ -90,6 +93,7 @@ CREATE TABLE `supplier_product_prices` (
 **GET** `/api/price-history/supplier`
 
 **Query 参数：**
+
 - `supplierId` (必填): 供应商ID
 - `productId` (可选): 产品ID
 
@@ -98,12 +102,13 @@ CREATE TABLE `supplier_product_prices` (
 **POST** `/api/price-history/customer`
 
 **请求体：**
+
 ```json
 {
   "customerId": "xxx",
   "productId": "xxx",
   "priceType": "SALES",
-  "unitPrice": 100.00,
+  "unitPrice": 100.0,
   "orderId": "xxx",
   "orderType": "SALES_ORDER"
 }
@@ -114,11 +119,12 @@ CREATE TABLE `supplier_product_prices` (
 **POST** `/api/price-history/supplier`
 
 **请求体：**
+
 ```json
 {
   "supplierId": "xxx",
   "productId": "xxx",
-  "unitPrice": 100.00,
+  "unitPrice": 100.0,
   "orderId": "xxx"
 }
 ```
@@ -128,7 +134,10 @@ CREATE TABLE `supplier_product_prices` (
 ### 1. 使用 Hook 获取价格历史
 
 ```typescript
-import { useCustomerPriceHistory, getLatestPrice } from '@/hooks/use-price-history';
+import {
+  useCustomerPriceHistory,
+  getLatestPrice,
+} from '@/hooks/use-price-history';
 
 // 在组件中使用
 const { data: priceHistoryData } = useCustomerPriceHistory({
@@ -137,11 +146,7 @@ const { data: priceHistoryData } = useCustomerPriceHistory({
 });
 
 // 获取产品的最新价格
-const latestPrice = getLatestPrice(
-  priceHistoryData?.data,
-  productId,
-  'SALES'
-);
+const latestPrice = getLatestPrice(priceHistoryData?.data, productId, 'SALES');
 ```
 
 ### 2. 自动填充价格
@@ -195,18 +200,56 @@ for (const item of validatedData.items) {
 
 ### 2. 厂家发货订单创建时
 
-需要在厂家发货订单创建 API 中添加类似的逻辑，记录：
-- 客户产品价格（priceType: 'FACTORY'）
-- 供应商产品价格
+在 `app/api/factory-shipments/route.ts` 的 POST 处理函数中，订单创建成功后自动记录价格历史：
+
+```typescript
+// 使用事务创建订单并记录价格历史
+const order = await prisma.$transaction(async tx => {
+  // 创建厂家发货订单
+  const newOrder = await tx.factoryShipmentOrder.create({...});
+
+  // 记录客户产品价格历史（厂家发货价格类型）
+  for (const item of items) {
+    if (!item.isManualProduct && item.productId && item.unitPrice) {
+      await tx.customerProductPrice.create({
+        data: {
+          customerId,
+          productId: item.productId,
+          priceType: 'FACTORY',
+          unitPrice: item.unitPrice,
+          orderId: newOrder.id,
+          orderType: 'FACTORY_SHIPMENT',
+        },
+      });
+    }
+
+    // 记录供应商产品价格历史
+    if (!item.isManualProduct && item.productId && item.supplierId && item.unitPrice) {
+      await tx.supplierProductPrice.create({
+        data: {
+          supplierId: item.supplierId,
+          productId: item.productId,
+          unitPrice: item.unitPrice,
+          orderId: newOrder.id,
+        },
+      });
+    }
+  }
+
+  return newOrder;
+});
+```
 
 ## 价格类型说明
 
 ### SALES (销售发货价格)
+
 - 用于普通销售订单（orderType: 'NORMAL'）
 - 记录客户通过销售发货购买产品的价格
 - 在创建普通销售订单时自动记录
 
 ### FACTORY (厂家发货价格)
+
 - 用于厂家发货订单
 - 记录客户通过厂家直接发货购买产品的价格
 - 在创建厂家发货订单时自动记录
@@ -214,6 +257,7 @@ for (const item of validatedData.items) {
 ## 使用场景
 
 ### 场景1：创建销售订单
+
 1. 用户选择客户
 2. 系统自动加载该客户的历史价格
 3. 用户选择产品
@@ -222,11 +266,13 @@ for (const item of validatedData.items) {
 6. 订单创建成功后，新价格被记录到历史
 
 ### 场景2：查看价格历史
+
 1. 在订单表单中选择客户和产品
 2. 可以查看该客户购买该产品的历史价格列表
 3. 可以选择使用历史价格中的任意一个
 
 ### 场景3：供应商价格管理
+
 1. 在厂家发货订单中选择供应商和产品
 2. 系统自动填充该供应商提供该产品的最后一次价格
 3. 订单创建后记录新的供应商价格
@@ -261,4 +307,3 @@ npx prisma generate
 3. **批量价格更新**：支持批量更新客户的产品价格
 4. **价格模板**：支持创建价格模板，快速应用到多个客户
 5. **价格审批**：对于价格变动较大的订单，需要审批后才能创建
-

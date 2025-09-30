@@ -230,64 +230,102 @@ export async function POST(request: NextRequest) {
     const finalTotalAmount = calculatedTotalAmount;
     const finalReceivableAmount = receivableAmount || calculatedTotalAmount;
 
-    // 创建厂家发货订单
-    const order = await prisma.factoryShipmentOrder.create({
-      data: {
-        orderNumber,
-        containerNumber,
-        customerId,
-        userId: session.user.id || '',
-        status: status || FACTORY_SHIPMENT_STATUS.DRAFT,
-        totalAmount: finalTotalAmount,
-        receivableAmount: finalReceivableAmount,
-        depositAmount: depositAmount || 0,
-        remarks,
-        planDate,
-        items: {
-          create: items.map(item => ({
-            productId: item.isManualProduct ? null : item.productId,
-            supplierId: item.supplierId,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            totalPrice: item.quantity * item.unitPrice,
-            isManualProduct: item.isManualProduct || false,
-            manualProductName: item.manualProductName,
-            manualSpecification: item.manualSpecification,
-            manualWeight: item.manualWeight,
-            manualUnit: item.manualUnit,
-            displayName: item.displayName,
-            specification: item.specification,
-            unit: item.unit,
-            weight: item.weight,
-            remarks: item.remarks,
-          })),
+    // 使用事务创建订单并记录价格历史
+    const order = await prisma.$transaction(async tx => {
+      // 创建厂家发货订单
+      const newOrder = await tx.factoryShipmentOrder.create({
+        data: {
+          orderNumber,
+          containerNumber,
+          customerId,
+          userId: session.user.id || '',
+          status: status || FACTORY_SHIPMENT_STATUS.DRAFT,
+          totalAmount: finalTotalAmount,
+          receivableAmount: finalReceivableAmount,
+          depositAmount: depositAmount || 0,
+          remarks,
+          planDate,
+          items: {
+            create: items.map(item => ({
+              productId: item.isManualProduct ? null : item.productId,
+              supplierId: item.supplierId,
+              quantity: item.quantity,
+              unitPrice: item.unitPrice,
+              totalPrice: item.quantity * item.unitPrice,
+              isManualProduct: item.isManualProduct || false,
+              manualProductName: item.manualProductName,
+              manualSpecification: item.manualSpecification,
+              manualWeight: item.manualWeight,
+              manualUnit: item.manualUnit,
+              displayName: item.displayName,
+              specification: item.specification,
+              unit: item.unit,
+              weight: item.weight,
+              remarks: item.remarks,
+            })),
+          },
         },
-      },
-      include: {
-        customer: {
-          select: { id: true, name: true, phone: true, address: true },
-        },
-        user: {
-          select: { id: true, name: true, email: true },
-        },
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                code: true,
-                name: true,
-                specification: true,
-                unit: true,
-                weight: true,
+        include: {
+          customer: {
+            select: { id: true, name: true, phone: true, address: true },
+          },
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  specification: true,
+                  unit: true,
+                  weight: true,
+                },
               },
-            },
-            supplier: {
-              select: { id: true, name: true, phone: true, address: true },
+              supplier: {
+                select: { id: true, name: true, phone: true, address: true },
+              },
             },
           },
         },
-      },
+      });
+
+      // 记录客户产品价格历史（厂家发货价格类型）
+      for (const item of items) {
+        if (!item.isManualProduct && item.productId && item.unitPrice) {
+          await tx.customerProductPrice.create({
+            data: {
+              customerId,
+              productId: item.productId,
+              priceType: 'FACTORY',
+              unitPrice: item.unitPrice,
+              orderId: newOrder.id,
+              orderType: 'FACTORY_SHIPMENT',
+            },
+          });
+        }
+
+        // 记录供应商产品价格历史
+        if (
+          !item.isManualProduct &&
+          item.productId &&
+          item.supplierId &&
+          item.unitPrice
+        ) {
+          await tx.supplierProductPrice.create({
+            data: {
+              supplierId: item.supplierId,
+              productId: item.productId,
+              unitPrice: item.unitPrice,
+              orderId: newOrder.id,
+            },
+          });
+        }
+      }
+
+      return newOrder;
     });
 
     return NextResponse.json(order, { status: 201 });

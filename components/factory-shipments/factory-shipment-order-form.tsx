@@ -45,6 +45,10 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import {
+  getLatestPrice,
+  useCustomerPriceHistory,
+} from '@/hooks/use-price-history';
 import { getCustomers } from '@/lib/api/customers';
 import { getProducts } from '@/lib/api/products';
 import { getSuppliers } from '@/lib/api/suppliers';
@@ -142,6 +146,15 @@ export function FactoryShipmentOrderForm({
       getSuppliers({ page: 1, limit: factoryShipmentConfig.queryLimit }),
   });
   const _suppliers = suppliersResponse?.data || [];
+
+  // 监听客户选择，用于价格历史查询
+  const selectedCustomerId = form.watch('customerId');
+
+  // 查询客户价格历史（厂家发货价格类型）
+  const { data: customerPriceHistoryData } = useCustomerPriceHistory({
+    customerId: selectedCustomerId,
+    priceType: 'FACTORY',
+  });
 
   // 查询订单详情（编辑模式）
   const { data: orderDetail } = useQuery({
@@ -461,6 +474,27 @@ export function FactoryShipmentOrderForm({
                           form={form}
                           index={index}
                           products={products}
+                          onProductChange={product => {
+                            if (product && selectedCustomerId) {
+                              // 自动填充客户历史价格（厂家发货价格）
+                              const customerPrice = getLatestPrice(
+                                customerPriceHistoryData?.data,
+                                product.id,
+                                'FACTORY'
+                              );
+                              if (customerPrice !== undefined) {
+                                form.setValue(
+                                  `items.${index}.unitPrice`,
+                                  customerPrice
+                                );
+                                toast({
+                                  title: '已自动填充客户历史价格',
+                                  description: `产品 "${product.name}" 的上次厂家发货价格：¥${customerPrice}`,
+                                  duration: 2000,
+                                });
+                              }
+                            }
+                          }}
                         />
                       </div>
 
