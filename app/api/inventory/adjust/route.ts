@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
@@ -173,13 +173,13 @@ export async function POST(request: NextRequest) {
     );
 
     // 清除相关缓存
-    await invalidateInventoryCache(adjustmentData.productId);
+    await invalidateInventoryCache(validationResult.data.productId);
 
     // WebSocket 推送更新
     publishWs('inventory', {
       type: 'adjust',
-      productId: adjustmentData.productId,
-      adjustQuantity: adjustmentData.adjustQuantity,
+      productId: validationResult.data.productId,
+      adjustQuantity: validationResult.data.adjustQuantity,
       inventoryId: result.inventory.id,
       adjustmentNumber: result.adjustment.adjustmentNumber,
     });

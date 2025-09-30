@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
@@ -267,12 +267,14 @@ export async function POST(request: NextRequest) {
     await invalidateInventoryCache(productId);
 
     // WebSocket 推送更新
-    publishWs('inventory', {
-      type: 'outbound',
-      productId,
-      quantity,
-      inventoryId: result.id,
-    });
+    if (result) {
+      publishWs('inventory', {
+        type: 'outbound',
+        productId,
+        quantity: validationResult.data.quantity,
+        inventoryId: result.id,
+      });
+    }
 
     return NextResponse.json({
       success: true,
