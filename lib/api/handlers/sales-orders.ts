@@ -324,6 +324,52 @@ export async function createSalesOrder(
         }
       }
 
+      // 如果订单状态为confirmed,需要预留库存
+      if (validatedData.status === 'confirmed') {
+        for (const item of validatedData.items) {
+          // 跳过手动输入的商品
+          if (item.isManualProduct || !item.productId) continue;
+
+          // 查找库存记录
+          const inventory = await tx.inventory.findFirst({
+            where: {
+              productId: item.productId,
+              // TODO: 添加variantId和batchNumber支持
+            },
+          });
+
+          if (!inventory) {
+            throw new Error(`产品ID ${item.productId} 库存记录不存在`);
+          }
+
+          // 检查可用库存是否足够
+          const availableQuantity =
+            inventory.quantity - inventory.reservedQuantity;
+          if (availableQuantity < item.quantity) {
+            throw new Error(
+              `产品ID ${item.productId} 可用库存不足。可用: ${availableQuantity}, 需要: ${item.quantity}`
+            );
+          }
+
+          // 预留库存 - 使用乐观锁
+          const updatedCount = await tx.inventory.updateMany({
+            where: {
+              id: inventory.id,
+              quantity: { gte: inventory.reservedQuantity + item.quantity }, // 确保总库存足够
+            },
+            data: {
+              reservedQuantity: { increment: item.quantity },
+            },
+          });
+
+          if (updatedCount.count === 0) {
+            throw new Error(
+              `产品ID ${item.productId} 库存预留失败,可能已被其他订单占用,请重试`
+            );
+          }
+        }
+      }
+
       // 创建订单
       const salesOrder = await tx.salesOrder.create({
         data: {
