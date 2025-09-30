@@ -1,12 +1,13 @@
 // 单个厂家发货订单 API 路由
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { updateFactoryShipmentOrderSchema } from '@/lib/schemas/factory-shipment';
+import { withIdempotency } from '@/lib/utils/idempotency';
 
 interface RouteParams {
   params: {
@@ -93,6 +94,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     // 验证输入数据
     const validatedData = updateFactoryShipmentOrderSchema.parse(body);
     const {
+      idempotencyKey,
       containerNumber,
       customerId,
       status,
@@ -108,6 +110,71 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       completionDate,
       items,
     } = validatedData;
+
+    // 如果有状态变更,使用幂等性包装器
+    if (status && status !== existingOrder.status) {
+      const { updateFactoryShipmentStatus } = await import(
+        '@/lib/api/handlers/factory-shipment-status'
+      );
+
+      const result = await withIdempotency(
+        idempotencyKey,
+        'factory_shipment_status_change',
+        id,
+        session.user.id,
+        {
+          status,
+          remarks,
+          shipmentDate,
+          arrivalDate,
+          deliveryDate,
+          completionDate,
+        },
+        async () => {
+          return await updateFactoryShipmentStatus(
+            id,
+            status,
+            existingOrder.status,
+            { remarks, shipmentDate, arrivalDate, deliveryDate, completionDate }
+          );
+        }
+      );
+
+      // 获取更新后的完整订单信息
+      const fullOrder = await prisma.factoryShipmentOrder.findUnique({
+        where: { id },
+        include: {
+          customer: {
+            select: { id: true, name: true, phone: true, address: true },
+          },
+          user: {
+            select: { id: true, name: true, email: true },
+          },
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  specification: true,
+                  unit: true,
+                  weight: true,
+                },
+              },
+              supplier: {
+                select: { id: true, name: true, phone: true, address: true },
+              },
+            },
+          },
+        },
+      });
+
+      return NextResponse.json({
+        ...fullOrder,
+        receivableCreated: result.receivableCreated,
+      });
+    }
 
     // 验证客户是否存在（如果提供了customerId）
     if (customerId) {

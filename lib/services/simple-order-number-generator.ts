@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/db';
-import { salesOrderConfig } from '@/lib/env';
+import { factoryShipmentConfig, salesOrderConfig } from '@/lib/env';
 
 /**
  * 简化版订单号生成服务
@@ -202,4 +202,115 @@ export async function isOrderNumberExists(
   });
 
   return !!existingOrder;
+}
+
+/**
+ * 生成唯一的厂家发货订单号
+ * 使用现有厂家发货订单表进行序列号生成,保证并发安全
+ *
+ * @returns Promise<string> 生成的订单号
+ */
+export async function generateFactoryShipmentNumber(): Promise<string> {
+  const prefix = factoryShipmentConfig.orderPrefix || 'FS';
+  const numberLength = 4;
+  const maxRetries = 15;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      return await prisma.$transaction(
+        async tx => {
+          const today = new Date();
+          const dateKey = today.toISOString().slice(0, 10).replace(/-/g, '');
+          const fullPrefix = `${prefix}${dateKey}`;
+
+          // 查找今天最后一个订单号
+          const lastOrder = await tx.factoryShipmentOrder.findFirst({
+            where: {
+              orderNumber: {
+                startsWith: fullPrefix,
+              },
+            },
+            orderBy: {
+              orderNumber: 'desc',
+            },
+            select: {
+              orderNumber: true,
+            },
+          });
+
+          let sequence = 1;
+          if (lastOrder) {
+            const lastSequence = parseInt(
+              lastOrder.orderNumber.slice(-numberLength)
+            );
+            sequence = lastSequence + 1;
+          }
+
+          // 处理并发
+          const randomOffset = Math.floor(Math.random() * 50);
+          const retryOffset = attempt * 10;
+          const timeOffset = Date.now() % 100;
+          const finalSequence =
+            sequence + randomOffset + retryOffset + timeOffset;
+
+          const orderNumber = `${fullPrefix}${finalSequence
+            .toString()
+            .padStart(numberLength, '0')}`;
+
+          // 检查订单号是否已存在
+          const existingOrder = await tx.factoryShipmentOrder.findFirst({
+            where: { orderNumber },
+            select: { id: true },
+          });
+
+          if (existingOrder) {
+            throw new Error(`订单号冲突: ${orderNumber}`);
+          }
+
+          return orderNumber;
+        },
+        {
+          timeout: 10000,
+        }
+      );
+    } catch (error) {
+      attempt++;
+
+      const isRetryableError =
+        error instanceof Error &&
+        (error.message.includes('Deadlock') ||
+          error.message.includes('Serialization failure') ||
+          error.message.includes('订单号冲突') ||
+          error.message.includes('UNIQUE constraint failed') ||
+          error.message.includes('unique constraint') ||
+          error.message.includes('duplicate key') ||
+          error.message.includes('Unique constraint failed on the fields'));
+
+      if (isRetryableError && attempt < maxRetries) {
+        const baseDelay = 50;
+        const randomDelay = Math.random() * 150;
+        const backoffDelay = attempt * 25;
+        const totalDelay = baseDelay + randomDelay + backoffDelay;
+
+        console.log(
+          `厂家发货订单号生成冲突,第${attempt}次重试,等待${Math.round(totalDelay)}ms...`
+        );
+        await new Promise(resolve => setTimeout(resolve, totalDelay));
+        continue;
+      }
+
+      if (attempt >= maxRetries) {
+        throw new Error(
+          `生成厂家发货订单号失败,已重试${maxRetries}次: ${
+            error instanceof Error ? error.message : '未知错误'
+          }`
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error('生成厂家发货订单号失败:超出最大重试次数');
 }

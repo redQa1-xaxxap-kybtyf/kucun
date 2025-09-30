@@ -126,6 +126,10 @@ export const createFactoryShipmentOrderSchema = z
 // 更新厂家发货订单验证
 export const updateFactoryShipmentOrderSchema = z
   .object({
+    idempotencyKey: z
+      .string()
+      .uuid('幂等性键格式不正确')
+      .describe('幂等性键,防止重复操作'),
     containerNumber: z
       .string()
       .min(1, '集装箱号码不能为空')

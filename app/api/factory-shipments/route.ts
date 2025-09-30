@@ -2,12 +2,12 @@
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
 import type { Prisma } from '@prisma/client';
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { factoryShipmentConfig, paginationConfig } from '@/lib/env';
+import { paginationConfig } from '@/lib/env';
 import {
   createFactoryShipmentOrderSchema,
   factoryShipmentOrderListParamsSchema,
@@ -204,14 +204,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 生成订单编号
-    const orderNumber = `${factoryShipmentConfig.orderPrefix}${Date.now()}`;
+    // 生成订单编号 - 使用安全的订单号生成服务
+    const { generateFactoryShipmentNumber } = await import(
+      '@/lib/services/simple-order-number-generator'
+    );
+    const orderNumber = await generateFactoryShipmentNumber();
 
     // 计算订单总金额
     const calculatedTotalAmount = items.reduce(
       (sum, item) => sum + item.quantity * item.unitPrice,
       0
     );
+
+    // 验证前端传入的金额是否正确
+    if (totalAmount && Math.abs(totalAmount - calculatedTotalAmount) > 0.01) {
+      return NextResponse.json(
+        {
+          error: `订单总金额计算错误。前端: ${totalAmount}, 服务器: ${calculatedTotalAmount}`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 使用服务器计算的金额
+    const finalTotalAmount = calculatedTotalAmount;
+    const finalReceivableAmount = receivableAmount || calculatedTotalAmount;
 
     // 创建厂家发货订单
     const order = await prisma.factoryShipmentOrder.create({
@@ -221,8 +238,8 @@ export async function POST(request: NextRequest) {
         customerId,
         userId: session.user.id || '',
         status: status || FACTORY_SHIPMENT_STATUS.DRAFT,
-        totalAmount: totalAmount || calculatedTotalAmount,
-        receivableAmount: receivableAmount || calculatedTotalAmount,
+        totalAmount: finalTotalAmount,
+        receivableAmount: finalReceivableAmount,
         depositAmount: depositAmount || 0,
         remarks,
         planDate,
