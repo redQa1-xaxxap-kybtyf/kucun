@@ -23,6 +23,7 @@ export interface BusinessOverview {
     inventoryValue: number; // 库存价值
     turnoverRate: number; // 库存周转率
     stockHealth: number; // 库存健康度 (0-100)
+    productGrowth: number; // 产品增长率 (%)
   };
 
   // 退货数据

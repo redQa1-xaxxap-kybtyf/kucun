@@ -8,7 +8,7 @@ import { prisma } from '@/lib/db';
 
 // 请求参数验证
 const dashboardQuerySchema = z.object({
-  timeRange: z.enum(['7d', '30d', '90d', '1y']).default('30d'),
+  timeRange: z.enum(['1d', '7d', '30d', '90d', '1y']).default('30d'),
   productCategory: z.string().optional(),
   customerType: z.string().optional(),
   salesChannel: z.string().optional(),
@@ -56,6 +56,9 @@ export async function GET(request: NextRequest) {
     const startDate = new Date();
 
     switch (timeRange) {
+      case '1d':
+        startDate.setDate(now.getDate() - 1);
+        break;
       case '7d':
         startDate.setDate(now.getDate() - 7);
         break;

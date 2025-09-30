@@ -8,7 +8,7 @@ import { inventoryConfig } from '@/lib/env';
 
 // 请求参数验证
 const overviewQuerySchema = z.object({
-  timeRange: z.enum(['7d', '30d', '90d', '1y']).default('30d'),
+  timeRange: z.enum(['1d', '7d', '30d', '90d', '1y']).default('30d'),
 });
 
 // 获取业务概览数据
@@ -47,6 +47,10 @@ export async function GET(request: NextRequest) {
     const previousStartDate = new Date();
 
     switch (timeRange) {
+      case '1d':
+        startDate.setDate(now.getDate() - 1);
+        previousStartDate.setDate(now.getDate() - 2);
+        break;
       case '7d':
         startDate.setDate(now.getDate() - 7);
         previousStartDate.setDate(now.getDate() - 14);
@@ -160,6 +164,63 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    // 计算当前时间段内新增的客户数
+    const currentNewCustomers = await prisma.customer.count({
+      where: {
+        createdAt: {
+          gte: startDate,
+        },
+      },
+    });
+
+    // 计算上一时间段内新增的客户数
+    const previousNewCustomers = await prisma.customer.count({
+      where: {
+        createdAt: {
+          gte: previousStartDate,
+          lt: startDate,
+        },
+      },
+    });
+
+    // 计算客户增长率（基于新增客户数）
+    const customerGrowth =
+      previousNewCustomers > 0
+        ? ((currentNewCustomers - previousNewCustomers) /
+            previousNewCustomers) *
+          100
+        : currentNewCustomers > 0
+          ? 100
+          : 0;
+
+    // 计算当前时间段内新增的产品数
+    const currentNewProducts = await prisma.product.count({
+      where: {
+        createdAt: {
+          gte: startDate,
+        },
+      },
+    });
+
+    // 计算上一时间段内新增的产品数
+    const previousNewProducts = await prisma.product.count({
+      where: {
+        createdAt: {
+          gte: previousStartDate,
+          lt: startDate,
+        },
+      },
+    });
+
+    // 计算产品增长率（基于新增产品数）
+    const productGrowth =
+      previousNewProducts > 0
+        ? ((currentNewProducts - previousNewProducts) / previousNewProducts) *
+          100
+        : currentNewProducts > 0
+          ? 100
+          : 0;
+
     // 构建业务概览数据
     const businessOverview = {
       sales: {
@@ -182,20 +243,31 @@ export async function GET(request: NextRequest) {
           0,
           100 - (lowStockProducts + outOfStockProducts * 2) * 10
         ),
+        productGrowth, // 添加产品增长率
       },
 
       returns: {
-        totalReturns: 0, // 需要退货数据
-        monthlyReturns: 0,
-        returnRate: 0,
-        returnValue: 0,
-        pendingReturns: 0,
+        totalReturns: await prisma.returnOrder.count(),
+        monthlyReturns: await prisma.returnOrder.count({
+          where: {
+            createdAt: {
+              gte: startDate,
+            },
+          },
+        }),
+        returnRate: 0, // 需要更复杂的计算
+        returnValue: 0, // 需要退货金额数据
+        pendingReturns: await prisma.returnOrder.count({
+          where: {
+            status: 'PENDING',
+          },
+        }),
       },
       customers: {
         totalCustomers,
         activeCustomers,
         newCustomers,
-        customerGrowth: 0, // 需要历史数据计算
+        customerGrowth, // 使用计算的增长率
       },
     };
 

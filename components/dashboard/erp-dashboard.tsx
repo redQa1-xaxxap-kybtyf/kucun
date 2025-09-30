@@ -7,6 +7,7 @@ import {
   Eye,
   Package,
   RefreshCw,
+  RotateCcw,
   ShoppingCart,
   Users,
   Zap,
@@ -23,8 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useDashboardData } from '@/lib/api/dashboard';
-import type { DashboardData, TimeRange } from '@/lib/types/dashboard';
+import { useBusinessOverview } from '@/lib/api/dashboard';
+import type { BusinessOverview, TimeRange } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
 
 /**
@@ -35,6 +36,7 @@ interface DashboardStats {
   totalOrders: number;
   totalCustomers: number;
   totalRevenue: number;
+  totalReturns: number;
   lowStockItems: number;
   pendingOrders: number;
   recentActivities: Activity[];
@@ -98,13 +100,16 @@ export function ERPDashboard({
   };
 
   // 转换API数据到组件数据格式
-  const transformDashboardData = (apiData: DashboardData): DashboardStats => ({
-    totalProducts: apiData.overview.inventory.totalProducts,
-    totalOrders: apiData.overview.sales.totalOrders,
-    totalCustomers: apiData.overview.customers.totalCustomers,
-    totalRevenue: apiData.overview.sales.totalRevenue,
-    lowStockItems: apiData.overview.inventory.lowStockCount,
-    pendingOrders: apiData.overview.sales.monthlyOrders, // 使用月订单数作为待处理订单
+  const transformDashboardData = (
+    apiData: BusinessOverview
+  ): DashboardStats => ({
+    totalProducts: apiData.inventory.totalProducts,
+    totalOrders: apiData.sales.totalOrders,
+    totalCustomers: apiData.customers.totalCustomers,
+    totalRevenue: apiData.sales.totalRevenue,
+    totalReturns: apiData.returns.totalReturns,
+    lowStockItems: apiData.inventory.lowStockCount,
+    pendingOrders: apiData.sales.monthlyOrders, // 使用月订单数作为待处理订单
     recentActivities: [], // 暂时为空，后续可以从API获取
     salesTrend: [], // 暂时为空，后续可以从API获取
   });
@@ -114,9 +119,7 @@ export function ERPDashboard({
     data: dashboardApiData,
     isLoading: isApiLoading,
     refetch,
-  } = useDashboardData({
-    timeRange: mapPeriodToTimeRange(selectedPeriod),
-  });
+  } = useBusinessOverview(mapPeriodToTimeRange(selectedPeriod));
 
   // 加载数据 - 完全使用真实API数据
   const loadDashboardData = React.useCallback(async () => {
@@ -159,8 +162,8 @@ export function ERPDashboard({
 
   // 处理初始数据
   React.useEffect(() => {
-    if (initialData && !dashboardData) {
-      const transformedData = transformDashboardData(initialData);
+    if (initialData?.overview && !dashboardData) {
+      const transformedData = transformDashboardData(initialData.overview);
       setDashboardData(transformedData);
       setIsLoading(false);
     }
@@ -312,7 +315,29 @@ export function ERPDashboard({
           <div className="text-xs text-muted-foreground">核心指标</div>
         </div>
         <div className="px-3 py-3">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
+            <div className="text-center">
+              <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
+                <ShoppingCart className="h-3 w-3" />
+                销售单总数
+              </div>
+              <div className="mt-1 text-lg font-bold">
+                {dashboardData.totalOrders}
+              </div>
+              {dashboardApiData?.sales?.ordersGrowth !== undefined && (
+                <div
+                  className={cn(
+                    'text-xs',
+                    dashboardApiData.sales.ordersGrowth >= 0
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                  )}
+                >
+                  {dashboardApiData.sales.ordersGrowth >= 0 ? '+' : ''}
+                  {dashboardApiData.sales.ordersGrowth.toFixed(1)}%
+                </div>
+              )}
+            </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
                 <Package className="h-3 w-3" />
@@ -321,17 +346,15 @@ export function ERPDashboard({
               <div className="mt-1 text-lg font-bold">
                 {dashboardData.totalProducts}
               </div>
-              <div className="text-xs text-green-600">+12%</div>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                <ShoppingCart className="h-3 w-3" />
-                订单总数
+                <RotateCcw className="h-3 w-3" />
+                退货订单
               </div>
               <div className="mt-1 text-lg font-bold">
-                {dashboardData.totalOrders}
+                {dashboardData.totalReturns}
               </div>
-              <div className="text-xs text-green-600">+8%</div>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
@@ -341,7 +364,19 @@ export function ERPDashboard({
               <div className="mt-1 text-lg font-bold">
                 {dashboardData.totalCustomers}
               </div>
-              <div className="text-xs text-green-600">+15%</div>
+              {dashboardApiData?.customers?.customerGrowth !== undefined && (
+                <div
+                  className={cn(
+                    'text-xs',
+                    dashboardApiData.customers.customerGrowth >= 0
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                  )}
+                >
+                  {dashboardApiData.customers.customerGrowth >= 0 ? '+' : ''}
+                  {dashboardApiData.customers.customerGrowth.toFixed(1)}%
+                </div>
+              )}
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
@@ -351,7 +386,19 @@ export function ERPDashboard({
               <div className="mt-1 text-lg font-bold">
                 {formatCurrency(dashboardData.totalRevenue)}
               </div>
-              <div className="text-xs text-green-600">+23%</div>
+              {dashboardApiData?.sales?.revenueGrowth !== undefined && (
+                <div
+                  className={cn(
+                    'text-xs',
+                    dashboardApiData.sales.revenueGrowth >= 0
+                      ? 'text-green-600'
+                      : 'text-red-600'
+                  )}
+                >
+                  {dashboardApiData.sales.revenueGrowth >= 0 ? '+' : ''}
+                  {dashboardApiData.sales.revenueGrowth.toFixed(1)}%
+                </div>
+              )}
             </div>
           </div>
         </div>

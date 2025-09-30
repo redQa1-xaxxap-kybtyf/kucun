@@ -15,10 +15,11 @@ import { getDashboardData } from '@/lib/api/handlers/dashboard';
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
-  // 解析查询参数
-  const timeRange = (searchParams.timeRange as string) || '7d';
+  // 解析查询参数 (Next.js 15 需要 await searchParams)
+  const params = await searchParams;
+  const timeRange = (params.timeRange as string) || '7d';
 
   // 服务器端获取初始数据
   const initialData = await getDashboardData(
