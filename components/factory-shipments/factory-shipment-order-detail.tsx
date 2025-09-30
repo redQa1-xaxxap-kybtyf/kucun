@@ -8,13 +8,14 @@ import {
   Calendar,
   DollarSign,
   Edit,
-  MapPin,
   Package,
-  Phone,
+  Ship,
   Truck,
   User,
 } from 'lucide-react';
+import { useState } from 'react';
 
+import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -30,6 +31,7 @@ import {
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentOrder,
+  type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
 
 interface FactoryShipmentOrderDetailProps {
@@ -43,13 +45,63 @@ const getFactoryShipmentOrder = async (
   _id: string
 ): Promise<FactoryShipmentOrder | null> =>
   // TODO: 实现真实API调用
-  // 这里应该调用真实的API
   null;
+
+// 获取状态徽章样式 - 与列表页面保持一致
+const getStatusBadgeVariant = (
+  status: FactoryShipmentStatus
+): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  switch (status) {
+    case 'draft':
+      return 'secondary';
+    case 'planning':
+      return 'outline';
+    case 'waiting_deposit':
+      return 'destructive';
+    case 'deposit_paid':
+    case 'factory_shipped':
+    case 'in_transit':
+    case 'arrived':
+    case 'delivered':
+    case 'completed':
+      return 'default';
+    default:
+      return 'secondary';
+  }
+};
+
+// 格式化金额
+const formatAmount = (amount: number): string => {
+  return `¥${amount.toLocaleString('zh-CN', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}`;
+};
+
+// 格式化日期
+const formatDate = (date: Date | string): string => {
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return format(dateObj, 'yyyy-MM-dd', { locale: zhCN });
+};
+
+// 判断是否可以确认发货
+const canConfirmShipment = (status: FactoryShipmentStatus): boolean => {
+  return ['draft', 'planning', 'waiting_deposit', 'deposit_paid'].includes(
+    status
+  );
+};
+
+/**
+ * 厂家发货订单详情组件
+ * 改进后的版本，符合ERP风格，添加确认发货功能
+ */
 export function FactoryShipmentOrderDetail({
   orderId,
   onEdit,
   onBack,
 }: FactoryShipmentOrderDetailProps) {
+  const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+
   // 查询订单详情
   const {
     data: order,
@@ -59,32 +111,6 @@ export function FactoryShipmentOrderDetail({
     queryKey: ['factory-shipment-order', orderId],
     queryFn: () => getFactoryShipmentOrder(orderId),
   });
-
-  // 获取状态徽章样式
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return 'secondary';
-      case 'planning':
-        return 'outline';
-      case 'waiting_deposit':
-        return 'destructive';
-      case 'deposit_paid':
-        return 'default';
-      case 'factory_shipped':
-        return 'default';
-      case 'in_transit':
-        return 'default';
-      case 'arrived':
-        return 'default';
-      case 'delivered':
-        return 'default';
-      case 'completed':
-        return 'default';
-      default:
-        return 'secondary';
-    }
-  };
 
   if (isLoading) {
     return (
@@ -109,7 +135,7 @@ export function FactoryShipmentOrderDetail({
   return (
     <div className="space-y-6">
       {/* 页面标题和操作 */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-4">
           <Button variant="ghost" size="sm" onClick={onBack}>
             <ArrowLeft className="mr-2 h-4 w-4" />
@@ -124,10 +150,21 @@ export function FactoryShipmentOrderDetail({
             </p>
           </div>
         </div>
-        <Button onClick={onEdit}>
-          <Edit className="mr-2 h-4 w-4" />
-          编辑订单
-        </Button>
+        <div className="flex gap-2">
+          {canConfirmShipment(order.status) && (
+            <Button
+              variant="default"
+              onClick={() => setConfirmDialogOpen(true)}
+            >
+              <Ship className="mr-2 h-4 w-4" />
+              确认发货
+            </Button>
+          )}
+          <Button variant="outline" onClick={onEdit}>
+            <Edit className="mr-2 h-4 w-4" />
+            编辑订单
+          </Button>
+        </div>
       </div>
 
       {/* 基本信息 */}
@@ -151,7 +188,9 @@ export function FactoryShipmentOrderDetail({
                 集装箱号码
               </label>
               <p className="mt-1 text-sm text-gray-900">
-                {order.containerNumber}
+                {order.containerNumber || (
+                  <span className="text-gray-400">待填写</span>
+                )}
               </p>
             </div>
             <div>
@@ -170,9 +209,7 @@ export function FactoryShipmentOrderDetail({
               </label>
               <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                 <Calendar className="h-3 w-3" />
-                {format(new Date(order.createdAt), 'yyyy-MM-dd HH:mm', {
-                  locale: zhCN,
-                })}
+                {formatDate(order.createdAt)}
               </p>
             </div>
             {order.planDate && (
@@ -182,9 +219,7 @@ export function FactoryShipmentOrderDetail({
                 </label>
                 <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                   <Calendar className="h-3 w-3" />
-                  {format(new Date(order.planDate), 'yyyy-MM-dd', {
-                    locale: zhCN,
-                  })}
+                  {formatDate(order.planDate)}
                 </p>
               </div>
             )}
@@ -195,12 +230,86 @@ export function FactoryShipmentOrderDetail({
                 </label>
                 <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
                   <Calendar className="h-3 w-3" />
-                  {format(new Date(order.shipmentDate), 'yyyy-MM-dd', {
-                    locale: zhCN,
-                  })}
+                  {formatDate(order.shipmentDate)}
                 </p>
               </div>
             )}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 客户信息 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <User className="h-5 w-5" />
+            客户信息
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+            <div>
+              <label className="text-sm font-medium text-gray-500">
+                客户名称
+              </label>
+              <p className="mt-1 text-sm text-gray-900">
+                {order.customer?.name || '-'}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">
+                联系电话
+              </label>
+              <p className="mt-1 text-sm text-gray-900">
+                {order.customer?.phone || '-'}
+              </p>
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-sm font-medium text-gray-500">
+                客户地址
+              </label>
+              <p className="mt-1 text-sm text-gray-900">
+                {order.customer?.address || '-'}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 金额信息 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-5 w-5" />
+            金额信息
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            <div>
+              <label className="text-sm font-medium text-gray-500">
+                订单总金额
+              </label>
+              <p className="mt-1 text-lg font-semibold text-gray-900">
+                {formatAmount(order.totalAmount)}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">
+                应收金额
+              </label>
+              <p className="mt-1 text-lg font-semibold text-blue-600">
+                {formatAmount(order.receivableAmount)}
+              </p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-500">
+                定金金额
+              </label>
+              <p className="mt-1 text-lg font-semibold text-green-600">
+                {formatAmount(order.depositAmount)}
+              </p>
+            </div>
           </div>
           {order.remarks && (
             <>
@@ -216,57 +325,12 @@ export function FactoryShipmentOrderDetail({
         </CardContent>
       </Card>
 
-      {/* 客户信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <User className="h-5 w-5" />
-            客户信息
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <div>
-              <label className="text-sm font-medium text-gray-500">
-                客户名称
-              </label>
-              <p className="mt-1 text-sm text-gray-900">
-                {order.customer.name}
-              </p>
-            </div>
-            {order.customer.phone && (
-              <div>
-                <label className="text-sm font-medium text-gray-500">
-                  联系电话
-                </label>
-                <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
-                  <Phone className="h-3 w-3" />
-                  {order.customer.phone}
-                </p>
-              </div>
-            )}
-            {order.customer.address && (
-              <div className="sm:col-span-2">
-                <label className="text-sm font-medium text-gray-500">
-                  客户地址
-                </label>
-                <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
-                  <MapPin className="h-3 w-3" />
-                  {order.customer.address}
-                </p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-
       {/* 商品明细 */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
             商品明细
-            <Badge variant="outline">共 {order.items.length} 个商品</Badge>
           </CardTitle>
         </CardHeader>
         <CardContent>
@@ -274,41 +338,33 @@ export function FactoryShipmentOrderDetail({
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>商品信息</TableHead>
+                  <TableHead>商品名称</TableHead>
                   <TableHead>供应商</TableHead>
                   <TableHead>规格</TableHead>
+                  <TableHead className="text-right">数量</TableHead>
                   <TableHead>单位</TableHead>
-                  <TableHead>数量</TableHead>
-                  <TableHead>单价</TableHead>
-                  <TableHead>小计</TableHead>
-                  <TableHead>备注</TableHead>
+                  <TableHead className="text-right">单价</TableHead>
+                  <TableHead className="text-right">小计</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {order.items.map(item => (
-                  <TableRow key={item.id}>
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{item.displayName}</p>
-                        {item.isManualProduct && (
-                          <Badge variant="outline" className="mt-1 text-xs">
-                            临时商品
-                          </Badge>
-                        )}
-                        {item.product && (
-                          <p className="text-xs text-gray-500">
-                            编码: {item.product.code}
-                          </p>
-                        )}
-                      </div>
+                {order.items?.map((item, index) => (
+                  <TableRow key={index}>
+                    <TableCell className="font-medium">
+                      {item.displayName}
                     </TableCell>
-                    <TableCell>{item.supplier.name}</TableCell>
+                    <TableCell>{item.supplier?.name || '-'}</TableCell>
                     <TableCell>{item.specification || '-'}</TableCell>
+                    <TableCell className="text-right">
+                      {item.quantity}
+                    </TableCell>
                     <TableCell>{item.unit}</TableCell>
-                    <TableCell>{item.quantity}</TableCell>
-                    <TableCell>¥{item.unitPrice.toLocaleString()}</TableCell>
-                    <TableCell>¥{item.totalPrice.toLocaleString()}</TableCell>
-                    <TableCell>{item.remarks || '-'}</TableCell>
+                    <TableCell className="text-right">
+                      {formatAmount(item.unitPrice)}
+                    </TableCell>
+                    <TableCell className="text-right font-medium">
+                      {formatAmount(item.quantity * item.unitPrice)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -317,78 +373,13 @@ export function FactoryShipmentOrderDetail({
         </CardContent>
       </Card>
 
-      {/* 财务信息 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <DollarSign className="h-5 w-5" />
-            财务信息
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            <div>
-              <label className="text-sm font-medium text-gray-500">
-                订单总金额
-              </label>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
-                ¥{order.totalAmount.toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">
-                应收金额
-              </label>
-              <p className="mt-1 text-lg font-semibold text-blue-600">
-                ¥{order.receivableAmount.toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">
-                定金金额
-              </label>
-              <p className="mt-1 text-lg font-semibold text-orange-600">
-                ¥{order.depositAmount.toLocaleString()}
-              </p>
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-500">
-                已付金额
-              </label>
-              <p className="mt-1 text-lg font-semibold text-green-600">
-                ¥{order.paidAmount.toLocaleString()}
-              </p>
-            </div>
-          </div>
-
-          {/* 付款进度 */}
-          <Separator className="my-4" />
-          <div>
-            <label className="text-sm font-medium text-gray-500">
-              付款进度
-            </label>
-            <div className="mt-2">
-              <div className="flex justify-between text-sm">
-                <span>已付款</span>
-                <span>
-                  {((order.paidAmount / order.receivableAmount) * 100).toFixed(
-                    1
-                  )}
-                  %
-                </span>
-              </div>
-              <div className="mt-1 h-2 w-full rounded-full bg-gray-200">
-                <div
-                  className="h-2 rounded-full bg-green-500"
-                  style={{
-                    width: `${Math.min((order.paidAmount / order.receivableAmount) * 100, 100)}%`,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* 确认发货对话框 */}
+      <ConfirmShipmentDialog
+        orderId={orderId}
+        orderNumber={order.orderNumber}
+        open={confirmDialogOpen}
+        onOpenChange={setConfirmDialogOpen}
+      />
     </div>
   );
 }
