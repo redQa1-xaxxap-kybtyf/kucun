@@ -1,8 +1,11 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
-import { getFinanceStatisticsCache } from '@/lib/cache/finance-cache';
+import {
+  getFinanceStatisticsCache,
+  setFinanceStatisticsCache,
+} from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 
 /**

@@ -4,7 +4,7 @@
  * 严格遵循全局约定规范
  */
 
-import { redis } from '@/lib/redis';
+import { redis } from '@/lib/redis/redis-client';
 
 // 缓存键前缀
 const CACHE_PREFIX = 'finance:';
@@ -236,4 +236,3 @@ export async function clearCacheAfterPaymentOut(): Promise<void> {
     clearStatementsCache(),
   ]);
 }
-
