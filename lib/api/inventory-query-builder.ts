@@ -42,21 +42,21 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
   // 搜索条件
   if (params.search) {
     conditions.push(Prisma.sql`(
-      p.code LIKE ${`%${params.search}%`} OR 
-      p.name LIKE ${`%${params.search}%`} OR 
-      i.batchNumber LIKE ${`%${params.search}%`} OR 
+      p.code LIKE ${`%${params.search}%`} OR
+      p.name LIKE ${`%${params.search}%`} OR
+      i.batch_number LIKE ${`%${params.search}%`} OR
       i.location LIKE ${`%${params.search}%`}
     )`);
   }
 
   // 产品ID筛选
   if (params.productId) {
-    conditions.push(Prisma.sql`i.productId = ${params.productId}`);
+    conditions.push(Prisma.sql`i.product_id = ${params.productId}`);
   }
 
   // 批次号筛选
   if (params.batchNumber) {
-    conditions.push(Prisma.sql`i.batchNumber = ${params.batchNumber}`);
+    conditions.push(Prisma.sql`i.batch_number = ${params.batchNumber}`);
   }
 
   // 存储位置筛选
@@ -66,7 +66,7 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
 
   // 分类筛选
   if (params.categoryId) {
-    conditions.push(Prisma.sql`p.categoryId = ${params.categoryId}`);
+    conditions.push(Prisma.sql`p.category_id = ${params.categoryId}`);
   }
 
   // 库存状态筛选
@@ -98,14 +98,14 @@ function buildOrderByClause(
 ): Prisma.Sql {
   // 验证排序字段
   const validSortFields: Record<string, string> = {
-    updatedAt: 'i.updatedAt',
+    updatedAt: 'i.updated_at',
     quantity: 'i.quantity',
-    productId: 'i.productId',
-    batchNumber: 'i.batchNumber',
+    productId: 'i.product_id',
+    batchNumber: 'i.batch_number',
     location: 'i.location',
   };
 
-  const field = validSortFields[sortBy] || 'i.updatedAt';
+  const field = validSortFields[sortBy] || 'i.updated_at';
   const order = sortOrder.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
 
   return Prisma.raw(`${field} ${order}`);
@@ -131,32 +131,28 @@ export async function getOptimizedInventoryList(
 
   // 使用Prisma的原生SQL查询，保持类型安全
   const inventoryRecords = await prisma.$queryRaw<InventoryQueryResult[]>`
-    SELECT 
+    SELECT
       i.id,
-      i.productId,
-      i.batchNumber,
+      i.product_id as productId,
+      i.batch_number as batchNumber,
       i.quantity,
-      i.reservedQuantity,
+      i.reserved_quantity as reservedQuantity,
       i.location,
-      i.unitCost,
-      i.updatedAt,
+      i.unit_cost as unitCost,
+      i.updated_at as updatedAt,
       p.id as product_id,
       p.code as product_code,
       p.name as product_name,
-      CASE 
-        WHEN p.specification IS NOT NULL THEN 
-          JSON_UNQUOTE(JSON_EXTRACT(p.specification, '$.size'))
-        ELSE NULL
-      END as specification_size,
+      p.specification as specification_size,
       p.unit as product_unit,
-      p.piecesPerUnit as product_piecesPerUnit,
+      p.pieces_per_unit as product_piecesPerUnit,
       p.status as product_status,
       c.id as category_id,
       c.name as category_name,
       c.code as category_code
     FROM inventory i
-    LEFT JOIN products p ON i.productId = p.id
-    LEFT JOIN categories c ON p.categoryId = c.id
+    LEFT JOIN products p ON i.product_id = p.id
+    LEFT JOIN categories c ON p.category_id = c.id
     WHERE ${whereClause}
     ORDER BY ${orderByClause}
     LIMIT ${limit} OFFSET ${offset}
@@ -176,7 +172,7 @@ export async function getInventoryCount(
   const result = await prisma.$queryRaw<[{ count: bigint }]>`
     SELECT COUNT(*) as count
     FROM inventory i
-    LEFT JOIN products p ON i.productId = p.id
+    LEFT JOIN products p ON i.product_id = p.id
     WHERE ${whereClause}
   `;
 
