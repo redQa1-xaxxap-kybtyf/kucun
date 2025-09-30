@@ -43,6 +43,9 @@ model User {
   payableRecords        PayableRecord[]
   paymentOutRecords     PaymentOutRecord[]
 
+  // 系统设置变更日志关联关系
+  settingChangeLogs     SettingChangeLog[]
+
   @@index([email])
   @@index([username])
   @@index([role])
@@ -755,6 +758,27 @@ model SystemSetting {
   @@index([category])
   @@index([isPublic])
   @@map("system_settings")
+}
+
+// 系统设置变更日志表 - 记录配置变更历史
+model SettingChangeLog {
+  id         String   @id @default(uuid())
+  settingKey String   @map("setting_key")
+  oldValue   String?  @map("old_value")
+  newValue   String   @map("new_value")
+  changedBy  String   @map("changed_by")
+  changedAt  DateTime @default(now()) @map("changed_at")
+  ipAddress  String?  @map("ip_address")
+  userAgent  String?  @map("user_agent")
+  remarks    String?
+
+  // 关联关系
+  user User @relation(fields: [changedBy], references: [id])
+
+  @@index([settingKey], map: "idx_setting_change_logs_key")
+  @@index([changedBy], map: "idx_setting_change_logs_user")
+  @@index([changedAt], map: "idx_setting_change_logs_date")
+  @@map("setting_change_logs")
 }
 
 // 系统日志表 - 系统操作日志记录

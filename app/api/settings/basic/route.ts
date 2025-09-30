@@ -3,8 +3,8 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -179,6 +179,21 @@ export async function PUT(request: NextRequest) {
 
     const settingsData = validationResult.data;
 
+    // 获取当前设置值(用于记录变更日志)
+    const currentSettings = await prisma.systemSetting.findMany({
+      where: {
+        key: { in: Object.keys(settingsData) },
+      },
+      select: {
+        key: true,
+        value: true,
+      },
+    });
+
+    const currentSettingsMap = new Map(
+      currentSettings.map(s => [s.key, s.value])
+    );
+
     // 批量更新设置
     const updatePromises = Object.entries(settingsData).map(
       async ([key, value]) => {
@@ -223,6 +238,37 @@ export async function PUT(request: NextRequest) {
 
     // 执行所有更新操作
     const results = await Promise.all(updatePromises.filter(p => p !== null));
+
+    // 记录设置变更日志
+    const changes = Object.entries(settingsData)
+      .filter(([_key, value]) => value !== undefined)
+      .map(([key, value]) => {
+        let stringValue: string;
+        if (typeof value === 'number') {
+          stringValue = value.toString();
+        } else if (typeof value === 'boolean') {
+          stringValue = value.toString();
+        } else if (typeof value === 'object' && value !== null) {
+          stringValue = JSON.stringify(value);
+        } else {
+          stringValue = String(value);
+        }
+
+        return {
+          settingKey: key,
+          oldValue: currentSettingsMap.get(key) || null,
+          newValue: stringValue,
+          remarks: '更新基本设置',
+        };
+      });
+
+    const requestInfo = extractRequestInfo(request);
+    await logSettingChanges(
+      changes,
+      session.user.id,
+      requestInfo.ipAddress,
+      requestInfo.userAgent
+    );
 
     // 记录系统设置变更日志
     const requestInfo = extractRequestInfo(request);
