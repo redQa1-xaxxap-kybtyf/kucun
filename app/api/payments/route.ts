@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
   createPaymentRecordSchema,
   paymentRecordQuerySchema,
@@ -308,6 +309,9 @@ export async function POST(request: NextRequest) {
         timeout: 10000, // 10秒超时
       }
     );
+
+    // 清除相关缓存
+    await clearCacheAfterPayment();
 
     return NextResponse.json({
       success: true,

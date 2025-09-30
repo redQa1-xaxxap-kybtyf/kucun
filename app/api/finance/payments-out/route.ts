@@ -10,6 +10,7 @@ import type {
   PaymentOutRecordDetail,
   PaymentOutRecordListResponse,
 } from '@/lib/types/payable';
+import { generatePaymentOutNumber } from '@/lib/utils/payment-number-generator';
 import {
   createPaymentOutRecordSchema,
   paymentOutRecordQuerySchema,
@@ -331,6 +332,9 @@ export async function POST(request: NextRequest) {
         timeout: 10000, // 10秒超时
       }
     );
+
+    // 清除相关缓存
+    await clearCacheAfterPaymentOut();
 
     return NextResponse.json({
       success: true,
