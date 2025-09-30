@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -198,10 +198,68 @@ export async function DELETE(
       );
     }
 
-    // TODO: 检查是否有关联的采购订单等，如果有则不允许删除
-    // 这里可以根据业务需求添加相关检查
+    // 检查是否有关联的销售订单(调货销售)
+    const salesOrderCount = await prisma.salesOrder.count({
+      where: { supplierId: id },
+    });
 
-    // 删除供应商
+    if (salesOrderCount > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `无法删除供应商,该供应商有 ${salesOrderCount} 个关联的销售订单`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 检查是否有关联的厂家发货订单明细
+    const factoryShipmentItemCount =
+      await prisma.factoryShipmentOrderItem.count({
+        where: { supplierId: id },
+      });
+
+    if (factoryShipmentItemCount > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `无法删除供应商,该供应商有 ${factoryShipmentItemCount} 个关联的厂家发货订单明细`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 检查是否有关联的应付款记录
+    const payableCount = await prisma.payableRecord.count({
+      where: { supplierId: id },
+    });
+
+    if (payableCount > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `无法删除供应商,该供应商有 ${payableCount} 个关联的应付款记录`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 检查是否有关联的付款记录
+    const paymentOutCount = await prisma.paymentOutRecord.count({
+      where: { supplierId: id },
+    });
+
+    if (paymentOutCount > 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `无法删除供应商,该供应商有 ${paymentOutCount} 个关联的付款记录`,
+        },
+        { status: 400 }
+      );
+    }
+
+    // 所有检查通过,可以安全删除
     await prisma.supplier.delete({
       where: { id },
     });

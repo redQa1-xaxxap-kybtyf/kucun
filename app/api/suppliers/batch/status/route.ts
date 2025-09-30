@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -47,30 +47,59 @@ export async function PUT(request: NextRequest) {
       });
     });
 
-    // 批量更新存在的供应商状态
-    for (const supplier of suppliersToUpdate) {
-      try {
-        // 检查状态是否需要更新
-        if (supplier.status === status) {
-          // 状态相同，跳过更新但计入成功
-          updatedCount++;
-          continue;
-        }
+    // 统计状态相同的供应商(无需更新)
+    const sameStatusSuppliers = suppliersToUpdate.filter(
+      s => s.status === status
+    );
+    const sameStatusCount = sameStatusSuppliers.length;
 
-        await prisma.supplier.update({
-          where: { id: supplier.id },
+    // 获取需要更新的供应商ID
+    const idsToUpdate = suppliersToUpdate
+      .filter(s => s.status !== status)
+      .map(s => s.id);
+
+    // 使用updateMany一次性更新所有需要更新的供应商
+    if (idsToUpdate.length > 0) {
+      try {
+        const result = await prisma.supplier.updateMany({
+          where: {
+            id: { in: idsToUpdate },
+          },
           data: { status },
         });
 
-        updatedCount++;
+        updatedCount = result.count + sameStatusCount;
       } catch (error) {
-        failedCount++;
-        failedSuppliers.push({
-          id: supplier.id,
-          name: supplier.name,
-          reason: error instanceof Error ? error.message : '更新失败',
-        });
+        // 如果批量更新失败,回退到逐个更新
+        console.warn('批量更新失败,回退到逐个更新:', error);
+
+        for (const supplier of suppliersToUpdate) {
+          try {
+            if (supplier.status === status) {
+              updatedCount++;
+              continue;
+            }
+
+            await prisma.supplier.update({
+              where: { id: supplier.id },
+              data: { status },
+            });
+
+            updatedCount++;
+          } catch (updateError) {
+            failedCount++;
+            failedSuppliers.push({
+              id: supplier.id,
+              name: supplier.name,
+              reason:
+                updateError instanceof Error ? updateError.message : '更新失败',
+            });
+          }
+        }
       }
+    } else {
+      // 所有供应商状态都相同,无需更新
+      updatedCount = sameStatusCount;
     }
 
     const statusText = status === 'active' ? '启用' : '停用';
