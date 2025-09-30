@@ -10,7 +10,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Loader2, RefreshCw, Save } from 'lucide-react';
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -32,6 +31,7 @@ import {
 } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
 import { inventoryConfig, salesOrderConfig, systemConfig } from '@/lib/env';
 import { BasicSettingsFormSchema } from '@/lib/schemas/settings';
 import type { BasicSettings, SettingsApiResponse } from '@/lib/types/settings';
@@ -100,6 +100,7 @@ const updateBasicSettings = async (
  */
 export function BasicSettingsForm() {
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // 获取基本设置数据
   const {
@@ -119,13 +120,21 @@ export function BasicSettingsForm() {
     onSuccess: data => {
       // 更新缓存
       queryClient.setQueryData(['settings', 'basic'], data);
-      toast.success('基本设置已保存');
+      toast({
+        title: '保存成功',
+        description: '基本设置已保存',
+        variant: 'success',
+      });
 
       // 重置表单状态
       form.reset(data);
     },
     onError: error => {
-      toast.error(error.message || '保存失败');
+      toast({
+        title: '保存失败',
+        description: error.message || '保存失败',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -166,7 +175,10 @@ export function BasicSettingsForm() {
   const handleReset = () => {
     if (settings) {
       form.reset(settings);
-      toast.info('表单已重置');
+      toast({
+        title: '重置成功',
+        description: '表单已重置',
+      });
     }
   };
 

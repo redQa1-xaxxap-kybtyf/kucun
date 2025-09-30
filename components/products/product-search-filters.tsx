@@ -1,6 +1,6 @@
 'use client';
 
-import { Filter, Search } from 'lucide-react';
+import { Filter, Search, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -71,7 +71,14 @@ export function ProductSearchFilters({
     }, 500);
 
     return () => clearTimeout(timer);
-  }, [localSearchValue, searchValue, onSearchChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [localSearchValue]);
+
+  // 清空搜索处理
+  const handleClearSearch = () => {
+    setLocalSearchValue('');
+    onSearchChange('');
+  };
 
   return (
     <div className="space-y-4">
@@ -82,8 +89,21 @@ export function ProductSearchFilters({
           placeholder="搜索产品编码、名称或规格..."
           value={localSearchValue}
           onChange={e => setLocalSearchValue(e.target.value)}
-          className="pl-10"
+          className="pl-10 pr-10"
         />
+        {/* 清空按钮 - 只在有输入内容时显示 */}
+        {localSearchValue && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleClearSearch}
+            className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0 hover:bg-transparent"
+            aria-label="清空搜索"
+          >
+            <X className="h-4 w-4 text-muted-foreground hover:text-foreground" />
+          </Button>
+        )}
       </div>
 
       {/* 筛选器 */}

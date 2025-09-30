@@ -176,7 +176,7 @@ function useToast() {
         listeners.splice(index, 1);
       }
     };
-  }, [state]);
+  }, []); // 移除 state 依赖,避免无限循环
 
   return {
     ...state,
@@ -185,4 +185,4 @@ function useToast() {
   };
 }
 
-export { useToast, toast };
+export { toast, useToast };

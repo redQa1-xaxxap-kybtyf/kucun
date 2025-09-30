@@ -5,7 +5,6 @@ import { Edit, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import {
   AlertDialog,
@@ -43,6 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useToast } from '@/components/ui/use-toast';
 import {
   batchDeleteSuppliers,
   batchUpdateSupplierStatus,
@@ -56,6 +56,7 @@ import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
 export default function SuppliersPage() {
   const _router = useRouter();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
 
   // 查询参数状态
   const [queryParams, setQueryParams] = useState<SupplierQueryParams>({
@@ -88,13 +89,21 @@ export default function SuppliersPage() {
   const deleteMutation = useMutation({
     mutationFn: deleteSupplier,
     onSuccess: data => {
-      toast.success(data.message || '供应商删除成功');
+      toast({
+        title: '删除成功',
+        description: data.message || '供应商删除成功',
+        variant: 'success',
+      });
       queryClient.invalidateQueries({ queryKey: supplierQueryKeys.lists() });
       setDeleteDialogOpen(false);
       setSupplierToDelete(null);
     },
     onError: error => {
-      toast.error(error.message || '删除供应商失败');
+      toast({
+        title: '删除失败',
+        description: error.message || '删除供应商失败',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -102,13 +111,21 @@ export default function SuppliersPage() {
   const batchDeleteMutation = useMutation({
     mutationFn: batchDeleteSuppliers,
     onSuccess: result => {
-      toast.success(result.message);
+      toast({
+        title: '批量删除成功',
+        description: result.message,
+        variant: 'success',
+      });
       queryClient.invalidateQueries({ queryKey: supplierQueryKeys.lists() });
       setBatchDeleteDialogOpen(false);
       setSelectedSuppliers([]);
     },
     onError: error => {
-      toast.error(error.message || '批量删除失败');
+      toast({
+        title: '批量删除失败',
+        description: error.message || '批量删除失败',
+        variant: 'destructive',
+      });
     },
   });
 
@@ -116,12 +133,20 @@ export default function SuppliersPage() {
   const batchUpdateStatusMutation = useMutation({
     mutationFn: batchUpdateSupplierStatus,
     onSuccess: result => {
-      toast.success(result.message);
+      toast({
+        title: '更新成功',
+        description: result.message,
+        variant: 'success',
+      });
       queryClient.invalidateQueries({ queryKey: supplierQueryKeys.lists() });
       setSelectedSuppliers([]);
     },
     onError: error => {
-      toast.error(error.message || '批量更新状态失败');
+      toast({
+        title: '更新失败',
+        description: error.message || '批量更新状态失败',
+        variant: 'destructive',
+      });
     },
   });
 

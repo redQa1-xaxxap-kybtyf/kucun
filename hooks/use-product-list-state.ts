@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import { useState } from 'react';
 
 import { paginationConfig } from '@/lib/config/product';
 import type { Product, ProductQueryParams } from '@/lib/types/product';
@@ -18,7 +18,7 @@ interface BatchDeleteDialogState {
 
 export function useProductListState(initialParams?: ProductQueryParams) {
   // 查询参数状态
-  const [queryParams, setQueryParams] = React.useState<ProductQueryParams>(
+  const [queryParams, setQueryParams] = useState<ProductQueryParams>(
     initialParams || {
       page: 1,
       limit: paginationConfig.defaultPageSize,
@@ -32,20 +32,18 @@ export function useProductListState(initialParams?: ProductQueryParams) {
   );
 
   // 删除确认对话框状态
-  const [deleteDialog, setDeleteDialog] = React.useState<DeleteDialogState>({
+  const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({
     open: false,
     productId: null,
     productName: '',
   });
 
   // 批量选择状态
-  const [selectedProductIds, setSelectedProductIds] = React.useState<string[]>(
-    []
-  );
+  const [selectedProductIds, setSelectedProductIds] = useState<string[]>([]);
 
   // 批量删除确认对话框状态
   const [batchDeleteDialog, setBatchDeleteDialog] =
-    React.useState<BatchDeleteDialogState>({
+    useState<BatchDeleteDialogState>({
       open: false,
       products: [],
     });

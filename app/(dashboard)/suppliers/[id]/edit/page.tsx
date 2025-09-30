@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { use, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +28,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
 import {
   getSupplier,
   supplierQueryKeys,
@@ -49,6 +49,7 @@ interface EditSupplierPageProps {
 export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   const router = useRouter();
   const { id } = use(params);
+  const { toast } = useToast();
 
   // 获取供应商详情
   const {
@@ -83,11 +84,19 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   const updateMutation = useMutation({
     mutationFn: (data: SupplierUpdateFormData) => updateSupplier(id, data),
     onSuccess: data => {
-      toast.success(data.message || '供应商更新成功');
+      toast({
+        title: '更新成功',
+        description: data.message || '供应商更新成功',
+        variant: 'success',
+      });
       router.push('/suppliers');
     },
     onError: error => {
-      toast.error(error.message || '更新供应商失败');
+      toast({
+        title: '更新失败',
+        description: error.message || '更新供应商失败',
+        variant: 'destructive',
+      });
     },
   });
 

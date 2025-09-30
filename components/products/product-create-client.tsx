@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 
 import { ProductForm } from '@/components/products/product-form';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import type { Product } from '@/lib/types/product';
 
 /**

@@ -2,7 +2,7 @@
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from '@/components/ui/use-toast';
 import {
   batchDeleteProducts,
   deleteProduct,
@@ -18,7 +18,6 @@ export function useProductDelete({
   onDeleteSuccess,
   onBatchDeleteSuccess,
 }: UseProductDeleteProps = {}) {
-  const { toast } = useToast();
   const queryClient = useQueryClient();
 
   // 单个删除mutation
@@ -28,6 +27,7 @@ export function useProductDelete({
       toast({
         title: '删除成功',
         description: '产品已成功删除',
+        variant: 'success',
       });
 
       // 刷新产品列表
@@ -50,11 +50,19 @@ export function useProductDelete({
   const batchDeleteMutation = useMutation({
     mutationFn: batchDeleteProducts,
     onSuccess: result => {
-      toast({
-        title: result.success ? '批量删除完成' : '批量删除部分失败',
-        description: result.message,
-        variant: result.success ? 'default' : 'destructive',
-      });
+      if (result.success) {
+        toast({
+          title: '批量删除完成',
+          description: result.message,
+          variant: 'success',
+        });
+      } else {
+        toast({
+          title: '批量删除部分失败',
+          description: result.message,
+          variant: 'destructive',
+        });
+      }
 
       if (result.failedCount > 0 && result.failedProducts) {
         // 显示失败的产品详情

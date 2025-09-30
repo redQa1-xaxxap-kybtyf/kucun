@@ -12,7 +12,6 @@ import {
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -40,6 +39,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
 import {
   useCreateReturnOrder,
   useSalesOrderReturnableItems,
@@ -76,6 +76,7 @@ export function ERPReturnOrderForm({
   onCancel,
 }: ERPReturnOrderFormProps) {
   const router = useRouter();
+  const { toast } = useToast();
   const [selectedSalesOrderId, setSelectedSalesOrderId] = useState<string>('');
   const [salesOrderNumber, setSalesOrderNumber] = useState<string>('');
   const [isSearchingSalesOrder, setIsSearchingSalesOrder] = useState(false);
@@ -139,20 +140,40 @@ export function ERPReturnOrderForm({
             form.setValue('salesOrderId', order.id);
             // 清空现有明细
             form.setValue('items', []);
-            toast.success(`已找到销售订单：${order.orderNumber}`);
+            toast({
+              title: '查询成功',
+              description: `已找到销售订单：${order.orderNumber}`,
+              variant: 'success',
+            });
           } else {
-            toast.error('未找到匹配的销售订单');
+            toast({
+              title: '查询失败',
+              description: '未找到匹配的销售订单',
+              variant: 'destructive',
+            });
           }
         } else {
-          toast.error('未找到销售订单');
+          toast({
+            title: '查询失败',
+            description: '未找到销售订单',
+            variant: 'destructive',
+          });
         }
       } else {
         const errorData = await response.json().catch(() => ({}));
-        toast.error(errorData.error || '查询销售订单失败');
+        toast({
+          title: '查询失败',
+          description: errorData.error || '查询销售订单失败',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       console.error('查询销售订单失败:', error);
-      toast.error('查询销售订单失败');
+      toast({
+        title: '查询失败',
+        description: '查询销售订单失败',
+        variant: 'destructive',
+      });
     } finally {
       setIsSearchingSalesOrder(false);
     }

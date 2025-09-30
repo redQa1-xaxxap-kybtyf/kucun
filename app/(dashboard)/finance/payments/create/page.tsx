@@ -13,7 +13,6 @@ import { ArrowLeft, DollarSign, Package, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
@@ -43,6 +42,7 @@ import {
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 
 // 创建收款记录表单Schema
@@ -87,6 +87,7 @@ export default function CreatePaymentPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const { toast } = useToast();
 
   // 表单配置
   const form = useForm<CreatePaymentFormData>({
@@ -158,11 +159,19 @@ export default function CreatePaymentPage() {
       return response.json();
     },
     onSuccess: data => {
-      toast.success('收款记录创建成功');
+      toast({
+        title: '创建成功',
+        description: '收款记录创建成功',
+        variant: 'success',
+      });
       router.push(`/finance/payments/${data.data.id}`);
     },
     onError: error => {
-      toast.error((error as Error).message);
+      toast({
+        title: '创建失败',
+        description: (error as Error).message,
+        variant: 'destructive',
+      });
     },
   });
 

@@ -6,21 +6,21 @@ import { ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
 import { createSupplier } from '@/lib/api/suppliers';
 import {
   CreateSupplierSchema,
@@ -30,6 +30,7 @@ import {
 
 export default function CreateSupplierPage() {
   const router = useRouter();
+  const { toast } = useToast();
 
   // 表单配置
   const form = useForm<SupplierCreateFormData>({
@@ -41,11 +42,19 @@ export default function CreateSupplierPage() {
   const createMutation = useMutation({
     mutationFn: createSupplier,
     onSuccess: data => {
-      toast.success(data.message || '供应商创建成功');
+      toast({
+        title: '创建成功',
+        description: data.message || '供应商创建成功',
+        variant: 'success',
+      });
       router.push('/suppliers');
     },
     onError: error => {
-      toast.error(error.message || '创建供应商失败');
+      toast({
+        title: '创建失败',
+        description: error.message || '创建供应商失败',
+        variant: 'destructive',
+      });
     },
   });
 

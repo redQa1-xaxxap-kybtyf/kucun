@@ -206,10 +206,22 @@ export async function deleteProduct(id: string): Promise<void> {
   });
 
   if (!response.ok) {
-    if (response.status === 404) {
-      throw new Error('产品不存在');
+    // 尝试读取API返回的错误信息
+    let errorMessage = `删除产品失败: ${response.statusText}`;
+
+    try {
+      const errorData: ApiResponse<void> = await response.json();
+      if (errorData.error) {
+        errorMessage = errorData.error;
+      }
+    } catch {
+      // JSON解析失败,使用默认错误信息
+      if (response.status === 404) {
+        errorMessage = '产品不存在';
+      }
     }
-    throw new Error(`删除产品失败: ${response.statusText}`);
+
+    throw new Error(errorMessage);
   }
 
   const data: ApiResponse<void> = await response.json();

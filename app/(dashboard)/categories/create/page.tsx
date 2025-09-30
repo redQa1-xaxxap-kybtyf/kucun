@@ -31,7 +31,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useToast } from '@/hooks/use-toast';
+import { useToast } from '@/components/ui/use-toast';
 import { createCategory, getCategories } from '@/lib/api/categories';
 import { CreateCategorySchema } from '@/lib/schemas/category';
 
