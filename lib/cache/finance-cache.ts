@@ -30,8 +30,7 @@ function getCacheKey(type: string, id?: string): string {
 export async function getFinanceStatisticsCache(): Promise<unknown | null> {
   try {
     const key = getCacheKey('statistics');
-    const cached = await redis.get(key);
-    return cached ? JSON.parse(cached) : null;
+    return await redis.getJson(key);
   } catch (error) {
     console.error('获取财务统计缓存失败:', error);
     return null;
@@ -44,7 +43,7 @@ export async function getFinanceStatisticsCache(): Promise<unknown | null> {
 export async function setFinanceStatisticsCache(data: unknown): Promise<void> {
   try {
     const key = getCacheKey('statistics');
-    await redis.setex(key, CACHE_TTL.statistics, JSON.stringify(data));
+    await redis.setJson(key, data, CACHE_TTL.statistics);
   } catch (error) {
     console.error('设置财务统计缓存失败:', error);
   }
@@ -58,8 +57,7 @@ export async function getReceivablesCache(
 ): Promise<unknown | null> {
   try {
     const key = getCacheKey('receivables', queryKey);
-    const cached = await redis.get(key);
-    return cached ? JSON.parse(cached) : null;
+    return await redis.getJson(key);
   } catch (error) {
     console.error('获取应收款缓存失败:', error);
     return null;
@@ -75,7 +73,7 @@ export async function setReceivablesCache(
 ): Promise<void> {
   try {
     const key = getCacheKey('receivables', queryKey);
-    await redis.setex(key, CACHE_TTL.receivables, JSON.stringify(data));
+    await redis.setJson(key, data, CACHE_TTL.receivables);
   } catch (error) {
     console.error('设置应收款缓存失败:', error);
   }
@@ -89,8 +87,7 @@ export async function getPayablesCache(
 ): Promise<unknown | null> {
   try {
     const key = getCacheKey('payables', queryKey);
-    const cached = await redis.get(key);
-    return cached ? JSON.parse(cached) : null;
+    return await redis.getJson(key);
   } catch (error) {
     console.error('获取应付款缓存失败:', error);
     return null;
@@ -106,7 +103,7 @@ export async function setPayablesCache(
 ): Promise<void> {
   try {
     const key = getCacheKey('payables', queryKey);
-    await redis.setex(key, CACHE_TTL.payables, JSON.stringify(data));
+    await redis.setJson(key, data, CACHE_TTL.payables);
   } catch (error) {
     console.error('设置应付款缓存失败:', error);
   }
@@ -120,8 +117,7 @@ export async function getStatementsCache(
 ): Promise<unknown | null> {
   try {
     const key = getCacheKey('statements', queryKey);
-    const cached = await redis.get(key);
-    return cached ? JSON.parse(cached) : null;
+    return await redis.getJson(key);
   } catch (error) {
     console.error('获取往来账单缓存失败:', error);
     return null;
@@ -137,7 +133,7 @@ export async function setStatementsCache(
 ): Promise<void> {
   try {
     const key = getCacheKey('statements', queryKey);
-    await redis.setex(key, CACHE_TTL.statements, JSON.stringify(data));
+    await redis.setJson(key, data, CACHE_TTL.statements);
   } catch (error) {
     console.error('设置往来账单缓存失败:', error);
   }
@@ -149,10 +145,7 @@ export async function setStatementsCache(
 export async function clearAllFinanceCache(): Promise<void> {
   try {
     const pattern = `${CACHE_PREFIX}*`;
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) {
-      await redis.del(...keys);
-    }
+    await redis.scanDel(pattern);
   } catch (error) {
     console.error('清除财务缓存失败:', error);
   }
@@ -176,10 +169,7 @@ export async function clearFinanceStatisticsCache(): Promise<void> {
 export async function clearReceivablesCache(): Promise<void> {
   try {
     const pattern = getCacheKey('receivables', '*');
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) {
-      await redis.del(...keys);
-    }
+    await redis.scanDel(pattern);
   } catch (error) {
     console.error('清除应收款缓存失败:', error);
   }
@@ -191,10 +181,7 @@ export async function clearReceivablesCache(): Promise<void> {
 export async function clearPayablesCache(): Promise<void> {
   try {
     const pattern = getCacheKey('payables', '*');
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) {
-      await redis.del(...keys);
-    }
+    await redis.scanDel(pattern);
   } catch (error) {
     console.error('清除应付款缓存失败:', error);
   }
@@ -206,10 +193,7 @@ export async function clearPayablesCache(): Promise<void> {
 export async function clearStatementsCache(): Promise<void> {
   try {
     const pattern = getCacheKey('statements', '*');
-    const keys = await redis.keys(pattern);
-    if (keys.length > 0) {
-      await redis.del(...keys);
-    }
+    await redis.scanDel(pattern);
   } catch (error) {
     console.error('清除往来账单缓存失败:', error);
   }
