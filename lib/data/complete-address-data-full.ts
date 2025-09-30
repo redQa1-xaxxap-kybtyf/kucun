@@ -90,6 +90,17 @@ export const cities = [
   // 上海市
   { code: '3101', name: '市辖区', provinceCode: '31' },
 
+  // 福建省
+  { code: '3501', name: '福州市', provinceCode: '35' },
+  { code: '3502', name: '厦门市', provinceCode: '35' },
+  { code: '3503', name: '莆田市', provinceCode: '35' },
+  { code: '3504', name: '三明市', provinceCode: '35' },
+  { code: '3505', name: '泉州市', provinceCode: '35' },
+  { code: '3506', name: '漳州市', provinceCode: '35' },
+  { code: '3507', name: '南平市', provinceCode: '35' },
+  { code: '3508', name: '龙岩市', provinceCode: '35' },
+  { code: '3509', name: '宁德市', provinceCode: '35' },
+
   // 重庆市
   { code: '5001', name: '市辖区', provinceCode: '50' },
 

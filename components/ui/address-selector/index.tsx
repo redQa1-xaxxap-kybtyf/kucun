@@ -48,16 +48,18 @@ export const AddressSelector = React.forwardRef<
     },
     ref
   ) => {
-    // 解析当前值
-    const currentAddress = React.useMemo(() => {
-      if (!value) {
-        return { province: '', city: '', district: '', detail: '' };
+    // 内部状态管理 - 维护地址对象
+    const [internalAddress, setInternalAddress] = React.useState<AddressData>(
+      () => {
+        if (!value) {
+          return { province: '', city: '', district: '', detail: '' };
+        }
+        if (typeof value === 'string') {
+          return parseAddressString(value);
+        }
+        return value;
       }
-      if (typeof value === 'string') {
-        return parseAddressString(value);
-      }
-      return value;
-    }, [value]);
+    );
 
     // 状态管理
     const [provinces, setProvinces] = React.useState<ProvinceData[]>([]);
@@ -87,14 +89,14 @@ export const AddressSelector = React.forwardRef<
     // 获取可用的城市列表
     React.useEffect(() => {
       const loadCities = async () => {
-        if (!currentAddress.province) {
+        if (!internalAddress.province) {
           setAvailableCities([]);
           return;
         }
 
         try {
           const province = provinces.find(
-            p => p.name === currentAddress.province
+            p => p.name === internalAddress.province
           );
           if (province) {
             const cities = await getCitiesByProvince(province.code);
@@ -109,19 +111,19 @@ export const AddressSelector = React.forwardRef<
       };
 
       loadCities();
-    }, [currentAddress.province, provinces]);
+    }, [internalAddress.province, provinces]);
 
     // 获取可用的区县列表
     React.useEffect(() => {
       const loadDistricts = async () => {
-        if (!currentAddress.city) {
+        if (!internalAddress.city) {
           setAvailableDistricts([]);
           return;
         }
 
         try {
           const city = availableCities.find(
-            c => c.name === currentAddress.city
+            c => c.name === internalAddress.city
           );
           if (city) {
             const districts = await getDistrictsByCity(city.code);
@@ -136,12 +138,12 @@ export const AddressSelector = React.forwardRef<
       };
 
       loadDistricts();
-    }, [currentAddress.city, availableCities]);
+    }, [internalAddress.city, availableCities]);
 
     // 处理地址变更
     const handleAddressChange = React.useCallback(
       (field: keyof AddressData, newValue: string) => {
-        const newAddress = { ...currentAddress, [field]: newValue };
+        const newAddress = { ...internalAddress, [field]: newValue };
 
         // 如果改变了省份，清空城市和区县
         if (field === 'province') {
@@ -154,9 +156,13 @@ export const AddressSelector = React.forwardRef<
           newAddress.district = '';
         }
 
+        // 更新内部状态
+        setInternalAddress(newAddress);
+
+        // 通知父组件
         onChange?.(newAddress);
       },
-      [currentAddress, onChange]
+      [internalAddress, onChange]
     );
 
     const content = (
@@ -167,7 +173,7 @@ export const AddressSelector = React.forwardRef<
           </div>
         ) : (
           <AddressSelectorContent
-            currentAddress={currentAddress}
+            currentAddress={internalAddress}
             provinces={provinces}
             availableCities={availableCities}
             availableDistricts={availableDistricts}
