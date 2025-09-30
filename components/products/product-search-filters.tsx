@@ -1,6 +1,7 @@
 'use client';
 
 import { Filter, Search } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -53,6 +54,25 @@ export function ProductSearchFilters({
 }: ProductSearchFiltersProps) {
   const hasActiveFilters = statusFilter || unitFilter || categoryFilter;
 
+  // 使用本地状态和防抖来优化搜索体验
+  const [localSearchValue, setLocalSearchValue] = useState(searchValue);
+
+  // 当外部searchValue变化时，同步到本地状态
+  useEffect(() => {
+    setLocalSearchValue(searchValue);
+  }, [searchValue]);
+
+  // 防抖处理：500ms后触发搜索
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (localSearchValue !== searchValue) {
+        onSearchChange(localSearchValue);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [localSearchValue, searchValue, onSearchChange]);
+
   return (
     <div className="space-y-4">
       {/* 搜索框 */}
@@ -60,8 +80,8 @@ export function ProductSearchFilters({
         <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
           placeholder="搜索产品编码、名称或规格..."
-          value={searchValue}
-          onChange={e => onSearchChange(e.target.value)}
+          value={localSearchValue}
+          onChange={e => setLocalSearchValue(e.target.value)}
           className="pl-10"
         />
       </div>

@@ -116,10 +116,10 @@ export function ProductTable({
             </TableHead>
             <TableHead>产品编码</TableHead>
             <TableHead>产品名称</TableHead>
+            <TableHead>分类</TableHead>
             <TableHead>规格</TableHead>
             <TableHead>单位</TableHead>
             <TableHead>状态</TableHead>
-            <TableHead>分类</TableHead>
             <TableHead className="text-right">操作</TableHead>
           </TableRow>
         </TableHeader>
@@ -136,12 +136,12 @@ export function ProductTable({
               </TableCell>
               <TableCell className="font-medium">{product.code}</TableCell>
               <TableCell>{product.name}</TableCell>
+              <TableCell>{product.category?.name || '-'}</TableCell>
               <TableCell className="text-muted-foreground">
                 {formatSpecification(product.specification)}
               </TableCell>
               <TableCell>{getChineseUnit(product.unit)}</TableCell>
               <TableCell>{getStatusBadge(product.status)}</TableCell>
-              <TableCell>{product.category?.name || '-'}</TableCell>
               <TableCell className="text-right">
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
