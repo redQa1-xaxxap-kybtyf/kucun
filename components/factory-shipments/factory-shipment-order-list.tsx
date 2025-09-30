@@ -92,12 +92,10 @@ const getStatusBadgeVariant = (
 };
 
 // 格式化金额 - 使用人民币符号和千分位分隔符
-const formatAmount = (amount: number): string => {
-  return `¥${amount.toLocaleString('zh-CN', {
+const formatAmount = (amount: number): string => `¥${amount.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
-};
 
 // 格式化日期 - 统一使用 YYYY-MM-DD 格式
 const formatDate = (date: Date | string): string => {

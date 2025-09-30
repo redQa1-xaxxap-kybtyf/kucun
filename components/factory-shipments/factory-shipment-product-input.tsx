@@ -51,7 +51,7 @@ export function FactoryShipmentProductInput({
           <FormLabel>选择产品</FormLabel>
           <FormControl>
             <SmartProductSearch
-              products={products as any}
+              products={products}
               value={field.value || ''}
               onValueChange={handleProductSelect}
               placeholder="搜索或选择产品..."

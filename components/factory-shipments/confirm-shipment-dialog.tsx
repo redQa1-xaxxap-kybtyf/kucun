@@ -45,15 +45,31 @@ interface ConfirmShipmentDialogProps {
   onSuccess?: () => void;
 }
 
-// 模拟API调用 - 后续替换为真实API
+/**
+ * 确认发货 API 调用
+ * 调用 PATCH /api/factory-shipments/[id]/status
+ */
 const confirmShipment = async (
   orderId: string,
   data: ConfirmShipmentData
 ): Promise<void> => {
-  // TODO: 实现真实API调用
-  // 调用 PATCH /api/factory-shipments/[id]/status
-  console.log('确认发货:', orderId, data);
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  const response = await fetch(`/api/factory-shipments/${orderId}/status`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      idempotencyKey: crypto.randomUUID(),
+      status: FACTORY_SHIPMENT_STATUS.FACTORY_SHIPPED,
+      containerNumber: data.containerNumber,
+      shipmentDate: new Date().toISOString(),
+    }),
+  });
+
+  if (!response.ok) {
+    const error = await response.json();
+    throw new Error(error.error || '确认发货失败');
+  }
 };
 
 /**
@@ -99,7 +115,8 @@ export function ConfirmShipmentDialog({
     onError: error => {
       toast({
         title: '确认发货失败',
-        description: error instanceof Error ? error.message : '操作失败，请重试',
+        description:
+          error instanceof Error ? error.message : '操作失败，请重试',
         variant: 'destructive',
       });
     },
@@ -163,4 +180,3 @@ export function ConfirmShipmentDialog({
     </Dialog>
   );
 }
-

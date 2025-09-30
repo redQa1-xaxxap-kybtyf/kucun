@@ -7,8 +7,9 @@ import { ItemForm } from '@/components/factory-shipments/form-sections/item-form
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import type { CreateFactoryShipmentOrderData } from '@/lib/schemas/factory-shipment';
-import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
+
+import type { PriceHistoryData } from '@/lib/types/price-history';
 
 interface ItemListSectionProps {
   form: UseFormReturn<CreateFactoryShipmentOrderData>;

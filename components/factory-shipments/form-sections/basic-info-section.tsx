@@ -30,8 +30,9 @@ import {
 } from '@/components/ui/select';
 import type { CreateFactoryShipmentOrderData } from '@/lib/schemas/factory-shipment';
 import { FACTORY_SHIPMENT_STATUS_LABELS } from '@/lib/types/factory-shipment';
-import type { Customer } from '@/lib/types/models';
 import { cn } from '@/lib/utils';
+
+import type { Customer } from '@/lib/types/models';
 
 interface BasicInfoSectionProps {
   form: UseFormReturn<CreateFactoryShipmentOrderData>;

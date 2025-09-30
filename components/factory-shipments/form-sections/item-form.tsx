@@ -19,8 +19,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { getLatestPrice } from '@/hooks/use-price-history';
 import type { CreateFactoryShipmentOrderData } from '@/lib/schemas/factory-shipment';
-import type { PriceHistoryData } from '@/lib/types/price-history';
 import type { Product } from '@/lib/types/product';
+
+import type { PriceHistoryData } from '@/lib/types/price-history';
 
 interface ItemFormProps {
   form: UseFormReturn<CreateFactoryShipmentOrderData>;

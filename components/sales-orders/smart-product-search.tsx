@@ -22,22 +22,22 @@ import { cn } from '@/lib/utils';
 
 import { AddTemporaryProductDialog } from './add-temporary-product-dialog';
 
-interface _Product {
+interface ProductWithInventory {
   id: string;
   code: string;
   name: string;
-  specification?: string;
+  specification?: string | null;
   unit: string;
-  piecesPerUnit?: number;
+  piecesPerUnit?: number | null;
   inventory?: {
     totalInventory: number;
     availableInventory: number;
     reservedInventory: number;
-  };
+  } | null;
 }
 
 interface SmartProductSearchProps {
-  products: any[];
+  products: ProductWithInventory[];
   value?: string;
   onValueChange?: (value: string) => void;
   onTemporaryProductAdd?: (productData: {
