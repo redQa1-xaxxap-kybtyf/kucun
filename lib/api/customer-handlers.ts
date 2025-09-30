@@ -165,6 +165,14 @@ export async function updateCustomer(
     throw new Error('客户不存在');
   }
 
+  // 如果更新了父级客户,检查是否会形成循环
+  if (data.parentCustomerId) {
+    const hasLoop = await checkHierarchyLoop(id, data.parentCustomerId);
+    if (hasLoop) {
+      throw new Error('无法设置父级客户,会形成循环引用');
+    }
+  }
+
   // 处理扩展信息
   const extendedInfoStr = data.extendedInfo
     ? processExtendedInfo(data.extendedInfo)
@@ -225,14 +233,68 @@ export async function deleteCustomer(id: string): Promise<void> {
 
   // 检查是否有子客户
   if (existingCustomer.childCustomers.length > 0) {
-    throw new Error('该客户存在下级客户，无法删除');
+    throw new Error(
+      `无法删除客户,该客户有 ${existingCustomer.childCustomers.length} 个子客户`
+    );
   }
 
-  // 检查是否有关联订单
+  // 检查是否有关联的销售订单
   if (existingCustomer.salesOrders.length > 0) {
-    throw new Error('该客户存在关联订单，无法删除');
+    throw new Error(
+      `无法删除客户,该客户有 ${existingCustomer.salesOrders.length} 个关联的销售订单`
+    );
   }
 
+  // 检查是否有关联的退货订单
+  const returnOrderCount = await prisma.returnOrder.count({
+    where: { customerId: id },
+  });
+
+  if (returnOrderCount > 0) {
+    throw new Error(
+      `无法删除客户,该客户有 ${returnOrderCount} 个关联的退货订单`
+    );
+  }
+
+  // 检查是否有关联的厂家发货订单
+  const factoryShipmentCount = await prisma.factoryShipmentOrder.count({
+    where: { customerId: id },
+  });
+
+  if (factoryShipmentCount > 0) {
+    throw new Error(
+      `无法删除客户,该客户有 ${factoryShipmentCount} 个关联的厂家发货订单`
+    );
+  }
+
+  // 检查是否有关联的付款记录
+  const paymentCount = await prisma.paymentRecord.count({
+    where: { customerId: id },
+  });
+
+  if (paymentCount > 0) {
+    throw new Error(`无法删除客户,该客户有 ${paymentCount} 个关联的付款记录`);
+  }
+
+  // 检查是否有关联的退款记录
+  const refundCount = await prisma.refundRecord.count({
+    where: { customerId: id },
+  });
+
+  if (refundCount > 0) {
+    throw new Error(`无法删除客户,该客户有 ${refundCount} 个关联的退款记录`);
+  }
+
+  // 检查是否有关联的出库记录
+  const outboundCount = await prisma.outboundRecord.count({
+    where: { customerId: id },
+  });
+
+  if (outboundCount > 0) {
+    throw new Error(`无法删除客户,该客户有 ${outboundCount} 个关联的出库记录`);
+  }
+
+  // 所有检查通过,可以安全删除
   await prisma.customer.delete({
     where: { id },
   });
@@ -346,4 +408,48 @@ export async function getCustomerList(params: CustomerQueryParams) {
       totalPages,
     },
   };
+}
+
+/**
+ * 检查客户层级是否会形成循环
+ * @param customerId 当前客户ID
+ * @param newParentId 新父级客户ID
+ * @returns 如果会形成循环返回true,否则返回false
+ */
+async function checkHierarchyLoop(
+  customerId: string,
+  newParentId: string
+): Promise<boolean> {
+  // 不能将自己设为父级
+  if (customerId === newParentId) {
+    return true;
+  }
+
+  // 检查新父级的所有祖先
+  let currentParentId: string | null = newParentId;
+  const visited = new Set<string>();
+
+  while (currentParentId) {
+    // 检测循环
+    if (visited.has(currentParentId)) {
+      return true;
+    }
+
+    // 如果新父级的祖先中包含当前客户,则形成循环
+    if (currentParentId === customerId) {
+      return true;
+    }
+
+    visited.add(currentParentId);
+
+    // 查找父级的父级
+    const parent = await prisma.customer.findUnique({
+      where: { id: currentParentId },
+      select: { parentCustomerId: true },
+    });
+
+    currentParentId = parent?.parentCustomerId || null;
+  }
+
+  return false;
 }
