@@ -869,3 +869,35 @@ model PaymentOutRecord {
   @@index([paymentMethod], map: "idx_payment_out_records_method")
   @@map("payment_out_records")
 }
+
+// 登录失败记录表 - 用于登录安全控制
+model LoginAttempt {
+  id            String   @id @default(uuid())
+  username      String   // 尝试登录的用户名
+  ipAddress     String   @map("ip_address")
+  userAgent     String?  @map("user_agent")
+  success       Boolean  @default(false) // 是否成功
+  failureReason String?  @map("failure_reason") // 失败原因
+  attemptAt     DateTime @default(now()) @map("attempt_at")
+
+  @@index([username], map: "idx_login_attempts_username")
+  @@index([ipAddress], map: "idx_login_attempts_ip")
+  @@index([attemptAt(sort: Desc)], map: "idx_login_attempts_date")
+  @@map("login_attempts")
+}
+
+// 账户锁定记录表 - 记录账户锁定状态
+model AccountLockout {
+  id          String    @id @default(uuid())
+  username    String    @unique
+  lockedAt    DateTime  @default(now()) @map("locked_at")
+  lockedUntil DateTime  @map("locked_until")
+  reason      String    // 锁定原因
+  unlocked    Boolean   @default(false) // 是否已解锁
+  unlockedAt  DateTime? @map("unlocked_at")
+  unlockedBy  String?   @map("unlocked_by") // 解锁操作人
+
+  @@index([username], map: "idx_account_lockouts_username")
+  @@index([lockedUntil], map: "idx_account_lockouts_until")
+  @@map("account_lockouts")
+}
