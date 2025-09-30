@@ -1,8 +1,8 @@
 // 退货订单状态更新API路由
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
+import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -72,16 +72,14 @@ export async function PATCH(
       id,
       session.user.id,
       { status, remarks, refundAmount, processedAt },
-      async () => {
-        return await updateReturnOrderStatus(
+      async () => await updateReturnOrderStatus(
           id,
           status,
           existingReturnOrder.status,
           existingReturnOrder.processType,
           { remarks, refundAmount, processedAt },
           session.user.id
-        );
-      }
+        )
     );
 
     // 获取更新后的完整订单信息

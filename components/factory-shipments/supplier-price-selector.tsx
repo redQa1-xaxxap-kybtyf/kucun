@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
-import { UseFormReturn } from 'react-hook-form';
+import type { UseFormReturn } from 'react-hook-form';
 
 import { SupplierSelector } from '@/components/sales-orders/supplier-selector';
 import {

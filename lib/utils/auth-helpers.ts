@@ -6,7 +6,6 @@
 import bcrypt from 'bcryptjs';
 
 import { prisma } from '@/lib/db';
-import { userValidations } from '@/lib/validations/base';
 
 import {
   handleLoginFailure,
@@ -167,4 +166,3 @@ export function extractRequestInfo(request: Request): {
 
   return { ipAddress, userAgent };
 }
-

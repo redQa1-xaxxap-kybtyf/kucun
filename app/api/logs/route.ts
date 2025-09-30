@@ -3,8 +3,8 @@
  * 遵循 Next.js 15.4 App Router 架构和全局约定规范
  */
 
+import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -188,9 +188,7 @@ export async function DELETE(request: NextRequest) {
 
     // 解析请求参数
     const searchParams = new URL(request.url).searchParams;
-    const retentionDays = parseInt(
-      searchParams.get('retentionDays') || '90'
-    );
+    const retentionDays = parseInt(searchParams.get('retentionDays') || '90');
 
     if (retentionDays < 1 || retentionDays > 365) {
       return NextResponse.json(
@@ -228,4 +226,3 @@ export async function DELETE(request: NextRequest) {
     );
   }
 }
-

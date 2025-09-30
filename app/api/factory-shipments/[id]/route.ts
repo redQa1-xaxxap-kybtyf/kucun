@@ -1,8 +1,8 @@
 // 单个厂家发货订单 API 路由
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
+import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -130,14 +130,12 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           deliveryDate,
           completionDate,
         },
-        async () => {
-          return await updateFactoryShipmentStatus(
+        async () => await updateFactoryShipmentStatus(
             id,
             status,
             existingOrder.status,
             { remarks, shipmentDate, arrivalDate, deliveryDate, completionDate }
-          );
-        }
+          )
       );
 
       // 获取更新后的完整订单信息

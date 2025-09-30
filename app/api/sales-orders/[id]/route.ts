@@ -1,5 +1,5 @@
+import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
-import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -225,14 +225,12 @@ export async function PUT(
       id,
       session.user.id,
       { status, remarks },
-      async () => {
-        return await updateSalesOrderStatus(
+      async () => await updateSalesOrderStatus(
           id,
           status,
           existingOrder.status,
           remarks
-        );
-      }
+        )
     );
 
     // 如果涉及库存变更,清除缓存
