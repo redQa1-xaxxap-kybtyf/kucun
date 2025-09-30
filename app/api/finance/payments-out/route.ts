@@ -1,8 +1,8 @@
 // 付款记录 API 路由
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -211,7 +211,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 如果关联应付款记录，验证并更新
+    // 如果关联应付款记录,验证金额
     let payableRecord = null;
     if (data.payableRecordId) {
       payableRecord = await prisma.payableRecord.findUnique({
@@ -232,79 +232,105 @@ export async function POST(request: NextRequest) {
         );
       }
 
-      // 检查付款金额是否超过剩余应付金额
+      // 金额验证：检查付款金额是否超过剩余应付金额
       if (data.paymentAmount > payableRecord.remainingAmount) {
         return NextResponse.json(
-          { success: false, error: '付款金额不能超过剩余应付金额' },
+          {
+            success: false,
+            error: `付款金额超过应付金额。应付: ¥${payableRecord.remainingAmount.toFixed(2)}, 本次付款: ¥${data.paymentAmount.toFixed(2)}`,
+          },
           { status: 400 }
         );
       }
     }
 
-    // 生成付款单号
-    const paymentNumber = `PAYOUT-${Date.now()}`;
+    // 生成付款单号(使用数据库序列表确保并发安全)
+    const paymentNumber = await generatePaymentOutNumber();
 
     // 使用事务创建付款记录并更新应付款
-    const payment = await prisma.$transaction(async tx => {
-      // 创建付款记录
-      const newPayment = await tx.paymentOutRecord.create({
-        data: {
-          ...data,
-          paymentNumber,
-          userId: session.user.id,
-          paymentDate: new Date(data.paymentDate),
-        },
-        include: {
-          payableRecord: {
-            select: {
-              id: true,
-              payableNumber: true,
-              payableAmount: true,
-              remainingAmount: true,
-            },
-          },
-          supplier: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              address: true,
-            },
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-        },
-      });
-
-      // 如果关联应付款记录，更新应付款状态
-      if (payableRecord) {
-        const newPaidAmount = payableRecord.paidAmount + data.paymentAmount;
-        const newRemainingAmount = payableRecord.payableAmount - newPaidAmount;
-
-        let newStatus = payableRecord.status;
-        if (newRemainingAmount <= 0) {
-          newStatus = 'paid';
-        } else if (newPaidAmount > 0) {
-          newStatus = 'partial';
-        }
-
-        await tx.payableRecord.update({
-          where: { id: payableRecord.id },
+    const payment = await prisma.$transaction(
+      async tx => {
+        // 创建付款记录
+        const newPayment = await tx.paymentOutRecord.create({
           data: {
-            paidAmount: newPaidAmount,
-            remainingAmount: newRemainingAmount,
-            status: newStatus,
+            ...data,
+            paymentNumber,
+            userId: session.user.id,
+            paymentDate: new Date(data.paymentDate),
+          },
+          include: {
+            payableRecord: {
+              select: {
+                id: true,
+                payableNumber: true,
+                payableAmount: true,
+                remainingAmount: true,
+              },
+            },
+            supplier: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+                address: true,
+              },
+            },
+            user: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+              },
+            },
           },
         });
-      }
 
-      return newPayment;
-    });
+        // 如果关联应付款记录,使用乐观锁更新应付款状态(并发控制)
+        if (payableRecord) {
+          const updateResult = await tx.payableRecord.updateMany({
+            where: {
+              id: data.payableRecordId,
+              remainingAmount: { gte: data.paymentAmount },
+            },
+            data: {
+              paidAmount: { increment: data.paymentAmount },
+              remainingAmount: { decrement: data.paymentAmount },
+              updatedAt: new Date(),
+            },
+          });
+
+          if (updateResult.count === 0) {
+            throw new Error('付款失败,可能是并发冲突或金额超限');
+          }
+
+          // 计算新的剩余金额,判断是否需要更新状态
+          const newRemainingAmount =
+            payableRecord.remainingAmount - data.paymentAmount;
+
+          let newStatus = payableRecord.status;
+          if (newRemainingAmount <= 0) {
+            newStatus = 'paid';
+          } else if (payableRecord.paidAmount + data.paymentAmount > 0) {
+            newStatus = 'partial';
+          }
+
+          // 更新应付款状态
+          await tx.payableRecord.update({
+            where: { id: payableRecord.id },
+            data: {
+              status: newStatus,
+              updatedAt: new Date(),
+            },
+          });
+        }
+
+        return newPayment;
+      },
+      {
+        isolationLevel: 'Serializable',
+        timeout: 10000, // 10秒超时
+      }
+    );
 
     return NextResponse.json({
       success: true,

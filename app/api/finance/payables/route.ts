@@ -1,8 +1,8 @@
 // 应付款记录 API 路由
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -214,8 +214,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 生成应付款单号
-    const payableNumber = `PAY-${Date.now()}`;
+    // 生成应付款单号(使用数据库序列表确保并发安全)
+    const payableNumber = await generatePayableNumber();
 
     // 创建应付款记录
     const payable = await prisma.payableRecord.create({

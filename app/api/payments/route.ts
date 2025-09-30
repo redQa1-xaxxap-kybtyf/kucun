@@ -1,5 +1,5 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -183,10 +183,19 @@ export async function POST(request: NextRequest) {
 
     const data = validationResult.data;
 
-    // 验证销售订单是否存在
+    // 验证销售订单是否存在并获取已收款信息
     const salesOrder = await prisma.salesOrder.findUnique({
       where: { id: data.salesOrderId },
-      select: { id: true, customerId: true, totalAmount: true, status: true },
+      select: {
+        id: true,
+        customerId: true,
+        totalAmount: true,
+        status: true,
+        payments: {
+          where: { status: 'confirmed' },
+          select: { paymentAmount: true },
+        },
+      },
     });
 
     if (!salesOrder) {
@@ -204,74 +213,101 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 生成收款单号
-    const paymentNumber = `PAY${Date.now()}`;
+    // 金额验证：计算已收款金额和剩余应收金额
+    const totalPaid = salesOrder.payments.reduce(
+      (sum, p) => sum + p.paymentAmount,
+      0
+    );
+    const remainingAmount = salesOrder.totalAmount - totalPaid;
 
-    // 修复：使用事务确保收款记录创建和订单状态更新的一致性
-    const payment = await prisma.$transaction(async tx => {
-      // 创建收款记录
-      const newPayment = await tx.paymentRecord.create({
-        data: {
-          ...data,
-          paymentNumber,
-          userId: session.user.id,
-          paymentDate: new Date(data.paymentDate),
+    // 验证收款金额不超过剩余应收金额
+    if (data.paymentAmount > remainingAmount) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `收款金额超过应收金额。应收: ¥${remainingAmount.toFixed(2)}, 本次收款: ¥${data.paymentAmount.toFixed(2)}`,
         },
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-            },
-          },
-          salesOrder: {
-            select: {
-              id: true,
-              orderNumber: true,
-              totalAmount: true,
-              status: true,
-            },
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
-            },
-          },
-        },
-      });
+        { status: 400 }
+      );
+    }
 
-      // 检查订单的总收款金额，如果全额收款则更新订单状态
-      const totalPayments = await tx.paymentRecord.aggregate({
-        where: {
-          salesOrderId: data.salesOrderId,
-          status: 'confirmed',
-        },
-        _sum: {
-          paymentAmount: true,
-        },
-      });
+    // 生成收款单号(使用数据库序列表确保并发安全)
+    const paymentNumber = await generatePaymentNumber();
 
-      const totalPaid =
-        (totalPayments._sum.paymentAmount || 0) + data.paymentAmount;
-
-      // 如果收款金额达到或超过订单总额，更新订单支付状态
-      if (
-        totalPaid >= salesOrder.totalAmount &&
-        salesOrder.status === 'confirmed'
-      ) {
-        await tx.salesOrder.update({
-          where: { id: data.salesOrderId },
+    // 使用事务确保收款记录创建和订单状态更新的一致性
+    const payment = await prisma.$transaction(
+      async tx => {
+        // 创建收款记录
+        const newPayment = await tx.paymentRecord.create({
           data: {
-            status: 'shipped', // 全额收款后可以发货
+            ...data,
+            paymentNumber,
+            userId: session.user.id,
+            paymentDate: new Date(data.paymentDate),
+          },
+          include: {
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+              },
+            },
+            salesOrder: {
+              select: {
+                id: true,
+                orderNumber: true,
+                totalAmount: true,
+                status: true,
+              },
+            },
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        });
+
+        // 使用乐观锁更新订单已付金额(并发控制)
+        const updateResult = await tx.salesOrder.updateMany({
+          where: {
+            id: data.salesOrderId,
+            totalAmount: { gte: totalPaid + data.paymentAmount },
+          },
+          data: {
+            paidAmount: { increment: data.paymentAmount },
             updatedAt: new Date(),
           },
         });
-      }
 
-      return newPayment;
-    });
+        if (updateResult.count === 0) {
+          throw new Error('收款失败,可能是并发冲突或金额超限');
+        }
+
+        // 如果收款金额达到或超过订单总额,更新订单状态
+        const newTotalPaid = totalPaid + data.paymentAmount;
+        if (
+          newTotalPaid >= salesOrder.totalAmount &&
+          salesOrder.status === 'confirmed'
+        ) {
+          await tx.salesOrder.update({
+            where: { id: data.salesOrderId },
+            data: {
+              status: 'shipped', // 全额收款后可以发货
+              updatedAt: new Date(),
+            },
+          });
+        }
+
+        return newPayment;
+      },
+      {
+        isolationLevel: 'Serializable',
+        timeout: 10000, // 10秒超时
+      }
+    );
 
     return NextResponse.json({
       success: true,
