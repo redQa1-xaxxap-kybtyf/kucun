@@ -83,13 +83,14 @@ export const factoryShipmentOrderItemSchema = z
     }
   );
 
-// 创建厂家发货订单验证
+// 创建厂家发货订单验证（创建时集装箱号码为可选）
 export const createFactoryShipmentOrderSchema = z
   .object({
     containerNumber: z
       .string()
-      .min(1, '集装箱号码不能为空')
-      .max(50, '集装箱号码不能超过50个字符'),
+      .max(50, '集装箱号码不能超过50个字符')
+      .optional()
+      .or(z.literal('')),
     customerId: z.string().uuid('客户ID格式不正确'),
     status: factoryShipmentStatusSchema.optional(),
     totalAmount: z.number().min(0, '订单总金额不能为负数').optional(),
@@ -220,20 +221,49 @@ export const factoryShipmentOrderListParamsSchema = z
   );
 
 // 厂家发货订单状态更新验证
-export const updateFactoryShipmentOrderStatusSchema = z.object({
-  status: factoryShipmentStatusSchema,
-  remarks: z
-    .string()
-    .max(500, '备注不能超过500个字符')
-    .optional()
-    .or(z.literal('')),
-  // 根据状态更新相应的日期字段
-  planDate: z.date().optional(),
-  shipmentDate: z.date().optional(),
-  arrivalDate: z.date().optional(),
-  deliveryDate: z.date().optional(),
-  completionDate: z.date().optional(),
-});
+export const updateFactoryShipmentOrderStatusSchema = z
+  .object({
+    status: factoryShipmentStatusSchema,
+    containerNumber: z
+      .string()
+      .max(50, '集装箱号码不能超过50个字符')
+      .optional()
+      .or(z.literal('')),
+    remarks: z
+      .string()
+      .max(500, '备注不能超过500个字符')
+      .optional()
+      .or(z.literal('')),
+    // 根据状态更新相应的日期字段
+    planDate: z.date().optional(),
+    shipmentDate: z.date().optional(),
+    arrivalDate: z.date().optional(),
+    deliveryDate: z.date().optional(),
+    completionDate: z.date().optional(),
+  })
+  .refine(
+    data => {
+      // 如果状态为已发货或之后的状态，集装箱号码必填
+      const shippedStatuses = [
+        FACTORY_SHIPMENT_STATUS.FACTORY_SHIPPED,
+        FACTORY_SHIPMENT_STATUS.IN_TRANSIT,
+        FACTORY_SHIPMENT_STATUS.ARRIVED,
+        FACTORY_SHIPMENT_STATUS.DELIVERED,
+        FACTORY_SHIPMENT_STATUS.COMPLETED,
+      ];
+      if (
+        shippedStatuses.includes(data.status) &&
+        (!data.containerNumber || data.containerNumber.trim() === '')
+      ) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: '确认发货时必须填写集装箱号码',
+      path: ['containerNumber'],
+    }
+  );
 
 // 类型推断
 export type CreateFactoryShipmentOrderData = z.infer<

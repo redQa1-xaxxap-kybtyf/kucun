@@ -308,20 +308,6 @@ export function FactoryShipmentOrderForm({
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <FormField
                 control={form.control}
-                name="containerNumber"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>集装箱号码 *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="请输入集装箱号码" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="customerId"
                 render={({ field }) => (
                   <FormItem>

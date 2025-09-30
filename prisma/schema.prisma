@@ -543,7 +543,7 @@ model PaymentRecord {
 model FactoryShipmentOrder {
   id                String   @id @default(uuid())
   orderNumber       String   @unique @map("order_number") // 订单编号
-  containerNumber   String   @map("container_number") // 集装箱号码
+  containerNumber   String?  @map("container_number") // 集装箱号码（确认发货时必填）
   customerId        String   @map("customer_id") // 客户ID
   userId            String   @map("user_id") // 创建用户ID
   status            String   @default("draft") // 订单状态
