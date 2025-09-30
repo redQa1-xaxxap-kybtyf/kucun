@@ -11,6 +11,7 @@ import {
   validateUserSession,
 } from '@/lib/api/inbound-handlers';
 import { prisma } from '@/lib/db';
+import { withIdempotency } from '@/lib/utils/idempotency';
 import { createInboundSchema } from '@/lib/validations/inbound';
 
 // GET /api/inventory/inbound - 获取入库记录列表
@@ -45,57 +46,72 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const validatedData = createInboundSchema.parse(body);
 
-    // 处理批次号：如果没有提供批次号，自动生成
-    let finalBatchNumber = validatedData.batchNumber;
-    if (!finalBatchNumber) {
-      // 获取产品信息用于生成批次号
-      const product = await prisma.product.findUnique({
-        where: { id: validatedData.productId },
-        select: { code: true },
-      });
+    const { idempotencyKey, productId } = validatedData;
 
-      if (product) {
-        // 生成批次号格式：产品编码-日期-序号
-        const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-        const existingBatches = await prisma.inboundRecord.count({
-          where: {
-            productId: validatedData.productId,
-            batchNumber: {
-              startsWith: `${product.code}-${today}-`,
+    // 使用幂等性包装器执行入库操作
+    const inboundRecord = await withIdempotency(
+      idempotencyKey,
+      'inbound',
+      productId,
+      session.user.id,
+      validatedData,
+      async () => {
+        // 处理批次号：如果没有提供批次号，自动生成
+        let finalBatchNumber = validatedData.batchNumber;
+        if (!finalBatchNumber) {
+          // 获取产品信息用于生成批次号
+          const product = await prisma.product.findUnique({
+            where: { id: validatedData.productId },
+            select: { code: true },
+          });
+
+          if (product) {
+            // 生成批次号格式：产品编码-日期-序号
+            const today = new Date()
+              .toISOString()
+              .slice(0, 10)
+              .replace(/-/g, '');
+            const existingBatches = await prisma.inboundRecord.count({
+              where: {
+                productId: validatedData.productId,
+                batchNumber: {
+                  startsWith: `${product.code}-${today}-`,
+                },
+              },
+            });
+
+            const sequence = String(existingBatches + 1).padStart(3, '0');
+            finalBatchNumber = `${product.code}-${today}-${sequence}`;
+          }
+        }
+
+        // 使用事务确保数据一致性
+        return await prisma.$transaction(async tx => {
+          // 创建入库记录
+          const record = await createInboundRecord(
+            {
+              ...validatedData,
+              batchNumber: finalBatchNumber,
             },
-          },
+            session.user.id,
+            tx
+          );
+
+          // 更新库存数量
+          await updateInventoryQuantity(
+            validatedData.productId,
+            finalBatchNumber || null,
+            validatedData.quantity,
+            {
+              variantId: validatedData.variantId,
+            },
+            tx
+          );
+
+          return record;
         });
-
-        const sequence = String(existingBatches + 1).padStart(3, '0');
-        finalBatchNumber = `${product.code}-${today}-${sequence}`;
       }
-    }
-
-    // 使用事务确保数据一致性
-    const inboundRecord = await prisma.$transaction(async tx => {
-      // 创建入库记录
-      const record = await createInboundRecord(
-        {
-          ...validatedData,
-          batchNumber: finalBatchNumber,
-        },
-        session.user.id,
-        tx // 传递事务上下文
-      );
-
-      // 更新库存数量
-      await updateInventoryQuantity(
-        validatedData.productId,
-        finalBatchNumber || null,
-        validatedData.quantity,
-        {
-          variantId: validatedData.variantId,
-        },
-        tx // 传递事务上下文
-      );
-
-      return record;
-    });
+    );
 
     // 修复：添加缓存失效调用
     const { invalidateInventoryCache } = await import(

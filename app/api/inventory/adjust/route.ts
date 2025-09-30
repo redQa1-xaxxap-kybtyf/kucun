@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
+import { withIdempotency } from '@/lib/utils/idempotency';
 import { inventoryAdjustSchema } from '@/lib/validations/inventory-operations';
 import { publishWs } from '@/lib/ws/ws-server';
 
@@ -155,12 +156,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const adjustmentData = validationResult.data;
+    const { idempotencyKey, productId } = validationResult.data;
 
-    // 执行库存调整事务
-    const result = await executeAdjustmentTransaction(
-      adjustmentData,
-      session.user.id
+    // 使用幂等性包装器执行调整操作
+    const result = await withIdempotency(
+      idempotencyKey,
+      'adjust',
+      productId,
+      session.user.id,
+      validationResult.data,
+      async () =>
+        await executeAdjustmentTransaction(
+          validationResult.data,
+          session.user.id
+        )
     );
 
     // 清除相关缓存

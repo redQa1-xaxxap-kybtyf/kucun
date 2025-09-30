@@ -19,6 +19,11 @@ export const inboundUnitSchema = z.enum(['pieces', 'units'] as const);
 
 // 创建入库记录验证规则
 export const createInboundSchema = z.object({
+  idempotencyKey: z
+    .string()
+    .uuid('幂等性键格式不正确')
+    .describe('幂等性键,防止重复操作'),
+
   productId: z.string().min(1, '请选择产品'),
 
   variantId: z.string().uuid('产品变体ID格式不正确').optional(),

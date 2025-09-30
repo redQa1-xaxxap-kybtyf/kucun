@@ -10,6 +10,10 @@ import { baseValidations } from './inventory-base';
 // 出库操作验证
 export const outboundCreateSchema = z
   .object({
+    idempotencyKey: z
+      .string()
+      .uuid('幂等性键格式不正确')
+      .describe('幂等性键,防止重复操作'),
     type: z.enum(['normal_outbound', 'sales_outbound', 'adjust_outbound'], {
       errorMap: () => ({ message: '请选择正确的出库类型' }),
     }),
@@ -62,6 +66,10 @@ export const adjustReasonSchema = z.enum(
 
 // 库存调整验证
 export const inventoryAdjustSchema = z.object({
+  idempotencyKey: z
+    .string()
+    .uuid('幂等性键格式不正确')
+    .describe('幂等性键,防止重复操作'),
   productId: baseValidations.productId,
   batchNumber: baseValidations.batchNumber,
   adjustQuantity: z

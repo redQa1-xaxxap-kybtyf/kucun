@@ -5,6 +5,7 @@ import { authOptions } from '@/lib/auth';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
+import { withIdempotency } from '@/lib/utils/idempotency';
 import { outboundCreateSchema } from '@/lib/validations/inventory-operations';
 import { publishWs } from '@/lib/ws/ws-server';
 
@@ -118,20 +119,121 @@ export async function GET(request: NextRequest) {
 }
 
 /**
+ * 执行出库事务
+ * 使用乐观锁防止并发问题
+ */
+async function executeOutboundTransaction(data: {
+  productId: string;
+  quantity: number;
+  batchNumber?: string;
+  variantId?: string;
+  reason?: string;
+  notes?: string;
+}) {
+  const { productId, quantity, batchNumber, variantId, reason, notes } = data;
+
+  return await prisma.$transaction(async tx => {
+    // 1. 查找可用库存
+    const whereCondition: {
+      productId: string;
+      variantId?: string;
+      batchNumber?: string;
+    } = { productId };
+
+    if (variantId) {
+      whereCondition.variantId = variantId;
+    }
+    if (batchNumber) {
+      whereCondition.batchNumber = batchNumber;
+    }
+
+    const availableInventory = await tx.inventory.findFirst({
+      where: whereCondition,
+      orderBy: [{ updatedAt: 'asc' }],
+    });
+
+    if (!availableInventory) {
+      throw new Error('未找到匹配的库存记录');
+    }
+
+    // 检查可用库存
+    const availableQuantity =
+      availableInventory.quantity - availableInventory.reservedQuantity;
+    if (availableQuantity < quantity) {
+      throw new Error(
+        `可用库存不足,当前可用库存:${availableQuantity},需要出库:${quantity}`
+      );
+    }
+
+    // 2. 使用乐观锁更新库存 - 确保并发安全
+    const updatedCount = await tx.inventory.updateMany({
+      where: {
+        id: availableInventory.id,
+        quantity: { gte: quantity }, // 确保库存足够
+      },
+      data: {
+        quantity: { decrement: quantity },
+        reservedQuantity: Math.max(
+          0,
+          Math.min(
+            availableInventory.reservedQuantity,
+            availableInventory.quantity - quantity
+          )
+        ),
+        updatedAt: new Date(),
+      },
+    });
+
+    if (updatedCount.count === 0) {
+      throw new Error('库存不足或已被其他操作占用,请重试');
+    }
+
+    // 3. 获取更新后的库存记录
+    const updatedInventory = await tx.inventory.findUnique({
+      where: { id: availableInventory.id },
+      include: {
+        product: {
+          select: { id: true, name: true, code: true },
+        },
+      },
+    });
+
+    // 4. 创建出库记录
+    const recordNumber = `OUT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-6)}`;
+
+    await tx.outboundRecord.create({
+      data: {
+        recordNumber,
+        productId,
+        inventoryId: availableInventory.id,
+        quantity,
+        reason: reason || 'manual_outbound',
+        batchNumber: availableInventory.batchNumber,
+        variantId: availableInventory.variantId,
+        notes,
+        operatorId: 'system',
+      },
+    });
+
+    return updatedInventory;
+  });
+}
+
+/**
  * 出库操作API
  * POST /api/inventory/outbound
  */
 export async function POST(request: NextRequest) {
   try {
-    // 验证用户权限 (开发环境下临时绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    // 验证用户权限
+    const session = await getServerSession(authOptions);
+    const userId = session?.user?.id || 'system';
+
+    if (env.NODE_ENV !== 'development' && !session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
     }
 
     const body = await request.json();
@@ -149,97 +251,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const {
+    const { idempotencyKey, productId } = validationResult.data;
+
+    // 使用幂等性包装器执行出库操作
+    const result = await withIdempotency(
+      idempotencyKey,
+      'outbound',
       productId,
-      quantity,
-      batchNumber,
-      variantId, // 修复：使用正确的字段名
-    } = validationResult.data;
-
-    // 使用事务确保数据一致性
-    const result = await prisma.$transaction(async tx => {
-      // 1. 查找可用库存 - 修复：使用variantId精确定位库存记录
-      const whereCondition: {
-        productId: string;
-        variantId?: string;
-        batchNumber?: string;
-      } = {
-        productId,
-      };
-
-      // 修复：同时提供variantId和batchNumber时，应同时应用两个过滤条件
-      if (variantId) {
-        whereCondition.variantId = variantId;
-      }
-      if (batchNumber) {
-        whereCondition.batchNumber = batchNumber;
-      }
-
-      const availableInventory = await tx.inventory.findFirst({
-        where: whereCondition,
-        orderBy: [
-          { updatedAt: 'asc' }, // 按更新时间排序，优先使用较早的库存
-        ],
-      });
-
-      if (!availableInventory) {
-        throw new Error('未找到匹配的库存记录');
-      }
-
-      // 检查可用库存是否足够（总库存 - 预留库存）
-      const availableQuantity =
-        availableInventory.quantity - availableInventory.reservedQuantity;
-      if (availableQuantity < quantity) {
-        throw new Error(
-          `可用库存不足，当前可用库存：${availableQuantity}，需要出库：${quantity}`
-        );
-      }
-
-      // 2. 更新库存数量 - 修复：同时更新quantity和reservedQuantity
-      const updatedInventory = await tx.inventory.update({
-        where: { id: availableInventory.id },
-        data: {
-          quantity: availableInventory.quantity - quantity,
-          // 修复：出库时同步减少预留量，确保预留量不超过实际库存
-          reservedQuantity: Math.max(
-            0,
-            Math.min(
-              availableInventory.reservedQuantity,
-              availableInventory.quantity - quantity
-            )
-          ),
-          updatedAt: new Date(),
-        },
-        include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-            },
-          },
-        },
-      });
-
-      // 3. 创建出库记录 - 修复：现在数据库中已有OutboundRecord表
-      const recordNumber = `OUT-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${Date.now().toString().slice(-6)}`;
-
-      await tx.outboundRecord.create({
-        data: {
-          recordNumber,
-          productId,
-          inventoryId: availableInventory.id,
-          quantity,
-          reason: validationResult.data.reason || 'manual_outbound',
-          batchNumber: availableInventory.batchNumber,
-          variantId: availableInventory.variantId,
-          notes: validationResult.data.notes,
-          operatorId: 'system', // TODO: 使用实际用户ID
-        },
-      });
-
-      return updatedInventory;
-    });
+      userId,
+      validationResult.data,
+      async () => await executeOutboundTransaction(validationResult.data)
+    );
 
     // 清除相关缓存
     await invalidateInventoryCache(productId);
