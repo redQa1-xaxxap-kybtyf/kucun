@@ -121,6 +121,10 @@ export const updateReturnOrderSchema = z.object({
 
 // 退货状态更新验证规则
 export const updateReturnStatusSchema = z.object({
+  idempotencyKey: z
+    .string()
+    .uuid('幂等性键格式不正确')
+    .describe('幂等性键,防止重复操作'),
   status: z.enum(
     [
       'draft',

@@ -314,3 +314,219 @@ export async function generateFactoryShipmentNumber(): Promise<string> {
 
   throw new Error('生成厂家发货订单号失败:超出最大重试次数');
 }
+
+/**
+ * 生成唯一的退货订单号
+ * 使用现有退货订单表进行序列号生成,保证并发安全
+ *
+ * @returns Promise<string> 生成的订单号
+ */
+export async function generateReturnOrderNumber(): Promise<string> {
+  const prefix = 'RT';
+  const numberLength = 4;
+  const maxRetries = 15;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      return await prisma.$transaction(
+        async tx => {
+          const today = new Date();
+          const dateKey = today.toISOString().slice(0, 10).replace(/-/g, '');
+          const fullPrefix = `${prefix}${dateKey}`;
+
+          const lastOrder = await tx.returnOrder.findFirst({
+            where: {
+              returnNumber: {
+                startsWith: fullPrefix,
+              },
+            },
+            orderBy: {
+              returnNumber: 'desc',
+            },
+            select: {
+              returnNumber: true,
+            },
+          });
+
+          let sequence = 1;
+          if (lastOrder) {
+            const lastSequence = parseInt(
+              lastOrder.returnNumber.slice(-numberLength)
+            );
+            sequence = lastSequence + 1;
+          }
+
+          const randomOffset = Math.floor(Math.random() * 50);
+          const retryOffset = attempt * 10;
+          const timeOffset = Date.now() % 100;
+          const finalSequence =
+            sequence + randomOffset + retryOffset + timeOffset;
+
+          const returnNumber = `${fullPrefix}${finalSequence
+            .toString()
+            .padStart(numberLength, '0')}`;
+
+          const existingOrder = await tx.returnOrder.findFirst({
+            where: { returnNumber },
+            select: { id: true },
+          });
+
+          if (existingOrder) {
+            throw new Error(`退货单号冲突: ${returnNumber}`);
+          }
+
+          return returnNumber;
+        },
+        {
+          timeout: 10000,
+        }
+      );
+    } catch (error) {
+      attempt++;
+
+      const isRetryableError =
+        error instanceof Error &&
+        (error.message.includes('Deadlock') ||
+          error.message.includes('Serialization failure') ||
+          error.message.includes('退货单号冲突') ||
+          error.message.includes('UNIQUE constraint failed') ||
+          error.message.includes('unique constraint') ||
+          error.message.includes('duplicate key') ||
+          error.message.includes('Unique constraint failed on the fields'));
+
+      if (isRetryableError && attempt < maxRetries) {
+        const baseDelay = 50;
+        const randomDelay = Math.random() * 150;
+        const backoffDelay = attempt * 25;
+        const totalDelay = baseDelay + randomDelay + backoffDelay;
+
+        console.log(
+          `退货单号生成冲突,第${attempt}次重试,等待${Math.round(totalDelay)}ms...`
+        );
+        await new Promise(resolve => setTimeout(resolve, totalDelay));
+        continue;
+      }
+
+      if (attempt >= maxRetries) {
+        throw new Error(
+          `生成退货单号失败,已重试${maxRetries}次: ${
+            error instanceof Error ? error.message : '未知错误'
+          }`
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error('生成退货单号失败:超出最大重试次数');
+}
+
+/**
+ * 生成唯一的退款单号
+ * 使用现有退款记录表进行序列号生成,保证并发安全
+ *
+ * @returns Promise<string> 生成的单号
+ */
+export async function generateRefundNumber(): Promise<string> {
+  const prefix = 'RF';
+  const numberLength = 4;
+  const maxRetries = 15;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      return await prisma.$transaction(
+        async tx => {
+          const today = new Date();
+          const dateKey = today.toISOString().slice(0, 10).replace(/-/g, '');
+          const fullPrefix = `${prefix}${dateKey}`;
+
+          const lastRecord = await tx.refundRecord.findFirst({
+            where: {
+              refundNumber: {
+                startsWith: fullPrefix,
+              },
+            },
+            orderBy: {
+              refundNumber: 'desc',
+            },
+            select: {
+              refundNumber: true,
+            },
+          });
+
+          let sequence = 1;
+          if (lastRecord) {
+            const lastSequence = parseInt(
+              lastRecord.refundNumber.slice(-numberLength)
+            );
+            sequence = lastSequence + 1;
+          }
+
+          const randomOffset = Math.floor(Math.random() * 50);
+          const retryOffset = attempt * 10;
+          const timeOffset = Date.now() % 100;
+          const finalSequence =
+            sequence + randomOffset + retryOffset + timeOffset;
+
+          const refundNumber = `${fullPrefix}${finalSequence
+            .toString()
+            .padStart(numberLength, '0')}`;
+
+          const existingRecord = await tx.refundRecord.findFirst({
+            where: { refundNumber },
+            select: { id: true },
+          });
+
+          if (existingRecord) {
+            throw new Error(`退款单号冲突: ${refundNumber}`);
+          }
+
+          return refundNumber;
+        },
+        {
+          timeout: 10000,
+        }
+      );
+    } catch (error) {
+      attempt++;
+
+      const isRetryableError =
+        error instanceof Error &&
+        (error.message.includes('Deadlock') ||
+          error.message.includes('Serialization failure') ||
+          error.message.includes('退款单号冲突') ||
+          error.message.includes('UNIQUE constraint failed') ||
+          error.message.includes('unique constraint') ||
+          error.message.includes('duplicate key') ||
+          error.message.includes('Unique constraint failed on the fields'));
+
+      if (isRetryableError && attempt < maxRetries) {
+        const baseDelay = 50;
+        const randomDelay = Math.random() * 150;
+        const backoffDelay = attempt * 25;
+        const totalDelay = baseDelay + randomDelay + backoffDelay;
+
+        console.log(
+          `退款单号生成冲突,第${attempt}次重试,等待${Math.round(totalDelay)}ms...`
+        );
+        await new Promise(resolve => setTimeout(resolve, totalDelay));
+        continue;
+      }
+
+      if (attempt >= maxRetries) {
+        throw new Error(
+          `生成退款单号失败,已重试${maxRetries}次: ${
+            error instanceof Error ? error.message : '未知错误'
+          }`
+        );
+      }
+
+      throw error;
+    }
+  }
+
+  throw new Error('生成退款单号失败:超出最大重试次数');
+}

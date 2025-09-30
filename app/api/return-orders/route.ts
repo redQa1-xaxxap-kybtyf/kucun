@@ -1,8 +1,8 @@
 // 退货订单API路由
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -238,17 +238,75 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // 生成退货单号 - 使用安全的订单号生成服务
+    const { generateReturnOrderNumber } = await import(
+      '@/lib/services/simple-order-number-generator'
+    );
+    const returnNumber = await generateReturnOrderNumber();
+
+    // 服务器端重新计算并验证金额
+    const calculatedTotalAmount = data.items.reduce((sum, item) => {
+      // 重新计算每个明细的小计
+      const calculatedSubtotal = item.returnQuantity * item.unitPrice;
+
+      // 验证前端传入的小计是否正确
+      if (Math.abs(item.subtotal - calculatedSubtotal) > 0.01) {
+        throw new Error(
+          `退货明细金额计算错误。产品ID: ${item.productId}, 前端: ${item.subtotal}, 服务器: ${calculatedSubtotal}`
+        );
+      }
+
+      return sum + calculatedSubtotal;
+    }, 0);
+
+    // 验证退货数量
+    for (const returnItem of data.items) {
+      // 查找对应的销售订单明细
+      const salesOrderItem = salesOrder.items.find(
+        item => item.id === returnItem.salesOrderItemId
+      );
+
+      if (!salesOrderItem) {
+        throw new Error(`销售订单明细不存在: ${returnItem.salesOrderItemId}`);
+      }
+
+      // 查询该销售订单明细已退货的数量
+      const existingReturns = await prisma.returnOrderItem.aggregate({
+        where: {
+          salesOrderItemId: returnItem.salesOrderItemId,
+          returnOrder: {
+            status: {
+              notIn: ['cancelled', 'rejected'],
+            },
+          },
+        },
+        _sum: {
+          returnQuantity: true,
+        },
+      });
+
+      const alreadyReturnedQuantity = existingReturns._sum.returnQuantity || 0;
+      const remainingQuantity =
+        salesOrderItem.quantity - alreadyReturnedQuantity;
+
+      // 验证退货数量
+      if (returnItem.returnQuantity > remainingQuantity) {
+        const productName =
+          salesOrder.items.find(item => item.id === returnItem.salesOrderItemId)
+            ?.product?.name || '未知产品';
+        throw new Error(
+          `产品 ${productName} 退货数量超过可退数量。` +
+            `已购买: ${salesOrderItem.quantity}, 已退货: ${alreadyReturnedQuantity}, ` +
+            `可退: ${remainingQuantity}, 本次退货: ${returnItem.returnQuantity}`
+        );
+      }
+    }
+
     // 使用事务创建退货订单
     const returnOrder = await prisma.$transaction(async tx => {
-      // 生成退货单号
-      const returnNumber = `RT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
-
-      // 计算退货总金额
-      const totalAmount = data.items.reduce(
-        (sum, item) => sum + item.subtotal,
-        0
-      );
-      const refundAmount = totalAmount; // 默认退款金额等于退货金额
+      // 使用服务器计算的金额
+      const totalAmount = calculatedTotalAmount;
+      const refundAmount = calculatedTotalAmount;
 
       // 创建退货订单
       const newReturnOrder = await tx.returnOrder.create({
