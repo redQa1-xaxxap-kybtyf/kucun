@@ -1,6 +1,7 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
+import { withErrorHandling } from '@/lib/api/middleware';
 import { authOptions } from '@/lib/auth';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
@@ -128,92 +129,69 @@ async function executeAdjustmentTransaction(
 }
 
 /**
+ * 获取用户ID（开发环境或生产环境）
+ */
+async function getUserId(): Promise<string> {
+  if (env.NODE_ENV === 'development') {
+    // 开发环境下使用数据库中的第一个用户
+    const user = await prisma.user.findFirst();
+    if (!user) {
+      throw new Error('开发环境下未找到可用用户');
+    }
+    return user.id;
+  } else {
+    // 生产环境下验证会话
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      throw new Error('未授权访问');
+    }
+    return session.user.id;
+  }
+}
+
+/**
  * 库存调整API
  * POST /api/inventory/adjust
  */
-export async function POST(request: NextRequest) {
-  try {
-    // 验证用户权限并获取用户ID
-    let userId: string;
+export const POST = withErrorHandling(async (request: NextRequest) => {
+  // 验证用户权限并获取用户ID
+  const userId = await getUserId();
 
-    if (env.NODE_ENV === 'development') {
-      // 开发环境下使用数据库中的第一个用户
-      const user = await prisma.user.findFirst();
-      if (!user) {
-        return NextResponse.json(
-          { success: false, error: '开发环境下未找到可用用户' },
-          { status: 500 }
-        );
-      }
-      userId = user.id;
-    } else {
-      // 生产环境下验证会话
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-      userId = session.user.id;
-    }
+  const body = await request.json();
 
-    const body = await request.json();
+  // 验证请求数据
+  const validatedData = inventoryAdjustSchema.parse(body);
 
-    // 验证请求数据
-    const validationResult = inventoryAdjustSchema.safeParse(body);
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '库存调整数据格式不正确',
-          details: validationResult.error.errors,
-        },
-        { status: 400 }
-      );
-    }
+  const { idempotencyKey, productId } = validatedData;
 
-    const { idempotencyKey, productId } = validationResult.data;
+  // 使用幂等性包装器执行调整操作
+  const result = await withIdempotency(
+    idempotencyKey,
+    'adjust',
+    productId,
+    userId,
+    validatedData,
+    async () => await executeAdjustmentTransaction(validatedData, userId)
+  );
 
-    // 使用幂等性包装器执行调整操作
-    const result = await withIdempotency(
-      idempotencyKey,
-      'adjust',
-      productId,
-      userId,
-      validationResult.data,
-      async () =>
-        await executeAdjustmentTransaction(validationResult.data, userId)
-    );
+  // 清除相关缓存
+  await invalidateInventoryCache(validatedData.productId);
 
-    // 清除相关缓存
-    await invalidateInventoryCache(validationResult.data.productId);
+  // WebSocket 推送更新
+  publishWs('inventory', {
+    type: 'adjust',
+    productId: validatedData.productId,
+    adjustQuantity: validatedData.adjustQuantity,
+    inventoryId: result.inventory.id,
+    adjustmentNumber: result.adjustment.adjustmentNumber,
+  });
 
-    // WebSocket 推送更新
-    publishWs('inventory', {
-      type: 'adjust',
-      productId: validationResult.data.productId,
-      adjustQuantity: validationResult.data.adjustQuantity,
-      inventoryId: result.inventory.id,
-      adjustmentNumber: result.adjustment.adjustmentNumber,
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        inventory: result.inventory,
-        adjustment: result.adjustment,
-      },
-      message: '库存调整成功',
-    });
-  } catch (error) {
-    console.error('库存调整失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '库存调整失败',
-      },
-      { status: 500 }
-    );
-  }
-}
+  return NextResponse.json({
+    success: true,
+    data: {
+      inventory: result.inventory,
+      adjustment: result.adjustment,
+    },
+    message: '库存调整成功',
+  });
+});
