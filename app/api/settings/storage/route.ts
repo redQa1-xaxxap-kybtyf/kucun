@@ -10,7 +10,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { storageConfig } from '@/lib/env';
+import { env, storageConfig } from '@/lib/env';
 import { extractRequestInfo, logSystemEventInfo } from '@/lib/logger';
 import { QiniuStorageConfigSchema } from '@/lib/schemas/settings';
 import type {
@@ -78,21 +78,23 @@ export async function GET(): Promise<
   NextResponse<SettingsApiResponse<QiniuStorageConfig>>
 > {
   try {
-    // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
+    // 验证用户身份 (开发模式下绕过)
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
 
-    // 检查管理员权限
-    if (session.user.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: '权限不足，只有管理员可以访问存储配置' },
-        { status: 403 }
-      );
+      // 检查管理员权限
+      if (session.user.role !== 'admin') {
+        return NextResponse.json(
+          { success: false, error: '权限不足，只有管理员可以访问存储配置' },
+          { status: 403 }
+        );
+      }
     }
 
     // 获取七牛云配置

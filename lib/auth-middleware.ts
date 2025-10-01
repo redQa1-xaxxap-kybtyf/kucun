@@ -12,7 +12,7 @@ const protectedPaths = [
   '/sales-orders',
   '/return-orders',
   '/payments',
-  '/api/users',
+  '/api/settings/users',
   '/api/customers',
   '/api/products',
   '/api/sales',
@@ -22,7 +22,7 @@ const protectedPaths = [
 
 // 需要管理员权限的路径
 const adminOnlyPaths = [
-  '/api/users',
+  '/api/settings/users',
   '/dashboard/users',
   '/dashboard/settings',
   '/settings', // 系统设置页面（包括基本设置、用户管理等）

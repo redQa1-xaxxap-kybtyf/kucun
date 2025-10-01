@@ -56,9 +56,14 @@ export const BasicSettingsSchema = z.object({
   companyPhone: z
     .string()
     .regex(/^[\d\s\-\+\(\)]+$/, '电话号码格式不正确')
-    .optional(),
-  companyEmail: z.string().email('邮箱格式不正确').optional(),
-  companyWebsite: z.string().url('网站地址格式不正确').optional(),
+    .optional()
+    .or(z.literal('')),
+  companyEmail: z.string().email('邮箱格式不正确').optional().or(z.literal('')),
+  companyWebsite: z
+    .string()
+    .url('网站地址格式不正确')
+    .optional()
+    .or(z.literal('')),
 
   // 系统配置
   systemName: z

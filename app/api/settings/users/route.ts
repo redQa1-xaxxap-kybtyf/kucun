@@ -9,7 +9,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { paginationConfig } from '@/lib/env';
+import { env, paginationConfig } from '@/lib/env';
 import { extractRequestInfo, logUserAction } from '@/lib/logger';
 import {
   CreateUserSchema,
@@ -48,21 +48,23 @@ function transformUser(user: {
 // GET - 获取用户列表
 export async function GET(request: NextRequest) {
   try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
+    // 身份验证 (开发模式下绕过)
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
 
-    // 权限检查 - 只有管理员可以访问
-    if (session.user.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: '权限不足，只有管理员可以管理用户' },
-        { status: 403 }
-      );
+      // 权限检查 - 只有管理员可以访问
+      if (session.user.role !== 'admin') {
+        return NextResponse.json(
+          { success: false, error: '权限不足，只有管理员可以管理用户' },
+          { status: 403 }
+        );
+      }
     }
 
     // 解析查询参数
@@ -161,21 +163,30 @@ export async function GET(request: NextRequest) {
 // POST - 创建新用户
 export async function POST(request: NextRequest) {
   try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
+    // 身份验证 (开发模式下绕过)
+    let userId = 'dev-user';
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
 
-    // 权限检查 - 只有管理员可以创建用户
-    if (session.user.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: '权限不足，只有管理员可以创建用户' },
-        { status: 403 }
-      );
+      // 权限检查 - 只有管理员可以创建用户
+      if (session.user.role !== 'admin') {
+        return NextResponse.json(
+          { success: false, error: '权限不足，只有管理员可以创建用户' },
+          { status: 403 }
+        );
+      }
+      userId = session.user.id;
+    } else {
+      const user = await prisma.user.findFirst();
+      if (user) {
+        userId = user.id;
+      }
     }
 
     // 解析请求体
@@ -238,7 +249,7 @@ export async function POST(request: NextRequest) {
     await logUserAction(
       'create_user',
       `创建新用户账户：${newUser.username}`,
-      session.user.id,
+      userId,
       requestInfo.ipAddress,
       requestInfo.userAgent,
       {
@@ -324,21 +335,30 @@ async function validateUserUpdate(
 // PUT - 更新用户信息
 export async function PUT(request: NextRequest) {
   try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
+    // 身份验证 (开发模式下绕过)
+    let operatorUserId = 'dev-user';
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
 
-    // 权限检查 - 只有管理员可以更新用户
-    if (session.user.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: '权限不足，只有管理员可以更新用户' },
-        { status: 403 }
-      );
+      // 权限检查 - 只有管理员可以更新用户
+      if (session.user.role !== 'admin') {
+        return NextResponse.json(
+          { success: false, error: '权限不足，只有管理员可以更新用户' },
+          { status: 403 }
+        );
+      }
+      operatorUserId = session.user.id;
+    } else {
+      const user = await prisma.user.findFirst();
+      if (user) {
+        operatorUserId = user.id;
+      }
     }
 
     // 解析请求体
@@ -351,7 +371,7 @@ export async function PUT(request: NextRequest) {
     // 验证用户更新权限和数据
     const validation = await validateUserUpdate(
       userId,
-      session.user.id,
+      operatorUserId,
       validatedData
     );
     if (!validation.success) {
@@ -382,7 +402,7 @@ export async function PUT(request: NextRequest) {
     await logUserAction(
       'update_user',
       `修改用户信息：${updatedUser.username}`,
-      session.user.id,
+      operatorUserId,
       requestInfo.ipAddress,
       requestInfo.userAgent,
       {
@@ -412,21 +432,30 @@ export async function PUT(request: NextRequest) {
 // DELETE - 软删除用户（设置状态为inactive）
 export async function DELETE(request: NextRequest) {
   try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
+    // 身份验证 (开发模式下绕过)
+    let operatorUserId = 'dev-user';
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
 
-    // 权限检查 - 只有管理员可以删除用户
-    if (session.user.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: '权限不足，只有管理员可以删除用户' },
-        { status: 403 }
-      );
+      // 权限检查 - 只有管理员可以删除用户
+      if (session.user.role !== 'admin') {
+        return NextResponse.json(
+          { success: false, error: '权限不足，只有管理员可以删除用户' },
+          { status: 403 }
+        );
+      }
+      operatorUserId = session.user.id;
+    } else {
+      const user = await prisma.user.findFirst();
+      if (user) {
+        operatorUserId = user.id;
+      }
     }
 
     // 解析请求体
@@ -441,7 +470,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 防止用户删除自己
-    if (userId === session.user.id) {
+    if (env.NODE_ENV !== 'development' && userId === operatorUserId) {
       return NextResponse.json(
         { success: false, error: '不能删除自己的账户' },
         { status: 400 }
@@ -481,7 +510,7 @@ export async function DELETE(request: NextRequest) {
     await logUserAction(
       'delete_user',
       `删除用户账户：${deletedUser.username}`,
-      session.user.id,
+      operatorUserId,
       requestInfo.ipAddress,
       requestInfo.userAgent,
       {
