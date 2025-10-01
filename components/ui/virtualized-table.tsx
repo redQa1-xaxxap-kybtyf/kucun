@@ -1,7 +1,13 @@
 /**
  * 通用虚拟化表格组件
  * 使用 @tanstack/react-virtual 优化大数据量渲染性能
- * 遵循全局约定规范和唯一真理原则
+ * 遵循 TanStack Virtual 最佳实践和全局约定规范
+ *
+ * 最佳实践：
+ * 1. 使用 estimateSize 而不是固定 size
+ * 2. 使用 overscan 预渲染提升滚动体验
+ * 3. 使用 position: absolute + transform 优化性能
+ * 4. 表格行使用 translateY 偏移（基于行的初始位置）
  */
 
 'use client';
@@ -27,8 +33,8 @@ export interface VirtualizedTableColumn<T> {
   key: string;
   /** 列标题 */
   header: string | React.ReactNode;
-  /** 列宽度（可选） */
-  width?: string | number;
+  /** 列宽度（像素，可选） */
+  width?: number;
   /** 列对齐方式 */
   align?: 'left' | 'center' | 'right';
   /** 单元格渲染函数 */
@@ -47,11 +53,11 @@ export interface VirtualizedTableProps<T> {
   data: T[];
   /** 列定义 */
   columns: VirtualizedTableColumn<T>[];
-  /** 行高度（像素） */
-  rowHeight?: number;
-  /** 容器高度（像素） */
+  /** 行高度估算（像素，默认 60） */
+  estimateRowHeight?: number;
+  /** 容器高度（像素，默认 600） */
   containerHeight?: number;
-  /** 预渲染行数 */
+  /** 预渲染行数（默认 5） */
   overscan?: number;
   /** 行键值获取函数 */
   getRowKey: (item: T, index: number) => string;
@@ -73,7 +79,7 @@ export interface VirtualizedTableProps<T> {
 export function VirtualizedTable<T>({
   data,
   columns,
-  rowHeight = 60,
+  estimateRowHeight = 60,
   containerHeight = 600,
   overscan = 5,
   getRowKey,
@@ -85,12 +91,12 @@ export function VirtualizedTable<T>({
 }: VirtualizedTableProps<T>) {
   const parentRef = React.useRef<HTMLDivElement>(null);
 
-  // 虚拟化配置
+  // 虚拟化配置 - 遵循 TanStack Virtual 最佳实践
   const rowVirtualizer = useVirtualizer({
     count: data.length,
     getScrollElement: () => parentRef.current,
-    estimateSize: () => rowHeight,
-    overscan,
+    estimateSize: () => estimateRowHeight, // 使用 estimateSize 而不是固定 size
+    overscan, // 预渲染行数，提升滚动体验
   });
 
   // 加载状态
@@ -147,12 +153,9 @@ export function VirtualizedTable<T>({
             </TableRow>
           </TableHeader>
 
-          {/* 虚拟化表体 */}
+          {/* 虚拟化表体 - 只渲染可见行 */}
           <TableBody>
-            <tr style={{ height: `${rowVirtualizer.getTotalSize()}px` }}>
-              <td />
-            </tr>
-            {rowVirtualizer.getVirtualItems().map(virtualRow => {
+            {rowVirtualizer.getVirtualItems().map((virtualRow, index) => {
               const item = data[virtualRow.index];
               const rowKey = getRowKey(item, virtualRow.index);
               const className =
@@ -164,17 +167,17 @@ export function VirtualizedTable<T>({
                 <TableRow
                   key={rowKey}
                   data-index={virtualRow.index}
-                  className={cn(
-                    'cursor-pointer hover:bg-muted/50',
-                    className
-                  )}
+                  className={cn('cursor-pointer hover:bg-muted/50', className)}
                   style={{
                     position: 'absolute',
                     top: 0,
                     left: 0,
                     width: '100%',
                     height: `${virtualRow.size}px`,
-                    transform: `translateY(${virtualRow.start}px)`,
+                    // 表格行的 transform 计算：基于行的初始位置
+                    // 需要减去 index * virtualRow.size 来正确计算偏移
+                    // 参考: https://tanstack.com/virtual/latest/docs/framework/react/examples/table
+                    transform: `translateY(${virtualRow.start - index * virtualRow.size}px)`,
                   }}
                   onClick={() => onRowClick?.(item, virtualRow.index)}
                 >
@@ -187,7 +190,9 @@ export function VirtualizedTable<T>({
                         column.align === 'right' && 'text-right',
                         column.cellClassName
                       )}
-                      style={{ width: column.width }}
+                      style={{
+                        width: column.width ? `${column.width}px` : undefined,
+                      }}
                     >
                       {column.render(item, virtualRow.index)}
                     </TableCell>
@@ -208,4 +213,3 @@ export function VirtualizedTable<T>({
 export const MemoizedVirtualizedTable = React.memo(
   VirtualizedTable
 ) as typeof VirtualizedTable;
-
