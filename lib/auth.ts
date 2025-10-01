@@ -123,7 +123,7 @@ export const authOptions: NextAuthOptions = {
           const baseUrl =
             process.env.NEXTAUTH_URL ||
             `http://localhost:${process.env.PORT || 3003}`;
-          const captchaResponse = await fetch(`${baseUrl}/api/auth/captcha`, {
+          const captchaResponse = await fetch(`${baseUrl}/api/captcha`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',

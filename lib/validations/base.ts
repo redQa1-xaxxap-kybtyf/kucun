@@ -102,7 +102,11 @@ export const userValidations = {
   login: z.object({
     username: baseValidations.username,
     password: baseValidations.simplePassword, // 登录时使用简单密码验证
-    captcha: z.string().min(1, '请输入验证码'),
+    captcha: z
+      .string()
+      .min(4, '验证码格式不正确')
+      .max(10, '验证码格式不正确')
+      .regex(/^[a-zA-Z0-9]+$/, '验证码只能包含字母和数字'),
   }),
 
   register: z.object({

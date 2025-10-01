@@ -180,7 +180,7 @@ export default function SignInPage() {
   // 加载验证码
   const loadCaptcha = async () => {
     try {
-      const response = await fetch('/api/auth/captcha');
+      const response = await fetch('/api/captcha');
       if (response.ok) {
         const data = await response.json();
         setCaptchaImage(data.captchaImage);
