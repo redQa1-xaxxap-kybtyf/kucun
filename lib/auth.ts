@@ -359,8 +359,8 @@ export async function createUser(data: {
     throw new Error('该用户名已被使用');
   }
 
-  // 加密密码
-  const passwordHash = await bcrypt.hash(data.password, 10);
+  // 加密密码 - 使用环境配置的 salt rounds
+  const passwordHash = await bcrypt.hash(data.password, env.BCRYPT_SALT_ROUNDS);
 
   // 创建用户
   const user = await prisma.user.create({
@@ -393,8 +393,8 @@ export async function updatePassword(userId: string, newPassword: string) {
     throw new Error('密码至少需要6个字符');
   }
 
-  // 加密新密码
-  const passwordHash = await bcrypt.hash(newPassword, 10);
+  // 加密新密码 - 使用环境配置的 salt rounds
+  const passwordHash = await bcrypt.hash(newPassword, env.BCRYPT_SALT_ROUNDS);
 
   // 更新密码
   await prisma.user.update({

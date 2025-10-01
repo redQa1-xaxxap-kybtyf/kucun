@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import { ResetPasswordSchema } from '@/lib/schemas/settings';
 
 // POST - 重置用户密码
@@ -49,8 +50,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 加密新密码
-    const passwordHash = await bcrypt.hash(validatedData.newPassword, 10);
+    // 加密新密码 - 使用环境配置的 salt rounds
+    const passwordHash = await bcrypt.hash(
+      validatedData.newPassword,
+      env.BCRYPT_SALT_ROUNDS
+    );
 
     // 更新用户密码
     await prisma.user.update({

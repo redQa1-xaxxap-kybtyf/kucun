@@ -219,8 +219,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 加密密码
-    const passwordHash = await bcrypt.hash(validatedData.password, 10);
+    // 加密密码 - 使用环境配置的 salt rounds
+    const passwordHash = await bcrypt.hash(
+      validatedData.password,
+      env.BCRYPT_SALT_ROUNDS
+    );
 
     // 创建用户
     const newUser = await prisma.user.create({

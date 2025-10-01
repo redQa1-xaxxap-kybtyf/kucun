@@ -33,6 +33,17 @@ const envSchema = z.object({
     .optional()
     .describe('Next-Auth 回调URL（生产环境必需）'),
 
+  // bcrypt 配置
+  BCRYPT_SALT_ROUNDS: z
+    .string()
+    .regex(/^[\d]+$/, 'BCRYPT_SALT_ROUNDS 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .refine(val => val >= 10 && val <= 15, {
+      message: 'BCRYPT_SALT_ROUNDS 必须在 10-15 之间',
+    })
+    .default('12')
+    .describe('bcrypt 加密的 salt rounds，推荐值 10-12'),
+
   // 应用配置
   NODE_ENV: z
     .enum(['development', 'production', 'test'])
