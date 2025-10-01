@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import { UpdateSupplierSchema } from '@/lib/schemas/supplier';
 import type { Supplier } from '@/lib/types/supplier';
 
@@ -14,13 +15,15 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 验证用户身份 (开发模式下绕过)
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
     }
 
     const { id } = params;
@@ -72,13 +75,15 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 验证用户身份 (开发模式下绕过)
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
     }
 
     const { id } = params;
@@ -175,13 +180,15 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 验证用户身份 (开发模式下绕过)
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
     }
 
     const { id } = params;
