@@ -261,6 +261,8 @@ export function usePerformanceMonitor(componentName: string) {
 
 /**
  * 虚拟滚动Hook
+ * @deprecated 请使用 @tanstack/react-virtual 替代
+ * 保留此函数以保持向后兼容，但建议迁移到新的虚拟化方案
  */
 export function useVirtualScroll<T>(
   items: T[],
