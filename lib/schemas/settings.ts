@@ -318,8 +318,20 @@ export const QiniuStorageConfigSchema = z.object({
     .min(1, '访问域名不能为空')
     .max(200, '访问域名不能超过200个字符')
     .regex(
-      /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/,
-      '访问域名格式不正确，请输入完整的HTTP/HTTPS地址'
+      /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*(:[1-9][0-9]{0,4})?(\/.*)?$/,
+      '访问域名格式不正确，请输入完整的HTTP/HTTPS地址（例如: https://cdn.example.com）'
+    )
+    .refine(
+      value => {
+        // 提取端口号并验证范围 (1-65535)
+        const portMatch = value.match(/:(\d+)/);
+        if (portMatch) {
+          const port = parseInt(portMatch[1], 10);
+          return port >= 1 && port <= 65535;
+        }
+        return true;
+      },
+      { message: '端口号必须在 1-65535 范围内' }
     ),
   region: z.string().max(20, '存储区域不能超过20个字符').optional().nullable(),
 });
