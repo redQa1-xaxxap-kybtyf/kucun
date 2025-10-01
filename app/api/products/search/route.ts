@@ -1,9 +1,12 @@
 // 产品搜索API路由
 // 为入库表单提供产品搜索功能
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest } from 'next/server';
 
+import { ApiError } from '@/lib/api/errors';
+import { withErrorHandling } from '@/lib/api/middleware';
+import { successResponse } from '@/lib/api/response';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import type { ProductOption } from '@/lib/types/inbound';
@@ -126,40 +129,27 @@ function transformToOptions(
 }
 
 // GET /api/products/search - 搜索产品
-export async function GET(request: NextRequest) {
-  try {
-    // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-
-    // 解析查询参数
-    const { searchParams } = new URL(request.url);
-    const { search, limit } = productSearchSchema.parse({
-      search: searchParams.get('search'),
-      limit: searchParams.get('limit')
-        ? parseInt(searchParams.get('limit') || '20')
-        : 20,
-    });
-
-    // 搜索产品并转换格式
-    const products = await searchProducts(search, limit);
-    const options = transformToOptions(products);
-    const sortedOptions = sortSearchResults(options, search);
-
-    return NextResponse.json({
-      success: true,
-      data: sortedOptions,
-    });
-  } catch (error) {
-    console.error('搜索产品失败:', error);
-    return NextResponse.json(
-      { success: false, error: '搜索产品失败' },
-      { status: 500 }
-    );
+export const GET = withErrorHandling(async (request: NextRequest) => {
+  // 1. 验证用户身份
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    throw ApiError.unauthorized();
   }
-}
+
+  // 2. 解析查询参数
+  const { searchParams } = new URL(request.url);
+  const { search, limit } = productSearchSchema.parse({
+    search: searchParams.get('search'),
+    limit: searchParams.get('limit')
+      ? parseInt(searchParams.get('limit') || '20')
+      : 20,
+  });
+
+  // 3. 搜索产品并转换格式
+  const products = await searchProducts(search, limit);
+  const options = transformToOptions(products);
+  const sortedOptions = sortSearchResults(options, search);
+
+  // 4. 返回成功响应
+  return successResponse(sortedOptions);
+});
