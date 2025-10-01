@@ -238,6 +238,10 @@ model SalesOrder {
   @@index([orderType], map: "idx_sales_orders_order_type")
   @@index([supplierId], map: "idx_sales_orders_supplier")
   @@index([createdAt(sort: Desc)], map: "idx_sales_orders_date")
+  // 复合索引优化：支持常见查询模式
+  @@index([customerId, status, createdAt(sort: Desc)], map: "idx_sales_orders_customer_status_date")
+  @@index([status, createdAt(sort: Desc)], map: "idx_sales_orders_status_date")
+  @@index([userId, status, createdAt(sort: Desc)], map: "idx_sales_orders_user_status_date")
   @@map("sales_orders")
 }
 
@@ -399,6 +403,10 @@ model InboundRecord {
   @@index([userId], map: "idx_inbound_records_user")
   @@index([reason], map: "idx_inbound_records_reason")
   @@index([createdAt(sort: Desc)], map: "idx_inbound_records_date")
+  // 复合索引优化：支持常见查询模式
+  @@index([productId, batchNumber, createdAt(sort: Desc)], map: "idx_inbound_records_product_batch_date")
+  @@index([reason, createdAt(sort: Desc)], map: "idx_inbound_records_reason_date")
+  @@index([userId, createdAt(sort: Desc)], map: "idx_inbound_records_user_date")
   @@map("inbound_records")
 }
 
@@ -438,6 +446,11 @@ model OutboundRecord {
   @@index([operatorId], map: "idx_outbound_records_operator")
   @@index([reason], map: "idx_outbound_records_reason")
   @@index([createdAt(sort: Desc)], map: "idx_outbound_records_date")
+  // 复合索引优化：支持常见查询模式
+  @@index([productId, batchNumber, createdAt(sort: Desc)], map: "idx_outbound_records_product_batch_date")
+  @@index([customerId, createdAt(sort: Desc)], map: "idx_outbound_records_customer_date")
+  @@index([salesOrderId, reason], map: "idx_outbound_records_order_reason")
+  @@index([reason, createdAt(sort: Desc)], map: "idx_outbound_records_reason_date")
   @@map("outbound_records")
 }
 
@@ -505,6 +518,10 @@ model InventoryAdjustment {
   @@index([operatorId], map: "idx_inventory_adjustments_operator")
   @@index([approverId], map: "idx_inventory_adjustments_approver")
   @@index([createdAt(sort: Desc)], map: "idx_inventory_adjustments_date")
+  // 复合索引优化：支持常见查询模式
+  @@index([status, createdAt(sort: Desc)], map: "idx_inventory_adjustments_status_date")
+  @@index([operatorId, status], map: "idx_inventory_adjustments_operator_status")
+  @@index([productId, status], map: "idx_inventory_adjustments_product_status")
   @@map("inventory_adjustments")
 }
 
@@ -536,6 +553,9 @@ model PaymentRecord {
   @@index([status], map: "idx_payment_records_status")
   @@index([paymentDate(sort: Desc)], map: "idx_payment_records_date")
   @@index([paymentMethod], map: "idx_payment_records_method")
+  // 复合索引优化：支持常见查询模式
+  @@index([customerId, status, paymentDate(sort: Desc)], map: "idx_payment_records_customer_status_date")
+  @@index([salesOrderId, status], map: "idx_payment_records_order_status")
   @@map("payment_records")
 }
 
@@ -571,6 +591,10 @@ model FactoryShipmentOrder {
   @@index([userId], map: "idx_factory_shipment_orders_user")
   @@index([status])
   @@index([createdAt(sort: Desc)], map: "idx_factory_shipment_orders_created")
+  // 复合索引优化：支持常见查询模式
+  @@index([customerId, status, createdAt(sort: Desc)], map: "idx_factory_shipment_orders_customer_status_date")
+  @@index([status, planDate], map: "idx_factory_shipment_orders_status_plan")
+  @@index([status, shipmentDate], map: "idx_factory_shipment_orders_status_shipment")
   @@map("factory_shipment_orders")
 }
 
@@ -646,6 +670,10 @@ model ReturnOrder {
   @@index([status], map: "idx_return_orders_status")
   @@index([type], map: "idx_return_orders_type")
   @@index([createdAt(sort: Desc)], map: "idx_return_orders_created")
+  // 复合索引优化：支持常见查询模式
+  @@index([customerId, status, createdAt(sort: Desc)], map: "idx_return_orders_customer_status_date")
+  @@index([salesOrderId, status], map: "idx_return_orders_order_status")
+  @@index([status, type], map: "idx_return_orders_status_type")
   @@map("return_orders")
 }
 
@@ -714,6 +742,10 @@ model RefundRecord {
   @@index([refundDate(sort: Desc)], map: "idx_refund_records_date")
   @@index([refundType], map: "idx_refund_records_type")
   @@index([refundMethod], map: "idx_refund_records_method")
+  // 复合索引优化：支持常见查询模式
+  @@index([customerId, status, refundDate(sort: Desc)], map: "idx_refund_records_customer_status_date")
+  @@index([salesOrderId, status], map: "idx_refund_records_order_status")
+  @@index([returnOrderId, status], map: "idx_refund_records_return_status")
   @@map("refund_records")
 }
 
@@ -848,6 +880,10 @@ model SystemLog {
   @@index([action])
   @@index([userId], map: "idx_system_logs_user")
   @@index([createdAt(sort: Desc)], map: "idx_system_logs_created")
+  // 复合索引优化：支持常见查询模式
+  @@index([type, level, createdAt(sort: Desc)], map: "idx_system_logs_type_level_date")
+  @@index([userId, type, createdAt(sort: Desc)], map: "idx_system_logs_user_type_date")
+  @@index([level, createdAt(sort: Desc)], map: "idx_system_logs_level_date")
   @@map("system_logs")
 }
 
@@ -882,6 +918,10 @@ model PayableRecord {
   @@index([dueDate], map: "idx_payable_records_due_date")
   @@index([sourceType], map: "idx_payable_records_source_type")
   @@index([createdAt(sort: Desc)], map: "idx_payable_records_date")
+  // 复合索引优化：支持常见查询模式
+  @@index([supplierId, status, createdAt(sort: Desc)], map: "idx_payable_records_supplier_status_date")
+  @@index([status, dueDate], map: "idx_payable_records_status_due")
+  @@index([sourceType, sourceId], map: "idx_payable_records_source")
   @@map("payable_records")
 }
 
@@ -913,6 +953,9 @@ model PaymentOutRecord {
   @@index([status], map: "idx_payment_out_records_status")
   @@index([paymentDate(sort: Desc)], map: "idx_payment_out_records_date")
   @@index([paymentMethod], map: "idx_payment_out_records_method")
+  // 复合索引优化：支持常见查询模式
+  @@index([supplierId, status, paymentDate(sort: Desc)], map: "idx_payment_out_records_supplier_status_date")
+  @@index([payableRecordId, status], map: "idx_payment_out_records_payable_status")
   @@map("payment_out_records")
 }
 
