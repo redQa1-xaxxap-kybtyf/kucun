@@ -3,7 +3,16 @@
 // 应付款管理页面
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import { Download, Eye, Plus, Search } from 'lucide-react';
+import {
+  AlertCircle,
+  CheckCircle,
+  Clock,
+  DollarSign,
+  Download,
+  Filter,
+  Plus,
+  Search,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
@@ -84,22 +93,19 @@ export default function PayablesPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-7xl px-4 py-6">
-      {/* 页面标题 */}
-      <div className="mb-6 flex items-center justify-between">
+    <div className="space-y-6">
+      {/* 页面标题和操作 */}
+      <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">应付款管理</h1>
-          <p className="text-gray-600">管理供应商应付款和付款记录</p>
+          <h1 className="text-3xl font-bold tracking-tight">应付款管理</h1>
+          <p className="text-muted-foreground">管理供应商应付款和付款记录</p>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Download className="mr-2 h-4 w-4" />
             导出
           </Button>
-          <Button
-            size="sm"
-            onClick={() => router.push('/finance/payables/create')}
-          >
+          <Button onClick={() => router.push('/finance/payables/create')}>
             <Plus className="mr-2 h-4 w-4" />
             新建应付款
           </Button>
@@ -107,116 +113,106 @@ export default function PayablesPage() {
       </div>
 
       {/* 统计卡片 */}
-      <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">总应付金额</p>
-                <p className="text-2xl font-bold">
-                  {statisticsLoading
-                    ? '加载中...'
-                    : formatCurrency(statistics?.totalPayables || 0)}
-                </p>
-              </div>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
-                <div className="h-4 w-4 rounded-full bg-red-500" />
-              </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">总应付金额</CardTitle>
+            <DollarSign className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {statisticsLoading
+                ? '加载中...'
+                : formatCurrency(statistics?.totalPayables || 0)}
             </div>
-            <p className="mt-2 text-xs text-gray-500">
-              {statistics?.pendingCount || 0} 个待付款
+            <p className="text-xs text-muted-foreground">
+              {statistics?.payableCount || 0} 个应付订单
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">已付金额</p>
-                <p className="text-2xl font-bold">
-                  {statisticsLoading
-                    ? '加载中...'
-                    : formatCurrency(statistics?.totalPaidAmount || 0)}
-                </p>
-              </div>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-100">
-                <div className="h-4 w-4 rounded-full bg-green-500" />
-              </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">已付金额</CardTitle>
+            <CheckCircle className="h-4 w-4 text-green-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600">
+              {statisticsLoading
+                ? '加载中...'
+                : formatCurrency(statistics?.totalPaidAmount || 0)}
             </div>
-            <p className="mt-2 text-xs text-gray-500">
-              {statistics?.paidCount || 0} 个已完成
+            <p className="text-xs text-muted-foreground">
+              付款率{' '}
+              {statistics?.totalPayables
+                ? Math.round(
+                    ((statistics?.totalPaidAmount || 0) /
+                      statistics.totalPayables) *
+                      100
+                  )
+                : 0}
+              %
             </p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">剩余应付</p>
-                <p className="text-2xl font-bold">
-                  {statisticsLoading
-                    ? '加载中...'
-                    : formatCurrency(statistics?.totalRemainingAmount || 0)}
-                </p>
-              </div>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-yellow-100">
-                <div className="h-4 w-4 rounded-full bg-yellow-500" />
-              </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">剩余应付</CardTitle>
+            <Clock className="h-4 w-4 text-orange-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-orange-600">
+              {statisticsLoading
+                ? '加载中...'
+                : formatCurrency(statistics?.totalRemainingAmount || 0)}
             </div>
-            <p className="mt-2 text-xs text-gray-500">待处理金额</p>
+            <p className="text-xs text-muted-foreground">待付款金额</p>
           </CardContent>
         </Card>
 
         <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">逾期金额</p>
-                <p className="text-2xl font-bold">
-                  {statisticsLoading
-                    ? '加载中...'
-                    : formatCurrency(statistics?.overdueAmount || 0)}
-                </p>
-              </div>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100">
-                <div className="h-4 w-4 rounded-full bg-red-600" />
-              </div>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-sm font-medium">逾期金额</CardTitle>
+            <AlertCircle className="h-4 w-4 text-red-600" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-red-600">
+              {statisticsLoading
+                ? '加载中...'
+                : formatCurrency(statistics?.overdueAmount || 0)}
             </div>
-            <p className="mt-2 text-xs text-gray-500">
-              {statistics?.overdueCount || 0} 个逾期
+            <p className="text-xs text-muted-foreground">
+              {statistics?.overdueCount || 0} 个逾期订单
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* 筛选和搜索 */}
-      <Card className="mb-6">
+      {/* 搜索和筛选 */}
+      <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Search className="h-5 w-5" />
-            筛选条件
-          </CardTitle>
+          <CardTitle>应付款列表</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-            <div>
-              <label className="text-sm font-medium">搜索</label>
-              <Input
-                placeholder="应付款单号或供应商名称"
-                value={query.search || ''}
-                onChange={e => handleSearch(e.target.value)}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">状态</label>
+          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+            <div className="flex flex-1 items-center gap-2">
+              <div className="relative max-w-sm flex-1">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="搜索应付款单号或供应商名称..."
+                  value={query.search || ''}
+                  onChange={e => handleSearch(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
               <Select
                 value={query.status || 'all'}
                 onValueChange={handleStatusFilter}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="全部状态" />
+                <SelectTrigger className="w-[140px]">
+                  <Filter className="mr-2 h-4 w-4" />
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">全部状态</SelectItem>
@@ -226,15 +222,14 @@ export default function PayablesPage() {
                   <SelectItem value="overdue">逾期</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">来源类型</label>
+
+              {/* 来源类型筛选 */}
               <Select
                 value={query.sourceType || 'all'}
                 onValueChange={handleSourceTypeFilter}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="全部类型" />
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="来源类型" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">全部类型</SelectItem>
@@ -244,15 +239,14 @@ export default function PayablesPage() {
                   <SelectItem value="other">其他</SelectItem>
                 </SelectContent>
               </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">排序方式</label>
+
+              {/* 排序选择器 */}
               <Select
                 value={query.sortBy || 'createdAt'}
                 onValueChange={handleSort}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="创建时间" />
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="createdAt">创建时间</SelectItem>
@@ -263,135 +257,135 @@ export default function PayablesPage() {
               </Select>
             </div>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* 应付款列表 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>应付款列表</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {payablesLoading ? (
-            <div className="py-8 text-center">正在加载应付款记录...</div>
-          ) : !payablesData?.data?.length ? (
-            <div className="py-8 text-center text-gray-500">暂无应付款记录</div>
-          ) : (
-            <div className="space-y-4">
-              {payablesData.data.map(payable => (
-                <Card key={payable.id} className="border-l-4 border-l-blue-500">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="mb-2 flex items-center gap-3">
-                          <h3 className="font-semibold">
-                            {payable.payableNumber}
-                          </h3>
-                          <Badge
-                            variant={PAYABLE_STATUS_VARIANTS[payable.status]}
-                          >
-                            {PAYABLE_STATUS_LABELS[payable.status]}
-                          </Badge>
-                          <Badge variant="outline">
-                            {PAYABLE_SOURCE_TYPE_LABELS[payable.sourceType]}
-                          </Badge>
-                        </div>
-                        <p className="mb-1 text-sm text-gray-600">
-                          供应商：{payable.supplier.name}
-                        </p>
-                        {payable.sourceNumber && (
-                          <p className="mb-1 text-sm text-gray-600">
-                            来源单号：{payable.sourceNumber}
+          {/* 应付款列表 */}
+          <div className="mt-6 space-y-4">
+            {payablesLoading ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-muted-foreground">加载中...</div>
+              </div>
+            ) : !payablesData?.data?.length ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="text-center">
+                  <DollarSign className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <p className="text-muted-foreground">暂无应付款记录</p>
+                </div>
+              </div>
+            ) : (
+              <>
+                {payablesData.data.map(payable => (
+                  <Card
+                    key={payable.id}
+                    className="transition-shadow hover:shadow-md"
+                  >
+                    <CardContent className="p-6">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-semibold">
+                              {payable.payableNumber}
+                            </h3>
+                            <Badge
+                              variant={PAYABLE_STATUS_VARIANTS[payable.status]}
+                            >
+                              {PAYABLE_STATUS_LABELS[payable.status]}
+                            </Badge>
+                            <Badge variant="outline">
+                              {PAYABLE_SOURCE_TYPE_LABELS[payable.sourceType]}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            供应商：{payable.supplier.name}
                           </p>
-                        )}
-                        <div className="flex items-center gap-4 text-sm text-gray-500">
-                          <span>
-                            创建时间：
-                            {new Date(payable.createdAt).toLocaleDateString()}
-                          </span>
-                          {payable.dueDate && (
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span>
-                              到期日期：
-                              {new Date(payable.dueDate).toLocaleDateString()}
+                              创建时间：
+                              {new Date(payable.createdAt).toLocaleDateString()}
                             </span>
+                            {payable.dueDate && (
+                              <span>
+                                到期日期：
+                                {new Date(payable.dueDate).toLocaleDateString()}
+                              </span>
+                            )}
+                          </div>
+                          {payable.sourceNumber && (
+                            <p className="text-sm text-muted-foreground">
+                              来源单号：{payable.sourceNumber}
+                            </p>
                           )}
                         </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="space-y-1">
+                        <div className="space-y-2 text-right">
                           <div>
-                            <span className="text-sm text-gray-500">
+                            <p className="text-sm text-muted-foreground">
                               应付金额
-                            </span>
+                            </p>
                             <p className="font-semibold">
                               {formatCurrency(payable.payableAmount)}
                             </p>
                           </div>
                           <div>
-                            <span className="text-sm text-gray-500">
+                            <p className="text-sm text-muted-foreground">
                               已付金额
-                            </span>
+                            </p>
                             <p className="font-semibold text-green-600">
                               {formatCurrency(payable.paidAmount)}
                             </p>
                           </div>
                           <div>
-                            <span className="text-sm text-gray-500">
-                              剩余金额
-                            </span>
-                            <p className="font-semibold text-red-600">
+                            <p className="text-sm text-muted-foreground">
+                              待付金额
+                            </p>
+                            <p className="font-semibold text-orange-600">
                               {formatCurrency(payable.remainingAmount)}
                             </p>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="mt-4 flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          router.push(`/finance/payables/${payable.id}`)
-                        }
-                      >
-                        <Eye className="mr-2 h-4 w-4" />
-                        查看详情
-                      </Button>
-                      {payable.remainingAmount > 0 && (
+                      <div className="mt-4 flex justify-end gap-2">
                         <Button
+                          variant="outline"
                           size="sm"
                           onClick={() =>
-                            router.push(
-                              `/finance/payments-out/create?payableId=${payable.id}`
-                            )
+                            router.push(`/finance/payables/${payable.id}`)
                           }
                         >
-                          付款
+                          查看详情
                         </Button>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-          )}
+                        {payable.remainingAmount > 0 && (
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              router.push(
+                                `/finance/payments-out/create?payableId=${payable.id}`
+                              )
+                            }
+                          >
+                            付款
+                          </Button>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </>
+            )}
+          </div>
 
           {/* 分页 */}
-          {payablesData && (
-            <div className="mt-6 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                共 {payablesData.pagination.total} 条记录
-              </p>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" disabled>
-                  上一页
-                </Button>
-                <Button variant="outline" size="sm" disabled>
-                  下一页
-                </Button>
-              </div>
+          <div className="mt-6 flex items-center justify-between">
+            <p className="text-sm text-muted-foreground">
+              共 {payablesData?.pagination?.total || 0} 条记录
+            </p>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" disabled>
+                上一页
+              </Button>
+              <Button variant="outline" size="sm" disabled>
+                下一页
+              </Button>
             </div>
-          )}
+          </div>
         </CardContent>
       </Card>
     </div>
