@@ -58,6 +58,17 @@ export function generateInboundRecordNumber(): string {
  * 验证用户会话
  */
 export async function validateUserSession() {
+  // 开发环境下绕过身份验证
+  if (env.NODE_ENV === 'development') {
+    return {
+      user: {
+        id: 'dev-user',
+        name: 'Dev User',
+        username: 'dev',
+      },
+    };
+  }
+
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
     throw new Error('未授权访问');

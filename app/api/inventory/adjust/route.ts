@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { inventoryAdjustSchema } from '@/lib/validations/inventory-operations';
@@ -132,13 +133,17 @@ async function executeAdjustmentTransaction(
  */
 export async function POST(request: NextRequest) {
   try {
-    // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 验证用户权限 (开发环境下临时绕过)
+    let userId = 'dev-user'; // 开发环境默认用户ID
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
+      userId = session.user.id;
     }
 
     const body = await request.json();
@@ -163,13 +168,10 @@ export async function POST(request: NextRequest) {
       idempotencyKey,
       'adjust',
       productId,
-      session.user.id,
+      userId,
       validationResult.data,
       async () =>
-        await executeAdjustmentTransaction(
-          validationResult.data,
-          session.user.id
-        )
+        await executeAdjustmentTransaction(validationResult.data, userId)
     );
 
     // 清除相关缓存

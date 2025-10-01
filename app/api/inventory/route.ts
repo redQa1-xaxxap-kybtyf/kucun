@@ -9,7 +9,7 @@ import {
 import { authOptions } from '@/lib/auth';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
-import { cacheConfig } from '@/lib/env';
+import { cacheConfig, env } from '@/lib/env';
 import {
   inventoryAdjustSchema,
   inventoryQuerySchema,
@@ -18,13 +18,15 @@ import {
 // 获取库存列表
 export async function GET(request: NextRequest) {
   try {
-    // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 验证用户权限 (开发环境下临时绕过)
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
     }
 
     const { searchParams } = new URL(request.url);
@@ -108,13 +110,15 @@ export async function GET(request: NextRequest) {
 // 库存调整
 export async function POST(request: NextRequest) {
   try {
-    // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 验证用户权限 (开发环境下临时绕过)
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
     }
 
     const body = await request.json();
