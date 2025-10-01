@@ -6,36 +6,36 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import {
+  deleteBatchSpecification,
   getBatchSpecificationById,
   updateBatchSpecification,
-  deleteBatchSpecification,
   validateUserSession,
 } from '@/lib/api/batch-specification-handlers';
+import { ApiError } from '@/lib/api/errors';
+import { withErrorHandling } from '@/lib/api/middleware';
 import {
-  updateBatchSpecificationSchema,
   batchSpecificationIdSchema,
+  updateBatchSpecificationSchema,
 } from '@/lib/validations/batch-specification';
 
 /**
  * GET /api/batch-specifications/[id]
  * 获取批次规格参数详情
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
+export const GET = withErrorHandling(
+  async (
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
     // 验证用户会话
     const session = await validateUserSession();
     if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+      throw ApiError.unauthorized();
     }
 
     // 验证批次规格参数ID
-    const validatedId = batchSpecificationIdSchema.parse(params.id);
+    const { id } = await params;
+    const validatedId = batchSpecificationIdSchema.parse(id);
 
     // 获取批次规格参数详情
     const batchSpecification = await getBatchSpecificationById(validatedId);
@@ -44,43 +44,27 @@ export async function GET(
       success: true,
       data: batchSpecification,
     });
-  } catch (error) {
-    console.error('获取批次规格参数详情失败:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: error.message.includes('不存在') ? 404 : 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { success: false, error: '获取批次规格参数详情失败' },
-      { status: 500 }
-    );
   }
-}
+);
 
 /**
  * PUT /api/batch-specifications/[id]
  * 更新批次规格参数
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
+export const PUT = withErrorHandling(
+  async (
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
     // 验证用户会话
     const session = await validateUserSession();
     if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+      throw ApiError.unauthorized();
     }
 
     // 验证批次规格参数ID
-    const validatedId = batchSpecificationIdSchema.parse(params.id);
+    const { id } = await params;
+    const validatedId = batchSpecificationIdSchema.parse(id);
 
     // 解析请求体
     const body = await request.json();
@@ -99,43 +83,27 @@ export async function PUT(
       data: updatedBatchSpecification,
       message: '批次规格参数更新成功',
     });
-  } catch (error) {
-    console.error('更新批次规格参数失败:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: error.message.includes('不存在') ? 404 : 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { success: false, error: '更新批次规格参数失败' },
-      { status: 500 }
-    );
   }
-}
+);
 
 /**
  * DELETE /api/batch-specifications/[id]
  * 删除批次规格参数
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
+export const DELETE = withErrorHandling(
+  async (
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
     // 验证用户会话
     const session = await validateUserSession();
     if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+      throw ApiError.unauthorized();
     }
 
     // 验证批次规格参数ID
-    const validatedId = batchSpecificationIdSchema.parse(params.id);
+    const { id } = await params;
+    const validatedId = batchSpecificationIdSchema.parse(id);
 
     // 删除批次规格参数
     await deleteBatchSpecification(validatedId);
@@ -144,49 +112,27 @@ export async function DELETE(
       success: true,
       message: '批次规格参数删除成功',
     });
-  } catch (error) {
-    console.error('删除批次规格参数失败:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        {
-          status: error.message.includes('不存在')
-            ? 404
-            : error.message.includes('已被')
-              ? 409
-              : 400,
-        }
-      );
-    }
-
-    return NextResponse.json(
-      { success: false, error: '删除批次规格参数失败' },
-      { status: 500 }
-    );
   }
-}
+);
 
 /**
  * PATCH /api/batch-specifications/[id]
  * 部分更新批次规格参数
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
+export const PATCH = withErrorHandling(
+  async (
+    request: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+  ) => {
     // 验证用户会话
     const session = await validateUserSession();
     if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+      throw ApiError.unauthorized();
     }
 
     // 验证批次规格参数ID
-    const validatedId = batchSpecificationIdSchema.parse(params.id);
+    const { id } = await params;
+    const validatedId = batchSpecificationIdSchema.parse(id);
 
     // 解析请求体
     const body = await request.json();
@@ -200,10 +146,7 @@ export async function PATCH(
     );
 
     if (!hasValidFields) {
-      return NextResponse.json(
-        { success: false, error: '请提供要更新的字段' },
-        { status: 400 }
-      );
+      throw ApiError.badRequest('请提供要更新的字段');
     }
 
     // 更新批次规格参数
@@ -217,19 +160,5 @@ export async function PATCH(
       data: updatedBatchSpecification,
       message: '批次规格参数部分更新成功',
     });
-  } catch (error) {
-    console.error('部分更新批次规格参数失败:', error);
-
-    if (error instanceof Error) {
-      return NextResponse.json(
-        { success: false, error: error.message },
-        { status: error.message.includes('不存在') ? 404 : 400 }
-      );
-    }
-
-    return NextResponse.json(
-      { success: false, error: '部分更新批次规格参数失败' },
-      { status: 500 }
-    );
   }
-}
+);
