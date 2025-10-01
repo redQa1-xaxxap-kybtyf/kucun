@@ -6,6 +6,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import { updateFactoryShipmentOrderSchema } from '@/lib/schemas/factory-shipment';
 import { withIdempotency } from '@/lib/utils/idempotency';
 
@@ -18,10 +19,12 @@ interface RouteParams {
 // 获取单个厂家发货订单详情
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    // 身份验证 (开发模式下绕过)
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user) {
+        return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+      }
     }
 
     const { id } = params;
@@ -70,10 +73,23 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // 更新厂家发货订单
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    // 身份验证 (开发模式下绕过)
+    let userId: string;
+    if (env.NODE_ENV === 'development') {
+      const user = await prisma.user.findFirst();
+      if (!user) {
+        return NextResponse.json(
+          { error: '开发环境下未找到可用用户' },
+          { status: 500 }
+        );
+      }
+      userId = user.id;
+    } else {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+      }
+      userId = session.user.id;
     }
 
     const { id } = params;
@@ -121,7 +137,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         idempotencyKey,
         'factory_shipment_status_change',
         id,
-        session.user.id,
+        userId,
         {
           status,
           remarks,
@@ -130,12 +146,14 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
           deliveryDate,
           completionDate,
         },
-        async () => await updateFactoryShipmentStatus(
-            id,
-            status,
-            existingOrder.status,
-            { remarks, shipmentDate, arrivalDate, deliveryDate, completionDate }
-          )
+        async () =>
+          await updateFactoryShipmentStatus(id, status, existingOrder.status, {
+            remarks,
+            shipmentDate,
+            arrivalDate,
+            deliveryDate,
+            completionDate,
+          })
       );
 
       // 获取更新后的完整订单信息
