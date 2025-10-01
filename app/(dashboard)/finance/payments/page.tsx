@@ -175,7 +175,7 @@ export default function PaymentsPage() {
   const pagination = data?.data?.pagination || { total: 0, pages: 0 };
 
   // 处理搜索
-  const handleSearch = () => {
+  const _handleSearch = () => {
     setPage(1);
     const params = new URLSearchParams();
     if (search) params.set('search', search);
@@ -186,7 +186,7 @@ export default function PaymentsPage() {
   };
 
   // 重置筛选
-  const handleReset = () => {
+  const _handleReset = () => {
     setSearch('');
     setStatus('all');
     setPaymentMethod('all');
