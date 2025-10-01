@@ -29,11 +29,11 @@ async function executeAdjustmentTransaction(
   const { productId, adjustQuantity, reason, batchNumber, variantId, notes } =
     data;
 
+  // 1. 在事务外部生成调整单号（避免嵌套事务导致死锁）
+  const adjustmentNumber = await generateAdjustmentNumber();
+
   return await prisma.$transaction(
     async tx => {
-      // 1. 生成调整单号
-      const adjustmentNumber = await generateAdjustmentNumber();
-
       // 2. 查找现有库存记录
       const existingInventory = await tx.inventory.findFirst({
         where: {
@@ -133,9 +133,21 @@ async function executeAdjustmentTransaction(
  */
 export async function POST(request: NextRequest) {
   try {
-    // 验证用户权限 (开发环境下临时绕过)
-    let userId = 'dev-user'; // 开发环境默认用户ID
-    if (env.NODE_ENV !== 'development') {
+    // 验证用户权限并获取用户ID
+    let userId: string;
+
+    if (env.NODE_ENV === 'development') {
+      // 开发环境下使用数据库中的第一个用户
+      const user = await prisma.user.findFirst();
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: '开发环境下未找到可用用户' },
+          { status: 500 }
+        );
+      }
+      userId = user.id;
+    } else {
+      // 生产环境下验证会话
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
         return NextResponse.json(

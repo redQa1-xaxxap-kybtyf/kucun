@@ -122,15 +122,27 @@ export async function GET(request: NextRequest) {
  * 执行出库事务
  * 使用乐观锁防止并发问题
  */
-async function executeOutboundTransaction(data: {
-  productId: string;
-  quantity: number;
-  batchNumber?: string;
-  variantId?: string;
-  reason?: string;
-  notes?: string;
-}) {
-  const { productId, quantity, batchNumber, variantId, reason, notes } = data;
+async function executeOutboundTransaction(
+  data: {
+    productId: string;
+    quantity: number;
+    batchNumber?: string;
+    variantId?: string;
+    reason?: string;
+    notes?: string;
+    customerId?: string;
+  },
+  userId: string
+) {
+  const {
+    productId,
+    quantity,
+    batchNumber,
+    variantId,
+    reason,
+    notes,
+    customerId,
+  } = data;
 
   return await prisma.$transaction(async tx => {
     // 1. 查找可用库存
@@ -211,7 +223,8 @@ async function executeOutboundTransaction(data: {
         batchNumber: availableInventory.batchNumber,
         variantId: availableInventory.variantId,
         notes,
-        operatorId: 'system',
+        customerId,
+        operatorId: userId,
       },
     });
 
@@ -225,15 +238,29 @@ async function executeOutboundTransaction(data: {
  */
 export async function POST(request: NextRequest) {
   try {
-    // 验证用户权限
-    const session = await getServerSession(authOptions);
-    const userId = session?.user?.id || 'system';
+    // 验证用户权限并获取用户ID
+    let userId: string;
 
-    if (env.NODE_ENV !== 'development' && !session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    if (env.NODE_ENV === 'development') {
+      // 开发环境下使用数据库中的第一个用户
+      const user = await prisma.user.findFirst();
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: '开发环境下未找到可用用户' },
+          { status: 500 }
+        );
+      }
+      userId = user.id;
+    } else {
+      // 生产环境下验证会话
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
+      userId = session.user.id;
     }
 
     const body = await request.json();
@@ -260,7 +287,8 @@ export async function POST(request: NextRequest) {
       productId,
       userId,
       validationResult.data,
-      async () => await executeOutboundTransaction(validationResult.data)
+      async () =>
+        await executeOutboundTransaction(validationResult.data, userId)
     );
 
     // 清除相关缓存

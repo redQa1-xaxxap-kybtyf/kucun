@@ -57,7 +57,11 @@ export const createInboundSchema = z.object({
     .string()
     .max(500, '备注不能超过500个字符')
     .optional()
-    .transform(val => val?.trim() || undefined),
+    .transform(val => val?.trim() || undefined)
+    .refine(
+      val => !val || !/<script|<iframe|javascript:|onerror=/i.test(val),
+      '备注包含不安全的内容'
+    ),
 
   // 批次管理字段
   batchNumber: z
@@ -104,7 +108,11 @@ export const updateInboundSchema = z.object({
     .string()
     .max(500, '备注不能超过500个字符')
     .optional()
-    .transform(val => val?.trim() || undefined),
+    .transform(val => val?.trim() || undefined)
+    .refine(
+      val => !val || !/<script|<iframe|javascript:|onerror=/i.test(val),
+      '备注包含不安全的内容'
+    ),
 });
 
 // 入库记录查询参数验证
