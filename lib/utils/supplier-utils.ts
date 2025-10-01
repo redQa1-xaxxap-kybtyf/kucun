@@ -163,6 +163,7 @@ export function formatSupplierReferenceError(references: {
 
 /**
  * 批量检查供应商引用
+ * 优化：使用批量查询避免 N+1 问题
  */
 export async function batchCheckSupplierReferences(
   supplierIds: string[]
@@ -177,11 +178,40 @@ export async function batchCheckSupplierReferences(
   const canDelete: string[] = [];
   const cannotDelete: Array<{ id: string; name: string; reason: string }> = [];
 
+  // 批量查询所有供应商信息（避免 N+1 查询）
+  const suppliers = await prisma.supplier.findMany({
+    where: { id: { in: supplierIds } },
+    select: { id: true, name: true },
+  });
+
+  // 创建供应商映射
+  const supplierMap = new Map(suppliers.map(s => [s.id, s]));
+
+  // 批量查询所有供应商的引用计数（避免 N+1 查询）
+  const [salesOrderCounts, factoryShipmentItemCounts] = await Promise.all([
+    prisma.salesOrder.groupBy({
+      by: ['supplierId'],
+      where: { supplierId: { in: supplierIds } },
+      _count: { id: true },
+    }),
+    prisma.factoryShipmentOrderItem.groupBy({
+      by: ['supplierId'],
+      where: { supplierId: { in: supplierIds } },
+      _count: { id: true },
+    }),
+  ]);
+
+  // 创建引用计数映射
+  const salesOrderCountMap = new Map(
+    salesOrderCounts.map(item => [item.supplierId, item._count.id])
+  );
+  const factoryShipmentItemCountMap = new Map(
+    factoryShipmentItemCounts.map(item => [item.supplierId, item._count.id])
+  );
+
+  // 检查每个供应商
   for (const supplierId of supplierIds) {
-    const supplier = await prisma.supplier.findUnique({
-      where: { id: supplierId },
-      select: { id: true, name: true },
-    });
+    const supplier = supplierMap.get(supplierId);
 
     if (!supplier) {
       cannotDelete.push({
@@ -192,10 +222,17 @@ export async function batchCheckSupplierReferences(
       continue;
     }
 
-    const { hasReferences, references } =
-      await checkSupplierReferences(supplierId);
+    const salesOrderCount = salesOrderCountMap.get(supplierId) || 0;
+    const factoryShipmentItemCount =
+      factoryShipmentItemCountMap.get(supplierId) || 0;
+
+    const hasReferences = salesOrderCount > 0 || factoryShipmentItemCount > 0;
 
     if (hasReferences) {
+      const references = {
+        salesOrders: salesOrderCount,
+        factoryShipmentItems: factoryShipmentItemCount,
+      };
       cannotDelete.push({
         id: supplierId,
         name: supplier.name,
