@@ -167,17 +167,6 @@ module.exports = {
         'no-undef': 'off',
       },
     },
-    // 测试文件特殊规则
-    {
-      files: ['**/__tests__/**/*', '**/*.test.*', '**/*.spec.*'],
-      env: {
-        jest: true,
-      },
-      rules: {
-        '@typescript-eslint/no-explicit-any': 'off',
-        'no-console': 'off',
-      },
-    },
   ],
   settings: {
     react: {

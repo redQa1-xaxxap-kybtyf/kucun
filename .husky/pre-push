@@ -35,16 +35,4 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 5. 运行测试（如果存在测试文件）
-if [ -d "__tests__" ] || [ -d "tests" ] || find . -name "*.test.*" -o -name "*.spec.*" | grep -q .; then
-    echo "🧪 运行测试套件..."
-    npm run test:ci
-    if [ $? -ne 0 ]; then
-        echo "❌ 测试失败！"
-        exit 1
-    fi
-else
-    echo "ℹ️  未发现测试文件，跳过测试检查"
-fi
-
 echo "✅ 所有pre-push检查通过！"

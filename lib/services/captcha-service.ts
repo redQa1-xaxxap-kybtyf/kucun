@@ -2,10 +2,15 @@
  * 验证码服务
  * 使用 Redis 存储验证码会话,支持分布式部署
  * 遵循全栈项目统一约定规范
+ *
+ * 优化说明:
+ * - 使用随机TTL防止缓存雪崩
+ * - 遵循唯一真理原则的缓存管理
  */
 
 import crypto from 'crypto';
 
+import { getRandomTTL } from '@/lib/cache/cache';
 import { redis } from '@/lib/redis/redis-client';
 
 // 验证码配置
@@ -142,9 +147,11 @@ export async function createCaptchaSession(
     createdAt: new Date().toISOString(),
   };
 
-  // 存储到 Redis,设置过期时间
+  // 存储到 Redis,使用随机TTL防止缓存雪崩
   const redisKey = `${CAPTCHA_CONFIG.redisKeyPrefix}${sessionId}`;
-  await redis.setJson(redisKey, session, CAPTCHA_CONFIG.expireMinutes * 60);
+  const baseTTL = CAPTCHA_CONFIG.expireMinutes * 60;
+  const randomTTL = getRandomTTL(baseTTL, 20); // 添加±20%随机抖动
+  await redis.setJson(redisKey, session, randomTTL);
 
   // 生成验证码SVG图片
   const captchaImage = generateCaptchaSVG(captchaText);
@@ -170,7 +177,7 @@ export async function updateCaptchaSession(
 ): Promise<void> {
   const redisKey = `${CAPTCHA_CONFIG.redisKeyPrefix}${session.sessionId}`;
 
-  // 计算剩余过期时间
+  // 计算剩余过期时间，使用随机TTL
   const expiresAt = new Date(session.expiresAt);
   const now = new Date();
   const remainingSeconds = Math.max(
@@ -179,7 +186,9 @@ export async function updateCaptchaSession(
   );
 
   if (remainingSeconds > 0) {
-    await redis.setJson(redisKey, session, remainingSeconds);
+    // 添加随机性，防止大量验证码同时过期
+    const randomTTL = getRandomTTL(remainingSeconds, 10); // 小幅抖动10%
+    await redis.setJson(redisKey, session, randomTTL);
   }
 }
 
