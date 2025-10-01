@@ -271,7 +271,6 @@ export async function PUT(request: NextRequest) {
     );
 
     // 记录系统设置变更日志
-    const requestInfo = extractRequestInfo(request);
     await logSystemEventInfo(
       'update_basic_settings',
       `更新基本设置：成功更新 ${results.length} 个设置项`,
