@@ -4,7 +4,7 @@ import {
   salesOrderQuerySchema,
 } from '@/lib/api/handlers/sales-orders';
 import { withAuth, withErrorHandling } from '@/lib/api/middleware';
-import { successResponse, validationErrorResponse } from '@/lib/api/response';
+import { successResponse } from '@/lib/api/response';
 import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
 /**
@@ -26,18 +26,13 @@ export const GET = withErrorHandling(
     };
 
     // 验证查询参数
-    const validationResult = salesOrderQuerySchema.safeParse(rawParams);
-    if (!validationResult.success) {
-      return validationErrorResponse(
-        '查询参数格式不正确',
-        validationResult.error.errors
-      );
-    }
+    const validatedParams = salesOrderQuerySchema.parse(rawParams);
 
-    const result = await getSalesOrders(validationResult.data);
+    const result = await getSalesOrders(validatedParams);
     return successResponse(result);
   })
 );
+
 /**
  * 创建销售订单
  */
@@ -46,16 +41,10 @@ export const POST = withErrorHandling(
     const body = await request.json();
 
     // 验证请求数据
-    const validationResult = salesOrderCreateSchema.safeParse(body);
-    if (!validationResult.success) {
-      return validationErrorResponse(
-        '订单数据格式不正确',
-        validationResult.error.errors
-      );
-    }
+    const validatedData = salesOrderCreateSchema.parse(body);
 
     const order = await createSalesOrder(
-      validationResult.data,
+      validatedData,
       (session as any).user.id
     );
     return successResponse(order, 201, '销售订单创建成功');
