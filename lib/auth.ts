@@ -304,7 +304,9 @@ export const authOptions: NextAuthOptions = {
     signIn: '/auth/signin',
     error: '/auth/error',
   },
-  secret: env.NEXTAUTH_SECRET || 'fallback-secret-for-development',
+  // 移除 fallback 值,强制使用环境变量
+  // 如果 NEXTAUTH_SECRET 未配置,应用启动时会失败
+  secret: env.NEXTAUTH_SECRET,
 };
 
 // 权限检查函数

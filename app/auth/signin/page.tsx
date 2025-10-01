@@ -1,11 +1,12 @@
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
+import DOMPurify from 'isomorphic-dompurify';
 import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -102,7 +103,9 @@ export default function SignInPage() {
       if (result?.error) {
         // Next-Auth 会将所有 CredentialsProvider 的错误转换为 CredentialsSignin
         // 我们需要从 URL 参数中获取具体的错误信息
-        console.log('登录失败,错误代码:', result.error);
+        if (process.env.NODE_ENV === 'development') {
+          console.log('登录失败,错误代码:', result.error);
+        }
 
         // 获取详细的错误信息
         // 如果是 CredentialsSignin,尝试从 URL 获取具体错误
@@ -150,7 +153,9 @@ export default function SignInPage() {
         }
       }
     } catch (error) {
-      console.error('登录错误:', error);
+      if (process.env.NODE_ENV === 'development') {
+        console.error('登录错误:', error);
+      }
 
       // 判断是否是网络错误
       const isNetworkError =
@@ -178,23 +183,41 @@ export default function SignInPage() {
   };
 
   // 加载验证码
-  const loadCaptcha = async () => {
+  const loadCaptcha = useCallback(async () => {
     try {
       const response = await fetch('/api/captcha');
       if (response.ok) {
         const data = await response.json();
         setCaptchaImage(data.captchaImage);
         setCaptchaSessionId(data.sessionId);
+      } else {
+        // 处理 HTTP 错误
+        if (process.env.NODE_ENV === 'development') {
+          console.error('验证码加载失败: HTTP', response.status);
+        }
+        toast({
+          title: '验证码加载失败',
+          description: '服务器响应异常,请刷新页面重试',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
-      console.error('加载验证码失败:', error);
+      // 处理网络错误
+      if (process.env.NODE_ENV === 'development') {
+        console.error('验证码加载失败:', error);
+      }
+      toast({
+        title: '验证码加载失败',
+        description: '网络连接异常,请检查网络后重试',
+        variant: 'destructive',
+      });
     }
-  };
+  }, [toast]);
 
   // 页面加载时获取验证码
   React.useEffect(() => {
     loadCaptcha();
-  }, []);
+  }, [loadCaptcha]);
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
@@ -332,13 +355,43 @@ export default function SignInPage() {
                           />
                         </FormControl>
                         <div className="flex items-center">
-                          {captchaImage && (
+                          {captchaImage ? (
                             <div
-                              className="cursor-pointer rounded border"
+                              className="cursor-pointer rounded border transition-opacity hover:opacity-80"
                               onClick={loadCaptcha}
                               title="点击刷新验证码"
-                              dangerouslySetInnerHTML={{ __html: captchaImage }}
+                              dangerouslySetInnerHTML={{
+                                __html: DOMPurify.sanitize(captchaImage, {
+                                  ALLOWED_TAGS: [
+                                    'svg',
+                                    'path',
+                                    'rect',
+                                    'text',
+                                    'g',
+                                    'line',
+                                    'circle',
+                                  ],
+                                  ALLOWED_ATTR: [
+                                    'width',
+                                    'height',
+                                    'viewBox',
+                                    'd',
+                                    'fill',
+                                    'x',
+                                    'y',
+                                    'transform',
+                                    'stroke',
+                                    'stroke-width',
+                                  ],
+                                }),
+                              }}
                             />
+                          ) : (
+                            <div className="h-10 w-[120px] animate-pulse rounded border bg-gray-200">
+                              <div className="flex h-full items-center justify-center text-xs text-gray-400">
+                                加载中...
+                              </div>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -390,14 +443,17 @@ export default function SignInPage() {
                   立即注册
                 </Link>
               </p>
-              <div className="mt-4 border-t border-gray-200 pt-4">
-                <p>默认测试账户：</p>
-                <p>管理员：admin / admin123456</p>
-                <p>销售员：sales / sales123456</p>
-                <p className="mt-2 text-xs text-gray-500">
-                  点击验证码图片可刷新验证码
-                </p>
-              </div>
+              {/* 只在开发环境显示测试账户 */}
+              {process.env.NODE_ENV === 'development' && (
+                <div className="mt-4 border-t border-gray-200 pt-4">
+                  <p>默认测试账户：</p>
+                  <p>管理员：admin / admin123456</p>
+                  <p>销售员：sales / sales123456</p>
+                </div>
+              )}
+              <p className="mt-4 text-xs text-gray-500">
+                点击验证码图片可刷新验证码
+              </p>
             </div>
           </CardContent>
         </Card>
