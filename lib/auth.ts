@@ -5,6 +5,12 @@ import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { prisma } from './db';
 import { env } from './env';
+import {
+  checkLoginLimit,
+  logLoginBlocked,
+  logLoginFailure,
+  logLoginSuccess,
+} from './services/login-log-service';
 import { userValidations } from './validations/base';
 
 // 扩展 NextAuth 类型定义
@@ -51,56 +57,125 @@ export const authOptions: NextAuthOptions = {
         password: { label: '密码', type: 'password' },
         captcha: { label: '验证码', type: 'text' },
       },
-      async authorize(credentials) {
-        if (
-          !credentials?.username ||
-          !credentials?.password ||
-          !credentials?.captcha
-        ) {
-          throw new Error('用户名、密码和验证码不能为空');
-        }
+      async authorize(credentials, req) {
+        // 获取客户端 IP 和 User-Agent
+        const clientIp =
+          (
+            req as unknown as {
+              headers?: { get?: (key: string) => string | null };
+            }
+          )?.headers?.get?.('x-forwarded-for') ||
+          (
+            req as unknown as {
+              headers?: { get?: (key: string) => string | null };
+            }
+          )?.headers?.get?.('x-real-ip') ||
+          '127.0.0.1';
 
-        // 验证输入格式
-        const validationResult = userValidations.login.safeParse({
-          username: credentials.username,
-          password: credentials.password,
-          captcha: credentials.captcha,
-        });
-
-        if (!validationResult.success) {
-          throw new Error('用户名、密码或验证码格式不正确');
-        }
+        const userAgent =
+          (
+            req as unknown as {
+              headers?: { get?: (key: string) => string | null };
+            }
+          )?.headers?.get?.('user-agent') || undefined;
 
         try {
+          if (
+            !credentials?.username ||
+            !credentials?.password ||
+            !credentials?.captcha
+          ) {
+            throw new Error('MISSING_FIELDS');
+          }
+
+          // 验证输入格式
+          const validationResult = userValidations.login.safeParse({
+            username: credentials.username,
+            password: credentials.password,
+            captcha: credentials.captcha,
+          });
+
+          if (!validationResult.success) {
+            throw new Error('INVALID_FORMAT');
+          }
+
+          // 检查登录限制(失败次数过多)
+          const limitCheck = await checkLoginLimit(
+            credentials.username,
+            clientIp
+          );
+          if (!limitCheck.allowed) {
+            // 记录被阻止的登录尝试
+            await logLoginBlocked(credentials.username, clientIp, userAgent);
+            throw new Error('TOO_MANY_ATTEMPTS');
+          }
+
           // 验证验证码
-          const captchaSessionId = (credentials as any).captchaSessionId;
+          const captchaSessionId = (
+            credentials as unknown as { captchaSessionId?: string }
+          ).captchaSessionId;
           if (!captchaSessionId) {
-            throw new Error('验证码会话ID缺失');
+            throw new Error('CAPTCHA_SESSION_MISSING');
           }
 
           // 调用验证码验证API
-          const captchaResponse = await fetch(
-            `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/auth/captcha`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                sessionId: captchaSessionId,
-                captcha: credentials.captcha,
-              }),
-            }
-          );
+          // 使用相对路径或从环境变量获取完整URL
+          const baseUrl =
+            process.env.NEXTAUTH_URL ||
+            `http://localhost:${process.env.PORT || 3003}`;
+          const captchaResponse = await fetch(`${baseUrl}/api/auth/captcha`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              // 传递客户端 IP 用于安全验证
+              'X-Forwarded-For':
+                (
+                  req as unknown as {
+                    headers?: { get?: (key: string) => string | null };
+                  }
+                )?.headers?.get?.('x-forwarded-for') || '127.0.0.1',
+            },
+            body: JSON.stringify({
+              sessionId: captchaSessionId,
+              captcha: credentials.captcha,
+              deleteAfterVerify: true, // 验证成功后删除会话
+            }),
+          });
 
           if (!captchaResponse.ok) {
-            const captchaError = await captchaResponse.json();
-            throw new Error(captchaError.error || '验证码验证失败');
+            // 记录验证码验证失败
+            await logLoginFailure(
+              credentials.username,
+              clientIp,
+              'captcha_incorrect',
+              userAgent
+            );
+            // 尝试解析 JSON,如果失败则使用默认错误
+            try {
+              const captchaError = await captchaResponse.json();
+              throw new Error(captchaError.error || 'CAPTCHA_VERIFY_FAILED');
+            } catch {
+              throw new Error('CAPTCHA_VERIFY_FAILED');
+            }
           }
 
-          const captchaResult = await captchaResponse.json();
+          // 尝试解析验证结果
+          let captchaResult;
+          try {
+            captchaResult = await captchaResponse.json();
+          } catch {
+            throw new Error('CAPTCHA_VERIFY_FAILED');
+          }
+
           if (!captchaResult.success) {
-            throw new Error(captchaResult.error || '验证码错误');
+            // 记录验证码错误
+            await logLoginFailure(
+              credentials.username,
+              clientIp,
+              'captcha_incorrect',
+              userAgent
+            );
+            throw new Error('CAPTCHA_INCORRECT');
           }
 
           // 查找用户（支持用户名或邮箱登录）
@@ -123,12 +198,27 @@ export const authOptions: NextAuthOptions = {
           });
 
           if (!user) {
-            throw new Error('用户不存在');
+            // 记录登录失败(用户不存在)
+            await logLoginFailure(
+              credentials.username,
+              clientIp,
+              'invalid_credentials',
+              userAgent
+            );
+            // 为了安全性,不明确告知用户不存在,统一返回凭证错误
+            throw new Error('INVALID_CREDENTIALS');
           }
 
           // 检查用户状态
           if (user.status !== 'active') {
-            throw new Error('用户账户已被禁用');
+            // 记录登录失败(账户被禁用)
+            await logLoginFailure(
+              credentials.username,
+              clientIp,
+              'account_disabled',
+              userAgent
+            );
+            throw new Error('ACCOUNT_DISABLED');
           }
 
           // 验证密码
@@ -138,8 +228,19 @@ export const authOptions: NextAuthOptions = {
           );
 
           if (!isPasswordValid) {
-            throw new Error('密码错误');
+            // 记录登录失败(密码错误)
+            await logLoginFailure(
+              credentials.username,
+              clientIp,
+              'invalid_credentials',
+              userAgent
+            );
+            // 为了安全性,不明确告知密码错误,统一返回凭证错误
+            throw new Error('INVALID_CREDENTIALS');
           }
+
+          // 登录成功 - 记录日志并重置失败次数
+          await logLoginSuccess(user.id, user.username, clientIp, userAgent);
 
           // 返回用户信息（不包含密码）
           return {
@@ -152,7 +253,20 @@ export const authOptions: NextAuthOptions = {
           };
         } catch (error) {
           console.error('认证错误:', error);
-          throw error;
+
+          // 根据 Next-Auth 最佳实践,返回 null 表示认证失败
+          // 错误信息会通过 signIn 的返回值传递
+          if (error instanceof Error) {
+            // 记录详细错误信息到服务器日志
+            console.error('认证失败原因:', error.message);
+
+            // 抛出错误,Next-Auth 会将其转换为 CredentialsSignin
+            // 并将错误消息附加到 URL 参数中
+            throw error;
+          }
+
+          // 未知错误
+          throw new Error('SERVER_ERROR');
         }
       },
     }),

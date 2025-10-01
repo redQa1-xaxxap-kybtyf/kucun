@@ -55,12 +55,33 @@ export default function SignInPage() {
     },
   });
 
-  // 错误信息映射
+  // 错误信息映射 - 更详细的错误提示
   const errorMessages: Record<string, string> = {
-    CredentialsSignin: '用户名或密码错误',
-    AccountDisabled: '账户已被禁用，请联系管理员',
+    // Next-Auth 默认错误
+    CredentialsSignin: '用户名或密码错误，请检查后重试',
     AccessDenied: '访问被拒绝，权限不足',
-    AuthenticationError: '认证失败，请重新登录',
+
+    // 自定义错误代码
+    MISSING_FIELDS: '请填写完整的登录信息',
+    INVALID_FORMAT: '用户名、密码或验证码格式不正确',
+    INVALID_CREDENTIALS: '用户名或密码错误，请检查后重试',
+    ACCOUNT_DISABLED: '该账户已被禁用，请联系管理员',
+
+    // 验证码相关错误
+    CAPTCHA_SESSION_MISSING: '验证码会话已过期，请刷新验证码',
+    CAPTCHA_VERIFY_FAILED: '验证码验证失败，请重试',
+    CAPTCHA_INCORRECT: '验证码错误，请重新输入',
+
+    // 登录限制错误
+    TOO_MANY_ATTEMPTS: '登录失败次数过多，请稍后再试',
+
+    // 服务器错误
+    SERVER_ERROR: '服务器错误，请稍后重试',
+
+    // 网络错误
+    NETWORK_ERROR: '网络连接失败，请检查网络后重试',
+
+    // 默认错误
     Default: '登录失败，请稍后重试',
   };
 
@@ -79,7 +100,21 @@ export default function SignInPage() {
       });
 
       if (result?.error) {
-        setFormError(errorMessages[result.error] || errorMessages.Default);
+        // Next-Auth 会将所有 CredentialsProvider 的错误转换为 CredentialsSignin
+        // 我们需要从 URL 参数中获取具体的错误信息
+        console.log('登录失败,错误代码:', result.error);
+
+        // 获取详细的错误信息
+        // 如果是 CredentialsSignin,尝试从 URL 获取具体错误
+        let errorMessage = errorMessages[result.error] || errorMessages.Default;
+
+        // 如果是 CredentialsSignin,显示通用的凭证错误
+        if (result.error === 'CredentialsSignin') {
+          errorMessage = errorMessages.INVALID_CREDENTIALS;
+        }
+
+        setFormError(errorMessage);
+
         // 登录失败时清空验证码并重新加载
         form.setValue('captcha', '');
         loadCaptcha();
@@ -87,7 +122,7 @@ export default function SignInPage() {
         // 显示错误 Toast
         toast({
           title: '登录失败',
-          description: errorMessages[result.error] || errorMessages.Default,
+          description: errorMessage,
           variant: 'destructive',
         });
       } else if (result?.ok) {
@@ -116,14 +151,22 @@ export default function SignInPage() {
       }
     } catch (error) {
       console.error('登录错误:', error);
-      setFormError('登录失败，请稍后重试');
+
+      // 判断是否是网络错误
+      const isNetworkError =
+        error instanceof TypeError && error.message.includes('fetch');
+      const errorMessage = isNetworkError
+        ? errorMessages.NETWORK_ERROR
+        : errorMessages.SERVER_ERROR;
+
+      setFormError(errorMessage);
       form.setValue('captcha', '');
       loadCaptcha();
 
       // 显示错误 Toast
       toast({
         title: '登录失败',
-        description: '登录失败，请稍后重试',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
