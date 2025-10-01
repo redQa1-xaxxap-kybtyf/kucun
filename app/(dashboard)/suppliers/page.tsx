@@ -224,11 +224,11 @@ export default function SuppliersPage() {
   }
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
+    <div className="space-y-6">
       {/* 页面标题 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">供应商管理</h1>
+          <h1 className="text-3xl font-bold tracking-tight">供应商管理</h1>
           <p className="text-muted-foreground">管理供应商信息</p>
         </div>
         <Button asChild>

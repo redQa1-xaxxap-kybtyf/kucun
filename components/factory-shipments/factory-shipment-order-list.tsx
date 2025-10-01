@@ -3,7 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { Eye, Filter, Package, Plus, Search, Truck } from 'lucide-react';
+import { Eye, Package, Plus, Search, Truck } from 'lucide-react';
 import Link from 'next/link';
 import { useState } from 'react';
 
@@ -92,7 +92,8 @@ const getStatusBadgeVariant = (
 };
 
 // 格式化金额 - 使用人民币符号和千分位分隔符
-const formatAmount = (amount: number): string => `¥${amount.toLocaleString('zh-CN', {
+const formatAmount = (amount: number): string =>
+  `¥${amount.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -151,8 +152,8 @@ export function FactoryShipmentOrderList({
       {/* 页面标题和操作 */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">厂家发货管理</h1>
-          <p className="mt-1 text-sm text-gray-600">
+          <h1 className="text-3xl font-bold tracking-tight">厂家发货管理</h1>
+          <p className="text-muted-foreground">
             管理厂家直发订单，支持多供应商和临时商品
           </p>
         </div>
@@ -166,22 +167,16 @@ export function FactoryShipmentOrderList({
 
       {/* 搜索和筛选 */}
       <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Filter className="h-5 w-5" />
-            搜索筛选
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                 <Input
                   placeholder="搜索集装箱号码或订单编号..."
                   value={searchTerm}
                   onChange={e => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-9"
                 />
               </div>
             </div>
