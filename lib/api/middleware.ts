@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
+import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 
 import { badRequestResponse, unauthorizedResponse } from './response';
 
@@ -23,6 +25,23 @@ export function withAuth(handler: AuthenticatedHandler) {
     context: { params?: Record<string, string> } = {}
   ) => {
     try {
+      // 开发环境下绕过身份验证,使用数据库中的第一个用户
+      if (env.NODE_ENV === 'development') {
+        const user = await prisma.user.findFirst();
+        if (!user) {
+          return unauthorizedResponse('开发环境下未找到可用用户');
+        }
+        const mockSession = {
+          user: {
+            id: user.id,
+            name: user.name || 'Dev User',
+            username: user.username,
+          },
+          expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+        };
+        return await handler(request, context, mockSession as any);
+      }
+
       const session = await getServerSession(authOptions);
 
       if (!session || !session.user) {

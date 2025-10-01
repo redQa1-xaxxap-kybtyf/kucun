@@ -37,16 +37,17 @@ export const createRefundRecordSchema = z
   .object({
     returnOrderId: z
       .string({
-        required_error: '请选择退货订单',
         invalid_type_error: '退货订单ID必须是字符串',
       })
-      .min(1, '请选择退货订单'),
+      .optional()
+      .or(z.literal('')),
 
     returnOrderNumber: z
       .string({
         invalid_type_error: '退货订单号必须是字符串',
       })
-      .optional(),
+      .optional()
+      .or(z.literal('')),
 
     salesOrderId: z
       .string({

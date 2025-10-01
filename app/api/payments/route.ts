@@ -4,6 +4,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { clearCacheAfterPayment } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
   createPaymentRecordSchema,
@@ -16,13 +17,15 @@ import {
  */
 export async function GET(request: NextRequest) {
   try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 身份验证 (开发模式下绕过)
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
     }
 
     // 解析查询参数
@@ -159,13 +162,23 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 身份验证 (开发模式下绕过)
+    let userId = 'dev-user'; // 开发环境默认用户ID
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
+      userId = session.user.id;
+    } else {
+      // 开发环境下获取第一个用户
+      const user = await prisma.user.findFirst();
+      if (user) {
+        userId = user.id;
+      }
     }
 
     // 解析请求体
@@ -244,7 +257,7 @@ export async function POST(request: NextRequest) {
           data: {
             ...data,
             paymentNumber,
-            userId: session.user.id,
+            userId,
             paymentDate: new Date(data.paymentDate),
           },
           include: {
