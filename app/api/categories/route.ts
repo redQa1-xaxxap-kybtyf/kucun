@@ -4,11 +4,10 @@
  */
 
 import type { Prisma } from '@prisma/client';
-import { type NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
-import { successResponse } from '@/lib/api/response';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { generateCategoryCode } from '@/lib/utils/category-code-generator';
@@ -109,8 +108,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   // 计算分页信息
   const totalPages = Math.ceil(total / validatedParams.limit);
 
-  // 返回成功响应
-  return successResponse({
+  // 返回成功响应（包含分页信息）
+  return NextResponse.json({
+    success: true,
     data: transformedCategories,
     pagination: {
       page: validatedParams.page,
@@ -210,5 +210,11 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   };
 
   // 返回成功响应（201 Created）
-  return successResponse(transformedCategory, 201);
+  return NextResponse.json(
+    {
+      success: true,
+      data: transformedCategory,
+    },
+    { status: 201 }
+  );
 });
