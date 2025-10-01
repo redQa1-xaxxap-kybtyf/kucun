@@ -75,6 +75,7 @@ export const QiniuStorageForm = ({
       bucket: initialData?.bucket || '',
       domain: initialData?.domain || '',
       region: initialData?.region || 'z0',
+      pathFormat: initialData?.pathFormat || '',
     },
   });
 
@@ -87,6 +88,7 @@ export const QiniuStorageForm = ({
         bucket: initialData.bucket || '',
         domain: initialData.domain || '',
         region: initialData.region || 'z0',
+        pathFormat: initialData.pathFormat || '',
       });
     }
   }, [initialData, form]);
@@ -260,6 +262,30 @@ export const QiniuStorageForm = ({
               </Select>
               <FormDescription>
                 存储空间所在的区域，影响访问速度和费用
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        {/* 存储目录格式 */}
+        <FormField
+          control={form.control}
+          name="pathFormat"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>存储目录格式</FormLabel>
+              <FormControl>
+                <Input
+                  {...field}
+                  placeholder="留空表示不使用目录，例如: {y}/{m}/{d}"
+                  disabled={isFormDisabled}
+                />
+              </FormControl>
+              <FormDescription>
+                文件存储目录格式，留空表示不使用目录结构。支持变量：{'{y}'}{' '}
+                (年份), {'{m}'} (月份), {'{d}'} (日期)，使用 / 分隔目录。例如：
+                {'{y}/{m}/{d}'} 表示按年/月/日存储
               </FormDescription>
               <FormMessage />
             </FormItem>

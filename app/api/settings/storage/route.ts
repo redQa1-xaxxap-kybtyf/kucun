@@ -105,6 +105,7 @@ export async function GET(): Promise<
             'qiniu_bucket',
             'qiniu_domain',
             'qiniu_region',
+            'qiniu_path_format',
           ],
         },
       },
@@ -117,6 +118,7 @@ export async function GET(): Promise<
       bucket: '',
       domain: '',
       region: storageConfig.region,
+      pathFormat: '',
     };
 
     settings.forEach(setting => {
@@ -135,6 +137,9 @@ export async function GET(): Promise<
           break;
         case 'qiniu_region':
           config.region = setting.value || storageConfig.region;
+          break;
+        case 'qiniu_path_format':
+          config.pathFormat = setting.value || '';
           break;
       }
     });
@@ -216,6 +221,13 @@ export async function PUT(
         category: 'storage',
         dataType: 'string',
         description: '七牛云存储区域',
+      },
+      {
+        key: 'qiniu_path_format',
+        value: validatedData.pathFormat || '',
+        category: 'storage',
+        dataType: 'string',
+        description: '七牛云存储目录格式',
       },
     ];
 

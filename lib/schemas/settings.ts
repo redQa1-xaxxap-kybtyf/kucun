@@ -334,6 +334,29 @@ export const QiniuStorageConfigSchema = z.object({
       { message: '端口号必须在 1-65535 范围内' }
     ),
   region: z.string().max(20, '存储区域不能超过20个字符').optional().nullable(),
+  pathFormat: z
+    .string()
+    .max(200, '存储目录格式不能超过200个字符')
+    .optional()
+    .nullable()
+    .refine(
+      value => {
+        if (!value) return true;
+        // 只允许字母、数字、斜杠、大括号、下划线、连字符
+        const validPattern = /^[a-zA-Z0-9/{}\-_]+$/;
+        if (!validPattern.test(value)) {
+          return false;
+        }
+        // 检查变量是否有效
+        const validVars = ['{y}', '{m}', '{d}'];
+        const vars = value.match(/\{[^}]+\}/g) || [];
+        return vars.every(v => validVars.includes(v));
+      },
+      {
+        message:
+          '存储目录格式只能包含字母、数字、斜杠(/)、变量{y}(年)、{m}(月)、{d}(日)，不支持其他特殊符号',
+      }
+    ),
 });
 
 export const QiniuStorageTestSchema = z.object({

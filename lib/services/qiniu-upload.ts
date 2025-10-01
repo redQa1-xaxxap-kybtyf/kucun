@@ -12,6 +12,7 @@ export interface QiniuConfig {
   bucket: string;
   domain: string;
   region?: string;
+  pathFormat?: string;
 }
 
 /**
@@ -38,6 +39,7 @@ async function getQiniuConfig(): Promise<QiniuConfig | null> {
             'qiniu_bucket',
             'qiniu_domain',
             'qiniu_region',
+            'qiniu_path_format',
           ],
         },
       },
@@ -48,10 +50,26 @@ async function getQiniuConfig(): Promise<QiniuConfig | null> {
     settings.forEach(setting => {
       switch (setting.key) {
         case 'qiniu_access_key':
-          config.accessKey = setting.value ? decrypt(setting.value) : '';
+          if (setting.value) {
+            const decrypted = decrypt(setting.value);
+            config.accessKey = decrypted;
+            console.log('AccessKey 解密:', {
+              encrypted: `${setting.value.substring(0, 20)}...`,
+              decrypted: `${decrypted.substring(0, 10)}...`,
+              length: decrypted.length,
+            });
+          }
           break;
         case 'qiniu_secret_key':
-          config.secretKey = setting.value ? decrypt(setting.value) : '';
+          if (setting.value) {
+            const decrypted = decrypt(setting.value);
+            config.secretKey = decrypted;
+            console.log('SecretKey 解密:', {
+              encrypted: `${setting.value.substring(0, 20)}...`,
+              decrypted: `${decrypted.substring(0, 10)}...`,
+              length: decrypted.length,
+            });
+          }
           break;
         case 'qiniu_bucket':
           config.bucket = setting.value || '';
@@ -61,6 +79,9 @@ async function getQiniuConfig(): Promise<QiniuConfig | null> {
           break;
         case 'qiniu_region':
           config.region = setting.value || 'z0';
+          break;
+        case 'qiniu_path_format':
+          config.pathFormat = setting.value || '';
           break;
       }
     });
@@ -72,8 +93,24 @@ async function getQiniuConfig(): Promise<QiniuConfig | null> {
       !config.bucket ||
       !config.domain
     ) {
+      console.error('七牛云配置不完整:', {
+        hasAccessKey: !!config.accessKey,
+        hasSecretKey: !!config.secretKey,
+        hasBucket: !!config.bucket,
+        hasDomain: !!config.domain,
+        accessKeyLength: config.accessKey?.length || 0,
+        secretKeyLength: config.secretKey?.length || 0,
+      });
       return null;
     }
+
+    console.log('七牛云配置验证通过:', {
+      accessKeyLength: config.accessKey.length,
+      secretKeyLength: config.secretKey.length,
+      bucket: config.bucket,
+      domain: config.domain,
+      region: config.region,
+    });
 
     return config as QiniuConfig;
   } catch (error) {
@@ -95,6 +132,35 @@ function getQiniuZone(region: string = 'z0') {
   };
 
   return zoneMap[region] || qiniu.zone.Zone_z0;
+}
+
+/**
+ * 生成文件存储路径
+ * 支持的变量: {y}(年), {m}(月), {d}(日)
+ * 留空表示不使用目录结构，直接存储在根目录
+ */
+function generateFilePath(
+  fileName: string,
+  _type: string,
+  pathFormat?: string
+): string {
+  const now = new Date();
+  const timestamp = Date.now();
+  const randomString = Math.random().toString(36).substring(2, 15);
+  const fileExtension = fileName.split('.').pop()?.toLowerCase() || 'jpg';
+
+  // 如果没有配置格式，直接使用时间戳+随机字符串作为文件名
+  if (!pathFormat || pathFormat.trim() === '') {
+    return `${timestamp}_${randomString}.${fileExtension}`;
+  }
+
+  // 替换变量
+  const directory = pathFormat
+    .replace(/{y}/g, now.getFullYear().toString())
+    .replace(/{m}/g, (now.getMonth() + 1).toString().padStart(2, '0'))
+    .replace(/{d}/g, now.getDate().toString().padStart(2, '0'));
+
+  return `${directory}/${timestamp}_${randomString}.${fileExtension}`;
 }
 
 /**
@@ -129,11 +195,15 @@ export async function uploadToQiniu(
       };
     }
 
-    // 生成文件key
-    const timestamp = Date.now();
-    const randomString = Math.random().toString(36).substring(2, 15);
-    const fileExtension = fileName.split('.').pop()?.toLowerCase() || 'jpg';
-    const key = `${type}/${timestamp}_${randomString}.${fileExtension}`;
+    // 使用配置的目录格式生成文件key
+    const key = generateFilePath(fileName, type, config.pathFormat);
+
+    console.log('七牛云上传配置:', {
+      bucket: config.bucket,
+      region: config.region,
+      pathFormat: config.pathFormat,
+      generatedKey: key,
+    });
 
     // 生成上传凭证
     const uploadToken = generateUploadToken(config, key);
@@ -247,36 +317,56 @@ export async function testQiniuConnection(): Promise<{
       };
     }
 
-    const mac = new qiniu.auth.digest.Mac(config.accessKey, config.secretKey);
-    const qiniuConfig = new qiniu.conf.Config({
-      zone: getQiniuZone(config.region),
+    console.log('开始测试七牛云连接:', {
+      accessKeyPrefix: config.accessKey.substring(0, 10),
+      secretKeyPrefix: config.secretKey.substring(0, 10),
+      bucket: config.bucket,
+      region: config.region,
     });
+
+    const mac = new qiniu.auth.digest.Mac(config.accessKey, config.secretKey);
+    const qiniuConfig = new qiniu.conf.Config();
+    qiniuConfig.zone = getQiniuZone(config.region);
 
     const bucketManager = new qiniu.rs.BucketManager(mac, qiniuConfig);
 
+    // 使用 listPrefix 测试连接（列举存储空间中的文件）
     return new Promise(resolve => {
-      // 尝试获取存储空间信息
-      bucketManager.getBucketInfo(config.bucket, (err, respBody, respInfo) => {
-        if (err) {
-          resolve({
-            success: false,
-            message: `连接失败: ${err.message}`,
-          });
-          return;
-        }
+      bucketManager.listPrefix(
+        config.bucket,
+        { limit: 1 },
+        (err, respBody, respInfo) => {
+          if (err) {
+            resolve({
+              success: false,
+              message: `连接失败: ${err.message}`,
+            });
+            return;
+          }
 
-        if (respInfo.statusCode === 200) {
-          resolve({
-            success: true,
-            message: '七牛云连接测试成功',
-          });
-        } else {
-          resolve({
-            success: false,
-            message: `连接失败: HTTP ${respInfo.statusCode}`,
-          });
+          if (respInfo.statusCode === 200) {
+            resolve({
+              success: true,
+              message: '七牛云连接测试成功',
+            });
+          } else if (respInfo.statusCode === 401) {
+            resolve({
+              success: false,
+              message: '连接失败: Access Key 或 Secret Key 不正确',
+            });
+          } else if (respInfo.statusCode === 631) {
+            resolve({
+              success: false,
+              message: '连接失败: 存储空间不存在',
+            });
+          } else {
+            resolve({
+              success: false,
+              message: `连接失败: HTTP ${respInfo.statusCode}`,
+            });
+          }
         }
-      });
+      );
     });
   } catch (error) {
     return {

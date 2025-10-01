@@ -189,6 +189,7 @@ export interface QiniuStorageConfig {
   bucket: string;
   domain: string;
   region?: string;
+  pathFormat?: string; // 存储目录格式
 }
 
 export interface QiniuStorageConfigRequest {
@@ -197,6 +198,7 @@ export interface QiniuStorageConfigRequest {
   bucket: string;
   domain: string;
   region?: string;
+  pathFormat?: string; // 存储目录格式
 }
 
 export interface QiniuStorageTestRequest {
