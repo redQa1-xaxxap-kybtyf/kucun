@@ -288,6 +288,7 @@ export function EnhancedSalesOrderForm({
       {/* 页面标题 */}
       <div className="flex items-center gap-4">
         <Button
+          type="button"
           variant="ghost"
           onClick={() => (onCancel ? onCancel() : router.back())}
         >

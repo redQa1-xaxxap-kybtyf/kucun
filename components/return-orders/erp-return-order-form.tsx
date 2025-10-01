@@ -284,6 +284,7 @@ export function ERPReturnOrderForm({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button
+              type="button"
               variant="ghost"
               size="sm"
               className="h-7"
@@ -296,6 +297,7 @@ export function ERPReturnOrderForm({
           </div>
           <div className="flex items-center gap-2">
             <Button
+              type="button"
               size="sm"
               className="h-7"
               onClick={form.handleSubmit(onSubmit)}

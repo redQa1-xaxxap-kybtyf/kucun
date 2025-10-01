@@ -24,7 +24,7 @@ export function InventoryFormHeader({
     <div className="flex items-center justify-between">
       <div className="flex items-center space-x-4">
         {onCancel && (
-          <Button variant="outline" size="sm" onClick={onCancel}>
+          <Button type="button" variant="outline" size="sm" onClick={onCancel}>
             <ArrowLeft className="mr-2 h-4 w-4" />
             返回
           </Button>

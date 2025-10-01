@@ -54,7 +54,12 @@ export function ProductForm({
       {/* 页面标题 */}
       <div className="mb-6 flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button variant="outline" size="sm" onClick={handleCancel}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleCancel}
+          >
             <ArrowLeft className="mr-2 h-4 w-4" />
             返回
           </Button>
