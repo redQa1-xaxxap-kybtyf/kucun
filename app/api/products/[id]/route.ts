@@ -1,19 +1,14 @@
-﻿import { type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
+﻿import { getServerSession } from 'next-auth';
+import { type NextRequest } from 'next/server';
 
+import { ApiError } from '@/lib/api/errors';
 import {
   deleteProduct,
   getProductById,
   updateProduct,
 } from '@/lib/api/handlers/products';
 import { withErrorHandling } from '@/lib/api/middleware';
-import {
-  errorResponse,
-  notFoundResponse,
-  successResponse,
-  unauthorizedResponse,
-  validationErrorResponse,
-} from '@/lib/api/response';
+import { successResponse } from '@/lib/api/response';
 import { authOptions } from '@/lib/auth';
 import { env } from '@/lib/env';
 import { productUpdateSchema } from '@/lib/validations/product';
@@ -46,17 +41,17 @@ async function resolveParams(context: RouteContext) {
 export const GET = withErrorHandling<{ id: string }>(
   async (request: NextRequest, context: RouteContext) => {
     if (!(await ensureAuthorized())) {
-      return unauthorizedResponse('请先登录');
+      throw ApiError.unauthorized('请先登录');
     }
 
     const params = await resolveParams(context);
     if (!params) {
-      return errorResponse('参数缺失', 400);
+      throw ApiError.badRequest('参数缺失');
     }
 
     const product = await getProductById(params.id);
     if (!product) {
-      return notFoundResponse('产品不存在');
+      throw ApiError.notFound('产品');
     }
 
     return successResponse(product);
@@ -69,32 +64,19 @@ export const GET = withErrorHandling<{ id: string }>(
 export const PUT = withErrorHandling<{ id: string }>(
   async (request: NextRequest, context: RouteContext) => {
     if (!(await ensureAuthorized())) {
-      return unauthorizedResponse('请先登录');
+      throw ApiError.unauthorized('请先登录');
     }
 
     const params = await resolveParams(context);
     if (!params) {
-      return errorResponse('参数缺失', 400);
+      throw ApiError.badRequest('参数缺失');
     }
 
     const body = await request.json();
-    const validationResult = productUpdateSchema.safeParse(body);
-    if (!validationResult.success) {
-      return validationErrorResponse(
-        '产品数据格式不正确',
-        validationResult.error.errors
-      );
-    }
+    const validatedData = productUpdateSchema.parse(body);
 
-    try {
-      const product = await updateProduct(params.id, validationResult.data);
-      return successResponse(product, 200, '产品更新成功');
-    } catch (error) {
-      return errorResponse(
-        error instanceof Error ? error.message : '产品更新失败',
-        400
-      );
-    }
+    const product = await updateProduct(params.id, validatedData);
+    return successResponse(product, 200, '产品更新成功');
   }
 );
 
@@ -104,22 +86,15 @@ export const PUT = withErrorHandling<{ id: string }>(
 export const DELETE = withErrorHandling<{ id: string }>(
   async (request: NextRequest, context: RouteContext) => {
     if (!(await ensureAuthorized())) {
-      return unauthorizedResponse('请先登录');
+      throw ApiError.unauthorized('请先登录');
     }
 
     const params = await resolveParams(context);
     if (!params) {
-      return errorResponse('参数缺失', 400);
+      throw ApiError.badRequest('参数缺失');
     }
 
-    try {
-      const result = await deleteProduct(params.id);
-      return successResponse(result, 200, '产品删除成功');
-    } catch (error) {
-      return errorResponse(
-        error instanceof Error ? error.message : '产品删除失败',
-        400
-      );
-    }
+    const result = await deleteProduct(params.id);
+    return successResponse(result, 200, '产品删除成功');
   }
 );
