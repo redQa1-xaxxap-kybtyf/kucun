@@ -1,27 +1,55 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
+import { ApiError } from '@/lib/api/errors';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateOrderStatusSchema } from '@/lib/validations/sales-order';
 
+/**
+ * 格式化销售订单数据
+ */
+function formatSalesOrder(salesOrder: any) {
+  return {
+    id: salesOrder.id,
+    orderNumber: salesOrder.orderNumber,
+    customerId: salesOrder.customerId,
+    userId: salesOrder.userId,
+    status: salesOrder.status,
+    totalAmount: salesOrder.totalAmount,
+    remarks: salesOrder.remarks,
+    customer: salesOrder.customer,
+    user: salesOrder.user,
+    items: salesOrder.items.map((item: any) => ({
+      id: item.id,
+      productId: item.productId,
+      colorCode: item.colorCode,
+      productionDate: item.productionDate,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      subtotal: item.subtotal,
+      product: item.product,
+    })),
+    createdAt: salesOrder.createdAt,
+    updatedAt: salesOrder.updatedAt,
+  };
+}
+
 // 获取单个销售订单信息
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = await params;
   try {
+    const { id } = await params;
+
     // 验证用户权限
     if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
       if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
+        throw ApiError.unauthorized();
       }
     }
 
@@ -91,51 +119,22 @@ export async function GET(
     });
 
     if (!salesOrder) {
-      return NextResponse.json(
-        { success: false, error: '销售订单不存在' },
-        { status: 404 }
-      );
+      throw ApiError.notFound('销售订单');
     }
 
     // 转换数据格式
-    const formattedOrder = {
-      id: salesOrder.id,
-      orderNumber: salesOrder.orderNumber,
-      customerId: salesOrder.customerId,
-      userId: salesOrder.userId,
-      status: salesOrder.status,
-      totalAmount: salesOrder.totalAmount,
-      remarks: salesOrder.remarks,
-      customer: salesOrder.customer,
-      user: salesOrder.user,
-      items: salesOrder.items.map((item: any) => ({
-        id: item.id,
-        productId: item.productId,
-        colorCode: item.colorCode,
-        productionDate: item.productionDate,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        subtotal: item.subtotal,
-        product: item.product,
-      })),
-      createdAt: salesOrder.createdAt,
-      updatedAt: salesOrder.updatedAt,
-    };
+    const formattedOrder = formatSalesOrder(salesOrder);
 
     return NextResponse.json({
       success: true,
       data: formattedOrder,
     });
   } catch (error) {
+    if (error instanceof ApiError) {
+      throw error;
+    }
     console.error('获取销售订单信息错误:', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '获取销售订单信息失败',
-      },
-      { status: 500 }
-    );
+    throw ApiError.internalError('获取销售订单信息失败');
   }
 }
 
