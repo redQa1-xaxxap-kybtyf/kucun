@@ -4,32 +4,24 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
-import { type Category } from '@/lib/api/categories';
+import { ApiError } from '@/lib/api/errors';
+import { withErrorHandling } from '@/lib/api/middleware';
 import { prisma } from '@/lib/db';
 import { UpdateCategorySchema } from '@/lib/schemas/category';
-import type { ApiResponse } from '@/lib/types/api';
+
+type RouteContext = { params: Promise<{ id: string }> };
 
 /**
  * GET /api/categories/[id] - 获取单个分类详情
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
+export const GET = withErrorHandling<RouteContext>(
+  async (request: NextRequest, { params }: RouteContext) => {
     const { id } = await params;
 
     // 验证ID格式
     if (!id || typeof id !== 'string') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '无效的分类ID',
-        },
-        { status: 400 }
-      );
+      throw ApiError.badRequest('无效的分类ID');
     }
 
     // 查询分类
@@ -47,13 +39,7 @@ export async function GET(
     });
 
     if (!category) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '分类不存在',
-        },
-        { status: 404 }
-      );
+      throw ApiError.notFound('分类');
     }
 
     // 转换数据格式
@@ -81,47 +67,27 @@ export async function GET(
       productCount: category._count.products,
     };
 
-    const response: ApiResponse<Category> = {
+    return NextResponse.json({
       success: true,
       data: transformedCategory,
-    };
-
-    return NextResponse.json(response);
-  } catch (error) {
-    console.error('获取分类详情失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: '服务器内部错误',
-      },
-      { status: 500 }
-    );
+    });
   }
-}
+);
 
 /**
  * PUT /api/categories/[id] - 更新分类
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
+export const PUT = withErrorHandling<RouteContext>(
+  async (request: NextRequest, { params }: RouteContext) => {
     const { id } = await params;
     const body = await request.json();
 
     // 验证ID格式
     if (!id || typeof id !== 'string') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '无效的分类ID',
-        },
-        { status: 400 }
-      );
+      throw ApiError.badRequest('无效的分类ID');
     }
 
-    // 验证请求数据
+    // 验证请求数据（Zod 错误会自动处理）
     const validatedData = UpdateCategorySchema.parse({ ...body, id });
 
     // 检查分类是否存在
@@ -130,13 +96,7 @@ export async function PUT(
     });
 
     if (!existingCategory) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '分类不存在',
-        },
-        { status: 404 }
-      );
+      throw ApiError.notFound('分类');
     }
 
     // 注意：分类编码不允许修改，由系统自动生成
@@ -151,13 +111,7 @@ export async function PUT(
       });
 
       if (nameExists) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: '分类名称已存在',
-          },
-          { status: 400 }
-        );
+        throw ApiError.badRequest('分类名称已存在');
       }
     }
 
@@ -165,13 +119,7 @@ export async function PUT(
     if (validatedData.parentId) {
       // 简单检查：不能将自己设为父级
       if (validatedData.parentId === id) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: '不能将自己设为父级分类',
-          },
-          { status: 400 }
-        );
+        throw ApiError.badRequest('不能将自己设为父级分类');
       }
 
       // 检查父级分类是否存在
@@ -180,13 +128,7 @@ export async function PUT(
       });
 
       if (!parentExists) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: '父级分类不存在',
-          },
-          { status: 400 }
-        );
+        throw ApiError.badRequest('父级分类不存在');
       }
     }
 
@@ -235,55 +177,23 @@ export async function PUT(
       productCount: updatedCategory._count.products,
     };
 
-    const response: ApiResponse<Category> = {
+    return NextResponse.json({
       success: true,
       data: transformedCategory,
-    };
-
-    return NextResponse.json(response);
-  } catch (error) {
-    console.error('更新分类失败:', error);
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '数据验证失败',
-          details: error.errors,
-        },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: '服务器内部错误',
-      },
-      { status: 500 }
-    );
+    });
   }
-}
+);
 
 /**
  * DELETE /api/categories/[id] - 删除分类
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
+export const DELETE = withErrorHandling(
+  async (_request: NextRequest, { params }: RouteContext) => {
     const { id } = await params;
 
     // 验证ID格式
     if (!id || typeof id !== 'string') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '无效的分类ID',
-        },
-        { status: 400 }
-      );
+      throw ApiError.badRequest('无效的分类ID');
     }
 
     // 检查分类是否存在
@@ -300,35 +210,17 @@ export async function DELETE(
     });
 
     if (!existingCategory) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '分类不存在',
-        },
-        { status: 404 }
-      );
+      throw ApiError.notFound('分类');
     }
 
     // 检查是否有子分类
     if (existingCategory.children.length > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '该分类下还有子分类，无法删除',
-        },
-        { status: 400 }
-      );
+      throw ApiError.badRequest('该分类下还有子分类，无法删除');
     }
 
     // 检查是否有关联产品
     if (existingCategory._count.products > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '该分类下还有产品，无法删除',
-        },
-        { status: 400 }
-      );
+      throw ApiError.badRequest('该分类下还有产品，无法删除');
     }
 
     // 删除分类
@@ -336,19 +228,8 @@ export async function DELETE(
       where: { id },
     });
 
-    const response: ApiResponse<void> = {
+    return NextResponse.json({
       success: true,
-    };
-
-    return NextResponse.json(response);
-  } catch (error) {
-    console.error('删除分类失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: '服务器内部错误',
-      },
-      { status: 500 }
-    );
+    });
   }
-}
+);
