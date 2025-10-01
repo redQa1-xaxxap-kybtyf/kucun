@@ -21,6 +21,10 @@ interface InventoryTableRowProps {
   isSelected: boolean;
   onSelect: (id: string, checked: boolean) => void;
   onAdjust: (id: string) => void;
+  /** 自定义样式（用于虚拟化） */
+  style?: React.CSSProperties;
+  /** 自定义类名 */
+  className?: string;
 }
 
 /**
@@ -56,7 +60,7 @@ const formatQuantityDisplay = (item: Inventory) => {
  * 使用React.memo优化重渲染性能
  */
 export const InventoryTableRow = React.memo<InventoryTableRowProps>(
-  ({ item, isSelected, onSelect, onAdjust }) => {
+  ({ item, isSelected, onSelect, onAdjust, style, className }) => {
     // 优化的事件处理函数
     const handleSelect = React.useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -118,7 +122,7 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
     );
 
     return (
-      <TableRow className="text-xs">
+      <TableRow className={`text-xs ${className || ''}`} style={style}>
         <TableCell>
           <input
             type="checkbox"
