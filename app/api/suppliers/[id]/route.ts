@@ -1,32 +1,30 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
+import { ApiError } from '@/lib/api/errors';
+import { withErrorHandling } from '@/lib/api/middleware';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import { UpdateSupplierSchema } from '@/lib/schemas/supplier';
 import type { Supplier } from '@/lib/types/supplier';
 
+type RouteContext = { params: Promise<{ id: string }> };
+
 /**
  * GET /api/suppliers/[id] - 获取单个供应商详情
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
+export const GET = withErrorHandling(
+  async (request: NextRequest, { params }: RouteContext) => {
     // 验证用户身份 (开发模式下绕过)
     if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
       if (!session) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
+        throw ApiError.unauthorized();
       }
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // 查询供应商
     const supplier = await prisma.supplier.findUnique({
@@ -34,10 +32,7 @@ export async function GET(
     });
 
     if (!supplier) {
-      return NextResponse.json(
-        { success: false, error: '供应商不存在' },
-        { status: 404 }
-      );
+      throw ApiError.notFound('供应商');
     }
 
     // 转换数据格式
@@ -55,38 +50,23 @@ export async function GET(
       success: true,
       data: transformedSupplier,
     });
-  } catch (error) {
-    console.error('获取供应商详情失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '获取供应商详情失败',
-      },
-      { status: 500 }
-    );
   }
-}
+);
 
 /**
  * PUT /api/suppliers/[id] - 更新供应商信息
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
+export const PUT = withErrorHandling(
+  async (request: NextRequest, { params }: RouteContext) => {
     // 验证用户身份 (开发模式下绕过)
     if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
       if (!session) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
+        throw ApiError.unauthorized();
       }
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // 检查供应商是否存在
     const existingSupplier = await prisma.supplier.findUnique({
@@ -94,10 +74,7 @@ export async function PUT(
     });
 
     if (!existingSupplier) {
-      return NextResponse.json(
-        { success: false, error: '供应商不存在' },
-        { status: 404 }
-      );
+      throw ApiError.notFound('供应商');
     }
 
     // 解析请求体
@@ -114,10 +91,7 @@ export async function PUT(
       });
 
       if (duplicateSupplier) {
-        return NextResponse.json(
-          { success: false, error: '供应商名称已存在' },
-          { status: 400 }
-        );
+        throw ApiError.badRequest('供应商名称已存在');
       }
     }
 
@@ -152,22 +126,56 @@ export async function PUT(
       data: transformedSupplier,
       message: '供应商更新成功',
     });
-  } catch (error) {
-    console.error('更新供应商失败:', error);
+  }
+);
 
-    if (error instanceof Error && error.message.includes('Unique constraint')) {
-      return NextResponse.json(
-        { success: false, error: '供应商名称已存在' },
-        { status: 400 }
-      );
-    }
+/**
+ * 检查供应商关联数据
+ * @param supplierId 供应商ID
+ * @throws ApiError 如果有关联数据
+ */
+async function checkSupplierRelations(supplierId: string): Promise<void> {
+  // 检查是否有关联的销售订单(调货销售)
+  const salesOrderCount = await prisma.salesOrder.count({
+    where: { supplierId },
+  });
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '更新供应商失败',
-      },
-      { status: 500 }
+  if (salesOrderCount > 0) {
+    throw ApiError.badRequest(
+      `无法删除供应商,该供应商有 ${salesOrderCount} 个关联的销售订单`
+    );
+  }
+
+  // 检查是否有关联的厂家发货订单明细
+  const factoryShipmentItemCount = await prisma.factoryShipmentOrderItem.count({
+    where: { supplierId },
+  });
+
+  if (factoryShipmentItemCount > 0) {
+    throw ApiError.badRequest(
+      `无法删除供应商,该供应商有 ${factoryShipmentItemCount} 个关联的厂家发货订单明细`
+    );
+  }
+
+  // 检查是否有关联的应付款记录
+  const payableCount = await prisma.payableRecord.count({
+    where: { supplierId },
+  });
+
+  if (payableCount > 0) {
+    throw ApiError.badRequest(
+      `无法删除供应商,该供应商有 ${payableCount} 个关联的应付款记录`
+    );
+  }
+
+  // 检查是否有关联的付款记录
+  const paymentOutCount = await prisma.paymentOutRecord.count({
+    where: { supplierId },
+  });
+
+  if (paymentOutCount > 0) {
+    throw ApiError.badRequest(
+      `无法删除供应商,该供应商有 ${paymentOutCount} 个关联的付款记录`
     );
   }
 }
@@ -175,23 +183,17 @@ export async function PUT(
 /**
  * DELETE /api/suppliers/[id] - 删除供应商
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  try {
+export const DELETE = withErrorHandling(
+  async (request: NextRequest, { params }: RouteContext) => {
     // 验证用户身份 (开发模式下绕过)
     if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
       if (!session) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
+        throw ApiError.unauthorized();
       }
     }
 
-    const { id } = params;
+    const { id } = await params;
 
     // 检查供应商是否存在
     const existingSupplier = await prisma.supplier.findUnique({
@@ -199,72 +201,11 @@ export async function DELETE(
     });
 
     if (!existingSupplier) {
-      return NextResponse.json(
-        { success: false, error: '供应商不存在' },
-        { status: 404 }
-      );
+      throw ApiError.notFound('供应商');
     }
 
-    // 检查是否有关联的销售订单(调货销售)
-    const salesOrderCount = await prisma.salesOrder.count({
-      where: { supplierId: id },
-    });
-
-    if (salesOrderCount > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `无法删除供应商,该供应商有 ${salesOrderCount} 个关联的销售订单`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // 检查是否有关联的厂家发货订单明细
-    const factoryShipmentItemCount =
-      await prisma.factoryShipmentOrderItem.count({
-        where: { supplierId: id },
-      });
-
-    if (factoryShipmentItemCount > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `无法删除供应商,该供应商有 ${factoryShipmentItemCount} 个关联的厂家发货订单明细`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // 检查是否有关联的应付款记录
-    const payableCount = await prisma.payableRecord.count({
-      where: { supplierId: id },
-    });
-
-    if (payableCount > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `无法删除供应商,该供应商有 ${payableCount} 个关联的应付款记录`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // 检查是否有关联的付款记录
-    const paymentOutCount = await prisma.paymentOutRecord.count({
-      where: { supplierId: id },
-    });
-
-    if (paymentOutCount > 0) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `无法删除供应商,该供应商有 ${paymentOutCount} 个关联的付款记录`,
-        },
-        { status: 400 }
-      );
-    }
+    // 检查关联数据
+    await checkSupplierRelations(id);
 
     // 所有检查通过,可以安全删除
     await prisma.supplier.delete({
@@ -275,14 +216,5 @@ export async function DELETE(
       success: true,
       message: '供应商删除成功',
     });
-  } catch (error) {
-    console.error('删除供应商失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '删除供应商失败',
-      },
-      { status: 500 }
-    );
   }
-}
+);
