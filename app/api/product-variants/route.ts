@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { paginationConfig } from '@/lib/env';
+import { env, paginationConfig } from '@/lib/env';
 
 // 产品变体查询参数验证
 const ProductVariantQuerySchema = z.object({
@@ -38,13 +38,15 @@ const ProductVariantCreateSchema = z.object({
 // 获取产品变体列表
 export async function GET(request: NextRequest) {
   try {
-    // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 验证用户权限 (开发模式下跳过)
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
     }
 
     const { searchParams } = new URL(request.url);
@@ -174,13 +176,15 @@ export async function GET(request: NextRequest) {
 // 创建产品变体
 export async function POST(request: NextRequest) {
   try {
-    // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 验证用户权限 (开发模式下跳过)
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
     }
 
     const body = await request.json();

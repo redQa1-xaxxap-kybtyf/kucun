@@ -5,17 +5,11 @@ import { invalidateProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
 import { productUpdateSchema } from '@/lib/validations/product';
 
-// 定义产品查询结果类型
+// 定义产品查询结果类型 (保留用于类型推断)
 type _ProductWithRelations = Prisma.ProductGetPayload<{
   include: {
     category: true;
     variants: true;
-  };
-}>;
-
-type ProductVariantWithRelations = Prisma.ProductVariantGetPayload<{
-  include: {
-    product: true;
   };
 }>;
 
