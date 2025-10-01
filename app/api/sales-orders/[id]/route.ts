@@ -3,6 +3,8 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
+import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateOrderStatusSchema } from '@/lib/validations/sales-order';
 
 // 获取单个销售订单信息
@@ -13,12 +15,14 @@ export async function GET(
   const { id } = await params;
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    if (env.NODE_ENV !== 'development') {
+      const session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
     }
 
     const salesOrder = await prisma.salesOrder.findUnique({
@@ -142,13 +146,30 @@ export async function PUT(
 ) {
   const { id } = await params;
   try {
-    // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 验证用户权限并获取用户ID
+    let userId: string;
+    let session = null;
+
+    if (env.NODE_ENV === 'development') {
+      // 开发环境下使用数据库中的第一个用户
+      const user = await prisma.user.findFirst();
+      if (!user) {
+        return NextResponse.json(
+          { success: false, error: '开发环境下未找到可用用户' },
+          { status: 500 }
+        );
+      }
+      userId = user.id;
+    } else {
+      // 生产环境下验证会话
+      session = await getServerSession(authOptions);
+      if (!session?.user?.id) {
+        return NextResponse.json(
+          { success: false, error: '未授权访问' },
+          { status: 401 }
+        );
+      }
+      userId = session.user.id;
     }
 
     const body = await request.json();
@@ -223,14 +244,10 @@ export async function PUT(
       idempotencyKey,
       'sales_order_status_change',
       id,
-      session.user.id,
+      userId,
       { status, remarks },
-      async () => await updateSalesOrderStatus(
-          id,
-          status,
-          existingOrder.status,
-          remarks
-        )
+      async () =>
+        await updateSalesOrderStatus(id, status, existingOrder.status, remarks)
     );
 
     // 如果涉及库存变更,清除缓存
@@ -251,6 +268,7 @@ export async function PUT(
       existingOrder.supplierId &&
       (existingOrder.costAmount || 0) > 0
     ) {
+      const supplierId = existingOrder.supplierId; // 确保非空
       await prisma.$transaction(async tx => {
         // 检查是否已经存在应付款记录
         const existingPayable = await tx.payableRecord.findFirst({
@@ -273,8 +291,8 @@ export async function PUT(
           await tx.payableRecord.create({
             data: {
               payableNumber,
-              supplierId: existingOrder.supplierId,
-              userId: session.user.id,
+              supplierId,
+              userId,
               sourceType: 'sales_order',
               sourceId: existingOrder.id,
               sourceNumber: existingOrder.orderNumber,
