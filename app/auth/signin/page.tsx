@@ -6,7 +6,7 @@ import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { getSession, signIn } from 'next-auth/react';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -56,103 +56,105 @@ export default function SignInPage() {
     },
   });
 
-  // 错误信息映射 - 更详细的错误提示
-  const errorMessages: Record<string, string> = {
-    // Next-Auth 默认错误
-    CredentialsSignin: '用户名或密码错误，请检查后重试',
-    AccessDenied: '访问被拒绝，权限不足',
+  // 错误信息映射 - 使用 useMemo 避免每次渲染都创建新对象
+  const errorMessages = useMemo(
+    () => ({
+      // Next-Auth 默认错误
+      CredentialsSignin: '用户名或密码错误，请检查后重试',
+      AccessDenied: '访问被拒绝，权限不足',
 
-    // 自定义错误代码
-    MISSING_FIELDS: '请填写完整的登录信息',
-    INVALID_FORMAT: '用户名、密码或验证码格式不正确',
-    INVALID_CREDENTIALS: '用户名或密码错误，请检查后重试',
-    ACCOUNT_DISABLED: '该账户已被禁用，请联系管理员',
+      // 自定义错误代码
+      MISSING_FIELDS: '请填写完整的登录信息',
+      INVALID_FORMAT: '用户名、密码或验证码格式不正确',
+      INVALID_CREDENTIALS: '用户名或密码错误，请检查后重试',
+      ACCOUNT_DISABLED: '该账户已被禁用，请联系管理员',
 
-    // 验证码相关错误
-    CAPTCHA_SESSION_MISSING: '验证码会话已过期，请刷新验证码',
-    CAPTCHA_VERIFY_FAILED: '验证码验证失败，请重试',
-    CAPTCHA_INCORRECT: '验证码错误，请重新输入',
+      // 验证码相关错误
+      CAPTCHA_SESSION_MISSING: '验证码会话已过期，请刷新验证码',
+      CAPTCHA_VERIFY_FAILED: '验证码验证失败，请重试',
+      CAPTCHA_INCORRECT: '验证码错误，请重新输入',
 
-    // 登录限制错误
-    TOO_MANY_ATTEMPTS: '登录失败次数过多，请稍后再试',
+      // 登录限制错误
+      TOO_MANY_ATTEMPTS: '登录失败次数过多，请稍后再试',
 
-    // 服务器错误
-    SERVER_ERROR: '服务器错误，请稍后重试',
+      // 服务器错误
+      SERVER_ERROR: '服务器错误，请稍后重试',
 
-    // 网络错误
-    NETWORK_ERROR: '网络连接失败，请检查网络后重试',
+      // 网络错误
+      NETWORK_ERROR: '网络连接失败，请检查网络后重试',
 
-    // 默认错误
-    Default: '登录失败，请稍后重试',
-  };
+      // 默认错误
+      Default: '登录失败，请稍后重试',
+    }),
+    []
+  );
 
-  const handleSubmit = async (data: UserLoginInput) => {
-    setIsLoading(true);
-    setFormError('');
-    setIsSuccess(false);
+  // 处理登录成功逻辑
+  const handleLoginSuccess = useCallback(
+    async (session: Awaited<ReturnType<typeof getSession>>) => {
+      if (!session) return;
 
-    try {
-      const result = await signIn('credentials', {
-        username: data.username,
-        password: data.password,
-        captcha: data.captcha,
-        captchaSessionId,
-        redirect: false,
+      // 设置成功状态
+      setIsSuccess(true);
+
+      // 安全获取用户信息,提供默认值
+      const userName = session.user?.name || '用户';
+      const userRole = session.user?.role || 'user';
+      const roleText = userRole === 'admin' ? '管理员' : '销售员';
+
+      // 显示成功 Toast
+      toast({
+        title: '登录成功！',
+        description: `欢迎回来，${userName}（${roleText}）`,
+        variant: 'success',
       });
 
-      if (result?.error) {
-        // Next-Auth 会将所有 CredentialsProvider 的错误转换为 CredentialsSignin
-        // 我们需要从 URL 参数中获取具体的错误信息
-        if (process.env.NODE_ENV === 'development') {
-          console.log('登录失败,错误代码:', result.error);
-        }
+      // 延迟跳转，让用户看到成功反馈
+      setTimeout(() => {
+        setIsRedirecting(true);
+        setTimeout(() => {
+          router.push(callbackUrl);
+          router.refresh();
+        }, 500); // 额外的短暂延迟用于显示跳转状态
+      }, 1500); // 1.5秒延迟让用户看到成功消息
+    },
+    [callbackUrl, router, toast]
+  );
 
-        // 获取详细的错误信息
-        // 如果是 CredentialsSignin,尝试从 URL 获取具体错误
-        let errorMessage = errorMessages[result.error] || errorMessages.Default;
-
-        // 如果是 CredentialsSignin,显示通用的凭证错误
-        if (result.error === 'CredentialsSignin') {
-          errorMessage = errorMessages.INVALID_CREDENTIALS;
-        }
-
-        setFormError(errorMessage);
-
-        // 登录失败时清空验证码并重新加载
-        form.setValue('captcha', '');
-        loadCaptcha();
-
-        // 显示错误 Toast
-        toast({
-          title: '登录失败',
-          description: errorMessage,
-          variant: 'destructive',
-        });
-      } else if (result?.ok) {
-        // 登录成功，获取会话信息
-        const session = await getSession();
-        if (session) {
-          // 设置成功状态
-          setIsSuccess(true);
-
-          // 显示成功 Toast
-          toast({
-            title: '登录成功！',
-            description: `欢迎回来，${session.user.name}（${session.user.role === 'admin' ? '管理员' : '销售员'}）`,
-            variant: 'success',
-          });
-
-          // 延迟跳转，让用户看到成功反馈
-          setTimeout(() => {
-            setIsRedirecting(true);
-            setTimeout(() => {
-              router.push(callbackUrl);
-              router.refresh();
-            }, 500); // 额外的短暂延迟用于显示跳转状态
-          }, 1500); // 1.5秒延迟让用户看到成功消息
-        }
+  // 处理登录失败逻辑
+  const handleLoginError = useCallback(
+    (errorCode: string) => {
+      if (process.env.NODE_ENV === 'development') {
+        console.log('登录失败,错误代码:', errorCode);
       }
-    } catch (error) {
+
+      // 获取详细的错误信息
+      let errorMessage = errorMessages[errorCode] || errorMessages.Default;
+
+      // 如果是 CredentialsSignin,显示通用的凭证错误
+      if (errorCode === 'CredentialsSignin') {
+        errorMessage = errorMessages.INVALID_CREDENTIALS;
+      }
+
+      setFormError(errorMessage);
+
+      // 登录失败时清空验证码并重新加载
+      form.setValue('captcha', '');
+      loadCaptcha();
+
+      // 显示错误 Toast
+      toast({
+        title: '登录失败',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    },
+    [errorMessages, form, loadCaptcha, toast]
+  );
+
+  // 处理网络错误逻辑
+  const handleNetworkError = useCallback(
+    (error: unknown) => {
       if (process.env.NODE_ENV === 'development') {
         console.error('登录错误:', error);
       }
@@ -174,6 +176,32 @@ export default function SignInPage() {
         description: errorMessage,
         variant: 'destructive',
       });
+    },
+    [errorMessages, form, loadCaptcha, toast]
+  );
+
+  const handleSubmit = async (data: UserLoginInput) => {
+    setIsLoading(true);
+    setFormError('');
+    setIsSuccess(false);
+
+    try {
+      const result = await signIn('credentials', {
+        username: data.username,
+        password: data.password,
+        captcha: data.captcha,
+        captchaSessionId,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        handleLoginError(result.error);
+      } else if (result?.ok) {
+        const session = await getSession();
+        await handleLoginSuccess(session);
+      }
+    } catch (error) {
+      handleNetworkError(error);
     } finally {
       // 只有在非成功状态下才立即设置 loading 为 false
       if (!isSuccess) {
