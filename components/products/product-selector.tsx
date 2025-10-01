@@ -24,6 +24,7 @@ import type { Product } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
 
 const SEARCH_DEBOUNCE_MS = 250;
+const MAX_DISPLAY_PRODUCTS = 10; // 最多显示10个产品
 
 function useDebouncedValue<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = React.useState(value);
@@ -155,7 +156,12 @@ export function ProductSelector({
   const debouncedSearch = useDebouncedValue(searchValue, SEARCH_DEBOUNCE_MS);
 
   const queryInput = React.useMemo(
-    () => buildProductSelectorQuery(debouncedSearch, filterStatus, 20),
+    () =>
+      buildProductSelectorQuery(
+        debouncedSearch,
+        filterStatus,
+        MAX_DISPLAY_PRODUCTS
+      ),
     [debouncedSearch, filterStatus]
   );
 
@@ -167,6 +173,8 @@ export function ProductSelector({
   });
 
   const products = productsResponse?.data ?? [];
+  const totalCount = productsResponse?.pagination?.total || 0;
+  const hasMoreResults = totalCount > MAX_DISPLAY_PRODUCTS;
   const selectedProductFromList = value
     ? products.find(product => product.id === value)
     : undefined;
@@ -242,6 +250,11 @@ export function ProductSelector({
                 {isFetching ? '加载中...' : '未找到产品'}
               </CommandEmpty>
               <CommandGroup>
+                {hasMoreResults && (
+                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                    显示前 {MAX_DISPLAY_PRODUCTS} 个结果，请细化搜索
+                  </div>
+                )}
                 {products.map(product => (
                   <CommandItem
                     key={product.id}
