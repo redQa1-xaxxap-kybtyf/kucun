@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import type { InboundListResponse } from '@/lib/types/inbound';
 import { toISOString } from '@/lib/utils/datetime';
 import { cleanRemarks, inboundQuerySchema } from '@/lib/validations/inbound';
@@ -58,13 +59,18 @@ export function generateInboundRecordNumber(): string {
  * 验证用户会话
  */
 export async function validateUserSession() {
-  // 开发环境下绕过身份验证
+  // 开发环境下绕过身份验证,使用数据库中的第一个用户
   if (env.NODE_ENV === 'development') {
+    // 获取数据库中的第一个用户
+    const user = await prisma.user.findFirst();
+    if (!user) {
+      throw new Error('开发环境下未找到可用用户');
+    }
     return {
       user: {
-        id: 'dev-user',
-        name: 'Dev User',
-        username: 'dev',
+        id: user.id,
+        name: user.name || 'Dev User',
+        username: user.username,
       },
     };
   }

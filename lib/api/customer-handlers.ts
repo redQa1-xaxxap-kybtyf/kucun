@@ -7,6 +7,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import type {
   Customer,
   CustomerCreateInput,
@@ -23,6 +24,11 @@ import {
  * @throws {Error} 当用户未登录时抛出错误
  */
 export async function validateUserSession(): Promise<void> {
+  // 开发环境下绕过身份验证
+  if (env.NODE_ENV === 'development') {
+    return;
+  }
+
   const session = await getServerSession(authOptions);
 
   if (!session || !session.user) {
