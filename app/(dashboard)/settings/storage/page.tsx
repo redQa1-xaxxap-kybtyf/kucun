@@ -7,8 +7,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Package } from 'lucide-react';
-import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import React from 'react';
 
 import { QiniuStorageForm } from '@/components/settings/QiniuStorageForm';
@@ -140,7 +140,7 @@ export default function StorageSettingsPage() {
   // 检查权限
   if (session?.user?.role !== 'admin') {
     return (
-      <div className="container mx-auto space-y-6 py-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link href="/settings">
@@ -150,7 +150,7 @@ export default function StorageSettingsPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold">七牛云存储</h1>
+              <h1 className="text-3xl font-bold tracking-tight">七牛云存储</h1>
               <p className="text-muted-foreground">文件上传和存储配置</p>
             </div>
           </div>
@@ -185,7 +185,7 @@ export default function StorageSettingsPage() {
   };
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
+    <div className="space-y-6">
       {/* 页面标题和导航 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -196,7 +196,7 @@ export default function StorageSettingsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">七牛云存储</h1>
+            <h1 className="text-3xl font-bold tracking-tight">七牛云存储</h1>
             <p className="text-muted-foreground">配置文件上传和存储服务</p>
           </div>
         </div>

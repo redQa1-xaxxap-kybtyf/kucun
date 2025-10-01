@@ -7,8 +7,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Plus, Search, Users } from 'lucide-react';
-import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import React from 'react';
 
 import { UserForm } from '@/components/settings/UserForm';
@@ -301,7 +301,7 @@ export default function UsersSettingsPage() {
   // 检查权限
   if (session?.user?.role !== 'admin') {
     return (
-      <div className="container mx-auto space-y-6 py-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link href="/settings">
@@ -311,7 +311,7 @@ export default function UsersSettingsPage() {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold">用户管理</h1>
+              <h1 className="text-3xl font-bold tracking-tight">用户管理</h1>
               <p className="text-muted-foreground">管理系统用户账户和权限</p>
             </div>
           </div>
@@ -339,7 +339,7 @@ export default function UsersSettingsPage() {
     resetPasswordMutation.isPending;
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
+    <div className="space-y-6">
       {/* 页面标题和导航 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -350,7 +350,7 @@ export default function UsersSettingsPage() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">用户管理</h1>
+            <h1 className="text-3xl font-bold tracking-tight">用户管理</h1>
             <p className="text-muted-foreground">管理系统用户账户和权限</p>
           </div>
         </div>

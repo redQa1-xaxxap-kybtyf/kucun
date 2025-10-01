@@ -6,8 +6,8 @@
 'use client';
 
 import { ArrowLeft, Settings } from 'lucide-react';
-import Link from 'next/link';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 
 import { BasicSettingsForm } from '@/components/settings/BasicSettingsForm';
 import { Button } from '@/components/ui/button';
@@ -27,10 +27,10 @@ const BasicSettingsPage = () => {
   // 检查用户权限
   if (!session) {
     return (
-      <div className="container mx-auto space-y-6 py-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">基本设置</h1>
+            <h1 className="text-3xl font-bold tracking-tight">基本设置</h1>
             <p className="text-muted-foreground">系统基础配置</p>
           </div>
         </div>
@@ -52,7 +52,7 @@ const BasicSettingsPage = () => {
   // 检查管理员权限
   if (!permissions.isAdmin()) {
     return (
-      <div className="container mx-auto space-y-6 py-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <Link href="/settings">
@@ -62,7 +62,7 @@ const BasicSettingsPage = () => {
               </Button>
             </Link>
             <div>
-              <h1 className="text-2xl font-bold">基本设置</h1>
+              <h1 className="text-3xl font-bold tracking-tight">基本设置</h1>
               <p className="text-muted-foreground">系统基础配置</p>
             </div>
           </div>
@@ -83,7 +83,7 @@ const BasicSettingsPage = () => {
   }
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
+    <div className="space-y-6">
       {/* 页面标题和导航 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
@@ -94,7 +94,7 @@ const BasicSettingsPage = () => {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">基本设置</h1>
+            <h1 className="text-3xl font-bold tracking-tight">基本设置</h1>
             <p className="text-muted-foreground">配置系统基础信息和参数</p>
           </div>
         </div>

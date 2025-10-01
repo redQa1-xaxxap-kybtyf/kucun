@@ -19,10 +19,10 @@ import { usePermissions } from '@/lib/utils/permissions';
 
 // 未登录状态组件
 const LoginRequiredView = () => (
-  <div className="container mx-auto space-y-6 py-6">
+  <div className="space-y-6">
     <div className="flex items-center justify-between">
       <div>
-        <h1 className="text-2xl font-bold">系统设置</h1>
+        <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
         <p className="text-muted-foreground">系统配置和管理功能</p>
       </div>
     </div>
@@ -54,10 +54,10 @@ const SettingsPage = () => {
   // 检查管理员权限
   if (!permissions.isAdmin()) {
     return (
-      <div className="container mx-auto space-y-6 py-6">
+      <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold">系统设置</h1>
+            <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
             <p className="text-muted-foreground">系统配置和管理功能</p>
           </div>
         </div>
@@ -77,10 +77,10 @@ const SettingsPage = () => {
   }
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
+    <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">系统设置</h1>
+          <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
           <p className="text-muted-foreground">正在跳转到基本设置...</p>
         </div>
       </div>
