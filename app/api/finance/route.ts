@@ -8,6 +8,7 @@ import {
 } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 财务管理概览API
@@ -161,7 +162,7 @@ export async function GET(_request: NextRequest) {
       data: financeOverview,
     });
   } catch (error) {
-    console.error('获取财务概览失败:', error);
+    logger.error('finance-api', '获取财务概览失败:', error);
     return NextResponse.json(
       {
         success: false,
@@ -306,7 +307,7 @@ export async function POST(request: NextRequest) {
       cached: false,
     });
   } catch (error) {
-    console.error('获取财务统计失败:', error);
+    logger.error('finance-api', '获取财务统计失败:', error);
     return NextResponse.json(
       {
         success: false,
