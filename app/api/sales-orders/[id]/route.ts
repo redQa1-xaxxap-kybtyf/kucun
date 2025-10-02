@@ -5,6 +5,10 @@ import { ApiError } from '@/lib/api/errors';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
+import {
+  createTransferPayableRecord,
+  validateStatusTransition,
+} from '@/lib/services/sales-order-service';
 import { logger } from '@/lib/utils/console-logger';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateOrderStatusSchema } from '@/lib/validations/sales-order';
@@ -212,27 +216,16 @@ export async function PUT(
       );
     }
 
-    // 验证状态流转规则
-    const validStatusTransitions: Record<string, string[]> = {
-      draft: ['confirmed', 'cancelled'],
-      confirmed: ['shipped', 'cancelled'],
-      shipped: ['completed'],
-      completed: [], // 已完成的订单不能再变更状态
-      cancelled: [], // 已取消的订单不能再变更状态
-    };
-
-    if (status !== existingOrder.status) {
-      const allowedStatuses =
-        validStatusTransitions[existingOrder.status] || [];
-      if (!allowedStatuses.includes(status)) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `订单状态不能从 ${existingOrder.status} 变更为 ${status}`,
-          },
-          { status: 400 }
-        );
-      }
+    // 验证状态流转规则(使用服务层函数)
+    const validation = validateStatusTransition(existingOrder.status, status);
+    if (!validation.valid) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: validation.error,
+        },
+        { status: 400 }
+      );
     }
 
     // 使用幂等性包装器执行状态更新
@@ -261,52 +254,20 @@ export async function PUT(
       }
     }
 
-    // 如果是调货销售且状态变更为confirmed,检查是否需要创建应付款记录
+    // 如果是调货销售且状态变更为confirmed,创建应付款记录(使用服务层函数)
     if (
       status === 'confirmed' &&
       existingOrder.orderType === 'TRANSFER' &&
       existingOrder.supplierId &&
       (existingOrder.costAmount || 0) > 0
     ) {
-      const supplierId = existingOrder.supplierId; // 确保非空
-      await prisma.$transaction(async tx => {
-        // 检查是否已经存在应付款记录
-        const existingPayable = await tx.payableRecord.findFirst({
-          where: {
-            sourceType: 'sales_order',
-            sourceId: existingOrder.id,
-          },
-        });
-
-        // 如果不存在应付款记录,则创建
-        if (!existingPayable) {
-          // 生成应付款单号
-          const payableNumber = `PAY-${Date.now()}-${existingOrder.id.slice(-6)}`;
-
-          // 计算应付款到期日期(默认30天后)
-          const dueDate = new Date();
-          dueDate.setDate(dueDate.getDate() + 30);
-
-          // 创建应付款记录
-          await tx.payableRecord.create({
-            data: {
-              payableNumber,
-              supplierId,
-              userId,
-              sourceType: 'sales_order',
-              sourceId: existingOrder.id,
-              sourceNumber: existingOrder.orderNumber,
-              payableAmount: existingOrder.costAmount || 0,
-              remainingAmount: existingOrder.costAmount || 0,
-              dueDate,
-              status: 'pending',
-              paymentTerms: '30天',
-              description: `调货销售订单 ${existingOrder.orderNumber} 确认后自动生成应付款`,
-              remarks: `关联销售订单：${existingOrder.orderNumber}，成本金额：¥${(existingOrder.costAmount || 0).toFixed(2)}`,
-            },
-          });
-        }
-      });
+      await createTransferPayableRecord(
+        existingOrder.id,
+        existingOrder.orderNumber,
+        existingOrder.supplierId,
+        existingOrder.costAmount || 0,
+        userId
+      );
     }
 
     // 获取更新后的完整订单信息

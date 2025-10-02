@@ -167,3 +167,137 @@ export async function getReturnableItems(
   };
 }
 
+// 订单状态更新数据类型
+export interface UpdateOrderStatusData {
+  status: string;
+  remarks?: string;
+}
+
+// 订单状态更新结果类型
+export interface UpdateOrderStatusResult {
+  order: {
+    id: string;
+    orderNumber: string;
+    customerId: string;
+    userId: string;
+    status: string;
+    totalAmount: number;
+    remarks: string | null;
+    customer: {
+      id: string;
+      name: string;
+      phone: string | null;
+    };
+    user: {
+      id: string;
+      name: string;
+    };
+    items: Array<{
+      id: string;
+      productId: string;
+      colorCode: string | null;
+      productionDate: string | null;
+      quantity: number;
+      unitPrice: number;
+      subtotal: number;
+      product: {
+        id: string;
+        code: string;
+        name: string;
+        unit: string;
+      };
+    }>;
+    createdAt: Date;
+    updatedAt: Date;
+  };
+  inventoryUpdated: boolean;
+  reservedInventoryReleased: boolean;
+}
+
+/**
+ * 验证订单状态流转规则
+ * @param currentStatus 当前状态
+ * @param newStatus 新状态
+ * @returns 是否允许流转
+ */
+export function validateStatusTransition(
+  currentStatus: string,
+  newStatus: string
+): { valid: boolean; error?: string } {
+  const validStatusTransitions: Record<string, string[]> = {
+    draft: ['confirmed', 'cancelled'],
+    confirmed: ['shipped', 'cancelled'],
+    shipped: ['completed'],
+    completed: [], // 已完成的订单不能再变更状态
+    cancelled: [], // 已取消的订单不能再变更状态
+  };
+
+  if (newStatus === currentStatus) {
+    return { valid: true };
+  }
+
+  const allowedStatuses = validStatusTransitions[currentStatus] || [];
+  if (!allowedStatuses.includes(newStatus)) {
+    return {
+      valid: false,
+      error: `订单状态不能从 ${currentStatus} 变更为 ${newStatus}`,
+    };
+  }
+
+  return { valid: true };
+}
+
+/**
+ * 创建调货销售的应付款记录
+ * @param orderId 订单ID
+ * @param orderNumber 订单号
+ * @param supplierId 供应商ID
+ * @param costAmount 成本金额
+ * @param userId 用户ID
+ */
+export async function createTransferPayableRecord(
+  orderId: string,
+  orderNumber: string,
+  supplierId: string,
+  costAmount: number,
+  userId: string
+): Promise<void> {
+  await prisma.$transaction(async tx => {
+    // 检查是否已经存在应付款记录
+    const existingPayable = await tx.payableRecord.findFirst({
+      where: {
+        sourceType: 'sales_order',
+        sourceId: orderId,
+      },
+    });
+
+    // 如果不存在应付款记录,则创建
+    if (!existingPayable) {
+      // 生成应付款单号
+      const payableNumber = `PAY-${Date.now()}-${orderId.slice(-6)}`;
+
+      // 计算应付款到期日期(默认30天后)
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + 30);
+
+      // 创建应付款记录
+      await tx.payableRecord.create({
+        data: {
+          payableNumber,
+          supplierId,
+          userId,
+          sourceType: 'sales_order',
+          sourceId: orderId,
+          sourceNumber: orderNumber,
+          payableAmount: costAmount,
+          remainingAmount: costAmount,
+          dueDate,
+          status: 'pending',
+          paymentTerms: '30天',
+          description: `调货销售订单 ${orderNumber} 确认后自动生成应付款`,
+          remarks: `关联销售订单：${orderNumber}，成本金额：¥${costAmount.toFixed(2)}`,
+        },
+      });
+    }
+  });
+}
