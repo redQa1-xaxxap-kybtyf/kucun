@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
@@ -103,7 +103,44 @@ function buildAdjustmentOrderBy(
 /**
  * 格式化调整记录数据
  */
-function formatAdjustmentData(adjustment: any) {
+type AdjustmentWithRelations = {
+  id: string;
+  adjustmentNumber: string;
+  productId: string;
+  variantId: string | null;
+  batchNumber: string | null;
+  beforeQuantity: number;
+  adjustQuantity: number;
+  afterQuantity: number;
+  reason: string;
+  notes: string | null;
+  status: string;
+  operatorId: string;
+  approverId: string | null;
+  approvedAt: Date | null;
+  createdAt: Date;
+  updatedAt: Date;
+  product: {
+    id: string;
+    code: string;
+    name: string;
+  };
+  variant: {
+    id: string;
+    sku: string;
+    name: string;
+  } | null;
+  operator: {
+    id: string;
+    name: string;
+  };
+  approver: {
+    id: string;
+    name: string;
+  } | null;
+};
+
+function formatAdjustmentData(adjustment: AdjustmentWithRelations) {
   return {
     id: adjustment.id,
     adjustmentNumber: adjustment.adjustmentNumber,

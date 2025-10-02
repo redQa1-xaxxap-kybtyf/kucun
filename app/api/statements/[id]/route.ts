@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { ApiError } from '@/lib/api/errors';
 import {
@@ -36,7 +36,7 @@ export const GET = withErrorHandling<{ id: string }>(
         totalOrders,
         totalAmount,
         paidAmount,
-        refundAmount,
+        refundAmount: _refundAmount, // 保留以备将来使用
         pendingAmount,
       } = calculateCustomerFinancials(customer);
 

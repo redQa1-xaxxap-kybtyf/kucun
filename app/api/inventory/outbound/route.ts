@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
@@ -11,6 +11,19 @@ import { withIdempotency } from '@/lib/utils/idempotency';
 import { outboundCreateSchema } from '@/lib/validations/inventory-operations';
 import { publishWs } from '@/lib/ws/ws-server';
 
+type OutboundWhereClause = {
+  OR?: Array<{
+    recordNumber?: { contains: string };
+    product?: { name?: { contains: string }; code?: { contains: string } };
+    batchNumber?: { contains: string };
+  }>;
+  reason?: string;
+  createdAt?: {
+    gte?: Date;
+    lte?: Date;
+  };
+};
+
 /**
  * 构建出库记录查询条件
  */
@@ -19,8 +32,8 @@ function buildOutboundWhereClause(params: {
   type?: string;
   startDate?: string;
   endDate?: string;
-}): any {
-  const where: any = {};
+}): OutboundWhereClause {
+  const where: OutboundWhereClause = {};
 
   if (params.search) {
     where.OR = [
@@ -48,10 +61,26 @@ function buildOutboundWhereClause(params: {
   return where;
 }
 
+type OutboundRecordWithProduct = {
+  id: string;
+  recordNumber: string;
+  productId: string;
+  quantity: number;
+  reason: string;
+  notes: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+  product: {
+    code: string;
+    name: string;
+    specification: string | null;
+  };
+};
+
 /**
  * 格式化出库记录数据
  */
-function formatOutboundRecord(record: any) {
+function formatOutboundRecord(record: OutboundRecordWithProduct) {
   return {
     id: record.id,
     recordNumber: record.recordNumber,

@@ -1,5 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
 import { ApiError } from '@/lib/api/errors';
@@ -20,14 +20,32 @@ const checkAvailabilitySchema = z.object({
 
 type AvailabilityParams = z.infer<typeof checkAvailabilitySchema>;
 
+type InventoryRecord = {
+  id: string;
+  quantity: number;
+  reservedQuantity: number;
+  batchNumber: string | null;
+  variantId: string | null;
+  location: string | null;
+};
+
+type AllocationItem = {
+  inventoryId: string;
+  batchNumber: string | null;
+  variantId: string | null;
+  location: string | null;
+  allocatedQuantity: number;
+  availableInBatch: number;
+};
+
 /**
  * 计算分配方案
  */
 function calculateAllocationPlan(
-  inventoryRecords: any[],
+  inventoryRecords: InventoryRecord[],
   quantity: number
-): any[] {
-  const allocationPlan: any[] = [];
+): AllocationItem[] {
+  const allocationPlan: AllocationItem[] = [];
   let remainingQuantity = quantity;
 
   for (const record of inventoryRecords) {
@@ -49,16 +67,31 @@ function calculateAllocationPlan(
   return allocationPlan;
 }
 
+type AvailabilityResult = {
+  available: boolean;
+  totalAvailable: number;
+  requested: number;
+  shortfall: number;
+  allocationPlan: AllocationItem[];
+  message: string;
+};
+
 /**
  * 检查库存可用性
  */
 async function checkInventoryAvailability(
   params: AvailabilityParams
-): Promise<any> {
+): Promise<AvailabilityResult> {
   const { productId, quantity, variantId, batchNumber, location } = params;
 
   // 构建查询条件
-  const whereCondition: any = {
+  const whereCondition: {
+    productId: string;
+    quantity: { gt: number };
+    variantId?: string;
+    batchNumber?: string;
+    location?: string;
+  } = {
     productId,
     quantity: { gt: 0 },
   };
