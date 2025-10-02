@@ -17,15 +17,21 @@ import { authOptions } from '@/lib/auth';
  * GET /api/statements/[id] - 获取往来账单详情
  * 重构：使用辅助函数拆分超长函数，符合全局约定规范
  */
-export const GET = withErrorHandling<{ id: string }>(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+export const GET = withErrorHandling(
+  async (
+    request: NextRequest,
+    { params }: { params?: Record<string, string> }
+  ) => {
     // 身份验证
     const session = await getServerSession(authOptions);
     if (!session) {
       throw ApiError.unauthorized();
     }
 
-    const { id } = params;
+    const id = params?.id;
+    if (!id) {
+      throw ApiError.badRequest('缺少必需的参数: id');
+    }
 
     // 首先尝试作为客户查找
     const customer = await fetchCustomerWithOrders(id);

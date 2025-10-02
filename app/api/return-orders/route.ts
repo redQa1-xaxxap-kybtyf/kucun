@@ -60,7 +60,25 @@ export async function GET(request: NextRequest) {
     } = validationResult.data;
 
     // 构建查询条件
-    const where: Record<string, unknown> = {};
+    type WhereClause = {
+      OR?: Array<{
+        returnNumber?: { contains: string };
+        reason?: { contains: string };
+        customer?: { name: { contains: string } };
+        salesOrder?: { orderNumber: { contains: string } };
+      }>;
+      customerId?: string;
+      salesOrderId?: string;
+      status?: string;
+      type?: string;
+      processType?: string;
+      createdAt?: {
+        gte?: Date;
+        lte?: Date;
+      };
+    };
+
+    const where: WhereClause = {};
 
     if (search) {
       where.OR = [
@@ -221,7 +239,16 @@ export async function POST(request: NextRequest) {
     const salesOrder = await prisma.salesOrder.findUnique({
       where: { id: data.salesOrderId },
       include: {
-        items: true,
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
         customer: true,
       },
     });

@@ -13,14 +13,18 @@ import { prisma } from '@/lib/db';
 type CustomerOrderWithRelations = SalesOrder & {
   payments: Array<{
     id: string;
+    paymentNumber: string;
     paymentAmount: number;
     paymentDate: Date;
+    paymentMethod: string;
     status: string;
   }>;
   refunds: Array<{
     id: string;
+    refundNumber: string;
     refundAmount: number;
     refundDate: Date;
+    reason: string;
     status: string;
   }>;
 };
@@ -38,8 +42,10 @@ type CustomerWithOrders = Customer & {
 type SupplierOrderWithRelations = SalesOrder & {
   payments: Array<{
     id: string;
+    paymentNumber: string;
     paymentAmount: number;
     paymentDate: Date;
+    paymentMethod: string;
     status: string;
   }>;
 };
@@ -49,6 +55,19 @@ type SupplierOrderWithRelations = SalesOrder & {
  */
 type SupplierWithOrders = Supplier & {
   salesOrders: SupplierOrderWithRelations[];
+  factoryShipmentOrderItems: Array<{
+    id: string;
+    displayName: string;
+    totalPrice: number;
+    createdAt: Date;
+    factoryShipmentOrder: {
+      id: string;
+      orderNumber: string;
+      status: string;
+      paidAmount: number;
+      updatedAt: Date;
+    };
+  }>;
 };
 
 /**
@@ -71,6 +90,14 @@ export async function fetchCustomerWithOrders(
             where: {
               status: 'confirmed',
             },
+            select: {
+              id: true,
+              paymentNumber: true,
+              paymentAmount: true,
+              paymentDate: true,
+              paymentMethod: true,
+              status: true,
+            },
             orderBy: {
               paymentDate: 'desc',
             },
@@ -78,6 +105,14 @@ export async function fetchCustomerWithOrders(
           refunds: {
             where: {
               status: 'completed',
+            },
+            select: {
+              id: true,
+              refundNumber: true,
+              refundAmount: true,
+              refundDate: true,
+              reason: true,
+              status: true,
             },
             orderBy: {
               refundDate: 'desc',
@@ -112,8 +147,36 @@ export async function fetchSupplierWithOrders(
             where: {
               status: 'confirmed',
             },
+            select: {
+              id: true,
+              paymentNumber: true,
+              paymentAmount: true,
+              paymentDate: true,
+              paymentMethod: true,
+              status: true,
+            },
             orderBy: {
               paymentDate: 'desc',
+            },
+          },
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
+      factoryShipmentOrderItems: {
+        select: {
+          id: true,
+          displayName: true,
+          totalPrice: true,
+          createdAt: true,
+          factoryShipmentOrder: {
+            select: {
+              id: true,
+              orderNumber: true,
+              status: true,
+              paidAmount: true,
+              updatedAt: true,
             },
           },
         },
