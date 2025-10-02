@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
+import { getReturnableItems } from '@/lib/services/sales-order-service';
 import { logger } from '@/lib/utils/console-logger';
 
 /**
@@ -10,7 +10,7 @@ import { logger } from '@/lib/utils/console-logger';
  * 获取销售订单的可退货明细
  */
 export async function GET(
-  request: NextRequest,
+  _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -25,133 +25,25 @@ export async function GET(
       );
     }
 
-    // 查询销售订单及其明细
-    const salesOrder = await prisma.salesOrder.findUnique({
-      where: { id },
-      include: {
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-          },
-        },
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                code: true,
-                unit: true,
-                specification: true,
-              },
-            },
-          },
-          orderBy: {
-            id: 'asc',
-          },
-        },
-      },
-    });
-
-    if (!salesOrder) {
-      return NextResponse.json(
-        { success: false, error: '销售订单不存在' },
-        { status: 404 }
-      );
-    }
-
-    // 检查订单状态是否允许退货
-    const allowedStatuses = ['confirmed', 'shipped', 'completed'];
-    if (!allowedStatuses.includes(salesOrder.status)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `订单状态为 ${salesOrder.status}，不允许退货`,
-        },
-        { status: 400 }
-      );
-    }
-
-    // 查询已退货数量
-    const existingReturns = await prisma.returnOrderItem.findMany({
-      where: {
-        returnOrder: {
-          salesOrderId: id,
-          status: {
-            not: 'cancelled', // 排除已取消的退货订单
-          },
-        },
-      },
-      select: {
-        salesOrderItemId: true,
-        returnQuantity: true,
-      },
-    });
-
-    // 计算每个明细项的已退货数量
-    const returnedQuantities = existingReturns.reduce(
-      (acc, item) => {
-        const key = item.salesOrderItemId;
-        acc[key] = (acc[key] || 0) + item.returnQuantity;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-
-    // 构建可退货明细
-    const returnableItems = (salesOrder as any).items
-      .map((item: any) => {
-        const returnedQuantity = returnedQuantities[item.id] || 0;
-        const availableQuantity = item.quantity - returnedQuantity;
-
-        return {
-          salesOrderItemId: item.id,
-          productId: item.productId,
-          product: item.product,
-          originalQuantity: item.quantity,
-          returnedQuantity,
-          availableQuantity,
-          unitPrice: item.unitPrice,
-          maxReturnAmount: availableQuantity * item.unitPrice,
-          colorCode: item.colorCode,
-          productionDate: item.productionDate,
-          batchNumber: item.batchNumber,
-          variantId: item.variantId,
-        };
-      })
-      .filter((item: any) => item.availableQuantity > 0); // 只返回还可以退货的明细
-
-    const response = {
-      salesOrder: {
-        id: salesOrder.id,
-        orderNumber: salesOrder.orderNumber,
-        status: salesOrder.status,
-        totalAmount: salesOrder.totalAmount,
-        customer: (salesOrder as any).customer,
-        createdAt: salesOrder.createdAt,
-      },
-      returnableItems,
-      summary: {
-        totalItems: (salesOrder as any).items.length,
-        returnableItems: returnableItems.length,
-        maxReturnAmount: returnableItems.reduce(
-          (sum: any, item: any) => sum + item.maxReturnAmount,
-          0
-        ),
-      },
-    };
+    // 获取可退货明细(使用服务层函数)
+    const response = await getReturnableItems(id);
 
     return NextResponse.json({
       success: true,
       data: response,
     });
   } catch (error) {
+    const errorMessage =
+      error instanceof Error ? error.message : '获取可退货明细失败';
     logger.error('sales-api', '获取可退货明细失败:', error);
     return NextResponse.json(
-      { success: false, error: '获取可退货明细失败' },
-      { status: 500 }
+      { success: false, error: errorMessage },
+      {
+        status:
+          error instanceof Error && error.message.includes('不存在')
+            ? 404
+            : 500,
+      }
     );
   }
 }
