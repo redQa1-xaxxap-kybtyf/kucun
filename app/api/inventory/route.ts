@@ -10,6 +10,7 @@ import { authOptions } from '@/lib/auth';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { cacheConfig, env } from '@/lib/env';
+import { logger } from '@/lib/utils/console-logger';
 import {
   inventoryAdjustSchema,
   inventoryQuerySchema,
@@ -91,10 +92,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: cached });
   } catch (error) {
-    console.error('获取库存列表错误:', error);
+    logger.error('inventory-api', '获取库存列表错误:', error);
     // 添加更详细的错误信息
     if (error instanceof Error) {
-      console.error('错误堆栈:', error.stack);
+      logger.error('inventory-api', '错误堆栈:', error.stack);
     }
 
     return NextResponse.json(
@@ -175,7 +176,7 @@ export async function POST(request: NextRequest) {
       throw err;
     }
   } catch (error) {
-    console.error('库存调整错误:', error);
+    logger.error('inventory-api', '库存调整错误:', error);
 
     return NextResponse.json(
       {
