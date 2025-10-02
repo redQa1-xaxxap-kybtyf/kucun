@@ -1,8 +1,9 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 生成销售订单号API
@@ -32,7 +33,7 @@ export async function GET(_request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('生成订单号失败:', error);
+    logger.error('sales-api', '生成订单号失败:', error);
     return NextResponse.json(
       {
         success: false,

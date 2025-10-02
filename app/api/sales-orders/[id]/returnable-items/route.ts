@@ -1,8 +1,9 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * GET /api/sales-orders/[id]/returnable-items
@@ -147,7 +148,7 @@ export async function GET(
       data: response,
     });
   } catch (error) {
-    console.error('获取可退货明细失败:', error);
+    logger.error('sales-api', '获取可退货明细失败:', error);
     return NextResponse.json(
       { success: false, error: '获取可退货明细失败' },
       { status: 500 }

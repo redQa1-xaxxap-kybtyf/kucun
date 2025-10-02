@@ -1,10 +1,11 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { ApiError } from '@/lib/api/errors';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
+import { logger } from '@/lib/utils/console-logger';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateOrderStatusSchema } from '@/lib/validations/sales-order';
 
@@ -133,7 +134,7 @@ export async function GET(
     if (error instanceof ApiError) {
       throw error;
     }
-    console.error('获取销售订单信息错误:', error);
+    logger.error('sales-api', '获取销售订单信息错误:', error);
     throw ApiError.internalError('获取销售订单信息失败');
   }
 }
