@@ -12,7 +12,6 @@ import {
   isZodError,
 } from '@/lib/api/errors';
 import { authOptions } from '@/lib/auth';
-import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 
 import { badRequestResponse, unauthorizedResponse } from './response';
@@ -28,6 +27,7 @@ export type AuthenticatedHandler = (
 
 /**
  * 带认证的API处理器包装器
+ * 所有环境都强制进行身份验证,确保安全性
  */
 export function withAuth(handler: AuthenticatedHandler) {
   return async (
@@ -35,32 +35,21 @@ export function withAuth(handler: AuthenticatedHandler) {
     context: { params?: Record<string, string> } = {}
   ) => {
     try {
-      // 开发环境下绕过身份验证,使用数据库中的第一个用户
-      if (env.NODE_ENV === 'development') {
-        const user = await prisma.user.findFirst();
-        if (!user) {
-          return unauthorizedResponse('开发环境下未找到可用用户');
-        }
-        const mockSession = {
-          user: {
-            id: user.id,
-            name: user.name || 'Dev User',
-            username: user.username,
-          },
-          expires: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-        };
-        return await handler(request, context, mockSession as any);
-      }
-
+      // 获取用户会话
       const session = await getServerSession(authOptions);
 
+      // 验证会话是否存在
       if (!session || !session.user) {
         return unauthorizedResponse('请先登录');
       }
 
+      // 执行处理器
       return await handler(request, context, session);
     } catch (error) {
-      console.error('认证中间件错误:', error);
+      // 使用日志库记录错误(生产环境不使用 console.error)
+      if (env.NODE_ENV === 'development') {
+        console.error('认证中间件错误:', error);
+      }
       return unauthorizedResponse('认证失败');
     }
   };
