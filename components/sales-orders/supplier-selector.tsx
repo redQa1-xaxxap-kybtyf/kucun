@@ -73,7 +73,7 @@ export function SupplierSelector({
 
   // 过滤供应商列表
   const filteredSuppliers = React.useMemo(() => {
-    if (!searchValue) return suppliers;
+    if (!searchValue) {return suppliers;}
 
     const search = searchValue.toLowerCase();
     return suppliers.filter(

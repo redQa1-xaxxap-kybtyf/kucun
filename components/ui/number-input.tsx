@@ -46,7 +46,7 @@ export const NumberInput = React.forwardRef<HTMLInputElement, NumberInputProps>(
     // 格式化数字显示
     const formatNumber = React.useCallback(
       (num: number | null | undefined): string => {
-        if (num === null || num === undefined) return '';
+        if (num === null || num === undefined) {return '';}
         if (precision !== undefined) {
           return num.toFixed(precision);
         }

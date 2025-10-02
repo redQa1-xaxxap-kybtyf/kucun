@@ -11,20 +11,16 @@ export async function middleware(request: NextRequest) {
   // 1. 执行身份验证中间件
   const authResponse = await authMiddleware(request);
 
-  // 如果身份验证失败(重定向),直接返回
-  if (authResponse.status === 307 || authResponse.status === 308) {
+  // 如果身份验证失败或需要重定向，直接返回
+  if (authResponse.status !== 200) {
     return authResponse;
   }
 
-  // 2. 添加安全头
-  const response = NextResponse.next({
-    request: {
-      headers: authResponse.headers,
-    },
-  });
+  // 2. 在认证响应上追加安全头
+  const response = authResponse;
 
-  // 生成 nonce 用于 CSP
-  const nonce = Buffer.from(crypto.randomUUID()).toString('base64');
+  // 生成 nonce 用于 CSP（Edge 环境下使用 Web API）
+  const nonce = btoa(crypto.randomUUID());
   const isDev = process.env.NODE_ENV === 'development';
 
   // Content Security Policy

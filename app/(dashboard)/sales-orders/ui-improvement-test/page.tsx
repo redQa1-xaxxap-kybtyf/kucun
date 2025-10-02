@@ -64,25 +64,25 @@ export default function UIImprovementTestPage() {
               <h4 className="font-medium text-green-700">✅ 改进后的优势</h4>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                   <span>
                     <strong>统一界面</strong>：无需模式切换，减少认知负担
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                   <span>
                     <strong>渐进式披露</strong>：按需显示功能，界面更清爽
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                   <span>
                     <strong>智能检测</strong>：自动识别用户意图，无需手动切换
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                   <span>
                     <strong>视觉层次</strong>：清晰的信息架构，符合中国用户习惯
                   </span>

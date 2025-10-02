@@ -150,7 +150,7 @@ export async function GET(_request: NextRequest) {
     todos.sort((a, b) => {
       const priorityDiff =
         priorityOrder[b.priority] - priorityOrder[a.priority];
-      if (priorityDiff !== 0) return priorityDiff;
+      if (priorityDiff !== 0) {return priorityDiff;}
 
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });

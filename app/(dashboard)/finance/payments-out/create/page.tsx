@@ -17,28 +17,28 @@ import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
 } from '@/components/ui/card';
 import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
+    Form,
+    FormControl,
+    FormDescription,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
@@ -48,15 +48,15 @@ import { formatCurrency } from '@/lib/utils';
 // 创建付款记录表单Schema
 const createPaymentOutSchema = z.object({
   payableRecordId: z.string().optional(),
-  supplierId: z.string().min(1, '请选择供应商'),
+  supplierId: z.string().min(1, { error: '请选择供应商' }),
   paymentMethod: z.enum(
     ['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'],
     {
-      required_error: '请选择付款方式',
+      message: '请选择付款方式',
     }
   ),
-  paymentAmount: z.number().min(0.01, '付款金额必须大于0'),
-  paymentDate: z.string().min(1, '请选择付款日期'),
+  paymentAmount: z.number().min(0.01, { error: '付款金额必须大于0' }),
+  paymentDate: z.string().min(1, { error: '请选择付款日期' }),
   voucherNumber: z.string().optional(),
   bankInfo: z.string().optional(),
   remarks: z.string().optional(),
@@ -342,7 +342,7 @@ function usePayableData(payableId: string) {
   const { data: payableData } = useQuery({
     queryKey: ['payableRecord', payableId],
     queryFn: async () => {
-      if (!payableId) return null;
+      if (!payableId) {return null;}
       const response = await fetch(`/api/finance/payables/${payableId}`);
       if (!response.ok) {
         throw new Error('获取应付款信息失败');

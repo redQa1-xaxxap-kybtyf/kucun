@@ -171,7 +171,7 @@ export function FactoryShipmentOrderList({
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   placeholder="搜索集装箱号码或订单编号..."
                   value={searchTerm}
@@ -218,7 +218,7 @@ export function FactoryShipmentOrderList({
         <CardContent>
           {isLoading ? (
             <div className="flex items-center justify-center py-8">
-              <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+              <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
             </div>
           ) : orders.length === 0 ? (
             <div className="py-8 text-center">

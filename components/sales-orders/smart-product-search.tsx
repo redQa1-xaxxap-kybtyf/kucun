@@ -75,7 +75,7 @@ export function SmartProductSearch({
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!searchValue) return products;
+    if (!searchValue) {return products;}
 
     const searchLower = searchValue.toLowerCase();
     return products.filter(
@@ -128,7 +128,7 @@ export function SmartProductSearch({
             disabled={disabled}
           >
             <div className="flex min-w-0 flex-1 items-center gap-2">
-              <Search className="h-4 w-4 flex-shrink-0" />
+              <Search className="h-4 w-4 shrink-0" />
               <span className="truncate">
                 {selectedProduct ? (
                   <span className="flex items-center gap-2">
@@ -171,7 +171,7 @@ export function SmartProductSearch({
                             value === product.id ? 'opacity-100' : 'opacity-0'
                           )}
                         />
-                        <Package className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                        <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="truncate font-medium">
@@ -189,7 +189,7 @@ export function SmartProductSearch({
                         </div>
                       </div>
                       {product.inventory && (
-                        <div className="flex-shrink-0 text-right">
+                        <div className="shrink-0 text-right">
                           <div className="text-sm font-medium">
                             库存: {product.inventory.availableInventory}
                           </div>

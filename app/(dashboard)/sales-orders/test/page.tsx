@@ -83,9 +83,15 @@ export default function SalesOrderTestPage() {
 
   // 获取测试状态
   const getTestStatus = (loading: boolean, error: unknown, data: unknown) => {
-    if (loading) return 'loading';
-    if (error) return 'error';
-    if (data) return 'success';
+    if (loading) {
+      return 'loading';
+    }
+    if (error) {
+      return 'error';
+    }
+    if (data) {
+      return 'success';
+    }
     return 'pending';
   };
 
@@ -129,7 +135,7 @@ export default function SalesOrderTestPage() {
           <div>
             <div className="font-medium">{title}</div>
             {description && (
-              <div className="text-sm text-muted-foreground">{description}</div>
+              <div className="text-muted-foreground text-sm">{description}</div>
             )}
           </div>
         </div>

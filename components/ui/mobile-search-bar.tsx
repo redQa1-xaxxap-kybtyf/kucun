@@ -152,7 +152,9 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
 
     // 获取当前排序标签
     const currentSortLabel = React.useMemo(() => {
-      if (!value.sort) return undefined;
+      if (!value.sort) {
+        return undefined;
+      }
       const sortOption = sortOptions.find(
         option => option.key === value.sort?.key
       );
@@ -163,7 +165,7 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
       <div className={cn('space-y-3', className)} ref={ref} {...props}>
         {/* 搜索输入框 */}
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 transform text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 transform" />
           <Input
             type="text"
             placeholder={placeholder}
@@ -174,13 +176,13 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
                 handleSearch();
               }
             }}
-            className="pl-10 pr-4"
+            className="pr-4 pl-10"
           />
           {localKeyword && (
             <button
               type="button"
               onClick={() => handleKeywordChange('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 transform text-muted-foreground hover:text-foreground"
+              className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2 transform"
             >
               <X className="h-4 w-4" />
             </button>
@@ -199,7 +201,7 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
                   {showFilterCount && activeFilterCount > 0 && (
                     <Badge
                       variant="destructive"
-                      className="absolute -right-2 -top-2 flex h-5 w-5 items-center justify-center p-0 text-xs"
+                      className="absolute -top-2 -right-2 flex h-5 w-5 items-center justify-center p-0 text-xs"
                     >
                       {activeFilterCount}
                     </Badge>
@@ -370,10 +372,14 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap gap-2">
             {Object.entries(value.filters).map(([key, filterValue]) => {
-              if (!filterValue) return null;
+              if (!filterValue) {
+                return null;
+              }
 
               const filter = filterOptions.find(f => f.key === key);
-              if (!filter) return null;
+              if (!filter) {
+                return null;
+              }
 
               let displayValue = filterValue;
               if (filter.type === 'select' && filter.options) {
@@ -389,7 +395,7 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
                   <button
                     type="button"
                     onClick={() => handleFilterChange(key, undefined)}
-                    className="ml-1 hover:text-destructive"
+                    className="hover:text-destructive ml-1"
                   >
                     <X className="h-3 w-3" />
                   </button>

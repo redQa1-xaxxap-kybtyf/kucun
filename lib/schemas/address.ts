@@ -105,7 +105,7 @@ export const addressValidation = {
   isAddressEmpty: (
     address: AddressData | OptionalAddressData | string | null | undefined
   ): boolean => {
-    if (!address) return true;
+    if (!address) {return true;}
 
     if (typeof address === 'string') {
       return address.trim().length === 0;
@@ -122,7 +122,7 @@ export const addressValidation = {
   getAddressDisplayText: (
     address: AddressData | OptionalAddressData | string | null | undefined
   ): string => {
-    if (!address) return '-';
+    if (!address) {return '-';}
 
     if (typeof address === 'string') {
       return address || '-';

@@ -225,13 +225,13 @@ function calculateScore(text: string, keyword: string): number {
   const lowerKeyword = keyword.toLowerCase();
 
   // 完全匹配得分最高
-  if (lowerText === lowerKeyword) return 100;
+  if (lowerText === lowerKeyword) {return 100;}
 
   // 开头匹配得分较高
-  if (lowerText.startsWith(lowerKeyword)) return 80;
+  if (lowerText.startsWith(lowerKeyword)) {return 80;}
 
   // 包含匹配得分中等
-  if (lowerText.includes(lowerKeyword)) return 60;
+  if (lowerText.includes(lowerKeyword)) {return 60;}
 
   return 0;
 }
@@ -246,20 +246,20 @@ export function validateAddressData(address: AddressData): boolean {
 
   // 验证省份是否存在
   const provinceExists = provinces.some(p => p.name === address.province);
-  if (!provinceExists) return false;
+  if (!provinceExists) {return false;}
 
   // 验证城市是否属于该省份
   const provinceCode = getProvinceCodeByName(address.province);
-  if (!provinceCode) return false;
+  if (!provinceCode) {return false;}
 
   const cityExists = cities.some(
     c => c.name === address.city && c.provinceCode === provinceCode
   );
-  if (!cityExists) return false;
+  if (!cityExists) {return false;}
 
   // 验证区县是否属于该城市
   const cityCode = getCityCodeByName(address.city, provinceCode);
-  if (!cityCode) return false;
+  if (!cityCode) {return false;}
 
   const districtExists = areas.some(
     a => a.name === address.district && a.cityCode === cityCode

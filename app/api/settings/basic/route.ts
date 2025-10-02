@@ -120,7 +120,7 @@ export async function GET(_request: NextRequest) {
         {
           success: false,
           error: '基本设置数据验证失败',
-          details: validationResult.error.errors.map(err => ({
+          details: validationResult.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message,
           })),
@@ -189,7 +189,7 @@ export async function PUT(request: NextRequest) {
         {
           success: false,
           error: '输入数据格式不正确',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         } as SettingsApiResponse,
         { status: 400 }
       );
@@ -215,7 +215,7 @@ export async function PUT(request: NextRequest) {
     // 批量更新设置
     const updatePromises = Object.entries(settingsData).map(
       async ([key, value]) => {
-        if (value === undefined) return null;
+        if (value === undefined) {return null;}
 
         // 确定数据类型
         let dataType: 'string' | 'number' | 'boolean' | 'json' = 'string';

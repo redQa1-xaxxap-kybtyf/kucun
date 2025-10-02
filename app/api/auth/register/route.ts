@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: '输入数据格式不正确',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );

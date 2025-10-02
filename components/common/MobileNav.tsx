@@ -133,7 +133,7 @@ export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
 
   // 根据用户权限过滤导航项
   const accessibleNavItems = React.useMemo(() => {
-    if (!session?.user?.role) return [];
+    if (!session?.user?.role) {return [];}
 
     const filteredItems = getAccessibleNavItems(
       mobileNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
@@ -143,7 +143,7 @@ export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
   }, [session?.user?.role, addBadgesToNavItems]);
 
   const accessibleBottomNavItems = React.useMemo(() => {
-    if (!session?.user?.role) return [];
+    if (!session?.user?.role) {return [];}
 
     const filteredItems = getAccessibleNavItems(
       mobileBottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
@@ -178,7 +178,7 @@ export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
+    if (!touchStart || !touchEnd) {return;}
 
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
@@ -280,7 +280,7 @@ function MobileNavItem({ item, isActive, onClick }: MobileNavItemProps) {
         variant={isActive ? 'secondary' : 'ghost'}
         className={cn(
           'h-12 w-full justify-start px-4 transition-all duration-200',
-          isActive && 'bg-secondary font-medium shadow-sm',
+          isActive && 'bg-secondary font-medium shadow-xs',
           'touch-manipulation active:scale-95'
         )}
         disabled={item.disabled}

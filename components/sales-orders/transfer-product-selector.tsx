@@ -93,7 +93,7 @@ export function TransferProductSelector({
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!searchValue) return products;
+    if (!searchValue) {return products;}
 
     const search = searchValue.toLowerCase();
     return products.filter(

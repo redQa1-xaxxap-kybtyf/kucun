@@ -47,16 +47,16 @@ import { formatCurrency } from '@/lib/utils';
 
 // 创建收款记录表单Schema
 const createPaymentSchema = z.object({
-  salesOrderId: z.string().min(1, '请选择销售订单'),
-  customerId: z.string().min(1, '请选择客户'),
+  salesOrderId: z.string().min(1, { error: '请选择销售订单' }),
+  customerId: z.string().min(1, { error: '请选择客户' }),
   paymentMethod: z.enum(
     ['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'],
     {
-      required_error: '请选择收款方式',
+      message: '请选择收款方式',
     }
   ),
-  paymentAmount: z.number().min(0.01, '收款金额必须大于0'),
-  paymentDate: z.string().min(1, '请选择收款日期'),
+  paymentAmount: z.number().min(0.01, { error: '收款金额必须大于0' }),
+  paymentDate: z.string().min(1, { error: '请选择收款日期' }),
   receiptNumber: z.string().optional(),
   bankInfo: z.string().optional(),
   remarks: z.string().optional(),
@@ -112,7 +112,7 @@ export default function CreatePaymentPage() {
   const { data: orderData, isLoading: _orderLoading } = useQuery({
     queryKey: ['salesOrder', watchedOrderId],
     queryFn: async () => {
-      if (!watchedOrderId) return null;
+      if (!watchedOrderId) {return null;}
       const response = await fetch(`/api/sales-orders/${watchedOrderId}`);
       if (!response.ok) {
         throw new Error('获取订单信息失败');
@@ -498,15 +498,15 @@ export default function CreatePaymentPage() {
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex items-start gap-2">
-                <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
+                <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
                 <p>请确认收款金额与实际到账金额一致</p>
               </div>
               <div className="flex items-start gap-2">
-                <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
+                <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
                 <p>建议保留收款凭证并填写收据号码</p>
               </div>
               <div className="flex items-start gap-2">
-                <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
+                <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
                 <p>收款记录创建后可在列表中查看和管理</p>
               </div>
             </CardContent>

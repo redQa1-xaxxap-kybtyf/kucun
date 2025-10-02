@@ -54,7 +54,7 @@ export function AuthLayout({
 
   // 认证检查
   React.useEffect(() => {
-    if (status === 'loading') return;
+    if (status === 'loading') {return;}
 
     if (requireAuth && status === 'unauthenticated') {
       // 未认证用户重定向到登录页

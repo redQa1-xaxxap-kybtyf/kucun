@@ -163,8 +163,8 @@ function _InventoryCheckItem({ result }: InventoryCheckItemProps) {
   };
 
   const _getProgressColor = () => {
-    if (result.availableQuantity === 0) return 'bg-red-500';
-    if (result.availableQuantity <= 10) return 'bg-orange-500';
+    if (result.availableQuantity === 0) {return 'bg-red-500';}
+    if (result.availableQuantity <= 10) {return 'bg-orange-500';}
     return 'bg-green-500';
   };
 

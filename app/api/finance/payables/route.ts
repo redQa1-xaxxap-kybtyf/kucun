@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: '查询参数验证失败',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );
@@ -199,7 +199,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: '数据验证失败',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );

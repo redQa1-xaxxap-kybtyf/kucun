@@ -50,7 +50,7 @@ export async function logSystemEvent(params: LogParams): Promise<void> {
       },
     });
   } catch (error) {
-    // eslint-disable-next-line no-console
+     
     console.error('记录系统日志失败:', error);
     // 日志记录失败不应该影响主要业务流程
   }

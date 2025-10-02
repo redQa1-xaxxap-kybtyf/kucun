@@ -30,26 +30,20 @@ export const createInboundSchema = z.object({
 
   // 用户输入的数量（根据选择的单位）
   inputQuantity: z
-    .number({
-      required_error: '请输入入库数量',
-      invalid_type_error: '数量必须是数字',
-    })
-    .min(1, '数量必须大于等于1')
-    .max(999999, '数量不能超过999999')
-    .int('数量必须是整数'),
+    .number({ message: '数量必须是数字' })
+    .min(1, { error: '数量必须大于等于1' })
+    .max(999999, { error: '数量不能超过999999' })
+    .int({ error: '数量必须是整数' }),
 
   // 用户选择的单位
   inputUnit: inboundUnitSchema.default('pieces'),
 
   // 最终存储的片数（由前端计算后传入）
   quantity: z
-    .number({
-      required_error: '请输入入库数量',
-      invalid_type_error: '数量必须是数字',
-    })
-    .min(1, '数量必须大于等于1片')
-    .max(999999, '数量不能超过999999片')
-    .int('数量必须是整数'),
+    .number({ message: '数量必须是数字' })
+    .min(1, { error: '数量必须大于等于1片' })
+    .max(999999, { error: '数量不能超过999999片' })
+    .int({ error: '数量必须是整数' }),
 
   reason: inboundReasonSchema.default('purchase'),
 
@@ -72,23 +66,17 @@ export const createInboundSchema = z.object({
 
   // 产品参数字段（入库时确定）
   piecesPerUnit: z
-    .number({
-      required_error: '请输入每单位片数',
-      invalid_type_error: '每单位片数必须是数字',
-    })
-    .int('每单位片数必须是整数')
-    .min(1, '每单位片数至少为1')
-    .max(10000, '每单位片数不能超过10000')
+    .number({ message: '每单位片数必须是数字' })
+    .int({ error: '每单位片数必须是整数' })
+    .min(1, { error: '每单位片数至少为1' })
+    .max(10000, { error: '每单位片数不能超过10000' })
     .optional()
     .default(1), // 提供默认值，避免字段缺失导致 "Required" 错误
 
   weight: z
-    .number({
-      required_error: '请输入产品重量',
-      invalid_type_error: '重量必须是数字',
-    })
-    .min(0.01, '重量必须大于0')
-    .max(10000, '重量不能超过10000kg')
+    .number({ message: '重量必须是数字' })
+    .min(0.01, { error: '重量必须大于0' })
+    .max(10000, { error: '重量不能超过10000kg' })
     .optional()
     .default(0.01), // 提供默认值，避免字段缺失导致 "Required" 错误
 });

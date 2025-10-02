@@ -65,13 +65,13 @@ export default function LogsSettingsPage() {
       });
 
       // 添加筛选参数
-      if (filters.type) params.append('type', filters.type);
-      if (filters.level) params.append('level', filters.level);
-      if (filters.userId) params.append('userId', filters.userId);
-      if (filters.action) params.append('action', filters.action);
-      if (filters.startDate) params.append('startDate', filters.startDate);
-      if (filters.endDate) params.append('endDate', filters.endDate);
-      if (filters.search) params.append('search', filters.search);
+      if (filters.type) {params.append('type', filters.type);}
+      if (filters.level) {params.append('level', filters.level);}
+      if (filters.userId) {params.append('userId', filters.userId);}
+      if (filters.action) {params.append('action', filters.action);}
+      if (filters.startDate) {params.append('startDate', filters.startDate);}
+      if (filters.endDate) {params.append('endDate', filters.endDate);}
+      if (filters.search) {params.append('search', filters.search);}
 
       const response = await fetch(`/api/settings/logs?${params}`);
       if (!response.ok) {

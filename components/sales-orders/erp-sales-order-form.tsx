@@ -99,13 +99,13 @@ export function ERPSalesOrderForm({
   const convertQuantity = {
     // 片转件：数量 ÷ 每件片数
     piecesToUnits: (pieces: number, piecesPerUnit: number): number => {
-      if (piecesPerUnit <= 0) return pieces;
+      if (piecesPerUnit <= 0) {return pieces;}
       return Math.round((pieces / piecesPerUnit) * 100) / 100; // 保留2位小数
     },
 
     // 件转片：数量 × 每件片数
     unitsToPieces: (units: number, piecesPerUnit: number): number => {
-      if (piecesPerUnit <= 0) return units;
+      if (piecesPerUnit <= 0) {return units;}
       return Math.round(units * piecesPerUnit * 100) / 100; // 保留2位小数
     },
 
@@ -143,7 +143,7 @@ export function ERPSalesOrderForm({
       piecePrice: number,
       piecesPerUnit: number
     ): number => {
-      if (piecesPerUnit <= 0 || piecePrice <= 0) return piecePrice;
+      if (piecesPerUnit <= 0 || piecePrice <= 0) {return piecePrice;}
       return Math.round(piecePrice * piecesPerUnit * 100) / 100; // 保留2位小数
     },
 
@@ -152,7 +152,7 @@ export function ERPSalesOrderForm({
       unitPrice: number,
       piecesPerUnit: number
     ): number => {
-      if (piecesPerUnit <= 0 || unitPrice <= 0) return unitPrice;
+      if (piecesPerUnit <= 0 || unitPrice <= 0) {return unitPrice;}
       return Math.round((unitPrice / piecesPerUnit) * 100) / 100; // 保留2位小数
     },
 
@@ -191,7 +191,7 @@ export function ERPSalesOrderForm({
     totalPieces: number,
     piecesPerUnit: number
   ): string => {
-    if (piecesPerUnit <= 0 || totalPieces <= 0) return '';
+    if (piecesPerUnit <= 0 || totalPieces <= 0) {return '';}
 
     try {
       const result = calculatePieceDisplay(
@@ -333,7 +333,7 @@ export function ERPSalesOrderForm({
   const totalWeight = watchedItems.reduce((sum, item) => {
     // 查找对应的产品数据
     const product = productsData?.data?.find(p => p.id === item.productId);
-    if (!product || !product.weight) return sum;
+    if (!product || !product.weight) {return sum;}
 
     // 重量 = 系统数量（片数） × 产品重量
     return sum + (item.quantity || 0) * product.weight;

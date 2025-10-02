@@ -2,14 +2,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowLeft,
-  Calendar,
-  Edit,
-  Mail,
-  MapPin,
-  Phone,
-  RotateCcw,
-  ShoppingCart,
+    ArrowLeft,
+    Calendar,
+    Edit,
+    Mail,
+    MapPin,
+    Phone,
+    RotateCcw,
+    ShoppingCart,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 

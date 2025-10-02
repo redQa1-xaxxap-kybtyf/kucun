@@ -65,7 +65,7 @@ export function MobileCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             {icon && (
-              <div className="rounded-lg bg-primary/10 p-2 text-primary">
+              <div className="bg-primary/10 text-primary rounded-lg p-2">
                 {icon}
               </div>
             )}
@@ -139,7 +139,9 @@ export function MobileList<T>({
   >({});
 
   const handleTouchStart = (e: React.TouchEvent, index: number) => {
-    if (!isMobile || !onItemSwipe) return;
+    if (!isMobile || !onItemSwipe) {
+      return;
+    }
 
     const touch = e.touches[0];
     setSwipeStates(prev => ({
@@ -153,11 +155,15 @@ export function MobileList<T>({
   };
 
   const handleTouchMove = (e: React.TouchEvent, index: number) => {
-    if (!isMobile || !onItemSwipe) return;
+    if (!isMobile || !onItemSwipe) {
+      return;
+    }
 
     const touch = e.touches[0];
     const state = swipeStates[index];
-    if (!state) return;
+    if (!state) {
+      return;
+    }
 
     setSwipeStates(prev => ({
       ...prev,
@@ -170,10 +176,14 @@ export function MobileList<T>({
   };
 
   const handleTouchEnd = (item: T, index: number) => {
-    if (!isMobile || !onItemSwipe) return;
+    if (!isMobile || !onItemSwipe) {
+      return;
+    }
 
     const state = swipeStates[index];
-    if (!state) return;
+    if (!state) {
+      return;
+    }
 
     const distance = state.currentX - state.startX;
     const minSwipeDistance = 50;
@@ -193,7 +203,7 @@ export function MobileList<T>({
 
   if (items.length === 0) {
     return (
-      <div className="py-8 text-center text-muted-foreground">
+      <div className="text-muted-foreground py-8 text-center">
         {emptyMessage}
       </div>
     );
@@ -262,7 +272,7 @@ export function MobileToolbar({
   return (
     <div
       className={cn(
-        'flex items-center justify-between border-b bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/60',
+        'bg-background/95 supports-backdrop-filter:bg-background/60 flex items-center justify-between border-b p-4 backdrop-blur-sm',
         isMobile && 'sticky top-0 z-40',
         className
       )}
@@ -356,7 +366,7 @@ export function MobileViewSwitcher({
         )}
       </div>
 
-      <div className="flex items-center space-x-1 rounded-lg bg-muted p-1">
+      <div className="bg-muted flex items-center space-x-1 rounded-lg p-1">
         <Button
           variant={view === 'grid' ? 'secondary' : 'ghost'}
           size="sm"
@@ -404,7 +414,7 @@ export function MobileBottomBar({ actions, className }: MobileBottomBarProps) {
   return (
     <div
       className={cn(
-        'fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/60',
+        'bg-background/95 supports-backdrop-filter:bg-background/60 fixed right-0 bottom-0 left-0 z-50 border-t p-4 backdrop-blur-sm',
         className
       )}
     >

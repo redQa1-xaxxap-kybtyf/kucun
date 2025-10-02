@@ -9,8 +9,7 @@ import { paginationConfig, returnRefundConfig } from '@/lib/env';
 export const refundMethodSchema = z.enum(
   ['cash', 'bank_transfer', 'original_payment', 'other'],
   {
-    required_error: '请选择退款方式',
-    invalid_type_error: '退款方式格式不正确',
+    message: '请选择退款方式',
   }
 );
 
@@ -18,8 +17,7 @@ export const refundMethodSchema = z.enum(
 export const refundStatusSchema = z.enum(
   ['pending', 'processing', 'completed', 'rejected', 'cancelled'],
   {
-    required_error: '请选择退款状态',
-    invalid_type_error: '退款状态格式不正确',
+    message: '请选择退款状态',
   }
 );
 
@@ -27,8 +25,7 @@ export const refundStatusSchema = z.enum(
 export const refundTypeSchema = z.enum(
   ['full_refund', 'partial_refund', 'exchange_refund'],
   {
-    required_error: '请选择退款类型',
-    invalid_type_error: '退款类型格式不正确',
+    message: '请选择退款类型',
   }
 );
 
@@ -36,51 +33,35 @@ export const refundTypeSchema = z.enum(
 export const createRefundRecordSchema = z
   .object({
     returnOrderId: z
-      .string({
-        invalid_type_error: '退货订单ID必须是字符串',
-      })
+      .string({ message: '退货订单ID必须是字符串' })
       .optional()
       .or(z.literal('')),
 
     returnOrderNumber: z
-      .string({
-        invalid_type_error: '退货订单号必须是字符串',
-      })
+      .string({ message: '退货订单号必须是字符串' })
       .optional()
       .or(z.literal('')),
 
     salesOrderId: z
-      .string({
-        required_error: '请选择销售订单',
-        invalid_type_error: '销售订单ID必须是字符串',
-      })
-      .min(1, '请选择销售订单'),
+      .string({ message: '销售订单ID必须是字符串' })
+      .min(1, { error: '请选择销售订单' }),
 
     customerId: z
-      .string({
-        required_error: '请选择客户',
-        invalid_type_error: '客户ID必须是字符串',
-      })
-      .min(1, '请选择客户'),
+      .string({ message: '客户ID必须是字符串' })
+      .min(1, { error: '请选择客户' }),
 
     refundType: refundTypeSchema,
 
     refundMethod: refundMethodSchema,
 
     refundAmount: z
-      .number({
-        required_error: '请输入退款金额',
-        invalid_type_error: '退款金额必须是数字',
-      })
-      .positive('退款金额必须大于0')
-      .max(999999999, '退款金额不能超过999,999,999'),
+      .number({ message: '退款金额必须是数字' })
+      .positive({ error: '退款金额必须大于0' })
+      .max(999999999, { error: '退款金额不能超过999,999,999' }),
 
     refundDate: z
-      .string({
-        required_error: '请选择退款日期',
-        invalid_type_error: '退款日期必须是字符串',
-      })
-      .min(1, '请选择退款日期')
+      .string({ message: '退款日期必须是字符串' })
+      .min(1, { error: '请选择退款日期' })
       .refine(date => {
         const parsedDate = new Date(date);
         return !isNaN(parsedDate.getTime());
@@ -88,8 +69,7 @@ export const createRefundRecordSchema = z
 
     reason: z
       .string({
-        required_error: '请输入退款原因',
-        invalid_type_error: '退款原因必须是字符串',
+        error: '请输入退款原因',
       })
       .min(1, '请输入退款原因')
       .max(500, '退款原因不能超过500个字符'),
@@ -121,7 +101,7 @@ export const updateRefundRecordSchema = z
 
     refundAmount: z
       .number({
-        invalid_type_error: '退款金额必须是数字',
+        error: '退款金额必须是数字',
       })
       .positive('退款金额必须大于0')
       .max(999999999, '退款金额不能超过999,999,999')
@@ -129,7 +109,7 @@ export const updateRefundRecordSchema = z
 
     processedAmount: z
       .number({
-        invalid_type_error: '已处理金额必须是数字',
+        error: '已处理金额必须是数字',
       })
       .min(0, '已处理金额不能小于0')
       .max(999999999, '已处理金额不能超过999,999,999')
@@ -137,7 +117,7 @@ export const updateRefundRecordSchema = z
 
     refundDate: z
       .string({
-        invalid_type_error: '退款日期必须是字符串',
+        error: '退款日期必须是字符串',
       })
       .min(1, '请选择退款日期')
       .refine(date => {
@@ -148,7 +128,7 @@ export const updateRefundRecordSchema = z
 
     processedDate: z
       .string({
-        invalid_type_error: '处理日期必须是字符串',
+        error: '处理日期必须是字符串',
       })
       .min(1, '请选择处理日期')
       .refine(date => {
@@ -161,7 +141,7 @@ export const updateRefundRecordSchema = z
 
     reason: z
       .string({
-        invalid_type_error: '退款原因必须是字符串',
+        error: '退款原因必须是字符串',
       })
       .min(1, '请输入退款原因')
       .max(500, '退款原因不能超过500个字符')
@@ -232,16 +212,14 @@ export const refundQuerySchema = z.object({
 export const processRefundSchema = z.object({
   processedAmount: z
     .number({
-      required_error: '请输入处理金额',
-      invalid_type_error: '处理金额必须是数字',
+      error: '请输入处理金额',
     })
     .positive('处理金额必须大于0')
     .max(999999999, '处理金额不能超过999,999,999'),
 
   processedDate: z
     .string({
-      required_error: '请选择处理日期',
-      invalid_type_error: '处理日期必须是字符串',
+      error: '请选择处理日期',
     })
     .min(1, '请选择处理日期')
     .refine(date => {
@@ -250,8 +228,7 @@ export const processRefundSchema = z.object({
     }, '请输入有效的日期格式'),
 
   status: z.enum(['completed', 'rejected'], {
-    required_error: '请选择处理结果',
-    invalid_type_error: '处理结果格式不正确',
+    error: '请选择处理结果',
   }),
 
   remarks: z.string().optional().or(z.literal('')),
@@ -261,8 +238,7 @@ export const processRefundSchema = z.object({
 export const batchRefundSchema = z.object({
   refundIds: z
     .array(z.string(), {
-      required_error: '请选择要处理的退款记录',
-      invalid_type_error: '退款记录ID列表格式不正确',
+      error: '请选择要处理的退款记录',
     })
     .min(1, '请至少选择一个退款记录')
     .max(
@@ -271,8 +247,7 @@ export const batchRefundSchema = z.object({
     ),
 
   action: z.enum(['approve', 'reject', 'cancel'], {
-    required_error: '请选择批量操作类型',
-    invalid_type_error: '批量操作类型格式不正确',
+    error: '请选择批量操作类型',
   }),
 
   remarks: z.string().optional().or(z.literal('')),

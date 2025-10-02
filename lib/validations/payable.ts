@@ -7,7 +7,7 @@ import { z } from 'zod';
 export const payableStatusSchema = z.enum(
   ['pending', 'partial', 'paid', 'overdue', 'cancelled'],
   {
-    errorMap: () => ({ message: '请选择有效的应付款状态' }),
+    message: '请选择有效的应付款状态',
   }
 );
 
@@ -15,7 +15,7 @@ export const payableStatusSchema = z.enum(
 export const payableSourceTypeSchema = z.enum(
   ['purchase_order', 'factory_shipment', 'sales_order', 'service', 'other'],
   {
-    errorMap: () => ({ message: '请选择有效的来源类型' }),
+    message: '请选择有效的来源类型',
   }
 );
 
@@ -23,7 +23,7 @@ export const payableSourceTypeSchema = z.enum(
 export const paymentOutMethodSchema = z.enum(
   ['cash', 'bank_transfer', 'check', 'other'],
   {
-    errorMap: () => ({ message: '请选择有效的付款方式' }),
+    message: '请选择有效的付款方式',
   }
 );
 
@@ -31,7 +31,7 @@ export const paymentOutMethodSchema = z.enum(
 export const paymentOutStatusSchema = z.enum(
   ['pending', 'confirmed', 'cancelled'],
   {
-    errorMap: () => ({ message: '请选择有效的付款状态' }),
+    message: '请选择有效的付款状态',
   }
 );
 
@@ -170,11 +170,11 @@ export const paymentOutRecordQuerySchema = z.object({
 // 批量操作验证规则
 export const batchPayableOperationSchema = z.object({
   ids: z
-    .array(z.string().min(1, 'ID不能为空'))
-    .min(1, '至少选择一条记录')
-    .max(100, '批量操作不能超过100条记录'),
+    .array(z.string().min(1, { error: 'ID不能为空' }))
+    .min(1, { error: '至少选择一条记录' })
+    .max(100, { error: '批量操作不能超过100条记录' }),
   operation: z.enum(['delete', 'updateStatus'], {
-    errorMap: () => ({ message: '请选择有效的操作类型' }),
+    message: '请选择有效的操作类型',
   }),
   status: payableStatusSchema.optional(),
 });
@@ -182,11 +182,11 @@ export const batchPayableOperationSchema = z.object({
 // 批量付款操作验证规则
 export const batchPaymentOutOperationSchema = z.object({
   ids: z
-    .array(z.string().min(1, 'ID不能为空'))
-    .min(1, '至少选择一条记录')
-    .max(100, '批量操作不能超过100条记录'),
+    .array(z.string().min(1, { error: 'ID不能为空' }))
+    .min(1, { error: '至少选择一条记录' })
+    .max(100, { error: '批量操作不能超过100条记录' }),
   operation: z.enum(['delete', 'updateStatus'], {
-    errorMap: () => ({ message: '请选择有效的操作类型' }),
+    message: '请选择有效的操作类型',
   }),
   status: paymentOutStatusSchema.optional(),
 });

@@ -221,7 +221,7 @@ export default function SalesOrderDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     订单状态
                   </label>
                   <div className="mt-1">
@@ -233,7 +233,7 @@ export default function SalesOrderDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     订单类型
                   </label>
                   <div className="mt-1">
@@ -241,13 +241,13 @@ export default function SalesOrderDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     客户名称
                   </label>
                   <p className="mt-1">{order.customer.name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     客户电话
                   </label>
                   <p className="mt-1">{order.customer.phone || '-'}</p>
@@ -255,7 +255,7 @@ export default function SalesOrderDetailPage() {
                 {order.supplier && (
                   <>
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">
+                      <label className="text-muted-foreground text-sm font-medium">
                         供应商
                       </label>
                       <p className="mt-1">{order.supplier.name}</p>
@@ -263,19 +263,19 @@ export default function SalesOrderDetailPage() {
                   </>
                 )}
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     创建人
                   </label>
                   <p className="mt-1">{order.user.name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     创建时间
                   </label>
                   <p className="mt-1">{formatDate(order.createdAt)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     更新时间
                   </label>
                   <p className="mt-1">{formatDate(order.updatedAt)}</p>
@@ -283,7 +283,7 @@ export default function SalesOrderDetailPage() {
               </div>
               {order.remarks && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     备注信息
                   </label>
                   <p className="mt-1 text-sm">{order.remarks}</p>
@@ -308,7 +308,7 @@ export default function SalesOrderDetailPage() {
                             ? item.manualProductName
                             : item.product?.name}
                         </h4>
-                        <div className="space-y-1 text-sm text-muted-foreground">
+                        <div className="text-muted-foreground space-y-1 text-sm">
                           {!item.isManualProduct && (
                             <p>产品编码：{item.product?.code}</p>
                           )}
@@ -325,11 +325,11 @@ export default function SalesOrderDetailPage() {
                         <p className="font-medium">
                           {formatCurrency(item.subtotal)}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           {item.quantity} × {formatCurrency(item.unitPrice)}
                         </p>
                         {item.costSubtotal && (
-                          <p className="text-xs text-muted-foreground">
+                          <p className="text-muted-foreground text-xs">
                             成本：{formatCurrency(item.costSubtotal)}
                           </p>
                         )}
@@ -400,7 +400,7 @@ export default function SalesOrderDetailPage() {
                   <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">订单创建</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       {formatDate(order.createdAt)}
                     </p>
                   </div>
@@ -410,7 +410,7 @@ export default function SalesOrderDetailPage() {
                     <div className="h-2 w-2 rounded-full bg-green-500"></div>
                     <div className="flex-1">
                       <p className="text-sm font-medium">订单更新</p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         {formatDate(order.updatedAt)}
                       </p>
                     </div>

@@ -17,8 +17,8 @@ export function getStockStatusLabel(
 ): string {
   const availableQuantity = quantity - reservedQuantity;
 
-  if (availableQuantity <= 0) return '缺货';
-  if (availableQuantity <= 10) return '库存不足';
+  if (availableQuantity <= 0) {return '缺货';}
+  if (availableQuantity <= 10) {return '库存不足';}
   return '库存充足';
 }
 
@@ -31,8 +31,8 @@ export function getStockStatusColor(
 ): 'destructive' | 'secondary' | 'default' {
   const availableQuantity = quantity - reservedQuantity;
 
-  if (availableQuantity <= 0) return 'destructive';
-  if (availableQuantity <= 10) return 'secondary';
+  if (availableQuantity <= 0) {return 'destructive';}
+  if (availableQuantity <= 10) {return 'secondary';}
   return 'default';
 }
 

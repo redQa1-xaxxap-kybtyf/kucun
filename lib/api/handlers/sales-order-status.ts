@@ -68,7 +68,7 @@ async function executeOrderStatusUpdateWithInventory(
 
     // 更新库存（减少可用库存）- 使用乐观锁
     for (const item of existingOrder.items) {
-      if (!item.productId) continue; // 跳过手动输入的商品
+      if (!item.productId) {continue;} // 跳过手动输入的商品
 
       // 查找库存记录
       const inventory = await tx.inventory.findFirst({
@@ -175,7 +175,7 @@ async function executeOrderCancellation(
 
     // 释放预留库存
     for (const item of existingOrder.items) {
-      if (!item.productId) continue; // 跳过手动输入的商品
+      if (!item.productId) {continue;} // 跳过手动输入的商品
 
       const inventory = await tx.inventory.findFirst({
         where: {

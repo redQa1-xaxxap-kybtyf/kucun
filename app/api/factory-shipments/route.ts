@@ -63,14 +63,14 @@ export async function GET(request: NextRequest) {
 
     // 构建查询条件
     const where: Prisma.FactoryShipmentOrderWhereInput = {};
-    if (status) where.status = status;
-    if (customerId) where.customerId = customerId;
-    if (containerNumber) where.containerNumber = { contains: containerNumber };
-    if (orderNumber) where.orderNumber = { contains: orderNumber };
+    if (status) {where.status = status;}
+    if (customerId) {where.customerId = customerId;}
+    if (containerNumber) {where.containerNumber = { contains: containerNumber };}
+    if (orderNumber) {where.orderNumber = { contains: orderNumber };}
     if (startDate || endDate) {
       where.createdAt = {};
-      if (startDate) where.createdAt.gte = startDate;
-      if (endDate) where.createdAt.lte = endDate;
+      if (startDate) {where.createdAt.gte = startDate;}
+      if (endDate) {where.createdAt.lte = endDate;}
     }
 
     // 分页计算

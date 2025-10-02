@@ -99,7 +99,7 @@ export class ProductInventoryValidator {
     productId: string,
     variantId?: string
   ): Promise<void> {
-    if (!variantId) return;
+    if (!variantId) {return;}
 
     const variant = await prisma.productVariant.findUnique({
       where: { id: variantId },
@@ -166,21 +166,21 @@ export class ProductInventoryValidator {
 
     if (hasRelatedData) {
       const reasons: string[] = [];
-      if (counts.inventory > 0) reasons.push(`库存记录(${counts.inventory}条)`);
+      if (counts.inventory > 0) {reasons.push(`库存记录(${counts.inventory}条)`);}
       if (counts.salesOrderItems > 0)
-        reasons.push(`销售订单项(${counts.salesOrderItems}条)`);
+        {reasons.push(`销售订单项(${counts.salesOrderItems}条)`);}
       if (counts.inboundRecords > 0)
-        reasons.push(`入库记录(${counts.inboundRecords}条)`);
+        {reasons.push(`入库记录(${counts.inboundRecords}条)`);}
       if (counts.outboundRecords > 0)
-        reasons.push(`出库记录(${counts.outboundRecords}条)`);
+        {reasons.push(`出库记录(${counts.outboundRecords}条)`);}
       if (counts.inventoryAdjustments > 0)
-        reasons.push(`库存调整记录(${counts.inventoryAdjustments}条)`);
+        {reasons.push(`库存调整记录(${counts.inventoryAdjustments}条)`);}
       if (counts.batchSpecifications > 0)
-        reasons.push(`批次规格(${counts.batchSpecifications}条)`);
+        {reasons.push(`批次规格(${counts.batchSpecifications}条)`);}
       if (counts.factoryShipmentOrderItems > 0)
-        reasons.push(`工厂发货单项(${counts.factoryShipmentOrderItems}条)`);
+        {reasons.push(`工厂发货单项(${counts.factoryShipmentOrderItems}条)`);}
       if (counts.returnOrderItems > 0)
-        reasons.push(`退货单项(${counts.returnOrderItems}条)`);
+        {reasons.push(`退货单项(${counts.returnOrderItems}条)`);}
 
       return {
         canDelete: false,
@@ -244,14 +244,14 @@ export class ProductInventoryValidator {
 
     if (hasInventory || hasReservedQuantity || hasRecords) {
       const reasons: string[] = [];
-      if (hasInventory) reasons.push('存在库存');
-      if (hasReservedQuantity) reasons.push('存在预留库存');
+      if (hasInventory) {reasons.push('存在库存');}
+      if (hasReservedQuantity) {reasons.push('存在预留库存');}
       if (counts.inboundRecords > 0)
-        reasons.push(`入库记录(${counts.inboundRecords}条)`);
+        {reasons.push(`入库记录(${counts.inboundRecords}条)`);}
       if (counts.outboundRecords > 0)
-        reasons.push(`出库记录(${counts.outboundRecords}条)`);
+        {reasons.push(`出库记录(${counts.outboundRecords}条)`);}
       if (counts.inventoryAdjustments > 0)
-        reasons.push(`库存调整记录(${counts.inventoryAdjustments}条)`);
+        {reasons.push(`库存调整记录(${counts.inventoryAdjustments}条)`);}
 
       return {
         canDelete: false,
@@ -282,7 +282,7 @@ export class ProductInventoryValidator {
     newUnit?: string,
     newPiecesPerUnit?: number
   ): Promise<void> {
-    if (!newUnit && !newPiecesPerUnit) return;
+    if (!newUnit && !newPiecesPerUnit) {return;}
 
     const product = await prisma.product.findUnique({
       where: { id: productId },

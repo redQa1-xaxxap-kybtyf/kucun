@@ -1,5 +1,5 @@
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
@@ -55,12 +55,24 @@ function buildAdjustmentWhereClause(
   }
 
   // 筛选条件
-  if (queryParams.productId) where.productId = queryParams.productId;
-  if (queryParams.variantId) where.variantId = queryParams.variantId;
-  if (queryParams.batchNumber) where.batchNumber = queryParams.batchNumber;
-  if (queryParams.reason) where.reason = queryParams.reason;
-  if (queryParams.status) where.status = queryParams.status;
-  if (queryParams.operatorId) where.operatorId = queryParams.operatorId;
+  if (queryParams.productId) {
+    where.productId = queryParams.productId;
+  }
+  if (queryParams.variantId) {
+    where.variantId = queryParams.variantId;
+  }
+  if (queryParams.batchNumber) {
+    where.batchNumber = queryParams.batchNumber;
+  }
+  if (queryParams.reason) {
+    where.reason = queryParams.reason;
+  }
+  if (queryParams.status) {
+    where.status = queryParams.status;
+  }
+  if (queryParams.operatorId) {
+    where.operatorId = queryParams.operatorId;
+  }
 
   // 日期范围筛选
   if (queryParams.startDate || queryParams.endDate) {
@@ -82,7 +94,7 @@ function buildAdjustmentWhereClause(
  */
 function buildAdjustmentOrderBy(
   sortBy: AdjustmentQueryParams['sortBy'],
-  sortOrder: 'asc' | 'desc'
+  sortOrder: 'asc' | 'desc' | undefined
 ): Record<string, 'asc' | 'desc'> {
   const orderBy: Record<string, 'asc' | 'desc'> = {};
   const finalSortOrder = sortOrder || 'desc';
@@ -128,7 +140,8 @@ type AdjustmentWithRelations = {
   variant: {
     id: string;
     sku: string;
-    name: string;
+    colorCode: string;
+    colorName: string | null;
   } | null;
   operator: {
     id: string;
@@ -203,9 +216,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
         variant: {
           select: {
             id: true,
+            sku: true,
             colorCode: true,
             colorName: true,
-            sku: true,
           },
         },
         operator: {

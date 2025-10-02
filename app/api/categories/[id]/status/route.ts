@@ -13,8 +13,7 @@ import type { ApiResponse } from '@/lib/types/api';
 // 状态更新Schema
 const UpdateStatusSchema = z.object({
   status: z.enum(['active', 'inactive'], {
-    required_error: '状态不能为空',
-    invalid_type_error: '状态值无效',
+    message: '状态不能为空或值无效',
   }),
 });
 
@@ -135,7 +134,7 @@ export async function PUT(
         {
           success: false,
           error: '数据验证失败',
-          details: error.errors,
+          details: error.issues,
         },
         { status: 400 }
       );

@@ -109,14 +109,14 @@ export function validateCategoryDepth(
   parentId: string | undefined,
   maxDepth: number = 3
 ): boolean {
-  if (!parentId) return true;
+  if (!parentId) {return true;}
 
   let depth = 1;
   let currentParentId = parentId;
 
   while (currentParentId && depth < maxDepth) {
     const parent = categories.find(cat => cat.id === currentParentId);
-    if (!parent) break;
+    if (!parent) {break;}
     currentParentId = parent.parentId;
     depth++;
   }
@@ -132,7 +132,7 @@ export function checkCircularReference(
   categoryId: string,
   parentId: string
 ): boolean {
-  if (categoryId === parentId) return true;
+  if (categoryId === parentId) {return true;}
 
   let currentParentId = parentId;
   const visited = new Set<string>();
@@ -144,7 +144,7 @@ export function checkCircularReference(
 
     visited.add(currentParentId);
     const parent = categories.find(cat => cat.id === currentParentId);
-    if (!parent) break;
+    if (!parent) {break;}
     currentParentId = parent.parentId;
   }
 
@@ -210,7 +210,7 @@ export function getCategoryPath(
 
   while (currentId) {
     const category = categories.find(cat => cat.id === currentId);
-    if (!category) break;
+    if (!category) {break;}
 
     path.unshift(category.name);
     currentId = category.parentId;

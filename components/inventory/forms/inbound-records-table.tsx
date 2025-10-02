@@ -63,7 +63,9 @@ const getOperationTypeVariant = (reason: string) => {
 
 // 格式化产品规格显示（限制11个字符，避免JSON字符串显示）
 const formatSpecification = (specification?: string) => {
-  if (!specification) return null;
+  if (!specification) {
+    return null;
+  }
 
   // 如果是JSON字符串，尝试解析并提取关键信息
   if (specification.startsWith('{') && specification.endsWith('}')) {
@@ -97,8 +99,8 @@ export function InboundRecordsTable({
 }: InboundRecordsTableProps) {
   if (isLoading) {
     return (
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <div className="flex items-center gap-2">
             <Package className="h-4 w-4" />
             <span className="text-sm font-medium">入库记录</span>
@@ -122,8 +124,8 @@ export function InboundRecordsTable({
   }
 
   return (
-    <div className="rounded border bg-card">
-      <div className="border-b bg-muted/30 px-3 py-2">
+    <div className="bg-card rounded border">
+      <div className="bg-muted/30 border-b px-3 py-2">
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4" />
           <span className="text-sm font-medium">
@@ -150,7 +152,7 @@ export function InboundRecordsTable({
             {records.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={8} className="h-24 text-center">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <div className="text-muted-foreground flex flex-col items-center gap-2">
                     <Package className="h-8 w-8" />
                     <span className="text-sm">暂无入库记录</span>
                   </div>
@@ -165,7 +167,7 @@ export function InboundRecordsTable({
                   <TableCell className="text-xs">
                     {record.product?.name || '未知产品'}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-xs">
                     {formatSpecification(record.product?.specification) || '-'}
                   </TableCell>
                   <TableCell className="text-xs">
@@ -179,16 +181,16 @@ export function InboundRecordsTable({
                       {getOperationTypeLabel(record.reason)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-xs">
                     {record.batchNumber || '-'}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-xs">
                     <div className="flex items-center gap-1">
                       <User className="h-3 w-3" />
                       {formatDate(record.createdAt)}
                     </div>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-xs">
                     {record.remarks || '-'}
                   </TableCell>
                 </TableRow>

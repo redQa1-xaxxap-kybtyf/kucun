@@ -65,7 +65,7 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
 
   if (users.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center text-muted-foreground">
+      <div className="text-muted-foreground flex h-32 items-center justify-center">
         暂无用户数据
       </div>
     );

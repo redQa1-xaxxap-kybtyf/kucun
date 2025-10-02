@@ -249,7 +249,7 @@ export const CreateUserSchema = z.object({
     .min(6, '密码至少需要6个字符')
     .max(50, '密码不能超过50个字符'),
   role: z.enum(['admin', 'sales'], {
-    errorMap: () => ({ message: '角色必须是管理员或销售员' }),
+    error: '角色必须是管理员或销售员',
   }),
 });
 
@@ -269,12 +269,12 @@ export const UpdateUserSchema = z.object({
     .optional(),
   role: z
     .enum(['admin', 'sales'], {
-      errorMap: () => ({ message: '角色必须是管理员或销售员' }),
+      error: '角色必须是管理员或销售员',
     })
     .optional(),
   status: z
     .enum(['active', 'inactive'], {
-      errorMap: () => ({ message: '状态必须是启用或禁用' }),
+      error: '状态必须是启用或禁用',
     })
     .optional(),
 });
@@ -346,7 +346,9 @@ export const QiniuStorageConfigSchema = z.object({
     .nullable()
     .refine(
       value => {
-        if (!value) return true;
+        if (!value) {
+          return true;
+        }
         // 只允许字母、数字、斜杠、大括号、下划线、连字符
         const validPattern = /^[a-zA-Z0-9/{}\-_]+$/;
         if (!validPattern.test(value)) {

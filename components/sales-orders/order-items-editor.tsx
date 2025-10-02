@@ -241,9 +241,9 @@ function OrderItemRow({
   const { data: productData } = useQuery({
     queryKey: ['products', 'detail', watchedItem?.productId],
     queryFn: async () => {
-      if (!watchedItem?.productId) return null;
+      if (!watchedItem?.productId) {return null;}
       const response = await fetch(`/api/products/${watchedItem.productId}`);
-      if (!response.ok) return null;
+      if (!response.ok) {return null;}
       const result = await response.json();
       return result.data as Product;
     },

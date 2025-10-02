@@ -50,8 +50,8 @@ export default function ReceivablesPage() {
       const searchParams = new URLSearchParams();
       searchParams.set('page', queryParams.page.toString());
       searchParams.set('pageSize', queryParams.limit.toString());
-      if (queryParams.search) searchParams.set('search', queryParams.search);
-      if (queryParams.status) searchParams.set('status', queryParams.status);
+      if (queryParams.search) {searchParams.set('search', queryParams.search);}
+      if (queryParams.status) {searchParams.set('status', queryParams.status);}
       searchParams.set('sortBy', queryParams.sortBy);
       searchParams.set('sortOrder', queryParams.sortOrder);
 

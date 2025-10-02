@@ -35,19 +35,19 @@ export async function getAdjustments(
   const searchParams = new URLSearchParams();
 
   // 添加查询参数
-  if (params.page) searchParams.set('page', params.page.toString());
-  if (params.limit) searchParams.set('limit', params.limit.toString());
-  if (params.search) searchParams.set('search', params.search);
-  if (params.sortBy) searchParams.set('sortBy', params.sortBy);
-  if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder);
-  if (params.productId) searchParams.set('productId', params.productId);
-  if (params.variantId) searchParams.set('variantId', params.variantId);
-  if (params.batchNumber) searchParams.set('batchNumber', params.batchNumber);
-  if (params.reason) searchParams.set('reason', params.reason);
-  if (params.status) searchParams.set('status', params.status);
-  if (params.operatorId) searchParams.set('operatorId', params.operatorId);
-  if (params.startDate) searchParams.set('startDate', params.startDate);
-  if (params.endDate) searchParams.set('endDate', params.endDate);
+  if (params.page) {searchParams.set('page', params.page.toString());}
+  if (params.limit) {searchParams.set('limit', params.limit.toString());}
+  if (params.search) {searchParams.set('search', params.search);}
+  if (params.sortBy) {searchParams.set('sortBy', params.sortBy);}
+  if (params.sortOrder) {searchParams.set('sortOrder', params.sortOrder);}
+  if (params.productId) {searchParams.set('productId', params.productId);}
+  if (params.variantId) {searchParams.set('variantId', params.variantId);}
+  if (params.batchNumber) {searchParams.set('batchNumber', params.batchNumber);}
+  if (params.reason) {searchParams.set('reason', params.reason);}
+  if (params.status) {searchParams.set('status', params.status);}
+  if (params.operatorId) {searchParams.set('operatorId', params.operatorId);}
+  if (params.startDate) {searchParams.set('startDate', params.startDate);}
+  if (params.endDate) {searchParams.set('endDate', params.endDate);}
 
   const url = `${API_BASE}?${searchParams.toString()}`;
 

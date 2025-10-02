@@ -22,7 +22,7 @@ export function SelectedProductDisplay({
 
   return (
     <div className="flex min-w-0 items-center gap-2">
-      <Package className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+      <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">
           <span className="truncate font-medium">{selectedProduct.label}</span>

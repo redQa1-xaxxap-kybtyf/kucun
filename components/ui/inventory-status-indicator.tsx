@@ -126,22 +126,22 @@ const InventoryStatusIndicator = React.forwardRef<
 
     // 计算库存百分比
     const stockPercentage = React.useMemo(() => {
-      if (!currentStock || !maxStock) return 0;
+      if (!currentStock || !maxStock) {return 0;}
       return Math.min((currentStock / maxStock) * 100, 100);
     }, [currentStock, maxStock]);
 
     // 自动计算预警级别
     const _calculatedAlertLevel = React.useMemo((): AlertLevel => {
-      if (alertLevel) return alertLevel;
+      if (alertLevel) {return alertLevel;}
 
       if (!currentStock || !safetyStock) {
         return status === 'out_of_stock' ? 'critical' : 'safe';
       }
 
       const ratio = currentStock / safetyStock;
-      if (ratio <= 0) return 'critical';
-      if (ratio <= 0.5) return 'danger';
-      if (ratio <= 1) return 'warning';
+      if (ratio <= 0) {return 'critical';}
+      if (ratio <= 0.5) {return 'danger';}
+      if (ratio <= 1) {return 'warning';}
       return 'safe';
     }, [alertLevel, currentStock, safetyStock, status]);
 
@@ -350,7 +350,7 @@ const QuickStatusToggle = React.forwardRef<
             className={cn(
               'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors',
               'hover:bg-accent hover:text-accent-foreground',
-              'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+              'focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2',
               isActive
                 ? inventoryStatusVariants({ status })
                 : 'border border-border bg-background'

@@ -126,7 +126,7 @@ export function GlobalSearch({
       const response = await fetch(
         `/api/products/search?search=${encodeURIComponent(query)}&limit=5`
       );
-      if (!response.ok) return [];
+      if (!response.ok) {return [];}
 
       const data = await response.json();
       return data.map((product: any) => ({
@@ -154,7 +154,7 @@ export function GlobalSearch({
       const response = await fetch(
         `/api/sales-orders?search=${encodeURIComponent(query)}&limit=5`
       );
-      if (!response.ok) return [];
+      if (!response.ok) {return [];}
 
       const data = await response.json();
       return (data.orders || []).map((order: any) => ({
@@ -178,7 +178,7 @@ export function GlobalSearch({
       const response = await fetch(
         `/api/customers/search?q=${encodeURIComponent(query)}&limit=5`
       );
-      if (!response.ok) return [];
+      if (!response.ok) {return [];}
 
       const data = await response.json();
       return data.map((customer: any) => ({

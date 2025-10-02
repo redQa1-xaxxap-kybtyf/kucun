@@ -30,16 +30,14 @@ const baseValidations = {
 
   /** 排序顺序验证：必须是非负整数 */
   sortOrder: z
-    .number({
-      invalid_type_error: '排序顺序必须是数字',
-    })
-    .int('排序顺序必须是整数')
-    .min(0, '排序顺序不能为负数')
+    .number({ message: '排序顺序必须是数字' })
+    .int({ error: '排序顺序必须是整数' })
+    .min(0, { error: '排序顺序不能为负数' })
     .default(0),
 
   /** 分类状态验证：必须是active或inactive */
   status: z.enum(['active', 'inactive'], {
-    errorMap: () => ({ message: '请选择有效的分类状态' }),
+    message: '请选择有效的分类状态',
   }),
 };
 

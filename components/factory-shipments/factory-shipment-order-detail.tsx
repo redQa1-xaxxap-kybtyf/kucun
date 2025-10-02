@@ -71,7 +71,8 @@ const getStatusBadgeVariant = (
 };
 
 // 格式化金额
-const formatAmount = (amount: number): string => `¥${amount.toLocaleString('zh-CN', {
+const formatAmount = (amount: number): string =>
+  `¥${amount.toLocaleString('zh-CN', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   })}`;
@@ -107,12 +108,12 @@ const UNIT_MAP: Record<string, string> = {
 };
 
 // 格式化单位 - 将英文单位转换为中文
-const formatUnit = (unit: string): string => UNIT_MAP[unit.toLowerCase()] || unit;
+const formatUnit = (unit: string): string =>
+  UNIT_MAP[unit.toLowerCase()] || unit;
 
 // 判断是否可以确认发货
-const canConfirmShipment = (status: FactoryShipmentStatus): boolean => ['draft', 'planning', 'waiting_deposit', 'deposit_paid'].includes(
-    status
-  );
+const canConfirmShipment = (status: FactoryShipmentStatus): boolean =>
+  ['draft', 'planning', 'waiting_deposit', 'deposit_paid'].includes(status);
 
 /**
  * 厂家发货订单详情组件
@@ -138,7 +139,7 @@ export function FactoryShipmentOrderDetail({
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+        <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
       </div>
     );
   }

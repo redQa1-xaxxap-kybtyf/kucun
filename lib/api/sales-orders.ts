@@ -207,10 +207,10 @@ export async function getSalesOrderStats(params?: {
 }): Promise<ApiResponse<SalesOrderStats>> {
   const searchParams = new URLSearchParams();
 
-  if (params?.startDate) searchParams.set('startDate', params.startDate);
-  if (params?.endDate) searchParams.set('endDate', params.endDate);
-  if (params?.customerId) searchParams.set('customerId', params.customerId);
-  if (params?.userId) searchParams.set('userId', params.userId);
+  if (params?.startDate) {searchParams.set('startDate', params.startDate);}
+  if (params?.endDate) {searchParams.set('endDate', params.endDate);}
+  if (params?.customerId) {searchParams.set('customerId', params.customerId);}
+  if (params?.userId) {searchParams.set('userId', params.userId);}
 
   const url = `${API_BASE}/stats?${searchParams.toString()}`;
 
@@ -239,8 +239,8 @@ export async function getCustomerOrders(
   const searchParams = new URLSearchParams();
   searchParams.set('customerId', customerId);
 
-  if (params?.limit) searchParams.set('limit', params.limit.toString());
-  if (params?.status) searchParams.set('status', params.status);
+  if (params?.limit) {searchParams.set('limit', params.limit.toString());}
+  if (params?.status) {searchParams.set('status', params.status);}
 
   const url = `${API_BASE}?${searchParams.toString()}`;
 
@@ -340,12 +340,12 @@ export async function exportSalesOrders(
   const searchParams = new URLSearchParams();
 
   // 构建查询参数
-  if (params.search) searchParams.set('search', params.search);
-  if (params.status) searchParams.set('status', params.status);
-  if (params.customerId) searchParams.set('customerId', params.customerId);
-  if (params.userId) searchParams.set('userId', params.userId);
-  if (params.startDate) searchParams.set('startDate', params.startDate);
-  if (params.endDate) searchParams.set('endDate', params.endDate);
+  if (params.search) {searchParams.set('search', params.search);}
+  if (params.status) {searchParams.set('status', params.status);}
+  if (params.customerId) {searchParams.set('customerId', params.customerId);}
+  if (params.userId) {searchParams.set('userId', params.userId);}
+  if (params.startDate) {searchParams.set('startDate', params.startDate);}
+  if (params.endDate) {searchParams.set('endDate', params.endDate);}
 
   const url = `${API_BASE}/export?${searchParams.toString()}`;
 

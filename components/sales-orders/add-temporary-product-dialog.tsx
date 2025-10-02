@@ -138,7 +138,7 @@ export function AddTemporaryProductDialog({
           >
             {/* 提示信息 */}
             <div className="flex items-start gap-2 rounded-md border border-amber-200 bg-amber-50 p-3">
-              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-600" />
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-amber-600" />
               <div className="text-sm">
                 <div className="font-medium text-amber-800">临时商品说明</div>
                 <div className="mt-1 text-amber-700">

@@ -77,7 +77,7 @@ export function ImageUpload({
       validFiles.push(file);
     }
 
-    if (validFiles.length === 0) return;
+    if (validFiles.length === 0) {return;}
 
     setUploading(true);
     setUploadStatus('uploading');
@@ -127,7 +127,7 @@ export function ImageUpload({
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    if (disabled || uploading) return;
+    if (disabled || uploading) {return;}
 
     const files = e.dataTransfer.files;
     if (files.length > 0) {

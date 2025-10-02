@@ -80,6 +80,7 @@ export async function updateFactoryShipmentStatus(
   newStatus: string,
   currentStatus: string,
   data: {
+    containerNumber?: string;
     remarks?: string;
     shipmentDate?: Date;
     arrivalDate?: Date;
@@ -100,6 +101,9 @@ export async function updateFactoryShipmentStatus(
       where: { id: orderId },
       data: {
         status: newStatus,
+        ...(data.containerNumber !== undefined && {
+          containerNumber: data.containerNumber,
+        }),
         ...(data.remarks !== undefined && { remarks: data.remarks }),
         ...(data.shipmentDate && { shipmentDate: data.shipmentDate }),
         ...(data.arrivalDate && { arrivalDate: data.arrivalDate }),

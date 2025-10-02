@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: '请求参数格式不正确',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );

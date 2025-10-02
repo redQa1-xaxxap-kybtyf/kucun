@@ -132,11 +132,11 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
             <Checkbox
               checked={todo.status === 'completed'}
               onCheckedChange={() => onComplete?.(todo.id)}
-              className="flex-shrink-0"
+              className="shrink-0"
             />
           )}
 
-          <div className="flex flex-shrink-0 items-center space-x-2">
+          <div className="flex shrink-0 items-center space-x-2">
             <IconComponent
               className={cn('h-4 w-4', `text-${typeConfig.color}-500`)}
             />
@@ -157,7 +157,7 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
             </p>
           </div>
 
-          <div className="flex flex-shrink-0 items-center space-x-2">
+          <div className="flex shrink-0 items-center space-x-2">
             {todo.dueDate && (
               <Badge
                 variant="outline"
@@ -200,7 +200,7 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
             <Checkbox
               checked={todo.status === 'completed'}
               onCheckedChange={() => onComplete?.(todo.id)}
-              className="mt-1 flex-shrink-0"
+              className="mt-1 shrink-0"
             />
           )}
 
@@ -209,7 +209,7 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
               <div className="flex min-w-0 flex-1 items-center space-x-2">
                 <IconComponent
                   className={cn(
-                    'h-4 w-4 flex-shrink-0',
+                    'h-4 w-4 shrink-0',
                     `text-${typeConfig.color}-500`
                   )}
                 />
@@ -234,7 +234,7 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
                   variant="ghost"
                   size="sm"
                   onClick={() => onView(todo)}
-                  className="h-8 w-8 flex-shrink-0 p-0"
+                  className="h-8 w-8 shrink-0 p-0"
                 >
                   <ExternalLink className="h-4 w-4" />
                 </Button>
@@ -341,7 +341,7 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
         const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
         const priorityDiff =
           priorityOrder[b.priority] - priorityOrder[a.priority];
-        if (priorityDiff !== 0) return priorityDiff;
+        if (priorityDiff !== 0) {return priorityDiff;}
 
         return (
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -364,7 +364,7 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
           stats.completed++;
         } else {
           stats.pending++;
-          if (todo.priority === 'urgent') stats.urgent++;
+          if (todo.priority === 'urgent') {stats.urgent++;}
           if (todo.dueDate && new Date(todo.dueDate) < new Date()) {
             stats.overdue++;
           }

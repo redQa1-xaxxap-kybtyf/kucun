@@ -37,7 +37,7 @@ export function AdjustmentRecordsTable({
 }: AdjustmentRecordsTableProps) {
   // 格式化日期
   const formatDate = (dateString: string | Date) => {
-    if (!dateString) return null;
+    if (!dateString) {return null;}
     return formatDateTimeCN(dateString);
   };
 
@@ -52,7 +52,7 @@ export function AdjustmentRecordsTable({
 
   // 格式化产品规格显示（限制11个字符，避免JSON字符串显示）
   const formatSpecification = (specification?: string) => {
-    if (!specification) return null;
+    if (!specification) {return null;}
 
     // 如果是JSON字符串，尝试解析并提取关键信息
     if (specification.startsWith('{') && specification.endsWith('}')) {

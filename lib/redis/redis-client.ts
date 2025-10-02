@@ -58,7 +58,7 @@ function createClient(url: string): Redis {
   client.on('error', (err: unknown) => {
     isRedisAvailable = false;
     if (env.NODE_ENV === 'development') {
-      // eslint-disable-next-line no-console
+       
       console.error('[Redis] error:', err);
     }
   });
@@ -137,7 +137,7 @@ export const redis: RedisClientWrapper = {
         }
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
+           
           console.warn(
             '[Redis] getJson failed, falling back to memory:',
             error
@@ -185,7 +185,7 @@ export const redis: RedisClientWrapper = {
         return await this.getClient().set(prefixedKey, payload);
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
+           
           console.warn(
             '[Redis] setJson failed, using memory cache only:',
             error
@@ -209,7 +209,7 @@ export const redis: RedisClientWrapper = {
         return await this.getClient().del(prefixedKey);
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
+           
           console.warn('[Redis] del failed:', error);
         }
       }
@@ -237,7 +237,7 @@ export const redis: RedisClientWrapper = {
         const client = this.getClient();
         let cursor = '0';
         do {
-          // eslint-disable-next-line no-await-in-loop
+           
           const [next, keys] = await client.scan(
             cursor,
             'MATCH',
@@ -247,14 +247,14 @@ export const redis: RedisClientWrapper = {
           );
           cursor = next;
           if (keys.length > 0) {
-            // eslint-disable-next-line no-await-in-loop
+             
             const n = await client.unlink(...keys);
             deleted += n;
           }
         } while (cursor !== '0');
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-          // eslint-disable-next-line no-console
+           
           console.warn('[Redis] scanDel failed:', error);
         }
       }

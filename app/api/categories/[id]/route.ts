@@ -6,18 +6,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
-import { withErrorHandling } from '@/lib/api/middleware';
+import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import { prisma } from '@/lib/db';
 import { UpdateCategorySchema } from '@/lib/schemas/category';
-
-type RouteContext = { params: Promise<{ id: string }> };
 
 /**
  * GET /api/categories/[id] - 获取单个分类详情
  */
-export const GET = withErrorHandling<RouteContext>(
-  async (request: NextRequest, { params }: RouteContext) => {
-    const { id } = await params;
+export const GET = withErrorHandling(
+  async (_request: NextRequest, context: { params?: Promise<{ id: string }> | { id: string } }) => {
+    const { id } = await resolveParams(context.params);
 
     // 验证ID格式
     if (!id || typeof id !== 'string') {
@@ -77,9 +75,9 @@ export const GET = withErrorHandling<RouteContext>(
 /**
  * PUT /api/categories/[id] - 更新分类
  */
-export const PUT = withErrorHandling<RouteContext>(
-  async (request: NextRequest, { params }: RouteContext) => {
-    const { id } = await params;
+export const PUT = withErrorHandling(
+  async (request: NextRequest, context: { params?: Promise<{ id: string }> | { id: string } }) => {
+    const { id } = await resolveParams(context.params);
     const body = await request.json();
 
     // 验证ID格式
@@ -188,8 +186,8 @@ export const PUT = withErrorHandling<RouteContext>(
  * DELETE /api/categories/[id] - 删除分类
  */
 export const DELETE = withErrorHandling(
-  async (_request: NextRequest, { params }: RouteContext) => {
-    const { id } = await params;
+  async (_request: NextRequest, context: { params?: Promise<{ id: string }> | { id: string } }) => {
+    const { id } = await resolveParams(context.params);
 
     // 验证ID格式
     if (!id || typeof id !== 'string') {

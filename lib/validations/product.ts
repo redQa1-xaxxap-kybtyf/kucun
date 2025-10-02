@@ -9,8 +9,8 @@
 import { z } from 'zod';
 
 import {
-  PRODUCT_STATUS_VALUES,
-  PRODUCT_UNIT_VALUES,
+    PRODUCT_STATUS_VALUES,
+    PRODUCT_UNIT_VALUES,
 } from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
 
@@ -49,40 +49,34 @@ const baseValidations = {
 
   /** 计量单位验证：必须是预定义的枚举值 */
   unit: z.enum(PRODUCT_UNIT_VALUES as [string, ...string[]], {
-    errorMap: () => ({ message: '请选择有效的计量单位' }),
+    message: '请选择有效的计量单位',
   }),
 
   /** 每件片数验证：可选正整数，范围1-10000，入库时确定 */
   piecesPerUnit: z
-    .number({
-      invalid_type_error: '每件片数必须是数字',
-    })
-    .int('每件片数必须是整数')
-    .min(1, '每件片数至少为1')
-    .max(10000, '每件片数不能超过10000')
+    .number({ message: '每件片数必须是数字' })
+    .int({ error: '每件片数必须是整数' })
+    .min(1, { error: '每件片数至少为1' })
+    .max(10000, { error: '每件片数不能超过10000' })
     .optional(),
 
   /** 重量验证：可选正数，最大100000kg */
   weight: z
-    .number({
-      invalid_type_error: '重量必须是数字',
-    })
-    .min(0, '重量不能为负数')
-    .max(100000, '重量不能超过100000kg')
+    .number({ message: '重量必须是数字' })
+    .min(0, { error: '重量不能为负数' })
+    .max(100000, { error: '重量不能超过100000kg' })
     .optional(),
 
   /** 厚度验证：可选正数，最大100mm */
   thickness: z
-    .number({
-      invalid_type_error: '厚度必须是数字',
-    })
-    .min(0, '厚度不能为负数')
-    .max(100, '厚度不能超过100mm')
+    .number({ message: '厚度必须是数字' })
+    .min(0, { error: '厚度不能为负数' })
+    .max(100, { error: '厚度不能超过100mm' })
     .optional(),
 
   /** 产品状态验证：必须是active或inactive */
   status: z.enum(PRODUCT_STATUS_VALUES as [string, ...string[]], {
-    errorMap: () => ({ message: '请选择有效的产品状态' }),
+    message: '请选择有效的产品状态',
   }),
 
   /** 缩略图URL验证：可选，必须是有效的URL */
@@ -96,15 +90,18 @@ const baseValidations = {
   images: z
     .array(
       z.object({
-        url: z.string().url('图片URL格式不正确'),
+        url: z.string().url({ error: '图片URL格式不正确' }),
         type: z.enum(['main', 'effect'], {
-          errorMap: () => ({ message: '图片类型必须是主图或效果图' }),
+          message: '图片类型必须是主图或效果图',
         }),
-        alt: z.string().max(200, '图片描述不能超过200个字符').optional(),
+        alt: z
+          .string()
+          .max(200, { error: '图片描述不能超过200个字符' })
+          .optional(),
         order: z.number().int().min(0).optional(), // 图片排序
       })
     )
-    .max(10, '最多只能上传10张图片')
+    .max(10, { error: '最多只能上传10张图片' })
     .optional(),
 };
 

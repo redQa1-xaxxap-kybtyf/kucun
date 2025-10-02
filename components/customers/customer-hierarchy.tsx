@@ -72,7 +72,7 @@ export function CustomerHierarchyTree({
     parentId?: string,
     level = 0
   ): CustomerTreeNode[] => {
-    if (level > maxLevel) return [];
+    if (level > maxLevel) {return [];}
 
     return customers
       .filter(customer => customer.parentCustomerId === parentId)
@@ -291,9 +291,9 @@ export function CustomerSelector({
   const { data: selectedCustomer } = useQuery({
     queryKey: ['customers', 'detail', field.value],
     queryFn: async () => {
-      if (!field.value) return null;
+      if (!field.value) {return null;}
       const response = await fetch(`/api/customers/${field.value}`);
-      if (!response.ok) return null;
+      if (!response.ok) {return null;}
       const result = await response.json();
       return result.data;
     },

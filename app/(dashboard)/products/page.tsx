@@ -1,3 +1,4 @@
+import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 
 import { ERPProductList } from '@/components/products/erp-product-list';
@@ -10,17 +11,40 @@ async function getProducts(params: ProductListQueryParams) {
   // 构建查询参数
   const searchParams = new URLSearchParams();
 
-  if (params.page) searchParams.set('page', params.page.toString());
-  if (params.limit) searchParams.set('limit', params.limit.toString());
-  if (params.search) searchParams.set('search', params.search);
-  if (params.categoryId) searchParams.set('categoryId', params.categoryId);
-  if (params.status) searchParams.set('status', params.status);
-  if (params.sortBy) searchParams.set('sortBy', params.sortBy);
-  if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder);
-  if (params.includeInventory !== undefined)
+  if (params.page) {
+    searchParams.set('page', params.page.toString());
+  }
+  if (params.limit) {
+    searchParams.set('limit', params.limit.toString());
+  }
+  if (params.search) {
+    searchParams.set('search', params.search);
+  }
+  if (params.categoryId) {
+    searchParams.set('categoryId', params.categoryId);
+  }
+  if (params.status) {
+    searchParams.set('status', params.status);
+  }
+  if (params.sortBy) {
+    searchParams.set('sortBy', params.sortBy);
+  }
+  if (params.sortOrder) {
+    searchParams.set('sortOrder', params.sortOrder);
+  }
+  if (params.includeInventory !== undefined) {
     searchParams.set('includeInventory', params.includeInventory.toString());
-  if (params.includeStatistics !== undefined)
+  }
+  if (params.includeStatistics !== undefined) {
     searchParams.set('includeStatistics', params.includeStatistics.toString());
+  }
+
+  // 获取 cookies 用于认证
+  const cookieStore = await cookies();
+  const cookieHeader = cookieStore
+    .getAll()
+    .map(cookie => `${cookie.name}=${cookie.value}`)
+    .join('; ');
 
   // 调用内部 API - 使用相对路径避免端口硬编码
   const baseUrl =
@@ -33,6 +57,7 @@ async function getProducts(params: ProductListQueryParams) {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
+        Cookie: cookieHeader,
       },
     }
   );

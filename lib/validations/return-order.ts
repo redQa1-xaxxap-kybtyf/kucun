@@ -29,7 +29,7 @@ export const returnOrderItemSchema = z
     subtotal: z.number().min(0, '小计不能为负数'),
     reason: z.string().optional(),
     condition: z.enum(['good', 'damaged', 'defective'], {
-      errorMap: () => ({ message: '请选择商品状态' }),
+      error: '请选择商品状态',
     }),
   })
   .refine(
@@ -67,11 +67,11 @@ export const createReturnOrderSchema = z
         'other',
       ] as const,
       {
-        errorMap: () => ({ message: '请选择退货类型' }),
+        error: '请选择退货类型',
       }
     ),
     processType: z.enum(['refund', 'exchange', 'repair', 'credit'] as const, {
-      errorMap: () => ({ message: '请选择处理方式' }),
+      error: '请选择处理方式',
     }),
     reason: z
       .string()
@@ -136,7 +136,7 @@ export const updateReturnStatusSchema = z.object({
       'cancelled',
     ] as const,
     {
-      errorMap: () => ({ message: '无效的状态值' }),
+      error: '无效的状态值',
     }
   ),
   remarks: z.string().max(500, '备注不能超过500字符').optional(),
@@ -279,7 +279,7 @@ export const batchReturnOrderSchema = z.object({
     .min(1, '请选择至少一个退货订单')
     .max(50, '批量操作不能超过50个订单'),
   action: z.enum(['approve', 'reject', 'cancel', 'export'], {
-    errorMap: () => ({ message: '无效的操作类型' }),
+    error: '无效的操作类型',
   }),
   remarks: z.string().max(500, '备注不能超过500字符').optional(),
 });

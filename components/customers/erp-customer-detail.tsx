@@ -73,14 +73,14 @@ export function ERPCustomerDetail({
 
   if (isLoading) {
     return (
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">客户详情</h3>
           </div>
         </div>
         <div className="px-3 py-2">
-          <div className="text-center text-xs text-muted-foreground">
+          <div className="text-muted-foreground text-center text-xs">
             加载中...
           </div>
         </div>
@@ -90,8 +90,8 @@ export function ERPCustomerDetail({
 
   if (error) {
     return (
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">客户详情</h3>
           </div>
@@ -107,14 +107,14 @@ export function ERPCustomerDetail({
 
   if (!customer) {
     return (
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">客户详情</h3>
           </div>
         </div>
         <div className="px-3 py-2">
-          <div className="text-center text-xs text-muted-foreground">
+          <div className="text-muted-foreground text-center text-xs">
             客户不存在
           </div>
         </div>
@@ -123,9 +123,9 @@ export function ERPCustomerDetail({
   }
 
   return (
-    <div className="rounded border bg-card">
+    <div className="bg-card rounded border">
       {/* ERP标准工具栏 */}
-      <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-muted/30 border-b px-3 py-2">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">客户详情</h3>
           {showActions && (
@@ -157,13 +157,13 @@ export function ERPCustomerDetail({
       <div className="px-3 py-2">
         {/* 基本信息区域 */}
         <div className="space-y-3">
-          <div className="text-xs font-medium text-muted-foreground">
+          <div className="text-muted-foreground text-xs font-medium">
             基本信息
           </div>
 
           {/* 客户名称 */}
           <div className="flex items-center gap-2">
-            <Users className="h-3 w-3 text-muted-foreground" />
+            <Users className="text-muted-foreground h-3 w-3" />
             <span className="text-sm font-medium">{customer.name}</span>
           </div>
 
@@ -171,13 +171,13 @@ export function ERPCustomerDetail({
           <div className="grid grid-cols-1 gap-y-2 md:grid-cols-2">
             {customer.phone && (
               <div className="flex items-center gap-2">
-                <Phone className="h-3 w-3 text-muted-foreground" />
+                <Phone className="text-muted-foreground h-3 w-3" />
                 <span className="text-xs">{customer.phone}</span>
               </div>
             )}
 
             <div className="flex items-center gap-2">
-              <Calendar className="h-3 w-3 text-muted-foreground" />
+              <Calendar className="text-muted-foreground h-3 w-3" />
               <span className="text-xs">
                 创建于 {formatDate(customer.createdAt)}
               </span>
@@ -187,7 +187,7 @@ export function ERPCustomerDetail({
           {/* 地址信息 */}
           {customer.address && (
             <div className="flex items-start gap-2">
-              <MapPin className="mt-0.5 h-3 w-3 text-muted-foreground" />
+              <MapPin className="text-muted-foreground mt-0.5 h-3 w-3" />
               <span className="text-xs">{customer.address}</span>
             </div>
           )}
@@ -195,23 +195,23 @@ export function ERPCustomerDetail({
 
         {/* 业务统计区域 */}
         <div className="mt-4 space-y-3">
-          <div className="text-xs font-medium text-muted-foreground">
+          <div className="text-muted-foreground text-xs font-medium">
             业务统计
           </div>
           <div className="grid grid-cols-3 gap-2">
             {/* 交易次数 */}
-            <div className="rounded border bg-muted/10 px-2 py-2 text-center">
+            <div className="bg-muted/10 rounded border px-2 py-2 text-center">
               <div className="flex items-center justify-center gap-1">
                 <TrendingUp className="h-3 w-3 text-blue-600" />
                 <span className="text-sm font-medium text-blue-600">
                   {customer.transactionCount || 0}
                 </span>
               </div>
-              <div className="text-xs text-muted-foreground">交易次数</div>
+              <div className="text-muted-foreground text-xs">交易次数</div>
             </div>
 
             {/* 合作天数 */}
-            <div className="rounded border bg-muted/10 px-2 py-2 text-center">
+            <div className="bg-muted/10 rounded border px-2 py-2 text-center">
               <div className="flex items-center justify-center gap-1">
                 <Calendar className="h-3 w-3 text-green-600" />
                 <span className="text-sm font-medium text-green-600">
@@ -220,27 +220,27 @@ export function ERPCustomerDetail({
                     : '-'}
                 </span>
               </div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-muted-foreground text-xs">
                 {customer.cooperationDays !== undefined ? '合作天数' : '未下单'}
               </div>
             </div>
 
             {/* 退货次数 */}
-            <div className="rounded border bg-muted/10 px-2 py-2 text-center">
+            <div className="bg-muted/10 rounded border px-2 py-2 text-center">
               <div className="flex items-center justify-center gap-1">
                 <TrendingDown className="h-3 w-3 text-red-600" />
                 <span className="text-sm font-medium text-red-600">
                   {customer.returnOrderCount || 0}
                 </span>
               </div>
-              <div className="text-xs text-muted-foreground">退货次数</div>
+              <div className="text-muted-foreground text-xs">退货次数</div>
             </div>
           </div>
         </div>
 
         {/* 客户状态 */}
         <div className="mt-4 space-y-3">
-          <div className="text-xs font-medium text-muted-foreground">
+          <div className="text-muted-foreground text-xs font-medium">
             客户状态
           </div>
           <div className="flex items-center gap-2">
@@ -275,11 +275,11 @@ export function ERPCustomerDetail({
         {customer.extendedInfo &&
           Object.keys(customer.extendedInfo).length > 0 && (
             <div className="mt-4 space-y-3">
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 扩展信息
               </div>
-              <div className="rounded border bg-muted/5 px-2 py-2">
-                <div className="text-xs text-muted-foreground">
+              <div className="bg-muted/5 rounded border px-2 py-2">
+                <div className="text-muted-foreground text-xs">
                   {JSON.stringify(customer.extendedInfo, null, 2)}
                 </div>
               </div>

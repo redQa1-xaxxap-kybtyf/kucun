@@ -143,7 +143,7 @@ export function validateSupplierName(name: string): boolean {
  * 格式化供应商电话显示
  */
 export function formatSupplierPhone(phone?: string): string {
-  if (!phone) return '-';
+  if (!phone) {return '-';}
   return phone;
 }
 
@@ -151,6 +151,6 @@ export function formatSupplierPhone(phone?: string): string {
  * 格式化供应商地址显示
  */
 export function formatSupplierAddress(address?: string): string {
-  if (!address) return '-';
+  if (!address) {return '-';}
   return address.length > 50 ? `${address.substring(0, 50)}...` : address;
 }

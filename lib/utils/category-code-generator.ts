@@ -484,28 +484,28 @@ function getCharacterInitial(char: string): string {
   const code = char.charCodeAt(0);
 
   // 基于Unicode编码范围的简单映射
-  if (code >= 0x4e00 && code <= 0x4fff) return 'A';
-  if (code >= 0x5000 && code <= 0x51ff) return 'B';
-  if (code >= 0x5200 && code <= 0x53ff) return 'C';
-  if (code >= 0x5400 && code <= 0x55ff) return 'D';
-  if (code >= 0x5600 && code <= 0x57ff) return 'E';
-  if (code >= 0x5800 && code <= 0x59ff) return 'F';
-  if (code >= 0x5a00 && code <= 0x5bff) return 'G';
-  if (code >= 0x5c00 && code <= 0x5dff) return 'H';
-  if (code >= 0x5e00 && code <= 0x5fff) return 'J';
-  if (code >= 0x6000 && code <= 0x61ff) return 'K';
-  if (code >= 0x6200 && code <= 0x63ff) return 'L';
-  if (code >= 0x6400 && code <= 0x65ff) return 'M';
-  if (code >= 0x6600 && code <= 0x67ff) return 'N';
-  if (code >= 0x6800 && code <= 0x69ff) return 'P';
-  if (code >= 0x6a00 && code <= 0x6bff) return 'Q';
-  if (code >= 0x6c00 && code <= 0x6dff) return 'R';
-  if (code >= 0x6e00 && code <= 0x6fff) return 'S';
-  if (code >= 0x7000 && code <= 0x71ff) return 'T';
-  if (code >= 0x7200 && code <= 0x73ff) return 'W';
-  if (code >= 0x7400 && code <= 0x75ff) return 'X';
-  if (code >= 0x7600 && code <= 0x77ff) return 'Y';
-  if (code >= 0x7800 && code <= 0x9fff) return 'Z';
+  if (code >= 0x4e00 && code <= 0x4fff) {return 'A';}
+  if (code >= 0x5000 && code <= 0x51ff) {return 'B';}
+  if (code >= 0x5200 && code <= 0x53ff) {return 'C';}
+  if (code >= 0x5400 && code <= 0x55ff) {return 'D';}
+  if (code >= 0x5600 && code <= 0x57ff) {return 'E';}
+  if (code >= 0x5800 && code <= 0x59ff) {return 'F';}
+  if (code >= 0x5a00 && code <= 0x5bff) {return 'G';}
+  if (code >= 0x5c00 && code <= 0x5dff) {return 'H';}
+  if (code >= 0x5e00 && code <= 0x5fff) {return 'J';}
+  if (code >= 0x6000 && code <= 0x61ff) {return 'K';}
+  if (code >= 0x6200 && code <= 0x63ff) {return 'L';}
+  if (code >= 0x6400 && code <= 0x65ff) {return 'M';}
+  if (code >= 0x6600 && code <= 0x67ff) {return 'N';}
+  if (code >= 0x6800 && code <= 0x69ff) {return 'P';}
+  if (code >= 0x6a00 && code <= 0x6bff) {return 'Q';}
+  if (code >= 0x6c00 && code <= 0x6dff) {return 'R';}
+  if (code >= 0x6e00 && code <= 0x6fff) {return 'S';}
+  if (code >= 0x7000 && code <= 0x71ff) {return 'T';}
+  if (code >= 0x7200 && code <= 0x73ff) {return 'W';}
+  if (code >= 0x7400 && code <= 0x75ff) {return 'X';}
+  if (code >= 0x7600 && code <= 0x77ff) {return 'Y';}
+  if (code >= 0x7800 && code <= 0x9fff) {return 'Z';}
 
   return 'X'; // 默认返回X
 }

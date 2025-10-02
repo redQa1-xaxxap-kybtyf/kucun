@@ -254,7 +254,7 @@ export class ProductDataFormatter {
    * 格式化产品重量显示
    */
   static formatWeight(weight?: number): string {
-    if (!weight || weight === 0) return '-';
+    if (!weight || weight === 0) {return '-';}
     return `${weight.toFixed(2)} kg`;
   }
 
@@ -262,7 +262,7 @@ export class ProductDataFormatter {
    * 格式化产品厚度显示
    */
   static formatThickness(thickness?: number): string {
-    if (!thickness || thickness === 0) return '-';
+    if (!thickness || thickness === 0) {return '-';}
     return `${thickness.toFixed(1)} mm`;
   }
 
@@ -271,7 +271,7 @@ export class ProductDataFormatter {
    * 处理可能的 JSON 格式或其他异常格式
    */
   static formatSpecification(specification?: string | null): string {
-    if (!specification || specification.trim() === '') return '-';
+    if (!specification || specification.trim() === '') {return '-';}
 
     const trimmed = specification.trim();
 

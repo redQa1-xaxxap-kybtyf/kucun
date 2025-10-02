@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 
 // 色号显示器变体定义
 const colorCodeDisplayVariants = cva(
-  'inline-flex items-center gap-2 rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2',
+  'inline-flex items-center gap-2 rounded-md border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2',
   {
     variants: {
       variant: {
@@ -152,7 +152,7 @@ const ColorCodeDisplay = React.forwardRef<
       >
         {showColorSwatch && (
           <div
-            className="h-3 w-3 flex-shrink-0 rounded-full border border-gray-300"
+            className="h-3 w-3 shrink-0 rounded-full border border-gray-300"
             style={{ backgroundColor: colorValue }}
             title={`色号: ${colorCode}`}
           />
@@ -199,9 +199,9 @@ const ColorCodeSelector = React.forwardRef<
         <button
           type="button"
           className={cn(
-            'flex w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm hover:bg-accent hover:text-accent-foreground',
+            'border-input bg-background hover:bg-accent hover:text-accent-foreground flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm',
             disabled && 'cursor-not-allowed opacity-50',
-            'focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2'
+            'focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-hidden'
           )}
           onClick={() => !disabled && setIsOpen(!isOpen)}
           disabled={disabled}
@@ -236,14 +236,14 @@ const ColorCodeSelector = React.forwardRef<
 
         {/* 色号选择下拉框 */}
         {isOpen && !disabled && (
-          <div className="absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-popover shadow-lg">
+          <div className="border-border bg-popover absolute z-50 mt-1 max-h-60 w-full overflow-auto rounded-md border shadow-lg">
             <div className="p-2">
               <div className="grid grid-cols-4 gap-2">
                 {colorCodes.map(code => (
                   <button
                     key={code}
                     type="button"
-                    className="rounded-sm p-1 transition-colors hover:bg-accent"
+                    className="hover:bg-accent rounded-sm p-1 transition-colors"
                     onClick={() => {
                       onValueChange?.(code);
                       setIsOpen(false);
@@ -305,7 +305,7 @@ const ColorCodeGrid = React.forwardRef<HTMLDivElement, ColorCodeGridProps>(
           onColorCodeClick={onColorCodeSelect}
           className={cn(
             'justify-center',
-            selectedColorCode === code && 'ring-2 ring-primary ring-offset-2'
+            selectedColorCode === code && 'ring-primary ring-2 ring-offset-2'
           )}
         />
       ))}

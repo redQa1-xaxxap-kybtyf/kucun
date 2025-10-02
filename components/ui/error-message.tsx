@@ -37,7 +37,7 @@ export function ErrorMessage({
     >
       <div className="flex">
         {showIcon && (
-          <div className="flex-shrink-0">
+          <div className="shrink-0">
             <AlertTriangle
               className={cn('h-5 w-5', iconStyles[variant])}
               aria-hidden="true"

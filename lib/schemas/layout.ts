@@ -42,9 +42,7 @@ export const NotificationItemSchema = z.object({
   title: z.string().min(1, '通知标题不能为空'),
   message: z.string().min(1, '通知内容不能为空'),
   type: z.enum(['info', 'warning', 'error', 'success'], {
-    errorMap: () => ({
-      message: '通知类型必须是 info、warning、error 或 success',
-    }),
+    error: '通知类型必须是 info、warning、error 或 success',
   }),
   isRead: z.boolean(),
   createdAt: z.date(),
@@ -106,7 +104,7 @@ export const LayoutConfigSchema = z.object({
   sidebarCollapsed: z.boolean(),
   isMobile: z.boolean(),
   theme: z.enum(['light', 'dark', 'system'], {
-    errorMap: () => ({ message: '主题必须是 light、dark 或 system' }),
+    error: '主题必须是 light、dark 或 system',
   }),
 });
 
@@ -129,9 +127,7 @@ export const QuickActionSchema = z.object({
 export const DeviceTypeSchema = z.enum(
   ['mobile', 'tablet', 'desktop', 'large'],
   {
-    errorMap: () => ({
-      message: '设备类型必须是 mobile、tablet、desktop 或 large',
-    }),
+    error: '设备类型必须是 mobile、tablet、desktop 或 large',
   }
 );
 
@@ -139,7 +135,7 @@ export const DeviceTypeSchema = z.enum(
  * 布局变体Schema
  */
 export const LayoutVariantSchema = z.enum(['default', 'compact', 'minimal'], {
-  errorMap: () => ({ message: '布局变体必须是 default、compact 或 minimal' }),
+  error: '布局变体必须是 default、compact 或 minimal',
 });
 
 /**
@@ -192,7 +188,7 @@ export const ApiResponseSchema = z.object({
 export const ErrorInfoSchema = z.object({
   code: z.string().min(1, '错误代码不能为空'),
   message: z.string().min(1, '错误信息不能为空'),
-  details: z.record(z.unknown()).optional(),
+  details: z.record(z.string(), z.unknown()).optional(),
   timestamp: z.date().optional(),
 });
 

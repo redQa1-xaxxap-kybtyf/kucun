@@ -1,51 +1,53 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import {
+  errorResponse,
+  validateQueryParams,
+  verifyApiAuth,
+} from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
+import { accountsReceivableQuerySchema } from '@/lib/validations/payment';
 
 /**
  * 应收货款API
  * GET /api/finance/receivables - 获取应收账款列表
+ *
+ * 遵循规范：
+ * 1. 使用 verifyApiAuth 读取中间件透传的用户信息，避免重复调用 getServerSession
+ * 2. 使用 Zod schema 进行参数验证，遵循唯一真理源原则
+ * 3. 使用统一的响应函数，确保 API 响应格式一致
  */
 export async function GET(request: NextRequest) {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 身份验证 - 从中间件透传的头信息中获取用户信息
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
-    // 解析查询参数
+    // 参数验证 - 使用 Zod schema，遵循唯一真理源原则
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const pageSize = parseInt(searchParams.get('pageSize') || '20');
-    const search = searchParams.get('search') || '';
-    const status = searchParams.get('status');
-    const customerId = searchParams.get('customerId');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const sortBy = searchParams.get('sortBy') || 'orderDate';
-    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const validation = validateQueryParams(
+      searchParams,
+      accountsReceivableQuerySchema
+    );
 
-    // 参数验证
-    if (page < 1 || pageSize < 1 || pageSize > 100) {
-      return NextResponse.json(
-        { success: false, error: '分页参数无效' },
-        { status: 400 }
-      );
+    if (!validation.success) {
+      return errorResponse(validation.error || '参数验证失败', 400);
     }
 
-    if (sortOrder !== 'asc' && sortOrder !== 'desc') {
-      return NextResponse.json(
-        { success: false, error: '排序方向参数无效' },
-        { status: 400 }
-      );
-    }
+    // 解构验证后的数据，提供默认值
+    const validatedData = validation.data!;
+    const page = validatedData.page ?? 1;
+    const pageSize = validatedData.pageSize ?? 20;
+    const search = validatedData.search;
+    const status = validatedData.paymentStatus;
+    const customerId = validatedData.customerId;
+    const startDate = validatedData.startDate;
+    const endDate = validatedData.endDate;
+    const sortBy = validatedData.sortBy ?? 'orderDate';
+    const sortOrder = validatedData.sortOrder ?? 'desc';
 
     // 建立前端字段与数据库字段的映射关系
     const sortFieldMapping: Record<
@@ -91,39 +93,31 @@ export async function GET(request: NextRequest) {
       };
     }
 
-    // 计算分页
-    const skip = (page - 1) * pageSize;
-
-    // 查询销售订单和相关的收款记录
-    let salesOrders, _total;
+    // 第一步：查询所有符合条件的订单（不分页），用于计算支付状态和统计数据
+    let allSalesOrders;
     try {
-      [salesOrders, _total] = await Promise.all([
-        prisma.salesOrder.findMany({
-          where: whereConditions,
-          include: {
-            customer: {
-              select: {
-                id: true,
-                name: true,
-                phone: true,
-              },
-            },
-            payments: {
-              where: {
-                status: 'confirmed',
-              },
-              select: {
-                paymentAmount: true,
-                paymentDate: true,
-              },
+      allSalesOrders = await prisma.salesOrder.findMany({
+        where: whereConditions,
+        include: {
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
             },
           },
-          orderBy: orderByClause,
-          skip,
-          take: pageSize,
-        }),
-        prisma.salesOrder.count({ where: whereConditions }),
-      ]);
+          payments: {
+            where: {
+              status: 'confirmed',
+            },
+            select: {
+              paymentAmount: true,
+              paymentDate: true,
+            },
+          },
+        },
+        orderBy: orderByClause,
+      });
     } catch (error) {
       console.error('数据库查询错误:', error);
       return NextResponse.json(
@@ -132,8 +126,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    // 转换为应收账款格式
-    const receivables = salesOrders.map((order: any) => {
+    // 第二步：转换为应收账款格式并计算支付状态
+    const allReceivables = allSalesOrders.map((order: any) => {
       const paidAmount = order.payments.reduce(
         (sum: number, payment: any) => sum + payment.paymentAmount,
         0
@@ -189,18 +183,12 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    // 根据状态筛选
+    // 第三步：根据状态筛选（在内存中进行，因为支付状态是计算出来的）
     const filteredReceivables = status
-      ? receivables.filter(r => r.paymentStatus === status)
-      : receivables;
+      ? allReceivables.filter(r => r.paymentStatus === status)
+      : allReceivables;
 
-    // 应用分页到筛选后的结果
-    const paginatedReceivables = filteredReceivables.slice(
-      (page - 1) * pageSize,
-      page * pageSize
-    );
-
-    // 计算统计数据
+    // 第四步：计算完整的统计数据（基于所有筛选后的数据）
     const summary = {
       totalReceivable: filteredReceivables.reduce(
         (sum, r) => sum + r.remainingAmount,
@@ -214,6 +202,12 @@ export async function GET(request: NextRequest) {
         r => r.paymentStatus === 'overdue'
       ).length,
     };
+
+    // 第五步：应用分页到筛选后的结果
+    const paginatedReceivables = filteredReceivables.slice(
+      (page - 1) * pageSize,
+      page * pageSize
+    );
 
     return NextResponse.json({
       success: true,

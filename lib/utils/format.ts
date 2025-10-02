@@ -64,7 +64,7 @@ export function formatDate(
   date: Date | string,
   format: 'date' | 'datetime' | 'time' = 'date'
 ): string {
-  if (!date) return '';
+  if (!date) {return '';}
 
   const dateObj = typeof date === 'string' ? new Date(date) : date;
 
@@ -106,7 +106,7 @@ export function formatDate(
  * @returns 相对时间字符串
  */
 export function formatRelativeTime(date: Date | string): string {
-  if (!date) return '';
+  if (!date) {return '';}
 
   const dateObj = typeof date === 'string' ? new Date(date) : date;
 
@@ -163,7 +163,7 @@ export function formatFileSize(bytes: number, precision: number = 1): string {
  * @returns 格式化后的手机号
  */
 export function formatPhone(phone: string): string {
-  if (!phone) return '';
+  if (!phone) {return '';}
 
   // 移除所有非数字字符
   const cleaned = phone.replace(/\D/g, '');
@@ -182,7 +182,7 @@ export function formatPhone(phone: string): string {
  * @returns 格式化后的身份证号（部分隐藏）
  */
 export function formatIdCard(idCard: string): string {
-  if (!idCard) return '';
+  if (!idCard) {return '';}
 
   if (idCard.length === 18) {
     return `${idCard.slice(0, 6)}********${idCard.slice(-4)}`;
@@ -199,7 +199,7 @@ export function formatIdCard(idCard: string): string {
  * @returns 格式化后的银行卡号（部分隐藏）
  */
 export function formatBankCard(cardNumber: string): string {
-  if (!cardNumber) return '';
+  if (!cardNumber) {return '';}
 
   const cleaned = cardNumber.replace(/\s/g, '');
 
@@ -222,7 +222,7 @@ export function truncateText(
   maxLength: number,
   suffix: string = '...'
 ): string {
-  if (!text) return '';
+  if (!text) {return '';}
 
   if (text.length <= maxLength) {
     return text;
@@ -241,7 +241,7 @@ export function formatAddress(
     | string
     | { province?: string; city?: string; district?: string; detail?: string }
 ): string {
-  if (!address) return '';
+  if (!address) {return '';}
 
   if (typeof address === 'string') {
     return address;

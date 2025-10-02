@@ -35,7 +35,7 @@ export async function POST(
         {
           success: false,
           error: '数据验证失败',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );

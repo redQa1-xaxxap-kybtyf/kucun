@@ -87,7 +87,7 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
     // 格式化规格显示（限制11个字符，避免JSON字符串显示）
     const formattedSpecification = React.useMemo(() => {
       const spec = item.product?.specification;
-      if (!spec) return '-';
+      if (!spec) {return '-';}
 
       // 如果是JSON字符串，尝试解析并提取关键信息
       if (spec.startsWith('{') && spec.endsWith('}')) {

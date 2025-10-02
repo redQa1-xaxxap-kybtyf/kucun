@@ -118,7 +118,7 @@ const InventoryAlertItem = React.forwardRef<
         >
           <div className="flex min-w-0 flex-1 items-center space-x-3">
             <IconComponent
-              className={cn('h-4 w-4 flex-shrink-0', levelConfig.color)}
+              className={cn('h-4 w-4 shrink-0', levelConfig.color)}
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-center space-x-2">
@@ -132,7 +132,7 @@ const InventoryAlertItem = React.forwardRef<
             </div>
           </div>
 
-          <div className="flex flex-shrink-0 items-center space-x-2">
+          <div className="flex shrink-0 items-center space-x-2">
             <Badge
               variant="outline"
               className={cn('text-xs', levelConfig.badge)}
@@ -168,7 +168,7 @@ const InventoryAlertItem = React.forwardRef<
         <div className="flex items-start justify-between">
           <div className="flex min-w-0 flex-1 items-start space-x-3">
             <IconComponent
-              className={cn('mt-0.5 h-5 w-5 flex-shrink-0', levelConfig.color)}
+              className={cn('mt-0.5 h-5 w-5 shrink-0', levelConfig.color)}
             />
             <div className="min-w-0 flex-1 space-y-2">
               <div className="flex items-center space-x-2">
@@ -213,7 +213,7 @@ const InventoryAlertItem = React.forwardRef<
             </div>
           </div>
 
-          <div className="flex flex-shrink-0 items-center space-x-2">
+          <div className="flex shrink-0 items-center space-x-2">
             {onViewProduct && (
               <Button
                 variant="outline"

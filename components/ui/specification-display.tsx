@@ -370,7 +370,7 @@ const SpecificationCompare = React.forwardRef<
   HTMLDivElement,
   SpecificationCompareProps
 >(({ specifications, className, ...props }, ref) => {
-  if (specifications.length === 0) return null;
+  if (specifications.length === 0) {return null;}
 
   return (
     <div className={cn('overflow-x-auto', className)} ref={ref} {...props}>

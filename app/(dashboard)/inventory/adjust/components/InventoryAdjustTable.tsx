@@ -28,7 +28,7 @@ export function InventoryAdjustTable({
 }: InventoryAdjustTableProps) {
   // 格式化日期
   const formatDate = (dateString: string | Date) => {
-    if (!dateString) return null;
+    if (!dateString) {return null;}
     return formatDateTimeCN(dateString);
   };
 

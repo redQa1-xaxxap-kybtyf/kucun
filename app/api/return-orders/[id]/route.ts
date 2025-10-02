@@ -130,7 +130,7 @@ export async function PUT(
         {
           success: false,
           error: '数据验证失败',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );
@@ -168,10 +168,10 @@ export async function PUT(
         updatedAt: new Date(),
       };
 
-      if (data.type) updateData.type = data.type;
-      if (data.processType) updateData.processType = data.processType;
-      if (data.reason) updateData.reason = data.reason;
-      if (data.remarks !== undefined) updateData.remarks = data.remarks;
+      if (data.type) {updateData.type = data.type;}
+      if (data.processType) {updateData.processType = data.processType;}
+      if (data.reason) {updateData.reason = data.reason;}
+      if (data.remarks !== undefined) {updateData.remarks = data.remarks;}
 
       // 如果有明细项更新
       if (data.items) {

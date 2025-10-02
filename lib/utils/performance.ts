@@ -49,7 +49,7 @@ export class LRUCache<K, V> {
   get(key: K): V | undefined {
     const item = this.cache.get(key);
 
-    if (!item) return undefined;
+    if (!item) {return undefined;}
 
     // 检查是否过期
     if (Date.now() - item.timestamp > this.ttl) {
@@ -200,10 +200,10 @@ export function useDeepMemo<T>(
  * 深度比较函数
  */
 function areEqual(a: React.DependencyList, b: React.DependencyList): boolean {
-  if (a.length !== b.length) return false;
+  if (a.length !== b.length) {return false;}
 
   for (let i = 0; i < a.length; i++) {
-    if (!Object.is(a[i], b[i])) return false;
+    if (!Object.is(a[i], b[i])) {return false;}
   }
 
   return true;
@@ -251,7 +251,7 @@ export function usePerformanceMonitor(componentName: string) {
     getMetrics: () => metricsRef.current,
     getAverageRenderTime: () => {
       const metrics = metricsRef.current;
-      if (metrics.length === 0) return 0;
+      if (metrics.length === 0) {return 0;}
 
       const total = metrics.reduce((sum, m) => sum + m.renderTime, 0);
       return total / metrics.length;

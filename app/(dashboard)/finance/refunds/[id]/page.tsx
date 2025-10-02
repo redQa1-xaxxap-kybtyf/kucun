@@ -329,7 +329,7 @@ export default async function RefundDetailPage({
             <CardContent>
               <div className="space-y-3 text-sm">
                 <div className="flex items-start gap-3">
-                  <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500" />
+                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
                   <div>
                     <p className="font-medium">退款申请已创建</p>
                     <p className="text-gray-500">
@@ -340,7 +340,7 @@ export default async function RefundDetailPage({
 
                 {refund.processedDate && (
                   <div className="flex items-start gap-3">
-                    <div className="mt-2 h-2 w-2 flex-shrink-0 rounded-full bg-green-500" />
+                    <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-green-500" />
                     <div>
                       <p className="font-medium">退款处理完成</p>
                       <p className="text-gray-500">

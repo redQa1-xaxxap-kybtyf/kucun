@@ -29,7 +29,7 @@ export function createWsClient(): WsClient {
   const reconnectDelay = 1000;
 
   function connect() {
-    if (ws?.readyState === WebSocket.OPEN) return;
+    if (ws?.readyState === WebSocket.OPEN) {return;}
 
     try {
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';

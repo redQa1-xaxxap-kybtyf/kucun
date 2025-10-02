@@ -40,7 +40,7 @@ export function OrderNumberGenerator({
 
   // 生成新订单号
   const generateOrderNumber = async () => {
-    if (disabled) return;
+    if (disabled) {return;}
 
     setIsGenerating(true);
     try {
@@ -118,7 +118,7 @@ export function OrderNumberGenerator({
 
   // 复制订单号
   const copyOrderNumber = async () => {
-    if (!value) return;
+    if (!value) {return;}
 
     try {
       await navigator.clipboard.writeText(value);

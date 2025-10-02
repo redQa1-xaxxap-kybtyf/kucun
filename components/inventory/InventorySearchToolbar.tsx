@@ -39,7 +39,6 @@ interface InventorySearchToolbarProps {
  * 使用防抖搜索优化性能
  */
 export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
-  // eslint-disable-next-line max-lines-per-function
   ({
     queryParams,
     categoryOptions,
@@ -121,11 +120,11 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
             <Edit className="mr-1 h-3 w-3" />
             调整
           </Button>
-          <div className="mx-2 h-4 w-px bg-border" />
+          <div className="bg-border mx-2 h-4 w-px" />
 
           {/* 防抖搜索框 */}
           <div className="relative max-w-xs flex-1">
-            <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+            <Search className="text-muted-foreground absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2" />
             <Input
               placeholder="搜索产品名称、编码..."
               value={inputValue}
@@ -133,8 +132,8 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
               className="h-7 pl-7 text-xs"
             />
             {isDebouncing && (
-              <div className="absolute right-2 top-1/2 h-3 w-3 -translate-y-1/2">
-                <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+              <div className="absolute top-1/2 right-2 h-3 w-3 -translate-y-1/2">
+                <div className="border-primary h-3 w-3 animate-spin rounded-full border-2 border-t-transparent" />
               </div>
             )}
           </div>

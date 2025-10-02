@@ -233,7 +233,7 @@ export default function ReturnOrderDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     退货状态
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
@@ -248,7 +248,7 @@ export default function ReturnOrderDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     关联销售订单
                   </label>
                   <p className="mt-1">
@@ -264,37 +264,37 @@ export default function ReturnOrderDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     客户名称
                   </label>
                   <p className="mt-1">{order.customer.name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     客户电话
                   </label>
                   <p className="mt-1">{order.customer.phone || '-'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     退货原因
                   </label>
                   <p className="mt-1">{order.returnReason}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     创建人
                   </label>
                   <p className="mt-1">{order.user.name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     创建时间
                   </label>
                   <p className="mt-1">{formatDate(order.createdAt)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     更新时间
                   </label>
                   <p className="mt-1">{formatDate(order.updatedAt)}</p>
@@ -302,7 +302,7 @@ export default function ReturnOrderDetailPage() {
               </div>
               {order.remarks && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     备注信息
                   </label>
                   <p className="mt-1 text-sm">{order.remarks}</p>
@@ -323,7 +323,7 @@ export default function ReturnOrderDetailPage() {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <h4 className="font-medium">{item.product.name}</h4>
-                        <div className="space-y-1 text-sm text-muted-foreground">
+                        <div className="text-muted-foreground space-y-1 text-sm">
                           <p>产品编码：{item.product.code}</p>
                           <p>单位：{item.product.unit}</p>
                           {item.returnReason && (
@@ -335,7 +335,7 @@ export default function ReturnOrderDetailPage() {
                         <p className="font-medium">
                           {formatCurrency(item.subtotal)}
                         </p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           {item.returnQuantity} ×{' '}
                           {formatCurrency(item.unitPrice)}
                         </p>
@@ -371,7 +371,7 @@ export default function ReturnOrderDetailPage() {
                 </span>
               </div>
               <Separator />
-              <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="text-muted-foreground flex justify-between text-sm">
                 <span>原销售订单金额</span>
                 <span>{formatCurrency(order.salesOrder.totalAmount)}</span>
               </div>
@@ -389,7 +389,7 @@ export default function ReturnOrderDetailPage() {
                   <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                   <div className="flex-1">
                     <p className="text-sm font-medium">退货申请创建</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       {formatDate(order.createdAt)}
                     </p>
                   </div>
@@ -415,7 +415,7 @@ export default function ReturnOrderDetailPage() {
                           ]
                         }
                       </p>
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-muted-foreground text-xs">
                         {formatDate(order.updatedAt)}
                       </p>
                     </div>

@@ -3,10 +3,11 @@
 import { useQuery } from '@tanstack/react-query';
 
 import {
-  ProductBatchDeleteDialog,
-  ProductDeleteDialog,
+    ProductBatchDeleteDialog,
+    ProductDeleteDialog,
 } from '@/components/products/product-delete-dialogs';
 import { ProductListToolbar } from '@/components/products/product-list-toolbar';
+import { ProductPagination } from '@/components/products/product-pagination';
 import { ProductSearchFilters } from '@/components/products/product-search-filters';
 import { ProductTable } from '@/components/products/product-table';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -42,6 +43,7 @@ export function ERPProductList({
     setBatchDeleteDialog,
     handleSearch,
     handleFilter,
+    handlePageChange,
     handleDeleteProduct,
     handleSelectProduct,
     handleSelectAll,
@@ -117,6 +119,20 @@ export function ERPProductList({
   }
 
   const products = data?.data || [];
+  const pagination = data?.pagination;
+
+  // 分页处理函数
+  const handlePrevPage = () => {
+    if (pagination && pagination.page > 1) {
+      handlePageChange(pagination.page - 1);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination && pagination.page < pagination.totalPages) {
+      handlePageChange(pagination.page + 1);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -142,14 +158,23 @@ export function ERPProductList({
       />
 
       {/* 产品表格 */}
-      <ProductTable
-        products={products}
-        selectedProductIds={selectedProductIds}
-        onProductSelect={onProductSelect}
-        onSelectProduct={handleSelectProduct}
-        onSelectAll={checked => handleSelectAll(checked, products)}
-        onDeleteProduct={handleDeleteProduct}
-      />
+      <div className="rounded-md border">
+        <ProductTable
+          products={products}
+          selectedProductIds={selectedProductIds}
+          onProductSelect={onProductSelect}
+          onSelectProduct={handleSelectProduct}
+          onSelectAll={checked => handleSelectAll(checked, products)}
+          onDeleteProduct={handleDeleteProduct}
+        />
+
+        {/* 分页组件 */}
+        <ProductPagination
+          pagination={pagination}
+          onPrevPage={handlePrevPage}
+          onNextPage={handleNextPage}
+        />
+      </div>
 
       {/* 删除确认对话框 */}
       <ProductDeleteDialog

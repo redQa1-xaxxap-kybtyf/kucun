@@ -51,18 +51,18 @@ export const paymentsApi = {
   ): Promise<PaymentRecordListResponse['data']> => {
     const params = new URLSearchParams();
 
-    if (query.page) params.append('page', query.page.toString());
-    if (query.pageSize) params.append('pageSize', query.pageSize.toString());
-    if (query.search) params.append('search', query.search);
-    if (query.customerId) params.append('customerId', query.customerId);
-    if (query.userId) params.append('userId', query.userId);
+    if (query.page) {params.append('page', query.page.toString());}
+    if (query.pageSize) {params.append('pageSize', query.pageSize.toString());}
+    if (query.search) {params.append('search', query.search);}
+    if (query.customerId) {params.append('customerId', query.customerId);}
+    if (query.userId) {params.append('userId', query.userId);}
     if (query.paymentMethod)
-      params.append('paymentMethod', query.paymentMethod);
-    if (query.status) params.append('status', query.status);
-    if (query.startDate) params.append('startDate', query.startDate);
-    if (query.endDate) params.append('endDate', query.endDate);
-    if (query.sortBy) params.append('sortBy', query.sortBy);
-    if (query.sortOrder) params.append('sortOrder', query.sortOrder);
+      {params.append('paymentMethod', query.paymentMethod);}
+    if (query.status) {params.append('status', query.status);}
+    if (query.startDate) {params.append('startDate', query.startDate);}
+    if (query.endDate) {params.append('endDate', query.endDate);}
+    if (query.sortBy) {params.append('sortBy', query.sortBy);}
+    if (query.sortOrder) {params.append('sortOrder', query.sortOrder);}
 
     const response = await fetch(`${API_BASE}?${params}`);
     if (!response.ok) {
@@ -210,16 +210,16 @@ export const paymentsApi = {
   ): Promise<AccountsReceivableResponse['data']> => {
     const params = new URLSearchParams();
 
-    if (query.page) params.append('page', query.page.toString());
-    if (query.pageSize) params.append('pageSize', query.pageSize.toString());
-    if (query.search) params.append('search', query.search);
-    if (query.customerId) params.append('customerId', query.customerId);
+    if (query.page) {params.append('page', query.page.toString());}
+    if (query.pageSize) {params.append('pageSize', query.pageSize.toString());}
+    if (query.search) {params.append('search', query.search);}
+    if (query.customerId) {params.append('customerId', query.customerId);}
     if (query.paymentStatus)
-      params.append('paymentStatus', query.paymentStatus);
-    if (query.startDate) params.append('startDate', query.startDate);
-    if (query.endDate) params.append('endDate', query.endDate);
-    if (query.sortBy) params.append('sortBy', query.sortBy);
-    if (query.sortOrder) params.append('sortOrder', query.sortOrder);
+      {params.append('paymentStatus', query.paymentStatus);}
+    if (query.startDate) {params.append('startDate', query.startDate);}
+    if (query.endDate) {params.append('endDate', query.endDate);}
+    if (query.sortBy) {params.append('sortBy', query.sortBy);}
+    if (query.sortOrder) {params.append('sortOrder', query.sortOrder);}
 
     const response = await fetch(`${API_BASE}/accounts-receivable?${params}`);
     if (!response.ok) {
@@ -240,12 +240,12 @@ export const paymentsApi = {
   ): Promise<PaymentStatisticsResponse['data']> => {
     const params = new URLSearchParams();
 
-    if (query.startDate) params.append('startDate', query.startDate);
-    if (query.endDate) params.append('endDate', query.endDate);
-    if (query.customerId) params.append('customerId', query.customerId);
+    if (query.startDate) {params.append('startDate', query.startDate);}
+    if (query.endDate) {params.append('endDate', query.endDate);}
+    if (query.customerId) {params.append('customerId', query.customerId);}
     if (query.paymentMethod)
-      params.append('paymentMethod', query.paymentMethod);
-    if (query.groupBy) params.append('groupBy', query.groupBy);
+      {params.append('paymentMethod', query.paymentMethod);}
+    if (query.groupBy) {params.append('groupBy', query.groupBy);}
 
     const response = await fetch(`${API_BASE}/statistics?${params}`);
     if (!response.ok) {
@@ -461,7 +461,7 @@ export const paymentUtils = {
   },
 
   calculatePaymentRate: (totalAmount: number, paidAmount: number): number => {
-    if (totalAmount === 0) return 0;
+    if (totalAmount === 0) {return 0;}
     return Math.round((paidAmount / totalAmount) * 100);
   },
 

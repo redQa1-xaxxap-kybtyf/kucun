@@ -73,25 +73,25 @@ const extendedInfoValidations = {
 
   customerType: z
     .enum(['company', 'store', 'individual'], {
-      errorMap: () => ({ message: '请选择正确的客户类型' }),
+      message: '请选择正确的客户类型',
     })
     .optional(),
 
   industry: z
     .string()
-    .max(50, '行业不能超过50个字符')
+    .max(50, { error: '行业不能超过50个字符' })
     .optional()
     .or(z.literal('')),
 
   region: z
     .string()
-    .max(50, '区域不能超过50个字符')
+    .max(50, { error: '区域不能超过50个字符' })
     .optional()
     .or(z.literal('')),
 
   level: z
     .enum(['A', 'B', 'C', 'D'], {
-      errorMap: () => ({ message: '请选择正确的客户等级' }),
+      message: '请选择正确的客户等级',
     })
     .optional(),
 

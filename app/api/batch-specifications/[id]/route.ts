@@ -6,16 +6,16 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import {
-  deleteBatchSpecification,
-  getBatchSpecificationById,
-  updateBatchSpecification,
-  validateUserSession,
+    deleteBatchSpecification,
+    getBatchSpecificationById,
+    updateBatchSpecification,
+    validateUserSession,
 } from '@/lib/api/batch-specification-handlers';
 import { ApiError } from '@/lib/api/errors';
-import { withErrorHandling } from '@/lib/api/middleware';
+import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import {
-  batchSpecificationIdSchema,
-  updateBatchSpecificationSchema,
+    batchSpecificationIdSchema,
+    updateBatchSpecificationSchema,
 } from '@/lib/validations/batch-specification';
 
 /**
@@ -24,8 +24,8 @@ import {
  */
 export const GET = withErrorHandling(
   async (
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    _request: NextRequest,
+    context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     // 验证用户会话
     const session = await validateUserSession();
@@ -34,7 +34,7 @@ export const GET = withErrorHandling(
     }
 
     // 验证批次规格参数ID
-    const { id } = await params;
+    const { id } = await resolveParams(context.params);
     const validatedId = batchSpecificationIdSchema.parse(id);
 
     // 获取批次规格参数详情
@@ -54,7 +54,7 @@ export const GET = withErrorHandling(
 export const PUT = withErrorHandling(
   async (
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     // 验证用户会话
     const session = await validateUserSession();
@@ -63,7 +63,7 @@ export const PUT = withErrorHandling(
     }
 
     // 验证批次规格参数ID
-    const { id } = await params;
+    const { id } = await resolveParams(context.params);
     const validatedId = batchSpecificationIdSchema.parse(id);
 
     // 解析请求体
@@ -92,8 +92,8 @@ export const PUT = withErrorHandling(
  */
 export const DELETE = withErrorHandling(
   async (
-    request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    _request: NextRequest,
+    context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     // 验证用户会话
     const session = await validateUserSession();
@@ -102,7 +102,7 @@ export const DELETE = withErrorHandling(
     }
 
     // 验证批次规格参数ID
-    const { id } = await params;
+    const { id } = await resolveParams(context.params);
     const validatedId = batchSpecificationIdSchema.parse(id);
 
     // 删除批次规格参数
@@ -122,7 +122,7 @@ export const DELETE = withErrorHandling(
 export const PATCH = withErrorHandling(
   async (
     request: NextRequest,
-    { params }: { params: Promise<{ id: string }> }
+    context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     // 验证用户会话
     const session = await validateUserSession();
@@ -131,7 +131,7 @@ export const PATCH = withErrorHandling(
     }
 
     // 验证批次规格参数ID
-    const { id } = await params;
+    const { id } = await resolveParams(context.params);
     const validatedId = batchSpecificationIdSchema.parse(id);
 
     // 解析请求体

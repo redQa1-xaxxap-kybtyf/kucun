@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: '上传类型不正确',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );

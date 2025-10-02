@@ -67,7 +67,7 @@ export async function GET(request: NextRequest) {
         {
           success: false,
           error: '查询参数格式不正确',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );
@@ -78,9 +78,9 @@ export async function GET(request: NextRequest) {
 
     // 构建查询条件
     const where: Prisma.ProductVariantWhereInput = {};
-    if (productId) where.productId = productId;
-    if (colorCode) where.colorCode = { contains: colorCode };
-    if (status) where.status = status;
+    if (productId) {where.productId = productId;}
+    if (colorCode) {where.colorCode = { contains: colorCode };}
+    if (status) {where.status = status;}
 
     // 查询产品变体列表
     const [variants, total] = await Promise.all([
@@ -196,7 +196,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: '输入数据格式不正确',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );

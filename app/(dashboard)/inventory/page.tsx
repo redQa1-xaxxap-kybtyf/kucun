@@ -41,7 +41,7 @@ export default function InventoryPage() {
 
   // 规范化列表数据结构，适配不同返回字段命名
   const normalizedData = React.useMemo(() => {
-    if (!data) return { data: [], pagination: undefined };
+    if (!data) {return { data: [], pagination: undefined };}
 
     // 处理API响应的嵌套结构
     // API返回: { success: true, data: { data: [...], pagination: {...} } }

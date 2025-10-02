@@ -247,7 +247,7 @@ export function Sidebar({ state, className }: SidebarProps) {
 
   // 根据用户权限过滤导航项
   const accessibleNavItems = React.useMemo(() => {
-    if (!session?.user?.role) return [];
+    if (!session?.user?.role) {return [];}
 
     const filteredItems = getAccessibleNavItems(
       navigationItems as Array<{ requiredRoles?: UserRole[] }>,
@@ -257,7 +257,7 @@ export function Sidebar({ state, className }: SidebarProps) {
   }, [session?.user?.role, addBadgesToNavItems]);
 
   const accessibleBottomNavItems = React.useMemo(() => {
-    if (!session?.user?.role) return [];
+    if (!session?.user?.role) {return [];}
 
     const filteredItems = getAccessibleNavItems(
       bottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
@@ -269,7 +269,7 @@ export function Sidebar({ state, className }: SidebarProps) {
   // 键盘导航处理
   React.useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (!state.isOpen) return;
+      if (!state.isOpen) {return;}
 
       const totalItems =
         accessibleNavItems.length + accessibleBottomNavItems.length;
@@ -446,7 +446,7 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
             className={cn(
               'h-10 w-full justify-start transition-all duration-200',
               isCollapsed ? 'px-2' : 'px-3',
-              isActive && 'bg-secondary font-medium shadow-sm',
+              isActive && 'bg-secondary font-medium shadow-xs',
               isHovered && !isActive && 'bg-accent/50',
               isFocused && 'ring-0'
             )}
@@ -502,7 +502,7 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
             'h-10 w-full justify-start transition-all duration-200',
             isCollapsed ? 'px-2' : 'px-3',
             (isActive || hasActiveChild) &&
-              'bg-secondary font-medium shadow-sm',
+              'bg-secondary font-medium shadow-xs',
             isHovered && !isActive && !hasActiveChild && 'bg-accent/50',
             isFocused && 'ring-2 ring-ring ring-offset-2'
           )}
@@ -581,7 +581,7 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
                     className={cn(
                       'h-9 w-full justify-start text-sm transition-all duration-200',
                       'px-3',
-                      isChildActive && 'bg-secondary font-medium shadow-sm'
+                      isChildActive && 'bg-secondary font-medium shadow-xs'
                     )}
                     disabled={child.disabled}
                     asChild

@@ -62,7 +62,7 @@ export function CustomerSelector({
 
   // 过滤客户列表
   const filteredCustomers = React.useMemo(() => {
-    if (!searchValue) return customers;
+    if (!searchValue) {return customers;}
 
     const search = searchValue.toLowerCase();
     return customers.filter(

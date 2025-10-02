@@ -197,7 +197,7 @@ export default function ReceivableDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     收款状态
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
@@ -210,7 +210,7 @@ export default function ReceivableDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     关联销售订单
                   </label>
                   <p className="mt-1">
@@ -226,16 +226,16 @@ export default function ReceivableDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     客户
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
-                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <Users className="text-muted-foreground h-4 w-4" />
                     <span>{receivable.customer.name}</span>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     联系人
                   </label>
                   <p className="mt-1">
@@ -243,36 +243,36 @@ export default function ReceivableDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     付款条件
                   </label>
                   <p className="mt-1">{receivable.paymentTerms || '-'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     到期日期
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="text-muted-foreground h-4 w-4" />
                     <span className={isOverdue ? 'text-red-600' : ''}>
                       {formatDate(receivable.dueDate)}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     创建人
                   </label>
                   <p className="mt-1">{receivable.user.name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     创建时间
                   </label>
                   <p className="mt-1">{formatDate(receivable.createdAt)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     更新时间
                   </label>
                   <p className="mt-1">{formatDate(receivable.updatedAt)}</p>
@@ -280,7 +280,7 @@ export default function ReceivableDetailPage() {
               </div>
               {receivable.description && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     描述
                   </label>
                   <p className="mt-1 text-sm">{receivable.description}</p>
@@ -288,7 +288,7 @@ export default function ReceivableDetailPage() {
               )}
               {receivable.remarks && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     备注信息
                   </label>
                   <p className="mt-1 text-sm">{receivable.remarks}</p>
@@ -315,7 +315,7 @@ export default function ReceivableDetailPage() {
                           <h4 className="font-medium">
                             {payment.paymentNumber}
                           </h4>
-                          <div className="space-y-1 text-sm text-muted-foreground">
+                          <div className="text-muted-foreground space-y-1 text-sm">
                             <p>收款方式：{payment.paymentMethod}</p>
                             <p>收款日期：{formatDate(payment.paymentDate)}</p>
                             {payment.remarks && <p>备注：{payment.remarks}</p>}
@@ -334,7 +334,7 @@ export default function ReceivableDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-muted-foreground">
+                <div className="text-muted-foreground py-8 text-center">
                   暂无收款记录
                 </div>
               )}
@@ -381,7 +381,7 @@ export default function ReceivableDetailPage() {
                 </div>
               </div>
               <Separator />
-              <div className="flex justify-between text-sm text-muted-foreground">
+              <div className="text-muted-foreground flex justify-between text-sm">
                 <span>订单总金额</span>
                 <span>{formatCurrency(receivable.salesOrder.totalAmount)}</span>
               </div>
@@ -416,12 +416,12 @@ export default function ReceivableDetailPage() {
               <div>
                 <p className="font-medium">{receivable.customer.name}</p>
                 {receivable.customer.contactPerson && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     联系人：{receivable.customer.contactPerson}
                   </p>
                 )}
                 {receivable.customer.phone && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     电话：{receivable.customer.phone}
                   </p>
                 )}

@@ -96,9 +96,9 @@ async function checkInventoryAvailability(
     quantity: { gt: 0 },
   };
 
-  if (variantId) whereCondition.variantId = variantId;
-  if (batchNumber) whereCondition.batchNumber = batchNumber;
-  if (location) whereCondition.location = location;
+  if (variantId) {whereCondition.variantId = variantId;}
+  if (batchNumber) {whereCondition.batchNumber = batchNumber;}
+  if (location) {whereCondition.location = location;}
 
   // 查询匹配的库存记录
   const inventoryRecords = await prisma.inventory.findMany({

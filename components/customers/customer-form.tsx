@@ -190,10 +190,10 @@ export function CustomerForm({
   const [newTag, setNewTag] = useState('');
 
   const addTag = () => {
-    if (!newTag.trim()) return;
+    if (!newTag.trim()) {return;}
 
     const currentTags = form.getValues('extendedInfo.tags') || [];
-    if (currentTags.includes(newTag.trim())) return;
+    if (currentTags.includes(newTag.trim())) {return;}
 
     form.setValue('extendedInfo.tags', [...currentTags, newTag.trim()]);
     setNewTag('');

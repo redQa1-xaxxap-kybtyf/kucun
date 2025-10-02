@@ -5,16 +5,14 @@ import { z } from 'zod';
 
 // 账单类型验证规则
 export const statementTypeSchema = z.enum(['customer', 'supplier'], {
-  required_error: '请选择账单类型',
-  invalid_type_error: '账单类型格式不正确',
+  error: '请选择账单类型',
 });
 
 // 账单状态验证规则
 export const statementStatusSchema = z.enum(
   ['active', 'settled', 'overdue', 'suspended'],
   {
-    required_error: '请选择账单状态',
-    invalid_type_error: '账单状态格式不正确',
+    error: '请选择账单状态',
   }
 );
 
@@ -22,8 +20,7 @@ export const statementStatusSchema = z.enum(
 export const transactionTypeSchema = z.enum(
   ['sale', 'payment', 'refund', 'purchase', 'payment_out', 'adjustment'],
   {
-    required_error: '请选择交易类型',
-    invalid_type_error: '交易类型格式不正确',
+    error: '请选择交易类型',
   }
 );
 
@@ -69,36 +66,31 @@ export const transactionQuerySchema = z.object({
 export const statementAdjustmentSchema = z.object({
   statementId: z
     .string({
-      required_error: '请选择账单',
-      invalid_type_error: '账单ID必须是字符串',
+      error: '请选择账单',
     })
     .min(1, '请选择账单'),
 
   adjustmentType: z.enum(['increase', 'decrease'], {
-    required_error: '请选择调整类型',
-    invalid_type_error: '调整类型格式不正确',
+    error: '请选择调整类型',
   }),
 
   amount: z
     .number({
-      required_error: '请输入调整金额',
-      invalid_type_error: '调整金额必须是数字',
+      error: '请输入调整金额',
     })
     .positive('调整金额必须大于0')
     .max(999999999, '调整金额不能超过999,999,999'),
 
   reason: z
     .string({
-      required_error: '请输入调整原因',
-      invalid_type_error: '调整原因必须是字符串',
+      error: '请输入调整原因',
     })
     .min(1, '请输入调整原因')
     .max(500, '调整原因不能超过500个字符'),
 
   adjustmentDate: z
     .string({
-      required_error: '请选择调整日期',
-      invalid_type_error: '调整日期必须是字符串',
+      error: '请选择调整日期',
     })
     .min(1, '请选择调整日期')
     .refine(date => {
@@ -113,31 +105,27 @@ export const statementAdjustmentSchema = z.object({
 export const creditLimitAdjustmentSchema = z.object({
   statementId: z
     .string({
-      required_error: '请选择账单',
-      invalid_type_error: '账单ID必须是字符串',
+      error: '请选择账单',
     })
     .min(1, '请选择账单'),
 
   newCreditLimit: z
     .number({
-      required_error: '请输入新的信用额度',
-      invalid_type_error: '信用额度必须是数字',
+      error: '请输入新的信用额度',
     })
     .min(0, '信用额度不能小于0')
     .max(999999999, '信用额度不能超过999,999,999'),
 
   reason: z
     .string({
-      required_error: '请输入调整原因',
-      invalid_type_error: '调整原因必须是字符串',
+      error: '请输入调整原因',
     })
     .min(1, '请输入调整原因')
     .max(500, '调整原因不能超过500个字符'),
 
   effectiveDate: z
     .string({
-      required_error: '请选择生效日期',
-      invalid_type_error: '生效日期必须是字符串',
+      error: '请选择生效日期',
     })
     .min(1, '请选择生效日期')
     .refine(date => {
@@ -153,15 +141,13 @@ export const reconciliationSchema = z
   .object({
     statementId: z
       .string({
-        required_error: '请选择账单',
-        invalid_type_error: '账单ID必须是字符串',
+        error: '请选择账单',
       })
       .min(1, '请选择账单'),
 
     periodStart: z
       .string({
-        required_error: '请选择开始日期',
-        invalid_type_error: '开始日期必须是字符串',
+        error: '请选择开始日期',
       })
       .min(1, '请选择开始日期')
       .refine(date => {
@@ -171,8 +157,7 @@ export const reconciliationSchema = z
 
     periodEnd: z
       .string({
-        required_error: '请选择结束日期',
-        invalid_type_error: '结束日期必须是字符串',
+        error: '请选择结束日期',
       })
       .min(1, '请选择结束日期')
       .refine(date => {
@@ -204,7 +189,9 @@ export const agingAnalysisSchema = z.object({
     .string()
     .optional()
     .refine(date => {
-      if (!date) return true;
+      if (!date) {
+        return true;
+      }
       const parsedDate = new Date(date);
       return !isNaN(parsedDate.getTime());
     }, '请输入有效的日期格式'),
@@ -215,18 +202,16 @@ export const agingAnalysisSchema = z.object({
 export const batchStatementOperationSchema = z.object({
   statementIds: z
     .array(z.string(), {
-      required_error: '请选择要操作的账单',
-      invalid_type_error: '账单ID列表格式不正确',
+      error: '请选择要操作的账单',
     })
     .min(1, '请至少选择一个账单')
     .max(50, '一次最多操作50个账单'),
 
   operation: z.enum(['suspend', 'activate', 'settle', 'adjust_credit'], {
-    required_error: '请选择批量操作类型',
-    invalid_type_error: '批量操作类型格式不正确',
+    error: '请选择批量操作类型',
   }),
 
-  operationData: z.record(z.any()).optional(),
+  operationData: z.record(z.string(), z.unknown()).optional(),
 
   remarks: z.string().optional().or(z.literal('')),
 });

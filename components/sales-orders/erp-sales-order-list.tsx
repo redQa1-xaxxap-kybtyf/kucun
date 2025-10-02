@@ -109,7 +109,9 @@ export function ERPSalesOrderList({
 
   // 格式化金额
   const formatAmount = (amount?: number) => {
-    if (!amount) return '¥0.00';
+    if (!amount) {
+      return '¥0.00';
+    }
     return `¥${amount.toFixed(2)}`;
   };
 
@@ -123,7 +125,7 @@ export function ERPSalesOrderList({
 
   if (error) {
     return (
-      <div className="rounded border bg-card p-4">
+      <div className="bg-card rounded border p-4">
         <div className="text-center text-red-600">
           加载失败: {error instanceof Error ? error.message : '未知错误'}
         </div>
@@ -134,11 +136,11 @@ export function ERPSalesOrderList({
   return (
     <div className="space-y-3">
       {/* ERP标准工具栏 */}
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">销售订单</h3>
-            <div className="text-xs text-muted-foreground">
+            <div className="text-muted-foreground text-xs">
               {data?.pagination ? `共 ${data.pagination.total} 条记录` : ''}
             </div>
           </div>
@@ -155,7 +157,7 @@ export function ERPSalesOrderList({
             </Button>
             <div className="flex-1">
               <div className="relative max-w-sm">
-                <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                <Search className="text-muted-foreground absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2" />
                 <Input
                   placeholder="订单号/客户名称"
                   value={queryParams.search}
@@ -201,7 +203,7 @@ export function ERPSalesOrderList({
       </div>
 
       {/* ERP标准数据表格 */}
-      <div className="rounded border bg-card">
+      <div className="bg-card rounded border">
         <Table>
           <TableHeader>
             <TableRow className="bg-muted/20">
@@ -244,10 +246,10 @@ export function ERPSalesOrderList({
               data.data.map((order, index) => (
                 <TableRow
                   key={order.id}
-                  className="cursor-pointer hover:bg-muted/50"
+                  className="hover:bg-muted/50 cursor-pointer"
                   onClick={() => onOrderSelect?.(order)}
                 >
-                  <TableCell className="h-8 text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground h-8 text-xs">
                     {((queryParams.page || 1) - 1) * (queryParams.limit || 10) +
                       index +
                       1}
@@ -264,10 +266,10 @@ export function ERPSalesOrderList({
                   <TableCell className="h-8 text-right text-xs font-medium">
                     {formatAmount(order.totalAmount)}
                   </TableCell>
-                  <TableCell className="h-8 text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground h-8 text-xs">
                     {formatDate(order.createdAt)}
                   </TableCell>
-                  <TableCell className="h-8 text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground h-8 text-xs">
                     {formatDate(order.updatedAt)}
                   </TableCell>
                   <TableCell className="h-8 text-xs">
@@ -319,7 +321,7 @@ export function ERPSalesOrderList({
               <TableRow>
                 <TableCell
                   colSpan={8}
-                  className="h-20 text-center text-xs text-muted-foreground"
+                  className="text-muted-foreground h-20 text-center text-xs"
                 >
                   暂无数据
                 </TableCell>

@@ -68,7 +68,7 @@ export function CustomerEditDialog({
   const { data: customer, isLoading: isLoadingCustomer } = useQuery({
     queryKey: customerId ? customerQueryKeys.detail(customerId) : [],
     queryFn: () => {
-      if (!customerId) throw new Error('Customer ID is required');
+      if (!customerId) {throw new Error('Customer ID is required');}
       return getCustomer(customerId);
     },
     enabled: !!customerId && open,
@@ -98,7 +98,7 @@ export function CustomerEditDialog({
   // 更新客户信息
   const updateMutation = useMutation({
     mutationFn: (data: CustomerUpdateInput) => {
-      if (!customerId) throw new Error('Customer ID is required');
+      if (!customerId) {throw new Error('Customer ID is required');}
       return updateCustomer(customerId, data);
     },
     onSuccess: () => {

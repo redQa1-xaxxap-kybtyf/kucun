@@ -48,7 +48,7 @@ const TableHeaderComponent = React.memo<{
           type="checkbox"
           checked={isAllSelected}
           ref={input => {
-            if (input) input.indeterminate = isIndeterminate;
+            if (input) {input.indeterminate = isIndeterminate;}
           }}
           onChange={onSelectAll}
           className="rounded border border-input"

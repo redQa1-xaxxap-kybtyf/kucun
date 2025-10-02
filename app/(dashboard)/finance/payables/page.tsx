@@ -4,14 +4,14 @@
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
 import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Download,
-  Filter,
-  Plus,
-  Search,
+    AlertCircle,
+    CheckCircle,
+    Clock,
+    DollarSign,
+    Download,
+    Filter,
+    Plus,
+    Search,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -21,20 +21,20 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
 } from '@/components/ui/select';
 import { usePayableRecords, usePayableStatistics } from '@/lib/api/payables';
 import {
-  type PayableRecordQuery,
-  type PayableSourceType,
-  type PayableStatus,
-  PAYABLE_SOURCE_TYPE_LABELS,
-  PAYABLE_STATUS_LABELS,
-  PAYABLE_STATUS_VARIANTS,
+    type PayableRecordQuery,
+    type PayableSourceType,
+    type PayableStatus,
+    PAYABLE_SOURCE_TYPE_LABELS,
+    PAYABLE_STATUS_LABELS,
+    PAYABLE_STATUS_VARIANTS,
 } from '@/lib/types/payable';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -126,7 +126,7 @@ export default function PayablesPage() {
                 : formatCurrency(statistics?.totalPayables || 0)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {statistics?.payableCount || 0} 个应付订单
+              {(statistics?.pendingCount || 0) + (statistics?.paidCount || 0) + (statistics?.overdueCount || 0)} 个应付订单
             </p>
           </CardContent>
         </Card>

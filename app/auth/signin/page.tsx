@@ -136,7 +136,7 @@ export default function SignInPage() {
   // 处理登录成功逻辑
   const handleLoginSuccess = useCallback(
     async (session: Awaited<ReturnType<typeof getSession>>) => {
-      if (!session) return;
+      if (!session) {return;}
 
       // 设置成功状态
       setIsSuccess(true);
@@ -260,7 +260,7 @@ export default function SignInPage() {
       <div className="relative w-full max-w-md space-y-8">
         {/* 成功/跳转遮罩层 */}
         {(isSuccess || isRedirecting) && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 backdrop-blur-sm">
+          <div className="absolute inset-0 z-10 flex items-center justify-center rounded-lg bg-white/80 backdrop-blur-xs">
             <div className="space-y-4 text-center">
               {isRedirecting ? (
                 <>

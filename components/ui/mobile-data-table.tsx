@@ -121,7 +121,9 @@ function MobileDataTable<T extends Record<string, any>>({
   // 渲染操作按钮
   const renderActionButtons = (record: T, index: number) => {
     const visibleActions = actions.filter(action => !action.hidden?.(record));
-    if (visibleActions.length === 0) return null;
+    if (visibleActions.length === 0) {
+      return null;
+    }
 
     return (
       <div className="flex items-center gap-1">
@@ -206,7 +208,7 @@ function MobileDataTable<T extends Record<string, any>>({
         >
           <Table>
             <TableHeader
-              className={cn(stickyHeader && 'sticky top-0 z-10 bg-background')}
+              className={cn(stickyHeader && 'bg-background sticky top-0 z-10')}
             >
               <TableRow>
                 {showIndex && <TableHead className="w-12">#</TableHead>}
@@ -234,12 +236,12 @@ function MobileDataTable<T extends Record<string, any>>({
                   key={getRowKey(record, index)}
                   className={cn(
                     (onRowClick || onItemClick) &&
-                      'cursor-pointer hover:bg-muted/50'
+                      'hover:bg-muted/50 cursor-pointer'
                   )}
                   onClick={() => handleRowClick(record, index)}
                 >
                   {showIndex && (
-                    <TableCell className="font-medium text-muted-foreground">
+                    <TableCell className="text-muted-foreground font-medium">
                       {index + 1}
                     </TableCell>
                   )}
@@ -282,7 +284,7 @@ function MobileDataTable<T extends Record<string, any>>({
               className={cn(
                 'transition-colors',
                 (onRowClick || onItemClick) &&
-                  'cursor-pointer hover:bg-muted/50 active:bg-muted',
+                  'hover:bg-muted/50 active:bg-muted cursor-pointer',
                 cardClassName
               )}
               onClick={() => handleRowClick(record, index)}
@@ -301,13 +303,13 @@ function MobileDataTable<T extends Record<string, any>>({
                             {renderCellContent(column, record, index)}
                           </div>
                           {column.mobileLabel && (
-                            <div className="mt-1 text-xs text-muted-foreground">
+                            <div className="text-muted-foreground mt-1 text-xs">
                               {column.mobileLabel}
                             </div>
                           )}
                         </div>
                         {actions.length > 0 && (
-                          <div className="ml-2 flex-shrink-0">
+                          <div className="ml-2 shrink-0">
                             {renderActionButtons(record, index)}
                           </div>
                         )}
@@ -321,14 +323,16 @@ function MobileDataTable<T extends Record<string, any>>({
                   <div className="space-y-2 text-sm">
                     {secondaryColumns.map(column => {
                       const content = renderCellContent(column, record, index);
-                      if (!content) return null;
+                      if (!content) {
+                        return null;
+                      }
 
                       return (
                         <div
                           key={column.key}
                           className="flex items-center justify-between"
                         >
-                          <span className="text-xs text-muted-foreground">
+                          <span className="text-muted-foreground text-xs">
                             {column.mobileLabel || column.title}:
                           </span>
                           <span className="text-xs font-medium">{content}</span>
@@ -348,7 +352,7 @@ function MobileDataTable<T extends Record<string, any>>({
                 {/* 点击指示器 */}
                 {(onRowClick || onItemClick) && !renderActions && (
                   <div className="mt-3 flex justify-end">
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    <ChevronRight className="text-muted-foreground h-4 w-4" />
                   </div>
                 )}
               </CardContent>
@@ -361,7 +365,7 @@ function MobileDataTable<T extends Record<string, any>>({
 }
 
 // 预设的列类型
-export const createTextColumn = <T, >(
+export const createTextColumn = <T,>(
   key: string,
   title: string,
   options?: Partial<ColumnDef<T>>
@@ -371,7 +375,7 @@ export const createTextColumn = <T, >(
   ...options,
 });
 
-export const createBadgeColumn = <T, >(
+export const createBadgeColumn = <T,>(
   key: string,
   title: string,
   badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'default',
@@ -384,7 +388,7 @@ export const createBadgeColumn = <T, >(
   ...options,
 });
 
-export const createDateColumn = <T, >(
+export const createDateColumn = <T,>(
   key: string,
   title: string,
   format: (date: string | Date) => string = date =>
@@ -397,7 +401,7 @@ export const createDateColumn = <T, >(
   ...options,
 });
 
-export const createNumberColumn = <T, >(
+export const createNumberColumn = <T,>(
   key: string,
   title: string,
   formatter?: (value: number) => string,
@@ -407,7 +411,9 @@ export const createNumberColumn = <T, >(
   title,
   align: 'right',
   render: value => {
-    if (value === null || value === undefined) return '-';
+    if (value === null || value === undefined) {
+      return '-';
+    }
     return formatter ? formatter(value) : value.toString();
   },
   ...options,

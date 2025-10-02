@@ -29,8 +29,8 @@ function formatAlertValue(alert: InventoryAlert): string {
 }
 
 function getAlertSeverity(alert: InventoryAlert): 'high' | 'medium' | 'low' {
-  if (alert.alertType === 'out_of_stock') return 'high';
-  if (alert.alertType === 'low_stock') return 'medium';
+  if (alert.alertType === 'out_of_stock') {return 'high';}
+  if (alert.alertType === 'low_stock') {return 'medium';}
   return 'low';
 }
 

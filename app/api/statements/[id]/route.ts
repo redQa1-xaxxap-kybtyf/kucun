@@ -1,16 +1,16 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
 import {
-  calculateCustomerFinancials,
-  calculateOverdueAmount,
-  calculateSupplierFinancials,
-  calculateSupplierOverdueAmount,
-  fetchCustomerWithOrders,
-  fetchSupplierWithOrders,
+    calculateCustomerFinancials,
+    calculateOverdueAmount,
+    calculateSupplierFinancials,
+    calculateSupplierOverdueAmount,
+    fetchCustomerWithOrders,
+    fetchSupplierWithOrders,
 } from '@/lib/api/handlers/statement-details';
-import { withErrorHandling } from '@/lib/api/middleware';
+import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import { authOptions } from '@/lib/auth';
 
 /**
@@ -19,8 +19,8 @@ import { authOptions } from '@/lib/auth';
  */
 export const GET = withErrorHandling(
   async (
-    request: NextRequest,
-    { params }: { params?: Record<string, string> }
+    _request: NextRequest,
+    context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     // 身份验证
     const session = await getServerSession(authOptions);
@@ -28,10 +28,7 @@ export const GET = withErrorHandling(
       throw ApiError.unauthorized();
     }
 
-    const id = params?.id;
-    if (!id) {
-      throw ApiError.badRequest('缺少必需的参数: id');
-    }
+    const { id } = await resolveParams(context.params);
 
     // 首先尝试作为客户查找
     const customer = await fetchCustomerWithOrders(id);

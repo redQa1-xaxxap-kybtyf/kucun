@@ -29,7 +29,7 @@ export const NULL_CACHE_TTL = 10;
  * const ttl = getRandomTTL(60, 20); // 返回 48-72 秒之间的随机值
  */
 export function getRandomTTL(baseTTL: number, jitterPercent = 20): number {
-  if (baseTTL <= 0) return baseTTL;
+  if (baseTTL <= 0) {return baseTTL;}
 
   const jitter = Math.floor(baseTTL * (jitterPercent / 100));
   const randomJitter = Math.floor(Math.random() * jitter * 2) - jitter;
@@ -45,7 +45,7 @@ export function buildCacheKey(
     .reduce<Record<string, unknown>>((acc, k) => {
       // Only include defined & primitive-like values
       const v = (params as Record<string, unknown>)[k];
-      if (v !== undefined && v !== null && v !== '') acc[k] = v;
+      if (v !== undefined && v !== null && v !== '') {acc[k] = v;}
       return acc;
     }, {});
   const hash = crypto
@@ -94,7 +94,7 @@ export async function getOrSetJSON<T>(
   }
 
   // 3. 如果fetcher为null，只返回缓存结果
-  if (fetcher === null) return null;
+  if (fetcher === null) {return null;}
 
   // 4. 从数据库获取数据
   const fresh = await fetcher();

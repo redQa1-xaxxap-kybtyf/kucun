@@ -328,7 +328,7 @@ export async function createSalesOrder(
       if (validatedData.status === 'confirmed') {
         for (const item of validatedData.items) {
           // 跳过手动输入的商品
-          if (item.isManualProduct || !item.productId) continue;
+          if (item.isManualProduct || !item.productId) {continue;}
 
           // 查找库存记录
           const inventory = await tx.inventory.findFirst({

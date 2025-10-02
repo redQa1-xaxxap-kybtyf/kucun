@@ -258,7 +258,7 @@ export function EnhancedSalesOrderForm({
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!productsData?.data) return [];
+    if (!productsData?.data) {return [];}
 
     return productsData.data.filter(
       product =>
@@ -523,7 +523,7 @@ export function EnhancedSalesOrderForm({
             </CardHeader>
             <CardContent className="space-y-4">
               {/* 重要金额信息突出显示 */}
-              <div className="rounded-lg border border-primary/20 bg-gradient-to-r from-primary/10 to-primary/5 p-4">
+              <div className="rounded-lg border border-primary/20 bg-linear-to-r from-primary/10 to-primary/5 p-4">
                 <div className="space-y-2 text-center">
                   <div className="text-sm text-muted-foreground">
                     订单总金额
@@ -764,7 +764,7 @@ export function EnhancedSalesOrderForm({
           </Card>
 
           {/* 操作按钮 - 优化为中国用户习惯 */}
-          <div className="sticky bottom-0 border-t bg-background/95 pt-6 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="sticky bottom-0 border-t bg-background/95 pt-6 backdrop-blur-sm supports-backdrop-filter:bg-background/60">
             <div className="flex items-center justify-between gap-4">
               <Button
                 type="button"

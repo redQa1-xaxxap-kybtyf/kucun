@@ -41,7 +41,7 @@ const envSchema = z.object({
     .refine(val => val >= 10 && val <= 15, {
       message: 'BCRYPT_SALT_ROUNDS 必须在 10-15 之间',
     })
-    .default('12')
+    .default(12)
     .describe('bcrypt 加密的 salt rounds，推荐值 10-12'),
 
   // 应用配置
@@ -60,7 +60,7 @@ const envSchema = z.object({
     .string()
     .regex(/^\d+$/, 'REDIS_POOL_SIZE 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('3')
+    .default(3)
     .describe('Redis 连接池大小'),
   REDIS_NAMESPACE: z
     .string()
@@ -72,7 +72,7 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'WS_PORT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('3002')
+    .default(3002)
     .describe('WebSocket 服务器端口'),
   WS_ALLOWED_ORIGINS: z
     .string()
@@ -82,7 +82,7 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'NEXT_PUBLIC_WS_PORT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('3002')
+    .default(3002)
     .describe('客户端 WebSocket 端口'),
 
   // 文件上传配置
@@ -90,7 +90,7 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'UPLOAD_MAX_SIZE 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('10485760') // 10MB
+    .default(10485760) // 10MB
     .describe('文件上传最大大小（字节）'),
 
   UPLOAD_DIR: z
@@ -104,7 +104,7 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'PORT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('3000')
+    .default(3000)
     .describe('应用服务器端口'),
 
   // 缓存配置
@@ -112,14 +112,14 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'PRODUCT_CACHE_TTL 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('60')
+    .default(60)
     .describe('产品缓存时间（秒）'),
 
   INVENTORY_CACHE_TTL: z
     .string()
     .regex(/^[\d]+$/, 'INVENTORY_CACHE_TTL 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('10')
+    .default(10)
     .describe('库存缓存时间（秒）'),
 
   // 库存阈值配置
@@ -127,28 +127,28 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'INVENTORY_DEFAULT_MIN_QUANTITY 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('10')
+    .default(10)
     .describe('默认最小库存阈值'),
 
   INVENTORY_CRITICAL_MIN_QUANTITY: z
     .string()
     .regex(/^[\d]+$/, 'INVENTORY_CRITICAL_MIN_QUANTITY 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('5')
+    .default(5)
     .describe('紧急库存阈值'),
 
   INVENTORY_OVERSTOCK_MULTIPLIER: z
     .string()
     .regex(/^[\d]+$/, 'INVENTORY_OVERSTOCK_MULTIPLIER 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('5')
+    .default(5)
     .describe('库存过多倍率'),
 
   INVENTORY_MAX_STOCK_MULTIPLIER: z
     .string()
     .regex(/^[\d]+$/, 'INVENTORY_MAX_STOCK_MULTIPLIER 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('50')
+    .default(50)
     .describe('最大库存为最小库存的倍数'),
 
   // 库存业务配置
@@ -156,21 +156,21 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'INVENTORY_AVERAGE_DAILY_SALES 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('2')
+    .default(2)
     .describe('平均日销量假设值'),
 
   INVENTORY_ALERT_REFRESH_INTERVAL: z
     .string()
     .regex(/^[\d]+$/, 'INVENTORY_ALERT_REFRESH_INTERVAL 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('300000')
+    .default(300000)
     .describe('库存预警刷新间隔（毫秒）'),
 
   INVENTORY_ALERT_LIMIT: z
     .string()
     .regex(/^[\d]+$/, 'INVENTORY_ALERT_LIMIT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('20')
+    .default(20)
     .describe('库存预警返回数量限制'),
 
   // 分页配置
@@ -178,41 +178,41 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'DEFAULT_PAGE_SIZE 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('20')
+    .default(20)
     .describe('默认分页大小'),
 
   MAX_PAGE_SIZE: z
     .string()
     .regex(/^[\d]+$/, 'MAX_PAGE_SIZE 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('100')
+    .default(100)
     .describe('最大分页大小'),
 
   // 产品模块配置
   PRODUCT_LIST_INCLUDE_INVENTORY: z
     .string()
     .transform(val => val === 'true')
-    .default('false')
+    .default(false)
     .describe('默认是否包含库存统计'),
 
   PRODUCT_LIST_INCLUDE_STATISTICS: z
     .string()
     .transform(val => val === 'true')
-    .default('false')
+    .default(false)
     .describe('默认是否包含统计信息'),
 
   PRODUCT_CACHE_WITH_INVENTORY_TTL: z
     .string()
     .regex(/^[\d]+$/, 'PRODUCT_CACHE_WITH_INVENTORY_TTL 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('60')
+    .default(60)
     .describe('包含库存的产品缓存TTL（秒）'),
 
   PRODUCT_CACHE_WITHOUT_INVENTORY_TTL: z
     .string()
     .regex(/^[\d]+$/, 'PRODUCT_CACHE_WITHOUT_INVENTORY_TTL 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('30')
+    .default(30)
     .describe('不包含库存的产品缓存TTL（秒）'),
 
   // 销售订单配置
@@ -220,14 +220,14 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'ORDER_NUMBER_MAX_RETRY 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('10')
+    .default(10)
     .describe('订单号生成最大重试次数'),
 
   ORDER_NUMBER_RECENT_LIMIT: z
     .string()
     .regex(/^[\d]+$/, 'ORDER_NUMBER_RECENT_LIMIT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('5')
+    .default(5)
     .describe('最近订单查询数量'),
 
   // 客户模块配置
@@ -235,14 +235,14 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'CUSTOMER_SEARCH_LIMIT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('5')
+    .default(5)
     .describe('客户搜索结果限制'),
 
   CUSTOMER_TAG_LIMIT: z
     .string()
     .regex(/^[\d]+$/, 'CUSTOMER_TAG_LIMIT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('10')
+    .default(10)
     .describe('客户标签数量上限'),
 
   // 仪表盘配置
@@ -250,14 +250,14 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'DASHBOARD_STALE_TIME 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('300000')
+    .default(300000)
     .describe('仪表盘数据过期时间（毫秒）'),
 
   DASHBOARD_REFETCH_INTERVAL: z
     .string()
     .regex(/^[\d]+$/, 'DASHBOARD_REFETCH_INTERVAL 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('60000')
+    .default(60000)
     .describe('仪表盘刷新间隔（毫秒）'),
 
   // 厂家发货模块配置
@@ -272,7 +272,7 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'FACTORY_SHIPMENT_QUERY_LIMIT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('1000')
+    .default(1000)
     .describe('厂家发货表单查询限制'),
 
   // 退货/退款模块配置
@@ -294,28 +294,28 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'RETURN_ORDER_ITEMS_LIMIT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('50')
+    .default(50)
     .describe('退货明细上限'),
 
   REFUND_BATCH_LIMIT: z
     .string()
     .regex(/^[\d]+$/, 'REFUND_BATCH_LIMIT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('50')
+    .default(50)
     .describe('退款批量处理上限'),
 
   FINANCE_CREDIT_LIMIT: z
     .string()
     .regex(/^[\d]+$/, 'FINANCE_CREDIT_LIMIT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('100000')
+    .default(100000)
     .describe('财务信用额度限制'),
 
   FINANCE_CACHE_TTL: z
     .string()
     .regex(/^[\d]+$/, 'FINANCE_CACHE_TTL 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('300')
+    .default(300)
     .describe('财务数据缓存时间（秒）'),
 
   // 销售订单模块配置
@@ -334,7 +334,7 @@ const envSchema = z.object({
       val => val >= 1 && val <= 10,
       'SALES_ORDER_NUMBER_LENGTH 必须在1-10之间'
     )
-    .default('4')
+    .default(4)
     .describe('销售订单号序号位数'),
 
   // 供应商模块配置
@@ -342,14 +342,14 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'SUPPLIER_QUERY_LIMIT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('100')
+    .default(100)
     .describe('供应商查询默认限制'),
 
   SUPPLIER_CACHE_TTL: z
     .string()
     .regex(/^[\d]+$/, 'SUPPLIER_CACHE_TTL 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('300000')
+    .default(300000)
     .describe('供应商数据缓存时间（毫秒）'),
 
   SUPPLIER_DEFAULT_STATUS: z
@@ -387,21 +387,21 @@ const envSchema = z.object({
       val => val >= 6 && val <= 20,
       'USER_PASSWORD_MIN_LENGTH 必须在6-20之间'
     )
-    .default('8')
+    .default(8)
     .describe('密码最小长度'),
 
   USER_MAX_LOGIN_ATTEMPTS: z
     .string()
     .regex(/^[\d]+$/, 'USER_MAX_LOGIN_ATTEMPTS 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('5')
+    .default(5)
     .describe('最大登录失败次数'),
 
   USER_SESSION_TIMEOUT: z
     .string()
     .regex(/^[\d]+$/, 'USER_SESSION_TIMEOUT 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('90')
+    .default(90)
     .describe('会话超时时间（分钟）'),
 
   // 存储配置
@@ -409,7 +409,7 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'STORAGE_MAX_FILE_SIZE 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('10485760')
+    .default(10485760)
     .describe('最大文件大小（字节）'),
 
   STORAGE_ALLOWED_FILE_TYPES: z
@@ -435,7 +435,7 @@ const envSchema = z.object({
     .string()
     .regex(/^[\d]+$/, 'LOG_RETENTION_DAYS 必须是数字')
     .transform(val => parseInt(val, 10))
-    .default('30')
+    .default(30)
     .describe('日志保留天数'),
 
   LOG_CRITICAL_ACTIONS: z
@@ -479,7 +479,7 @@ function validateEnv(): Env {
         .string()
         .regex(/^[\d]+$/, 'NEXT_PUBLIC_WS_PORT 必须是数字')
         .transform(val => parseInt(val, 10))
-        .default('3002')
+        .default(3002)
         .describe('客户端 WebSocket 端口'),
     });
 
@@ -576,14 +576,14 @@ function validateEnv(): Env {
     return parsed;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      const errorMessages = error.errors.map(
-        err => `${err.path.join('.')}: ${err.message}`
+      const errorMessages = error.issues.map(
+        (err: z.ZodIssue) => `${err.path.join('.')}: ${err.message}`
       );
 
       // eslint-disable-next-line no-console
       console.error('❌ 环境变量验证失败:');
       // eslint-disable-next-line no-console
-      errorMessages.forEach(msg => console.error(`  - ${msg}`));
+      errorMessages.forEach((msg: string) => console.error(`  - ${msg}`));
 
       throw new Error(`环境变量验证失败:\n${errorMessages.join('\n')}`);
     }

@@ -30,7 +30,7 @@ function createServer(): ServerApi {
 
   function initializeServer() {
     try {
-      if (wss) return; // Already initialized
+      if (wss) {return;} // Already initialized
 
       wss = new WebSocketServer({ port: wsConfig.port });
       redisSubscriber = redis.getClient();
@@ -56,12 +56,12 @@ function createServer(): ServerApi {
       ts: Date.now(),
     });
     channels.get(channel)?.forEach(ws => {
-      if (ws.readyState === ws.OPEN) ws.send(payload);
+      if (ws.readyState === ws.OPEN) {ws.send(payload);}
     });
   }
 
   function setupWebSocketHandlers() {
-    if (!wss || !redisSubscriber || !redisPublisher) return;
+    if (!wss || !redisSubscriber || !redisPublisher) {return;}
 
     function subscribe(client: ClientInfo, channel: string) {
       if (!channels.has(channel)) {
@@ -101,7 +101,7 @@ function createServer(): ServerApi {
     async function isAuthenticated(
       cookieHeader: string | undefined
     ): Promise<{ ok: boolean; userId?: string }> {
-      if (!cookieHeader) return { ok: false };
+      if (!cookieHeader) {return { ok: false };}
       try {
         const res = await fetch(
           `http://localhost:${appConfig.port}/api/auth/session`,
@@ -109,7 +109,7 @@ function createServer(): ServerApi {
             headers: { cookie: cookieHeader },
           }
         );
-        if (!res.ok) return { ok: false };
+        if (!res.ok) {return { ok: false };}
         const json = (await res.json()) as { user?: { id?: string } };
         return json?.user?.id
           ? { ok: true, userId: json.user.id }
@@ -168,8 +168,8 @@ function createServer(): ServerApi {
             type: 'subscribe' | 'unsubscribe';
             channel: string;
           };
-          if (msg.type === 'subscribe') subscribe(client, msg.channel);
-          if (msg.type === 'unsubscribe') unsubscribe(client, msg.channel);
+          if (msg.type === 'subscribe') {subscribe(client, msg.channel);}
+          if (msg.type === 'unsubscribe') {unsubscribe(client, msg.channel);}
         } catch {
           // ignore
         }

@@ -189,7 +189,7 @@ export default function PayableDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     付款状态
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
@@ -202,7 +202,7 @@ export default function PayableDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     来源类型
                   </label>
                   <p className="mt-1">
@@ -212,16 +212,16 @@ export default function PayableDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     供应商
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
-                    <Building className="h-4 w-4 text-muted-foreground" />
+                    <Building className="text-muted-foreground h-4 w-4" />
                     <span>{payable.supplier.name}</span>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     联系人
                   </label>
                   <p className="mt-1">
@@ -230,7 +230,7 @@ export default function PayableDetailPage() {
                 </div>
                 {payable.sourceNumber && (
                   <div>
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-muted-foreground text-sm font-medium">
                       关联单号
                     </label>
                     <p className="mt-1">
@@ -249,36 +249,36 @@ export default function PayableDetailPage() {
                   </div>
                 )}
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     付款条件
                   </label>
                   <p className="mt-1">{payable.paymentTerms || '-'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     到期日期
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="text-muted-foreground h-4 w-4" />
                     <span className={isOverdue ? 'text-red-600' : ''}>
                       {formatDate(payable.dueDate)}
                     </span>
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     创建人
                   </label>
                   <p className="mt-1">{payable.user.name}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     创建时间
                   </label>
                   <p className="mt-1">{formatDate(payable.createdAt)}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     更新时间
                   </label>
                   <p className="mt-1">{formatDate(payable.updatedAt)}</p>
@@ -286,7 +286,7 @@ export default function PayableDetailPage() {
               </div>
               {payable.description && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     描述
                   </label>
                   <p className="mt-1 text-sm">{payable.description}</p>
@@ -294,7 +294,7 @@ export default function PayableDetailPage() {
               )}
               {payable.remarks && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     备注信息
                   </label>
                   <p className="mt-1 text-sm">{payable.remarks}</p>
@@ -321,7 +321,7 @@ export default function PayableDetailPage() {
                           <h4 className="font-medium">
                             {payment.paymentNumber}
                           </h4>
-                          <div className="space-y-1 text-sm text-muted-foreground">
+                          <div className="text-muted-foreground space-y-1 text-sm">
                             <p>付款方式：{payment.paymentMethod}</p>
                             <p>付款日期：{formatDate(payment.paymentDate)}</p>
                             {payment.remarks && <p>备注：{payment.remarks}</p>}
@@ -340,7 +340,7 @@ export default function PayableDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-muted-foreground">
+                <div className="text-muted-foreground py-8 text-center">
                   暂无付款记录
                 </div>
               )}
@@ -417,12 +417,12 @@ export default function PayableDetailPage() {
               <div>
                 <p className="font-medium">{payable.supplier.name}</p>
                 {payable.supplier.contactPerson && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     联系人：{payable.supplier.contactPerson}
                   </p>
                 )}
                 {payable.supplier.phone && (
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-muted-foreground text-sm">
                     电话：{payable.supplier.phone}
                   </p>
                 )}

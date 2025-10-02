@@ -217,7 +217,7 @@ export default function SupplierDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     供应商状态
                   </label>
                   <div className="mt-1">
@@ -227,19 +227,19 @@ export default function SupplierDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     联系人
                   </label>
                   <p className="mt-1">{supplier.contactPerson || '-'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     电话号码
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
                     {supplier.phone ? (
                       <>
-                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <Phone className="text-muted-foreground h-4 w-4" />
                         <span>{supplier.phone}</span>
                       </>
                     ) : (
@@ -248,13 +248,13 @@ export default function SupplierDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     邮箱地址
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
                     {supplier.email ? (
                       <>
-                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <Mail className="text-muted-foreground h-4 w-4" />
                         <span>{supplier.email}</span>
                       </>
                     ) : (
@@ -263,13 +263,13 @@ export default function SupplierDetailPage() {
                   </div>
                 </div>
                 <div className="col-span-2">
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     地址
                   </label>
                   <div className="mt-1 flex items-start space-x-2">
                     {supplier.address ? (
                       <>
-                        <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                        <MapPin className="text-muted-foreground mt-0.5 h-4 w-4" />
                         <span>{supplier.address}</span>
                       </>
                     ) : (
@@ -278,24 +278,24 @@ export default function SupplierDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     付款条件
                   </label>
                   <p className="mt-1">{supplier.paymentTerms || '-'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     创建时间
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="text-muted-foreground h-4 w-4" />
                     <span>{formatDate(supplier.createdAt)}</span>
                   </div>
                 </div>
               </div>
               {supplier.remarks && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     备注信息
                   </label>
                   <p className="mt-1 text-sm">{supplier.remarks}</p>
@@ -316,20 +316,20 @@ export default function SupplierDetailPage() {
                 <p className="text-2xl font-bold text-blue-600">
                   {formatCurrency(totalShipmentAmount)}
                 </p>
-                <p className="text-sm text-muted-foreground">累计发货金额</p>
+                <p className="text-muted-foreground text-sm">累计发货金额</p>
               </div>
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
                   <p className="text-lg font-semibold">
                     {supplier._count.factoryShipments}
                   </p>
-                  <p className="text-xs text-muted-foreground">发货记录</p>
+                  <p className="text-muted-foreground text-xs">发货记录</p>
                 </div>
                 <div>
                   <p className="text-lg font-semibold">
                     {supplier._count.payableRecords}
                   </p>
-                  <p className="text-xs text-muted-foreground">应付记录</p>
+                  <p className="text-muted-foreground text-xs">应付记录</p>
                 </div>
               </div>
             </CardContent>
@@ -344,13 +344,13 @@ export default function SupplierDetailPage() {
                 <p className="text-2xl font-bold text-red-600">
                   {formatCurrency(totalRemainingAmount)}
                 </p>
-                <p className="text-sm text-muted-foreground">待付款金额</p>
+                <p className="text-muted-foreground text-sm">待付款金额</p>
               </div>
               <div className="text-center">
-                <p className="text-lg font-semibold text-muted-foreground">
+                <p className="text-muted-foreground text-lg font-semibold">
                   {formatCurrency(totalPayableAmount)}
                 </p>
-                <p className="text-xs text-muted-foreground">累计应付金额</p>
+                <p className="text-muted-foreground text-xs">累计应付金额</p>
               </div>
             </CardContent>
           </Card>
@@ -387,14 +387,14 @@ export default function SupplierDetailPage() {
                   {supplier.factoryShipments.map(shipment => (
                     <div
                       key={shipment.id}
-                      className="flex cursor-pointer items-center justify-between rounded-lg border p-4 hover:bg-muted/50"
+                      className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
                       onClick={() =>
                         router.push(`/factory-shipments/${shipment.id}`)
                       }
                     >
                       <div>
                         <p className="font-medium">{shipment.shipmentNumber}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           {formatDate(shipment.createdAt)}
                         </p>
                       </div>
@@ -408,7 +408,7 @@ export default function SupplierDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-muted-foreground">
+                <div className="text-muted-foreground py-8 text-center">
                   暂无发货记录
                 </div>
               )}
@@ -420,14 +420,14 @@ export default function SupplierDetailPage() {
                   {supplier.payableRecords.map(record => (
                     <div
                       key={record.id}
-                      className="flex cursor-pointer items-center justify-between rounded-lg border p-4 hover:bg-muted/50"
+                      className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
                       onClick={() =>
                         router.push(`/finance/payables/${record.id}`)
                       }
                     >
                       <div>
                         <p className="font-medium">{record.payableNumber}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           到期：{formatDate(record.dueDate)}
                         </p>
                       </div>
@@ -435,7 +435,7 @@ export default function SupplierDetailPage() {
                         <p className="font-medium">
                           {formatCurrency(record.remainingAmount)}
                         </p>
-                        <p className="text-xs text-muted-foreground">
+                        <p className="text-muted-foreground text-xs">
                           / {formatCurrency(record.payableAmount)}
                         </p>
                         {getPayableStatusBadge(record.status)}
@@ -444,7 +444,7 @@ export default function SupplierDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-muted-foreground">
+                <div className="text-muted-foreground py-8 text-center">
                   暂无应付款记录
                 </div>
               )}

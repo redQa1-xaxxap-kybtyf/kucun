@@ -33,7 +33,7 @@ export class Permissions {
    * 检查是否有特定权限
    */
   hasPermission(permission: string): boolean {
-    if (!this.role) return false;
+    if (!this.role) {return false;}
 
     const rolePermissions = ROLE_PERMISSIONS[this.role] || [];
     return rolePermissions.includes(permission);

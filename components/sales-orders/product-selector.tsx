@@ -50,7 +50,7 @@ export function ProductSelector({
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!searchValue) return products;
+    if (!searchValue) {return products;}
 
     const search = searchValue.toLowerCase();
     return products.filter(
@@ -79,7 +79,7 @@ export function ProductSelector({
         >
           {selectedProduct ? (
             <div className="flex items-center gap-2 truncate">
-              <Package className="h-4 w-4 flex-shrink-0" />
+              <Package className="h-4 w-4 shrink-0" />
               <div className="flex flex-col items-start truncate">
                 <span className="truncate font-medium">
                   {selectedProduct.name}
@@ -277,7 +277,7 @@ export function BatchProductSelector({
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!searchValue) return products;
+    if (!searchValue) {return products;}
 
     const search = searchValue.toLowerCase();
     return products.filter(

@@ -219,7 +219,7 @@ export default function PaymentsPage() {
             <div className="text-2xl font-bold text-green-600">
               {formatCurrency(summary.totalAmount)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {summary.recordCount} 条收款记录
             </p>
           </CardContent>
@@ -234,7 +234,7 @@ export default function PaymentsPage() {
             <div className="text-2xl font-bold text-green-600">
               {formatCurrency(summary.confirmedAmount)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {summary.totalAmount > 0
                 ? Math.round(
                     (summary.confirmedAmount / summary.totalAmount) * 100
@@ -254,7 +254,7 @@ export default function PaymentsPage() {
             <div className="text-2xl font-bold text-orange-600">
               {formatCurrency(summary.pendingAmount)}
             </div>
-            <p className="text-xs text-muted-foreground">待财务确认</p>
+            <p className="text-muted-foreground text-xs">待财务确认</p>
           </CardContent>
         </Card>
 
@@ -267,7 +267,7 @@ export default function PaymentsPage() {
             <div className="text-2xl font-bold text-blue-600">
               {formatCurrency(summary.confirmedAmount)}
             </div>
-            <p className="text-xs text-muted-foreground">较上月增长 12%</p>
+            <p className="text-muted-foreground text-xs">较上月增长 12%</p>
           </CardContent>
         </Card>
       </div>
@@ -281,13 +281,13 @@ export default function PaymentsPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 items-center gap-2">
               <div className="relative max-w-sm flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   placeholder="搜索收款单号、客户名称..."
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   className="pl-9"
-                  onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                  onKeyDown={e => e.key === 'Enter' && _handleSearch()}
                 />
               </div>
               <Select
@@ -344,7 +344,7 @@ export default function PaymentsPage() {
             ) : !payments.length ? (
               <div className="flex items-center justify-center py-8">
                 <div className="text-center">
-                  <DollarSign className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <DollarSign className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                   <p className="text-muted-foreground">暂无收款记录</p>
                 </div>
               </div>
@@ -367,12 +367,12 @@ export default function PaymentsPage() {
                               method={payment.paymentMethod}
                             />
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-muted-foreground text-sm">
                             客户：{payment.customer.name}
                             {payment.customer.phone &&
                               ` (${payment.customer.phone})`}
                           </p>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="text-muted-foreground flex items-center gap-4 text-sm">
                             <span>
                               收款日期：
                               {format(
@@ -385,14 +385,14 @@ export default function PaymentsPage() {
                             </span>
                           </div>
                           {payment.remarks && (
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               备注：{payment.remarks}
                             </p>
                           )}
                         </div>
                         <div className="space-y-2 text-right">
                           <div>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               收款金额
                             </p>
                             <p className="font-semibold text-green-600">
@@ -400,7 +400,7 @@ export default function PaymentsPage() {
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               订单金额
                             </p>
                             <p className="font-semibold">
@@ -429,7 +429,7 @@ export default function PaymentsPage() {
 
           {/* 分页 */}
           <div className="mt-6 flex items-center justify-between">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               共 {pagination.total} 条记录
             </p>
             <div className="flex items-center gap-2">

@@ -15,7 +15,7 @@ export const outboundCreateSchema = z
       .uuid('幂等性键格式不正确')
       .describe('幂等性键,防止重复操作'),
     type: z.enum(['normal_outbound', 'sales_outbound', 'adjust_outbound'], {
-      errorMap: () => ({ message: '请选择正确的出库类型' }),
+      message: '请选择正确的出库类型',
     }),
     productId: baseValidations.productId,
     batchNumber: baseValidations.batchNumber,
@@ -60,7 +60,7 @@ export const adjustReasonSchema = z.enum(
     'other', // 其他
   ],
   {
-    errorMap: () => ({ message: '请选择正确的调整原因' }),
+    message: '请选择正确的调整原因',
   }
 );
 
@@ -143,11 +143,11 @@ export const inventoryCountSchema = z
 // 批量操作验证
 export const batchOperationSchema = z.object({
   ids: z
-    .array(z.string().uuid('记录ID格式不正确'))
-    .min(1, '请选择至少一条记录')
-    .max(100, '批量操作最多支持100条记录'),
-  action: z.enum(['delete', 'export']),
-  params: z.record(z.any()).optional(), // 操作参数
+    .array(z.string().uuid({ error: '记录ID格式不正确' }))
+    .min(1, { error: '请选择至少一条记录' })
+    .max(100, { error: '批量操作最多支持100条记录' }),
+  action: z.enum(['delete', 'export'], { message: '请选择有效的操作' }),
+  params: z.record(z.string(), z.any()).optional(), // 操作参数
 });
 
 // 表单数据类型推导

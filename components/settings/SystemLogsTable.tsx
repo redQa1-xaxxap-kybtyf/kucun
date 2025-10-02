@@ -87,7 +87,9 @@ export const SystemLogsTable = ({
     formatDateTime(dateString, 'yyyy-MM-dd HH:mm:ss') || dateString;
 
   const truncateText = (text: string, maxLength: number = 50) => {
-    if (text.length <= maxLength) return text;
+    if (text.length <= maxLength) {
+      return text;
+    }
     return `${text.substring(0, maxLength)}...`;
   };
 
@@ -104,7 +106,7 @@ export const SystemLogsTable = ({
 
   if (logs.length === 0) {
     return (
-      <div className="flex h-64 flex-col items-center justify-center text-muted-foreground">
+      <div className="text-muted-foreground flex h-64 flex-col items-center justify-center">
         <p>暂无日志记录</p>
         <p className="text-sm">尝试调整筛选条件或检查系统是否有操作记录</p>
       </div>
@@ -160,7 +162,7 @@ export const SystemLogsTable = ({
                   {log.user ? (
                     <div className="space-y-1">
                       <div className="font-medium">{log.user.name}</div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-muted-foreground text-sm">
                         @{log.user.username}
                       </div>
                     </div>
@@ -190,7 +192,7 @@ export const SystemLogsTable = ({
 
       {/* 分页信息和控制 */}
       <div className="flex items-center justify-between">
-        <div className="text-sm text-muted-foreground">
+        <div className="text-muted-foreground text-sm">
           显示第 {(page - 1) * limit + 1} - {Math.min(page * limit, total)} 条，
           共 {total} 条记录
         </div>

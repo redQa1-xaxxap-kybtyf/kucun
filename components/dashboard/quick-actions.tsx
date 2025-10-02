@@ -169,7 +169,7 @@ const QuickActionItem = React.forwardRef<HTMLDivElement, QuickActionItemProps>(
             {action.badge && (
               <Badge
                 variant={action.badge.variant}
-                className="flex-shrink-0 text-xs"
+                className="shrink-0 text-xs"
               >
                 {action.badge.text}
               </Badge>

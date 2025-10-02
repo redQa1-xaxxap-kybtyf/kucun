@@ -77,7 +77,7 @@ export default function StatementDetailPage({
 
   // API 调用函数
   const fetchStatementDetail = async (): Promise<StatementDetail> => {
-    if (!id) throw new Error('ID 不能为空');
+    if (!id) {throw new Error('ID 不能为空');}
 
     const response = await fetch(`/api/statements/${id}`);
     if (!response.ok) {

@@ -221,7 +221,7 @@ export async function GET(request: NextRequest) {
         alertList.sort((a, b) => {
           const severityDiff =
             severityOrder[a.severity] - severityOrder[b.severity];
-          if (severityDiff !== 0) return severityDiff;
+          if (severityDiff !== 0) {return severityDiff;}
           return (
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );

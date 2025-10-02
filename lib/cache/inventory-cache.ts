@@ -91,7 +91,7 @@ export async function getCachedProductInventorySummary(
 export async function getBatchCachedInventorySummary(
   productIds: string[]
 ): Promise<Map<string, InventorySummary>> {
-  if (productIds.length === 0) return new Map();
+  if (productIds.length === 0) {return new Map();}
 
   const inventoryMap = new Map<string, InventorySummary>();
   const uncachedIds: string[] = [];

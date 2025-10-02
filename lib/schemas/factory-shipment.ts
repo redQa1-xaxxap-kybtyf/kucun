@@ -223,6 +223,10 @@ export const factoryShipmentOrderListParamsSchema = z
 // 厂家发货订单状态更新验证
 export const updateFactoryShipmentOrderStatusSchema = z
   .object({
+    idempotencyKey: z
+      .string()
+      .uuid('幂等性键格式不正确')
+      .describe('幂等性键,防止重复操作'),
     status: factoryShipmentStatusSchema,
     containerNumber: z
       .string()

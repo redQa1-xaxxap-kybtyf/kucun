@@ -7,7 +7,7 @@ import { z } from 'zod';
 export const paymentMethodSchema = z.enum(
   ['cash', 'bank_transfer', 'check', 'other'],
   {
-    errorMap: () => ({ message: '请选择有效的收款方式' }),
+    message: '请选择有效的收款方式',
   }
 );
 
@@ -15,7 +15,7 @@ export const paymentMethodSchema = z.enum(
 export const paymentStatusSchema = z.enum(
   ['pending', 'confirmed', 'cancelled'],
   {
-    errorMap: () => ({ message: '请选择有效的收款状态' }),
+    message: '请选择有效的收款状态',
   }
 );
 
@@ -23,39 +23,30 @@ export const paymentStatusSchema = z.enum(
 export const createPaymentRecordSchema = z
   .object({
     salesOrderId: z
-      .string({
-        required_error: '请选择销售订单',
-        invalid_type_error: '销售订单ID必须是字符串',
-      })
-      .min(1, '请选择销售订单'),
+      .string({ message: '销售订单ID必须是字符串' })
+      .min(1, { error: '请选择销售订单' }),
 
     customerId: z
-      .string({
-        required_error: '请选择客户',
-        invalid_type_error: '客户ID必须是字符串',
-      })
-      .min(1, '请选择客户'),
+      .string({ message: '客户ID必须是字符串' })
+      .min(1, { error: '请选择客户' }),
 
     paymentMethod: paymentMethodSchema,
 
     paymentAmount: z
-      .number({
-        required_error: '请输入收款金额',
-        invalid_type_error: '收款金额必须是数字',
-      })
-      .positive('收款金额必须大于0')
-      .max(999999999, '收款金额不能超过999,999,999'),
+      .number({ message: '收款金额必须是数字' })
+      .positive({ error: '收款金额必须大于0' })
+      .max(999999999, { error: '收款金额不能超过999,999,999' }),
 
     paymentDate: z
-      .string({
-        required_error: '请选择收款日期',
-        invalid_type_error: '收款日期必须是字符串',
-      })
-      .min(1, '请选择收款日期')
-      .refine(date => {
-        const parsedDate = new Date(date);
-        return !isNaN(parsedDate.getTime());
-      }, '请输入有效的日期格式'),
+      .string({ message: '收款日期必须是字符串' })
+      .min(1, { error: '请选择收款日期' })
+      .refine(
+        date => {
+          const parsedDate = new Date(date);
+          return !isNaN(parsedDate.getTime());
+        },
+        { error: '请输入有效的日期格式' }
+      ),
 
     remarks: z.string().optional().or(z.literal('')),
 
@@ -84,21 +75,22 @@ export const updatePaymentRecordSchema = z
 
     paymentAmount: z
       .number({
-        invalid_type_error: '收款金额必须是数字',
+        error: '收款金额必须是数字',
       })
-      .positive('收款金额必须大于0')
-      .max(999999999, '收款金额不能超过999,999,999')
+      .positive({ error: '收款金额必须大于0' })
+      .max(999999999, { error: '收款金额不能超过999,999,999' })
       .optional(),
 
     paymentDate: z
-      .string({
-        invalid_type_error: '收款日期必须是字符串',
-      })
-      .min(1, '请选择收款日期')
-      .refine(date => {
-        const parsedDate = new Date(date);
-        return !isNaN(parsedDate.getTime());
-      }, '请输入有效的日期格式')
+      .string({ message: '收款日期必须是字符串' })
+      .min(1, { error: '请选择收款日期' })
+      .refine(
+        date => {
+          const parsedDate = new Date(date);
+          return !isNaN(parsedDate.getTime());
+        },
+        { error: '请输入有效的日期格式' }
+      )
       .optional(),
 
     status: paymentStatusSchema.optional(),
@@ -196,7 +188,13 @@ export const accountsReceivableQuerySchema = z
         return !isNaN(parsedDate.getTime());
       }, '请输入有效的结束日期格式'),
     sortBy: z
-      .enum(['orderDate', 'totalAmount', 'remainingAmount', 'overdueDays'])
+      .enum([
+        'orderDate',
+        'totalAmount',
+        'remainingAmount',
+        'overdueDays',
+        'customerName',
+      ])
       .optional()
       .default('orderDate'),
     sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
@@ -221,15 +219,13 @@ export const accountsReceivableQuerySchema = z
 export const paymentConfirmationSchema = z.object({
   paymentRecordId: z
     .string({
-      required_error: '收款记录ID不能为空',
-      invalid_type_error: '收款记录ID必须是字符串',
+      error: '收款记录ID不能为空',
     })
     .min(1, '收款记录ID不能为空'),
 
   confirmationDate: z
     .string({
-      required_error: '请选择确认日期',
-      invalid_type_error: '确认日期必须是字符串',
+      error: '请选择确认日期',
     })
     .min(1, '请选择确认日期')
     .refine(date => {
@@ -239,8 +235,7 @@ export const paymentConfirmationSchema = z.object({
 
   confirmedBy: z
     .string({
-      required_error: '确认人不能为空',
-      invalid_type_error: '确认人必须是字符串',
+      error: '确认人不能为空',
     })
     .min(1, '确认人不能为空'),
 
@@ -251,7 +246,7 @@ export const paymentConfirmationSchema = z.object({
 export const batchPaymentOperationSchema = z.object({
   paymentRecordIds: z.array(z.string()).min(1, '请选择至少一条收款记录'),
   operation: z.enum(['confirm', 'cancel', 'delete'], {
-    errorMap: () => ({ message: '请选择有效的操作类型' }),
+    error: '请选择有效的操作类型',
   }),
   notes: z.string().optional().or(z.literal('')),
 });

@@ -3,11 +3,11 @@ import { type NextRequest } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
 import {
-  deleteProduct,
-  getProductById,
-  updateProduct,
+    deleteProduct,
+    getProductById,
+    updateProduct,
 } from '@/lib/api/handlers/products';
-import { withErrorHandling } from '@/lib/api/middleware';
+import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import { successResponse } from '@/lib/api/response';
 import { authOptions } from '@/lib/auth';
 import { productUpdateSchema } from '@/lib/validations/product';
@@ -23,17 +23,14 @@ async function ensureAuthorized() {
  */
 export const GET = withErrorHandling(
   async (
-    request: NextRequest,
-    { params }: { params?: Record<string, string> }
+    _request: NextRequest,
+    context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     if (!(await ensureAuthorized())) {
       throw ApiError.unauthorized('请先登录');
     }
 
-    const id = params?.id;
-    if (!id) {
-      throw ApiError.badRequest('缺少必需的参数: id');
-    }
+    const { id } = await resolveParams(context.params);
 
     const product = await getProductById(id);
     if (!product) {
@@ -50,16 +47,13 @@ export const GET = withErrorHandling(
 export const PUT = withErrorHandling(
   async (
     request: NextRequest,
-    { params }: { params?: Record<string, string> }
+    context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     if (!(await ensureAuthorized())) {
       throw ApiError.unauthorized('请先登录');
     }
 
-    const id = params?.id;
-    if (!id) {
-      throw ApiError.badRequest('缺少必需的参数: id');
-    }
+    const { id } = await resolveParams(context.params);
 
     const body = await request.json();
     const validatedData = productUpdateSchema.parse(body);
@@ -74,17 +68,14 @@ export const PUT = withErrorHandling(
  */
 export const DELETE = withErrorHandling(
   async (
-    request: NextRequest,
-    { params }: { params?: Record<string, string> }
+    _request: NextRequest,
+    context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     if (!(await ensureAuthorized())) {
       throw ApiError.unauthorized('请先登录');
     }
 
-    const id = params?.id;
-    if (!id) {
-      throw ApiError.badRequest('缺少必需的参数: id');
-    }
+    const { id } = await resolveParams(context.params);
 
     const result = await deleteProduct(id);
     return successResponse(result, 200, '产品删除成功');

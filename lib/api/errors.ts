@@ -202,7 +202,7 @@ export function handlePrismaError(error: unknown): ApiError {
  * 将 Zod 错误转换为 ApiError
  */
 export function handleZodError(error: ZodError): ApiError {
-  const details = error.errors.map(err => ({
+  const details = error.issues.map(err => ({
     path: err.path.join('.'),
     message: err.message,
     code: err.code,

@@ -117,7 +117,7 @@ export function ERPReturnOrderForm({
 
   // 根据订单号查询销售订单
   const searchSalesOrderByNumber = async (orderNumber: string) => {
-    if (!orderNumber.trim()) return;
+    if (!orderNumber.trim()) {return;}
 
     setIsSearchingSalesOrder(true);
     try {

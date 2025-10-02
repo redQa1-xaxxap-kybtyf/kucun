@@ -73,7 +73,7 @@ function SearchField({
   value: string | undefined;
   onChange: (value: string | undefined) => void;
 }) {
-  if (!config?.enabled) return null;
+  if (!config?.enabled) {return null;}
 
   return (
     <div>
@@ -103,7 +103,7 @@ function TypeFilterField({
   value: string | undefined;
   onChange: (value: string | undefined) => void;
 }) {
-  if (!config?.enabled) return null;
+  if (!config?.enabled) {return null;}
 
   return (
     <div>
@@ -146,7 +146,7 @@ function DateRangeFields({
   onStartChange: (value: string | undefined) => void;
   onEndChange: (value: string | undefined) => void;
 }) {
-  if (!config?.enabled) return null;
+  if (!config?.enabled) {return null;}
 
   return (
     <>

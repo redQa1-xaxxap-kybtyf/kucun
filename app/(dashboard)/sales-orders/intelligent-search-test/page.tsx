@@ -57,26 +57,26 @@ export default function IntelligentSearchTestPage() {
               <h4 className="font-medium text-green-700">✅ 核心优势</h4>
               <ul className="space-y-2 text-sm">
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                   <span>
                     <strong>智能搜索</strong>
                     ：支持商品名称、编码、规格的模糊搜索
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                   <span>
                     <strong>无缝添加</strong>：搜索无结果时自动提供添加选项
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                   <span>
                     <strong>预填信息</strong>：对话框自动预填用户搜索的关键词
                   </span>
                 </li>
                 <li className="flex items-start gap-2">
-                  <CheckCircle className="mt-0.5 h-4 w-4 flex-shrink-0 text-green-600" />
+                  <CheckCircle className="mt-0.5 h-4 w-4 shrink-0 text-green-600" />
                   <span>
                     <strong>通用功能</strong>
                     ：不仅限于调货销售，所有订单都可使用
@@ -120,7 +120,7 @@ export default function IntelligentSearchTestPage() {
         <CardContent className="space-y-4">
           <div className="space-y-4">
             <div className="flex items-start gap-4">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-blue-100">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-100">
                 <span className="text-sm font-medium text-blue-600">1</span>
               </div>
               <div>
@@ -132,7 +132,7 @@ export default function IntelligentSearchTestPage() {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-green-100">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-100">
                 <span className="text-sm font-medium text-green-600">2</span>
               </div>
               <div>
@@ -144,7 +144,7 @@ export default function IntelligentSearchTestPage() {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-amber-100">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-amber-100">
                 <span className="text-sm font-medium text-amber-600">3</span>
               </div>
               <div>
@@ -156,7 +156,7 @@ export default function IntelligentSearchTestPage() {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-purple-100">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-100">
                 <span className="text-sm font-medium text-purple-600">4</span>
               </div>
               <div>
@@ -168,7 +168,7 @@ export default function IntelligentSearchTestPage() {
             </div>
 
             <div className="flex items-start gap-4">
-              <div className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-full bg-indigo-100">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-indigo-100">
                 <span className="text-sm font-medium text-indigo-600">5</span>
               </div>
               <div>

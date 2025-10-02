@@ -30,7 +30,7 @@ export function AdjustmentDetailDialog({
   open,
   onOpenChange,
 }: AdjustmentDetailDialogProps) {
-  if (!adjustment) return null;
+  if (!adjustment) {return null;}
 
   // 格式化调整数量显示
   const formatAdjustQuantity = (quantity: number) => {

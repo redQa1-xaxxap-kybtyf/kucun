@@ -117,7 +117,7 @@ export default function AdjustmentRecordsPage() {
         adjustment={selectedAdjustment}
         open={showDetailDialog}
         onOpenChange={open => {
-          if (!open) closeDetailDialog();
+          if (!open) {closeDetailDialog();}
         }}
       />
     </div>

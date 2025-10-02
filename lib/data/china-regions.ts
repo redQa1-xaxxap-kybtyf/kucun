@@ -363,7 +363,7 @@ export function searchRegions(
   keyword: string,
   type: 'province' | 'city' | 'district' = 'province'
 ): string[] {
-  if (!keyword) return [];
+  if (!keyword) {return [];}
 
   const searchList =
     type === 'province'

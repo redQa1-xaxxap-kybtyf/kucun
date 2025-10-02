@@ -51,10 +51,10 @@ export const Captcha = React.forwardRef<HTMLCanvasElement, CaptchaProps>(
     // 绘制验证码 - 移除 onCaptchaChange 依赖，使用 ref 访问
     const drawCaptcha = useCallback(() => {
       const canvas = canvasRef.current;
-      if (!canvas) return;
+      if (!canvas) {return;}
 
       const ctx = canvas.getContext('2d');
-      if (!ctx) return;
+      if (!ctx) {return;}
 
       // 生成新的验证码文本
       const newCaptcha = generateCaptcha(length);

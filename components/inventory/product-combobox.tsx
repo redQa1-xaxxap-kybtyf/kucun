@@ -146,13 +146,13 @@ export function ProductCombobox({
                 onValueChange={handleSearchChange}
                 onFocus={() => setOpen(true)}
                 disabled={disabled}
-                className="ml-2 flex-1 bg-transparent outline-none placeholder:text-muted-foreground"
+                className="ml-2 flex-1 bg-transparent outline-hidden placeholder:text-muted-foreground"
               />
             </div>
           </div>
           <div className="relative mt-2">
             {open && (
-              <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-none animate-in">
+              <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-hidden animate-in">
                 <CommandList>
                   <CommandEmpty>
                     {isLoading ? '搜索中...' : '未找到相关产品'}

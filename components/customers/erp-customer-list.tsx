@@ -146,19 +146,19 @@ export function ERPCustomerList({
     new Date(dateString).toLocaleDateString('zh-CN');
 
   return (
-    <div className="rounded border bg-card">
+    <div className="bg-card rounded border">
       {/* ERP标准工具栏 */}
-      <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-muted/30 border-b px-3 py-2">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">客户管理</h3>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-muted-foreground text-xs">
             {data?.pagination ? `共 ${data.pagination.total} 条记录` : ''}
           </div>
         </div>
       </div>
 
       {/* 操作按钮区 */}
-      <div className="border-b bg-muted/10 px-3 py-2">
+      <div className="bg-muted/10 border-b px-3 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button
@@ -181,16 +181,16 @@ export function ERPCustomerList({
       </div>
 
       {/* 筛选区域 */}
-      <div className="border-b bg-muted/5 px-3 py-2">
+      <div className="bg-muted/5 border-b px-3 py-2">
         <div className="flex items-center gap-2 text-xs">
-          <Filter className="h-3 w-3 text-muted-foreground" />
+          <Filter className="text-muted-foreground h-3 w-3" />
           <span className="text-muted-foreground">筛选条件</span>
         </div>
         <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-4">
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">搜索客户</label>
+            <label className="text-muted-foreground text-xs">搜索客户</label>
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+              <Search className="text-muted-foreground absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2" />
               <Input
                 placeholder="客户名称或电话"
                 value={queryParams.search}
@@ -200,7 +200,7 @@ export function ERPCustomerList({
             </div>
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">排序方式</label>
+            <label className="text-muted-foreground text-xs">排序方式</label>
             <Select
               value={queryParams.sortBy || 'createdAt'}
               onValueChange={handleSort}
@@ -219,7 +219,7 @@ export function ERPCustomerList({
             </Select>
           </div>
           <div className="space-y-1">
-            <label className="text-xs text-muted-foreground">&nbsp;</label>
+            <label className="text-muted-foreground text-xs">&nbsp;</label>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -237,7 +237,7 @@ export function ERPCustomerList({
 
       {/* 表格区域 */}
       <div className="px-3 py-2">
-        <div className="mb-2 text-xs font-medium text-muted-foreground">
+        <div className="text-muted-foreground mb-2 text-xs font-medium">
           客户列表
         </div>
         <div className="rounded border">
@@ -261,7 +261,7 @@ export function ERPCustomerList({
                 <TableRow>
                   <TableCell
                     colSpan={8}
-                    className="h-10 text-center text-xs text-muted-foreground"
+                    className="text-muted-foreground h-10 text-center text-xs"
                   >
                     加载中...
                   </TableCell>
@@ -270,7 +270,7 @@ export function ERPCustomerList({
                 <TableRow>
                   <TableCell
                     colSpan={8}
-                    className="h-10 text-center text-xs text-muted-foreground"
+                    className="text-muted-foreground h-10 text-center text-xs"
                   >
                     暂无客户记录
                   </TableCell>
@@ -280,7 +280,7 @@ export function ERPCustomerList({
                   <TableRow key={customer.id} className="h-10">
                     <TableCell className="px-2 py-1">
                       <div className="flex items-center gap-2">
-                        <Users className="h-3 w-3 text-muted-foreground" />
+                        <Users className="text-muted-foreground h-3 w-3" />
                         <span className="text-xs font-medium">
                           {customer.name}
                         </span>
@@ -288,7 +288,7 @@ export function ERPCustomerList({
                     </TableCell>
                     <TableCell className="px-2 py-1">
                       <div className="flex items-center gap-1">
-                        <Phone className="h-3 w-3 text-muted-foreground" />
+                        <Phone className="text-muted-foreground h-3 w-3" />
                         <span className="text-xs">{customer.phone || '-'}</span>
                       </div>
                     </TableCell>
@@ -334,7 +334,7 @@ export function ERPCustomerList({
                     </TableCell>
                     <TableCell className="px-2 py-1">
                       <div className="flex items-center gap-1">
-                        <Calendar className="h-3 w-3 text-muted-foreground" />
+                        <Calendar className="text-muted-foreground h-3 w-3" />
                         <span className="text-xs">
                           {formatDate(customer.createdAt)}
                         </span>

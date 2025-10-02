@@ -296,7 +296,9 @@ export const getStatusBgColor = (status: SalesOrderStatus): string => {
 
 // 生产日期格式化函数
 export const formatProductionDate = (dateString?: string): string => {
-  if (!dateString) return '';
+  if (!dateString) {
+    return '';
+  }
 
   try {
     const date = new Date(dateString);

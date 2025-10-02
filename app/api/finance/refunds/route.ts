@@ -310,7 +310,7 @@ export async function POST(request: NextRequest) {
         {
           success: false,
           error: '输入数据验证失败',
-          details: error.errors,
+          details: error.issues,
         },
         { status: 400 }
       );

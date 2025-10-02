@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
-import { withErrorHandling } from '@/lib/api/middleware';
+import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
@@ -14,8 +14,8 @@ import type { Supplier } from '@/lib/types/supplier';
  */
 export const GET = withErrorHandling(
   async (
-    request: NextRequest,
-    { params }: { params?: Record<string, string> }
+    _request: NextRequest,
+    context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     // 验证用户身份 (开发模式下绕过)
     if (env.NODE_ENV !== 'development') {
@@ -25,10 +25,7 @@ export const GET = withErrorHandling(
       }
     }
 
-    const id = params?.id;
-    if (!id) {
-      throw ApiError.badRequest('缺少必需的参数: id');
-    }
+    const { id } = await resolveParams(context.params);
 
     // 查询供应商
     const supplier = await prisma.supplier.findUnique({
@@ -63,7 +60,7 @@ export const GET = withErrorHandling(
 export const PUT = withErrorHandling(
   async (
     request: NextRequest,
-    { params }: { params?: Record<string, string> }
+    context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     // 验证用户身份 (开发模式下绕过)
     if (env.NODE_ENV !== 'development') {
@@ -73,10 +70,7 @@ export const PUT = withErrorHandling(
       }
     }
 
-    const id = params?.id;
-    if (!id) {
-      throw ApiError.badRequest('缺少必需的参数: id');
-    }
+    const { id } = await resolveParams(context.params);
 
     // 检查供应商是否存在
     const existingSupplier = await prisma.supplier.findUnique({
@@ -195,8 +189,8 @@ async function checkSupplierRelations(supplierId: string): Promise<void> {
  */
 export const DELETE = withErrorHandling(
   async (
-    request: NextRequest,
-    { params }: { params?: Record<string, string> }
+    _request: NextRequest,
+    context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     // 验证用户身份 (开发模式下绕过)
     if (env.NODE_ENV !== 'development') {
@@ -206,10 +200,7 @@ export const DELETE = withErrorHandling(
       }
     }
 
-    const id = params?.id;
-    if (!id) {
-      throw ApiError.badRequest('缺少必需的参数: id');
-    }
+    const { id } = await resolveParams(context.params);
 
     // 检查供应商是否存在
     const existingSupplier = await prisma.supplier.findUnique({

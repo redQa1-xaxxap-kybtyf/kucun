@@ -39,7 +39,7 @@ export async function DELETE(request: NextRequest) {
         {
           success: false,
           error: '输入数据无效',
-          details: validationResult.error.errors,
+          details: validationResult.error.issues,
         },
         { status: 400 }
       );

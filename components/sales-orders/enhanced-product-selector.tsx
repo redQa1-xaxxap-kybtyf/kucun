@@ -113,7 +113,7 @@ export function EnhancedProductSelector({
 
   // 格式化库存显示
   const formatInventory = (product: Product) => {
-    if (!product.inventory) return '未知';
+    if (!product.inventory) {return '未知';}
 
     const available = product.inventory.availableInventory || 0;
     const chineseUnit = unitMapping[product.unit.toLowerCase()] || product.unit;
