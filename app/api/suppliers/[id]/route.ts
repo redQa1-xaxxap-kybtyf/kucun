@@ -9,13 +9,14 @@ import { env } from '@/lib/env';
 import { UpdateSupplierSchema } from '@/lib/schemas/supplier';
 import type { Supplier } from '@/lib/types/supplier';
 
-type RouteContext = { params: Promise<{ id: string }> };
-
 /**
  * GET /api/suppliers/[id] - 获取单个供应商详情
  */
 export const GET = withErrorHandling(
-  async (request: NextRequest, { params }: RouteContext) => {
+  async (
+    request: NextRequest,
+    { params }: { params?: Record<string, string> }
+  ) => {
     // 验证用户身份 (开发模式下绕过)
     if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
@@ -24,7 +25,10 @@ export const GET = withErrorHandling(
       }
     }
 
-    const { id } = await params;
+    const id = params?.id;
+    if (!id) {
+      throw ApiError.badRequest('缺少必需的参数: id');
+    }
 
     // 查询供应商
     const supplier = await prisma.supplier.findUnique({
@@ -57,7 +61,10 @@ export const GET = withErrorHandling(
  * PUT /api/suppliers/[id] - 更新供应商信息
  */
 export const PUT = withErrorHandling(
-  async (request: NextRequest, { params }: RouteContext) => {
+  async (
+    request: NextRequest,
+    { params }: { params?: Record<string, string> }
+  ) => {
     // 验证用户身份 (开发模式下绕过)
     if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
@@ -66,7 +73,10 @@ export const PUT = withErrorHandling(
       }
     }
 
-    const { id } = await params;
+    const id = params?.id;
+    if (!id) {
+      throw ApiError.badRequest('缺少必需的参数: id');
+    }
 
     // 检查供应商是否存在
     const existingSupplier = await prisma.supplier.findUnique({
@@ -184,7 +194,10 @@ async function checkSupplierRelations(supplierId: string): Promise<void> {
  * DELETE /api/suppliers/[id] - 删除供应商
  */
 export const DELETE = withErrorHandling(
-  async (request: NextRequest, { params }: RouteContext) => {
+  async (
+    request: NextRequest,
+    { params }: { params?: Record<string, string> }
+  ) => {
     // 验证用户身份 (开发模式下绕过)
     if (env.NODE_ENV !== 'development') {
       const session = await getServerSession(authOptions);
@@ -193,7 +206,10 @@ export const DELETE = withErrorHandling(
       }
     }
 
-    const { id } = await params;
+    const id = params?.id;
+    if (!id) {
+      throw ApiError.badRequest('缺少必需的参数: id');
+    }
 
     // 检查供应商是否存在
     const existingSupplier = await prisma.supplier.findUnique({
