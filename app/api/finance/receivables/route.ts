@@ -4,7 +4,6 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
 
 /**
  * 应收货款API
@@ -12,15 +11,13 @@ import { env } from '@/lib/env';
  */
 export async function GET(request: NextRequest) {
   try {
-    // 验证用户身份 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    // 身份验证 - 始终验证,确保安全性
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
     }
 
     // 解析查询参数

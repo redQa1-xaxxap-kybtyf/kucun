@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
 import { updateRefundRecordSchema } from '@/lib/validations/refund';
 
 // GET /api/finance/refunds/[id] - 获取单个退款记录详情
@@ -12,12 +11,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 验证用户身份 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user) {
-        return NextResponse.json({ error: '未授权访问' }, { status: 401 });
-      }
+    // 身份验证 - 始终验证,确保安全性
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }
 
     const refund = await prisma.refundRecord.findUnique({
@@ -51,12 +48,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 验证用户身份 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user) {
-        return NextResponse.json({ error: '未授权访问' }, { status: 401 });
-      }
+    // 身份验证 - 始终验证,确保安全性
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }
 
     const body = await request.json();
@@ -124,12 +119,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 验证用户身份 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user) {
-        return NextResponse.json({ error: '未授权访问' }, { status: 401 });
-      }
+    // 身份验证 - 始终验证,确保安全性
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }
 
     // 检查退款记录是否存在且可以删除

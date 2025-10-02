@@ -6,7 +6,6 @@ import {
   getFinanceStatisticsCache,
   setFinanceStatisticsCache,
 } from '@/lib/cache/finance-cache';
-import { env } from '@/lib/env';
 import {
   getFinanceOverview,
   getFinanceStatistics,
@@ -19,15 +18,13 @@ import { logger } from '@/lib/utils/console-logger';
  */
 export async function GET(_request: NextRequest) {
   try {
-    // 验证用户身份 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    // 身份验证 - 始终验证,确保安全性
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
     }
 
     // 尝试从缓存获取数据
@@ -68,15 +65,13 @@ export async function GET(_request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // 验证用户身份 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    // 身份验证 - 始终验证,确保安全性
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
     }
 
     // 解析请求参数
