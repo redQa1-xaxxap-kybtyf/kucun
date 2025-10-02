@@ -124,9 +124,7 @@ export default function SignInPage() {
   // 处理登录失败逻辑
   const handleLoginError = useCallback(
     (errorCode: string) => {
-      if (process.env.NODE_ENV === 'development') {
-        console.log('登录失败,错误代码:', errorCode);
-      }
+      logger.info('auth', '登录失败,错误代码:', errorCode);
 
       // 获取详细的错误信息
       let errorMessage = errorMessages[errorCode] || errorMessages.Default;
@@ -155,9 +153,7 @@ export default function SignInPage() {
   // 处理网络错误逻辑
   const handleNetworkError = useCallback(
     (error: unknown) => {
-      if (process.env.NODE_ENV === 'development') {
-        console.error('登录错误:', error);
-      }
+      logger.error('auth', '登录错误:', error);
 
       // 判断是否是网络错误
       const isNetworkError =
@@ -220,9 +216,7 @@ export default function SignInPage() {
         setCaptchaSessionId(data.sessionId);
       } else {
         // 处理 HTTP 错误
-        if (process.env.NODE_ENV === 'development') {
-          console.error('验证码加载失败: HTTP', response.status);
-        }
+        logger.error('auth', '验证码加载失败: HTTP', response.status);
         toast({
           title: '验证码加载失败',
           description: '服务器响应异常,请刷新页面重试',
@@ -231,9 +225,7 @@ export default function SignInPage() {
       }
     } catch (error) {
       // 处理网络错误
-      if (process.env.NODE_ENV === 'development') {
-        console.error('验证码加载失败:', error);
-      }
+      logger.error('auth', '验证码加载失败:', error);
       toast({
         title: '验证码加载失败',
         description: '网络连接异常,请检查网络后重试',
