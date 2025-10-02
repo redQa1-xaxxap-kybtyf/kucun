@@ -1,8 +1,8 @@
 // 产品搜索API路由
 // 为入库表单提供产品搜索功能
 
-import { getServerSession } from 'next-auth';
 import { type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';

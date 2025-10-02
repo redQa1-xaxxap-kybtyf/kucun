@@ -1,5 +1,5 @@
-﻿import { getServerSession } from 'next-auth';
-import { type NextRequest } from 'next/server';
+﻿import { type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { ApiError } from '@/lib/api/errors';
 import {
@@ -10,7 +10,6 @@ import {
 import { withErrorHandling } from '@/lib/api/middleware';
 import { successResponse } from '@/lib/api/response';
 import { authOptions } from '@/lib/auth';
-import { env } from '@/lib/env';
 import { productUpdateSchema } from '@/lib/validations/product';
 
 type RouteContext = {
@@ -18,10 +17,7 @@ type RouteContext = {
 };
 
 async function ensureAuthorized() {
-  if (env.NODE_ENV === 'development') {
-    return true;
-  }
-
+  // 始终验证用户权限,确保安全性
   const session = await getServerSession(authOptions);
   return Boolean(session?.user?.id);
 }

@@ -7,7 +7,7 @@ import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { getBatchCachedInventorySummary } from '@/lib/cache/inventory-cache';
 import { invalidateProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
-import { env, paginationConfig, productConfig } from '@/lib/env';
+import { paginationConfig, productConfig } from '@/lib/env';
 import { paginationValidations } from '@/lib/validations/base';
 import { productCreateSchema } from '@/lib/validations/product';
 import { publishWs } from '@/lib/ws/ws-server';
@@ -21,15 +21,13 @@ const DEFAULT_INVENTORY = {
 // 获取产品列表
 export async function GET(request: NextRequest) {
   try {
-    // 验证用户权限 (开发环境下临时绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    // 验证用户权限 - 始终验证,确保安全性
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
     }
 
     const { searchParams } = new URL(request.url);
@@ -282,14 +280,13 @@ export async function GET(request: NextRequest) {
 // 创建产品
 export async function POST(request: NextRequest) {
   try {
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    // 验证用户权限 - 始终验证,确保安全性
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { success: false, error: '未授权访问' },
+        { status: 401 }
+      );
     }
 
     const body = await request.json();

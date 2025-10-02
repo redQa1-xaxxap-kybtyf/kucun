@@ -7,7 +7,7 @@ import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { env, paginationConfig } from '@/lib/env';
+import { paginationConfig } from '@/lib/env';
 import {
   createFactoryShipmentOrderSchema,
   factoryShipmentOrderListParamsSchema,
@@ -17,12 +17,10 @@ import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 // 获取厂家发货订单列表
 export async function GET(request: NextRequest) {
   try {
-    // 身份验证 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user) {
-        return NextResponse.json({ error: '未授权访问' }, { status: 401 });
-      }
+    // 身份验证 - 始终验证,确保安全性
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }
 
     // 解析查询参数
@@ -132,24 +130,12 @@ export async function GET(request: NextRequest) {
 // 创建厂家发货订单
 export async function POST(request: NextRequest) {
   try {
-    // 身份验证 (开发模式下绕过)
-    let userId: string;
-    if (env.NODE_ENV === 'development') {
-      const user = await prisma.user.findFirst();
-      if (!user) {
-        return NextResponse.json(
-          { error: '开发环境下未找到可用用户' },
-          { status: 500 }
-        );
-      }
-      userId = user.id;
-    } else {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json({ error: '未授权访问' }, { status: 401 });
-      }
-      userId = session.user.id;
+    // 身份验证 - 始终验证,确保安全性
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
     }
+    const userId = session.user.id;
 
     // 解析请求体
     const body = await request.json();
