@@ -6,6 +6,63 @@
 
 import { prisma } from '@/lib/db';
 
+// 财务概览数据类型
+export interface FinanceOverview {
+  totalReceivable: number;
+  totalRefundable: number;
+  overdueAmount: number;
+  monthlyReceived: number;
+  receivableCount: number;
+  refundCount: number;
+  overdueCount: number;
+  summary: {
+    totalOrders: number;
+    totalAmount: number;
+    paidAmount: number;
+    pendingAmount: number;
+    paymentRate: number;
+  };
+}
+
+// 财务统计查询参数类型
+export interface FinanceStatisticsParams {
+  startDate?: string;
+  endDate?: string;
+  customerId?: string;
+  includeRefunds?: boolean;
+  includeStatements?: boolean;
+}
+
+// 财务统计数据类型
+export interface FinanceStatistics {
+  period: {
+    startDate?: string;
+    endDate?: string;
+  };
+  sales: {
+    totalAmount: number;
+    orderCount: number;
+  };
+  payments: {
+    totalAmount: number;
+    paymentCount: number;
+  };
+  receivables: {
+    totalAmount: number;
+    paymentRate: number;
+  };
+  refunds?: {
+    totalAmount: number;
+    refundCount: number;
+  };
+  statements?: {
+    customerCount: number;
+    supplierCount: number;
+    totalReceivable: number;
+    totalPayable: number;
+  };
+}
+
 // 往来账单统计数据类型
 export interface StatementSummary {
   id: string;
@@ -422,4 +479,256 @@ export async function getStatementsList(params: StatementQueryParams): Promise<{
     },
     summary,
   };
+}
+
+/**
+ * 获取总应收金额
+ * 基于销售订单和已收款计算
+ */
+export async function getTotalReceivable(): Promise<{
+  totalAmount: number;
+  paidAmount: number;
+  pendingAmount: number;
+}> {
+  const result = await prisma.$queryRaw<
+    Array<{ total_amount: number; paid_amount: number }>
+  >`
+    SELECT
+      COALESCE(SUM(so.total_amount), 0) as total_amount,
+      COALESCE(SUM(pr.payment_amount), 0) as paid_amount
+    FROM sales_orders so
+    LEFT JOIN payment_records pr ON so.id = pr.sales_order_id AND pr.status = 'confirmed'
+    WHERE so.status IN ('confirmed', 'shipped', 'completed')
+  `;
+
+  const data = Array.isArray(result) ? result[0] : result;
+  const totalAmount = Number(data?.total_amount || 0);
+  const paidAmount = Number(data?.paid_amount || 0);
+  const pendingAmount = totalAmount - paidAmount;
+
+  return { totalAmount, paidAmount, pendingAmount };
+}
+
+/**
+ * 获取总应退金额
+ * 基于 remainingAmount 计算真实待付金额
+ */
+export async function getTotalRefundable(): Promise<number> {
+  const result = await prisma.$queryRaw<Array<{ total_refundable: number }>>`
+    SELECT COALESCE(SUM(remaining_amount), 0) as total_refundable
+    FROM refund_records
+    WHERE status IN ('pending', 'processing') AND remaining_amount > 0
+  `;
+
+  const data = Array.isArray(result) ? result[0] : result;
+  return Number(data?.total_refundable || 0);
+}
+
+/**
+ * 获取逾期金额
+ * 基于销售订单创建时间超过30天的未付款订单
+ */
+export async function getOverdueAmount(): Promise<number> {
+  const result = await prisma.$queryRaw<Array<{ overdue_amount: number }>>`
+    SELECT COALESCE(SUM(so.total_amount - COALESCE(pr.paid_amount, 0)), 0) as overdue_amount
+    FROM sales_orders so
+    LEFT JOIN (
+      SELECT sales_order_id, SUM(payment_amount) as paid_amount
+      FROM payment_records
+      WHERE status = 'confirmed'
+      GROUP BY sales_order_id
+    ) pr ON so.id = pr.sales_order_id
+    WHERE so.status IN ('confirmed', 'shipped', 'completed')
+    AND so.created_at < datetime('now', '-30 days')
+    AND (so.total_amount - COALESCE(pr.paid_amount, 0)) > 0
+  `;
+
+  const data = Array.isArray(result) ? result[0] : result;
+  return Number(data?.overdue_amount || 0);
+}
+
+/**
+ * 获取本月收款金额
+ * 基于本月的收款记录
+ */
+export async function getMonthlyReceived(): Promise<number> {
+  const result = await prisma.$queryRaw<Array<{ monthly_received: number }>>`
+    SELECT COALESCE(SUM(payment_amount), 0) as monthly_received
+    FROM payment_records
+    WHERE status = 'confirmed'
+    AND strftime('%Y-%m', payment_date) = strftime('%Y-%m', datetime('now'))
+  `;
+
+  const data = Array.isArray(result) ? result[0] : result;
+  return Number(data?.monthly_received || 0);
+}
+
+/**
+ * 获取逾期订单数量
+ */
+export async function getOverdueCount(): Promise<number> {
+  const result = await prisma.$queryRaw<Array<{ count: number }>>`
+    SELECT COUNT(*) as count
+    FROM sales_orders so
+    LEFT JOIN (
+      SELECT sales_order_id, SUM(payment_amount) as paid_amount
+      FROM payment_records
+      WHERE status = 'confirmed'
+      GROUP BY sales_order_id
+    ) pr ON so.id = pr.sales_order_id
+    WHERE so.status IN ('confirmed', 'shipped', 'completed')
+    AND so.created_at < datetime('now', '-30 days')
+    AND (so.total_amount - COALESCE(pr.paid_amount, 0)) > 0
+  `;
+
+  const data = Array.isArray(result) ? result[0] : result;
+  return Number(data?.count || 0);
+}
+
+/**
+ * 获取财务概览数据
+ * 聚合所有财务统计信息
+ */
+export async function getFinanceOverview(): Promise<FinanceOverview> {
+  // 并行获取所有统计数据
+  const [
+    receivableData,
+    totalRefundable,
+    overdueAmount,
+    monthlyReceived,
+    receivableCount,
+    refundCount,
+    overdueCount,
+  ] = await Promise.all([
+    getTotalReceivable(),
+    getTotalRefundable(),
+    getOverdueAmount(),
+    getMonthlyReceived(),
+    prisma.salesOrder.count({
+      where: { status: { in: ['confirmed', 'shipped', 'completed'] } },
+    }),
+    prisma.refundRecord.count({
+      where: { status: { in: ['pending', 'processing', 'completed'] } },
+    }),
+    getOverdueCount(),
+  ]);
+
+  return {
+    totalReceivable: receivableData.pendingAmount,
+    totalRefundable,
+    overdueAmount,
+    monthlyReceived,
+    receivableCount,
+    refundCount,
+    overdueCount,
+    summary: {
+      totalOrders: receivableCount,
+      totalAmount: receivableData.totalAmount,
+      paidAmount: receivableData.paidAmount,
+      pendingAmount: receivableData.pendingAmount,
+      paymentRate:
+        receivableData.totalAmount > 0
+          ? (receivableData.paidAmount / receivableData.totalAmount) * 100
+          : 0,
+    },
+  };
+}
+
+/**
+ * 获取财务统计数据
+ * 根据查询参数获取指定条件的财务统计
+ */
+export async function getFinanceStatistics(
+  params: FinanceStatisticsParams
+): Promise<FinanceStatistics> {
+  const {
+    startDate,
+    endDate,
+    customerId,
+    includeRefunds = true,
+    includeStatements = true,
+  } = params;
+
+  // 构建查询条件
+  const whereConditions: Record<string, unknown> = {};
+
+  if (startDate && endDate) {
+    whereConditions.createdAt = {
+      gte: new Date(startDate),
+      lte: new Date(endDate),
+    };
+  }
+
+  if (customerId) {
+    whereConditions.customerId = customerId;
+  }
+
+  // 获取销售订单统计
+  const salesOrderStats = await prisma.salesOrder.aggregate({
+    where: whereConditions,
+    _sum: { totalAmount: true },
+    _count: { id: true },
+  });
+
+  // 获取收款统计
+  const paymentStats = await prisma.paymentRecord.aggregate({
+    where: { ...whereConditions, status: 'confirmed' },
+    _sum: { paymentAmount: true },
+    _count: { id: true },
+  });
+
+  // 构建基础响应数据
+  const statisticsData: FinanceStatistics = {
+    period: { startDate, endDate },
+    sales: {
+      totalAmount: salesOrderStats._sum.totalAmount || 0,
+      orderCount: salesOrderStats._count.id || 0,
+    },
+    payments: {
+      totalAmount: paymentStats._sum.paymentAmount || 0,
+      paymentCount: paymentStats._count.id || 0,
+    },
+    receivables: {
+      totalAmount:
+        (salesOrderStats._sum.totalAmount || 0) -
+        (paymentStats._sum.paymentAmount || 0),
+      paymentRate: salesOrderStats._sum.totalAmount
+        ? ((paymentStats._sum.paymentAmount || 0) /
+            salesOrderStats._sum.totalAmount) *
+          100
+        : 0,
+    },
+  };
+
+  // 如果需要包含退款数据
+  if (includeRefunds) {
+    const refundStats = await prisma.refundRecord.aggregate({
+      where: {
+        ...whereConditions,
+        status: { in: ['pending', 'processing', 'completed'] },
+      },
+      _sum: { refundAmount: true },
+      _count: { id: true },
+    });
+
+    statisticsData.refunds = {
+      totalAmount: refundStats._sum.refundAmount || 0,
+      refundCount: refundStats._count.id || 0,
+    };
+  }
+
+  // 如果需要包含往来账单数据
+  if (includeStatements) {
+    const customerCount = await prisma.customer.count();
+    statisticsData.statements = {
+      customerCount,
+      supplierCount: 0,
+      totalReceivable:
+        (salesOrderStats._sum.totalAmount || 0) -
+        (paymentStats._sum.paymentAmount || 0),
+      totalPayable: 0,
+    };
+  }
+
+  return statisticsData;
 }
