@@ -3,13 +3,18 @@
  * 遵循 Next.js 15.4 App Router 架构和全局约定规范
  */
 
-import { type NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { SystemLogListRequestSchema } from '@/lib/schemas/settings';
-import type { SystemLogListResponse } from '@/lib/types/settings';
+import type {
+  SystemLog,
+  SystemLogLevel,
+  SystemLogListResponse,
+  SystemLogType,
+} from '@/lib/types/settings';
 
 /**
  * GET /api/logs - 获取系统日志列表

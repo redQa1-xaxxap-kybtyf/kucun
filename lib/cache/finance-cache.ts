@@ -9,7 +9,7 @@
  * - 所有缓存操作遵循唯一真理原则
  */
 
-import { buildCacheKey, getOrSetJSON, getRandomTTL } from '@/lib/cache/cache';
+import { getOrSetJSON } from '@/lib/cache/cache';
 import { redis } from '@/lib/redis/redis-client';
 
 // 缓存键前缀
@@ -51,16 +51,11 @@ export async function setFinanceStatisticsCache(data: unknown): Promise<void> {
   try {
     const key = getCacheKey('statistics');
     // 使用统一缓存工具，自动添加随机TTL
-    await getOrSetJSON(
-      key,
-      async () => data,
-      CACHE_TTL.statistics,
-      {
-        enableRandomTTL: true, // 启用随机TTL，防止缓存雪崩
-        jitterPercent: 20, // 20%抖动
-        enableNullCache: true, // 启用空值缓存，防止缓存穿透
-      }
-    );
+    await getOrSetJSON(key, async () => data, CACHE_TTL.statistics, {
+      enableRandomTTL: true, // 启用随机TTL，防止缓存雪崩
+      jitterPercent: 20, // 20%抖动
+      enableNullCache: true, // 启用空值缓存，防止缓存穿透
+    });
   } catch (error) {
     console.error('设置财务统计缓存失败:', error);
   }
@@ -92,16 +87,11 @@ export async function setReceivablesCache(
   try {
     const key = getCacheKey('receivables', queryKey);
     // 使用统一缓存工具，自动添加随机TTL
-    await getOrSetJSON(
-      key,
-      async () => data,
-      CACHE_TTL.receivables,
-      {
-        enableRandomTTL: true,
-        jitterPercent: 20,
-        enableNullCache: true,
-      }
-    );
+    await getOrSetJSON(key, async () => data, CACHE_TTL.receivables, {
+      enableRandomTTL: true,
+      jitterPercent: 20,
+      enableNullCache: true,
+    });
   } catch (error) {
     console.error('设置应收款缓存失败:', error);
   }
@@ -133,16 +123,11 @@ export async function setPayablesCache(
   try {
     const key = getCacheKey('payables', queryKey);
     // 使用统一缓存工具，自动添加随机TTL
-    await getOrSetJSON(
-      key,
-      async () => data,
-      CACHE_TTL.payables,
-      {
-        enableRandomTTL: true,
-        jitterPercent: 20,
-        enableNullCache: true,
-      }
-    );
+    await getOrSetJSON(key, async () => data, CACHE_TTL.payables, {
+      enableRandomTTL: true,
+      jitterPercent: 20,
+      enableNullCache: true,
+    });
   } catch (error) {
     console.error('设置应付款缓存失败:', error);
   }
@@ -174,16 +159,11 @@ export async function setStatementsCache(
   try {
     const key = getCacheKey('statements', queryKey);
     // 使用统一缓存工具，自动添加随机TTL
-    await getOrSetJSON(
-      key,
-      async () => data,
-      CACHE_TTL.statements,
-      {
-        enableRandomTTL: true,
-        jitterPercent: 20,
-        enableNullCache: true,
-      }
-    );
+    await getOrSetJSON(key, async () => data, CACHE_TTL.statements, {
+      enableRandomTTL: true,
+      jitterPercent: 20,
+      enableNullCache: true,
+    });
   } catch (error) {
     console.error('设置往来账单缓存失败:', error);
   }

@@ -3,9 +3,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import DOMPurify from 'isomorphic-dompurify';
 import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
+import { getSession, signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { getSession, signIn } from 'next-auth/react';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { logger } from '@/lib/utils/console-logger';
 import { userValidations, type UserLoginInput } from '@/lib/validations/base';
 
 export default function SignInPage() {
@@ -57,8 +58,23 @@ export default function SignInPage() {
   });
 
   // 错误信息映射 - 使用 useMemo 避免每次渲染都创建新对象
+  // 添加索引签名以支持动态访问
   const errorMessages = useMemo(
-    () => ({
+    (): Record<string, string> & {
+      CredentialsSignin: string;
+      AccessDenied: string;
+      MISSING_FIELDS: string;
+      INVALID_FORMAT: string;
+      INVALID_CREDENTIALS: string;
+      ACCOUNT_DISABLED: string;
+      CAPTCHA_SESSION_MISSING: string;
+      CAPTCHA_VERIFY_FAILED: string;
+      CAPTCHA_INCORRECT: string;
+      TOO_MANY_ATTEMPTS: string;
+      SERVER_ERROR: string;
+      NETWORK_ERROR: string;
+      Default: string;
+    } => ({
       // Next-Auth 默认错误
       CredentialsSignin: '用户名或密码错误，请检查后重试',
       AccessDenied: '访问被拒绝，权限不足',
@@ -88,6 +104,34 @@ export default function SignInPage() {
     }),
     []
   );
+
+  // 加载验证码 - 移到前面以避免使用前声明错误
+  const loadCaptcha = useCallback(async () => {
+    try {
+      const response = await fetch('/api/captcha');
+      if (response.ok) {
+        const data = await response.json();
+        setCaptchaImage(data.captchaImage);
+        setCaptchaSessionId(data.sessionId);
+      } else {
+        // 处理 HTTP 错误
+        logger.error('auth', '验证码加载失败: HTTP', response.status);
+        toast({
+          title: '验证码加载失败',
+          description: '服务器响应异常,请刷新页面重试',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      // 处理网络错误
+      logger.error('auth', '验证码加载失败:', error);
+      toast({
+        title: '验证码加载失败',
+        description: '网络连接异常,请检查网络后重试',
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
 
   // 处理登录成功逻辑
   const handleLoginSuccess = useCallback(
@@ -205,34 +249,6 @@ export default function SignInPage() {
       }
     }
   };
-
-  // 加载验证码
-  const loadCaptcha = useCallback(async () => {
-    try {
-      const response = await fetch('/api/captcha');
-      if (response.ok) {
-        const data = await response.json();
-        setCaptchaImage(data.captchaImage);
-        setCaptchaSessionId(data.sessionId);
-      } else {
-        // 处理 HTTP 错误
-        logger.error('auth', '验证码加载失败: HTTP', response.status);
-        toast({
-          title: '验证码加载失败',
-          description: '服务器响应异常,请刷新页面重试',
-          variant: 'destructive',
-        });
-      }
-    } catch (error) {
-      // 处理网络错误
-      logger.error('auth', '验证码加载失败:', error);
-      toast({
-        title: '验证码加载失败',
-        description: '网络连接异常,请检查网络后重试',
-        variant: 'destructive',
-      });
-    }
-  }, [toast]);
 
   // 页面加载时获取验证码
   React.useEffect(() => {
