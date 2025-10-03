@@ -71,3 +71,8 @@ lib/nul
 # PM2
 .pm2
 pm2.log
+
+# 测试文件和示例文件
+**/test/
+**/*-test/
+**/examples/

@@ -22,6 +22,7 @@ import {
 import { ErrorMessage } from '@/components/ui/error-message';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Separator } from '@/components/ui/separator';
+import { queryKeys } from '@/lib/queryKeys';
 import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -103,8 +104,8 @@ export default function SalesOrderDetailPage() {
     data: order,
     isLoading,
     error,
-  } = useQuery({
-    queryKey: ['sales-order', id],
+  } = useQuery<SalesOrderDetail>({
+    queryKey: queryKeys.salesOrders.detail(id),
     queryFn: () => fetchSalesOrderDetail(id),
     enabled: !!id,
   });
