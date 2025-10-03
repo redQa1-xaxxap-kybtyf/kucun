@@ -122,11 +122,11 @@ log_success "目录创建完成"
 
 print_header "步骤 3: 安装依赖"
 
-log_info "清理旧的依赖..."
-rm -rf node_modules package-lock.json
+log_info "清理旧的 node_modules..."
+rm -rf node_modules
 
-log_info "安装生产依赖..."
-npm ci --production=false
+log_info "安装生产依赖（使用 npm ci 确保依赖版本一致性）..."
+npm ci --omit=dev
 
 log_success "依赖安装完成"
 
