@@ -1,0 +1,147 @@
+name: CD - 生产部署
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: '部署环境'
+        required: true
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
+
+jobs:
+  deploy:
+    name: 部署到生产环境
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.event.inputs.environment || 'production' }}
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 9
+
+      - name: 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: 'pnpm'
+
+      - name: 安装生产依赖
+        run: pnpm install --frozen-lockfile --prod
+
+      - name: 生成 Prisma Client
+        run: pnpm db:generate
+
+      - name: 构建应用
+        run: pnpm build
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          NEXTAUTH_URL: ${{ secrets.NEXTAUTH_URL }}
+          NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+
+      - name: 创建部署包
+        run: |
+          mkdir -p deploy
+          cp -r .next deploy/
+          cp -r public deploy/
+          cp -r prisma deploy/
+          cp package.json deploy/
+          cp pnpm-lock.yaml deploy/
+          cp ecosystem.config.js deploy/ || echo "⚠️  ecosystem.config.js 不存在"
+          tar -czf deploy.tar.gz deploy/
+
+      - name: 上传部署包
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-package
+          path: deploy.tar.gz
+          retention-days: 7
+
+      - name: 部署到服务器
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          port: ${{ secrets.DEPLOY_PORT || 22 }}
+          script: |
+            # 进入项目目录
+            cd ${{ secrets.DEPLOY_PATH }}
+
+            # 备份当前版本
+            if [ -d ".next" ]; then
+              BACKUP_DIR="backups/$(date +%Y%m%d_%H%M%S)"
+              mkdir -p $BACKUP_DIR
+              cp -r .next $BACKUP_DIR/
+              echo "✅ 已备份当前版本到 $BACKUP_DIR"
+            fi
+
+            # 拉取最新代码
+            git pull origin main
+
+            # 安装依赖（使用锁文件）
+            pnpm install --frozen-lockfile --prod
+
+            # 生成 Prisma Client
+            pnpm db:generate
+
+            # 应用数据库迁移
+            npx prisma migrate deploy
+
+            # 构建应用
+            pnpm build
+
+            # 重启 PM2 进程
+            pm2 reload ecosystem.config.js --env production
+
+            # 等待应用启动
+            sleep 5
+
+            # 健康检查
+            HEALTH_CHECK_URL="${{ secrets.NEXTAUTH_URL }}/api/health"
+            HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" $HEALTH_CHECK_URL)
+
+            if [ "$HTTP_CODE" = "200" ]; then
+              echo "✅ 健康检查通过 (HTTP $HTTP_CODE)"
+              echo "✅ 部署成功！"
+            else
+              echo "❌ 健康检查失败 (HTTP $HTTP_CODE)"
+              echo "⚠️  正在回滚..."
+              
+              # 回滚到备份版本
+              if [ -d "$BACKUP_DIR" ]; then
+                rm -rf .next
+                cp -r $BACKUP_DIR/.next .
+                pm2 reload ecosystem.config.js --env production
+                echo "✅ 已回滚到之前的版本"
+              fi
+              
+              exit 1
+            fi
+
+      - name: 发送部署通知
+        if: always()
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: |
+            部署状态: ${{ job.status }}
+            提交信息: ${{ github.event.head_commit.message }}
+            提交者: ${{ github.actor }}
+            分支: ${{ github.ref }}
+          webhook_url: ${{ secrets.SLACK_WEBHOOK_URL }}
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
