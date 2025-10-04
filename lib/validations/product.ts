@@ -9,8 +9,8 @@
 import { z } from 'zod';
 
 import {
-    PRODUCT_STATUS_VALUES,
-    PRODUCT_UNIT_VALUES,
+  PRODUCT_STATUS_VALUES,
+  PRODUCT_UNIT_VALUES,
 } from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
 
@@ -105,13 +105,12 @@ const baseValidations = {
     .optional(),
 };
 
-// 产品创建表单验证 - 移除重量和每单位片数字段
+// 产品创建表单验证 - 移除重量、每单位片数和计量单位字段
 export const productCreateSchema = z.object({
   code: baseValidations.code,
   name: baseValidations.name,
   specification: baseValidations.specification,
   description: baseValidations.description,
-  unit: baseValidations.unit.default('piece'),
   thickness: baseValidations.thickness,
   status: baseValidations.status.default('active'),
   categoryId: z.string().optional(),
@@ -120,14 +119,13 @@ export const productCreateSchema = z.object({
   images: baseValidations.images,
 });
 
-// 产品更新表单验证
+// 产品更新表单验证 - 移除计量单位字段
 export const productUpdateSchema = z.object({
   id: z.string().min(1, '产品ID不能为空'),
   code: baseValidations.code.optional(),
   name: baseValidations.name.optional(),
   specification: baseValidations.specification,
   description: baseValidations.description,
-  unit: baseValidations.unit.optional(),
   piecesPerUnit: baseValidations.piecesPerUnit.optional(),
   weight: baseValidations.weight,
   thickness: baseValidations.thickness,
@@ -183,9 +181,8 @@ export type ProductSearchFormData = z.infer<typeof productSearchSchema>;
 export type BatchDeleteProductsData = z.infer<typeof batchDeleteProductsSchema>;
 export type ProductQueryParams = z.infer<typeof productQuerySchema>;
 
-// 表单默认值 - 移除重量和每单位片数的默认值
+// 表单默认值 - 移除重量、每单位片数和计量单位的默认值
 export const productCreateDefaults: Partial<ProductCreateFormData> = {
-  unit: 'piece',
   specification: '',
   description: '',
   thickness: undefined, // 厚度字段是可选的

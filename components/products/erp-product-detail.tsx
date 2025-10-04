@@ -19,14 +19,45 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { deleteProduct, productQueryKeys } from '@/lib/api/products';
-import {
-  PRODUCT_STATUS_LABELS,
-  PRODUCT_UNIT_LABELS,
-  type Product,
-} from '@/lib/types/product';
+import { PRODUCT_STATUS_LABELS, type Product } from '@/lib/types/product';
 
 interface ERPProductDetailProps {
   product: Product;
+}
+
+/**
+ * 格式化规格字段显示
+ * 如果是 JSON 字符串，解析并格式化显示；否则直接显示
+ */
+function formatSpecification(specification: string | null | undefined): string {
+  if (!specification) {
+    return '-';
+  }
+
+  // 尝试解析 JSON
+  try {
+    const parsed = JSON.parse(specification);
+    if (typeof parsed === 'object' && parsed !== null) {
+      // 格式化为键值对形式
+      return Object.entries(parsed)
+        .map(([key, value]) => {
+          // 处理数组类型的值
+          if (Array.isArray(value)) {
+            return `${key}: ${value.join(', ')}`;
+          }
+          // 处理对象类型的值
+          if (typeof value === 'object' && value !== null) {
+            return `${key}: ${JSON.stringify(value)}`;
+          }
+          return `${key}: ${value}`;
+        })
+        .join(' | ');
+    }
+  } catch {
+    // 不是 JSON，直接返回原字符串
+  }
+
+  return specification;
 }
 
 /**
@@ -42,15 +73,15 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
   // 删除产品 Mutation
   const deleteMutation = useMutation({
     mutationFn: () => deleteProduct(product.id),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: '删除成功',
         description: `产品编码 "${product.code}" 已删除`,
         variant: 'success',
       });
 
-      // 失效相关查询缓存
-      queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
+      // 等待缓存失效完成，确保列表数据会被重新获取
+      await queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
 
       // 跳转回产品列表
       router.push('/products');
@@ -89,8 +120,8 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
   return (
     <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
       {/* ERP标准工具栏 */}
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <div className="flex items-center justify-between">
             <h3 className="text-sm font-medium">产品详情</h3>
             <div className="flex items-center gap-2">
@@ -111,7 +142,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
             <div className="flex items-center gap-3">
               <div>
                 <div className="text-sm font-medium">{product.name}</div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-muted-foreground text-xs">
                   编码: {product.code}
                 </div>
               </div>
@@ -143,60 +174,52 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
       </div>
 
       {/* 基本信息区域 */}
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <h4 className="text-sm font-medium">基本信息</h4>
         </div>
         <div className="p-4">
           <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <div>
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 产品编码
               </div>
               <div className="mt-1 text-sm">{product.code}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 产品名称
               </div>
               <div className="mt-1 text-sm">{product.name}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 规格
               </div>
-              <div className="mt-1 text-sm">{product.specification || '-'}</div>
-            </div>
-            <div>
-              <div className="text-xs font-medium text-muted-foreground">
-                计量单位
-              </div>
               <div className="mt-1 text-sm">
-                {PRODUCT_UNIT_LABELS[
-                  product.unit as keyof typeof PRODUCT_UNIT_LABELS
-                ] || product.unit}
+                {formatSpecification(product.specification)}
               </div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 每单位片数
               </div>
               <div className="mt-1 text-sm">{product.piecesPerUnit || '-'}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 重量 (kg)
               </div>
               <div className="mt-1 text-sm">{product.weight || '-'}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 厚度 (mm)
               </div>
               <div className="mt-1 text-sm">{product.thickness || '-'}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 产品分类
               </div>
               <div className="mt-1 text-sm">
@@ -208,20 +231,20 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
       </div>
 
       {/* 系统信息区域 */}
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <h4 className="text-sm font-medium">系统信息</h4>
         </div>
         <div className="p-4">
           <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
             <div>
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 产品状态
               </div>
               <div className="mt-1">{getStatusBadge(product.status)}</div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 创建时间
               </div>
               <div className="mt-1 text-sm">
@@ -229,7 +252,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
               </div>
             </div>
             <div>
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 更新时间
               </div>
               <div className="mt-1 text-sm">
@@ -241,27 +264,27 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
       </div>
 
       {/* 扩展信息区域 - 预留给未来功能 */}
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <h4 className="text-sm font-medium">扩展信息</h4>
         </div>
         <div className="p-4">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="rounded border border-dashed border-muted-foreground/25 p-4 text-center">
-              <div className="text-xs text-muted-foreground">库存信息</div>
-              <div className="mt-1 text-sm text-muted-foreground">
+            <div className="border-muted-foreground/25 rounded border border-dashed p-4 text-center">
+              <div className="text-muted-foreground text-xs">库存信息</div>
+              <div className="text-muted-foreground mt-1 text-sm">
                 功能开发中
               </div>
             </div>
-            <div className="rounded border border-dashed border-muted-foreground/25 p-4 text-center">
-              <div className="text-xs text-muted-foreground">销售记录</div>
-              <div className="mt-1 text-sm text-muted-foreground">
+            <div className="border-muted-foreground/25 rounded border border-dashed p-4 text-center">
+              <div className="text-muted-foreground text-xs">销售记录</div>
+              <div className="text-muted-foreground mt-1 text-sm">
                 功能开发中
               </div>
             </div>
-            <div className="rounded border border-dashed border-muted-foreground/25 p-4 text-center">
-              <div className="text-xs text-muted-foreground">操作历史</div>
-              <div className="mt-1 text-sm text-muted-foreground">
+            <div className="border-muted-foreground/25 rounded border border-dashed p-4 text-center">
+              <div className="text-muted-foreground text-xs">操作历史</div>
+              <div className="text-muted-foreground mt-1 text-sm">
                 功能开发中
               </div>
             </div>

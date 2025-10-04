@@ -20,10 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { categoryQueryKeys, getCategories } from '@/lib/api/categories';
-import {
-  PRODUCT_STATUS_LABELS,
-  PRODUCT_UNIT_LABELS,
-} from '@/lib/types/product';
+import { PRODUCT_STATUS_LABELS } from '@/lib/types/product';
 import type {
   ProductCreateFormData,
   ProductUpdateFormData,
@@ -164,55 +161,6 @@ function ProductCategorySelect({
   );
 }
 
-function ProductUnitSelect({
-  control,
-  disabled,
-  isCreateMode = false,
-}: {
-  control: ProductFormControl;
-  disabled: boolean;
-  isCreateMode?: boolean;
-}) {
-  return (
-    <FormField
-      control={control}
-      name="unit"
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>计量单位</FormLabel>
-          <Select
-            onValueChange={field.onChange}
-            value={field.value || undefined}
-            disabled={disabled || isCreateMode}
-            name={field.name}
-          >
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="选择计量单位" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {Object.entries(PRODUCT_UNIT_LABELS).map(([value, label]) => (
-                <SelectItem key={value} value={value}>
-                  {label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-          {/* 添加隐藏的 input 来确保表单数据包含此字段 */}
-          <input type="hidden" name={field.name} value={field.value || ''} />
-          <FormDescription>
-            {isCreateMode
-              ? '系统默认以"件"为单位。入库时可选择按"件"或"片"入库，系统会自动换算。'
-              : '产品的销售计量单位'}
-          </FormDescription>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-}
-
 function ProductSpecificationInput({
   control,
   disabled,
@@ -284,18 +232,13 @@ function ProductStatusSelect({
 export function ProductBasicInfoForm({
   control,
   isLoading,
-  isCreateMode = false,
+  isCreateMode: _isCreateMode = false,
 }: ProductBasicInfoFormProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       <ProductCodeInput control={control} disabled={isLoading} />
       <ProductNameInput control={control} disabled={isLoading} />
       <ProductCategorySelect control={control} disabled={isLoading} />
-      <ProductUnitSelect
-        control={control}
-        disabled={isLoading}
-        isCreateMode={isCreateMode}
-      />
       <ProductSpecificationInput control={control} disabled={isLoading} />
       <ProductStatusSelect control={control} disabled={isLoading} />
     </div>

@@ -26,10 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { categoryQueryKeys, getCategories } from '@/lib/api/categories';
-import {
-  PRODUCT_STATUS_OPTIONS,
-  PRODUCT_UNIT_OPTIONS,
-} from '@/lib/types/product';
+import { PRODUCT_STATUS_OPTIONS } from '@/lib/types/product';
 
 interface ProductFormFieldProps<T extends FieldValues> {
   control: Control<T>;
@@ -121,46 +118,6 @@ export function ProductSpecificationField<T extends FieldValues>({
               rows={3}
             />
           </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
-  );
-}
-
-/**
- * 产品单位字段
- */
-export function ProductUnitField<T extends FieldValues>({
-  control,
-  name,
-  disabled,
-}: ProductFormFieldProps<T>) {
-  return (
-    <FormField
-      control={control}
-      name={name}
-      render={({ field }) => (
-        <FormItem>
-          <FormLabel>计量单位 *</FormLabel>
-          <Select
-            onValueChange={field.onChange}
-            defaultValue={field.value}
-            disabled={disabled}
-          >
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="请选择计量单位" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              {PRODUCT_UNIT_OPTIONS.map(option => (
-                <SelectItem key={option.value} value={option.value}>
-                  {option.label}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
           <FormMessage />
         </FormItem>
       )}

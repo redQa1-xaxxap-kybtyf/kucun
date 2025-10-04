@@ -7,18 +7,18 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from '@/components/ui/table';
 import { PRODUCT_STATUS_LABELS } from '@/lib/config/product';
 import type { Product } from '@/lib/types/product';
@@ -31,18 +31,6 @@ interface ProductTableProps {
   onSelectProduct: (productId: string, checked: boolean) => void;
   onSelectAll: (checked: boolean) => void;
   onDeleteProduct: (productId: string, productCode: string) => void;
-}
-
-// 单位映射：英文 -> 中文
-// 瓷砖行业专用：只使用"件"和"片"两种单位
-const UNIT_MAP: Record<string, string> = {
-  piece: '件',
-  sheet: '片',
-};
-
-// 获取中文单位
-function getChineseUnit(unit: string): string {
-  return UNIT_MAP[unit.toLowerCase()] || unit;
 }
 
 export function ProductTable({
@@ -92,7 +80,6 @@ export function ProductTable({
           <TableHead>产品名称</TableHead>
           <TableHead>分类</TableHead>
           <TableHead>规格</TableHead>
-          <TableHead>单位</TableHead>
           <TableHead>状态</TableHead>
           <TableHead className="text-right">操作</TableHead>
         </TableRow>
@@ -116,7 +103,6 @@ export function ProductTable({
                 product.specification
               )}
             </TableCell>
-            <TableCell>{getChineseUnit(product.unit)}</TableCell>
             <TableCell>{getStatusBadge(product.status)}</TableCell>
             <TableCell className="text-right">
               <DropdownMenu>

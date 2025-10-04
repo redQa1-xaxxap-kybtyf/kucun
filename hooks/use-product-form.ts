@@ -68,8 +68,9 @@ export function useProductForm({
   // 创建产品
   const createMutation = useMutation({
     mutationFn: createProduct,
-    onSuccess: product => {
-      queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
+    onSuccess: async product => {
+      // 等待缓存失效完成，确保列表数据会被重新获取
+      await queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
       onSuccess?.(product);
     },
     onError: (error: Error) => {
@@ -81,8 +82,9 @@ export function useProductForm({
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: ProductUpdateFormData }) =>
       updateProduct(id, data),
-    onSuccess: product => {
-      queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
+    onSuccess: async product => {
+      // 等待缓存失效完成，确保列表和详情数据会被重新获取
+      await queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
       onSuccess?.(product);
     },
     onError: (error: Error) => {

@@ -23,16 +23,16 @@ export function useProductDelete({
   // 单个删除mutation
   const deleteMutation = useMutation({
     mutationFn: deleteProduct,
-    onSuccess: () => {
+    onSuccess: async () => {
       toast({
         title: '删除成功',
         description: '产品已成功删除',
         variant: 'success',
       });
 
-      // 刷新产品列表
-      queryClient.invalidateQueries({
-        queryKey: productQueryKeys.lists(),
+      // 等待缓存失效完成，确保所有产品相关查询都会被重新获取
+      await queryClient.invalidateQueries({
+        queryKey: productQueryKeys.all,
       });
 
       onDeleteSuccess?.();
@@ -49,7 +49,7 @@ export function useProductDelete({
   // 批量删除mutation
   const batchDeleteMutation = useMutation({
     mutationFn: batchDeleteProducts,
-    onSuccess: result => {
+    onSuccess: async result => {
       if (result.success) {
         toast({
           title: '批量删除完成',
@@ -77,9 +77,9 @@ export function useProductDelete({
         });
       }
 
-      // 刷新产品列表
-      queryClient.invalidateQueries({
-        queryKey: productQueryKeys.lists(),
+      // 等待缓存失效完成，确保所有产品相关查询都会被重新获取
+      await queryClient.invalidateQueries({
+        queryKey: productQueryKeys.all,
       });
 
       onBatchDeleteSuccess?.();
@@ -95,13 +95,17 @@ export function useProductDelete({
 
   // 确认删除产品
   const confirmDeleteProduct = async (productId: string) => {
-    if (!productId) return;
+    if (!productId) {
+      return;
+    }
     deleteMutation.mutate(productId);
   };
 
   // 确认批量删除
   const confirmBatchDelete = (productIds: string[]) => {
-    if (productIds.length === 0) return;
+    if (productIds.length === 0) {
+      return;
+    }
     batchDeleteMutation.mutate({ productIds });
   };
 
