@@ -45,9 +45,9 @@ export const GET = withAuth(
     const validationResult = refundQuerySchema.safeParse(queryParams);
 
     if (!validationResult.success) {
-      return successResponse(
-        null,
-        '查询参数验证失败: ' + validationResult.error.issues[0]?.message
+      return errorResponse(
+        '查询参数验证失败: ' + validationResult.error.issues[0]?.message,
+        400
       );
     }
 
@@ -319,7 +319,7 @@ export const POST = withAuth(
       userId: user.id,
     });
 
-    return successResponse(newRefund, '退款记录创建成功');
+    return successResponse(newRefund, 201, '退款记录创建成功');
   },
   { permissions: ['finance:manage'] }
 );

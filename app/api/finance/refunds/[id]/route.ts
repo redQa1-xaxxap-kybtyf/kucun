@@ -57,7 +57,19 @@ export async function PUT(
     const validatedData = updateRefundRecordSchema.parse(body);
 
     // 修复：在更新时重新计算金额字段
-    const updateData = { ...validatedData, updatedAt: new Date() };
+    const updateData: {
+      refundMethod?: string;
+      refundAmount?: number;
+      processedAmount?: number;
+      refundDate?: Date;
+      processedDate?: Date;
+      status?: string;
+      remarks?: string;
+      receiptNumber?: string;
+      bankInfo?: string;
+      updatedAt: Date;
+      remainingAmount?: number;
+    } = { ...validatedData, updatedAt: new Date() };
 
     // 如果更新了processedAmount，需要重新计算remainingAmount
     if (validatedData.processedAmount !== undefined) {

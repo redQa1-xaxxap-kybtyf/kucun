@@ -20,13 +20,12 @@ interface InboundRecordWithRelations {
   id: string;
   recordNumber: string;
   productId: string;
+  variantId: string | null;
   quantity: number;
   reason: string;
   remarks: string | null;
   userId: string;
-  batchNumber?: string;
-  colorCode: string | null;
-  productionDate: Date | null;
+  batchNumber: string | null;
   unitCost: number | null;
   totalCost: number | null;
   createdAt: Date;
@@ -35,20 +34,26 @@ interface InboundRecordWithRelations {
     id: string;
     name: string;
     code: string;
+    specification: string | null;
     unit: string;
-    piecesPerUnit?: number;
-    weight?: number;
+    piecesPerUnit: number;
+    weight: number | null;
   };
   user: {
     id: string;
     name: string;
   };
+  variant?: {
+    id: string;
+    colorCode: string;
+    colorName: string | null;
+  } | null;
   batchSpecification?: {
     id: string;
     piecesPerUnit: number;
-    weight: number;
-    thickness?: number;
-  };
+    weight: number | null;
+    thickness: number | null;
+  } | null;
 }
 
 /**
@@ -163,12 +168,14 @@ export function buildInboundWhereClause(queryData: {
   if (queryData.startDate || queryData.endDate) {
     where.createdAt = {} as { gte?: Date; lte?: Date };
     if (queryData.startDate) {
-      where.createdAt.gte = new Date(queryData.startDate);
+      (where.createdAt as { gte?: Date; lte?: Date }).gte = new Date(
+        queryData.startDate
+      );
     }
     if (queryData.endDate) {
       const endDate = new Date(queryData.endDate);
       endDate.setHours(23, 59, 59, 999);
-      where.createdAt.lte = endDate;
+      (where.createdAt as { gte?: Date; lte?: Date }).lte = endDate;
     }
   }
 
@@ -196,15 +203,13 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
     id: record.id,
     recordNumber: record.recordNumber,
     productId: record.productId,
+    variantId: record.variantId || undefined,
     quantity: record.quantity,
     reason: record.reason,
     remarks: record.remarks || '',
     userId: record.userId,
     batchNumber: record.batchNumber || '',
-    colorCode: record.colorCode || '',
-    productionDate: record.productionDate
-      ? toISOString(record.productionDate)?.split('T')[0] || ''
-      : '',
+    colorCode: record.variant?.colorCode || '',
     unitCost: record.unitCost || 0,
     totalCost: record.totalCost || 0,
     createdAt: toISOString(record.createdAt) || '',
@@ -286,6 +291,13 @@ export async function getInboundRecords(queryData: {
             unit: true,
             piecesPerUnit: true, // 产品默认每单位片数
             weight: true, // 产品默认重量
+          },
+        },
+        variant: {
+          select: {
+            id: true,
+            colorCode: true,
+            colorName: true,
           },
         },
         batchSpecification: {
@@ -422,14 +434,12 @@ export async function createInboundRecord(
     id: inboundRecord.id,
     recordNumber: inboundRecord.recordNumber,
     productId: inboundRecord.productId,
+    variantId: inboundRecord.variantId || undefined,
     quantity: inboundRecord.quantity,
     reason: inboundRecord.reason,
     remarks: inboundRecord.remarks || '',
     userId: inboundRecord.userId,
-    colorCode: inboundRecord.colorCode || '',
-    productionDate: inboundRecord.productionDate
-      ? toISOString(inboundRecord.productionDate)?.split('T')[0] || ''
-      : '',
+    batchNumber: inboundRecord.batchNumber || undefined,
     unitCost: inboundRecord.unitCost || 0,
     totalCost: inboundRecord.totalCost || 0,
     createdAt: toISOString(inboundRecord.createdAt) || '',

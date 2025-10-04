@@ -11,7 +11,7 @@
 import { type NextRequest } from 'next/server';
 
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
-import { buildCacheKey, getOrSetJSON, CACHE_STRATEGY } from '@/lib/cache';
+import { buildCacheKey, CACHE_STRATEGY, getOrSetJSON } from '@/lib/cache';
 import { getReceivables } from '@/lib/services/receivables-service';
 import { accountsReceivableQuerySchema } from '@/lib/validations/payment';
 
@@ -38,9 +38,9 @@ export const GET = withAuth(
     });
 
     if (!validationResult.success) {
-      return successResponse(
-        null,
-        '参数验证失败: ' + validationResult.error.issues[0]?.message
+      return errorResponse(
+        '参数验证失败: ' + validationResult.error.issues[0]?.message,
+        400
       );
     }
 
@@ -85,9 +85,9 @@ export const POST = withAuth(
     });
 
     if (!validationResult.success) {
-      return successResponse(
-        null,
-        '参数验证失败: ' + validationResult.error.issues[0]?.message
+      return errorResponse(
+        '参数验证失败: ' + validationResult.error.issues[0]?.message,
+        400
       );
     }
 
@@ -101,6 +101,7 @@ export const POST = withAuth(
       {
         totalRecords: result.receivables.length,
       },
+      200,
       '导出功能开发中'
     );
   },

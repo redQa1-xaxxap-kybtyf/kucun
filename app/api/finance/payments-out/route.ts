@@ -28,9 +28,9 @@ export const GET = withAuth(
     const validationResult = paymentOutRecordQuerySchema.safeParse(queryParams);
 
     if (!validationResult.success) {
-      return successResponse(
-        null,
-        '查询参数验证失败: ' + validationResult.error.issues[0]?.message
+      return errorResponse(
+        '查询参数验证失败: ' + validationResult.error.issues[0]?.message,
+        400
       );
     }
 
@@ -76,12 +76,16 @@ export const GET = withAuth(
     }
 
     if (startDate || endDate) {
-      where.paymentDate = {};
+      where.paymentDate = {} as { gte?: Date; lte?: Date };
       if (startDate) {
-        where.paymentDate.gte = new Date(startDate);
+        (where.paymentDate as { gte?: Date; lte?: Date }).gte = new Date(
+          startDate
+        );
       }
       if (endDate) {
-        where.paymentDate.lte = new Date(endDate);
+        (where.paymentDate as { gte?: Date; lte?: Date }).lte = new Date(
+          endDate
+        );
       }
     }
 
@@ -152,9 +156,9 @@ export const POST = withAuth(
     const validationResult = createPaymentOutRecordSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return successResponse(
-        null,
-        '数据验证失败: ' + validationResult.error.issues[0]?.message
+      return errorResponse(
+        '数据验证失败: ' + validationResult.error.issues[0]?.message,
+        400
       );
     }
 
@@ -167,11 +171,11 @@ export const POST = withAuth(
     });
 
     if (!supplier) {
-      return successResponse(null, '供应商不存在');
+      return errorResponse('供应商不存在', 404);
     }
 
     if (supplier.status !== 'active') {
-      return successResponse(null, '供应商状态异常，无法创建付款记录');
+      return errorResponse('供应商状态异常，无法创建付款记录', 400);
     }
 
     // 如果关联应付款记录,验证金额
@@ -189,14 +193,14 @@ export const POST = withAuth(
       });
 
       if (!payableRecord) {
-        return successResponse(null, '关联的应付款记录不存在');
+        return errorResponse('关联的应付款记录不存在', 404);
       }
 
       // 金额验证：检查付款金额是否超过剩余应付金额
       if (data.paymentAmount > payableRecord.remainingAmount) {
-        return successResponse(
-          null,
-          `付款金额超过应付金额。应付: ¥${payableRecord.remainingAmount.toFixed(2)}, 本次付款: ¥${data.paymentAmount.toFixed(2)}`
+        return errorResponse(
+          `付款金额超过应付金额。应付: ¥${payableRecord.remainingAmount.toFixed(2)}, 本次付款: ¥${data.paymentAmount.toFixed(2)}`,
+          400
         );
       }
     }
@@ -292,7 +296,7 @@ export const POST = withAuth(
     // 清除相关缓存
     await clearCacheAfterPaymentOut();
 
-    return successResponse(payment, '付款记录创建成功');
+    return successResponse(payment, 201, '付款记录创建成功');
   },
   { permissions: ['finance:manage'] }
 );

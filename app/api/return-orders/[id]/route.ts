@@ -140,6 +140,10 @@ export const PUT = withAuth(
         reason?: string;
         remarks?: string;
         status?: string;
+        type?: string;
+        processType?: string;
+        totalAmount?: number;
+        refundAmount?: number;
       } = {
         updatedAt: new Date(),
       };

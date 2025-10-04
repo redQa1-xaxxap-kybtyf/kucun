@@ -27,9 +27,9 @@ export const GET = withAuth(
     const validationResult = payableRecordQuerySchema.safeParse(queryParams);
 
     if (!validationResult.success) {
-      return successResponse(
-        null,
-        '查询参数验证失败: ' + validationResult.error.issues[0]?.message
+      return errorResponse(
+        '查询参数验证失败: ' + validationResult.error.issues[0]?.message,
+        400
       );
     }
 
@@ -70,12 +70,14 @@ export const GET = withAuth(
     }
 
     if (startDate || endDate) {
-      where.createdAt = {};
+      where.createdAt = {} as { gte?: Date; lte?: Date };
       if (startDate) {
-        where.createdAt.gte = new Date(startDate);
+        (where.createdAt as { gte?: Date; lte?: Date }).gte = new Date(
+          startDate
+        );
       }
       if (endDate) {
-        where.createdAt.lte = new Date(endDate);
+        (where.createdAt as { gte?: Date; lte?: Date }).lte = new Date(endDate);
       }
     }
 
@@ -153,9 +155,9 @@ export const POST = withAuth(
     const validationResult = createPayableRecordSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return successResponse(
-        null,
-        '数据验证失败: ' + validationResult.error.issues[0]?.message
+      return errorResponse(
+        '数据验证失败: ' + validationResult.error.issues[0]?.message,
+        400
       );
     }
 
@@ -168,11 +170,11 @@ export const POST = withAuth(
     });
 
     if (!supplier) {
-      return successResponse(null, '供应商不存在');
+      return errorResponse('供应商不存在', 404);
     }
 
     if (supplier.status !== 'active') {
-      return successResponse(null, '供应商状态异常，无法创建应付款');
+      return errorResponse('供应商状态异常，无法创建应付款', 400);
     }
 
     // 生成应付款单号(使用数据库序列表确保并发安全)
@@ -207,7 +209,7 @@ export const POST = withAuth(
       },
     });
 
-    return successResponse(payable, '应付款记录创建成功');
+    return successResponse(payable, 201, '应付款记录创建成功');
   },
   { permissions: ['finance:manage'] }
 );

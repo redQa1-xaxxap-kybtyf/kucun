@@ -52,7 +52,7 @@ export function InventoryTable({
     return (
       <VirtualizedInventoryTable
         data={data}
-        selectedIds={Array.from(selectedIds)}
+        selectedIds={selectedIds}
         onSelectAll={onSelectAll}
         onSelectRow={onSelectRow}
         onAdjust={onAdjust}

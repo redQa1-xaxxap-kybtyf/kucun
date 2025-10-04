@@ -58,16 +58,13 @@ export const GET = withErrorHandling(
  * 创建销售订单
  */
 export const POST = withErrorHandling(
-  withAuth(async (request, _context, session) => {
+  withAuth(async (request, { user }) => {
     const body = await request.json();
 
     // 验证请求数据
     const validatedData = salesOrderCreateSchema.parse(body);
 
-    const order = await createSalesOrder(
-      validatedData,
-      session?.user?.id || ''
-    );
+    const order = await createSalesOrder(validatedData, user.id);
 
     // 使用统一的缓存失效系统（自动级联失效相关缓存）
     await revalidateSalesOrders();

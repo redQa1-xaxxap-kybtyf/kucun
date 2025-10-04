@@ -175,8 +175,8 @@ export async function PUT(
         where: {
           productId_variantId_batchNumber: {
             productId: existingRecord.productId,
-            variantId: existingRecord.variantId ?? undefined,
-            batchNumber: existingRecord.batchNumber ?? undefined,
+            variantId: existingRecord.variantId ?? '',
+            batchNumber: existingRecord.batchNumber ?? '',
           },
         },
         update: {

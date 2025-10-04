@@ -23,7 +23,7 @@ import type { Inventory } from '@/lib/types/inventory';
 
 interface VirtualizedInventoryTableProps {
   data: Inventory[];
-  selectedIds: string[];
+  selectedIds: Set<string>;
   onSelectAll: (checked: boolean) => void;
   onSelectRow: (id: string, checked: boolean) => void;
   onAdjust: (id: string) => void;
@@ -128,14 +128,14 @@ export const VirtualizedInventoryTable =
 
       // 全选状态
       const isAllSelected = React.useMemo(
-        () => data.length > 0 && selectedIds.length === data.length,
-        [data.length, selectedIds.length]
+        () => data.length > 0 && selectedIds.size === data.length,
+        [data.length, selectedIds.size]
       );
 
       // 部分选中状态
       const isIndeterminate = React.useMemo(
-        () => selectedIds.length > 0 && selectedIds.length < data.length,
-        [selectedIds.length, data.length]
+        () => selectedIds.size > 0 && selectedIds.size < data.length,
+        [selectedIds.size, data.length]
       );
 
       // 优化的全选处理
@@ -177,14 +177,14 @@ export const VirtualizedInventoryTable =
 
                 {/* 虚拟化表体 - 只渲染可见行 */}
                 <TableBody>
-                  {rowVirtualizer.getVirtualItems().map((virtualRow, index) => {
+                  {rowVirtualizer.getVirtualItems().map(virtualRow => {
                     const item = data[virtualRow.index];
 
                     return (
                       <InventoryTableRow
                         key={item.id}
                         item={item}
-                        isSelected={selectedIds.includes(item.id)}
+                        isSelected={selectedIds.has(item.id)}
                         onSelect={onSelectRow}
                         onAdjust={onAdjust}
                         style={{
@@ -193,10 +193,8 @@ export const VirtualizedInventoryTable =
                           left: 0,
                           width: '100%',
                           height: `${virtualRow.size}px`,
-                          // 表格行的 transform 计算：基于行的初始位置
-                          // 需要减去 index * virtualRow.size 来正确计算偏移
-                          // 参考: https://tanstack.com/virtual/latest/docs/framework/react/examples/table
-                          transform: `translateY(${virtualRow.start - index * virtualRow.size}px)`,
+                          // 遵循 TanStack Virtual 最佳实践：直接使用 virtualRow.start
+                          transform: `translateY(${virtualRow.start}px)`,
                         }}
                       />
                     );

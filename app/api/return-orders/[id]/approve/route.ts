@@ -72,6 +72,7 @@ export const POST = withAuth(
         updatedAt: Date;
         approvedBy?: string;
         remarks?: string;
+        refundAmount?: number;
       } = {
         status: approved ? 'approved' : 'rejected',
         approvedAt: new Date(),

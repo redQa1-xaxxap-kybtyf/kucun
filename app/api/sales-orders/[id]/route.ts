@@ -18,19 +18,25 @@ function formatSalesOrder(salesOrder: {
   id: string;
   orderNumber: string;
   customerId: string;
+  userId: string;
   totalAmount: number;
   status: string;
   remarks?: string | null;
+  createdAt: Date;
+  updatedAt: Date;
   customer: unknown;
   user: unknown;
   items: Array<{
     id: string;
     productId: string;
     colorCode?: string | null;
+    productionDate?: string | null;
     quantity: number;
     unitPrice: number;
     totalPrice: number;
+    subtotal?: number;
     remarks?: string | null;
+    product?: unknown;
   }>;
 }) {
   return {
@@ -50,7 +56,7 @@ function formatSalesOrder(salesOrder: {
       productionDate: item.productionDate,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
-      subtotal: item.subtotal,
+      subtotal: item.subtotal ?? item.totalPrice,
       product: item.product,
     })),
     createdAt: salesOrder.createdAt,

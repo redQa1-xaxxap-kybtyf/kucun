@@ -178,10 +178,11 @@ async function realQiniuConnectionTest(): Promise<QiniuStorageTestResponse> {
     return {
       success: result.success,
       message: result.message,
-      ...('bucketInfo' in result &&
-        result.bucketInfo && {
-          bucketInfo: result.bucketInfo,
-        }),
+      ...('bucketInfo' in result && result.bucketInfo
+        ? {
+            bucketInfo: result.bucketInfo,
+          }
+        : {}),
     };
   } catch (error) {
     return {

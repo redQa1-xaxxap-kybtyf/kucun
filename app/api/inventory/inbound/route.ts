@@ -76,12 +76,11 @@ async function executeInboundTransaction(
     productId: string;
     variantId?: string;
     quantity: number;
-    unitPrice: number;
-    supplierId?: string;
-    batchNumber?: string;
-    productionDate?: string;
-    expiryDate?: string;
+    reason: string;
     remarks?: string;
+    batchNumber?: string;
+    piecesPerUnit?: number;
+    weight?: number;
   },
   userId: string,
   finalBatchNumber: string | undefined
@@ -90,8 +89,14 @@ async function executeInboundTransaction(
     // 创建入库记录
     const record = await createInboundRecord(
       {
-        ...validatedData,
+        productId: validatedData.productId,
+        variantId: validatedData.variantId,
+        quantity: validatedData.quantity,
+        reason: validatedData.reason,
+        remarks: validatedData.remarks,
         batchNumber: finalBatchNumber,
+        piecesPerUnit: validatedData.piecesPerUnit,
+        weight: validatedData.weight,
       },
       userId,
       tx

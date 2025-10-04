@@ -141,7 +141,20 @@ export async function GET(request: NextRequest) {
         //     productionDate: 'asc',
         //   },
         // });
-        const expiredInventory: unknown[] = []; // 临时空数组
+        const expiredInventory: Array<{
+          id: string;
+          productId: string;
+          quantity: number;
+          reservedQuantity: number;
+          batchNumber: string | null;
+          variantId: string | null;
+          location: string | null;
+          product: {
+            id: string;
+            name: string;
+            code: string;
+          };
+        }> = []; // 临时空数组
 
         const alertList = [];
 
