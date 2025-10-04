@@ -3,12 +3,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { verifyApiAuth } from '@/lib/api-helpers';
 import { ApiError } from '@/lib/api/errors';
 import {
-    calculateCustomerFinancials,
-    calculateOverdueAmount,
-    calculateSupplierFinancials,
-    calculateSupplierOverdueAmount,
-    fetchCustomerWithOrders,
-    fetchSupplierWithOrders,
+  calculateCustomerFinancials,
+  calculateOverdueAmount,
+  calculateSupplierFinancials,
+  calculateSupplierOverdueAmount,
+  fetchCustomerWithOrders,
+  fetchSupplierWithOrders,
 } from '@/lib/api/handlers/statement-details';
 import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 

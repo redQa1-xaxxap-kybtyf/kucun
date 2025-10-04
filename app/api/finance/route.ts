@@ -1,11 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
-import {
-  buildCacheKey,
-  getOrSetJSON,
-  CACHE_STRATEGY,
-} from '@/lib/cache';
+import { buildCacheKey, getOrSetJSON, CACHE_STRATEGY } from '@/lib/cache';
 import {
   getFinanceOverview,
   getFinanceStatistics,
