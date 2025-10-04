@@ -3,8 +3,8 @@
 import { useQuery } from '@tanstack/react-query';
 
 import {
-    ProductBatchDeleteDialog,
-    ProductDeleteDialog,
+  ProductBatchDeleteDialog,
+  ProductDeleteDialog,
 } from '@/components/products/product-delete-dialogs';
 import { ProductListToolbar } from '@/components/products/product-list-toolbar';
 import { ProductPagination } from '@/components/products/product-pagination';
@@ -81,7 +81,8 @@ export function ERPProductList({
   const { data, isLoading, error } = useQuery({
     queryKey: productQueryKeys.list(queryParams),
     queryFn: () => getProducts(queryParams),
-    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
+    staleTime: 30 * 1000, // 30秒内认为数据是新鲜的（降低缓存时间以便更快看到更新）
+    refetchOnMount: 'always', // 组件挂载时总是重新获取数据
     refetchOnWindowFocus: false, // 避免不必要的重新获取
   });
 
@@ -112,7 +113,7 @@ export function ERPProductList({
 
   if (error) {
     return (
-      <div className="flex h-32 items-center justify-center text-muted-foreground">
+      <div className="text-muted-foreground flex h-32 items-center justify-center">
         加载产品列表失败，请重试
       </div>
     );
