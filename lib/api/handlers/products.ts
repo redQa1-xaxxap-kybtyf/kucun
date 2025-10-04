@@ -120,7 +120,7 @@ export async function updateProduct(
   }
 
   // 构建更新数据对象，只包含提供的字段
-  const updateData: Record<string, unknown> = {};
+  const updateData: Prisma.ProductUpdateInput = {};
 
   if (validatedData.name !== undefined) {
     updateData.name = validatedData.name;
