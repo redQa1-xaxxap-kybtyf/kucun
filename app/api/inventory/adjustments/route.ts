@@ -195,7 +195,8 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   };
 
   // 使用 Zod schema 验证
-  const validationResult = inventoryAdjustmentsQuerySchema.safeParse(queryParams);
+  const validationResult =
+    inventoryAdjustmentsQuerySchema.safeParse(queryParams);
 
   if (!validationResult.success) {
     return NextResponse.json(

@@ -6,11 +6,7 @@ import {
   getInventoryCount,
   getOptimizedInventoryList,
 } from '@/lib/api/inventory-query-builder';
-import {
-  buildCacheKey,
-  getOrSetJSON,
-  CACHE_STRATEGY,
-} from '@/lib/cache';
+import { buildCacheKey, getOrSetJSON, CACHE_STRATEGY } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/utils/console-logger';
 import {
@@ -21,7 +17,6 @@ import {
 // 获取库存列表
 export const GET = withAuth(
   async (request: NextRequest, { user }) => {
-
     const { searchParams } = new URL(request.url);
 
     // 直接传递字符串参数给验证器，让验证器自己转换
