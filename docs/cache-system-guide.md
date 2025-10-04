@@ -38,8 +38,8 @@
 import { CacheTags } from '@/lib/cache';
 
 // 使用预定义标签
-CacheTags.Products.all;           // 'products'
-CacheTags.Products.list;          // 'products:list'
+CacheTags.Products.all; // 'products'
+CacheTags.Products.list; // 'products:list'
 CacheTags.Products.detail('123'); // 'products:123'
 CacheTags.Inventory.summary('p1'); // 'inventory:summary:p1'
 ```
@@ -47,16 +47,19 @@ CacheTags.Inventory.summary('p1'); // 'inventory:summary:p1'
 ### 2. 缓存层级
 
 **L1: React cache()** - 请求级缓存，同一请求内复用
+
 - 作用域：单个 HTTP 请求
 - 生命周期：请求结束自动清除
 - 适用：服务器组件数据获取
 
 **L2: Next.js unstable_cache** - 应用级缓存
+
 - 作用域：单个 Next.js 进程
 - 生命周期：由 revalidate 或 revalidateTag 控制
 - 适用：静态数据、低频变更数据
 
 **L3: Redis** - 分布式缓存
+
 - 作用域：跨进程、跨服务器
 - 生命周期：由 TTL 或手动失效控制
 - 适用：所有场景，特别是多实例部署
@@ -426,7 +429,7 @@ import { CACHE_STRATEGY } from '@/lib/cache';
 
 const getProduct = cachedDetail(
   async (id: string) => prisma.product.findUnique({ where: { id } }),
-  (id) => [CacheTags.Products.detail(id)]
+  id => [CacheTags.Products.detail(id)]
 );
 
 // 使用预定义策略
@@ -443,7 +446,7 @@ const getProduct = cachedQuery(
 
 ```typescript
 const getProducts = cachedList(
-  async (params) => prisma.product.findMany(params),
+  async params => prisma.product.findMany(params),
   {
     tags: [CacheTags.Products.list],
     ...CACHE_STRATEGY.dynamicData, // { redis: true, redisTTL: 300, revalidate: 60 }
@@ -455,7 +458,7 @@ const getProducts = cachedList(
 
 ```typescript
 const getInventory = cachedQuery(
-  async (productId) => prisma.inventory.findMany({ where: { productId } }),
+  async productId => prisma.inventory.findMany({ where: { productId } }),
   {
     tags: [CacheTags.Inventory.summary(productId)],
     ...CACHE_STRATEGY.volatileData, // { redis: true, redisTTL: 60, revalidate: 30 }
@@ -593,7 +596,7 @@ export async function POST(request: NextRequest) {
 
   return Response.json({
     success: true,
-    deleted
+    deleted,
   });
 }
 ```
@@ -613,16 +616,19 @@ redis-cli
 ### Q: 何时使用 Next.js 缓存 vs Redis 缓存？
 
 **Next.js 缓存**：
+
 - 单进程部署
 - 静态或准静态数据
 - 需要 Build Time 优化
 
 **Redis 缓存**：
+
 - 多进程/多服务器部署
 - 动态数据
 - 需要跨请求共享
 
 **两者结合**（推荐）：
+
 - 利用 Next.js 的增量静态再生成 (ISR)
 - 同时使用 Redis 作为数据源缓存
 
@@ -647,14 +653,9 @@ await getOrSetJSON(
 启用空值缓存：
 
 ```typescript
-await getOrSetJSON(
-  key,
-  fetcher,
-  300,
-  {
-    enableNullCache: true, // 缓存 null 结果
-  }
-);
+await getOrSetJSON(key, fetcher, 300, {
+  enableNullCache: true, // 缓存 null 结果
+});
 ```
 
 ### Q: 如何避免缓存击穿？

@@ -63,6 +63,7 @@ interface NotificationEvent extends BaseEvent {
 ```
 
 **使用场景**:
+
 - 用户操作成功/失败提示
 - 审核结果通知
 - 系统消息推送
@@ -85,6 +86,7 @@ interface InventoryChangeEvent extends BaseEvent {
 ```
 
 **使用场景**:
+
 - 库存调整
 - 入库/出库操作
 - 库存预留/释放
@@ -105,6 +107,7 @@ interface OrderStatusEvent extends BaseEvent {
 ```
 
 **使用场景**:
+
 - 销售订单状态变更
 - 退货单状态更新
 - 采购单流程跟踪
@@ -127,6 +130,7 @@ interface ApprovalEvent extends BaseEvent {
 ```
 
 **使用场景**:
+
 - 审核请求提交
 - 审核结果通知
 - 审核流程追踪
@@ -149,6 +153,7 @@ interface FinanceEvent extends BaseEvent {
 ```
 
 **使用场景**:
+
 - 收款/付款确认
 - 退款处理
 - 逾期提醒
@@ -167,6 +172,7 @@ interface DataChangeEvent extends BaseEvent {
 ```
 
 **使用场景**:
+
 - 商品创建/更新/删除
 - 客户/供应商信息变更
 - 数据同步通知
@@ -185,6 +191,7 @@ interface SystemEvent extends BaseEvent {
 ```
 
 **使用场景**:
+
 - 系统维护通知
 - 版本更新公告
 - 紧急系统告警
@@ -201,20 +208,20 @@ export const EventChannels = {
   userNotification: (userId: string) => `user:${userId}:notifications`,
 
   // 业务频道
-  inventory: 'inventory',       // 库存
-  orders: 'orders',             // 订单
-  approvals: 'approvals',       // 审核
-  finance: 'finance',           // 财务
+  inventory: 'inventory', // 库存
+  orders: 'orders', // 订单
+  approvals: 'approvals', // 审核
+  finance: 'finance', // 财务
 
   // 资源频道
-  products: 'products',         // 商品
-  customers: 'customers',       // 客户
-  suppliers: 'suppliers',       // 供应商
+  products: 'products', // 商品
+  customers: 'customers', // 客户
+  suppliers: 'suppliers', // 供应商
 
   // 系统频道
-  system: 'system',             // 系统
-  broadcast: 'broadcast',       // 全局广播
-}
+  system: 'system', // 系统
+  broadcast: 'broadcast', // 全局广播
+};
 ```
 
 ### Redis 频道映射
@@ -406,8 +413,10 @@ function NotificationCenter({ userId }: { userId: string }) {
 import { useInventoryUpdates } from '@/hooks/use-websocket';
 
 function InventoryMonitor() {
-  useInventoryUpdates((event) => {
-    console.log(`${event.productName}: ${event.oldQuantity} → ${event.newQuantity}`);
+  useInventoryUpdates(event => {
+    console.log(
+      `${event.productName}: ${event.oldQuantity} → ${event.newQuantity}`
+    );
 
     // 刷新缓存
     queryClient.invalidateQueries(['inventory', event.productId]);
@@ -428,12 +437,14 @@ function InventoryMonitor() {
 import { useOrderUpdates } from '@/hooks/use-websocket';
 
 function OrderStatusTracker() {
-  useOrderUpdates((event) => {
+  useOrderUpdates(event => {
     // 自动类型推断
-    console.log(`Order ${event.orderNumber}: ${event.oldStatus} → ${event.newStatus}`);
+    console.log(
+      `Order ${event.orderNumber}: ${event.oldStatus} → ${event.newStatus}`
+    );
 
     // 更新订单列表
-    queryClient.setQueryData(['orders', event.orderId], (old) => ({
+    queryClient.setQueryData(['orders', event.orderId], old => ({
       ...old,
       status: event.newStatus,
     }));
@@ -449,7 +460,7 @@ function OrderStatusTracker() {
 import { useApprovalUpdates } from '@/hooks/use-websocket';
 
 function ApprovalMonitor() {
-  useApprovalUpdates((event) => {
+  useApprovalUpdates(event => {
     if (event.type === 'approval:request') {
       showNotification(`新的审核请求: ${event.resourceNumber}`);
       playSound('notification.mp3');
@@ -472,7 +483,7 @@ function ApprovalMonitor() {
 import { useFinanceUpdates } from '@/hooks/use-websocket';
 
 function FinanceMonitor() {
-  useFinanceUpdates((event) => {
+  useFinanceUpdates(event => {
     if (event.type === 'finance:payment' && event.action === 'confirmed') {
       showSuccess(`收款确认: ¥${event.amount}`);
     } else if (event.type === 'finance:overdue') {
@@ -492,7 +503,7 @@ function FinanceMonitor() {
 import { useSystemUpdates } from '@/hooks/use-websocket';
 
 function SystemAnnouncements() {
-  useSystemUpdates((event) => {
+  useSystemUpdates(event => {
     if (event.level === 'critical') {
       showModal({
         title: '重要通知',
@@ -515,7 +526,7 @@ function SystemAnnouncements() {
 import { useBroadcast } from '@/hooks/use-websocket';
 
 function BroadcastReceiver() {
-  useBroadcast((event) => {
+  useBroadcast(event => {
     showToast(event.message, event.level);
   });
 
@@ -691,7 +702,7 @@ export async function submitOrderForApproval(
 
   // 通知所有审核人
   await Promise.all(
-    approvers.map((approver) =>
+    approvers.map(approver =>
       notifyUser(approver.id, {
         type: 'notification',
         notificationType: 'warning',
@@ -808,14 +819,14 @@ return { success: true };
 
 ```typescript
 // ✅ 推荐 - 使用专用 hook
-useInventoryUpdates((event) => {
+useInventoryUpdates(event => {
   // 类型安全，自动过滤频道
 });
 
 // ❌ 不推荐 - 手动订阅需要自己过滤
 useWebSocket({
   channels: ['inventory', 'orders'],
-  onMessage: (msg) => {
+  onMessage: msg => {
     if (msg.channel === 'inventory') {
       // 需要手动类型转换和频道过滤
     }
@@ -857,7 +868,7 @@ await publishInventoryChange(data);
 await revalidateInventory(productId); // 清除相关缓存
 
 // 客户端收到事件后刷新查询
-useInventoryUpdates((event) => {
+useInventoryUpdates(event => {
   queryClient.invalidateQueries(['inventory', event.productId]);
 });
 ```
@@ -872,7 +883,7 @@ useInventoryUpdates((event) => {
 // 临时添加全局监听器
 useWebSocket({
   channels: Object.values(EventChannels),
-  onMessage: (msg) => {
+  onMessage: msg => {
     console.log('[WebSocket Event]', msg.channel, msg.data);
   },
 });
@@ -919,7 +930,9 @@ PSUBSCRIBE ws:*
 await prisma.payment.create({ data: paymentData });
 
 // 2. 发送实时通知（尽力而为）
-await publishFinanceEvent({ /* ... */ });
+await publishFinanceEvent({
+  /* ... */
+});
 
 // 客户端应该定期轮询数据库作为兜底
 ```
@@ -931,7 +944,7 @@ await publishFinanceEvent({ /* ... */ });
 ```typescript
 const processedEvents = useRef(new Set<string>());
 
-useInventoryUpdates((event) => {
+useInventoryUpdates(event => {
   const eventId = `${event.productId}-${event.timestamp}`;
   if (processedEvents.current.has(eventId)) return;
 

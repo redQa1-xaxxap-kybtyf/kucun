@@ -320,7 +320,7 @@ export async function getReceivables(
 
   // 如果有支付状态筛选,在应用层过滤
   if (paymentStatus) {
-    receivables = receivables.filter((r) => r.paymentStatus === paymentStatus);
+    receivables = receivables.filter(r => r.paymentStatus === paymentStatus);
   }
 
   // 计算统计数据
@@ -345,4 +345,3 @@ export async function getReceivables(
     summary,
   };
 }
-

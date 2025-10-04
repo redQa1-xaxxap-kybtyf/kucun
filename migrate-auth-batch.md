@@ -67,11 +67,13 @@ app/api/dashboard/alerts/route.ts
 ### 模式 1: 删除导入语句
 
 **查找：**
+
 ```typescript
 import { getServerSession } from 'next-auth';
 ```
 
 **替换为：**
+
 ```typescript
 // 删除此行
 ```
@@ -79,11 +81,13 @@ import { getServerSession } from 'next-auth';
 ### 模式 2: 删除 authOptions 导入
 
 **查找：**
+
 ```typescript
 import { authOptions } from '@/lib/auth';
 ```
 
 **替换为：**
+
 ```typescript
 // 删除此行
 ```
@@ -91,6 +95,7 @@ import { authOptions } from '@/lib/auth';
 ### 模式 3: 添加新的导入
 
 在文件开头添加（如果没有的话）：
+
 ```typescript
 import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
 ```
@@ -98,6 +103,7 @@ import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
 ### 模式 4: 替换认证逻辑 - 基础版本
 
 **查找：**
+
 ```typescript
 const session = await getServerSession(authOptions);
 if (!session) {
@@ -109,6 +115,7 @@ if (!session) {
 ```
 
 **替换为：**
+
 ```typescript
 const auth = verifyApiAuth(request);
 if (!auth.success) {
@@ -119,6 +126,7 @@ if (!auth.success) {
 ### 模式 5: 替换认证逻辑 - 带用户ID检查版本
 
 **查找：**
+
 ```typescript
 const session = await getServerSession(authOptions);
 if (!session?.user?.id) {
@@ -130,6 +138,7 @@ if (!session?.user?.id) {
 ```
 
 **替换为：**
+
 ```typescript
 const auth = verifyApiAuth(request);
 if (!auth.success) {
@@ -140,23 +149,27 @@ if (!auth.success) {
 ### 模式 6: 替换用户ID引用
 
 **查找：**
+
 ```typescript
-session.user.id
+session.user.id;
 ```
 
 **替换为：**
+
 ```typescript
-auth.userId
+auth.userId;
 ```
 
 或者如果需要非空断言：
+
 ```typescript
-auth.userId!
+auth.userId!;
 ```
 
 ### 模式 7: 开发模式下的特殊处理（需要删除）
 
 **查找：**
+
 ```typescript
 if (env.NODE_ENV !== 'development') {
   const session = await getServerSession(authOptions);
@@ -167,6 +180,7 @@ if (env.NODE_ENV !== 'development') {
 ```
 
 **替换为：**
+
 ```typescript
 const auth = verifyApiAuth(request);
 if (!auth.success) {
@@ -179,16 +193,20 @@ if (!auth.success) {
 由于文件数量较多（36个待处理），建议使用以下方法：
 
 ### 选项1：逐个手动修改（更安全）
+
 按照上述模式，逐个文件手动替换，确保每个文件的上下文正确。
 
 ### 选项2：使用批量替换工具
+
 可以使用 VS Code 的全局搜索替换功能：
+
 1. 按 Ctrl+Shift+H 打开全局替换
 2. 启用正则表达式模式
 3. 设置文件过滤：`app/api/**/*.ts` 但排除 `app/api/auth/**`
 4. 按照上述模式逐个替换
 
 ### 选项3：使用自动化脚本
+
 创建一个 Node.js 脚本来批量处理文件（需要仔细测试）
 
 ## 重要注意事项

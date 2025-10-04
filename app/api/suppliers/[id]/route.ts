@@ -13,7 +13,9 @@ export const GET = withAuth(
   withErrorHandling(
     async (
       request: NextRequest,
-      context: { params?: Promise<Record<string, string>> | Record<string, string> }
+      context: {
+        params?: Promise<Record<string, string>> | Record<string, string>;
+      }
     ) => {
       const { id } = await resolveParams(context.params);
 
@@ -52,7 +54,9 @@ export const PUT = withAuth(
   withErrorHandling(
     async (
       request: NextRequest,
-      context: { params?: Promise<Record<string, string>> | Record<string, string> }
+      context: {
+        params?: Promise<Record<string, string>> | Record<string, string>;
+      }
     ) => {
       const { id } = await resolveParams(context.params);
 
@@ -183,7 +187,9 @@ export const DELETE = withAuth(
   withErrorHandling(
     async (
       request: NextRequest,
-      context: { params?: Promise<Record<string, string>> | Record<string, string> }
+      context: {
+        params?: Promise<Record<string, string>> | Record<string, string>;
+      }
     ) => {
       const { id } = await resolveParams(context.params);
 

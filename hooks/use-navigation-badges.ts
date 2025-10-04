@@ -138,7 +138,9 @@ export function useNavigationBadges() {
   const addBadgesToNavItems = (
     navItems: NavigationItem[]
   ): NavigationItem[] => {
-    if (!badgeData) return navItems;
+    if (!badgeData) {
+      return navItems;
+    }
 
     return navItems.map(item => {
       const badgeInfo = badgeData.find(badge => badge.navId === item.id);
@@ -165,7 +167,9 @@ export function useNavigationBadges() {
    * 获取总的未读/待处理数量
    */
   const getTotalBadgeCount = (): number => {
-    if (!badgeData) return 0;
+    if (!badgeData) {
+      return 0;
+    }
 
     return badgeData.reduce((total, badge) => {
       const count = typeof badge.badge === 'number' ? badge.badge : 0;
@@ -177,7 +181,9 @@ export function useNavigationBadges() {
    * 获取紧急项目数量（红色徽章）
    */
   const getUrgentBadgeCount = (): number => {
-    if (!badgeData) return 0;
+    if (!badgeData) {
+      return 0;
+    }
 
     return badgeData
       .filter(badge => badge.badgeVariant === 'destructive')

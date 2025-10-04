@@ -111,7 +111,12 @@ export {
 export type { CacheOptions } from './cache';
 
 // ==================== 缓存标签 ====================
-export { CacheTags, RedisCachePrefix, tagToRedisKey, redisKeyToTag } from './tags';
+export {
+  CacheTags,
+  RedisCachePrefix,
+  tagToRedisKey,
+  redisKeyToTag,
+} from './tags';
 export type { CacheTag } from './tags';
 
 // ==================== 缓存失效 ====================

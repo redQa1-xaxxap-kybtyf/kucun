@@ -50,8 +50,8 @@ const mutation = useMutation({
   mutationFn: createProduct,
   onSuccess: () => {
     // 失效产品列表缓存
-    queryClient.invalidateQueries({ 
-      queryKey: queryKeys.products.lists() 
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.lists(),
     });
   },
 });
@@ -74,10 +74,10 @@ export default function ProductListPage() {
 
   // 使用 Query Keys 查询产品列表
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.products.list({ 
-      page, 
-      pageSize: 20, 
-      search 
+    queryKey: queryKeys.products.list({
+      page,
+      pageSize: 20,
+      search
     }),
     queryFn: () => fetchProducts({ page, pageSize: 20, search }),
   });
@@ -87,9 +87,9 @@ export default function ProductListPage() {
 
   return (
     <div>
-      <input 
-        value={search} 
-        onChange={(e) => setSearch(e.target.value)} 
+      <input
+        value={search}
+        onChange={(e) => setSearch(e.target.value)}
         placeholder="搜索产品..."
       />
       <ul>
@@ -130,8 +130,8 @@ export default function ProductDetailPage({ productId }: { productId: string }) 
     mutationFn: updateProduct,
     onSuccess: () => {
       // 失效当前产品的缓存
-      queryClient.invalidateQueries({ 
-        queryKey: queryKeys.products.detail(productId) 
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.products.detail(productId)
       });
     },
   });
@@ -159,18 +159,18 @@ import { queryKeys } from '@/lib/queryKeys';
 const queryClient = useQueryClient();
 
 // 失效单个产品的缓存
-queryClient.invalidateQueries({ 
-  queryKey: queryKeys.products.detail('product-id') 
+queryClient.invalidateQueries({
+  queryKey: queryKeys.products.detail('product-id'),
 });
 
 // 失效所有产品列表的缓存
-queryClient.invalidateQueries({ 
-  queryKey: queryKeys.products.lists() 
+queryClient.invalidateQueries({
+  queryKey: queryKeys.products.lists(),
 });
 
 // 失效所有产品相关的缓存
-queryClient.invalidateQueries({ 
-  queryKey: queryKeys.products.all 
+queryClient.invalidateQueries({
+  queryKey: queryKeys.products.all,
 });
 ```
 
@@ -179,12 +179,12 @@ queryClient.invalidateQueries({
 ```typescript
 const createProductMutation = useMutation({
   mutationFn: createProduct,
-  onSuccess: (newProduct) => {
+  onSuccess: newProduct => {
     // 失效产品列表
-    queryClient.invalidateQueries({ 
-      queryKey: queryKeys.products.lists() 
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.lists(),
     });
-    
+
     // 可选: 设置新产品的缓存
     queryClient.setQueryData(
       queryKeys.products.detail(newProduct.id),
@@ -195,13 +195,13 @@ const createProductMutation = useMutation({
 
 const updateProductMutation = useMutation({
   mutationFn: updateProduct,
-  onSuccess: (updatedProduct) => {
+  onSuccess: updatedProduct => {
     // 失效特定产品和列表
-    queryClient.invalidateQueries({ 
-      queryKey: queryKeys.products.detail(updatedProduct.id) 
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.detail(updatedProduct.id),
     });
-    queryClient.invalidateQueries({ 
-      queryKey: queryKeys.products.lists() 
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.lists(),
     });
   },
 });
@@ -210,13 +210,13 @@ const deleteProductMutation = useMutation({
   mutationFn: deleteProduct,
   onSuccess: (_, productId) => {
     // 移除特定产品的缓存
-    queryClient.removeQueries({ 
-      queryKey: queryKeys.products.detail(productId) 
+    queryClient.removeQueries({
+      queryKey: queryKeys.products.detail(productId),
     });
-    
+
     // 失效产品列表
-    queryClient.invalidateQueries({ 
-      queryKey: queryKeys.products.lists() 
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.lists(),
     });
   },
 });
@@ -296,7 +296,10 @@ import { queryOptions } from '@tanstack/react-query';
 import { queryKeys } from '@/lib/queryKeys';
 
 // 定义可复用的查询选项
-export function productListOptions(filters: { page: number; pageSize: number }) {
+export function productListOptions(filters: {
+  page: number;
+  pageSize: number;
+}) {
   return queryOptions({
     queryKey: queryKeys.products.list(filters),
     queryFn: () => fetchProducts(filters),
@@ -340,18 +343,18 @@ useQuery({
 
 ```typescript
 // ✅ 正确 - 失效所有产品相关的查询
-queryClient.invalidateQueries({ 
-  queryKey: queryKeys.products.all 
+queryClient.invalidateQueries({
+  queryKey: queryKeys.products.all,
 });
 
 // ✅ 正确 - 只失效产品列表
-queryClient.invalidateQueries({ 
-  queryKey: queryKeys.products.lists() 
+queryClient.invalidateQueries({
+  queryKey: queryKeys.products.lists(),
 });
 
 // ✅ 正确 - 只失效特定产品
-queryClient.invalidateQueries({ 
-  queryKey: queryKeys.products.detail(id) 
+queryClient.invalidateQueries({
+  queryKey: queryKeys.products.detail(id),
 });
 ```
 
@@ -362,8 +365,8 @@ queryClient.invalidateQueries({
 const createMutation = useMutation({
   mutationFn: createProduct,
   onSuccess: () => {
-    queryClient.invalidateQueries({ 
-      queryKey: queryKeys.products.lists() 
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.lists(),
     });
   },
 });
@@ -372,11 +375,11 @@ const createMutation = useMutation({
 const updateMutation = useMutation({
   mutationFn: updateProduct,
   onSuccess: (_, variables) => {
-    queryClient.invalidateQueries({ 
-      queryKey: queryKeys.products.detail(variables.id) 
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.detail(variables.id),
     });
-    queryClient.invalidateQueries({ 
-      queryKey: queryKeys.products.lists() 
+    queryClient.invalidateQueries({
+      queryKey: queryKeys.products.lists(),
     });
   },
 });
@@ -405,20 +408,21 @@ queryClient.getQueryData(productDetailOptions(id).queryKey);
 ```typescript
 // ✅ 正确 - 包含所有影响查询结果的参数
 const { data } = useQuery({
-  queryKey: queryKeys.products.list({ 
-    page, 
-    pageSize, 
-    search, 
+  queryKey: queryKeys.products.list({
+    page,
+    pageSize,
+    search,
     status,
-    categoryId 
+    categoryId,
   }),
-  queryFn: () => fetchProducts({ 
-    page, 
-    pageSize, 
-    search, 
-    status,
-    categoryId 
-  }),
+  queryFn: () =>
+    fetchProducts({
+      page,
+      pageSize,
+      search,
+      status,
+      categoryId,
+    }),
 });
 
 // ❌ 错误 - 遗漏参数会导致缓存错误
@@ -437,10 +441,10 @@ const { data } = useQuery({
 ```typescript
 export const newModuleKeys = {
   all: ['new-module'] as const,
-  
+
   lists: () => [...newModuleKeys.all, 'list'] as const,
   list: (filters?: BaseFilters) => [...newModuleKeys.lists(), filters] as const,
-  
+
   details: () => [...newModuleKeys.all, 'detail'] as const,
   detail: (id: string) => [...newModuleKeys.details(), id] as const,
 } as const;
@@ -467,7 +471,8 @@ interface ProductFilters extends BaseFilters {
 
 export const productKeys = {
   // ...
-  list: (filters?: ProductFilters) => [...productKeys.lists(), filters] as const,
+  list: (filters?: ProductFilters) =>
+    [...productKeys.lists(), filters] as const,
 };
 ```
 
@@ -481,10 +486,10 @@ import { queryKeys } from '@/lib/queryKeys';
 
 export async function createProduct(data: ProductInput) {
   const product = await db.product.create({ data });
-  
+
   // 使用 Next.js 的 revalidateTag
   revalidateTag(JSON.stringify(queryKeys.products.lists()));
-  
+
   return product;
 }
 ```
@@ -492,4 +497,3 @@ export async function createProduct(data: ProductInput) {
 ---
 
 **记住**: 集中管理 Query Keys 是确保缓存一致性和类型安全的关键！
-

@@ -285,4 +285,3 @@ export type UpdateFactoryShipmentOrderStatusData = z.infer<
 export type FactoryShipmentOrderItemData = z.infer<
   typeof factoryShipmentOrderItemSchema
 >;
-

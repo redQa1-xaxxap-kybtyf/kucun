@@ -28,69 +28,71 @@ export const inventoryAlertsQuerySchema = z.object({
 });
 
 // 库存调整查询验证规则
-export const inventoryAdjustmentsQuerySchema = z.object({
-  page: z.number().int().positive().optional().default(1),
+export const inventoryAdjustmentsQuerySchema = z
+  .object({
+    page: z.number().int().positive().optional().default(1),
 
-  limit: z
-    .number()
-    .int()
-    .positive()
-    .max(paginationConfig.maxPageSize)
-    .optional()
-    .default(20),
+    limit: z
+      .number()
+      .int()
+      .positive()
+      .max(paginationConfig.maxPageSize)
+      .optional()
+      .default(20),
 
-  search: z.string().optional(),
+    search: z.string().optional(),
 
-  sortBy: z
-    .enum(['createdAt', 'adjustmentNumber', 'quantity', 'reason'])
-    .optional()
-    .default('createdAt'),
+    sortBy: z
+      .enum(['createdAt', 'adjustmentNumber', 'quantity', 'reason'])
+      .optional()
+      .default('createdAt'),
 
-  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
 
-  productId: z.string().uuid().optional(),
+    productId: z.string().uuid().optional(),
 
-  variantId: z.string().uuid().optional(),
+    variantId: z.string().uuid().optional(),
 
-  batchNumber: z.string().optional(),
+    batchNumber: z.string().optional(),
 
-  reason: z
-    .enum([
-      'damaged',
-      'lost',
-      'found',
-      'correction',
-      'quality_issue',
-      'expired',
-      'other',
-    ])
-    .optional(),
+    reason: z
+      .enum([
+        'damaged',
+        'lost',
+        'found',
+        'correction',
+        'quality_issue',
+        'expired',
+        'other',
+      ])
+      .optional(),
 
-  status: z.enum(['pending', 'approved', 'rejected', 'completed']).optional(),
+    status: z.enum(['pending', 'approved', 'rejected', 'completed']).optional(),
 
-  operatorId: z.string().uuid().optional(),
+    operatorId: z.string().uuid().optional(),
 
-  startDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式不正确')
-    .optional(),
+    startDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式不正确')
+      .optional(),
 
-  endDate: z
-    .string()
-    .regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式不正确')
-    .optional(),
-}).refine(
-  data => {
-    if (data.startDate && data.endDate) {
-      return new Date(data.startDate) <= new Date(data.endDate);
+    endDate: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式不正确')
+      .optional(),
+  })
+  .refine(
+    data => {
+      if (data.startDate && data.endDate) {
+        return new Date(data.startDate) <= new Date(data.endDate);
+      }
+      return true;
+    },
+    {
+      message: '开始日期不能晚于结束日期',
+      path: ['endDate'],
     }
-    return true;
-  },
-  {
-    message: '开始日期不能晚于结束日期',
-    path: ['endDate'],
-  }
-);
+  );
 
 // 库存查询API验证规则
 export const inventoryQuerySchema = z.object({

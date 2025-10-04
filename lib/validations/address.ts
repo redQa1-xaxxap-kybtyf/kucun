@@ -105,7 +105,9 @@ export const addressValidation = {
   isAddressEmpty: (
     address: AddressData | OptionalAddressData | string | null | undefined
   ): boolean => {
-    if (!address) {return true;}
+    if (!address) {
+      return true;
+    }
 
     if (typeof address === 'string') {
       return address.trim().length === 0;
@@ -122,7 +124,9 @@ export const addressValidation = {
   getAddressDisplayText: (
     address: AddressData | OptionalAddressData | string | null | undefined
   ): string => {
-    if (!address) {return '-';}
+    if (!address) {
+      return '-';
+    }
 
     if (typeof address === 'string') {
       return address || '-';
@@ -176,4 +180,3 @@ export const ADDRESS_FIELD_LABELS = {
   detail: '详细地址',
   full: '完整地址',
 } as const;
-

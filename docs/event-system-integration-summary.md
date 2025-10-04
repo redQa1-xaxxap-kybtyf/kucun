@@ -5,12 +5,15 @@
 ### 1. 库存相关 API ✅
 
 #### `app/api/inventory/adjust/route.ts`
+
 **集成内容**:
+
 - 添加 `publishInventoryChange` 导入
 - 在库存调整后发布 `inventory:change` 事件
 - 包含完整的库存变更信息（产品名、旧数量、新数量、原因、操作员）
 
 **代码示例**:
+
 ```typescript
 await publishInventoryChange({
   action: 'adjust',
@@ -25,12 +28,15 @@ await publishInventoryChange({
 ```
 
 #### `app/api/inventory/outbound/route.ts`
+
 **集成内容**:
+
 - 添加 `publishInventoryChange` 导入
 - 修改事务函数返回 `{ inventory, oldQuantity }` 以提供变更数据
 - 在出库后发布 `inventory:change` 事件
 
 **代码示例**:
+
 ```typescript
 await publishInventoryChange({
   action: 'outbound',
@@ -49,12 +55,15 @@ await publishInventoryChange({
 ### 2. 订单相关 API ✅
 
 #### `app/api/sales-orders/[id]/route.ts`
+
 **集成内容**:
+
 - 添加 `publishOrderStatus` 导入
 - 在订单状态更新后发布 `order:status` 事件
 - 包含订单类型、订单号、旧状态、新状态、客户信息
 
 **代码示例**:
+
 ```typescript
 await publishOrderStatus({
   orderType: 'sales',
@@ -69,6 +78,7 @@ await publishOrderStatus({
 ```
 
 **实时通知效果**:
+
 - 所有订阅 `orders` 频道的客户端会实时收到订单状态变更
 - 可用于自动刷新订单列表、显示通知等
 
@@ -77,12 +87,15 @@ await publishOrderStatus({
 ### 3. 审核相关 API ✅
 
 #### `app/api/return-orders/[id]/approve/route.ts`
+
 **集成内容**:
+
 - 添加 `publishApprovalResult` 和 `notifyUser` 导入
 - 在审核完成后发布审核结果事件
 - 自动通知请求者审核结果（通过 `publishApprovalResult` 内部实现）
 
 **代码示例**:
+
 ```typescript
 await publishApprovalResult({
   approved,
@@ -99,6 +112,7 @@ await publishApprovalResult({
 ```
 
 **实时通知效果**:
+
 - 发布到 `approvals` 频道：所有审核页面收到更新
 - 发送到请求者个人频道：请求者收到专属通知
 
@@ -107,11 +121,14 @@ await publishApprovalResult({
 ### 4. 财务相关 API ✅
 
 #### `app/api/payments/route.ts`
+
 **集成内容**:
+
 - 添加 `publishFinanceEvent` 导入
 - 在收款记录创建后发布 `finance:payment` 事件
 
 **代码示例**:
+
 ```typescript
 await publishFinanceEvent({
   action: 'created',
@@ -126,11 +143,14 @@ await publishFinanceEvent({
 ```
 
 #### `app/api/finance/refunds/route.ts`
+
 **集成内容**:
+
 - 添加 `publishFinanceEvent` 导入
 - 在退款记录创建后发布 `finance:refund` 事件
 
 **代码示例**:
+
 ```typescript
 await publishFinanceEvent({
   action: 'created',
@@ -149,7 +169,9 @@ await publishFinanceEvent({
 ### 5. 产品相关 API ✅
 
 #### `app/api/products/route.ts`
+
 **集成内容**:
+
 - 已在之前的缓存迁移中集成 `publishDataUpdate`
 - 在产品创建时发布 `data:change` 事件
 
@@ -158,29 +180,42 @@ await publishFinanceEvent({
 ### 6. 前端页面集成 ✅
 
 #### `app/(dashboard)/inventory/page-client.tsx` - 库存页面
+
 **集成内容**:
+
 - 添加 `useInventoryUpdates` hook
 - 实时监听库存变更事件
 - 自动刷新库存列表
 - 显示库存变更 toast 通知
 
 **代码示例**:
-```typescript
-useInventoryUpdates(React.useCallback((event) => {
-  // 刷新库存列表
-  queryClient.invalidateQueries({ queryKey: ['inventory'] });
 
-  // 显示变更提示
-  const changeType = event.changeAmount > 0 ? '增加' : '减少';
-  const amount = Math.abs(event.changeAmount);
-  toast.info(`库存变更: ${event.productName || '产品'} ${changeType} ${amount}`, {
-    description: event.reason || event.action,
-  });
-}, [queryClient]));
+```typescript
+useInventoryUpdates(
+  React.useCallback(
+    event => {
+      // 刷新库存列表
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+
+      // 显示变更提示
+      const changeType = event.changeAmount > 0 ? '增加' : '减少';
+      const amount = Math.abs(event.changeAmount);
+      toast.info(
+        `库存变更: ${event.productName || '产品'} ${changeType} ${amount}`,
+        {
+          description: event.reason || event.action,
+        }
+      );
+    },
+    [queryClient]
+  )
+);
 ```
 
 #### `components/sales-orders/erp-sales-order-list.tsx` - 订单列表
+
 **集成内容**:
+
 - 添加 `useOrderUpdates` hook
 - 实时监听订单状态变更
 - 自动更新本地订单缓存
@@ -188,23 +223,30 @@ useInventoryUpdates(React.useCallback((event) => {
 - 显示状态变更通知
 
 **代码示例**:
+
 ```typescript
-useOrderUpdates(React.useCallback((event) => {
-  // 更新本地订单缓存
-  queryClient.setQueryData(
-    salesOrderQueryKeys.detail(event.orderId),
-    (old: any) => old ? { ...old, status: event.newStatus } : old
-  );
+useOrderUpdates(
+  React.useCallback(
+    event => {
+      // 更新本地订单缓存
+      queryClient.setQueryData(
+        salesOrderQueryKeys.detail(event.orderId),
+        (old: any) => (old ? { ...old, status: event.newStatus } : old)
+      );
 
-  // 刷新订单列表
-  queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
+      // 刷新订单列表
+      queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
 
-  // 显示状态变更通知
-  const statusLabel = SALES_ORDER_STATUS_LABELS[event.newStatus] || event.newStatus;
-  toast.info(`订单 ${event.orderNumber} 状态更新`, {
-    description: `${event.oldStatus} → ${statusLabel}`,
-  });
-}, [queryClient]));
+      // 显示状态变更通知
+      const statusLabel =
+        SALES_ORDER_STATUS_LABELS[event.newStatus] || event.newStatus;
+      toast.info(`订单 ${event.orderNumber} 状态更新`, {
+        description: `${event.oldStatus} → ${statusLabel}`,
+      });
+    },
+    [queryClient]
+  )
+);
 ```
 
 ---
@@ -212,24 +254,28 @@ useOrderUpdates(React.useCallback((event) => {
 ## 架构优势
 
 ### 1. **完全解耦**
+
 - API 路由不需要知道谁在监听事件
 - 前端组件可以独立订阅感兴趣的事件
 - 通过 Redis Pub/Sub 实现跨进程通信
 
 ### 2. **类型安全**
+
 ```typescript
 // 编译时类型检查
 await publishInventoryChange({
-  action: 'adjust',  // 只能是 'adjust' | 'inbound' | 'outbound' | 'reserve' | 'release'
+  action: 'adjust', // 只能是 'adjust' | 'inbound' | 'outbound' | 'reserve' | 'release'
   productId: string,
-  oldQuantity: number,  // 必填
-  newQuantity: number,  // 必填
+  oldQuantity: number, // 必填
+  newQuantity: number, // 必填
   // ...
 });
 ```
 
 ### 3. **向后兼容**
+
 保留了旧的 `publishWs` 调用，可以平滑迁移：
+
 ```typescript
 // 新事件系统
 await publishInventoryChange({ ... });
@@ -303,6 +349,7 @@ export default function RootLayout({ children }) {
 ### 2. 页面级监控
 
 #### 库存页面
+
 ```typescript
 // app/(dashboard)/inventory/page.tsx
 'use client';
@@ -326,6 +373,7 @@ export default function InventoryPage() {
 ```
 
 #### 订单页面
+
 ```typescript
 // app/(dashboard)/sales-orders/page.tsx
 'use client';
@@ -353,6 +401,7 @@ export default function OrdersPage() {
 ```
 
 #### 审核工作台
+
 ```typescript
 // app/(dashboard)/approvals/page.tsx
 'use client';
@@ -426,7 +475,9 @@ export default function ApprovalsPage() {
 ## 性能考虑
 
 ### 1. 事件发布不阻塞业务
+
 所有 `publish*` 函数都是异步的，但错误不会抛出：
+
 ```typescript
 try {
   await redis.publish(channel, payload);
@@ -437,7 +488,9 @@ try {
 ```
 
 ### 2. 批量更新优化
+
 如果一次操作影响多个产品，考虑批量发布：
+
 ```typescript
 await Promise.all(
   productIds.map(id => publishInventoryChange({ productId: id, ... }))
@@ -445,14 +498,16 @@ await Promise.all(
 ```
 
 ### 3. 客户端防抖
+
 前端组件应该对频繁的事件进行防抖处理：
+
 ```typescript
 const debouncedRefresh = useMemo(
   () => debounce(() => queryClient.invalidateQueries(['inventory']), 500),
   []
 );
 
-useInventoryUpdates((event) => {
+useInventoryUpdates(event => {
   debouncedRefresh();
 });
 ```
@@ -462,25 +517,31 @@ useInventoryUpdates((event) => {
 ## 调试和监控
 
 ### 1. 开发环境日志
+
 在 `.env.local` 中启用详细日志：
+
 ```bash
 LOG_LEVEL=debug
 WS_DEBUG=true
 ```
 
 ### 2. Redis 监控
+
 实时监控所有事件：
+
 ```bash
 redis-cli
 PSUBSCRIBE ws:*
 ```
 
 ### 3. 前端调试
+
 临时添加全局监听器查看所有事件：
+
 ```typescript
 useWebSocket({
   channels: Object.values(EventChannels),
-  onMessage: (msg) => {
+  onMessage: msg => {
     console.log('[WS Event]', msg.channel, msg.data);
   },
 });
@@ -491,17 +552,20 @@ useWebSocket({
 ## 下一步工作
 
 ### 必须完成
+
 - [ ] 集成财务相关 API 事件发布
 - [ ] 集成入库确认事件发布
 - [ ] 在主要页面添加事件订阅（Dashboard、库存、订单）
 
 ### 建议完成
+
 - [ ] 添加事件重播机制（Redis Streams）
 - [ ] 实现离线消息队列
 - [ ] 添加事件统计和监控面板
 - [ ] 创建事件日志审计系统
 
 ### 可选优化
+
 - [ ] 实现事件版本控制
 - [ ] 添加事件过滤和转换中间件
 - [ ] 支持事件订阅权限控制
@@ -512,6 +576,7 @@ useWebSocket({
 ## 总结
 
 ✅ **已完成**:
+
 1. 库存调整/出库事件发布
 2. 订单状态变更事件发布
 3. 退货单审核事件发布
@@ -519,12 +584,14 @@ useWebSocket({
 5. 详细的文档和使用示例
 
 ✅ **核心优势**:
+
 - 完全解耦的事件驱动架构
 - 端到端 TypeScript 类型安全
 - 支持多进程/多服务器部署
 - 向后兼容，平滑迁移
 
 📝 **文档完整**:
+
 - 系统架构文档: `docs/event-system-guide.md`
 - 使用示例: `components/examples/WebSocketHooksExample.tsx`
 - Server Actions 示例: `lib/actions/event-actions.example.ts`

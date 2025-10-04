@@ -57,7 +57,7 @@ export function validateQueryParams<T>(
   try {
     // 将 URLSearchParams 转换为普通对象
     const params: Record<string, string | number> = {};
-    
+
     searchParams.forEach((value, key) => {
       // 尝试将数字字符串转换为数字
       if (/^\d+$/.test(value)) {
@@ -95,20 +95,14 @@ export function validateQueryParams<T>(
  * 统一的错误响应
  */
 export function errorResponse(error: string, status: number = 400) {
-  return NextResponse.json(
-    { success: false, error },
-    { status }
-  );
+  return NextResponse.json({ success: false, error }, { status });
 }
 
 /**
  * 统一的成功响应
  */
 export function successResponse<T>(data: T, status: number = 200) {
-  return NextResponse.json(
-    { success: true, data },
-    { status }
-  );
+  return NextResponse.json({ success: true, data }, { status });
 }
 
 /**
@@ -116,11 +110,10 @@ export function successResponse<T>(data: T, status: number = 200) {
  */
 export function handleApiError(error: unknown): NextResponse {
   console.error('API 错误:', error);
-  
+
   if (error instanceof Error) {
     return errorResponse(error.message, 500);
   }
-  
+
   return errorResponse('服务器内部错误', 500);
 }
-

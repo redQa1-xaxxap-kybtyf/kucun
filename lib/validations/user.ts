@@ -206,7 +206,9 @@ export type UserRole = z.infer<typeof userRoleSchema>;
 export type UserStatus = z.infer<typeof userStatusSchema>;
 
 // 验证工具函数
-export const validatePassword = (password: string): {
+export const validatePassword = (
+  password: string
+): {
   valid: boolean;
   errors: string[];
 } => {

@@ -15,7 +15,12 @@ import type {
 } from '@/lib/validations/category';
 
 // 重新导出以保持向后兼容
-export type { CreateCategoryData, UpdateCategoryData, CategoryQueryParams, CategoryStatus };
+export type {
+  CreateCategoryData,
+  UpdateCategoryData,
+  CategoryQueryParams,
+  CategoryStatus,
+};
 
 /**
  * 分类选项
@@ -56,4 +61,3 @@ export interface Category {
   /** 更新时间 */
   updatedAt: Date;
 }
-

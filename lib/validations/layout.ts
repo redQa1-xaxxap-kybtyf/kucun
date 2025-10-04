@@ -269,4 +269,3 @@ export type NotificationItemsType = z.infer<typeof NotificationItemsSchema>;
 export type BreadcrumbItemsType = z.infer<typeof BreadcrumbItemsSchema>;
 export type RouteConfigsType = z.infer<typeof RouteConfigsSchema>;
 export type QuickActionsType = z.infer<typeof QuickActionsSchema>;
-

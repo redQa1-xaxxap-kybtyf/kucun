@@ -129,11 +129,15 @@ export function recordApiRequest(
   path: string,
   statusCode: number
 ): void {
-  incrementCounter('http_requests_total', {
-    method,
-    path,
-    status: String(statusCode),
-  }, 'Total HTTP requests');
+  incrementCounter(
+    'http_requests_total',
+    {
+      method,
+      path,
+      status: String(statusCode),
+    },
+    'Total HTTP requests'
+  );
 }
 
 /**
@@ -144,10 +148,15 @@ export function recordApiDuration(
   path: string,
   duration: number
 ): void {
-  recordHistogram('http_request_duration_ms', duration, {
-    method,
-    path,
-  }, 'HTTP request duration in milliseconds');
+  recordHistogram(
+    'http_request_duration_ms',
+    duration,
+    {
+      method,
+      path,
+    },
+    'HTTP request duration in milliseconds'
+  );
 }
 
 /**
@@ -158,11 +167,15 @@ export function recordApiError(
   path: string,
   errorType: string
 ): void {
-  incrementCounter('http_errors_total', {
-    method,
-    path,
-    error_type: errorType,
-  }, 'Total HTTP errors');
+  incrementCounter(
+    'http_errors_total',
+    {
+      method,
+      path,
+      error_type: errorType,
+    },
+    'Total HTTP errors'
+  );
 }
 
 /**
@@ -173,10 +186,15 @@ export function recordDatabaseQuery(
   table: string,
   duration: number
 ): void {
-  recordHistogram('db_query_duration_ms', duration, {
-    operation,
-    table,
-  }, 'Database query duration in milliseconds');
+  recordHistogram(
+    'db_query_duration_ms',
+    duration,
+    {
+      operation,
+      table,
+    },
+    'Database query duration in milliseconds'
+  );
 }
 
 /**
@@ -187,37 +205,55 @@ export function recordDatabaseError(
   table: string,
   errorType: string
 ): void {
-  incrementCounter('db_errors_total', {
-    operation,
-    table,
-    error_type: errorType,
-  }, 'Total database errors');
+  incrementCounter(
+    'db_errors_total',
+    {
+      operation,
+      table,
+      error_type: errorType,
+    },
+    'Total database errors'
+  );
 }
 
 /**
  * 缓存命中率
  */
 export function recordCacheHit(cacheKey: string, hit: boolean): void {
-  incrementCounter('cache_operations_total', {
-    key: cacheKey,
-    result: hit ? 'hit' : 'miss',
-  }, 'Total cache operations');
+  incrementCounter(
+    'cache_operations_total',
+    {
+      key: cacheKey,
+      result: hit ? 'hit' : 'miss',
+    },
+    'Total cache operations'
+  );
 }
 
 /**
  * WebSocket 连接数
  */
 export function setActiveWebsocketConnections(count: number): void {
-  setGauge('websocket_connections_active', count, {}, 'Active WebSocket connections');
+  setGauge(
+    'websocket_connections_active',
+    count,
+    {},
+    'Active WebSocket connections'
+  );
 }
 
 /**
  * 队列大小
  */
 export function setQueueSize(queueName: string, size: number): void {
-  setGauge('queue_size', size, {
-    queue: queueName,
-  }, 'Current queue size');
+  setGauge(
+    'queue_size',
+    size,
+    {
+      queue: queueName,
+    },
+    'Current queue size'
+  );
 }
 
 // ==================== 系统指标 ====================
@@ -228,9 +264,24 @@ export function setQueueSize(queueName: string, size: number): void {
 export function recordMemoryUsage(): void {
   if (typeof process !== 'undefined' && process.memoryUsage) {
     const usage = process.memoryUsage();
-    setGauge('process_memory_bytes', usage.heapUsed, { type: 'heap_used' }, 'Process memory usage');
-    setGauge('process_memory_bytes', usage.heapTotal, { type: 'heap_total' }, 'Process memory usage');
-    setGauge('process_memory_bytes', usage.rss, { type: 'rss' }, 'Process memory usage');
+    setGauge(
+      'process_memory_bytes',
+      usage.heapUsed,
+      { type: 'heap_used' },
+      'Process memory usage'
+    );
+    setGauge(
+      'process_memory_bytes',
+      usage.heapTotal,
+      { type: 'heap_total' },
+      'Process memory usage'
+    );
+    setGauge(
+      'process_memory_bytes',
+      usage.rss,
+      { type: 'rss' },
+      'Process memory usage'
+    );
   }
 }
 
@@ -238,7 +289,12 @@ export function recordMemoryUsage(): void {
  * 记录 Node.js 事件循环延迟
  */
 export function recordEventLoopLag(lag: number): void {
-  setGauge('nodejs_eventloop_lag_ms', lag, {}, 'Event loop lag in milliseconds');
+  setGauge(
+    'nodejs_eventloop_lag_ms',
+    lag,
+    {},
+    'Event loop lag in milliseconds'
+  );
 }
 
 // ==================== Prometheus 格式导出 ====================

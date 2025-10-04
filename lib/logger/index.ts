@@ -186,7 +186,8 @@ export function log(
     }
   }
 
-  const formatted = config.format === 'json' ? formatJSON(entry) : formatText(entry);
+  const formatted =
+    config.format === 'json' ? formatJSON(entry) : formatText(entry);
   output(level, formatted);
 }
 
@@ -334,21 +335,30 @@ export function timer(
  * 记录审计日志
  * 用于关键业务操作的审计追踪
  */
-export async function audit(entry: AuditLogEntry, context?: LogContext): Promise<void> {
+export async function audit(
+  entry: AuditLogEntry,
+  context?: LogContext
+): Promise<void> {
   // 记录到应用日志
-  info('audit', `${entry.action} ${entry.resource}`, {
-    ...context,
-    resourceId: entry.resourceId,
-    result: entry.result,
-  }, {
-    changes: entry.changes,
-    reason: entry.reason,
-  });
+  info(
+    'audit',
+    `${entry.action} ${entry.resource}`,
+    {
+      ...context,
+      resourceId: entry.resourceId,
+      result: entry.result,
+    },
+    {
+      changes: entry.changes,
+      reason: entry.reason,
+    }
+  );
 
   // 记录到数据库（异步，不阻塞主流程）
   try {
     const systemLogType: SystemLogType = 'business_operation';
-    const systemLogLevel: SystemLogLevel = entry.result === 'success' ? 'info' : 'error';
+    const systemLogLevel: SystemLogLevel =
+      entry.result === 'success' ? 'info' : 'error';
 
     await prisma.systemLog.create({
       data: {
@@ -383,7 +393,10 @@ export function extractRequestContext(request: Request): LogContext {
   return {
     method: request.method,
     path: new URL(request.url).pathname,
-    ip: request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || '127.0.0.1',
+    ip:
+      request.headers.get('x-forwarded-for') ||
+      request.headers.get('x-real-ip') ||
+      '127.0.0.1',
     userAgent: request.headers.get('user-agent') || undefined,
   };
 }
@@ -402,9 +415,17 @@ export function logRequest(
   context.userId = userId;
   context.statusCode = statusCode;
 
-  const level: LogLevel = statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
+  const level: LogLevel =
+    statusCode >= 500 ? 'error' : statusCode >= 400 ? 'warn' : 'info';
 
-  log(level, module, `${request.method} ${context.path}`, context, undefined, duration);
+  log(
+    level,
+    module,
+    `${request.method} ${context.path}`,
+    context,
+    undefined,
+    duration
+  );
   metric(module, 'api_request', duration, 'ms', {
     method: request.method,
     status: String(statusCode),

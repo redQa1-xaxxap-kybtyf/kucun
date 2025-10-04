@@ -72,7 +72,9 @@ export async function createSupplier(
     }
 
     throw new Error(
-      errorData.error || errorData.message || `创建供应商失败: ${response.statusText}`
+      errorData.error ||
+        errorData.message ||
+        `创建供应商失败: ${response.statusText}`
     );
   }
 

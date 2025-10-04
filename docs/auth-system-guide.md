@@ -73,7 +73,11 @@ export const GET = withAuth(
 
 ```typescript
 import { type NextRequest, NextResponse } from 'next/server';
-import { requireAuth, requireAuthWithPermission, requireAdmin } from '@/lib/auth/api-helpers';
+import {
+  requireAuth,
+  requireAuthWithPermission,
+  requireAdmin,
+} from '@/lib/auth/api-helpers';
 import { can } from '@/lib/auth/permissions';
 
 export async function GET(request: NextRequest) {
@@ -89,10 +93,7 @@ export async function GET(request: NextRequest) {
   // 或：自定义权限逻辑
   const user = requireAuth(request);
   if (!can(user, 'finance:manage') && user.id !== targetUserId) {
-    return NextResponse.json(
-      { error: '权限不足' },
-      { status: 403 }
-    );
+    return NextResponse.json({ error: '权限不足' }, { status: 403 });
   }
 
   // 业务逻辑...
@@ -108,29 +109,29 @@ export async function GET(request: NextRequest) {
 
 ```typescript
 // 财务权限
-'finance:view'        // 查看财务数据
-'finance:manage'      // 管理财务数据
-'finance:export'      // 导出财务报表
-'finance:approve'     // 审批财务单据
+'finance:view'; // 查看财务数据
+'finance:manage'; // 管理财务数据
+'finance:export'; // 导出财务报表
+'finance:approve'; // 审批财务单据
 
 // 客户权限
-'customers:view'      // 查看客户
-'customers:create'    // 创建客户
-'customers:edit'      // 编辑客户
-'customers:delete'    // 删除客户
+'customers:view'; // 查看客户
+'customers:create'; // 创建客户
+'customers:edit'; // 编辑客户
+'customers:delete'; // 删除客户
 
 // 产品权限
-'products:view'
-'products:create'
-'products:edit'
-'products:delete'
-'products:manage_price'
+'products:view';
+'products:create';
+'products:edit';
+'products:delete';
+'products:manage_price';
 
 // 库存权限
-'inventory:view'
-'inventory:adjust'
-'inventory:inbound'
-'inventory:outbound'
+'inventory:view';
+'inventory:adjust';
+'inventory:inbound';
+'inventory:outbound';
 
 // ... 更多权限见 lib/auth/permissions.ts
 ```

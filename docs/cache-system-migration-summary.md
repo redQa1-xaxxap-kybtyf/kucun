@@ -19,17 +19,20 @@ Server Components (React cache + Next.js + Redis)
 ### 2. 核心模块实现 ✅
 
 #### `lib/cache/tags.ts` - 缓存标签系统
+
 - 定义了所有业务资源的缓存标签
 - 统一的标签命名规范：`resource:action:id`
 - 类型安全的标签定义
 
 #### `lib/cache/revalidate.ts` - 缓存失效管理
+
 - 统一的缓存失效 API
 - 自动级联失效相关缓存
 - 集成 Next.js `revalidateTag` 和 Redis 缓存清除
 - 便捷的失效函数：`revalidateProducts()`, `revalidateInventory()` 等
 
 #### `lib/cache/server.ts` - 服务器组件缓存包装器
+
 - `cachedServerFn()` - 通用服务器函数缓存
 - `cachedQuery()` - 查询函数缓存
 - `cachedStats()` - 统计数据缓存
@@ -37,21 +40,25 @@ Server Components (React cache + Next.js + Redis)
 - `cachedList()` - 列表页缓存
 
 #### `lib/cache/pubsub.ts` - Redis Pub/Sub 事件系统
+
 - 跨进程缓存失效通知
 - 实时数据更新通知
 - 事件类型定义和发布/订阅函数
 
 #### `lib/cache/init.ts` - 缓存系统初始化
+
 - 应用启动时初始化 Pub/Sub 订阅
 - 事件处理器注册
 
 #### `lib/cache/index.ts` - 统一导出
+
 - 导出所有缓存相关函数和类型
 - 提供预定义的缓存策略配置
 
 ### 3. 现有模块优化 ✅
 
 #### `lib/cache/cache.ts` - 基础缓存工具
+
 - 已有的 `getOrSetJSON()` - 获取或设置缓存
 - 已有的 `getOrSetWithLock()` - 带分布式锁的缓存
 - 已有的 `buildCacheKey()` - 缓存键生成
@@ -61,6 +68,7 @@ Server Components (React cache + Next.js + Redis)
   - 分布式锁（防止缓存击穿）
 
 #### 业务缓存模块
+
 - `lib/cache/product-cache.ts` - 产品缓存
 - `lib/cache/inventory-cache.ts` - 库存缓存
 - `lib/cache/finance-cache.ts` - 财务缓存
@@ -68,6 +76,7 @@ Server Components (React cache + Next.js + Redis)
 ### 4. 文档完善 ✅
 
 #### `docs/cache-system-guide.md` - 完整使用指南
+
 - 架构概述
 - 核心概念解释
 - 5 个实际使用场景示例
@@ -83,9 +92,9 @@ Server Components (React cache + Next.js + Redis)
 import { CacheTags } from '@/lib/cache';
 
 // 预定义标签，类型安全
-CacheTags.Products.list         // 'products:list'
-CacheTags.Products.detail('123') // 'products:123'
-CacheTags.Inventory.summary('p1') // 'inventory:summary:p1'
+CacheTags.Products.list; // 'products:list'
+CacheTags.Products.detail('123'); // 'products:123'
+CacheTags.Inventory.summary('p1'); // 'inventory:summary:p1'
 ```
 
 ### 2. 自动级联失效
@@ -104,6 +113,7 @@ await revalidateInventory(productId);
 ### 3. 多层缓存策略
 
 **L1: React cache()** - 请求级缓存
+
 ```typescript
 const getCachedData = cache(async () => {
   return await prisma.product.findMany();
@@ -111,14 +121,16 @@ const getCachedData = cache(async () => {
 ```
 
 **L2: Next.js unstable_cache** - 应用级缓存
+
 ```typescript
-const getProducts = cachedQuery(
-  async () => prisma.product.findMany(),
-  { tags: [CacheTags.Products.list], revalidate: 60 }
-);
+const getProducts = cachedQuery(async () => prisma.product.findMany(), {
+  tags: [CacheTags.Products.list],
+  revalidate: 60,
+});
 ```
 
 **L3: Redis** - 分布式缓存
+
 ```typescript
 const data = await getOrSetJSON(
   cacheKey,
@@ -141,6 +153,7 @@ await revalidateProducts(); // 发布 Pub/Sub 事件
 ### 5. 防护机制
 
 **防止缓存穿透**（查询不存在的数据）
+
 ```typescript
 await getOrSetJSON(key, fetcher, ttl, {
   enableNullCache: true, // 缓存 null 结果
@@ -148,6 +161,7 @@ await getOrSetJSON(key, fetcher, ttl, {
 ```
 
 **防止缓存雪崩**（大量缓存同时失效）
+
 ```typescript
 await getOrSetJSON(key, fetcher, ttl, {
   enableRandomTTL: true, // TTL 随机抖动 ±20%
@@ -156,6 +170,7 @@ await getOrSetJSON(key, fetcher, ttl, {
 ```
 
 **防止缓存击穿**（热点数据失效时大量请求）
+
 ```typescript
 await getOrSetWithLock(key, fetcher, ttl); // 分布式锁
 ```
@@ -192,7 +207,7 @@ export default async function ProductsPage() {
 // app/api/products/route.ts
 import { getOrSetJSON, buildCacheKey, revalidateProducts } from '@/lib/cache';
 
-export const GET = withAuth(async (request) => {
+export const GET = withAuth(async request => {
   const params = getSearchParams(request);
   const cacheKey = buildCacheKey('products:list', params);
 
@@ -205,7 +220,7 @@ export const GET = withAuth(async (request) => {
   return successResponse(data);
 });
 
-export const POST = withAuth(async (request) => {
+export const POST = withAuth(async request => {
   const product = await createProduct(data);
 
   // 失效缓存
@@ -240,6 +255,7 @@ export function ProductList() {
 ### 1. 现有代码迁移
 
 **旧代码：**
+
 ```typescript
 // 手动构建缓存键
 const cacheKey = `products:list:${JSON.stringify(params)}`;
@@ -251,6 +267,7 @@ await redis.del('dashboard:*');
 ```
 
 **新代码：**
+
 ```typescript
 // 使用统一的缓存键构建
 const cacheKey = buildCacheKey('products:list', params);
@@ -262,6 +279,7 @@ await revalidateProducts();
 ### 2. 服务器组件添加缓存
 
 **旧代码：**
+
 ```typescript
 export default async function Page() {
   // 每次请求都查询数据库
@@ -271,6 +289,7 @@ export default async function Page() {
 ```
 
 **新代码：**
+
 ```typescript
 import { cachedQuery, CacheTags } from '@/lib/cache';
 
@@ -299,16 +318,19 @@ initializeCacheSystem();
 ## 性能改进预期
 
 ### 1. 数据库查询减少
+
 - **列表查询**：缓存 3-5 分钟，减少 80% 数据库查询
 - **详情查询**：缓存 1 小时，减少 95% 数据库查询
 - **统计查询**：缓存 10 分钟，减少 90% 聚合查询
 
 ### 2. API 响应时间
+
 - **缓存命中**：< 10ms（Redis）
 - **缓存未命中**：100-500ms（数据库查询）
 - **平均响应时间减少**：60-80%
 
 ### 3. 并发处理能力
+
 - **分布式锁**：防止热点数据击穿
 - **Pub/Sub**：跨进程缓存同步，支持水平扩展
 - **级联失效**：自动维护缓存一致性
@@ -350,6 +372,7 @@ export async function DELETE(request: NextRequest) {
 ## 下一步优化建议
 
 ### 1. 缓存预热
+
 在应用启动或低峰期预加载热点数据：
 
 ```typescript
@@ -363,6 +386,7 @@ async function warmupCache() {
 ```
 
 ### 2. 缓存指标收集
+
 集成 Prometheus/Grafana 监控缓存性能：
 
 ```typescript
@@ -382,6 +406,7 @@ const cacheDuration = new Histogram({
 ```
 
 ### 3. 智能缓存 TTL
+
 根据数据访问频率动态调整 TTL：
 
 ```typescript
@@ -401,31 +426,37 @@ async function getSmartTTL(key: string, baseT TL: number): Promise<number> {
 本次重构完成了：
 
 ✅ **统一的缓存管理系统**
-  - 集中管理所有缓存标签
-  - 统一的失效策略
-  - 类型安全的 API
+
+- 集中管理所有缓存标签
+- 统一的失效策略
+- 类型安全的 API
 
 ✅ **多层缓存架构**
-  - React cache（请求级）
-  - Next.js cache（应用级）
-  - Redis（分布式）
+
+- React cache（请求级）
+- Next.js cache（应用级）
+- Redis（分布式）
 
 ✅ **跨进程缓存同步**
-  - Redis Pub/Sub
-  - 自动失效通知
+
+- Redis Pub/Sub
+- 自动失效通知
 
 ✅ **完善的防护机制**
-  - 防缓存穿透
-  - 防缓存雪崩
-  - 防缓存击穿
+
+- 防缓存穿透
+- 防缓存雪崩
+- 防缓存击穿
 
 ✅ **级联失效**
-  - 自动维护缓存一致性
-  - 减少手动管理成本
+
+- 自动维护缓存一致性
+- 减少手动管理成本
 
 ✅ **完整的文档**
-  - 使用指南
-  - 最佳实践
-  - 迁移示例
+
+- 使用指南
+- 最佳实践
+- 迁移示例
 
 现有代码可以逐步迁移到新系统，保持向后兼容的同时享受新特性带来的性能提升和开发体验改善。

@@ -50,15 +50,15 @@ export function SupplierDetailSkeleton() {
               <Skeleton className="h-6 w-24" />
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center space-y-2">
-                <Skeleton className="h-8 w-32 mx-auto" />
-                <Skeleton className="h-4 w-24 mx-auto" />
+              <div className="space-y-2 text-center">
+                <Skeleton className="mx-auto h-8 w-32" />
+                <Skeleton className="mx-auto h-4 w-24" />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 {[...Array(2)].map((_, i) => (
-                  <div key={i} className="text-center space-y-2">
-                    <Skeleton className="h-6 w-12 mx-auto" />
-                    <Skeleton className="h-3 w-16 mx-auto" />
+                  <div key={i} className="space-y-2 text-center">
+                    <Skeleton className="mx-auto h-6 w-12" />
+                    <Skeleton className="mx-auto h-3 w-16" />
                   </div>
                 ))}
               </div>
@@ -70,13 +70,13 @@ export function SupplierDetailSkeleton() {
               <Skeleton className="h-6 w-24" />
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="text-center space-y-2">
-                <Skeleton className="h-8 w-32 mx-auto" />
-                <Skeleton className="h-4 w-24 mx-auto" />
+              <div className="space-y-2 text-center">
+                <Skeleton className="mx-auto h-8 w-32" />
+                <Skeleton className="mx-auto h-4 w-24" />
               </div>
-              <div className="text-center space-y-2">
-                <Skeleton className="h-6 w-28 mx-auto" />
-                <Skeleton className="h-3 w-20 mx-auto" />
+              <div className="space-y-2 text-center">
+                <Skeleton className="mx-auto h-6 w-28" />
+                <Skeleton className="mx-auto h-3 w-20" />
               </div>
             </CardContent>
           </Card>
@@ -117,4 +117,3 @@ export function SupplierDetailSkeleton() {
     </div>
   );
 }
-

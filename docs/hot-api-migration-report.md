@@ -11,6 +11,7 @@
 **文件**: `app/api/dashboard/overview/route.ts`
 
 **优化内容**:
+
 - ✅ 使用 `getOrSetWithLock()` 防止缓存击穿（热点数据）
 - ✅ 优化数据库查询：15 个串行查询 → 1 个并行查询
 - ✅ 使用统一的缓存策略：`CACHE_STRATEGY.aggregateData` (10分钟)
@@ -18,11 +19,13 @@
 - ✅ 统一缓存键构建：`buildCacheKey('dashboard:overview', { timeRange })`
 
 **性能提升预期**:
+
 - 首次查询：~2000ms（15个数据库查询）
 - 缓存命中：< 10ms（Redis）
 - 响应速度提升：**99.5%** ⚡
 
 **代码改进**:
+
 ```typescript
 // 旧代码：串行查询15次数据库
 const currentSalesOrders = await prisma.salesOrder.findMany({...});
@@ -52,6 +55,7 @@ const businessOverview = await getOrSetWithLock(
 **文件**: `app/api/products/route.ts`
 
 **优化内容**:
+
 - ✅ 更新导入：使用新的统一缓存模块
 - ✅ 使用统一的缓存策略：`CACHE_STRATEGY.dynamicData` (5分钟)
 - ✅ 启用防护机制：随机TTL + 空值缓存
@@ -59,11 +63,13 @@ const businessOverview = await getOrSetWithLock(
 - ✅ 集成 Pub/Sub：使用 `publishDataUpdate()` 发布实时事件
 
 **性能提升预期**:
+
 - 首次查询：~200-500ms（数据库查询 + N+1 库存查询）
 - 缓存命中：< 10ms（Redis）
 - 响应速度提升：**95-98%** ⚡
 
 **代码改进**:
+
 ```typescript
 // 旧代码：手动缓存失效
 await invalidateProductCache();
@@ -80,18 +86,20 @@ publishWs('products', { type: 'created', id }); // 向后兼容
 **文件**: `lib/ws/ws-server.ts`
 
 **优化内容**:
+
 - ✅ 在 WebSocket 服务器启动时初始化缓存系统
 - ✅ 调用 `initializeCacheSystem()` 订阅 Redis Pub/Sub
 - ✅ 设置事件发射器：将缓存事件转发到 WebSocket 客户端
 - ✅ 实现跨进程实时通知
 
 **架构改进**:
+
 ```typescript
 // 初始化缓存系统
 initializeCacheSystem();
 
 // 设置 WebSocket 事件发射器
-setWsEventEmitter((event) => {
+setWsEventEmitter(event => {
   // 将 Pub/Sub 事件转发到 WebSocket
   let channel = determineChannel(event);
   broadcast(channel, event);
@@ -99,6 +107,7 @@ setWsEventEmitter((event) => {
 ```
 
 **好处**:
+
 - 多进程/多服务器间缓存自动同步
 - 实时数据更新通知客户端
 - 统一的事件分发机制
@@ -106,11 +115,13 @@ setWsEventEmitter((event) => {
 ### 4. 库存查询接口 ✅
 
 **文件**:
+
 - `app/api/inventory/route.ts` (列表查询)
 - `app/api/inventory/adjust/route.ts` (库存调整)
 - `app/api/inventory/outbound/route.ts` (库存出库)
 
 **优化内容**:
+
 - ✅ 更新导入：使用新的统一缓存模块
 - ✅ 使用统一的缓存策略：`CACHE_STRATEGY.volatileData` (2分钟)
 - ✅ 启用防护机制：随机TTL + 空值缓存
@@ -118,11 +129,13 @@ setWsEventEmitter((event) => {
 - ✅ WebSocket 推送更新保持向后兼容
 
 **性能提升预期**:
+
 - 首次查询：~150-300ms（数据库查询 + N+1优化）
 - 缓存命中：< 10ms（Redis）
 - 响应速度提升：**95-97%** ⚡
 
 **代码改进**:
+
 ```typescript
 // GET - 库存列表查询
 const cached = await getOrSetJSON(
@@ -148,6 +161,7 @@ publishWs('inventory', { type: 'adjust', ... }); // WebSocket 推送更新
 ```
 
 **级联失效范围**:
+
 - `inventory:summary:{productId}` - 产品库存汇总
 - `inventory:list` - 库存列表
 - `products:list` - 产品列表（含库存信息）
@@ -157,10 +171,12 @@ publishWs('inventory', { type: 'adjust', ... }); // WebSocket 推送更新
 ### 5. 财务应收款接口 ✅
 
 **文件**:
+
 - `app/api/finance/receivables/route.ts` (应收款列表)
 - `lib/cache/finance-cache.ts` (财务缓存工具)
 
 **优化内容**:
+
 - ✅ 更新导入：使用新的统一缓存模块
 - ✅ 使用统一的缓存策略：`CACHE_STRATEGY.aggregateData` (10分钟)
 - ✅ 启用防护机制：随机TTL + 空值缓存
@@ -168,11 +184,13 @@ publishWs('inventory', { type: 'adjust', ... }); // WebSocket 推送更新
 - ✅ 自动级联失效相关财务缓存
 
 **性能提升预期**:
+
 - 首次查询：~800-1200ms（复杂聚合计算 + 内存过滤）
 - 缓存命中：< 10ms（Redis）
 - 响应速度提升：**98-99%** ⚡
 
 **代码改进**:
+
 ```typescript
 // GET - 应收款列表查询
 const cacheKey = buildCacheKey('finance:receivables:list', queryParams);
@@ -198,12 +216,14 @@ export async function clearCacheAfterPayment(): Promise<void> {
 ```
 
 **级联失效范围**:
+
 - `finance:receivables:*` - 应收款列表
 - `finance:statements:*` - 往来账单
 - `finance:receivables:stats` - 应收款统计
 - `dashboard:overview` - 仪表盘统计
 
 **财务缓存工具简化**:
+
 - 从 200+ 行手动缓存管理代码简化为 40 行统一失效调用
 - 移除所有手动的 `scanDel` 操作
 - 自动处理缓存级联关系
@@ -211,9 +231,11 @@ export async function clearCacheAfterPayment(): Promise<void> {
 ### 6. 销售订单接口 ✅
 
 **文件**:
+
 - `app/api/sales-orders/route.ts` (订单列表和创建)
 
 **优化内容**:
+
 - ✅ 更新导入：使用新的统一缓存模块
 - ✅ 使用统一的缓存策略：`CACHE_STRATEGY.dynamicData` (5分钟)
 - ✅ 启用防护机制：随机TTL + 空值缓存
@@ -221,11 +243,13 @@ export async function clearCacheAfterPayment(): Promise<void> {
 - ✅ 简化缓存管理代码
 
 **性能提升预期**:
+
 - 首次查询：~300-500ms（包含订单项、客户、用户等关联查询）
 - 缓存命中：< 10ms（Redis）
 - 响应速度提升：**96-98%** ⚡
 
 **代码改进**:
+
 ```typescript
 // GET - 销售订单列表查询
 const cacheKey = buildCacheKey('sales-orders:list', validatedParams);
@@ -247,6 +271,7 @@ await revalidateSalesOrders(); // 自动级联失效相关缓存
 ```
 
 **级联失效范围**:
+
 - `sales-orders:list` - 销售订单列表
 - `sales-orders:detail:{id}` - 订单详情
 - `sales-orders:items:{id}` - 订单明细
@@ -268,11 +293,11 @@ L3: Redis → 分布式缓存
 
 ### 2. 防护机制
 
-| 问题 | 解决方案 | 状态 |
-|------|---------|------|
-| 缓存穿透 | 空值缓存 | ✅ |
-| 缓存雪崩 | 随机TTL | ✅ |
-| 缓存击穿 | 分布式锁 | ✅ |
+| 问题     | 解决方案 | 状态 |
+| -------- | -------- | ---- |
+| 缓存穿透 | 空值缓存 | ✅   |
+| 缓存雪崩 | 随机TTL  | ✅   |
+| 缓存击穿 | 分布式锁 | ✅   |
 
 ### 3. 自动级联失效
 
@@ -303,51 +328,51 @@ await revalidateProducts();
 
 ### 仪表盘概览接口
 
-| 指标 | 旧实现 | 新实现 | 改善 |
-|------|--------|--------|------|
-| 首次查询 | ~2000ms | ~1500ms | 25% ⬆️ |
-| 缓存命中 | N/A | < 10ms | 199x ⚡ |
-| 数据库查询 | 15次串行 | 15次并行 | 快10x |
-| 内存使用 | 中等 | 低 | 优化 |
+| 指标       | 旧实现   | 新实现   | 改善    |
+| ---------- | -------- | -------- | ------- |
+| 首次查询   | ~2000ms  | ~1500ms  | 25% ⬆️  |
+| 缓存命中   | N/A      | < 10ms   | 199x ⚡ |
+| 数据库查询 | 15次串行 | 15次并行 | 快10x   |
+| 内存使用   | 中等     | 低       | 优化    |
 
 ### 产品列表接口
 
-| 指标 | 旧实现 | 新实现 | 改善 |
-|------|--------|--------|------|
-| 首次查询 | ~300ms | ~250ms | 16% ⬆️ |
-| 缓存命中 | N/A | < 10ms | 30x ⚡ |
-| TTL 策略 | 固定 | 随机±20% | 防雪崩 |
-| 缓存失效 | 手动 | 自动级联 | 简化 |
+| 指标     | 旧实现 | 新实现   | 改善   |
+| -------- | ------ | -------- | ------ |
+| 首次查询 | ~300ms | ~250ms   | 16% ⬆️ |
+| 缓存命中 | N/A    | < 10ms   | 30x ⚡ |
+| TTL 策略 | 固定   | 随机±20% | 防雪崩 |
+| 缓存失效 | 手动   | 自动级联 | 简化   |
 
 ### 库存查询接口
 
-| 指标 | 旧实现 | 新实现 | 改善 |
-|------|--------|--------|------|
-| 首次查询 | ~250ms | ~200ms | 20% ⬆️ |
-| 缓存命中 | N/A | < 10ms | 25x ⚡ |
-| TTL 策略 | 固定 | 随机±20% | 防雪崩 |
-| 缓存失效 | 手动 | 自动级联 | 简化 |
-| Pub/Sub | 无 | ✅ | 跨进程同步 |
+| 指标     | 旧实现 | 新实现   | 改善       |
+| -------- | ------ | -------- | ---------- |
+| 首次查询 | ~250ms | ~200ms   | 20% ⬆️     |
+| 缓存命中 | N/A    | < 10ms   | 25x ⚡     |
+| TTL 策略 | 固定   | 随机±20% | 防雪崩     |
+| 缓存失效 | 手动   | 自动级联 | 简化       |
+| Pub/Sub  | 无     | ✅       | 跨进程同步 |
 
 ### 财务应收款接口
 
-| 指标 | 旧实现 | 新实现 | 改善 |
-|------|--------|--------|------|
-| 首次查询 | ~1000ms | ~900ms | 10% ⬆️ |
-| 缓存命中 | N/A | < 10ms | 100x ⚡ |
-| TTL 策略 | 固定 | 随机±20% | 防雪崩 |
-| 缓存失效 | 手动200+行 | 自动40行 | 简化80% |
+| 指标     | 旧实现      | 新实现      | 改善    |
+| -------- | ----------- | ----------- | ------- |
+| 首次查询 | ~1000ms     | ~900ms      | 10% ⬆️  |
+| 缓存命中 | N/A         | < 10ms      | 100x ⚡ |
+| TTL 策略 | 固定        | 随机±20%    | 防雪崩  |
+| 缓存失效 | 手动200+行  | 自动40行    | 简化80% |
 | 级联失效 | 手动3个函数 | 自动1个函数 | 简化67% |
 
 ### 销售订单接口
 
-| 指标 | 旧实现 | 新实现 | 改善 |
-|------|--------|--------|------|
-| 首次查询 | ~400ms | ~350ms | 12% ⬆️ |
-| 缓存命中 | N/A | < 10ms | 40x ⚡ |
-| TTL 策略 | 无 | 随机±20% | 防雪崩 |
-| 缓存失效 | 无 | 自动级联 | 新增 |
-| 级联范围 | - | 8个相关缓存 | 全面 |
+| 指标     | 旧实现 | 新实现      | 改善   |
+| -------- | ------ | ----------- | ------ |
+| 首次查询 | ~400ms | ~350ms      | 12% ⬆️ |
+| 缓存命中 | N/A    | < 10ms      | 40x ⚡ |
+| TTL 策略 | 无     | 随机±20%    | 防雪崩 |
+| 缓存失效 | 无     | 自动级联    | 新增   |
+| 级联范围 | -      | 8个相关缓存 | 全面   |
 
 ## 待迁移接口
 
@@ -379,7 +404,7 @@ import {
 ### 步骤 2: GET 请求添加缓存
 
 ```typescript
-export const GET = withAuth(async (request) => {
+export const GET = withAuth(async request => {
   const cacheKey = buildCacheKey('resource:list', params);
 
   const data = await getOrSetJSON(
@@ -402,7 +427,7 @@ export const GET = withAuth(async (request) => {
 ### 步骤 3: 写操作时失效缓存
 
 ```typescript
-export const POST = withAuth(async (request) => {
+export const POST = withAuth(async request => {
   const record = await createRecord(data);
 
   // 统一缓存失效
@@ -482,6 +507,7 @@ cacheDurationHistogram.observe({ operation: 'get' }, duration);
 ## 总结
 
 ✅ **已完成**:
+
 - 仪表盘概览接口（查询优化 + 缓存）
 - 产品列表接口（缓存 + 失效）
 - 库存查询接口（列表 + 调整 + 出库）
@@ -491,17 +517,20 @@ cacheDurationHistogram.observe({ operation: 'get' }, duration);
 - 缓存系统初始化
 
 📊 **性能提升**:
+
 - 响应速度：**95-99.5%** ⚡
 - 数据库负载：**降低 70-90%**
 - 并发能力：**显著提升**（分布式锁）
 - 代码简化：**财务缓存代码减少 80%**
 
 🎯 **覆盖范围**:
+
 - **6个核心热点接口**全部完成迁移
 - **所有高优先级接口**已完成
 - 覆盖 **90%+ 的用户流量**
 
 🔄 **后续优化**:
+
 - 迁移中等优先级接口（客户、供应商、分类）
 - 添加性能监控和告警
 - 优化缓存策略和TTL配置

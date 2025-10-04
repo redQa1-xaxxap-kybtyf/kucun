@@ -23,7 +23,10 @@ import { can, requirePermission } from './permissions';
  */
 export type ApiHandler = (
   request: NextRequest,
-  context: { user: AuthUser; params?: Promise<Record<string, string>> | Record<string, string> }
+  context: {
+    user: AuthUser;
+    params?: Promise<Record<string, string>> | Record<string, string>;
+  }
 ) => Promise<Response> | Response;
 
 /**
@@ -153,8 +156,18 @@ export function requireAdmin(request: NextRequest): AuthUser {
 export function withAuth(
   handler: ApiHandler,
   options: AuthOptions = {}
-): (request: NextRequest, context?: { params?: Promise<Record<string, string>> | Record<string, string> }) => Promise<Response> {
-  return async (request: NextRequest, context?: { params?: Promise<Record<string, string>> | Record<string, string> }) => {
+): (
+  request: NextRequest,
+  context?: {
+    params?: Promise<Record<string, string>> | Record<string, string>;
+  }
+) => Promise<Response> {
+  return async (
+    request: NextRequest,
+    context?: {
+      params?: Promise<Record<string, string>> | Record<string, string>;
+    }
+  ) => {
     try {
       // 1. 认证检查
       const user = requireAuth(request);
@@ -221,10 +234,7 @@ export function withAuth(
       console.error('[API Auth] 请求处理失败:', error);
 
       // 认证错误
-      if (
-        error instanceof Error &&
-        error.message.includes('未授权')
-      ) {
+      if (error instanceof Error && error.message.includes('未授权')) {
         return NextResponse.json(
           { success: false, error: error.message },
           { status: 401 }
@@ -232,10 +242,7 @@ export function withAuth(
       }
 
       // 权限错误
-      if (
-        error instanceof Error &&
-        error.message.includes('权限不足')
-      ) {
+      if (error instanceof Error && error.message.includes('权限不足')) {
         return NextResponse.json(
           { success: false, error: error.message },
           { status: 403 }
@@ -260,20 +267,14 @@ export function withAuth(
  * 返回未授权错误响应
  */
 export function unauthorizedResponse(message = '未授权访问') {
-  return NextResponse.json(
-    { success: false, error: message },
-    { status: 401 }
-  );
+  return NextResponse.json({ success: false, error: message }, { status: 401 });
 }
 
 /**
  * 返回权限不足错误响应
  */
 export function forbiddenResponse(message = '权限不足') {
-  return NextResponse.json(
-    { success: false, error: message },
-    { status: 403 }
-  );
+  return NextResponse.json({ success: false, error: message }, { status: 403 });
 }
 
 /**
@@ -291,10 +292,7 @@ export function successResponse<T>(data: T, message?: string) {
  * 返回错误响应
  */
 export function errorResponse(message: string, status = 400) {
-  return NextResponse.json(
-    { success: false, error: message },
-    { status }
-  );
+  return NextResponse.json({ success: false, error: message }, { status });
 }
 
 // ==================== 使用示例 ====================

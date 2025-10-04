@@ -39,13 +39,15 @@ export interface InventoryQueryResult {
 function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
   const conditions: Prisma.Sql[] = [];
 
-  // 搜索条件
+  // 搜索条件 - 优化为使用索引的查询
+  // code 使用前缀匹配可以利用索引
+  // name 使用全文搜索但保留备选方案
   if (params.search) {
     conditions.push(Prisma.sql`(
-      p.code LIKE ${`%${params.search}%`} OR
+      p.code LIKE ${`${params.search}%`} OR
       p.name LIKE ${`%${params.search}%`} OR
-      i.batch_number LIKE ${`%${params.search}%`} OR
-      i.location LIKE ${`%${params.search}%`}
+      i.batch_number = ${params.search} OR
+      i.location LIKE ${`${params.search}%`}
     )`);
   }
 

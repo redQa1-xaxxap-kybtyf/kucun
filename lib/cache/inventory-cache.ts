@@ -143,16 +143,17 @@ export async function getBatchCachedInventorySummary(
 
       inventoryMap.set(item.productId, summary);
 
-      // 异步设置缓存
+      // 同步设置缓存
       const cacheKey = `inventory:summary:${item.productId}`;
-      getOrSetJSON(cacheKey, async () => summary, cacheConfig.inventoryTtl);
+      await getOrSetJSON(cacheKey, async () => summary, cacheConfig.inventoryTtl);
     });
 
     await Promise.all(setCachePromises);
 
     // 为没有库存记录的产品设置默认值
-    uncachedIds.forEach(productId => {
-      if (!inventoryMap.has(productId)) {
+    const defaultCachePromises = uncachedIds
+      .filter(productId => !inventoryMap.has(productId))
+      .map(async productId => {
         const defaultSummary: InventorySummary = {
           totalQuantity: 0,
           reservedQuantity: 0,
@@ -160,15 +161,16 @@ export async function getBatchCachedInventorySummary(
         };
         inventoryMap.set(productId, defaultSummary);
 
-        // 异步设置缓存
+        // 同步设置缓存
         const cacheKey = `inventory:summary:${productId}`;
-        getOrSetJSON(
+        await getOrSetJSON(
           cacheKey,
           async () => defaultSummary,
           cacheConfig.inventoryTtl
         );
-      }
-    });
+      });
+
+    await Promise.all(defaultCachePromises);
   }
 
   return inventoryMap;

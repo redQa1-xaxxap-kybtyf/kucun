@@ -57,7 +57,9 @@ export function useWebSocket(
   }, [onMessage, autoConnect]);
 
   useEffect(() => {
-    if (!clientRef.current) return;
+    if (!clientRef.current) {
+      return;
+    }
 
     const client = clientRef.current;
 
@@ -114,12 +116,16 @@ export function useWebSocket(
  */
 export function useUserNotifications(
   userId: string,
-  onNotification: (notification: BusinessEvent & { type: 'notification' }) => void
+  onNotification: (
+    notification: BusinessEvent & { type: 'notification' }
+  ) => void
 ): UseWebSocketReturn {
   const handleMessage = useCallback(
     (message: WsMessage) => {
       if (message.channel === EventChannels.userNotification(userId)) {
-        onNotification(message.data as BusinessEvent & { type: 'notification' });
+        onNotification(
+          message.data as BusinessEvent & { type: 'notification' }
+        );
       }
     },
     [userId, onNotification]
@@ -188,7 +194,10 @@ export function useApprovalUpdates(
       if (message.channel === EventChannels.approvals) {
         onUpdate(
           message.data as BusinessEvent & {
-            type: 'approval:request' | 'approval:approved' | 'approval:rejected';
+            type:
+              | 'approval:request'
+              | 'approval:approved'
+              | 'approval:rejected';
           }
         );
       }

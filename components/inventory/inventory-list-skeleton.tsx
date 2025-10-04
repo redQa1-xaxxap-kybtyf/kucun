@@ -29,9 +29,9 @@ export function InventoryListSkeleton() {
               key={i}
               className="flex items-center justify-between rounded-lg border p-4"
             >
-              <div className="flex items-center space-x-4 flex-1">
+              <div className="flex flex-1 items-center space-x-4">
                 <Skeleton className="h-10 w-10 rounded" />
-                <div className="space-y-2 flex-1">
+                <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-48" />
                   <Skeleton className="h-3 w-32" />
                 </div>
@@ -57,4 +57,3 @@ export function InventoryListSkeleton() {
     </Card>
   );
 }
-

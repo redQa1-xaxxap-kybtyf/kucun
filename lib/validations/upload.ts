@@ -16,7 +16,12 @@ export const uploadFileTypeSchema = z.enum([
 /**
  * 允许的图片格式
  */
-const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const ALLOWED_IMAGE_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+];
 
 /**
  * 允许的文档格式

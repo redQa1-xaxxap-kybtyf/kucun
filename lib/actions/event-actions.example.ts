@@ -114,7 +114,7 @@ export async function submitApprovalAction(data: {
 
   // 通知所有审核人
   await Promise.all(
-    data.approverIds.map((approverId) =>
+    data.approverIds.map(approverId =>
       notifyUser(approverId, {
         type: 'notification',
         notificationType: 'warning',

@@ -133,7 +133,7 @@ function transformCategory(category: {
           code: category.parent.code,
         }
       : undefined,
-    children: category.children.map((child) => ({
+    children: category.children.map(child => ({
       id: child.id,
       name: child.name,
       code: child.code,
@@ -270,7 +270,9 @@ export async function createCategory(
 /**
  * 获取单个分类详情
  */
-export async function getCategoryById(id: string): Promise<CategoryItem | null> {
+export async function getCategoryById(
+  id: string
+): Promise<CategoryItem | null> {
   const category = await prisma.category.findUnique({
     where: { id },
     include: {
@@ -290,4 +292,3 @@ export async function getCategoryById(id: string): Promise<CategoryItem | null> 
 
   return transformCategory(category);
 }
-

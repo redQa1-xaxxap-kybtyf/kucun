@@ -60,7 +60,9 @@ export function useKeyboardNavigation(
 
   // 移动焦点
   const moveFocus = (direction: 'up' | 'down' | 'first' | 'last') => {
-    if (itemCount === 0) return;
+    if (itemCount === 0) {
+      return;
+    }
 
     let newIndex = focusedIndex;
 
@@ -102,7 +104,9 @@ export function useKeyboardNavigation(
 
   // 键盘事件处理
   useEffect(() => {
-    if (!enabled) return;
+    if (!enabled) {
+      return;
+    }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       // 如果有自定义处理器且返回true，则跳过默认处理

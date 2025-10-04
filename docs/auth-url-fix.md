@@ -6,8 +6,7 @@
 
 ```typescript
 const baseUrl =
-  process.env.NEXTAUTH_URL ||
-  `http://localhost:${process.env.PORT || 3003}`;
+  process.env.NEXTAUTH_URL || `http://localhost:${process.env.PORT || 3003}`;
 ```
 
 这会导致以下问题:
@@ -33,17 +32,13 @@ const baseUrl = (() => {
   // 生产环境必须配置 NEXTAUTH_URL
   if (process.env.NODE_ENV === 'production') {
     console.error('[Auth] 生产环境必须配置 NEXTAUTH_URL 环境变量');
-    throw new Error(
-      'NEXTAUTH_URL is required in production environment'
-    );
+    throw new Error('NEXTAUTH_URL is required in production environment');
   }
 
   // 开发环境回退到 localhost
   const port = process.env.PORT || 3000;
   const fallbackUrl = `http://localhost:${port}`;
-  console.warn(
-    `[Auth] NEXTAUTH_URL 未配置,使用回退 URL: ${fallbackUrl}`
-  );
+  console.warn(`[Auth] NEXTAUTH_URL 未配置,使用回退 URL: ${fallbackUrl}`);
   return fallbackUrl;
 })();
 ```
@@ -105,4 +100,3 @@ NEXTAUTH_URL="https://your-domain.com"
 ## 修复日期
 
 2025-10-03
-

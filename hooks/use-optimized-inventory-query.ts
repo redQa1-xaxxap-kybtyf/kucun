@@ -123,7 +123,9 @@ export function useOptimizedInventoryQuery({
 
   // 自动预取相邻页面
   React.useEffect(() => {
-    if (!query.data?.pagination || !enabled) return;
+    if (!query.data?.pagination || !enabled) {
+      return;
+    }
 
     const { page, totalPages } = query.data.pagination;
 

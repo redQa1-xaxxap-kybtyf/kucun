@@ -61,7 +61,8 @@ export const PATCH = withAuth(
       id,
       userId,
       { status, remarks, refundAmount, processedAt },
-      async () => await updateReturnOrderStatus(
+      async () =>
+        await updateReturnOrderStatus(
           id,
           status,
           existingReturnOrder.status,

@@ -65,7 +65,12 @@ export function cachedServerFn<Args extends unknown[], Result>(
   fn: (...args: Args) => Promise<Result>,
   options: ServerCacheOptions = {}
 ): (...args: Args) => Promise<Result> {
-  const { tags = [], revalidate, redis: useRedis = false, redisTTL = 300 } = options;
+  const {
+    tags = [],
+    revalidate,
+    redis: useRedis = false,
+    redisTTL = 300,
+  } = options;
 
   // 1. 应用 React cache() - 请求级缓存
   const reactCached = cache(fn);
@@ -82,14 +87,10 @@ export function cachedServerFn<Args extends unknown[], Result>(
 
   // 4. 应用 Next.js unstable_cache
   if (tags.length > 0 || revalidate !== undefined) {
-    const nextCached = unstable_cache(
-      reactCached,
-      [fn.name],
-      {
-        tags,
-        revalidate,
-      }
-    );
+    const nextCached = unstable_cache(reactCached, [fn.name], {
+      tags,
+      revalidate,
+    });
 
     // 5. 如果需要 Redis 缓存
     if (useRedis) {
