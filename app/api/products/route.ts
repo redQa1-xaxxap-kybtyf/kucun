@@ -25,7 +25,6 @@ const DEFAULT_INVENTORY = {
 // 获取产品列表
 export const GET = withAuth(
   async (request: NextRequest, { user }) => {
-
     const { searchParams } = new URL(request.url);
 
     const includeInventory = searchParams.get('includeInventory')
@@ -269,7 +268,6 @@ export const GET = withAuth(
 // 创建产品
 export const POST = withAuth(
   async (request: NextRequest, { user }) => {
-
     const body = await request.json();
 
     // 验证请求数据

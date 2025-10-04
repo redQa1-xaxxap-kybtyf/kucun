@@ -258,7 +258,9 @@ async function generateSkuSuggestions(baseSku: string): Promise<string[]> {
       const numberedSku = `${baseSku}-${i.toString().padStart(2, '0')}`;
       if (!existingSkuSet.has(numberedSku)) {
         suggestions.push(numberedSku);
-        if (suggestions.length >= 10) {break;}
+        if (suggestions.length >= 10) {
+          break;
+        }
       }
     }
 
@@ -270,7 +272,9 @@ async function generateSkuSuggestions(baseSku: string): Promise<string[]> {
         const letterSku = `${baseSku}-${letter}`;
         if (!existingSkuSet.has(letterSku)) {
           suggestions.push(letterSku);
-          if (suggestions.length >= 10) {break;}
+          if (suggestions.length >= 10) {
+            break;
+          }
         }
       }
     }

@@ -145,8 +145,12 @@ export async function GET(
 
     const batches = Object.values(batchSummary).sort(
       (a: BatchSummary, b: BatchSummary) => {
-        if (a.batchNumber === '未指定批次') {return 1;}
-        if (b.batchNumber === '未指定批次') {return -1;}
+        if (a.batchNumber === '未指定批次') {
+          return 1;
+        }
+        if (b.batchNumber === '未指定批次') {
+          return -1;
+        }
         return a.batchNumber.localeCompare(b.batchNumber);
       }
     );

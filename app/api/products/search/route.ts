@@ -24,24 +24,40 @@ function sortSearchResults(
     const bNameLower = b.label.toLowerCase();
 
     // 1. 编码完全匹配优先
-    if (aCodeLower === searchLower && bCodeLower !== searchLower) {return -1;}
-    if (bCodeLower === searchLower && aCodeLower !== searchLower) {return 1;}
+    if (aCodeLower === searchLower && bCodeLower !== searchLower) {
+      return -1;
+    }
+    if (bCodeLower === searchLower && aCodeLower !== searchLower) {
+      return 1;
+    }
 
     // 2. 编码开头匹配优先
     const aCodeStartsWith = aCodeLower.startsWith(searchLower);
     const bCodeStartsWith = bCodeLower.startsWith(searchLower);
-    if (aCodeStartsWith && !bCodeStartsWith) {return -1;}
-    if (bCodeStartsWith && !aCodeStartsWith) {return 1;}
+    if (aCodeStartsWith && !bCodeStartsWith) {
+      return -1;
+    }
+    if (bCodeStartsWith && !aCodeStartsWith) {
+      return 1;
+    }
 
     // 3. 名称完全匹配优先
-    if (aNameLower === searchLower && bNameLower !== searchLower) {return -1;}
-    if (bNameLower === searchLower && aNameLower !== searchLower) {return 1;}
+    if (aNameLower === searchLower && bNameLower !== searchLower) {
+      return -1;
+    }
+    if (bNameLower === searchLower && aNameLower !== searchLower) {
+      return 1;
+    }
 
     // 4. 名称开头匹配优先
     const aNameStartsWith = aNameLower.startsWith(searchLower);
     const bNameStartsWith = bNameLower.startsWith(searchLower);
-    if (aNameStartsWith && !bNameStartsWith) {return -1;}
-    if (bNameStartsWith && !aNameStartsWith) {return 1;}
+    if (aNameStartsWith && !bNameStartsWith) {
+      return -1;
+    }
+    if (bNameStartsWith && !aNameStartsWith) {
+      return 1;
+    }
 
     // 5. 编码长度排序（短的优先，更可能是精确匹配）
     if (a.code.length !== b.code.length) {
