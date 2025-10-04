@@ -37,7 +37,9 @@ function cleanExpiredMemoryCache(): void {
 }
 
 // 定期清理过期缓存
-setInterval(cleanExpiredMemoryCache, 60000); // 每分钟清理一次
+// 使用 unref() 防止此定时器阻止 Node.js 进程退出
+const cleanupInterval = setInterval(cleanExpiredMemoryCache, 60000); // 每分钟清理一次
+cleanupInterval.unref();
 
 function createClient(url: string): Redis {
   const client = new Redis(url, {
@@ -176,8 +178,12 @@ export const redis: RedisClientWrapper = {
   ): Promise<'OK' | null> {
     const payload = JSON.stringify(value);
     const prefixedKey = prefixed(key);
-    const expiry =
-      ttlSeconds && ttlSeconds > 0 ? Date.now() + ttlSeconds * 1000 : 0;
+
+    // 防止 TTL=0 导致内存泄漏：要求明确的 TTL 或使用默认值
+    const DEFAULT_TTL = 3600; // 默认 1 小时
+    const effectiveTTL =
+      ttlSeconds && ttlSeconds > 0 ? ttlSeconds : DEFAULT_TTL;
+    const expiry = Date.now() + effectiveTTL * 1000;
 
     // 始终写入内存缓存作为备份
     memoryCache.set(prefixedKey, { value, expiry });
@@ -185,15 +191,12 @@ export const redis: RedisClientWrapper = {
     // 尝试写入Redis
     if (await checkRedisAvailability()) {
       try {
-        if (ttlSeconds && ttlSeconds > 0) {
-          return await this.getClient().set(
-            prefixedKey,
-            payload,
-            'EX',
-            ttlSeconds
-          );
-        }
-        return await this.getClient().set(prefixedKey, payload);
+        return await this.getClient().set(
+          prefixedKey,
+          payload,
+          'EX',
+          effectiveTTL
+        );
       } catch (error) {
         if (env.NODE_ENV === 'development') {
           console.warn(

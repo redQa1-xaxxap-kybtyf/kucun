@@ -81,12 +81,15 @@ export function getApiAuthContext(request: NextRequest): ApiAuthResult {
     };
   }
 
+  // 解码 x-user-name（因为中间件使用 encodeURIComponent 编码）
+  const decodedUserName = userName ? decodeURIComponent(userName) : username;
+
   // 构建用户对象
   const user: AuthUser = {
     id: userId,
     email: userEmail || '',
     username,
-    name: userName || username,
+    name: decodedUserName,
     role: userRole,
     status: userStatus || 'active',
   };

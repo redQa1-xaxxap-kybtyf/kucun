@@ -278,14 +278,37 @@ export function forbiddenResponse(message = '权限不足') {
 }
 
 /**
- * 返回成功响应
+ * 统一的成功响应
+ * 标准签名：successResponse(data, status?, message?)
+ *
+ * @param data - 响应数据
+ * @param status - HTTP 状态码，默认 200
+ * @param message - 可选的成功消息
+ * @returns NextResponse 对象
+ *
+ * @example
+ * ```typescript
+ * // 基本用法
+ * return successResponse(product);
+ *
+ * // 带状态码
+ * return successResponse(product, 201);
+ *
+ * // 带状态码和消息
+ * return successResponse(product, 200, '产品更新成功');
+ * ```
  */
-export function successResponse<T>(data: T, message?: string) {
-  return NextResponse.json({
+export function successResponse<T>(
+  data: T,
+  status: number = 200,
+  message?: string
+): NextResponse {
+  const response = {
     success: true,
     data,
     ...(message && { message }),
-  });
+  };
+  return NextResponse.json(response, { status });
 }
 
 /**

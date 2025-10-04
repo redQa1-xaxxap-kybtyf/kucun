@@ -6,7 +6,7 @@
 
 import type { NextRequest } from 'next/server';
 import { NextResponse } from 'next/server';
-import type { ZodSchema } from 'zod';
+import type { ZodType } from 'zod';
 
 /**
  * 从请求头中验证用户身份
@@ -48,7 +48,7 @@ export function verifyApiAuth(request: NextRequest): {
  */
 export function validateQueryParams<T>(
   searchParams: URLSearchParams,
-  schema: ZodSchema<T>
+  schema: ZodType<T>
 ): {
   success: boolean;
   data?: T;
@@ -100,9 +100,36 @@ export function errorResponse(error: string, status: number = 400) {
 
 /**
  * 统一的成功响应
+ * 标准签名：successResponse(data, status?, message?)
+ *
+ * @param data - 响应数据
+ * @param status - HTTP 状态码，默认 200
+ * @param message - 可选的成功消息
+ * @returns NextResponse 对象
+ *
+ * @example
+ * ```typescript
+ * // 基本用法
+ * return successResponse(product);
+ *
+ * // 带状态码
+ * return successResponse(product, 201);
+ *
+ * // 带状态码和消息
+ * return successResponse(product, 200, '产品更新成功');
+ * ```
  */
-export function successResponse<T>(data: T, status: number = 200) {
-  return NextResponse.json({ success: true, data }, { status });
+export function successResponse<T>(
+  data: T,
+  status: number = 200,
+  message?: string
+): NextResponse {
+  const response = {
+    success: true,
+    data,
+    ...(message && { message }),
+  };
+  return NextResponse.json(response, { status });
 }
 
 /**
