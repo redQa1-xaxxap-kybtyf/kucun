@@ -80,8 +80,11 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
         variant: 'success',
       });
 
-      // 等待缓存失效完成，确保列表数据会被重新获取
-      await queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
+      // 等待缓存失效并重新获取完成，确保列表数据会被重新获取
+      await queryClient.invalidateQueries({
+        queryKey: productQueryKeys.all,
+        refetchType: 'active', // 立即重新获取所有活跃的查询
+      });
 
       // 跳转回产品列表
       router.push('/products');
