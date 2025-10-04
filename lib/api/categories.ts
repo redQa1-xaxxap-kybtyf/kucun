@@ -74,6 +74,25 @@ export interface BatchDeleteResult {
 }
 
 /**
+ * 获取 API 基础 URL
+ * 在服务器端使用绝对 URL，在客户端使用相对 URL
+ */
+function getApiBaseUrl(): string {
+  // 服务器端环境
+  if (typeof window === 'undefined') {
+    // 优先使用环境变量中的 URL
+    if (process.env.NEXTAUTH_URL) {
+      return process.env.NEXTAUTH_URL;
+    }
+    // 开发环境默认使用 localhost:3000
+    const port = process.env.PORT || 3000;
+    return `http://localhost:${port}`;
+  }
+  // 客户端环境使用相对路径
+  return '';
+}
+
+/**
  * 获取分类列表
  */
 export async function getCategories(
@@ -87,7 +106,10 @@ export async function getCategories(
     }
   });
 
-  const response = await fetch(`/api/categories?${searchParams.toString()}`);
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(
+    `${baseUrl}/api/categories?${searchParams.toString()}`
+  );
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -129,7 +151,8 @@ export const categoryQueryKeys = {
  * 获取单个分类详情
  */
 export async function getCategory(id: string): Promise<ApiResponse<Category>> {
-  const response = await fetch(`/api/categories/${id}`);
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/api/categories/${id}`);
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
@@ -151,7 +174,8 @@ export async function createCategory(data: {
   parentId?: string;
   sortOrder?: number;
 }): Promise<ApiResponse<Category>> {
-  const response = await fetch('/api/categories', {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/api/categories`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -182,7 +206,8 @@ export async function updateCategory(data: {
 }): Promise<ApiResponse<Category>> {
   const { id, ...updateData } = data;
 
-  const response = await fetch(`/api/categories/${id}`, {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/api/categories/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -204,7 +229,8 @@ export async function updateCategory(data: {
  * 删除分类
  */
 export async function deleteCategory(id: string): Promise<ApiResponse<void>> {
-  const response = await fetch(`/api/categories/${id}`, {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/api/categories/${id}`, {
     method: 'DELETE',
   });
 
@@ -225,7 +251,8 @@ export async function updateCategoryStatus(
   id: string,
   status: 'active' | 'inactive'
 ): Promise<ApiResponse<Category>> {
-  const response = await fetch(`/api/categories/${id}/status`, {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/api/categories/${id}/status`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
@@ -249,7 +276,8 @@ export async function updateCategoryStatus(
 export async function batchDeleteCategories(
   input: BatchDeleteCategoriesInput
 ): Promise<BatchDeleteResult> {
-  const response = await fetch('/api/categories/batch', {
+  const baseUrl = getApiBaseUrl();
+  const response = await fetch(`${baseUrl}/api/categories/batch`, {
     method: 'DELETE',
     headers: {
       'Content-Type': 'application/json',
