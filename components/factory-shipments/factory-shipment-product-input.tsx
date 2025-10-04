@@ -10,8 +10,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import type { CreateFactoryShipmentOrderData } from '@/lib/schemas/factory-shipment';
 import type { Product } from '@/lib/types/product';
+import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
 
 interface FactoryShipmentProductInputProps {
   form: UseFormReturn<CreateFactoryShipmentOrderData>;
@@ -42,6 +42,23 @@ export function FactoryShipmentProductInput({
     }
   };
 
+  // 转换产品数据格式以匹配 SmartProductSearch 的类型要求
+  const productsWithInventory = products.map(p => ({
+    id: p.id,
+    code: p.code,
+    name: p.name,
+    specification: p.specification,
+    unit: p.unit,
+    piecesPerUnit: p.piecesPerUnit,
+    inventory: p.inventory
+      ? {
+          totalInventory: p.inventory.totalQuantity || 0,
+          availableInventory: p.inventory.availableQuantity || 0,
+          reservedInventory: p.inventory.reservedQuantity || 0,
+        }
+      : null,
+  }));
+
   return (
     <FormField
       control={form.control}
@@ -51,7 +68,7 @@ export function FactoryShipmentProductInput({
           <FormLabel>选择产品</FormLabel>
           <FormControl>
             <SmartProductSearch
-              products={products}
+              products={productsWithInventory}
               value={field.value || ''}
               onValueChange={handleProductSelect}
               placeholder="搜索或选择产品..."

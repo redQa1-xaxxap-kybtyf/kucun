@@ -191,7 +191,16 @@ export const batchPaymentOutOperationSchema = z.object({
   status: paymentOutStatusSchema.optional(),
 });
 
-// 导出类型
+// ===== 导出类型：单一真理源 =====
+// 所有类型都从Zod Schema推导，禁止在lib/types中重复定义
+
+// 状态和枚举类型
+export type PayableStatus = z.infer<typeof payableStatusSchema>;
+export type PayableSourceType = z.infer<typeof payableSourceTypeSchema>;
+export type PaymentOutMethod = z.infer<typeof paymentOutMethodSchema>;
+export type PaymentOutStatus = z.infer<typeof paymentOutStatusSchema>;
+
+// 表单和输入类型
 export type CreatePayableRecordData = z.infer<typeof createPayableRecordSchema>;
 export type UpdatePayableRecordData = z.infer<typeof updatePayableRecordSchema>;
 export type CreatePaymentOutRecordData = z.infer<
@@ -200,8 +209,12 @@ export type CreatePaymentOutRecordData = z.infer<
 export type UpdatePaymentOutRecordData = z.infer<
   typeof updatePaymentOutRecordSchema
 >;
+
+// 查询类型
 export type PayableRecordQuery = z.infer<typeof payableRecordQuerySchema>;
 export type PaymentOutRecordQuery = z.infer<typeof paymentOutRecordQuerySchema>;
+
+// 批量操作类型
 export type BatchPayableOperation = z.infer<typeof batchPayableOperationSchema>;
 export type BatchPaymentOutOperation = z.infer<
   typeof batchPaymentOutOperationSchema

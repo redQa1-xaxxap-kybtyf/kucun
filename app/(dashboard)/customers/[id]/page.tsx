@@ -2,14 +2,14 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-    ArrowLeft,
-    Calendar,
-    Edit,
-    Mail,
-    MapPin,
-    Phone,
-    RotateCcw,
-    ShoppingCart,
+  ArrowLeft,
+  Calendar,
+  Edit,
+  Mail,
+  MapPin,
+  Phone,
+  RotateCcw,
+  ShoppingCart,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface CustomerDetail {
@@ -81,7 +82,7 @@ export default function CustomerDetailPage() {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['customer', id],
+    queryKey: queryKeys.customers.detail(id),
     queryFn: () => fetchCustomerDetail(id),
     enabled: !!id,
   });
@@ -211,7 +212,7 @@ export default function CustomerDetailPage() {
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     客户状态
                   </label>
                   <div className="mt-1">
@@ -221,19 +222,19 @@ export default function CustomerDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     联系人
                   </label>
                   <p className="mt-1">{customer.contactPerson || '-'}</p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     电话号码
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
                     {customer.phone ? (
                       <>
-                        <Phone className="h-4 w-4 text-muted-foreground" />
+                        <Phone className="text-muted-foreground h-4 w-4" />
                         <span>{customer.phone}</span>
                       </>
                     ) : (
@@ -242,13 +243,13 @@ export default function CustomerDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     邮箱地址
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
                     {customer.email ? (
                       <>
-                        <Mail className="h-4 w-4 text-muted-foreground" />
+                        <Mail className="text-muted-foreground h-4 w-4" />
                         <span>{customer.email}</span>
                       </>
                     ) : (
@@ -257,13 +258,13 @@ export default function CustomerDetailPage() {
                   </div>
                 </div>
                 <div className="col-span-2">
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     地址
                   </label>
                   <div className="mt-1 flex items-start space-x-2">
                     {customer.address ? (
                       <>
-                        <MapPin className="mt-0.5 h-4 w-4 text-muted-foreground" />
+                        <MapPin className="text-muted-foreground mt-0.5 h-4 w-4" />
                         <span>{customer.address}</span>
                       </>
                     ) : (
@@ -272,7 +273,7 @@ export default function CustomerDetailPage() {
                   </div>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     信用额度
                   </label>
                   <p className="mt-1">
@@ -282,18 +283,18 @@ export default function CustomerDetailPage() {
                   </p>
                 </div>
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     创建时间
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <Calendar className="text-muted-foreground h-4 w-4" />
                     <span>{formatDate(customer.createdAt)}</span>
                   </div>
                 </div>
               </div>
               {customer.tags && customer.tags.length > 0 && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     标签
                   </label>
                   <div className="mt-1 flex flex-wrap gap-2">
@@ -307,7 +308,7 @@ export default function CustomerDetailPage() {
               )}
               {customer.remarks && (
                 <div>
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     备注信息
                   </label>
                   <p className="mt-1 text-sm">{customer.remarks}</p>
@@ -328,20 +329,20 @@ export default function CustomerDetailPage() {
                 <p className="text-2xl font-bold text-green-600">
                   {formatCurrency(totalSalesAmount)}
                 </p>
-                <p className="text-sm text-muted-foreground">累计销售金额</p>
+                <p className="text-muted-foreground text-sm">累计销售金额</p>
               </div>
               <div className="grid grid-cols-2 gap-4 text-center">
                 <div>
                   <p className="text-lg font-semibold">
                     {customer._count.salesOrders}
                   </p>
-                  <p className="text-xs text-muted-foreground">销售订单</p>
+                  <p className="text-muted-foreground text-xs">销售订单</p>
                 </div>
                 <div>
                   <p className="text-lg font-semibold">
                     {customer._count.returnOrders}
                   </p>
-                  <p className="text-xs text-muted-foreground">退货订单</p>
+                  <p className="text-muted-foreground text-xs">退货订单</p>
                 </div>
               </div>
               {totalReturnAmount > 0 && (
@@ -349,7 +350,7 @@ export default function CustomerDetailPage() {
                   <p className="text-lg font-semibold text-red-600">
                     {formatCurrency(totalReturnAmount)}
                   </p>
-                  <p className="text-xs text-muted-foreground">累计退货金额</p>
+                  <p className="text-muted-foreground text-xs">累计退货金额</p>
                 </div>
               )}
             </CardContent>
@@ -387,12 +388,12 @@ export default function CustomerDetailPage() {
                   {customer.salesOrders.map(order => (
                     <div
                       key={order.id}
-                      className="flex cursor-pointer items-center justify-between rounded-lg border p-4 hover:bg-muted/50"
+                      className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
                       onClick={() => router.push(`/sales-orders/${order.id}`)}
                     >
                       <div>
                         <p className="font-medium">{order.orderNumber}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           {formatDate(order.createdAt)}
                         </p>
                       </div>
@@ -406,7 +407,7 @@ export default function CustomerDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-muted-foreground">
+                <div className="text-muted-foreground py-8 text-center">
                   暂无销售订单
                 </div>
               )}
@@ -418,12 +419,12 @@ export default function CustomerDetailPage() {
                   {customer.returnOrders.map(order => (
                     <div
                       key={order.id}
-                      className="flex cursor-pointer items-center justify-between rounded-lg border p-4 hover:bg-muted/50"
+                      className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
                       onClick={() => router.push(`/return-orders/${order.id}`)}
                     >
                       <div>
                         <p className="font-medium">{order.returnNumber}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="text-muted-foreground text-sm">
                           {formatDate(order.createdAt)}
                         </p>
                       </div>
@@ -437,7 +438,7 @@ export default function CustomerDetailPage() {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center text-muted-foreground">
+                <div className="text-muted-foreground py-8 text-center">
                   暂无退货订单
                 </div>
               )}

@@ -1,9 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import sharp from 'sharp';
 import { z } from 'zod';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { uploadConfig } from '@/lib/env';
 import { uploadToQiniu } from '@/lib/services/qiniu-upload';
 
@@ -24,12 +23,9 @@ const SUPPORTED_IMAGE_TYPES = [
 export async function POST(request: NextRequest) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const formData = await request.formData();
@@ -125,7 +121,8 @@ export async function POST(request: NextRequest) {
               .jpeg({ quality: 80 });
         }
 
-        buffer = await sharpInstance.toBuffer();
+        const optimizedBuffer = await sharpInstance.toBuffer();
+        buffer = Buffer.from(optimizedBuffer);
 
         console.log(
           `图片优化完成: ${file.name}, 原始大小: ${bytes.byteLength}, 优化后大小: ${buffer.length}`
@@ -160,7 +157,7 @@ export async function POST(request: NextRequest) {
         url: uploadResult.url,
         key: uploadResult.key,
         uploadedAt: new Date().toISOString(),
-        uploadedBy: session.user.id,
+        uploadedBy: auth.userId,
       },
       message: '文件上传成功',
     });
@@ -181,12 +178,9 @@ export async function POST(request: NextRequest) {
 // 获取上传文件信息（可选功能）
 export async function GET(request: NextRequest) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const { searchParams } = new URL(request.url);

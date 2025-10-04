@@ -1,6 +1,52 @@
 import { z } from 'zod';
 
+import { customerConfig, paginationConfig } from '@/lib/env';
 import type { CustomerExtendedInfo } from '@/lib/types/customer';
+
+// 客户搜索查询验证规则
+export const customerSearchQuerySchema = z.object({
+  q: z.string().optional().default(''),
+
+  limit: z
+    .number()
+    .int()
+    .positive()
+    .max(50, '每次最多返回50条记录')
+    .optional()
+    .default(customerConfig.searchLimit),
+});
+
+// 客户查询验证规则
+export const customerQuerySchema = z.object({
+  page: z.number().int().positive().optional().default(1),
+
+  limit: z
+    .number()
+    .int()
+    .positive()
+    .max(paginationConfig.maxPageSize)
+    .optional()
+    .default(20),
+
+  search: z.string().optional(),
+
+  status: z.enum(['active', 'inactive']).optional(),
+
+  customerType: z.enum(['company', 'store', 'individual']).optional(),
+
+  level: z.enum(['A', 'B', 'C', 'D']).optional(),
+
+  region: z.string().optional(),
+
+  industry: z.string().optional(),
+
+  sortBy: z
+    .enum(['createdAt', 'name', 'creditLimit', 'totalOrders'])
+    .optional()
+    .default('createdAt'),
+
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+});
 
 // 基础验证规则
 const baseValidations = {
@@ -209,13 +255,19 @@ export const validateCustomerHierarchy = (
 export const processExtendedInfo = (
   extendedInfo?: CustomerExtendedInfo
 ): string | undefined => {
-  if (!extendedInfo) return undefined;
+  if (!extendedInfo) {
+    return undefined;
+  }
 
   // 过滤空值
   const filtered = Object.fromEntries(
     Object.entries(extendedInfo).filter(([_, value]) => {
-      if (value === null || value === undefined || value === '') return false;
-      if (Array.isArray(value) && value.length === 0) return false;
+      if (value === null || value === undefined || value === '') {
+        return false;
+      }
+      if (Array.isArray(value) && value.length === 0) {
+        return false;
+      }
       return true;
     })
   );
@@ -229,7 +281,9 @@ export const processExtendedInfo = (
 export const parseExtendedInfo = (
   extendedInfoStr?: string
 ): CustomerExtendedInfo => {
-  if (!extendedInfoStr) return {};
+  if (!extendedInfoStr) {
+    return {};
+  }
 
   try {
     return JSON.parse(extendedInfoStr) as CustomerExtendedInfo;
@@ -254,10 +308,14 @@ export const generateCustomerPath = (
     path.unshift(current.id);
     visited.add(current.id);
 
-    if (!current.parentCustomerId) break;
+    if (!current.parentCustomerId) {
+      break;
+    }
 
     const parent = allCustomers.find(c => c.id === current.parentCustomerId);
-    if (!parent) break;
+    if (!parent) {
+      break;
+    }
     current = parent;
   }
 
@@ -270,7 +328,9 @@ export const calculateCustomerLevel = (
   allCustomers: { id: string; parentCustomerId?: string }[]
 ): number => {
   const customer = allCustomers.find(c => c.id === customerId);
-  if (!customer) return 0;
+  if (!customer) {
+    return 0;
+  }
 
   const path = generateCustomerPath(customer, allCustomers);
   return path.length - 1; // 减1因为包含自己

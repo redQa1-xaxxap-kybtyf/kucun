@@ -2,9 +2,8 @@
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateReturnStatusSchema } from '@/lib/validations/return-order';
@@ -12,20 +11,10 @@ import { updateReturnStatusSchema } from '@/lib/validations/return-order';
 /**
  * PATCH /api/return-orders/[id]/status - 更新退货订单状态
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
+export const PATCH = withAuth(
+  async (request: NextRequest, { user, params }) => {
+    const { id } = await (params as Promise<{ id: string }>);
+    const userId = user.id;
 
     // 解析请求体
     const body = await request.json();
@@ -70,7 +59,7 @@ export async function PATCH(
       idempotencyKey,
       'return_order_status_change',
       id,
-      session.user.id,
+      userId,
       { status, remarks, refundAmount, processedAt },
       async () => await updateReturnOrderStatus(
           id,
@@ -78,7 +67,7 @@ export async function PATCH(
           existingReturnOrder.status,
           existingReturnOrder.processType,
           { remarks, refundAmount, processedAt },
-          session.user.id
+          userId
         )
     );
 
@@ -129,11 +118,6 @@ export async function PATCH(
       },
       message: '退货订单状态更新成功',
     });
-  } catch (error) {
-    console.error('更新退货订单状态失败:', error);
-    return NextResponse.json(
-      { success: false, error: '更新退货订单状态失败' },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['returns:edit'] }
+);

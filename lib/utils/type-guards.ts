@@ -5,21 +5,23 @@
  */
 
 import type {
-  NavigationItem,
-  UserInfo,
-  NotificationItem,
-  SidebarState,
   BreadcrumbItem,
+  LayoutConfig,
+  NavigationItem,
+  NotificationItem,
   PageMetadata,
   RouteConfig,
-  LayoutConfig,
+  SidebarState,
+  UserInfo,
 } from '@/lib/types/layout';
 
 /**
  * 检查是否为有效的导航项
  */
 export function isNavigationItem(item: unknown): item is NavigationItem {
-  if (!item || typeof item !== 'object') {return false;}
+  if (!item || typeof item !== 'object') {
+    return false;
+  }
 
   const nav = item as Record<string, unknown>;
 
@@ -40,7 +42,9 @@ export function isNavigationItem(item: unknown): item is NavigationItem {
  * 检查是否为有效的用户信息
  */
 export function isUserInfo(user: unknown): user is UserInfo {
-  if (!user || typeof user !== 'object') {return false;}
+  if (!user || typeof user !== 'object') {
+    return false;
+  }
 
   const userObj = user as Record<string, unknown>;
 
@@ -57,7 +61,9 @@ export function isUserInfo(user: unknown): user is UserInfo {
  * 检查是否为有效的通知项
  */
 export function isNotificationItem(item: unknown): item is NotificationItem {
-  if (!item || typeof item !== 'object') {return false;}
+  if (!item || typeof item !== 'object') {
+    return false;
+  }
 
   const notification = item as Record<string, unknown>;
 
@@ -78,7 +84,9 @@ export function isNotificationItem(item: unknown): item is NotificationItem {
  * 检查是否为有效的侧边栏状态
  */
 export function isSidebarState(state: unknown): state is SidebarState {
-  if (!state || typeof state !== 'object') {return false;}
+  if (!state || typeof state !== 'object') {
+    return false;
+  }
 
   const sidebar = state as Record<string, unknown>;
 
@@ -95,7 +103,9 @@ export function isSidebarState(state: unknown): state is SidebarState {
  * 检查是否为有效的面包屑项
  */
 export function isBreadcrumbItem(item: unknown): item is BreadcrumbItem {
-  if (!item || typeof item !== 'object') {return false;}
+  if (!item || typeof item !== 'object') {
+    return false;
+  }
 
   const breadcrumb = item as Record<string, unknown>;
 
@@ -111,7 +121,9 @@ export function isBreadcrumbItem(item: unknown): item is BreadcrumbItem {
  * 检查是否为有效的页面元数据
  */
 export function isPageMetadata(metadata: unknown): metadata is PageMetadata {
-  if (!metadata || typeof metadata !== 'object') {return false;}
+  if (!metadata || typeof metadata !== 'object') {
+    return false;
+  }
 
   const meta = metadata as Record<string, unknown>;
 
@@ -128,7 +140,9 @@ export function isPageMetadata(metadata: unknown): metadata is PageMetadata {
  * 检查是否为有效的路由配置
  */
 export function isRouteConfig(config: unknown): config is RouteConfig {
-  if (!config || typeof config !== 'object') {return false;}
+  if (!config || typeof config !== 'object') {
+    return false;
+  }
 
   const route = config as Record<string, unknown>;
 
@@ -145,7 +159,9 @@ export function isRouteConfig(config: unknown): config is RouteConfig {
  * 检查是否为有效的布局配置
  */
 export function isLayoutConfig(config: unknown): config is LayoutConfig {
-  if (!config || typeof config !== 'object') {return false;}
+  if (!config || typeof config !== 'object') {
+    return false;
+  }
 
   const layout = config as Record<string, unknown>;
 
@@ -318,8 +334,10 @@ export class TypeAssert {
 /**
  * 类型验证装饰器
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function validateTypes<T extends (...args: any[]) => any>(
   fn: T,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   validators: Array<(arg: any) => boolean>
 ): T {
   return ((...args: Parameters<T>) => {

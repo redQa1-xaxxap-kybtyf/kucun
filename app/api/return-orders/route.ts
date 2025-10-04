@@ -2,11 +2,10 @@
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { env, paginationConfig } from '@/lib/env';
+import { paginationConfig } from '@/lib/env';
 import {
   createReturnOrderSchema,
   returnOrderQuerySchema,
@@ -15,19 +14,8 @@ import {
 /**
  * GET /api/return-orders - 获取退货订单列表
  */
-export async function GET(request: NextRequest) {
-  try {
-    // 身份验证 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-    }
-
+export const GET = withAuth(
+  async (request: NextRequest) => {
     // 解析查询参数
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams.entries());
@@ -182,41 +170,16 @@ export async function GET(request: NextRequest) {
         },
       },
     });
-  } catch (error) {
-    console.error('获取退货订单列表失败:', error);
-    return NextResponse.json(
-      { success: false, error: '获取退货订单列表失败' },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['returns:view'] }
+);
 
 /**
  * POST /api/return-orders - 创建退货订单
  */
-export async function POST(request: NextRequest) {
-  try {
-    // 身份验证 (开发模式下绕过)
-    let userId: string;
-    if (env.NODE_ENV === 'development') {
-      const user = await prisma.user.findFirst();
-      if (!user) {
-        return NextResponse.json(
-          { success: false, error: '开发环境下未找到可用用户' },
-          { status: 500 }
-        );
-      }
-      userId = user.id;
-    } else {
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-      userId = session.user.id;
-    }
+export const POST = withAuth(
+  async (request: NextRequest, { user }) => {
+    const userId = user.id;
 
     // 解析请求体
     const body = await request.json();
@@ -431,11 +394,6 @@ export async function POST(request: NextRequest) {
       data: fullReturnOrder,
       message: '退货订单创建成功',
     });
-  } catch (error) {
-    console.error('创建退货订单失败:', error);
-    return NextResponse.json(
-      { success: false, error: '创建退货订单失败' },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['returns:create'] }
+);

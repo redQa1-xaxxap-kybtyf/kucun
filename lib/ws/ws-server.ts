@@ -1,7 +1,10 @@
 import { WebSocketServer, type WebSocket } from 'ws';
 
-import { appConfig, isDevelopment, wsConfig } from '@/lib/env';
+import { initializeCacheSystem, setWsEventEmitter } from '@/lib/cache';
+import { isDevelopment, wsConfig } from '@/lib/env';
 import { redis } from '@/lib/redis/redis-client';
+import { logger } from '@/lib/utils/console-logger';
+import { verifyWebSocketAuth } from '@/lib/ws/ws-auth';
 
 interface ClientInfo {
   socket: WebSocket;
@@ -14,10 +17,19 @@ interface ServerApi {
   publish<T extends object>(channel: string, payload: T): void;
 }
 
+/**
+ * 全局符号，用于单例模式
+ */
 const globalKey = Symbol.for('kucun.ws.server');
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const g = globalThis as any;
+/**
+ * 全局对象类型定义
+ */
+interface GlobalWithWsServer {
+  [key: symbol]: ServerApi;
+}
+
+const g = globalThis as GlobalWithWsServer;
 
 function createServer(): ServerApi {
   let wss: WebSocketServer | null = null;
@@ -25,12 +37,14 @@ function createServer(): ServerApi {
   const clients = new Set<ClientInfo>();
 
   // Redis 订阅客户端用于跨实例通信
-  let redisSubscriber: any = null;
-  let redisPublisher: any = null;
+  let redisSubscriber: ReturnType<typeof redis.getClient> | null = null;
+  let redisPublisher: ReturnType<typeof redis.getClient> | null = null;
 
   function initializeServer() {
     try {
-      if (wss) {return;} // Already initialized
+      if (wss) {
+        return;
+      } // Already initialized
 
       wss = new WebSocketServer({ port: wsConfig.port });
       redisSubscriber = redis.getClient();
@@ -41,6 +55,27 @@ function createServer(): ServerApi {
           `🔌 WebSocket server starting on ws://localhost:${wsConfig.port}`
         );
       }
+
+      // 初始化缓存系统（Pub/Sub 订阅）
+      initializeCacheSystem();
+
+      // 设置 WebSocket 事件发射器，将缓存事件转发到 WebSocket
+      setWsEventEmitter(event => {
+        // 根据事件类型确定频道
+        let channel = 'system';
+        if (event.type === 'data:update') {
+          channel = event.resource;
+        } else if (event.type === 'inventory:change') {
+          channel = 'inventory';
+        } else if (event.type === 'order:status') {
+          channel = 'orders';
+        } else if (event.type === 'finance:change') {
+          channel = 'finance';
+        }
+
+        // 广播到所有订阅该频道的客户端
+        broadcast(channel, event);
+      });
 
       setupWebSocketHandlers();
     } catch (error) {
@@ -56,12 +91,16 @@ function createServer(): ServerApi {
       ts: Date.now(),
     });
     channels.get(channel)?.forEach(ws => {
-      if (ws.readyState === ws.OPEN) {ws.send(payload);}
+      if (ws.readyState === ws.OPEN) {
+        ws.send(payload);
+      }
     });
   }
 
   function setupWebSocketHandlers() {
-    if (!wss || !redisSubscriber || !redisPublisher) {return;}
+    if (!wss || !redisSubscriber || !redisPublisher) {
+      return;
+    }
 
     function subscribe(client: ClientInfo, channel: string) {
       if (!channels.has(channel)) {
@@ -92,32 +131,10 @@ function createServer(): ServerApi {
           const data = JSON.parse(message);
           broadcast(channel, data);
         } catch (error) {
-          console.error('解析Redis消息失败:', error);
+          logger.error('ws-server', '解析Redis消息失败:', error);
         }
       }
     });
-
-    // Simple auth: verify Next-Auth session via internal fetch using request cookies
-    async function isAuthenticated(
-      cookieHeader: string | undefined
-    ): Promise<{ ok: boolean; userId?: string }> {
-      if (!cookieHeader) {return { ok: false };}
-      try {
-        const res = await fetch(
-          `http://localhost:${appConfig.port}/api/auth/session`,
-          {
-            headers: { cookie: cookieHeader },
-          }
-        );
-        if (!res.ok) {return { ok: false };}
-        const json = (await res.json()) as { user?: { id?: string } };
-        return json?.user?.id
-          ? { ok: true, userId: json.user.id }
-          : { ok: false };
-      } catch {
-        return { ok: false };
-      }
-    }
 
     wss.on('connection', async (socket, request) => {
       // Origin check
@@ -129,10 +146,11 @@ function createServer(): ServerApi {
         }
       }
 
-      // Auth
-      const auth = await isAuthenticated(request.headers.cookie);
-      if (!auth.ok) {
-        socket.close(1008, '未授权');
+      // Auth - 使用内部 JWT 验证，避免 HTTP 往返
+      const auth = await verifyWebSocketAuth(request.headers.cookie);
+      if (!auth.authenticated) {
+        socket.close(1008, auth.error || '未授权');
+        logger.warn('ws-server', 'WebSocket 连接被拒绝:', auth.error);
         return;
       }
 
@@ -142,6 +160,12 @@ function createServer(): ServerApi {
         userId: auth.userId,
       };
       clients.add(client);
+
+      // 记录连接信息
+      logger.info(
+        'ws-server',
+        `WebSocket 连接建立: userId=${auth.userId}, username=${auth.username}`
+      );
 
       // Heartbeat
       let alive = true;
@@ -168,8 +192,12 @@ function createServer(): ServerApi {
             type: 'subscribe' | 'unsubscribe';
             channel: string;
           };
-          if (msg.type === 'subscribe') {subscribe(client, msg.channel);}
-          if (msg.type === 'unsubscribe') {unsubscribe(client, msg.channel);}
+          if (msg.type === 'subscribe') {
+            subscribe(client, msg.channel);
+          }
+          if (msg.type === 'unsubscribe') {
+            unsubscribe(client, msg.channel);
+          }
         } catch {
           // ignore
         }

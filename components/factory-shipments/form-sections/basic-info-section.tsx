@@ -28,9 +28,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { CreateFactoryShipmentOrderData } from '@/lib/schemas/factory-shipment';
 import { FACTORY_SHIPMENT_STATUS_LABELS } from '@/lib/types/factory-shipment';
 import { cn } from '@/lib/utils';
+import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
 
 import type { Customer } from '@/lib/types/models';
 

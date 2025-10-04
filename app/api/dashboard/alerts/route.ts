@@ -1,20 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
 
 // 获取库存预警数据
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 获取库存数据，包含产品信息

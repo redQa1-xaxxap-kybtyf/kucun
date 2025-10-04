@@ -1,8 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 
 // 批量创建产品变体输入验证
@@ -40,12 +39,9 @@ const BatchOperationSchema = z.object({
 export async function POST(request: NextRequest) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const body = await request.json();

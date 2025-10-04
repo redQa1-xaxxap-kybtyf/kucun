@@ -1,27 +1,38 @@
-// 应付款管理类型定义
-// 遵循全栈类型安全原则，确保数据库模型、API接口与前端组件的类型一致性
+/**
+ * 应付款管理类型定义
+ * 遵循全栈开发执行手册：Zod Schema 作为单一真理源
+ *
+ * 重要：枚举和表单输入类型从 lib/validations/payable.ts 导入
+ * 本文件只定义 API 响应、详情和扩展类型
+ */
 
-// 应付款状态枚举
-export type PayableStatus =
-  | 'pending'
-  | 'partial'
-  | 'paid'
-  | 'overdue'
-  | 'cancelled';
+// 从 Zod Schema 导入基础类型（单一真理源）
+import type {
+  PayableStatus,
+  PayableSourceType,
+  PaymentOutMethod,
+  PaymentOutStatus,
+  CreatePayableRecordData,
+  UpdatePayableRecordData,
+  CreatePaymentOutRecordData,
+  UpdatePaymentOutRecordData,
+  PayableRecordQuery,
+  PaymentOutRecordQuery,
+} from '@/lib/validations/payable';
 
-// 应付款来源类型
-export type PayableSourceType =
-  | 'purchase_order'
-  | 'factory_shipment'
-  | 'sales_order'
-  | 'service'
-  | 'other';
-
-// 付款方式枚举
-export type PaymentOutMethod = 'cash' | 'bank_transfer' | 'check' | 'other';
-
-// 付款状态枚举
-export type PaymentOutStatus = 'pending' | 'confirmed' | 'cancelled';
+// 重新导出以保持向后兼容
+export type {
+  PayableStatus,
+  PayableSourceType,
+  PaymentOutMethod,
+  PaymentOutStatus,
+  CreatePayableRecordData,
+  UpdatePayableRecordData,
+  CreatePaymentOutRecordData,
+  UpdatePaymentOutRecordData,
+  PayableRecordQuery,
+  PaymentOutRecordQuery,
+};
 
 // 应付款记录基础数据
 export interface PayableRecord {
@@ -99,80 +110,8 @@ export interface PaymentOutRecordDetail extends PaymentOutRecord {
   };
 }
 
-// 应付款查询参数
-export interface PayableRecordQuery {
-  page?: number;
-  limit?: number;
-  search?: string; // 搜索应付款单号或供应商名称
-  supplierId?: string;
-  status?: PayableStatus;
-  sourceType?: PayableSourceType;
-  startDate?: string;
-  endDate?: string;
-  sortBy?: 'createdAt' | 'payableAmount' | 'dueDate' | 'remainingAmount';
-  sortOrder?: 'asc' | 'desc';
-}
-
-// 付款记录查询参数
-export interface PaymentOutRecordQuery {
-  page?: number;
-  limit?: number;
-  search?: string; // 搜索付款单号或供应商名称
-  payableRecordId?: string;
-  supplierId?: string;
-  status?: PaymentOutStatus;
-  paymentMethod?: PaymentOutMethod;
-  startDate?: string;
-  endDate?: string;
-  sortBy?: 'createdAt' | 'paymentAmount' | 'paymentDate';
-  sortOrder?: 'asc' | 'desc';
-}
-
-// 创建应付款记录数据
-export interface CreatePayableRecordData {
-  supplierId: string;
-  sourceType: PayableSourceType;
-  sourceId?: string;
-  sourceNumber?: string;
-  payableAmount: number;
-  dueDate?: Date | string;
-  paymentTerms?: string;
-  description?: string;
-  remarks?: string;
-}
-
-// 更新应付款记录数据
-export interface UpdatePayableRecordData {
-  payableAmount?: number;
-  dueDate?: Date | string;
-  status?: PayableStatus;
-  paymentTerms?: string;
-  description?: string;
-  remarks?: string;
-}
-
-// 创建付款记录数据
-export interface CreatePaymentOutRecordData {
-  payableRecordId?: string;
-  supplierId: string;
-  paymentMethod: PaymentOutMethod;
-  paymentAmount: number;
-  paymentDate: Date | string;
-  remarks?: string;
-  voucherNumber?: string;
-  bankInfo?: string;
-}
-
-// 更新付款记录数据
-export interface UpdatePaymentOutRecordData {
-  paymentMethod?: PaymentOutMethod;
-  paymentAmount?: number;
-  paymentDate?: Date | string;
-  status?: PaymentOutStatus;
-  remarks?: string;
-  voucherNumber?: string;
-  bankInfo?: string;
-}
+// 注意：CreatePayableRecordData, UpdatePayableRecordData 等
+// 已从 lib/validations/payable.ts 导入，不在此重复定义
 
 // 应付款统计数据
 export interface PayableStatistics {

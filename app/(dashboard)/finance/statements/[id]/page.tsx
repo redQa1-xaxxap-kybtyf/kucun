@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
+import { queryKeys } from '@/lib/queryKeys';
 
 import { StatementBasicInfo } from './components/statement-basic-info';
 import { StatementFinancialSummary } from './components/statement-financial-summary';
@@ -77,7 +78,9 @@ export default function StatementDetailPage({
 
   // API 调用函数
   const fetchStatementDetail = async (): Promise<StatementDetail> => {
-    if (!id) {throw new Error('ID 不能为空');}
+    if (!id) {
+      throw new Error('ID 不能为空');
+    }
 
     const response = await fetch(`/api/statements/${id}`);
     if (!response.ok) {
@@ -93,8 +96,8 @@ export default function StatementDetailPage({
     isLoading,
     isError,
     error,
-  } = useQuery({
-    queryKey: ['statement-detail', id],
+  } = useQuery<StatementDetail>({
+    queryKey: queryKeys.finance.statement(id),
     queryFn: fetchStatementDetail,
     enabled: !!id,
     staleTime: 5 * 60 * 1000, // 5分钟

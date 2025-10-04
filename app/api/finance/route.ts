@@ -1,47 +1,44 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
 import {
-  getFinanceStatisticsCache,
-  setFinanceStatisticsCache,
-} from '@/lib/cache/finance-cache';
+  buildCacheKey,
+  getOrSetJSON,
+  CACHE_STRATEGY,
+} from '@/lib/cache';
 import {
   getFinanceOverview,
   getFinanceStatistics,
 } from '@/lib/services/finance-statistics';
 import { logger } from '@/lib/utils/console-logger';
+import { financeStatisticsQuerySchema } from '@/lib/validations/finance';
 
 /**
  * 财务管理概览API
  * GET /api/finance - 获取财务管理概览数据
  */
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
-    // 尝试从缓存获取数据
-    const cached = await getFinanceStatisticsCache();
-    if (cached) {
-      return NextResponse.json({
-        success: true,
-        data: cached,
-        cached: true,
-      });
-    }
-
-    // 获取财务概览数据(使用服务层函数)
-    const financeOverview = await getFinanceOverview();
-
-    // 设置缓存
-    await setFinanceStatisticsCache(financeOverview);
+    // 使用缓存包装查询
+    const cacheKey = buildCacheKey('finance:overview', {});
+    const financeOverview = await getOrSetJSON(
+      cacheKey,
+      async () => {
+        // 获取财务概览数据(使用服务层函数)
+        return await getFinanceOverview();
+      },
+      CACHE_STRATEGY.aggregateData.redisTTL, // 10分钟缓存
+      {
+        enableRandomTTL: true,
+        enableNullCache: true,
+      }
+    );
 
     return NextResponse.json({
       success: true,
@@ -66,34 +63,46 @@ export async function GET(_request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
+    }
+
+    // 解析并验证请求参数
+    const body = await request.json();
+    const validationResult = financeStatisticsQuerySchema.safeParse(body);
+
+    if (!validationResult.success) {
       return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
+        {
+          success: false,
+          error: '参数验证失败',
+          details: validationResult.error.issues,
+        },
+        { status: 400 }
       );
     }
 
-    // 解析请求参数
-    const body = await request.json();
-    const params = {
-      startDate: body.startDate,
-      endDate: body.endDate,
-      customerId: body.customerId,
-      includeRefunds: body.includeRefunds ?? true,
-      includeStatements: body.includeStatements ?? true,
-    };
+    const params = validationResult.data;
 
-    // 获取财务统计数据(使用服务层函数)
-    const statisticsData = await getFinanceStatistics(params);
-
-    // 设置缓存
-    await setFinanceStatisticsCache(statisticsData);
+    // 使用缓存包装查询
+    const cacheKey = buildCacheKey('finance:statistics', params);
+    const statisticsData = await getOrSetJSON(
+      cacheKey,
+      async () => {
+        // 获取财务统计数据(使用服务层函数)
+        return await getFinanceStatistics(params);
+      },
+      CACHE_STRATEGY.aggregateData.redisTTL, // 10分钟缓存
+      {
+        enableRandomTTL: true,
+        enableNullCache: true,
+      }
+    );
 
     return NextResponse.json({
       success: true,
       data: statisticsData,
-      cached: false,
     });
   } catch (error) {
     logger.error('finance-api', '获取财务统计失败:', error);

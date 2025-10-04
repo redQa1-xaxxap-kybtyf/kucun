@@ -1,11 +1,15 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { type NextRequest, NextResponse } from 'next/server';
 
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
-import { authOptions } from '@/lib/auth';
-import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
+import { successResponse, withAuth } from '@/lib/auth/api-helpers';
+import {
+  buildCacheKey,
+  getOrSetJSON,
+  revalidateProducts,
+  publishDataUpdate,
+  CACHE_STRATEGY,
+} from '@/lib/cache';
 import { getBatchCachedInventorySummary } from '@/lib/cache/inventory-cache';
-import { invalidateProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
 import { paginationConfig, productConfig } from '@/lib/env';
 import { paginationValidations } from '@/lib/validations/base';
@@ -19,16 +23,8 @@ const DEFAULT_INVENTORY = {
 };
 
 // 获取产品列表
-export async function GET(request: NextRequest) {
-  try {
-    // 验证用户权限 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
+export const GET = withAuth(
+  async (request: NextRequest, { user }) => {
 
     const { searchParams } = new URL(request.url);
 
@@ -245,9 +241,11 @@ export async function GET(request: NextRequest) {
           },
         } as const;
       },
-      includeInventory
-        ? productConfig.cacheWithInventoryTtl
-        : productConfig.cacheWithoutInventoryTtl
+      CACHE_STRATEGY.dynamicData.redisTTL, // 使用统一的动态数据缓存策略 (5分钟)
+      {
+        enableRandomTTL: true, // 防止缓存雪崩
+        enableNullCache: true, // 防止缓存穿透
+      }
     );
 
     // 性能监控：记录慢查询
@@ -264,30 +262,13 @@ export async function GET(request: NextRequest) {
     }
 
     return createDateTimeResponse(cached);
-  } catch (error) {
-    console.error('获取产品列表错误:', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '获取产品列表失败',
-      },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['products:view'] }
+);
 
 // 创建产品
-export async function POST(request: NextRequest) {
-  try {
-    // 验证用户权限 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
+export const POST = withAuth(
+  async (request: NextRequest, { user }) => {
 
     const body = await request.json();
 
@@ -417,8 +398,13 @@ export async function POST(request: NextRequest) {
       updatedAt: product.updatedAt,
     };
 
-    // 缓存失效 & WebSocket 推送
-    await invalidateProductCache();
+    // 使用新的统一缓存失效系统
+    await revalidateProducts(); // 自动级联失效相关缓存
+
+    // 发布实时更新事件
+    await publishDataUpdate('products', formattedProduct.id, 'create');
+
+    // WebSocket 推送（向后兼容）
     publishWs('products', {
       type: 'created',
       id: formattedProduct.id,
@@ -426,15 +412,6 @@ export async function POST(request: NextRequest) {
     });
 
     return createDateTimeResponse(formattedProduct, 201, '产品创建成功');
-  } catch (error) {
-    console.error('创建产品错误:', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '创建产品失败',
-      },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['products:create'] }
+);

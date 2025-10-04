@@ -1,25 +1,15 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { BatchUpdateSupplierStatusSchema } from '@/lib/schemas/supplier';
 import type { BatchUpdateSupplierStatusResult } from '@/lib/types/supplier';
+import { BatchUpdateSupplierStatusSchema } from '@/lib/validations/supplier';
 
 /**
  * PUT /api/suppliers/batch/status - 批量更新供应商状态
  */
-export async function PUT(request: NextRequest) {
-  try {
-    // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-
+export const PUT = withAuth(
+  async (request: NextRequest) => {
     // 解析请求体
     const body = await request.json();
     const { supplierIds, status } = BatchUpdateSupplierStatusSchema.parse(body);
@@ -112,15 +102,6 @@ export async function PUT(request: NextRequest) {
     };
 
     return NextResponse.json(result);
-  } catch (error) {
-    console.error('批量更新供应商状态失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error:
-          error instanceof Error ? error.message : '批量更新供应商状态失败',
-      },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['suppliers:edit'] }
+);

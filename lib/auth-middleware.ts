@@ -71,7 +71,9 @@ function isAdminOnlyPath(pathname: string): boolean {
 // 检查路径是否为公开路径
 function isPublicPath(pathname: string): boolean {
   // 精确匹配首页
-  if (pathname === '/') return true;
+  if (pathname === '/') {
+    return true;
+  }
   // 其他路径使用 startsWith 匹配
   return publicPaths.some(path => pathname.startsWith(path));
 }
@@ -154,11 +156,18 @@ export async function authMiddleware(request: NextRequest) {
     }
 
     // 认证通过，透传用户信息到请求头（供 API 路由使用）
-    // 创建新的请求头，包含用户信息
+    // 创建新的请求头，包含完整的用户信息
+    // 注意：HTTP Headers 只支持 ASCII 字符，中文等非 ASCII 字符需要进行 URL 编码
     const requestHeaders = new Headers(request.headers);
     requestHeaders.set('x-user-id', token.sub || '');
-    requestHeaders.set('x-user-name', token.username || '');
+    requestHeaders.set('x-user-email', token.email || '');
+    requestHeaders.set(
+      'x-user-name',
+      encodeURIComponent(token.name || token.username || '')
+    );
+    requestHeaders.set('x-user-username', token.username || '');
     requestHeaders.set('x-user-role', token.role || 'user');
+    requestHeaders.set('x-user-status', token.status || 'active');
 
     // 使用新的请求头创建响应
     return NextResponse.next({

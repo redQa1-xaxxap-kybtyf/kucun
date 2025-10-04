@@ -78,7 +78,9 @@ function ProductLabel({
   // 格式化规格显示（限制11个字符，避免JSON字符串显示）
   const formattedSpecification = React.useMemo(() => {
     const spec = product.specification;
-    if (!spec) {return null;}
+    if (!spec) {
+      return null;
+    }
 
     // 如果是JSON字符串，尝试解析并提取关键信息
     if (spec.startsWith('{') && spec.endsWith('}')) {
@@ -106,7 +108,7 @@ function ProductLabel({
     <div className="flex min-w-0 flex-1 flex-col gap-1">
       <div className="flex flex-wrap items-center gap-2">
         {showCode && product.code && (
-          <span className="font-mono text-sm text-muted-foreground">
+          <span className="text-muted-foreground font-mono text-sm">
             {product.code}
           </span>
         )}
@@ -118,7 +120,7 @@ function ProductLabel({
         )}
       </div>
       {showSpecification && formattedSpecification && (
-        <span className="truncate text-xs text-muted-foreground">
+        <span className="text-muted-foreground truncate text-xs">
           {formattedSpecification}
         </span>
       )}
@@ -183,10 +185,8 @@ export function ProductSelector({
     value && !selectedProductFromList && !isFetching
   );
 
-  const { data: selectedProductFallback } = useQuery({
-    queryKey: value
-      ? productQueryKeys.detail(value)
-      : ['product', 'detail', null],
+  const { data: selectedProductFallback } = useQuery<Product>({
+    queryKey: productQueryKeys.detail(value || ''),
     queryFn: () => getProduct(value as string),
     enabled: shouldQueryById,
     staleTime: 60_000,
@@ -251,7 +251,7 @@ export function ProductSelector({
               </CommandEmpty>
               <CommandGroup>
                 {hasMoreResults && (
-                  <div className="px-2 py-1.5 text-xs text-muted-foreground">
+                  <div className="text-muted-foreground px-2 py-1.5 text-xs">
                     显示前 {MAX_DISPLAY_PRODUCTS} 个结果，请细化搜索
                   </div>
                 )}
@@ -327,11 +327,11 @@ export function MultiProductSelector({
   const products = productsResponse?.data ?? [];
 
   const selectedProductsQueryKey = React.useMemo(
-    () => ['product-selector', 'selected', [...value].sort()],
+    () => productQueryKeys.list({ ids: [...value].sort().join(',') }),
     [value]
   );
 
-  const { data: persistedProducts } = useQuery({
+  const { data: persistedProducts } = useQuery<Product[]>({
     queryKey: selectedProductsQueryKey,
     queryFn: async (): Promise<Product[]> => {
       const uniqueIds = Array.from(new Set(value));
@@ -404,7 +404,7 @@ export function MultiProductSelector({
               {product.name}
               <button
                 type="button"
-                className="ml-1 hover:text-destructive"
+                className="hover:text-destructive ml-1"
                 onClick={() => handleRemove(product.id)}
                 disabled={disabled}
               >

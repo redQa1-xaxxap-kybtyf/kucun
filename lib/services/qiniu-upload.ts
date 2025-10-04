@@ -122,8 +122,8 @@ async function getQiniuConfig(): Promise<QiniuConfig | null> {
 /**
  * 获取七牛云区域配置
  */
-function getQiniuZone(region: string = 'z0') {
-  const zoneMap: Record<string, any> = {
+function getQiniuZone(region: string = 'z0'): typeof qiniu.zone.Zone_z0 {
+  const zoneMap: Record<string, typeof qiniu.zone.Zone_z0> = {
     z0: qiniu.zone.Zone_z0, // 华东-浙江
     z1: qiniu.zone.Zone_z1, // 华北-河北
     z2: qiniu.zone.Zone_z2, // 华南-广东

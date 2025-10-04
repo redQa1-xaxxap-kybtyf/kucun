@@ -35,6 +35,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/components/ui/use-toast';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   SettingsApiResponse,
   SystemLogFilters,
@@ -57,7 +58,7 @@ export default function LogsSettingsPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['system-logs', page, limit, filters],
+    queryKey: queryKeys.settings.logs(),
     queryFn: async () => {
       const params = new URLSearchParams({
         page: page.toString(),
@@ -65,13 +66,27 @@ export default function LogsSettingsPage() {
       });
 
       // 添加筛选参数
-      if (filters.type) {params.append('type', filters.type);}
-      if (filters.level) {params.append('level', filters.level);}
-      if (filters.userId) {params.append('userId', filters.userId);}
-      if (filters.action) {params.append('action', filters.action);}
-      if (filters.startDate) {params.append('startDate', filters.startDate);}
-      if (filters.endDate) {params.append('endDate', filters.endDate);}
-      if (filters.search) {params.append('search', filters.search);}
+      if (filters.type) {
+        params.append('type', filters.type);
+      }
+      if (filters.level) {
+        params.append('level', filters.level);
+      }
+      if (filters.userId) {
+        params.append('userId', filters.userId);
+      }
+      if (filters.action) {
+        params.append('action', filters.action);
+      }
+      if (filters.startDate) {
+        params.append('startDate', filters.startDate);
+      }
+      if (filters.endDate) {
+        params.append('endDate', filters.endDate);
+      }
+      if (filters.search) {
+        params.append('search', filters.search);
+      }
 
       const response = await fetch(`/api/settings/logs?${params}`);
       if (!response.ok) {
@@ -124,7 +139,7 @@ export default function LogsSettingsPage() {
         variant: 'success',
       });
       // 刷新日志列表
-      queryClient.invalidateQueries({ queryKey: ['system-logs'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.logs() });
       // 重置确认文本
       setConfirmText('');
     },
@@ -307,7 +322,7 @@ export default function LogsSettingsPage() {
         </CardHeader>
         <CardContent>
           {error ? (
-            <div className="flex h-32 flex-col items-center justify-center text-muted-foreground">
+            <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
               <p>加载日志失败</p>
               <Button
                 variant="outline"

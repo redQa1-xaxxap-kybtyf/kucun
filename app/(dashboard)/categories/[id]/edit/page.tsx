@@ -40,7 +40,8 @@ import {
   getCategory,
   updateCategory,
 } from '@/lib/api/categories';
-import { UpdateCategorySchema } from '@/lib/schemas/category';
+import { queryKeys } from '@/lib/queryKeys';
+import { UpdateCategorySchema } from '@/lib/validations/category';
 
 type UpdateCategoryData = z.infer<typeof UpdateCategorySchema>;
 
@@ -65,14 +66,17 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
     isLoading: isCategoryLoading,
     error: categoryError,
   } = useQuery({
-    queryKey: ['categories', categoryId],
+    queryKey: queryKeys.categories.detail(categoryId),
     queryFn: () => getCategory(categoryId),
   });
 
   // 获取父级分类列表（排除当前分类）
   const { data: categoriesResponse, isLoading: isCategoriesLoading } = useQuery(
     {
-      queryKey: ['categories', { status: 'active', exclude: categoryId }],
+      queryKey: queryKeys.categories.list({
+        status: 'active',
+        exclude: categoryId,
+      }),
       queryFn: () => getCategories({ status: 'active', limit: 100 }),
       enabled: !!categoryId,
     }
@@ -120,9 +124,11 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
       // 精确刷新缓存
       await Promise.all([
         // 失效所有分类列表查询
-        queryClient.invalidateQueries({ queryKey: ['categories'] }),
+        queryClient.invalidateQueries({ queryKey: queryKeys.categories.all }),
         // 强制重新获取当前分类的详情数据
-        queryClient.refetchQueries({ queryKey: ['categories', categoryId] }),
+        queryClient.refetchQueries({
+          queryKey: queryKeys.categories.detail(categoryId),
+        }),
       ]);
 
       // 延迟跳转，让用户看到成功提示

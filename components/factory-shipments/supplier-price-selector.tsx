@@ -15,7 +15,7 @@ import {
   getLatestSupplierPrice,
   useSupplierPriceHistory,
 } from '@/hooks/use-price-history';
-import type { CreateFactoryShipmentOrderData } from '@/lib/schemas/factory-shipment';
+import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
 
 interface SupplierPriceSelectorProps {
   form: UseFormReturn<CreateFactoryShipmentOrderData>;
@@ -26,7 +26,7 @@ interface SupplierPriceSelectorProps {
 
 /**
  * 供应商价格选择器组件
- * 
+ *
  * 功能：
  * 1. 选择供应商
  * 2. 自动查询供应商的产品历史价格
@@ -77,14 +77,7 @@ export function SupplierPriceSelector({
         }
       }
     }
-  }, [
-    value,
-    currentProductId,
-    supplierPriceHistoryData,
-    form,
-    index,
-    toast,
-  ]);
+  }, [value, currentProductId, supplierPriceHistoryData, form, index, toast]);
 
   return (
     <FormItem>
@@ -101,4 +94,3 @@ export function SupplierPriceSelector({
     </FormItem>
   );
 }
-

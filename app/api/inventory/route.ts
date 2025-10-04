@@ -1,15 +1,17 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
+import { successResponse, withAuth } from '@/lib/auth/api-helpers';
 import { formatPaginatedResponse } from '@/lib/api/inventory-formatter';
 import {
   getInventoryCount,
   getOptimizedInventoryList,
 } from '@/lib/api/inventory-query-builder';
-import { authOptions } from '@/lib/auth';
-import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
+import {
+  buildCacheKey,
+  getOrSetJSON,
+  CACHE_STRATEGY,
+} from '@/lib/cache';
 import { prisma } from '@/lib/db';
-import { cacheConfig, env } from '@/lib/env';
 import { logger } from '@/lib/utils/console-logger';
 import {
   inventoryAdjustSchema,
@@ -17,18 +19,8 @@ import {
 } from '@/lib/validations/inventory';
 
 // 获取库存列表
-export async function GET(request: NextRequest) {
-  try {
-    // 验证用户权限 (开发环境下临时绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-    }
+export const GET = withAuth(
+  async (request: NextRequest, { user }) => {
 
     const { searchParams } = new URL(request.url);
 
@@ -87,41 +79,21 @@ export async function GET(request: NextRequest) {
           queryParams.limit
         );
       },
-      cacheConfig.inventoryTtl // 使用配置的库存缓存TTL
+      CACHE_STRATEGY.volatileData.redisTTL, // 库存数据变动频繁，使用较短缓存 (2分钟)
+      {
+        enableRandomTTL: true, // 防止缓存雪崩
+        enableNullCache: true, // 防止缓存穿透
+      }
     );
 
     return NextResponse.json({ success: true, data: cached });
-  } catch (error) {
-    logger.error('inventory-api', '获取库存列表错误:', error);
-    // 添加更详细的错误信息
-    if (error instanceof Error) {
-      logger.error('inventory-api', '错误堆栈:', error.stack);
-    }
+  },
+  { permissions: ['inventory:view'] }
+);
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '获取库存列表失败',
-      },
-      { status: 500 }
-    );
-  }
-}
-
-// 库存调整
-export async function POST(request: NextRequest) {
-  try {
-    // 验证用户权限 (开发环境下临时绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-    }
-
+// 库存调整（已弃用 - 使用 /api/inventory/adjust 端点）
+export const POST = withAuth(
+  async (request: NextRequest, { user }) => {
     const body = await request.json();
 
     // 验证输入数据
@@ -139,51 +111,25 @@ export async function POST(request: NextRequest) {
 
     const { productId } = validationResult.data;
 
-    const pid = productId as string;
-
-    try {
-      await prisma.$transaction(async tx => {
-        // 验证产品是否存在（事务内保证一致性）
-        const product = await tx.product.findUnique({
-          where: { id: pid },
-        });
-        if (!product) {
-          throw new Error('BAD_REQUEST: 指定的产品不存在');
-        }
-
-        // 修复：库存调整应通过专用的 /api/inventory/adjust 端点处理
-        // 这里只保留基本的库存查询功能，移除调整逻辑
-        throw new Error(
-          'BAD_REQUEST: 库存调整请使用 /api/inventory/adjust 端点'
-        );
-      });
-
+    // 验证产品是否存在
+    const product = await prisma.product.findUnique({
+      where: { id: productId as string },
+    });
+    if (!product) {
       return NextResponse.json(
-        {
-          success: false,
-          error: '库存调整请使用 /api/inventory/adjust 端点',
-        },
+        { success: false, error: '指定的产品不存在' },
         { status: 400 }
       );
-    } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
-      if (msg.startsWith('BAD_REQUEST:')) {
-        return NextResponse.json(
-          { success: false, error: msg.replace('BAD_REQUEST: ', '') },
-          { status: 400 }
-        );
-      }
-      throw err;
     }
-  } catch (error) {
-    logger.error('inventory-api', '库存调整错误:', error);
 
+    // 返回错误：库存调整应通过专用端点处理
     return NextResponse.json(
       {
         success: false,
-        error: error instanceof Error ? error.message : '库存调整失败',
+        error: '库存调整请使用 /api/inventory/adjust 端点',
       },
-      { status: 500 }
+      { status: 400 }
     );
-  }
-}
+  },
+  { permissions: ['inventory:adjust'] }
+);

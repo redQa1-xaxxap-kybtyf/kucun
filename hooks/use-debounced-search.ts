@@ -164,6 +164,7 @@ export function useDebounce<T>(value: T, delay: number): T {
  * @param deps 依赖数组
  * @returns 防抖后的回调函数
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function useDebouncedCallback<T extends (...args: any[]) => any>(
   callback: T,
   delay: number,

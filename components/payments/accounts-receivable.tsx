@@ -99,7 +99,10 @@ const AccountsReceivableComponent = React.forwardRef<
     };
 
     // 处理筛选
-    const handleFilter = (key: keyof AccountsReceivableQuery, value: any) => {
+    const handleFilter = (
+      key: keyof AccountsReceivableQuery,
+      value: string | number | boolean | undefined
+    ) => {
       onQueryChange({ [key]: value, page: 1 });
     };
 
@@ -115,7 +118,7 @@ const AccountsReceivableComponent = React.forwardRef<
 
     // 处理排序
     const handleSort = (sortBy: string, sortOrder: 'asc' | 'desc') => {
-      onQueryChange({ sortBy: sortBy as any, sortOrder });
+      onQueryChange({ sortBy, sortOrder });
     };
 
     // 获取付款状态配置
@@ -197,7 +200,7 @@ const AccountsReceivableComponent = React.forwardRef<
           return (
             <div className="space-y-1">
               <Progress value={progress} className="h-2" />
-              <div className="text-center text-xs text-muted-foreground">
+              <div className="text-muted-foreground text-center text-xs">
                 {progress}%
               </div>
             </div>
@@ -304,7 +307,7 @@ const AccountsReceivableComponent = React.forwardRef<
                 >
                   {receivable.orderNumber}
                 </Link>
-                <div className="mt-1 text-sm text-muted-foreground">
+                <div className="text-muted-foreground mt-1 text-sm">
                   {receivable.customerName}
                 </div>
               </div>
@@ -410,7 +413,7 @@ const AccountsReceivableComponent = React.forwardRef<
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-muted-foreground text-sm font-medium">
                     总应收金额
                   </p>
                   <p className="text-2xl font-bold">
@@ -426,7 +429,7 @@ const AccountsReceivableComponent = React.forwardRef<
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-muted-foreground text-sm font-medium">
                     已收金额
                   </p>
                   <p className="text-2xl font-bold text-green-600">
@@ -442,7 +445,7 @@ const AccountsReceivableComponent = React.forwardRef<
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-muted-foreground text-sm font-medium">
                     待收金额
                   </p>
                   <p className="text-2xl font-bold text-orange-600">
@@ -458,7 +461,7 @@ const AccountsReceivableComponent = React.forwardRef<
             <CardContent className="p-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-muted-foreground text-sm font-medium">
                     收款率
                   </p>
                   <p className="text-2xl font-bold">
@@ -474,11 +477,11 @@ const AccountsReceivableComponent = React.forwardRef<
         {/* 搜索和筛选栏 */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-x-4 md:space-y-0">
+            <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 md:space-x-4">
               {/* 搜索框 */}
               <div className="max-w-md flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                   <Input
                     placeholder="搜索订单号、客户名称..."
                     value={searchValue}
@@ -524,7 +527,7 @@ const AccountsReceivableComponent = React.forwardRef<
         {receivables.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <DollarSign className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+              <DollarSign className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
               <p className="text-muted-foreground">暂无应收账款</p>
             </CardContent>
           </Card>
@@ -573,7 +576,7 @@ function AccountsReceivableSkeleton() {
       {/* 搜索筛选骨架屏 */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-x-4 md:space-y-0">
+          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 md:space-x-4">
             <Skeleton className="h-10 w-full max-w-md" />
             <div className="flex items-center space-x-2">
               <Skeleton className="h-10 w-32" />

@@ -1,19 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 
 // 获取待办事项数据
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated || !auth.userId) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const todos: Array<{
@@ -59,7 +55,7 @@ export async function GET(_request: NextRequest) {
         relatedId: order.id,
         status: 'pending' as const,
         createdAt: order.createdAt.toISOString(),
-        assignedTo: session.user.id,
+        assignedTo: auth.userId!,
       });
     });
 
@@ -101,7 +97,7 @@ export async function GET(_request: NextRequest) {
         relatedId: item.productId,
         status: 'pending' as const,
         createdAt: item.updatedAt.toISOString(),
-        assignedTo: session.user.id,
+        assignedTo: auth.userId!,
       });
     });
 
@@ -141,7 +137,7 @@ export async function GET(_request: NextRequest) {
         relatedId: order.id,
         status: 'pending' as const,
         createdAt: order.createdAt.toISOString(),
-        assignedTo: session.user.id,
+        assignedTo: auth.userId!,
       });
     });
 
@@ -150,7 +146,9 @@ export async function GET(_request: NextRequest) {
     todos.sort((a, b) => {
       const priorityDiff =
         priorityOrder[b.priority] - priorityOrder[a.priority];
-      if (priorityDiff !== 0) {return priorityDiff;}
+      if (priorityDiff !== 0) {
+        return priorityDiff;
+      }
 
       return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
     });

@@ -1,22 +1,38 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
 import { ApiError } from '@/lib/api/errors';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
+import { publishOrderStatus } from '@/lib/events';
 import {
   createTransferPayableRecord,
   validateStatusTransition,
 } from '@/lib/services/sales-order-service';
-import { logger } from '@/lib/utils/console-logger';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateOrderStatusSchema } from '@/lib/validations/sales-order';
 
 /**
  * 格式化销售订单数据
  */
-function formatSalesOrder(salesOrder: any) {
+function formatSalesOrder(salesOrder: {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  totalAmount: number;
+  status: string;
+  remarks?: string | null;
+  customer: unknown;
+  user: unknown;
+  items: Array<{
+    id: string;
+    productId: string;
+    colorCode?: string | null;
+    quantity: number;
+    unitPrice: number;
+    totalPrice: number;
+    remarks?: string | null;
+  }>;
+}) {
   return {
     id: salesOrder.id,
     orderNumber: salesOrder.orderNumber,
@@ -27,7 +43,7 @@ function formatSalesOrder(salesOrder: any) {
     remarks: salesOrder.remarks,
     customer: salesOrder.customer,
     user: salesOrder.user,
-    items: salesOrder.items.map((item: any) => ({
+    items: salesOrder.items.map(item => ({
       id: item.id,
       productId: item.productId,
       colorCode: item.colorCode,
@@ -43,20 +59,9 @@ function formatSalesOrder(salesOrder: any) {
 }
 
 // 获取单个销售订单信息
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-
-    // 验证用户权限
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        throw ApiError.unauthorized();
-      }
-    }
+export const GET = withAuth(
+  async (request: NextRequest, { params }) => {
+    const { id } = await (params as Promise<{ id: string }>);
 
     const salesOrder = await prisma.salesOrder.findUnique({
       where: { id },
@@ -134,47 +139,15 @@ export async function GET(
       success: true,
       data: formattedOrder,
     });
-  } catch (error) {
-    if (error instanceof ApiError) {
-      throw error;
-    }
-    logger.error('sales-api', '获取销售订单信息错误:', error);
-    throw ApiError.internalError('获取销售订单信息失败');
-  }
-}
+  },
+  { permissions: ['orders:view'] }
+);
 
 // 更新销售订单状态
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  try {
-    // 验证用户权限并获取用户ID
-    let userId: string;
-    let session = null;
-
-    if (env.NODE_ENV === 'development') {
-      // 开发环境下使用数据库中的第一个用户
-      const user = await prisma.user.findFirst();
-      if (!user) {
-        return NextResponse.json(
-          { success: false, error: '开发环境下未找到可用用户' },
-          { status: 500 }
-        );
-      }
-      userId = user.id;
-    } else {
-      // 生产环境下验证会话
-      session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-      userId = session.user.id;
-    }
+export const PUT = withAuth(
+  async (request: NextRequest, { user, params }) => {
+    const { id } = await (params as Promise<{ id: string }>);
+    const userId = user.id;
 
     const body = await request.json();
 
@@ -350,20 +323,23 @@ export async function PUT(
       updatedAt: fullOrder.updatedAt,
     };
 
+    // 发布订单状态变更事件
+    await publishOrderStatus({
+      orderType: 'sales',
+      orderId: fullOrder.id,
+      orderNumber: fullOrder.orderNumber,
+      oldStatus: existingOrder.status,
+      newStatus: fullOrder.status,
+      customerId: fullOrder.customerId,
+      customerName: fullOrder.customer.name,
+      userId: user.id,
+    });
+
     return NextResponse.json({
       success: true,
       data: formattedOrder,
       message: '销售订单更新成功',
     });
-  } catch (error) {
-    console.error('更新销售订单错误:', error);
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '更新销售订单失败',
-      },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['orders:edit'] }
+);

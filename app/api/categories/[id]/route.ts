@@ -8,13 +8,16 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { ApiError } from '@/lib/api/errors';
 import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import { prisma } from '@/lib/db';
-import { UpdateCategorySchema } from '@/lib/schemas/category';
+import { UpdateCategorySchema } from '@/lib/validations/category';
 
 /**
  * GET /api/categories/[id] - 获取单个分类详情
  */
 export const GET = withErrorHandling(
-  async (_request: NextRequest, context: { params?: Promise<{ id: string }> | { id: string } }) => {
+  async (
+    _request: NextRequest,
+    context: { params?: Promise<{ id: string }> | { id: string } }
+  ) => {
     const { id } = await resolveParams(context.params);
 
     // 验证ID格式
@@ -25,9 +28,29 @@ export const GET = withErrorHandling(
     // 查询分类
     const category = await prisma.category.findUnique({
       where: { id },
-      include: {
-        parent: true,
-        children: true,
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        parentId: true,
+        sortOrder: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
         _count: {
           select: {
             products: true,
@@ -40,34 +63,12 @@ export const GET = withErrorHandling(
       throw ApiError.notFound('分类');
     }
 
-    // 转换数据格式
-    const transformedCategory = {
-      id: category.id,
-      name: category.name,
-      code: category.code,
-      parentId: category.parentId || undefined,
-      sortOrder: category.sortOrder,
-      status: category.status as 'active' | 'inactive',
-      createdAt: category.createdAt.toISOString(),
-      updatedAt: category.updatedAt.toISOString(),
-      parent: category.parent
-        ? {
-            id: category.parent.id,
-            name: category.parent.name,
-            code: category.parent.code,
-          }
-        : undefined,
-      children: category.children.map(child => ({
-        id: child.id,
-        name: child.name,
-        code: child.code,
-      })),
-      productCount: category._count.products,
-    };
-
     return NextResponse.json({
       success: true,
-      data: transformedCategory,
+      data: {
+        ...category,
+        productCount: category._count.products,
+      },
     });
   }
 );
@@ -76,7 +77,10 @@ export const GET = withErrorHandling(
  * PUT /api/categories/[id] - 更新分类
  */
 export const PUT = withErrorHandling(
-  async (request: NextRequest, context: { params?: Promise<{ id: string }> | { id: string } }) => {
+  async (
+    request: NextRequest,
+    context: { params?: Promise<{ id: string }> | { id: string } }
+  ) => {
     const { id } = await resolveParams(context.params);
     const body = await request.json();
 
@@ -91,6 +95,7 @@ export const PUT = withErrorHandling(
     // 检查分类是否存在
     const existingCategory = await prisma.category.findUnique({
       where: { id },
+      select: { id: true, name: true },
     });
 
     if (!existingCategory) {
@@ -106,6 +111,7 @@ export const PUT = withErrorHandling(
           name: validatedData.name,
           id: { not: id },
         },
+        select: { id: true },
       });
 
       if (nameExists) {
@@ -123,6 +129,7 @@ export const PUT = withErrorHandling(
       // 检查父级分类是否存在
       const parentExists = await prisma.category.findUnique({
         where: { id: validatedData.parentId },
+        select: { id: true },
       });
 
       if (!parentExists) {
@@ -139,9 +146,29 @@ export const PUT = withErrorHandling(
         parentId: validatedData.parentId,
         sortOrder: validatedData.sortOrder,
       },
-      include: {
-        parent: true,
-        children: true,
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        parentId: true,
+        sortOrder: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        children: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
         _count: {
           select: {
             products: true,
@@ -150,34 +177,12 @@ export const PUT = withErrorHandling(
       },
     });
 
-    // 转换数据格式
-    const transformedCategory = {
-      id: updatedCategory.id,
-      name: updatedCategory.name,
-      code: updatedCategory.code,
-      parentId: updatedCategory.parentId || undefined,
-      sortOrder: updatedCategory.sortOrder,
-      status: updatedCategory.status as 'active' | 'inactive',
-      createdAt: updatedCategory.createdAt.toISOString(),
-      updatedAt: updatedCategory.updatedAt.toISOString(),
-      parent: updatedCategory.parent
-        ? {
-            id: updatedCategory.parent.id,
-            name: updatedCategory.parent.name,
-            code: updatedCategory.parent.code,
-          }
-        : undefined,
-      children: updatedCategory.children.map(child => ({
-        id: child.id,
-        name: child.name,
-        code: child.code,
-      })),
-      productCount: updatedCategory._count.products,
-    };
-
     return NextResponse.json({
       success: true,
-      data: transformedCategory,
+      data: {
+        ...updatedCategory,
+        productCount: updatedCategory._count.products,
+      },
     });
   }
 );
@@ -186,7 +191,10 @@ export const PUT = withErrorHandling(
  * DELETE /api/categories/[id] - 删除分类
  */
 export const DELETE = withErrorHandling(
-  async (_request: NextRequest, context: { params?: Promise<{ id: string }> | { id: string } }) => {
+  async (
+    _request: NextRequest,
+    context: { params?: Promise<{ id: string }> | { id: string } }
+  ) => {
     const { id } = await resolveParams(context.params);
 
     // 验证ID格式
@@ -197,8 +205,13 @@ export const DELETE = withErrorHandling(
     // 检查分类是否存在
     const existingCategory = await prisma.category.findUnique({
       where: { id },
-      include: {
-        children: true,
+      select: {
+        id: true,
+        children: {
+          select: {
+            id: true,
+          },
+        },
         _count: {
           select: {
             products: true,

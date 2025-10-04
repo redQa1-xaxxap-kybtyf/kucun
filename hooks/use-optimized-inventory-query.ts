@@ -38,6 +38,8 @@ interface UseOptimizedInventoryQueryOptions {
   staleTime?: number;
   /** 垃圾回收时间（毫秒） */
   cacheTime?: number;
+  /** 初始数据 */
+  initialData?: InventoryListResponse;
 }
 
 /**
@@ -50,6 +52,7 @@ export function useOptimizedInventoryQuery({
   prefetchPrev = false,
   staleTime = 5 * 60 * 1000, // 5分钟
   cacheTime = 10 * 60 * 1000, // 10分钟
+  initialData,
 }: UseOptimizedInventoryQueryOptions) {
   const queryClient = useQueryClient();
 
@@ -76,6 +79,7 @@ export function useOptimizedInventoryQuery({
     enabled,
     staleTime,
     gcTime: cacheTime,
+    initialData,
     placeholderData: previousData => previousData,
     // 错误重试配置
     retry: (failureCount, error) => {
@@ -119,9 +123,9 @@ export function useOptimizedInventoryQuery({
 
   // 自动预取相邻页面
   React.useEffect(() => {
-    if (!(query.data as any)?.pagination || !enabled) return;
+    if (!query.data?.pagination || !enabled) return;
 
-    const { page, totalPages } = (query.data as any).pagination;
+    const { page, totalPages } = query.data.pagination;
 
     // 预取下一页
     if (prefetchNext && page < totalPages) {
@@ -135,7 +139,7 @@ export function useOptimizedInventoryQuery({
       prefetchPage(prevParams);
     }
   }, [
-    (query.data as any)?.pagination,
+    query.data?.pagination,
     params,
     prefetchNext,
     prefetchPrev,

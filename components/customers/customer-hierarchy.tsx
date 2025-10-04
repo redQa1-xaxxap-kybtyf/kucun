@@ -34,6 +34,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 // API and Types
 import { searchCustomers } from '@/lib/api/customers';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   type Customer,
   CUSTOMER_TYPE_LABELS,
@@ -72,7 +73,9 @@ export function CustomerHierarchyTree({
     parentId?: string,
     level = 0
   ): CustomerTreeNode[] => {
-    if (level > maxLevel) {return [];}
+    if (level > maxLevel) {
+      return [];
+    }
 
     return customers
       .filter(customer => customer.parentCustomerId === parentId)
@@ -125,8 +128,8 @@ export function CustomerHierarchyTree({
     return (
       <div key={node.id} className="select-none">
         <div
-          className={`flex cursor-pointer items-center rounded-md px-3 py-2 transition-colors hover:bg-muted/50 ${
-            isSelected ? 'border border-primary/20 bg-primary/10' : ''
+          className={`hover:bg-muted/50 flex cursor-pointer items-center rounded-md px-3 py-2 transition-colors ${
+            isSelected ? 'border-primary/20 bg-primary/10 border' : ''
           }`}
           style={{ paddingLeft: `${12 + node.level * 20}px` }}
           onClick={() => onSelectCustomer?.(node)}
@@ -155,7 +158,7 @@ export function CustomerHierarchyTree({
           </div>
 
           {/* 客户图标 */}
-          <div className="mr-2 text-muted-foreground">
+          <div className="text-muted-foreground mr-2">
             {getCustomerIcon(node.extendedInfo)}
           </div>
 
@@ -189,7 +192,7 @@ export function CustomerHierarchyTree({
             </div>
 
             {/* 联系信息 */}
-            <div className="truncate text-xs text-muted-foreground">
+            <div className="text-muted-foreground truncate text-xs">
               {node.phone && <span>{node.phone}</span>}
               {node.phone && node.address && <span className="mx-1">•</span>}
               {node.address && <span>{node.address}</span>}
@@ -199,7 +202,7 @@ export function CustomerHierarchyTree({
             {showStats &&
               (node.totalOrders !== undefined ||
                 node.totalAmount !== undefined) && (
-                <div className="mt-1 text-xs text-muted-foreground">
+                <div className="text-muted-foreground mt-1 text-xs">
                   {node.totalOrders !== undefined && (
                     <span>订单: {node.totalOrders}</span>
                   )}
@@ -234,7 +237,7 @@ export function CustomerHierarchyTree({
 
   if (treeData.length === 0) {
     return (
-      <div className="py-8 text-center text-muted-foreground">
+      <div className="text-muted-foreground py-8 text-center">
         <Building2 className="mx-auto mb-4 h-12 w-12 opacity-50" />
         <p>暂无客户数据</p>
       </div>
@@ -252,6 +255,7 @@ export function CustomerHierarchyTree({
 
 // 客户选择器组件属性
 interface CustomerSelectorProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React Hook Form Control 泛型参数
   control: Control<any>;
   name: string;
   label?: string;
@@ -281,7 +285,7 @@ export function CustomerSelector({
 
   // 搜索客户
   const { data: searchResults, isLoading } = useQuery({
-    queryKey: ['customers', 'search', searchQuery, excludeId],
+    queryKey: queryKeys.customers.list({ search: searchQuery, excludeId }),
     queryFn: () => searchCustomers(searchQuery, { excludeId }),
     enabled: searchQuery.length > 0,
     staleTime: 30000, // 30秒缓存
@@ -289,11 +293,15 @@ export function CustomerSelector({
 
   // 获取选中的客户信息
   const { data: selectedCustomer } = useQuery({
-    queryKey: ['customers', 'detail', field.value],
+    queryKey: queryKeys.customers.detail(field.value || ''),
     queryFn: async () => {
-      if (!field.value) {return null;}
+      if (!field.value) {
+        return null;
+      }
       const response = await fetch(`/api/customers/${field.value}`);
-      if (!response.ok) {return null;}
+      if (!response.ok) {
+        return null;
+      }
       const result = await response.json();
       return result.data;
     },
@@ -302,7 +310,7 @@ export function CustomerSelector({
 
   const customers = searchResults || [];
   const filteredCustomers = onlyParents
-    ? customers.filter((customer: any) => !customer.parentCustomerId)
+    ? customers.filter(customer => !customer.parentCustomerId)
     : customers;
 
   return (
@@ -382,7 +390,7 @@ export function CustomerSelector({
                     </div>
                   </CommandItem>
 
-                  {filteredCustomers.map((customer: any) => (
+                  {filteredCustomers.map(customer => (
                     <CommandItem
                       key={customer.id}
                       value={customer.id}
@@ -425,7 +433,7 @@ export function CustomerSelector({
                               return null;
                             })()}
                         </div>
-                        <div className="truncate text-xs text-muted-foreground">
+                        <div className="text-muted-foreground truncate text-xs">
                           {customer.phone && <span>{customer.phone}</span>}
                           {customer.phone && customer.address && (
                             <span className="mx-1">•</span>

@@ -1,0 +1,157 @@
+165:52  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+69:19  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+181:22  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+182:32  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+36:29  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+258:20  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+161:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+166:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+185:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+204:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+228:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+132:38  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+298:67  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+361:42  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+130:31  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+147:31  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+161:31  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+193:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+--
+102:70  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+118:41  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+102:65  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+118:41  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+212:43  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+138:57  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+147:25  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+151:42  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+174:59  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+407:64  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+147:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+152:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+171:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+190:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+38:13  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+283:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+578:39  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+685:51  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+413:44  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+762:29  Warning: '_selectedProduct' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+--
+1341:39  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+1346:17  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+--
+89:13  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+16:23  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+129:27  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+147:10  Warning: '_isAdvancedOpen' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+--
+249:40  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+312:48  Warning: '_customer' is defined but never used.  @typescript-eslint/no-unused-vars
+457:66  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+47:20  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+232:3  Warning: '_mode' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+--
+233:20  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+237:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+238:37  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+240:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+241:37  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+243:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+244:37  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+246:26  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+247:37  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+162:33  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+171:14  Warning: 'error' is defined but never used.  @typescript-eslint/no-unused-vars
+349:38  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+403:15  Warning: '_customerId' is defined but never used.  @typescript-eslint/no-unused-vars
+--
+225:42  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+25:20  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+77:51  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+46:27  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+110:59  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+84:36  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+149:8  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+103:49  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+104:49  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+150:49  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+217:49  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+85:54  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+133:59  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+237:53  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+237:70  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+273:12  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+370:34  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+53:27  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+56:27  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+303:13  Warning: '_profitAmount' is assigned a value but never used.  @typescript-eslint/no-unused-vars
+--
+126:33  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+201:5  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+--
+9:34  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+47:38  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+258:28  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+259:29  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+
+--
+401:49  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+421:9  Warning: Unexpected console statement. Only these console methods are allowed: warn, error.  no-console
+--
+309:41  Error: Unexpected any. Specify a different type.  @typescript-eslint/no-explicit-any
+

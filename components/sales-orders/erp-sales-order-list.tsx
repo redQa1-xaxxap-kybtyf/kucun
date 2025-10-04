@@ -1,9 +1,10 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Edit, Eye, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
+import { toast } from 'sonner';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useOrderUpdates } from '@/hooks/use-websocket';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { paginationConfig } from '@/lib/env';
 import { type PaginatedResponse } from '@/lib/types/api';
@@ -56,6 +58,7 @@ export function ERPSalesOrderList({
   initialParams,
 }: ERPSalesOrderListProps) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [queryParams, setQueryParams] = React.useState<SalesOrderQueryParams>(
     initialParams || {
       page: 1,
@@ -77,6 +80,34 @@ export function ERPSalesOrderList({
     // keepPreviousData: true, // TanStack Query v5 中已移除
     refetchOnMount: false, // 避免挂载时重新获取
   });
+
+  // 订阅订单状态实时更新
+  useOrderUpdates(
+    React.useCallback(
+      event => {
+        // 更新本地订单缓存
+        queryClient.setQueryData(
+          salesOrderQueryKeys.detail(event.orderId),
+          (old: SalesOrder | undefined) =>
+            old ? { ...old, status: event.newStatus } : old
+        );
+
+        // 刷新订单列表
+        queryClient.invalidateQueries({
+          queryKey: salesOrderQueryKeys.lists(),
+        });
+
+        // 显示状态变更通知
+        const statusLabel =
+          SALES_ORDER_STATUS_LABELS[event.newStatus as SalesOrderStatus] ||
+          event.newStatus;
+        toast.info(`订单 ${event.orderNumber} 状态更新`, {
+          description: `${event.oldStatus} → ${statusLabel}`,
+        });
+      },
+      [queryClient]
+    )
+  );
 
   // 搜索处理
   const handleSearch = (value: string) => {

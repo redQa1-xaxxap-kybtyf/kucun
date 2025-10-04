@@ -232,7 +232,7 @@ export interface DashboardWidget {
     w: number;
     h: number;
   };
-  config: any; // 小部件特定配置
+  config: Record<string, unknown>; // 小部件特定配置
   visible: boolean;
   refreshable: boolean;
 }

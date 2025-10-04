@@ -47,10 +47,10 @@ export function generateCaptchaText(): string {
 }
 
 /**
- * 生成验证码会话ID
+ * 生成验证码会话ID (UUID v4)
  */
 export function generateSessionId(): string {
-  return crypto.randomBytes(32).toString('hex');
+  return crypto.randomUUID();
 }
 
 /**
@@ -134,6 +134,11 @@ export async function createCaptchaSession(
 ): Promise<{ sessionId: string; captchaImage: string }> {
   const captchaText = generateCaptchaText();
   const sessionId = generateSessionId();
+
+  console.log(
+    `[验证码生成] SessionID: ${sessionId}, 格式: ${sessionId.length}字符, 是否UUID: ${/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)}`
+  );
+
   const expiresAt = new Date(
     Date.now() + CAPTCHA_CONFIG.expireMinutes * 60 * 1000
   );
@@ -212,20 +217,30 @@ export async function verifyCaptcha(
   success: boolean;
   error?: string;
 }> {
+  console.log(
+    `[验证码验证] 开始验证 - SessionID: ${sessionId}, 输入: ${captcha}, IP: ${clientIp}`
+  );
+
   // 获取会话
   const session = await getCaptchaSession(sessionId);
 
   if (!session) {
+    console.log(`[验证码验证] 失败 - 会话不存在: ${sessionId}`);
     return {
       success: false,
       error: '验证码会话不存在或已过期',
     };
   }
 
+  console.log(
+    `[验证码验证] 会话信息 - 正确验证码: ${session.captchaText}, 尝试次数: ${session.attempts}, 过期时间: ${session.expiresAt}`
+  );
+
   // 检查是否过期
   const expiresAt = new Date(session.expiresAt);
   if (new Date() > expiresAt) {
     await deleteCaptchaSession(sessionId);
+    console.log(`[验证码验证] 失败 - 验证码已过期`);
     return {
       success: false,
       error: '验证码已过期',
@@ -235,6 +250,7 @@ export async function verifyCaptcha(
   // 检查尝试次数
   if (session.attempts >= CAPTCHA_CONFIG.maxAttempts) {
     await deleteCaptchaSession(sessionId);
+    console.log(`[验证码验证] 失败 - 尝试次数过多: ${session.attempts}`);
     return {
       success: false,
       error: '验证码尝试次数过多',
@@ -250,12 +266,17 @@ export async function verifyCaptcha(
 
   // 验证验证码
   const isValid = captcha.toUpperCase() === session.captchaText;
+  console.log(
+    `[验证码验证] 比较结果 - 输入(大写): ${captcha.toUpperCase()}, 正确: ${session.captchaText}, 匹配: ${isValid}`
+  );
 
   if (isValid) {
     // 验证成功
     if (deleteAfterVerify) {
       await deleteCaptchaSession(sessionId);
-      console.log(`验证码验证成功,会话已删除: ${sessionId}`);
+      console.log(`[验证码验证] 成功 - 会话已删除: ${sessionId}`);
+    } else {
+      console.log(`[验证码验证] 成功 - 会话保留: ${sessionId}`);
     }
 
     return {
@@ -265,6 +286,9 @@ export async function verifyCaptcha(
     // 验证失败,增加尝试次数
     session.attempts += 1;
     await updateCaptchaSession(session);
+    console.log(
+      `[验证码验证] 失败 - 验证码错误, 尝试次数增加到: ${session.attempts}`
+    );
 
     return {
       success: false,

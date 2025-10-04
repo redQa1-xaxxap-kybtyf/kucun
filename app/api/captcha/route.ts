@@ -11,6 +11,7 @@ import {
   createCaptchaSession,
   verifyCaptcha,
 } from '@/lib/services/captcha-service';
+import { verifyCaptchaSchema } from '@/lib/validations/captcha';
 
 /**
  * GET - 生成新的验证码
@@ -54,18 +55,38 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 /**
  * POST - 验证验证码（用于预验证，可选）
+ * 使用 Zod schema 进行参数验证，遵循"唯一真理源"规范
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
-    const { sessionId, captcha, deleteAfterVerify } = body;
+    console.log('[验证码API] 收到验证请求:', JSON.stringify(body));
 
-    if (!sessionId || !captcha) {
+    // 使用 Zod schema 验证输入
+    const validationResult = verifyCaptchaSchema.safeParse(body);
+
+    if (!validationResult.success) {
+      console.log(
+        '[验证码API] Zod验证失败:',
+        JSON.stringify(validationResult.error.issues)
+      );
       return NextResponse.json(
-        { success: false, error: '缺少必要参数' },
+        {
+          success: false,
+          error: '参数验证失败',
+          details: validationResult.error.issues,
+        },
         { status: 400 }
       );
     }
+
+    const { sessionId, captcha, deleteAfterVerify } = validationResult.data;
+    console.log(
+      '[验证码API] Zod验证通过 - SessionID:',
+      sessionId,
+      'Captcha:',
+      captcha
+    );
 
     // 获取客户端IP地址
     const clientIp =
@@ -82,18 +103,20 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
 
     if (result.success) {
+      console.log('[验证码API] 验证成功');
       return NextResponse.json({
         success: true,
         message: '验证码验证成功',
       });
     } else {
+      console.log('[验证码API] 验证失败:', result.error);
       return NextResponse.json(
         { success: false, error: result.error },
         { status: 400 }
       );
     }
   } catch (error) {
-    console.error('验证验证码失败:', error);
+    console.error('[验证码API] 异常:', error);
 
     return NextResponse.json(
       { success: false, error: '验证验证码失败' },

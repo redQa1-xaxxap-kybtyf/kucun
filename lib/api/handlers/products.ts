@@ -13,6 +13,20 @@ type _ProductWithRelations = Prisma.ProductGetPayload<{
   };
 }>;
 
+// 定义产品变体类型
+type ProductVariantWithRelations = Prisma.ProductVariantGetPayload<{
+  select: {
+    id: true;
+    sku: true;
+    colorCode: true;
+    colorName: true;
+    colorValue: true;
+    status: true;
+    createdAt: true;
+    updatedAt: true;
+  };
+}>;
+
 /**
  * 根据ID获取产品详情
  */
@@ -222,7 +236,22 @@ export async function deleteProduct(id: string) {
 /**
  * 格式化产品数据
  */
-function formatProduct(product: any) {
+function formatProduct(product: {
+  id: string;
+  name: string;
+  code: string;
+  categoryId?: string | null;
+  specification?: string | null;
+  unit: string;
+  purchasePrice: number;
+  salePrice: number;
+  minStock: number;
+  maxStock: number;
+  status: string;
+  description?: string | null;
+  category?: { id: string; name: string } | null;
+  inventory?: Array<{ quantity: number; reservedQuantity: number }>;
+}) {
   return {
     id: product.id,
     code: product.code,

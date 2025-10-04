@@ -82,7 +82,7 @@ export async function createTestCategories() {
 /**
  * 创建测试产品
  */
-export async function createTestProducts(categories: any[]) {
+export async function createTestProducts(categories: Array<{ id: string }>) {
   const products = [
     {
       code: 'TEST-PROD-001',
@@ -130,7 +130,9 @@ export async function createTestProducts(categories: any[]) {
 /**
  * 创建测试产品变体
  */
-export async function createTestProductVariants(products: any[]) {
+export async function createTestProductVariants(
+  products: Array<{ id: string }>
+) {
   const variants = [];
 
   for (const product of products) {
@@ -234,7 +236,10 @@ export async function createTestSuppliers() {
 /**
  * 创建测试库存记录
  */
-export async function createTestInventory(products: any[], variants: any[]) {
+export async function createTestInventory(
+  products: Array<{ id: string }>,
+  variants: Array<{ id: string; productId: string }>
+) {
   const inventoryRecords = [];
 
   for (let i = 0; i < products.length; i++) {

@@ -1,10 +1,9 @@
-'use client';
-
 import { ERPCustomerForm } from '@/components/customers/erp-customer-form';
 
 /**
- * 新建客户页面
- * 使用ERP风格的紧凑布局，符合中国用户习惯
+ * 新建客户页面 - Server Component
+ * 负责数据获取和 SEO 优化
+ * 严格遵循前端架构规范：三级组件架构
  */
 export default function CreateCustomerPage() {
   return (

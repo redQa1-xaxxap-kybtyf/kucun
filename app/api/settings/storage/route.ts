@@ -6,17 +6,16 @@
 import crypto from 'crypto';
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { env, storageConfig } from '@/lib/env';
+import { storageConfig } from '@/lib/env';
 import { extractRequestInfo, logSystemEventInfo } from '@/lib/logger';
-import { QiniuStorageConfigSchema } from '@/lib/schemas/settings';
 import type {
   QiniuStorageConfig,
   SettingsApiResponse,
 } from '@/lib/types/settings';
+import { QiniuStorageConfigSchema } from '@/lib/validations/settings';
 
 // 使用环境配置的加密密钥
 const ENCRYPTION_KEY = storageConfig.encryptionKey;
@@ -74,28 +73,11 @@ function decrypt(text: string): string {
 /**
  * 获取七牛云存储配置
  */
-export async function GET(): Promise<
-  NextResponse<SettingsApiResponse<QiniuStorageConfig>>
-> {
+export const GET = withAuth(async (
+  request: NextRequest,
+  { user }
+): Promise<NextResponse<SettingsApiResponse<QiniuStorageConfig>>> => {
   try {
-    // 验证用户身份 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-
-      // 检查管理员权限
-      if (session.user.role !== 'admin') {
-        return NextResponse.json(
-          { success: false, error: '权限不足，只有管理员可以访问存储配置' },
-          { status: 403 }
-        );
-      }
-    }
 
     // 获取七牛云配置
     const settings = await prisma.systemSetting.findMany({
@@ -157,31 +139,16 @@ export async function GET(): Promise<
       { status: 500 }
     );
   }
-}
+}, { requireAdmin: true });
 
 /**
  * 保存七牛云存储配置
  */
-export async function PUT(
-  request: NextRequest
-): Promise<NextResponse<SettingsApiResponse<{ message: string }>>> {
+export const PUT = withAuth(async (
+  request: NextRequest,
+  { user }
+): Promise<NextResponse<SettingsApiResponse<{ message: string }>>> => {
   try {
-    // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-
-    // 检查管理员权限
-    if (session.user.role !== 'admin') {
-      return NextResponse.json(
-        { success: false, error: '权限不足，只有管理员可以修改存储配置' },
-        { status: 403 }
-      );
-    }
 
     // 解析请求体
     const body = await request.json();
@@ -252,7 +219,7 @@ export async function PUT(
     await logSystemEventInfo(
       'update_storage_config',
       '更新七牛云存储配置',
-      session.user.id,
+      user.id,
       requestInfo.ipAddress,
       requestInfo.userAgent,
       {
@@ -282,4 +249,4 @@ export async function PUT(
       { status: 500 }
     );
   }
-}
+}, { requireAdmin: true });

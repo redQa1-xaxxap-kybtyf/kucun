@@ -7,9 +7,7 @@ import { useWebSocket, type UseWebSocketReturn } from '@/hooks/use-websocket';
 import { inventoryQueryKeys } from '@/lib/api/inventory';
 import { productQueryKeys } from '@/lib/api/products';
 
-interface WebSocketContextType extends UseWebSocketReturn {
-  // Additional context methods can be added here
-}
+type WebSocketContextType = UseWebSocketReturn;
 
 const WebSocketContext = createContext<WebSocketContextType | null>(null);
 

@@ -9,6 +9,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
+import type { ReturnableItemsResponse } from '@/lib/services/sales-order-service';
 import type {
   ReturnOrderListResponse,
   ReturnOrderQueryParams,
@@ -270,7 +271,7 @@ export async function getReturnOrderStats(): Promise<ReturnOrderStatsResponse> {
  */
 export async function getSalesOrderReturnableItems(
   salesOrderId: string
-): Promise<any> {
+): Promise<{ success: boolean; data: ReturnableItemsResponse }> {
   const response = await fetch(
     `/api/sales-orders/${salesOrderId}/returnable-items`,
     {
@@ -367,7 +368,10 @@ export function useReturnOrderStats(
  */
 export function useSalesOrderReturnableItems(
   salesOrderId: string,
-  options?: Omit<UseQueryOptions<any>, 'queryKey' | 'queryFn'>
+  options?: Omit<
+    UseQueryOptions<{ success: boolean; data: ReturnableItemsResponse }>,
+    'queryKey' | 'queryFn'
+  >
 ) {
   return useQuery({
     queryKey: returnOrderQueryKeys.salesOrderItems(salesOrderId),

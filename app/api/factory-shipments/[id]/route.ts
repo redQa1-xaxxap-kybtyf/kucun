@@ -2,12 +2,11 @@
 // 遵循 Next.js 15.4 App Router 架构和 TypeScript 严格模式
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
-import { updateFactoryShipmentOrderSchema } from '@/lib/schemas/factory-shipment';
 import { withIdempotency } from '@/lib/utils/idempotency';
+import { updateFactoryShipmentOrderSchema } from '@/lib/validations/factory-shipment';
 
 interface RouteParams {
   params: {
@@ -19,9 +18,9 @@ interface RouteParams {
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
     // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const { id } = params;
@@ -71,11 +70,11 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
     // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated || !auth.userId) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
-    const userId = session.user.id;
+    const userId = auth.userId;
 
     const { id } = params;
 
@@ -324,9 +323,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
     // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const { id } = params;

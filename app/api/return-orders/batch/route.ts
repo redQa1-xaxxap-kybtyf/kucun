@@ -2,26 +2,16 @@
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { batchReturnOrderSchema } from '@/lib/validations/return-order';
 
 /**
  * POST /api/return-orders/batch - 批量操作退货订单
  */
-export async function POST(request: NextRequest) {
-  try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-
+export const POST = withAuth(
+  async (request: NextRequest) => {
     // 解析请求体
     const body = await request.json();
     const validationResult = batchReturnOrderSchema.safeParse(body);
@@ -86,19 +76,17 @@ export async function POST(request: NextRequest) {
       data: result,
       message: `批量${getActionName(action)}操作完成`,
     });
-  } catch (error) {
-    console.error('批量操作退货订单失败:', error);
-    return NextResponse.json(
-      { success: false, error: '批量操作退货订单失败' },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { anyPermissions: ['returns:approve', 'returns:reject', 'returns:edit'] }
+);
 
 /**
  * 批量审批通过
  */
-async function batchApprove(returnOrders: any[], remarks?: string) {
+async function batchApprove(
+  returnOrders: Array<{ id: string; status: string }>,
+  remarks?: string
+) {
   const validOrders = returnOrders.filter(
     order => order.status === 'submitted'
   );
@@ -131,7 +119,10 @@ async function batchApprove(returnOrders: any[], remarks?: string) {
 /**
  * 批量审批拒绝
  */
-async function batchReject(returnOrders: any[], remarks?: string) {
+async function batchReject(
+  returnOrders: Array<{ id: string; status: string }>,
+  remarks?: string
+) {
   const validOrders = returnOrders.filter(
     order => order.status === 'submitted'
   );
@@ -164,7 +155,10 @@ async function batchReject(returnOrders: any[], remarks?: string) {
 /**
  * 批量取消
  */
-async function batchCancel(returnOrders: any[], remarks?: string) {
+async function batchCancel(
+  returnOrders: Array<{ id: string; status: string }>,
+  remarks?: string
+) {
   const validOrders = returnOrders.filter(order =>
     ['draft', 'submitted', 'approved'].includes(order.status)
   );
@@ -196,7 +190,7 @@ async function batchCancel(returnOrders: any[], remarks?: string) {
 /**
  * 批量导出
  */
-async function batchExport(returnOrders: any[]) {
+async function batchExport(returnOrders: Array<{ id: string }>) {
   // 这里可以实现导出逻辑
   // 例如生成Excel文件、CSV文件等
 

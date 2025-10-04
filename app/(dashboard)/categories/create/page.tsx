@@ -33,7 +33,8 @@ import {
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import { createCategory, getCategories } from '@/lib/api/categories';
-import { CreateCategorySchema } from '@/lib/schemas/category';
+import { queryKeys } from '@/lib/queryKeys';
+import { CreateCategorySchema } from '@/lib/validations/category';
 
 type CreateCategoryData = z.infer<typeof CreateCategorySchema>;
 
@@ -58,7 +59,7 @@ export default function CreateCategoryPage() {
   // 获取父级分类列表
   const { data: categoriesResponse, isLoading: isCategoriesLoading } = useQuery(
     {
-      queryKey: ['categories', { status: 'active' }],
+      queryKey: queryKeys.categories.list({ status: 'active' }),
       queryFn: () => getCategories({ status: 'active', limit: 100 }),
     }
   );
@@ -77,7 +78,7 @@ export default function CreateCategoryPage() {
       });
 
       // 刷新缓存
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
 
       // 延迟跳转，让用户看到成功提示
       setTimeout(() => {

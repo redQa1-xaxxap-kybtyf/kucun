@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 import { updateRefundRecordSchema } from '@/lib/validations/refund';
 
@@ -12,9 +11,9 @@ export async function GET(
 ) {
   try {
     // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const refund = await prisma.refundRecord.findUnique({
@@ -49,9 +48,9 @@ export async function PUT(
 ) {
   try {
     // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const body = await request.json();
@@ -69,7 +68,7 @@ export async function PUT(
       });
 
       if (currentRefund) {
-        (updateData as any).remainingAmount = Math.max(
+        updateData.remainingAmount = Math.max(
           0,
           (validatedData.refundAmount || currentRefund.refundAmount) -
             validatedData.processedAmount
@@ -83,7 +82,7 @@ export async function PUT(
       });
 
       if (currentRefund) {
-        (updateData as any).remainingAmount = Math.max(
+        updateData.remainingAmount = Math.max(
           0,
           validatedData.refundAmount - (currentRefund.processedAmount || 0)
         );
@@ -120,9 +119,9 @@ export async function DELETE(
 ) {
   try {
     // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 检查退款记录是否存在且可以删除

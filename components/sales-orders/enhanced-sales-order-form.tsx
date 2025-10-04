@@ -258,7 +258,9 @@ export function EnhancedSalesOrderForm({
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!productsData?.data) {return [];}
+    if (!productsData?.data) {
+      return [];
+    }
 
     return productsData.data.filter(
       product =>
@@ -280,6 +282,7 @@ export function EnhancedSalesOrderForm({
       })),
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     createMutation.mutate(orderData as any);
   };
 
@@ -306,21 +309,21 @@ export function EnhancedSalesOrderForm({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* ERP标准布局：顶部基本信息区域 */}
-          <div className="rounded border bg-card">
-            <div className="border-b bg-muted/30 px-4 py-2">
+          <div className="bg-card rounded border">
+            <div className="bg-muted/30 border-b px-4 py-2">
               <h3 className="text-sm font-medium">基本信息</h3>
             </div>
             <div className="p-4">
               <div className="grid grid-cols-1 gap-x-6 gap-y-3 md:grid-cols-2 lg:grid-cols-4">
                 {/* 订单号 - 自动生成显示 */}
                 <div className="space-y-1">
-                  <FormLabel className="text-xs text-muted-foreground">
+                  <FormLabel className="text-muted-foreground text-xs">
                     订单号
                   </FormLabel>
-                  <div className="rounded border bg-muted/50 px-2 py-1 font-mono text-sm">
+                  <div className="bg-muted/50 rounded border px-2 py-1 font-mono text-sm">
                     {autoOrderNumber || '正在生成...'}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     系统将自动生成唯一订单号
                   </p>
                 </div>
@@ -332,7 +335,7 @@ export function EnhancedSalesOrderForm({
                     name="customerId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs text-muted-foreground">
+                        <FormLabel className="text-muted-foreground text-xs">
                           客户名称 <span className="text-destructive">*</span>
                         </FormLabel>
                         <Select
@@ -353,7 +356,7 @@ export function EnhancedSalesOrderForm({
                                     {customer.name}
                                   </span>
                                   {customer.phone && (
-                                    <span className="text-xs text-muted-foreground">
+                                    <span className="text-muted-foreground text-xs">
                                       {customer.phone}
                                     </span>
                                   )}
@@ -396,7 +399,7 @@ export function EnhancedSalesOrderForm({
                           <span className="text-muted-foreground">
                             📊 历史交易：
                           </span>
-                          <span className="font-medium text-primary">
+                          <span className="text-primary font-medium">
                             {selectedCustomer.transactionCount}次
                           </span>
                         </div>
@@ -418,7 +421,7 @@ export function EnhancedSalesOrderForm({
               <div className="space-y-2">
                 <FormLabel className="text-sm font-medium">订单号</FormLabel>
                 <div className="flex gap-2">
-                  <div className="flex-1 rounded-md border bg-muted/50 px-3 py-2 text-sm">
+                  <div className="bg-muted/50 flex-1 rounded-md border px-3 py-2 text-sm">
                     {form.watch('orderNumber') || '点击生成订单号'}
                   </div>
                   <Button
@@ -523,12 +526,12 @@ export function EnhancedSalesOrderForm({
             </CardHeader>
             <CardContent className="space-y-4">
               {/* 重要金额信息突出显示 */}
-              <div className="rounded-lg border border-primary/20 bg-linear-to-r from-primary/10 to-primary/5 p-4">
+              <div className="border-primary/20 from-primary/10 to-primary/5 rounded-lg border bg-linear-to-r p-4">
                 <div className="space-y-2 text-center">
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-muted-foreground text-sm">
                     订单总金额
                   </div>
-                  <div className="text-3xl font-bold text-primary">
+                  <div className="text-primary text-3xl font-bold">
                     ¥
                     {totalAmount.toLocaleString('zh-CN', {
                       minimumFractionDigits: 2,
@@ -540,19 +543,19 @@ export function EnhancedSalesOrderForm({
 
               {/* 详细统计信息 */}
               <div className="grid grid-cols-2 gap-4 text-sm">
-                <div className="rounded-lg bg-muted/50 p-3 text-center">
-                  <div className="mb-1 text-muted-foreground">商品种类</div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <div className="text-muted-foreground mb-1">商品种类</div>
                   <div className="text-xl font-semibold text-blue-600">
                     {fields.length}
                   </div>
-                  <div className="text-xs text-muted-foreground">种</div>
+                  <div className="text-muted-foreground text-xs">种</div>
                 </div>
-                <div className="rounded-lg bg-muted/50 p-3 text-center">
-                  <div className="mb-1 text-muted-foreground">总数量</div>
+                <div className="bg-muted/50 rounded-lg p-3 text-center">
+                  <div className="text-muted-foreground mb-1">总数量</div>
                   <div className="text-xl font-semibold text-green-600">
                     {fields.reduce((sum, item) => sum + item.quantity, 0)}
                   </div>
-                  <div className="text-xs text-muted-foreground">件</div>
+                  <div className="text-muted-foreground text-xs">件</div>
                 </div>
               </div>
 
@@ -575,7 +578,10 @@ export function EnhancedSalesOrderForm({
               items={fields.map(item => ({
                 productId: item.productId || '',
                 quantity: item.quantity,
-                batchNumber: (item as any).batchNumber || '',
+                batchNumber:
+                  'batchNumber' in item && typeof item.batchNumber === 'string'
+                    ? item.batchNumber
+                    : '',
               }))}
               products={productsData?.data || []}
               onInventoryCheck={results => {
@@ -607,7 +613,7 @@ export function EnhancedSalesOrderForm({
             </CardHeader>
             <CardContent>
               {fields.length === 0 ? (
-                <div className="py-8 text-center text-muted-foreground">
+                <div className="text-muted-foreground py-8 text-center">
                   <p className="mb-2 font-medium">暂无商品明细</p>
                   <p className="text-sm">
                     点击&ldquo;添加商品&rdquo;按钮开始添加
@@ -617,7 +623,7 @@ export function EnhancedSalesOrderForm({
                 <div className="space-y-4">
                   {/* 产品搜索 */}
                   <div className="flex items-center gap-2">
-                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Search className="text-muted-foreground h-4 w-4" />
                     <Input
                       placeholder="搜索产品名称或编码..."
                       value={productSearch}
@@ -682,7 +688,12 @@ export function EnhancedSalesOrderForm({
                               <TableCell>
                                 <Input
                                   placeholder="批次号"
-                                  value={(item as any).batchNumber || ''}
+                                  value={
+                                    'batchNumber' in item &&
+                                    typeof item.batchNumber === 'string'
+                                      ? item.batchNumber
+                                      : ''
+                                  }
                                   onChange={e =>
                                     updateOrderItem(
                                       index,
@@ -711,7 +722,7 @@ export function EnhancedSalesOrderForm({
                                     className="w-full"
                                   />
                                   {hasStockWarning && (
-                                    <div className="text-xs text-destructive">
+                                    <div className="text-destructive text-xs">
                                       {stockWarnings[index]}
                                     </div>
                                   )}
@@ -764,7 +775,7 @@ export function EnhancedSalesOrderForm({
           </Card>
 
           {/* 操作按钮 - 优化为中国用户习惯 */}
-          <div className="sticky bottom-0 border-t bg-background/95 pt-6 backdrop-blur-sm supports-backdrop-filter:bg-background/60">
+          <div className="bg-background/95 supports-backdrop-filter:bg-background/60 sticky bottom-0 border-t pt-6 backdrop-blur-sm">
             <div className="flex items-center justify-between gap-4">
               <Button
                 type="button"
@@ -818,7 +829,7 @@ export function EnhancedSalesOrderForm({
                     fields.length === 0 ||
                     !form.watch('customerId')
                   }
-                  className="min-w-[120px] bg-primary hover:bg-primary/90"
+                  className="bg-primary hover:bg-primary/90 min-w-[120px]"
                 >
                   {createMutation.isPending &&
                   form.watch('status') === 'confirmed' ? (
@@ -837,7 +848,7 @@ export function EnhancedSalesOrderForm({
             </div>
 
             {/* 提示信息 */}
-            <div className="mt-3 text-center text-xs text-muted-foreground">
+            <div className="text-muted-foreground mt-3 text-center text-xs">
               💡 保存草稿：可随时修改；提交订单：确认后进入处理流程
             </div>
           </div>

@@ -43,6 +43,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { paginationConfig } from '@/lib/env';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   type ReturnOrder,
   type ReturnOrderQueryParams,
@@ -84,7 +85,7 @@ export function ERPReturnOrderList({
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['return-orders', queryParams],
+    queryKey: queryKeys.returnOrders.list(queryParams),
     queryFn: async () =>
       // 待办：实现真实的退货订单API
       // 目前返回空数据，等待后端API实现
@@ -134,7 +135,7 @@ export function ERPReturnOrderList({
   const handleStatusFilter = (status: string) => {
     setQueryParams(prev => ({
       ...prev,
-      status: status === 'all' ? undefined : (status as any),
+      status: status === 'all' ? undefined : status,
       page: 1,
     }));
   };
@@ -143,7 +144,7 @@ export function ERPReturnOrderList({
   const handleSort = (sortBy: string) => {
     setQueryParams(prev => ({
       ...prev,
-      sortBy: sortBy as any,
+      sortBy,
       page: 1,
     }));
   };
@@ -233,12 +234,12 @@ export function ERPReturnOrderList({
   // 如果有真实数据错误且没有模拟数据，显示错误
   if (error && !displayData) {
     return (
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <h3 className="text-sm font-medium">退货订单管理</h3>
         </div>
         <div className="px-3 py-8">
-          <div className="text-center text-xs text-muted-foreground">
+          <div className="text-muted-foreground text-center text-xs">
             加载失败: {error.message}
           </div>
         </div>
@@ -247,12 +248,12 @@ export function ERPReturnOrderList({
   }
 
   return (
-    <div className="rounded border bg-card">
+    <div className="bg-card rounded border">
       {/* ERP标准工具栏 */}
-      <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-muted/30 border-b px-3 py-2">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">退货订单管理</h3>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-muted-foreground text-xs">
             {displayData?.data.pagination
               ? `共 ${displayData.data.pagination.total} 条记录`
               : ''}
@@ -261,7 +262,7 @@ export function ERPReturnOrderList({
       </div>
 
       {/* 操作工具栏 */}
-      <div className="border-b bg-muted/10 px-3 py-2">
+      <div className="bg-muted/10 border-b px-3 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button
@@ -284,16 +285,16 @@ export function ERPReturnOrderList({
       </div>
 
       {/* 筛选工具栏 */}
-      <div className="border-b bg-muted/5 px-3 py-2">
+      <div className="bg-muted/5 border-b px-3 py-2">
         <div className="flex items-center gap-2">
-          <Filter className="h-3 w-3 text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">筛选条件</span>
+          <Filter className="text-muted-foreground h-3 w-3" />
+          <span className="text-muted-foreground text-xs">筛选条件</span>
         </div>
         <div className="mt-2 flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">搜索订单</span>
+            <span className="text-muted-foreground text-xs">搜索订单</span>
             <div className="relative">
-              <Search className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+              <Search className="text-muted-foreground absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2" />
               <Input
                 placeholder="退货单号或客户名称"
                 className="h-7 w-48 pl-7 text-xs"
@@ -303,7 +304,7 @@ export function ERPReturnOrderList({
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">订单状态</span>
+            <span className="text-muted-foreground text-xs">订单状态</span>
             <Select
               value={queryParams.status || 'all'}
               onValueChange={handleStatusFilter}
@@ -324,7 +325,7 @@ export function ERPReturnOrderList({
             </Select>
           </div>
           <div className="flex items-center gap-1">
-            <span className="text-xs text-muted-foreground">排序方式</span>
+            <span className="text-muted-foreground text-xs">排序方式</span>
             <Select
               value={queryParams.sortBy || 'createdAt'}
               onValueChange={handleSort}
@@ -355,8 +356,8 @@ export function ERPReturnOrderList({
       </div>
 
       {/* 数据表格 */}
-      <div className="border-b bg-muted/5 px-3 py-1">
-        <div className="text-xs text-muted-foreground">退货订单列表</div>
+      <div className="bg-muted/5 border-b px-3 py-1">
+        <div className="text-muted-foreground text-xs">退货订单列表</div>
       </div>
 
       <div className="overflow-x-auto">
@@ -379,31 +380,31 @@ export function ERPReturnOrderList({
               Array.from({ length: 5 }).map((_, index) => (
                 <TableRow key={index}>
                   <TableCell className="h-8 px-2">
-                    <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+                    <div className="bg-muted h-3 w-20 animate-pulse rounded" />
                   </TableCell>
                   <TableCell className="h-8 px-2">
-                    <div className="h-3 w-16 animate-pulse rounded bg-muted" />
+                    <div className="bg-muted h-3 w-16 animate-pulse rounded" />
                   </TableCell>
                   <TableCell className="h-8 px-2">
-                    <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+                    <div className="bg-muted h-3 w-24 animate-pulse rounded" />
                   </TableCell>
                   <TableCell className="h-8 px-2">
-                    <div className="h-3 w-16 animate-pulse rounded bg-muted" />
+                    <div className="bg-muted h-3 w-16 animate-pulse rounded" />
                   </TableCell>
                   <TableCell className="h-8 px-2">
-                    <div className="h-3 w-12 animate-pulse rounded bg-muted" />
+                    <div className="bg-muted h-3 w-12 animate-pulse rounded" />
                   </TableCell>
                   <TableCell className="h-8 px-2">
-                    <div className="h-3 w-16 animate-pulse rounded bg-muted" />
+                    <div className="bg-muted h-3 w-16 animate-pulse rounded" />
                   </TableCell>
                   <TableCell className="h-8 px-2">
-                    <div className="h-3 w-12 animate-pulse rounded bg-muted" />
+                    <div className="bg-muted h-3 w-12 animate-pulse rounded" />
                   </TableCell>
                   <TableCell className="h-8 px-2">
-                    <div className="h-3 w-20 animate-pulse rounded bg-muted" />
+                    <div className="bg-muted h-3 w-20 animate-pulse rounded" />
                   </TableCell>
                   <TableCell className="h-8 px-2">
-                    <div className="h-3 w-8 animate-pulse rounded bg-muted" />
+                    <div className="bg-muted h-3 w-8 animate-pulse rounded" />
                   </TableCell>
                 </TableRow>
               ))
@@ -411,7 +412,7 @@ export function ERPReturnOrderList({
               <TableRow>
                 <TableCell
                   colSpan={9}
-                  className="h-16 text-center text-xs text-muted-foreground"
+                  className="text-muted-foreground h-16 text-center text-xs"
                 >
                   暂无退货订单数据
                 </TableCell>
@@ -421,20 +422,20 @@ export function ERPReturnOrderList({
                 <TableRow key={returnOrder.id} className="text-xs">
                   <TableCell className="h-8 px-2">
                     <div className="flex items-center gap-1">
-                      <Package className="h-3 w-3 text-muted-foreground" />
+                      <Package className="text-muted-foreground h-3 w-3" />
                       <span className="font-mono">
                         {returnOrder.returnNumber}
                       </span>
                     </div>
                   </TableCell>
                   <TableCell className="h-8 px-2">
-                    <span className="font-mono text-muted-foreground">
+                    <span className="text-muted-foreground font-mono">
                       {returnOrder.salesOrder?.orderNumber || '-'}
                     </span>
                   </TableCell>
                   <TableCell className="h-8 px-2">
                     <div className="flex items-center gap-1">
-                      <User className="h-3 w-3 text-muted-foreground" />
+                      <User className="text-muted-foreground h-3 w-3" />
                       <span>{returnOrder.customer?.name || '-'}</span>
                     </div>
                   </TableCell>
@@ -450,7 +451,7 @@ export function ERPReturnOrderList({
                   </TableCell>
                   <TableCell className="h-8 px-2">
                     <div className="flex items-center gap-1">
-                      <TrendingDown className="h-3 w-3 text-muted-foreground" />
+                      <TrendingDown className="text-muted-foreground h-3 w-3" />
                       <span className="font-mono">
                         {formatAmount(returnOrder.totalAmount)}
                       </span>
@@ -466,7 +467,7 @@ export function ERPReturnOrderList({
                   </TableCell>
                   <TableCell className="h-8 px-2">
                     <div className="flex items-center gap-1">
-                      <Calendar className="h-3 w-3 text-muted-foreground" />
+                      <Calendar className="text-muted-foreground h-3 w-3" />
                       <span>{formatDate(returnOrder.createdAt)}</span>
                     </div>
                   </TableCell>

@@ -22,6 +22,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   QiniuStorageConfig,
   QiniuStorageTestResponse,
@@ -44,7 +45,7 @@ export default function StorageSettingsPage() {
     isLoading: _isLoadingConfig,
     error: configError,
   } = useQuery({
-    queryKey: ['storage-config'],
+    queryKey: queryKeys.settings.storage(),
     queryFn: async () => {
       const response = await fetch('/api/settings/storage');
       if (!response.ok) {
@@ -75,7 +76,7 @@ export default function StorageSettingsPage() {
     },
     onSuccess: () => {
       toast({ title: '成功', description: '七牛云存储配置保存成功' });
-      queryClient.invalidateQueries({ queryKey: ['storage-config'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.settings.storage() });
       // 清除测试结果
       setTestResult(null);
       setTestError(null);
@@ -215,13 +216,13 @@ export default function StorageSettingsPage() {
         </CardHeader>
         <CardContent>
           {configError ? (
-            <div className="flex h-32 flex-col items-center justify-center text-muted-foreground">
+            <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
               <p>加载配置失败</p>
               <Button
                 variant="outline"
                 onClick={() =>
                   queryClient.invalidateQueries({
-                    queryKey: ['storage-config'],
+                    queryKey: queryKeys.settings.storage(),
                   })
                 }
                 className="mt-2"

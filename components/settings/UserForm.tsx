@@ -30,12 +30,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { CreateUserSchema, UpdateUserSchema } from '@/lib/schemas/settings';
 import type {
   CreateUserRequest,
   UpdateUserRequest,
   UserManagementUser,
 } from '@/lib/types/settings';
+import { CreateUserSchema, UpdateUserSchema } from '@/lib/validations/settings';
 
 // 表单数据类型
 type CreateUserFormData = CreateUserRequest;

@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
+import { customerPriceHistoryQuerySchema } from '@/lib/validations/price-history';
 
 /**
  * GET /api/price-history/customer
@@ -16,19 +16,32 @@ import { prisma } from '@/lib/db';
 export async function GET(request: NextRequest) {
   try {
     // 验证用户登录
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const { searchParams } = new URL(request.url);
-    const customerId = searchParams.get('customerId');
-    const productId = searchParams.get('productId');
-    const priceType = searchParams.get('priceType');
 
-    if (!customerId) {
-      return NextResponse.json({ error: '客户ID不能为空' }, { status: 400 });
+    // 使用 Zod 进行参数验证
+    const validationResult = customerPriceHistoryQuerySchema.safeParse({
+      customerId: searchParams.get('customerId') || undefined,
+      productId: searchParams.get('productId') || undefined,
+      priceType: searchParams.get('priceType') || undefined,
+    });
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '查询参数验证失败',
+          details: validationResult.error.issues,
+        },
+        { status: 400 }
+      );
     }
+
+    const { customerId, productId, priceType } = validationResult.data;
 
     // 构建查询条件
     const where: {
@@ -43,7 +56,7 @@ export async function GET(request: NextRequest) {
       where.productId = productId;
     }
 
-    if (priceType && (priceType === 'SALES' || priceType === 'FACTORY')) {
+    if (priceType) {
       where.priceType = priceType;
     }
 
@@ -167,9 +180,9 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 验证用户登录
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const body = await request.json();

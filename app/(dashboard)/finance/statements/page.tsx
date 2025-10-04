@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { paginationConfig } from '@/lib/env';
+import { queryKeys } from '@/lib/queryKeys';
 
 // 数据类型定义
 interface StatementSummary {
@@ -103,7 +104,7 @@ export default function StatementsPage() {
     isError,
     error,
   } = useQuery({
-    queryKey: ['statements', queryParams],
+    queryKey: queryKeys.finance.statementsList(queryParams),
     queryFn: fetchStatements,
     staleTime: 5 * 60 * 1000, // 5分钟
   });
@@ -184,7 +185,7 @@ export default function StatementsPage() {
             <div className="text-2xl font-bold text-blue-600">
               {isLoading ? '-' : summary.totalCustomers}
             </div>
-            <p className="text-xs text-muted-foreground">活跃客户</p>
+            <p className="text-muted-foreground text-xs">活跃客户</p>
           </CardContent>
         </Card>
 
@@ -197,7 +198,7 @@ export default function StatementsPage() {
             <div className="text-2xl font-bold text-green-600">
               {isLoading ? '-' : formatCurrency(summary.totalReceivable)}
             </div>
-            <p className="text-xs text-muted-foreground">客户应收账款</p>
+            <p className="text-muted-foreground text-xs">客户应收账款</p>
           </CardContent>
         </Card>
 
@@ -210,7 +211,7 @@ export default function StatementsPage() {
             <div className="text-2xl font-bold text-purple-600">
               {isLoading ? '-' : summary.totalSuppliers}
             </div>
-            <p className="text-xs text-muted-foreground">合作供应商</p>
+            <p className="text-muted-foreground text-xs">合作供应商</p>
           </CardContent>
         </Card>
 
@@ -223,7 +224,7 @@ export default function StatementsPage() {
             <div className="text-2xl font-bold text-orange-600">
               {isLoading ? '-' : formatCurrency(summary.totalPayable)}
             </div>
-            <p className="text-xs text-muted-foreground">供应商应付账款</p>
+            <p className="text-muted-foreground text-xs">供应商应付账款</p>
           </CardContent>
         </Card>
       </div>
@@ -237,7 +238,7 @@ export default function StatementsPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 items-center gap-2">
               <div className="relative max-w-sm flex-1">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   placeholder="搜索客户或供应商名称..."
                   value={queryParams.search}
@@ -330,20 +331,20 @@ export default function StatementsPage() {
                                 : '供应商'}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                          <div className="text-muted-foreground flex items-center gap-4 text-sm">
                             <span>总订单：{statement.totalOrders} 个</span>
                             <span>账期：{statement.paymentTerms}</span>
                             <span>
                               信用额度：{formatCurrency(statement.creditLimit)}
                             </span>
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-muted-foreground text-sm">
                             最后交易：{statement.lastTransactionDate}
                           </p>
                         </div>
                         <div className="space-y-2 text-right">
                           <div>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               总交易金额
                             </p>
                             <p className="font-semibold">
@@ -351,7 +352,7 @@ export default function StatementsPage() {
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               已付金额
                             </p>
                             <p className="font-semibold text-green-600">
@@ -359,7 +360,7 @@ export default function StatementsPage() {
                             </p>
                           </div>
                           <div>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-muted-foreground text-sm">
                               {statement.type === 'customer'
                                 ? '待收金额'
                                 : '待付金额'}
@@ -370,7 +371,7 @@ export default function StatementsPage() {
                           </div>
                           {statement.overdueAmount > 0 && (
                             <div>
-                              <p className="text-sm text-muted-foreground">
+                              <p className="text-muted-foreground text-sm">
                                 逾期金额
                               </p>
                               <p className="font-semibold text-red-600">
@@ -426,7 +427,7 @@ export default function StatementsPage() {
           {/* 分页 */}
           {!isLoading && !isError && (
             <div className="mt-6 flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 共 {pagination.total} 条记录，第 {pagination.page} 页，共{' '}
                 {pagination.totalPages} 页
               </p>

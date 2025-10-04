@@ -1,10 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 
 import {
   createWsClient,
   type WsClient,
   type WsMessage,
 } from '@/lib/ws/ws-client';
+import type { BusinessEvent } from '@/lib/events/types';
+import { EventChannels } from '@/lib/events/types';
 
 export interface UseWebSocketOptions {
   channels?: string[];
@@ -105,4 +107,239 @@ export function useWebSocket(
     connect,
     disconnect,
   };
+}
+
+/**
+ * Subscribe to user notifications
+ */
+export function useUserNotifications(
+  userId: string,
+  onNotification: (notification: BusinessEvent & { type: 'notification' }) => void
+): UseWebSocketReturn {
+  const handleMessage = useCallback(
+    (message: WsMessage) => {
+      if (message.channel === EventChannels.userNotification(userId)) {
+        onNotification(message.data as BusinessEvent & { type: 'notification' });
+      }
+    },
+    [userId, onNotification]
+  );
+
+  return useWebSocket({
+    channels: [EventChannels.userNotification(userId)],
+    onMessage: handleMessage,
+  });
+}
+
+/**
+ * Subscribe to inventory changes
+ */
+export function useInventoryUpdates(
+  onUpdate: (event: BusinessEvent & { type: 'inventory:change' }) => void
+): UseWebSocketReturn {
+  const handleMessage = useCallback(
+    (message: WsMessage) => {
+      if (message.channel === EventChannels.inventory) {
+        onUpdate(message.data as BusinessEvent & { type: 'inventory:change' });
+      }
+    },
+    [onUpdate]
+  );
+
+  return useWebSocket({
+    channels: [EventChannels.inventory],
+    onMessage: handleMessage,
+  });
+}
+
+/**
+ * Subscribe to order status changes
+ */
+export function useOrderUpdates(
+  onUpdate: (event: BusinessEvent & { type: 'order:status' }) => void
+): UseWebSocketReturn {
+  const handleMessage = useCallback(
+    (message: WsMessage) => {
+      if (message.channel === EventChannels.orders) {
+        onUpdate(message.data as BusinessEvent & { type: 'order:status' });
+      }
+    },
+    [onUpdate]
+  );
+
+  return useWebSocket({
+    channels: [EventChannels.orders],
+    onMessage: handleMessage,
+  });
+}
+
+/**
+ * Subscribe to approval events
+ */
+export function useApprovalUpdates(
+  onUpdate: (
+    event: BusinessEvent & {
+      type: 'approval:request' | 'approval:approved' | 'approval:rejected';
+    }
+  ) => void
+): UseWebSocketReturn {
+  const handleMessage = useCallback(
+    (message: WsMessage) => {
+      if (message.channel === EventChannels.approvals) {
+        onUpdate(
+          message.data as BusinessEvent & {
+            type: 'approval:request' | 'approval:approved' | 'approval:rejected';
+          }
+        );
+      }
+    },
+    [onUpdate]
+  );
+
+  return useWebSocket({
+    channels: [EventChannels.approvals],
+    onMessage: handleMessage,
+  });
+}
+
+/**
+ * Subscribe to finance events
+ */
+export function useFinanceUpdates(
+  onUpdate: (
+    event: BusinessEvent & {
+      type: 'finance:payment' | 'finance:refund' | 'finance:overdue';
+    }
+  ) => void
+): UseWebSocketReturn {
+  const handleMessage = useCallback(
+    (message: WsMessage) => {
+      if (message.channel === EventChannels.finance) {
+        onUpdate(
+          message.data as BusinessEvent & {
+            type: 'finance:payment' | 'finance:refund' | 'finance:overdue';
+          }
+        );
+      }
+    },
+    [onUpdate]
+  );
+
+  return useWebSocket({
+    channels: [EventChannels.finance],
+    onMessage: handleMessage,
+  });
+}
+
+/**
+ * Subscribe to product data changes
+ */
+export function useProductUpdates(
+  onUpdate: (event: BusinessEvent & { type: 'data:change' }) => void
+): UseWebSocketReturn {
+  const handleMessage = useCallback(
+    (message: WsMessage) => {
+      if (message.channel === EventChannels.products) {
+        onUpdate(message.data as BusinessEvent & { type: 'data:change' });
+      }
+    },
+    [onUpdate]
+  );
+
+  return useWebSocket({
+    channels: [EventChannels.products],
+    onMessage: handleMessage,
+  });
+}
+
+/**
+ * Subscribe to customer data changes
+ */
+export function useCustomerUpdates(
+  onUpdate: (event: BusinessEvent & { type: 'data:change' }) => void
+): UseWebSocketReturn {
+  const handleMessage = useCallback(
+    (message: WsMessage) => {
+      if (message.channel === EventChannels.customers) {
+        onUpdate(message.data as BusinessEvent & { type: 'data:change' });
+      }
+    },
+    [onUpdate]
+  );
+
+  return useWebSocket({
+    channels: [EventChannels.customers],
+    onMessage: handleMessage,
+  });
+}
+
+/**
+ * Subscribe to supplier data changes
+ */
+export function useSupplierUpdates(
+  onUpdate: (event: BusinessEvent & { type: 'data:change' }) => void
+): UseWebSocketReturn {
+  const handleMessage = useCallback(
+    (message: WsMessage) => {
+      if (message.channel === EventChannels.suppliers) {
+        onUpdate(message.data as BusinessEvent & { type: 'data:change' });
+      }
+    },
+    [onUpdate]
+  );
+
+  return useWebSocket({
+    channels: [EventChannels.suppliers],
+    onMessage: handleMessage,
+  });
+}
+
+/**
+ * Subscribe to system events
+ */
+export function useSystemUpdates(
+  onUpdate: (
+    event: BusinessEvent & {
+      type: 'system:maintenance' | 'system:update' | 'system:alert';
+    }
+  ) => void
+): UseWebSocketReturn {
+  const handleMessage = useCallback(
+    (message: WsMessage) => {
+      if (message.channel === EventChannels.system) {
+        onUpdate(
+          message.data as BusinessEvent & {
+            type: 'system:maintenance' | 'system:update' | 'system:alert';
+          }
+        );
+      }
+    },
+    [onUpdate]
+  );
+
+  return useWebSocket({
+    channels: [EventChannels.system],
+    onMessage: handleMessage,
+  });
+}
+
+/**
+ * Subscribe to broadcast messages
+ */
+export function useBroadcast(
+  onMessage: (event: BusinessEvent & { type: 'system:alert' }) => void
+): UseWebSocketReturn {
+  const handleMessage = useCallback(
+    (message: WsMessage) => {
+      if (message.channel === EventChannels.broadcast) {
+        onMessage(message.data as BusinessEvent & { type: 'system:alert' });
+      }
+    },
+    [onMessage]
+  );
+
+  return useWebSocket({
+    channels: [EventChannels.broadcast],
+    onMessage: handleMessage,
+  });
 }

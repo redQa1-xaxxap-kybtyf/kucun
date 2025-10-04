@@ -66,6 +66,7 @@ export type {
   InventoryDetailResponse,
   InventoryListResponse,
   InventoryQueryParams,
+  InventoryQueryResult,
   InventoryStats,
   OutboundRecordListResponse,
   OutboundRecordQueryParams,

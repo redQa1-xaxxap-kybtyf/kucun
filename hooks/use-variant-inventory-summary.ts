@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { getVariantInventorySummary } from '@/lib/api/product-variants';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface VariantInventorySummaryData {
   variant: {
@@ -47,7 +48,7 @@ export function useVariantInventorySummary(variantId: string) {
     isLoading,
     error,
   } = useQuery({
-    queryKey: ['variant-inventory-summary', variantId],
+    queryKey: queryKeys.products.variantInventorySummary(variantId),
     queryFn: () => getVariantInventorySummary(variantId),
     enabled: !!variantId,
   });

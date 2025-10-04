@@ -4,17 +4,37 @@
 
 ## 技术栈
 
-- **全栈框架**: Next.js 15.4 (App Router) + TypeScript 5.2
-- **数据库**: MySQL 8.0+
-- **数据库驱动**: Prisma
-- **身份认证**: Next-Auth.js
-- **状态管理**: TanStack Query v5.79.0
-- **UI组件库**: Tailwind CSS v3.4.0 + shadcn/ui 2025.1.2
-- **表单处理**: React Hook Form 7.54.1
-- **数据验证**: Zod 3.22.0
-- **文件上传**: multer
-- **图片处理**: sharp
-- **代码质量工具**: ESLint 8 + Prettier + Husky
+全栈框架: Next.js 15.4 (App Router)
+
+数据库: MySQL 8.0+
+
+数据库驱动: Prisma
+
+身份认证: Next-Auth.js
+
+状态管理: TanStack Query v5.79.0
+
+UI组件库: Tailwind CSS v4.1.12 + shadcn/ui 2025.1.2
+
+服务器管理: 宝塔面板
+
+文件上传: multer
+
+环境管理: .env.local 文件
+
+类型定义: TypeScript 5.2
+
+代码质量工具: ESLint 9 + Prettier + Husky
+
+表单处理: React Hook Form 7.54.1
+
+图片处理: sharp
+
+数据验证: Zod 4.0
+
+WebSocket: ws
+
+缓存与消息队列: Redis
 
 ## 开发环境要求
 

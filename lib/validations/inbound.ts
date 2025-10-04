@@ -236,7 +236,9 @@ export const formatQuantity = (quantity: number): number =>
 
 // 备注清理辅助函数
 export const cleanRemarks = (remarks?: string): string | undefined => {
-  if (!remarks) return undefined;
+  if (!remarks) {
+    return undefined;
+  }
   const cleaned = remarks.trim();
   return cleaned.length > 0 ? cleaned : undefined;
 };

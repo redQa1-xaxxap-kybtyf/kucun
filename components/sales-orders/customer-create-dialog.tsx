@@ -143,13 +143,10 @@ export function CustomerCreateDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit as any)}
-            className="space-y-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* 客户名称 */}
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
@@ -168,7 +165,7 @@ export function CustomerCreateDialog({
 
             {/* 联系电话 */}
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="phone"
               render={({ field }) => (
                 <FormItem>
@@ -187,7 +184,7 @@ export function CustomerCreateDialog({
 
             {/* 客户地址 */}
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="address"
               render={({ field }) => (
                 <AddressSelector

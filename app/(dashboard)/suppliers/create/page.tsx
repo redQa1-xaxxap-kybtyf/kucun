@@ -26,7 +26,7 @@ import {
   CreateSupplierSchema,
   supplierCreateDefaults,
   type SupplierCreateFormData,
-} from '@/lib/schemas/supplier';
+} from '@/lib/validations/supplier';
 
 export default function CreateSupplierPage() {
   const router = useRouter();
@@ -36,6 +36,7 @@ export default function CreateSupplierPage() {
   const form = useForm<SupplierCreateFormData>({
     resolver: zodResolver(CreateSupplierSchema),
     defaultValues: supplierCreateDefaults,
+    mode: 'all', // 在所有交互时验证
   });
 
   // 创建供应商
@@ -58,16 +59,14 @@ export default function CreateSupplierPage() {
     },
   });
 
-  // 提交表单
-  const onSubmit = (data: SupplierCreateFormData) => {
-    // 清理空字符串
-    const submitData = {
+  // 提交表单 - 这个函数只会在表单验证通过后被调用
+  // Zod Schema 已经处理了 trim() 和所有验证，无需手动校验
+  const onSubmit = async (data: SupplierCreateFormData) => {
+    createMutation.mutate({
       name: data.name,
       phone: data.phone || undefined,
       address: data.address || undefined,
-    };
-
-    createMutation.mutate(submitData);
+    });
   };
 
   const isLoading = createMutation.isPending;
@@ -112,6 +111,7 @@ export default function CreateSupplierPage() {
                           placeholder="请输入供应商名称"
                           disabled={isLoading}
                           {...field}
+                          value={field.value || ''} // 确保显示空字符串而不是 undefined
                         />
                       </FormControl>
                       <FormDescription>
@@ -134,6 +134,7 @@ export default function CreateSupplierPage() {
                           placeholder="请输入联系电话"
                           disabled={isLoading}
                           {...field}
+                          value={field.value || ''} // 确保显示空字符串而不是 undefined
                         />
                       </FormControl>
                       <FormDescription>
@@ -157,6 +158,7 @@ export default function CreateSupplierPage() {
                           disabled={isLoading}
                           rows={3}
                           {...field}
+                          value={field.value || ''} // 确保显示空字符串而不是 undefined
                         />
                       </FormControl>
                       <FormDescription>

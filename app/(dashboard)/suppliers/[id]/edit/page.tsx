@@ -38,7 +38,7 @@ import {
   UpdateSupplierSchema,
   supplierUpdateDefaults,
   type SupplierUpdateFormData,
-} from '@/lib/schemas/supplier';
+} from '@/lib/validations/supplier';
 
 interface EditSupplierPageProps {
   params: Promise<{

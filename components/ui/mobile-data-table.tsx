@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils';
 export interface ColumnDef<T> {
   key: string;
   title: string;
-  render?: (value: any, record: T, index: number) => React.ReactNode;
+  render?: (value: unknown, record: T, index: number) => React.ReactNode;
   width?: string | number;
   align?: 'left' | 'center' | 'right';
   sortable?: boolean;
@@ -74,7 +74,7 @@ export interface MobileDataTableProps<T> {
   renderMobileCard?: (item: T) => React.ReactNode; // 添加renderMobileCard属性支持
 }
 
-function MobileDataTable<T extends Record<string, any>>({
+function MobileDataTable<T extends Record<string, unknown>>({
   data,
   columns,
   loading = false,

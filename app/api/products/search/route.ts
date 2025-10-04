@@ -2,12 +2,11 @@
 // 为入库表单提供产品搜索功能
 
 import { type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
 import { successResponse } from '@/lib/api/response';
-import { authOptions } from '@/lib/auth';
+import { verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 import type { ProductOption } from '@/lib/types/inbound';
 import { productSearchSchema } from '@/lib/validations/inbound';
@@ -131,8 +130,8 @@ function transformToOptions(
 // GET /api/products/search - 搜索产品
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // 1. 验证用户身份
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  const auth = verifyApiAuth(request);
+  if (!auth.success) {
     throw ApiError.unauthorized();
   }
 

@@ -126,7 +126,8 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
 
       if (onSuccess) {
-        onSuccess(data as any);
+        // data 是 SalesOrder 类型,需要转换为 CreateSalesOrderData
+        onSuccess(data as unknown as CreateSalesOrderData);
       } else {
         router.push('/sales-orders');
       }
@@ -246,7 +247,8 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
       })),
     };
 
-    createMutation.mutate(orderData as any);
+    // orderData 符合 SalesOrderCreateInput 类型
+    createMutation.mutate(orderData);
   };
 
   return (
@@ -274,19 +276,19 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* 中国进销存标准单据布局 */}
-          <div className="rounded-lg border bg-card">
+          <div className="bg-card rounded-lg border">
             {/* 单据头部信息 */}
-            <div className="border-b bg-muted/30 px-6 py-4">
+            <div className="bg-muted/30 border-b px-6 py-4">
               <div className="grid grid-cols-12 items-center gap-4">
                 {/* 订单号 - 自动生成显示 */}
                 <div className="col-span-3">
-                  <label className="text-sm font-medium text-muted-foreground">
+                  <label className="text-muted-foreground text-sm font-medium">
                     订单号
                   </label>
                   <div className="mt-1 font-mono text-lg font-semibold">
                     {autoOrderNumber || '正在生成...'}
                   </div>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     系统自动生成
                   </p>
                 </div>
@@ -298,7 +300,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                     name="customerId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium text-muted-foreground">
+                        <FormLabel className="text-muted-foreground text-sm font-medium">
                           客户名称 *
                         </FormLabel>
                         <FormControl>
@@ -327,7 +329,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                 <div className="col-span-3">
                   {selectedCustomer && (
                     <div>
-                      <label className="text-sm font-medium text-muted-foreground">
+                      <label className="text-muted-foreground text-sm font-medium">
                         联系电话
                       </label>
                       <div className="mt-1 text-sm">
@@ -344,7 +346,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-sm font-medium text-muted-foreground">
+                        <FormLabel className="text-muted-foreground text-sm font-medium">
                           状态
                         </FormLabel>
                         <Select
@@ -372,7 +374,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
             {/* 产品明细表格 */}
             <div className="px-6 py-4">
               <div className="mb-3 flex items-center justify-between">
-                <h3 className="text-sm font-medium text-muted-foreground">
+                <h3 className="text-muted-foreground text-sm font-medium">
                   产品明细
                 </h3>
                 <Button
@@ -421,7 +423,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                       <TableRow>
                         <TableCell
                           colSpan={8}
-                          className="h-32 text-center text-muted-foreground"
+                          className="text-muted-foreground h-32 text-center"
                         >
                           <div className="flex flex-col items-center gap-2">
                             <Package className="h-8 w-8 opacity-50" />
@@ -454,7 +456,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                             {/* 产品名称 */}
                             <TableCell className="border-r">
                               <EnhancedProductSelector
-                                products={(productsData?.data as any) || []}
+                                products={productsData?.data || []}
                                 value={item.productId}
                                 onValueChange={value =>
                                   handleProductSelect(value, index)
@@ -487,7 +489,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                                 className="h-8 text-center text-sm"
                               />
                               {hasStockWarning && (
-                                <div className="mt-1 text-xs text-destructive">
+                                <div className="text-destructive mt-1 text-xs">
                                   库存不足
                                 </div>
                               )}
@@ -525,7 +527,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => removeOrderItem(index)}
-                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                className="text-destructive hover:text-destructive h-6 w-6 p-0"
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
@@ -540,9 +542,9 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
             </div>
 
             {/* 单据底部汇总 */}
-            <div className="border-t bg-muted/30 px-6 py-3">
+            <div className="bg-muted/30 border-t px-6 py-3">
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-6 text-sm text-muted-foreground">
+                <div className="text-muted-foreground flex items-center gap-6 text-sm">
                   <span>
                     品种数：
                     <strong className="text-foreground">{fields.length}</strong>
@@ -570,7 +572,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                 name="remarks"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel className="text-sm font-medium text-muted-foreground">
+                    <FormLabel className="text-muted-foreground text-sm font-medium">
                       备注信息
                     </FormLabel>
                     <FormControl>

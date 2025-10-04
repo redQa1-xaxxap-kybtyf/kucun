@@ -22,8 +22,8 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
-import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
 import type { Product } from '@/lib/types/product';
+import type { CreateSalesOrderData } from '@/lib/validations/sales-order';
 
 import { EnhancedProductSelector } from './enhanced-product-selector';
 
@@ -143,7 +143,7 @@ export function UnifiedProductInput({
         {isTransferSale && !selectedProductId && (
           <div className="flex items-center gap-2 py-1">
             <Separator className="flex-1" />
-            <span className="text-xs text-muted-foreground">或</span>
+            <span className="text-muted-foreground text-xs">或</span>
             <Separator className="flex-1" />
           </div>
         )}
@@ -291,7 +291,7 @@ export function UnifiedProductInput({
                     form.setValue(`items.${index}.manualWeight`, undefined);
                     form.setValue(`items.${index}.manualUnit`, '');
                   }}
-                  className="h-6 px-2 text-xs text-muted-foreground"
+                  className="text-muted-foreground h-6 px-2 text-xs"
                 >
                   收起
                 </Button>

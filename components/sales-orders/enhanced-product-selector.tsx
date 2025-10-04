@@ -35,7 +35,7 @@ interface Product {
 }
 
 interface EnhancedProductSelectorProps {
-  products: any[];
+  products: Product[];
   value?: string;
   onValueChange?: (value: string) => void;
   placeholder?: string;
@@ -113,7 +113,9 @@ export function EnhancedProductSelector({
 
   // 格式化库存显示
   const formatInventory = (product: Product) => {
-    if (!product.inventory) {return '未知';}
+    if (!product.inventory) {
+      return '未知';
+    }
 
     const available = product.inventory.availableInventory || 0;
     const chineseUnit = unitMapping[product.unit.toLowerCase()] || product.unit;
@@ -137,13 +139,13 @@ export function EnhancedProductSelector({
                 <span className="truncate font-medium">
                   {selectedProduct.name}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   {selectedProduct.code}
                 </span>
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2">
               <Search className="h-4 w-4" />
               {placeholder}
             </div>
@@ -189,7 +191,7 @@ export function EnhancedProductSelector({
 
                       {/* 产品规格 */}
                       {product.specification && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           规格：{product.specification}
                         </div>
                       )}

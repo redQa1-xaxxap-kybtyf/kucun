@@ -25,6 +25,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
+import { queryKeys } from '@/lib/queryKeys';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 
 // 确认发货表单验证规则
@@ -103,10 +104,10 @@ export function ConfirmShipmentDialog({
       });
       // 刷新订单详情和列表
       queryClient.invalidateQueries({
-        queryKey: ['factory-shipment-order', orderId],
+        queryKey: queryKeys.factoryShipments.detail(orderId),
       });
       queryClient.invalidateQueries({
-        queryKey: ['factory-shipment-orders'],
+        queryKey: queryKeys.factoryShipments.lists(),
       });
       form.reset();
       onOpenChange(false);

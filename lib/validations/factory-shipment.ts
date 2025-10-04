@@ -254,9 +254,9 @@ export const updateFactoryShipmentOrderStatusSchema = z
         FACTORY_SHIPMENT_STATUS.ARRIVED,
         FACTORY_SHIPMENT_STATUS.DELIVERED,
         FACTORY_SHIPMENT_STATUS.COMPLETED,
-      ];
+      ] as const;
       if (
-        shippedStatuses.includes(data.status) &&
+        (shippedStatuses as readonly string[]).includes(data.status) &&
         (!data.containerNumber || data.containerNumber.trim() === '')
       ) {
         return false;
@@ -285,3 +285,4 @@ export type UpdateFactoryShipmentOrderStatusData = z.infer<
 export type FactoryShipmentOrderItemData = z.infer<
   typeof factoryShipmentOrderItemSchema
 >;
+

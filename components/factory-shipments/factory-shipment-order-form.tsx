@@ -16,14 +16,15 @@ import { useCustomerPriceHistory } from '@/hooks/use-price-history';
 import { getCustomers } from '@/lib/api/customers';
 import { getProducts } from '@/lib/api/products';
 import { factoryShipmentConfig } from '@/lib/env';
-import {
-  createFactoryShipmentOrderSchema,
-  type CreateFactoryShipmentOrderData,
-} from '@/lib/schemas/factory-shipment';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   FACTORY_SHIPMENT_STATUS,
   type FactoryShipmentOrder,
 } from '@/lib/types/factory-shipment';
+import {
+  createFactoryShipmentOrderSchema,
+  type CreateFactoryShipmentOrderData,
+} from '@/lib/validations/factory-shipment';
 
 interface FactoryShipmentOrderFormProps {
   orderId?: string;
@@ -98,14 +99,20 @@ export function FactoryShipmentOrderForm({
 
   // 查询基础数据
   const { data: customersResponse } = useQuery({
-    queryKey: ['customers'],
+    queryKey: queryKeys.customers.list({
+      page: 1,
+      limit: factoryShipmentConfig.queryLimit,
+    }),
     queryFn: () =>
       getCustomers({ page: 1, limit: factoryShipmentConfig.queryLimit }),
   });
   const customers = customersResponse?.data || [];
 
   const { data: productsResponse } = useQuery({
-    queryKey: ['products'],
+    queryKey: queryKeys.products.list({
+      page: 1,
+      limit: factoryShipmentConfig.queryLimit,
+    }),
     queryFn: () =>
       getProducts({ page: 1, limit: factoryShipmentConfig.queryLimit }),
   });
@@ -122,7 +129,7 @@ export function FactoryShipmentOrderForm({
 
   // 查询订单详情（编辑模式）
   const { data: orderDetail } = useQuery({
-    queryKey: ['factory-shipment-order', orderId],
+    queryKey: queryKeys.factoryShipments.detail(orderId || ''),
     queryFn: () => (orderId ? getFactoryShipmentOrder(orderId) : null),
     enabled: isEditing,
   });
@@ -135,7 +142,9 @@ export function FactoryShipmentOrderForm({
         title: '创建成功',
         description: '厂家发货订单创建成功',
       });
-      queryClient.invalidateQueries({ queryKey: ['factory-shipment-orders'] });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.factoryShipments.orders(),
+      });
       onSuccess?.(data);
     },
     onError: error => {
@@ -161,9 +170,11 @@ export function FactoryShipmentOrderForm({
         title: '更新成功',
         description: '厂家发货订单更新成功',
       });
-      queryClient.invalidateQueries({ queryKey: ['factory-shipment-orders'] });
       queryClient.invalidateQueries({
-        queryKey: ['factory-shipment-order', orderId],
+        queryKey: queryKeys.factoryShipments.lists(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.factoryShipments.detail(orderId || ''),
       });
       onSuccess?.(data);
     },

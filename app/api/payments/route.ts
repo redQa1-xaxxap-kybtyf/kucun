@@ -1,10 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { clearCacheAfterPayment } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
+import { publishFinanceEvent } from '@/lib/events';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
   createPaymentRecordSchema,
@@ -17,15 +16,10 @@ import {
  */
 export async function GET(request: NextRequest) {
   try {
-    // 身份验证 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    // 身份验证
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 解析查询参数
@@ -90,7 +84,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (startDate || endDate) {
-      const paymentDateFilter: any = {};
+      const paymentDateFilter: { gte?: Date; lte?: Date } = {};
       if (startDate) {
         paymentDateFilter.gte = new Date(startDate);
       }
@@ -162,24 +156,12 @@ export async function GET(request: NextRequest) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // 身份验证 (开发模式下绕过)
-    let userId = 'dev-user'; // 开发环境默认用户ID
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-      userId = session.user.id;
-    } else {
-      // 开发环境下获取第一个用户
-      const user = await prisma.user.findFirst();
-      if (user) {
-        userId = user.id;
-      }
+    // 身份验证
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
+    const userId = auth.userId!;
 
     // 解析请求体
     const body = await request.json();
@@ -315,6 +297,18 @@ export async function POST(request: NextRequest) {
 
     // 清除相关缓存
     await clearCacheAfterPayment();
+
+    // 发布财务事件
+    await publishFinanceEvent({
+      action: 'created',
+      recordType: 'payment',
+      recordId: payment.id,
+      recordNumber: payment.paymentNumber,
+      amount: payment.paymentAmount,
+      customerId: payment.customerId,
+      customerName: payment.customer.name,
+      userId,
+    });
 
     return NextResponse.json({
       success: true,

@@ -1,9 +1,8 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 
 // 请求参数验证
@@ -18,13 +17,10 @@ const dashboardQuerySchema = z.object({
 // 获取仪表盘主数据
 export async function GET(request: NextRequest) {
   try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    // 身份验证 - 使用中间件透传的用户信息
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 解析查询参数

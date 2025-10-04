@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useState } from 'react';
 
+import { queryKeys } from '@/lib/queryKeys';
 import type { OutboundType } from '@/lib/types/inventory';
 
 interface OutboundFilters {
@@ -36,7 +37,7 @@ export function useOutboundRecords() {
 
   // 获取出库记录数据
   const { data, isLoading, error } = useQuery({
-    queryKey: ['outbound-records', filters],
+    queryKey: queryKeys.inventory.outbounds(),
     queryFn: async () => {
       // 构建查询参数
       const searchParams = new URLSearchParams();

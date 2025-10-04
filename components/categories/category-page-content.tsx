@@ -5,8 +5,6 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import React from 'react';
-
 import { CategoryDeleteDialogs } from '@/components/categories/category-delete-dialogs';
 import { CategoryList } from '@/components/categories/category-list';
 import { CategoryPageHeader } from '@/components/categories/category-page-header';
@@ -20,18 +18,45 @@ interface CategoryPageContentProps {
   isLoading: boolean;
   error: Error | null;
   categories: Category[];
-  pagination: any;
-  queryParams: any;
+  pagination: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+  };
+  queryParams: {
+    search?: string;
+    status?: string;
+    parentId?: string;
+    page?: number;
+    limit?: number;
+  };
   selectedCategoryIds: string[];
-  deleteDialog: any;
-  batchDeleteDialog: any;
+  deleteDialog: {
+    open: boolean;
+    categoryId: string;
+    categoryName: string;
+  };
+  batchDeleteDialog: {
+    open: boolean;
+  };
   updatingStatusId: string | null;
-  deleteMutation: any;
-  batchDeleteMutation: any;
-  setDeleteDialog: (state: any) => void;
-  setBatchDeleteDialog: (state: any) => void;
+  deleteMutation: {
+    mutate: (id: string) => void;
+    isPending: boolean;
+  };
+  batchDeleteMutation: {
+    mutate: (ids: string[]) => void;
+    isPending: boolean;
+  };
+  setDeleteDialog: (state: {
+    open: boolean;
+    categoryId: string;
+    categoryName: string;
+  }) => void;
+  setBatchDeleteDialog: (state: { open: boolean }) => void;
   handleSearch: (value: string) => void;
-  handleFilter: (key: string, value: any) => void;
+  handleFilter: (key: string, value: string | undefined) => void;
   handlePageChange: (page: number) => void;
   handleDeleteCategory: (categoryId: string, categoryName: string) => void;
   confirmDelete: () => void;

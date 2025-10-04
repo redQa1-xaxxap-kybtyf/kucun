@@ -6,7 +6,7 @@
 /**
  * 基础API响应接口
  */
-export interface ApiResponse<T = any> {
+export interface ApiResponse<T = unknown> {
   success: boolean;
   data?: T;
   error?: string;
@@ -37,14 +37,14 @@ export interface PaginatedResponse<T> {
 export interface ErrorResponse {
   success: false;
   error: string;
-  details?: any[];
+  details?: unknown[];
   code?: string;
 }
 
 /**
  * 成功响应接口
  */
-export interface SuccessResponse<T = any> {
+export interface SuccessResponse<T = unknown> {
   success: true;
   data: T;
   message?: string;
@@ -170,7 +170,7 @@ export enum HttpStatus {
 export interface ApiRequestConfig {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
   headers?: Record<string, string>;
-  body?: any;
+  body?: unknown;
   timeout?: number;
   retries?: number;
 }
@@ -212,17 +212,17 @@ export interface ApiClient {
   get<T>(url: string, config?: ApiRequestConfig): Promise<ApiResponse<T>>;
   post<T>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: ApiRequestConfig
   ): Promise<ApiResponse<T>>;
   put<T>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: ApiRequestConfig
   ): Promise<ApiResponse<T>>;
   patch<T>(
     url: string,
-    data?: any,
+    data?: unknown,
     config?: ApiRequestConfig
   ): Promise<ApiResponse<T>>;
   delete<T>(url: string, config?: ApiRequestConfig): Promise<ApiResponse<T>>;
@@ -243,7 +243,7 @@ export interface ValidationError {
   field: string;
   message: string;
   code?: string;
-  value?: any;
+  value?: unknown;
 }
 
 /**
@@ -255,8 +255,8 @@ export interface AuditLog {
   action: string;
   resource: string;
   resourceId: string;
-  changes?: Record<string, any>;
-  metadata?: Record<string, any>;
+  changes?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
   timestamp: string;
   ipAddress?: string;
   userAgent?: string;
@@ -315,7 +315,7 @@ export function createSuccessResponse<T>(
  */
 export function createErrorResponse(
   error: string,
-  details?: any[],
+  details?: unknown[],
   code?: string
 ): ErrorResponse {
   return {

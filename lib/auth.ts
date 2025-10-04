@@ -119,10 +119,30 @@ export const authOptions: NextAuthOptions = {
           }
 
           // 调用验证码验证API
-          // 使用相对路径或从环境变量获取完整URL
-          const baseUrl =
-            process.env.NEXTAUTH_URL ||
-            `http://localhost:${process.env.PORT || 3003}`;
+          // 获取应用基础 URL
+          const baseUrl = (() => {
+            // 优先使用 NEXTAUTH_URL 环境变量
+            if (env.NEXTAUTH_URL) {
+              return env.NEXTAUTH_URL;
+            }
+
+            // 生产环境必须配置 NEXTAUTH_URL
+            if (process.env.NODE_ENV === 'production') {
+              console.error('[Auth] 生产环境必须配置 NEXTAUTH_URL 环境变量');
+              throw new Error(
+                'NEXTAUTH_URL is required in production environment'
+              );
+            }
+
+            // 开发环境回退到 localhost
+            const port = process.env.PORT || 3000;
+            const fallbackUrl = `http://localhost:${port}`;
+            console.warn(
+              `[Auth] NEXTAUTH_URL 未配置，使用回退 URL: ${fallbackUrl}`
+            );
+            return fallbackUrl;
+          })();
+
           const captchaResponse = await fetch(`${baseUrl}/api/captcha`, {
             method: 'POST',
             headers: {
@@ -344,6 +364,7 @@ export async function createUser(data: {
   // 检查邮箱是否已存在
   const existingEmailUser = await prisma.user.findUnique({
     where: { email: data.email },
+    select: { id: true },
   });
 
   if (existingEmailUser) {
@@ -353,6 +374,7 @@ export async function createUser(data: {
   // 检查用户名是否已存在
   const existingUsernameUser = await prisma.user.findUnique({
     where: { username: data.username },
+    select: { id: true },
   });
 
   if (existingUsernameUser) {
@@ -400,6 +422,7 @@ export async function updatePassword(userId: string, newPassword: string) {
   await prisma.user.update({
     where: { id: userId },
     data: { passwordHash },
+    select: { id: true },
   });
 }
 
@@ -411,5 +434,6 @@ export async function updateUserStatus(
   await prisma.user.update({
     where: { id: userId },
     data: { status },
+    select: { id: true },
   });
 }

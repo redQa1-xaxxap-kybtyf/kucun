@@ -1,124 +1,73 @@
-'use client';
+import { Suspense } from 'react';
 
-import { useQuery } from '@tanstack/react-query';
-import * as React from 'react';
-
-import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
-import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
-import { categoryQueryKeys, getCategoryOptions } from '@/lib/api/categories';
+import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
+import { getCategoryOptions } from '@/lib/api/categories';
+import { formatPaginatedResponse } from '@/lib/api/inventory-formatter';
+import {
+  getInventoryCount,
+  getOptimizedInventoryList,
+} from '@/lib/api/inventory-query-builder';
 import { paginationConfig } from '@/lib/env';
-import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
+import type { InventoryQueryParams } from '@/lib/types/inventory';
+import { InventoryPageClient } from './page-client';
 
 /**
- * 库存管理页面 - ERP风格
- * 严格遵循全栈项目统一约定规范
+ * 库存管理页面 - Server Component
+ * 负责数据获取和 SEO 优化
+ * 严格遵循前端架构规范：三级组件架构
  */
-export default function InventoryPage() {
-  const [queryParams, setQueryParams] = React.useState<InventoryQueryParams>({
-    page: 1,
-    limit: paginationConfig.defaultPageSize,
-    search: '',
-    categoryId: '',
-    lowStock: false,
-    hasStock: false,
-    // 移除悬空的变体相关参数，因为后端不支持
-    // groupByVariant: false,
-    // includeVariants: true,
-    sortBy: 'updatedAt',
-    sortOrder: 'desc',
-  });
+export default async function InventoryPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  // 解析查询参数
+  const params = await searchParams;
+  const page = Number(params.page) || 1;
+  const limit = Number(params.limit) || paginationConfig.defaultPageSize;
+  const search = (params.search as string) || '';
+  const categoryId = (params.categoryId as string) || '';
+  const lowStock = params.lowStock === 'true';
+  const hasStock = params.hasStock === 'true';
+  const sortBy =
+    (params.sortBy as InventoryQueryParams['sortBy']) || 'updatedAt';
+  const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
 
-  // 获取库存列表数据（使用优化Hook，内置缓存与预取，保持上一页数据）
-  const { data, isLoading, error } = useOptimizedInventoryQuery({
-    params: queryParams,
-  });
+  const queryParams: InventoryQueryParams = {
+    page,
+    limit,
+    search,
+    categoryId,
+    lowStock,
+    hasStock,
+    sortBy,
+    sortOrder,
+  };
 
-  // 获取分类选项数据
-  const { data: categoryOptions = [] } = useQuery({
-    queryKey: categoryQueryKeys.options(),
-    queryFn: getCategoryOptions,
-  });
+  // 并行获取初始数据
+  const [inventoryRecords, total, categoryOptions] = await Promise.all([
+    getOptimizedInventoryList(queryParams),
+    getInventoryCount(queryParams),
+    getCategoryOptions(),
+  ]);
 
-  // 规范化列表数据结构，适配不同返回字段命名
-  const normalizedData = React.useMemo(() => {
-    if (!data) {return { data: [], pagination: undefined };}
-
-    // 处理API响应的嵌套结构
-    // API返回: { success: true, data: { data: [...], pagination: {...} } }
-    // 组件期望: { data: [...], pagination: {...} }
-    const response = data as {
-      success?: boolean;
-      data?: {
-        data?: Inventory[];
-        inventories?: Inventory[];
-        pagination?: {
-          page: number;
-          limit: number;
-          total: number;
-          totalPages: number;
-        };
-      };
-      // 直接格式（向后兼容）
-      inventories?: Inventory[];
-      pagination?: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-      };
-    };
-
-    // 优先从嵌套的data中提取
-    const nestedData = response.data;
-    const items =
-      nestedData?.data ?? nestedData?.inventories ?? response.inventories ?? [];
-    const pagination = nestedData?.pagination ?? response.pagination;
-
-    return { data: items, pagination };
-  }, [data]);
-
-  // 搜索处理
-  const handleSearch = React.useCallback((value: string) => {
-    setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
-  }, []);
-
-  // 筛选处理
-  const handleFilter = React.useCallback(
-    (
-      key: keyof InventoryQueryParams,
-      value: string | number | boolean | undefined
-    ) => {
-      setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
-    },
-    []
+  // 格式化响应数据
+  const initialData = formatPaginatedResponse(
+    inventoryRecords,
+    total,
+    queryParams.page || 1,
+    queryParams.limit || 20
   );
-
-  // 分页处理
-  const handlePageChange = React.useCallback((page: number) => {
-    setQueryParams(prev => ({ ...prev, page }));
-  }, []);
-
-  if (error) {
-    return (
-      <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="rounded border bg-card p-4 text-center text-red-600">
-          加载失败: {error instanceof Error ? error.message : '未知错误'}
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      <ERPInventoryList
-        data={normalizedData}
-        categoryOptions={categoryOptions}
-        queryParams={queryParams}
-        onSearch={handleSearch}
-        onFilter={handleFilter}
-        onPageChange={handlePageChange}
-        isLoading={isLoading}
-      />
+      <Suspense fallback={<InventoryListSkeleton />}>
+        <InventoryPageClient
+          initialData={initialData}
+          initialParams={queryParams}
+          categoryOptions={categoryOptions}
+        />
+      </Suspense>
     </div>
   );
 }

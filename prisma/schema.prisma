@@ -11,8 +11,6 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// SQLite 不支持枚举，使用字符串约束替代
-
 // 用户表 - 系统用户管理
 model User {
   id           String   @id @default(uuid())

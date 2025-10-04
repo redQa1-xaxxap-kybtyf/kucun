@@ -99,7 +99,10 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
     };
 
     // 处理筛选
-    const handleFilter = (key: keyof PaymentRecordQuery, value: any) => {
+    const handleFilter = (
+      key: keyof PaymentRecordQuery,
+      value: string | number | boolean | undefined
+    ) => {
       onQueryChange({ [key]: value, page: 1 });
     };
 
@@ -115,7 +118,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
 
     // 处理排序
     const handleSort = (sortBy: string, sortOrder: 'asc' | 'desc') => {
-      onQueryChange({ sortBy: sortBy as any, sortOrder });
+      onQueryChange({ sortBy, sortOrder });
     };
 
     // 桌面端表格列定义
@@ -149,7 +152,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
           <div>
             <div className="font-medium">{payment.customer.name}</div>
             {payment.customer.phone && (
-              <div className="text-sm text-muted-foreground">
+              <div className="text-muted-foreground text-sm">
                 {payment.customer.phone}
               </div>
             )}
@@ -276,7 +279,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
           <div className="mb-3 flex items-start justify-between">
             <div>
               <div className="text-sm font-medium">{payment.paymentNumber}</div>
-              <div className="mt-1 text-xs text-muted-foreground">
+              <div className="text-muted-foreground mt-1 text-xs">
                 {format(new Date(payment.paymentDate), 'yyyy-MM-dd HH:mm')}
               </div>
             </div>
@@ -378,11 +381,11 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         {/* 搜索和筛选栏 */}
         <Card>
           <CardContent className="p-4">
-            <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-x-4 md:space-y-0">
+            <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 md:space-x-4">
               {/* 搜索框 */}
               <div className="max-w-md flex-1">
                 <div className="relative">
-                  <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                   <Input
                     placeholder="搜索收款单号、客户名称..."
                     value={searchValue}
@@ -453,7 +456,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         {payments.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <DollarSign className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+              <DollarSign className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
               <p className="text-muted-foreground">暂无收款记录</p>
             </CardContent>
           </Card>
@@ -485,7 +488,7 @@ function PaymentListSkeleton() {
       {/* 搜索筛选骨架屏 */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-x-4 md:space-y-0">
+          <div className="flex flex-col space-y-4 md:flex-row md:items-center md:justify-between md:space-y-0 md:space-x-4">
             <Skeleton className="h-10 w-full max-w-md" />
             <div className="flex items-center space-x-2">
               <Skeleton className="h-10 w-32" />

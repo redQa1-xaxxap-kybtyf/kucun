@@ -2,9 +2,8 @@
 // 提供单个入库记录的查询、更新、删除操作
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 import {
   cleanRemarks,
@@ -21,12 +20,9 @@ export async function GET(
   const { id } = await params;
   try {
     // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 验证参数
@@ -96,12 +92,9 @@ export async function PUT(
   const { id } = await params;
   try {
     // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 验证参数
@@ -182,9 +175,9 @@ export async function PUT(
         where: {
           productId_variantId_batchNumber: {
             productId: existingRecord.productId,
-            variantId: existingRecord.variantId,
-            batchNumber: existingRecord.batchNumber,
-          } as any,
+            variantId: existingRecord.variantId ?? undefined,
+            batchNumber: existingRecord.batchNumber ?? undefined,
+          },
         },
         update: {
           quantity: {
@@ -234,12 +227,9 @@ export async function DELETE(
   const { id } = await params;
   try {
     // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 验证参数

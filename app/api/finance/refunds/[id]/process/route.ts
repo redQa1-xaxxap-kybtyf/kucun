@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 import { processRefundSchema } from '@/lib/validations/refund';
 
@@ -10,9 +9,9 @@ export async function POST(
   { params }: { params: { id: string } }
 ) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const body = await request.json();

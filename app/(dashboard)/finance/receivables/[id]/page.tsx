@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Separator } from '@/components/ui/separator';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface ReceivableDetail {
@@ -94,8 +95,8 @@ export default function ReceivableDetailPage() {
     data: receivable,
     isLoading,
     error,
-  } = useQuery({
-    queryKey: ['receivable', id],
+  } = useQuery<ReceivableDetail>({
+    queryKey: queryKeys.finance.receivable(id),
     queryFn: () => fetchReceivableDetail(id),
     enabled: !!id,
   });

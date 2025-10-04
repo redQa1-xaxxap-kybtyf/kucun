@@ -24,6 +24,7 @@ interface InboundRecordWithRelations {
   reason: string;
   remarks: string | null;
   userId: string;
+  batchNumber?: string;
   colorCode: string | null;
   productionDate: Date | null;
   unitCost: number | null;
@@ -35,10 +36,18 @@ interface InboundRecordWithRelations {
     name: string;
     code: string;
     unit: string;
+    piecesPerUnit?: number;
+    weight?: number;
   };
   user: {
     id: string;
     name: string;
+  };
+  batchSpecification?: {
+    id: string;
+    piecesPerUnit: number;
+    weight: number;
+    thickness?: number;
   };
 }
 
@@ -152,14 +161,14 @@ export function buildInboundWhereClause(queryData: {
 
   // 日期范围筛选
   if (queryData.startDate || queryData.endDate) {
-    where.createdAt = {};
+    where.createdAt = {} as { gte?: Date; lte?: Date };
     if (queryData.startDate) {
-      (where.createdAt as any).gte = new Date(queryData.startDate);
+      where.createdAt.gte = new Date(queryData.startDate);
     }
     if (queryData.endDate) {
       const endDate = new Date(queryData.endDate);
       endDate.setHours(23, 59, 59, 999);
-      (where.createdAt as any).lte = endDate;
+      where.createdAt.lte = endDate;
     }
   }
 
@@ -191,7 +200,7 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
     reason: record.reason,
     remarks: record.remarks || '',
     userId: record.userId,
-    batchNumber: (record as any).batchNumber || '', // 新增批次号字段
+    batchNumber: record.batchNumber || '',
     colorCode: record.colorCode || '',
     productionDate: record.productionDate
       ? toISOString(record.productionDate)?.split('T')[0] || ''
@@ -209,22 +218,19 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
       unit: record.product.unit,
       // 优先使用批次级规格参数，回退到产品默认参数
       piecesPerUnit:
-        (record as any).batchSpecification?.piecesPerUnit ||
-        (record.product as any).piecesPerUnit ||
+        record.batchSpecification?.piecesPerUnit ||
+        record.product.piecesPerUnit ||
         1,
-      weight:
-        (record as any).batchSpecification?.weight ||
-        (record.product as any).weight ||
-        0,
+      weight: record.batchSpecification?.weight || record.product.weight || 0,
     },
 
     // 批次规格参数信息（如果存在）
-    batchSpecification: (record as any).batchSpecification
+    batchSpecification: record.batchSpecification
       ? {
-          id: (record as any).batchSpecification.id,
-          piecesPerUnit: (record as any).batchSpecification.piecesPerUnit,
-          weight: (record as any).batchSpecification.weight,
-          thickness: (record as any).batchSpecification.thickness,
+          id: record.batchSpecification.id,
+          piecesPerUnit: record.batchSpecification.piecesPerUnit,
+          weight: record.batchSpecification.weight,
+          thickness: record.batchSpecification.thickness,
         }
       : undefined,
 
@@ -302,11 +308,13 @@ export async function getInboundRecords(queryData: {
   ]);
 
   // 格式化记录数据
-  const formattedRecords = formatInboundRecords(records as any);
+  const formattedRecords = formatInboundRecords(
+    records as InboundRecordWithRelations[]
+  );
 
   return {
     // success: true, // 移除不存在的属性
-    data: formattedRecords as any,
+    data: formattedRecords,
     pagination: {
       page: queryData.page,
       limit: queryData.limit,
@@ -349,7 +357,7 @@ export async function createInboundRecord(
     weight?: number; // 产品重量（入库时确定）
   },
   userId: string,
-  tx?: any // 事务上下文
+  tx?: typeof prisma // 事务上下文
 ) {
   // 验证产品存在
   await validateProductExists(data.productId);
@@ -459,7 +467,7 @@ export async function updateInventoryQuantity(
   options?: {
     variantId?: string;
   },
-  tx?: any // 事务上下文
+  tx?: typeof prisma // 事务上下文
 ) {
   const prismaClient = tx || prisma;
 

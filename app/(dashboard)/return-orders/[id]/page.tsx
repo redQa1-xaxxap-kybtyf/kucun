@@ -24,6 +24,7 @@ import {
 import { ErrorMessage } from '@/components/ui/error-message';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Separator } from '@/components/ui/separator';
+import { queryKeys } from '@/lib/queryKeys';
 import { RETURN_ORDER_STATUS_LABELS } from '@/lib/types/return-order';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
@@ -96,8 +97,8 @@ export default function ReturnOrderDetailPage() {
     data: order,
     isLoading,
     error,
-  } = useQuery({
-    queryKey: ['return-order', id],
+  } = useQuery<ReturnOrderDetail>({
+    queryKey: queryKeys.returnOrders.detail(id),
     queryFn: () => fetchReturnOrderDetail(id),
     enabled: !!id,
   });

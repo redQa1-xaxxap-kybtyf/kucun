@@ -74,6 +74,9 @@ export interface PaginationInfo {
   totalPages: number;
 }
 
+// 库存查询结果类型（用于列表展示）
+export type InventoryQueryResult = Inventory;
+
 // API 响应类型
 export interface InventoryListResponse {
   success: boolean;

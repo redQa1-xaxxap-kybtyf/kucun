@@ -1,11 +1,10 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { withErrorHandling } from '@/lib/api/middleware';
-import { authOptions } from '@/lib/auth';
-import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
+import { successResponse, withAuth } from '@/lib/auth/api-helpers';
+import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
+import { publishInventoryChange } from '@/lib/events';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { inventoryAdjustSchema } from '@/lib/validations/inventory-operations';
@@ -129,69 +128,62 @@ async function executeAdjustmentTransaction(
 }
 
 /**
- * 获取用户ID（开发环境或生产环境）
- */
-async function getUserId(): Promise<string> {
-  if (env.NODE_ENV === 'development') {
-    // 开发环境下使用数据库中的第一个用户
-    const user = await prisma.user.findFirst();
-    if (!user) {
-      throw new Error('开发环境下未找到可用用户');
-    }
-    return user.id;
-  } else {
-    // 生产环境下验证会话
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      throw new Error('未授权访问');
-    }
-    return session.user.id;
-  }
-}
-
-/**
  * 库存调整API
  * POST /api/inventory/adjust
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  // 验证用户权限并获取用户ID
-  const userId = await getUserId();
+export const POST = withAuth(
+  async (request: NextRequest, { user }) => {
+    return withErrorHandling(async () => {
+      const body = await request.json();
 
-  const body = await request.json();
+      // 验证请求数据
+      const validatedData = inventoryAdjustSchema.parse(body);
 
-  // 验证请求数据
-  const validatedData = inventoryAdjustSchema.parse(body);
+      const { idempotencyKey, productId } = validatedData;
 
-  const { idempotencyKey, productId } = validatedData;
+      // 使用幂等性包装器执行调整操作
+      const result = await withIdempotency(
+        idempotencyKey,
+        'adjust',
+        productId,
+        user.id,
+        validatedData,
+        async () => await executeAdjustmentTransaction(validatedData, user.id)
+      );
 
-  // 使用幂等性包装器执行调整操作
-  const result = await withIdempotency(
-    idempotencyKey,
-    'adjust',
-    productId,
-    userId,
-    validatedData,
-    async () => await executeAdjustmentTransaction(validatedData, userId)
-  );
+      // 使用统一的缓存失效系统（自动级联失效相关缓存）
+      await revalidateInventory(validatedData.productId);
 
-  // 清除相关缓存
-  await invalidateInventoryCache(validatedData.productId);
+      // 发布库存变更事件（新事件系统）
+      await publishInventoryChange({
+        action: 'adjust',
+        productId: validatedData.productId,
+        productName: result.inventory.product.name,
+        oldQuantity: result.adjustment.beforeQuantity,
+        newQuantity: result.adjustment.afterQuantity,
+        reason: validatedData.reason,
+        operator: user.name || user.username,
+        userId: user.id,
+      });
 
-  // WebSocket 推送更新
-  publishWs('inventory', {
-    type: 'adjust',
-    productId: validatedData.productId,
-    adjustQuantity: validatedData.adjustQuantity,
-    inventoryId: result.inventory.id,
-    adjustmentNumber: result.adjustment.adjustmentNumber,
-  });
+      // WebSocket 推送更新（向后兼容，后续可移除）
+      publishWs('inventory', {
+        type: 'adjust',
+        productId: validatedData.productId,
+        adjustQuantity: validatedData.adjustQuantity,
+        inventoryId: result.inventory.id,
+        adjustmentNumber: result.adjustment.adjustmentNumber,
+      });
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      inventory: result.inventory,
-      adjustment: result.adjustment,
-    },
-    message: '库存调整成功',
-  });
-});
+      return NextResponse.json({
+        success: true,
+        data: {
+          inventory: result.inventory,
+          adjustment: result.adjustment,
+        },
+        message: '库存调整成功',
+      });
+    })(request, {});
+  },
+  { permissions: ['inventory:adjust'] }
+);

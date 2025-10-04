@@ -1,81 +1,26 @@
 /**
- * 分类相关的Zod验证Schema
- * 严格遵循全栈项目统一约定规范
+ * 分类工具函数
+ * 从 lib/schemas/category.ts 迁移而来
  */
-
-import { z } from 'zod';
 
 /**
- * 创建分类Schema
+ * 分类基础接口
  */
-export const CreateCategorySchema = z.object({
-  name: z
-    .string()
-    .min(1, '分类名称不能为空')
-    .max(50, '分类名称不能超过50个字符'),
-
-  code: z
-    .string()
-    .max(50, '分类编码不能超过50个字符')
-    .regex(/^[A-Za-z0-9_-]+$/, '分类编码只能包含字母、数字、下划线和短横线')
-    .optional(),
-
-  parentId: z.string().optional(),
-
-  sortOrder: z.number().int().min(0).default(0),
-});
+interface CategoryBase {
+  id: string;
+  name: string;
+  code: string;
+  parentId?: string | null;
+  description?: string | null;
+}
 
 /**
- * 更新分类Schema
+ * 分类树节点接口
  */
-export const UpdateCategorySchema = CreateCategorySchema.partial().extend({
-  id: z.string().min(1, 'ID不能为空'),
-});
-
-/**
- * 分类查询参数Schema
- */
-export const CategoryQuerySchema = z.object({
-  page: z.number().int().min(1).default(1),
-
-  limit: z.number().int().min(1).max(100).default(20),
-
-  search: z.string().optional(),
-
-  sortBy: z.enum(['name', 'createdAt', 'updatedAt']).default('createdAt'),
-
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
-
-  parentId: z.string().optional(),
-});
-
-/**
- * 批量删除分类Schema
- */
-export const BatchDeleteCategoriesSchema = z.object({
-  ids: z
-    .array(z.string().min(1))
-    .min(1, '至少选择一个分类')
-    .max(50, '一次最多删除50个分类'),
-});
-
-// 导出类型
-export type CreateCategoryData = z.infer<typeof CreateCategorySchema>;
-export type UpdateCategoryData = z.infer<typeof UpdateCategorySchema>;
-export type CategoryQueryParams = z.infer<typeof CategoryQuerySchema>;
-export type BatchDeleteCategoriesData = z.infer<
-  typeof BatchDeleteCategoriesSchema
->;
-
-/**
- * 分类表单默认值
- */
-export const categoryFormDefaults: CreateCategoryData = {
-  name: '',
-  code: undefined,
-  parentId: undefined,
-  sortOrder: 0,
-};
+interface CategoryTreeNode extends CategoryBase {
+  children: CategoryTreeNode[];
+  level?: number;
+}
 
 /**
  * 验证分类名称唯一性（前端预检查）
@@ -105,18 +50,22 @@ export function generateCategoryCodeSuggestion(name: string): string {
  * 验证分类层级深度
  */
 export function validateCategoryDepth(
-  categories: any[],
+  categories: CategoryBase[],
   parentId: string | undefined,
   maxDepth: number = 3
 ): boolean {
-  if (!parentId) {return true;}
+  if (!parentId) {
+    return true;
+  }
 
   let depth = 1;
-  let currentParentId = parentId;
+  let currentParentId: string | undefined | null = parentId;
 
   while (currentParentId && depth < maxDepth) {
     const parent = categories.find(cat => cat.id === currentParentId);
-    if (!parent) {break;}
+    if (!parent) {
+      break;
+    }
     currentParentId = parent.parentId;
     depth++;
   }
@@ -128,13 +77,15 @@ export function validateCategoryDepth(
  * 检查循环引用
  */
 export function checkCircularReference(
-  categories: any[],
+  categories: CategoryBase[],
   categoryId: string,
   parentId: string
 ): boolean {
-  if (categoryId === parentId) {return true;}
+  if (categoryId === parentId) {
+    return true;
+  }
 
-  let currentParentId = parentId;
+  let currentParentId: string | undefined | null = parentId;
   const visited = new Set<string>();
 
   while (currentParentId) {
@@ -144,7 +95,9 @@ export function checkCircularReference(
 
     visited.add(currentParentId);
     const parent = categories.find(cat => cat.id === currentParentId);
-    if (!parent) {break;}
+    if (!parent) {
+      break;
+    }
     currentParentId = parent.parentId;
   }
 
@@ -154,9 +107,11 @@ export function checkCircularReference(
 /**
  * 构建分类树结构
  */
-export function buildCategoryTree(categories: any[]): any[] {
-  const categoryMap = new Map();
-  const rootCategories: any[] = [];
+export function buildCategoryTree(
+  categories: CategoryBase[]
+): CategoryTreeNode[] {
+  const categoryMap = new Map<string, CategoryTreeNode>();
+  const rootCategories: CategoryTreeNode[] = [];
 
   // 创建映射
   categories.forEach(category => {
@@ -166,6 +121,9 @@ export function buildCategoryTree(categories: any[]): any[] {
   // 构建树结构
   categories.forEach(category => {
     const categoryNode = categoryMap.get(category.id);
+    if (!categoryNode) {
+      return;
+    }
 
     if (category.parentId) {
       const parent = categoryMap.get(category.parentId);
@@ -185,8 +143,11 @@ export function buildCategoryTree(categories: any[]): any[] {
 /**
  * 扁平化分类树
  */
-export function flattenCategoryTree(tree: any[], level: number = 0): any[] {
-  const result: any[] = [];
+export function flattenCategoryTree(
+  tree: CategoryTreeNode[],
+  level: number = 0
+): Array<CategoryTreeNode & { level: number }> {
+  const result: Array<CategoryTreeNode & { level: number }> = [];
 
   tree.forEach(category => {
     result.push({ ...category, level });
@@ -202,15 +163,17 @@ export function flattenCategoryTree(tree: any[], level: number = 0): any[] {
  * 获取分类路径
  */
 export function getCategoryPath(
-  categories: any[],
+  categories: CategoryBase[],
   categoryId: string
 ): string[] {
   const path: string[] = [];
-  let currentId = categoryId;
+  let currentId: string | undefined | null = categoryId;
 
   while (currentId) {
     const category = categories.find(cat => cat.id === currentId);
-    if (!category) {break;}
+    if (!category) {
+      break;
+    }
 
     path.unshift(category.name);
     currentId = category.parentId;

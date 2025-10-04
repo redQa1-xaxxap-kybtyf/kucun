@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   CreateUserRequest,
   SettingsApiResponse,
@@ -75,7 +76,7 @@ export default function UsersSettingsPage() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['users', queryParams],
+    queryKey: queryKeys.users.list(queryParams),
     queryFn: async () => {
       const params = new URLSearchParams();
       Object.entries(queryParams).forEach(([key, value]) => {
@@ -114,7 +115,7 @@ export default function UsersSettingsPage() {
     onSuccess: () => {
       toast({ title: '成功', description: '用户创建成功' });
       setUserFormOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
     onError: (error: Error) => {
       toast({
@@ -142,7 +143,7 @@ export default function UsersSettingsPage() {
     onSuccess: () => {
       toast({ title: '成功', description: '用户更新成功' });
       setUserFormOpen(false);
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
     onError: (error: Error) => {
       toast({
@@ -169,7 +170,7 @@ export default function UsersSettingsPage() {
     },
     onSuccess: () => {
       toast({ title: '成功', description: '用户删除成功' });
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
     onError: (error: Error) => {
       toast({
@@ -202,7 +203,7 @@ export default function UsersSettingsPage() {
     },
     onSuccess: () => {
       toast({ title: '成功', description: '用户状态更新成功' });
-      queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.users.all });
     },
     onError: (error: Error) => {
       toast({
@@ -372,7 +373,7 @@ export default function UsersSettingsPage() {
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-1 items-center space-x-2">
               <div className="relative max-w-sm flex-1">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
                 <Input
                   placeholder="搜索用户名、邮箱或姓名..."
                   value={searchTerm}
@@ -417,7 +418,7 @@ export default function UsersSettingsPage() {
               <span className="ml-2">加载中...</span>
             </div>
           ) : error ? (
-            <div className="flex h-32 flex-col items-center justify-center text-muted-foreground">
+            <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
               <p>加载用户列表失败</p>
               <Button
                 variant="outline"
@@ -441,7 +442,7 @@ export default function UsersSettingsPage() {
 
           {/* 分页信息 */}
           {userListData && userListData.total > 0 && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="text-muted-foreground flex items-center justify-between text-sm">
               <div>
                 显示第 {(userListData.page - 1) * userListData.limit + 1} 到{' '}
                 {Math.min(

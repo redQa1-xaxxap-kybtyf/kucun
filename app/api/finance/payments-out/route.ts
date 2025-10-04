@@ -1,13 +1,11 @@
 // 付款记录 API 路由
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
+import { type NextRequest } from 'next/server';
 
-import { authOptions } from '@/lib/auth';
+import { successResponse, withAuth } from '@/lib/auth/api-helpers';
 import { clearCacheAfterPaymentOut } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
 import type {
   PaymentOutRecordDetail,
   PaymentOutRecordListResponse,
@@ -20,33 +18,19 @@ import {
 
 /**
  * GET /api/finance/payments-out - 获取付款记录列表
+ * 权限：需要 finance:view 权限
  */
-export async function GET(request: NextRequest) {
-  try {
-    // 身份验证 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-    }
-
+export const GET = withAuth(
+  async (request: NextRequest) => {
     // 解析查询参数
     const searchParams = new URL(request.url).searchParams;
     const queryParams = Object.fromEntries(searchParams.entries());
     const validationResult = paymentOutRecordQuerySchema.safeParse(queryParams);
 
     if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '查询参数验证失败',
-          details: validationResult.error.issues,
-        },
-        { status: 400 }
+      return successResponse(
+        null,
+        '查询参数验证失败: ' + validationResult.error.issues[0]?.message
       );
     }
 
@@ -65,7 +49,7 @@ export async function GET(request: NextRequest) {
     } = validationResult.data;
 
     // 构建查询条件
-    const where: any = {};
+    const where: Record<string, unknown> = {};
 
     if (search) {
       where.OR = [
@@ -152,55 +136,25 @@ export async function GET(request: NextRequest) {
       },
     };
 
-    return NextResponse.json({
-      success: true,
-      data: response,
-    });
-  } catch (error) {
-    console.error('获取付款记录失败:', error);
-    return NextResponse.json(
-      { success: false, error: '获取付款记录失败' },
-      { status: 500 }
-    );
-  }
-}
+    return successResponse(response);
+  },
+  { permissions: ['finance:view'] }
+);
 
 /**
  * POST /api/finance/payments-out - 创建付款记录
+ * 权限：需要 finance:manage 权限
  */
-export async function POST(request: NextRequest) {
-  try {
-    // 身份验证 (开发模式下绕过)
-    let userId = 'dev-user'; // 开发环境默认用户ID
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-      userId = session.user.id;
-    } else {
-      // 开发环境下获取第一个用户
-      const user = await prisma.user.findFirst();
-      if (user) {
-        userId = user.id;
-      }
-    }
-
+export const POST = withAuth(
+  async (request: NextRequest, { user }) => {
     // 解析请求体
     const body = await request.json();
     const validationResult = createPaymentOutRecordSchema.safeParse(body);
 
     if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '数据验证失败',
-          details: validationResult.error.issues,
-        },
-        { status: 400 }
+      return successResponse(
+        null,
+        '数据验证失败: ' + validationResult.error.issues[0]?.message
       );
     }
 
@@ -213,17 +167,11 @@ export async function POST(request: NextRequest) {
     });
 
     if (!supplier) {
-      return NextResponse.json(
-        { success: false, error: '供应商不存在' },
-        { status: 404 }
-      );
+      return successResponse(null, '供应商不存在');
     }
 
     if (supplier.status !== 'active') {
-      return NextResponse.json(
-        { success: false, error: '供应商状态异常，无法创建付款记录' },
-        { status: 400 }
-      );
+      return successResponse(null, '供应商状态异常，无法创建付款记录');
     }
 
     // 如果关联应付款记录,验证金额
@@ -241,20 +189,14 @@ export async function POST(request: NextRequest) {
       });
 
       if (!payableRecord) {
-        return NextResponse.json(
-          { success: false, error: '关联的应付款记录不存在' },
-          { status: 404 }
-        );
+        return successResponse(null, '关联的应付款记录不存在');
       }
 
       // 金额验证：检查付款金额是否超过剩余应付金额
       if (data.paymentAmount > payableRecord.remainingAmount) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: `付款金额超过应付金额。应付: ¥${payableRecord.remainingAmount.toFixed(2)}, 本次付款: ¥${data.paymentAmount.toFixed(2)}`,
-          },
-          { status: 400 }
+        return successResponse(
+          null,
+          `付款金额超过应付金额。应付: ¥${payableRecord.remainingAmount.toFixed(2)}, 本次付款: ¥${data.paymentAmount.toFixed(2)}`
         );
       }
     }
@@ -270,7 +212,7 @@ export async function POST(request: NextRequest) {
           data: {
             ...data,
             paymentNumber,
-            userId,
+            userId: user.id,
             paymentDate: new Date(data.paymentDate),
           },
           include: {
@@ -350,16 +292,7 @@ export async function POST(request: NextRequest) {
     // 清除相关缓存
     await clearCacheAfterPaymentOut();
 
-    return NextResponse.json({
-      success: true,
-      data: payment,
-      message: '付款记录创建成功',
-    });
-  } catch (error) {
-    console.error('创建付款记录失败:', error);
-    return NextResponse.json(
-      { success: false, error: '创建付款记录失败' },
-      { status: 500 }
-    );
-  }
-}
+    return successResponse(payment, '付款记录创建成功');
+  },
+  { permissions: ['finance:manage'] }
+);

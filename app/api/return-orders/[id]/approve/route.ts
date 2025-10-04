@@ -2,29 +2,18 @@
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { publishApprovalResult } from '@/lib/events';
 import { returnOrderApprovalSchema } from '@/lib/validations/return-order';
 
 /**
  * POST /api/return-orders/[id]/approve - 审批退货订单
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
+export const POST = withAuth(
+  async (request: NextRequest, { user, params }) => {
+    const { id } = await (params as Promise<{ id: string }>);
 
     // 解析请求体
     const body = await request.json();
@@ -50,6 +39,12 @@ export async function POST(
         items: true,
         salesOrder: true,
         customer: true,
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     });
 
@@ -71,7 +66,13 @@ export async function POST(
     // 使用事务处理审批
     const updatedReturnOrder = await prisma.$transaction(async tx => {
       // 准备更新数据
-      const updateData: any = {
+      const updateData: {
+        status: string;
+        approvedAt: Date;
+        updatedAt: Date;
+        approvedBy?: string;
+        remarks?: string;
+      } = {
         status: approved ? 'approved' : 'rejected',
         approvedAt: new Date(),
         updatedAt: new Date(),
@@ -140,16 +141,25 @@ export async function POST(
       return returnOrder;
     });
 
+    // 发布审核结果事件
+    await publishApprovalResult({
+      approved,
+      resourceType: 'return',
+      resourceId: updatedReturnOrder.id,
+      resourceNumber: updatedReturnOrder.returnNumber,
+      requesterId: existingReturnOrder.userId,
+      requesterName: existingReturnOrder.user?.name || '未知用户',
+      approverId: user.id,
+      approverName: user.name || user.username,
+      comment: remarks,
+      userId: user.id,
+    });
+
     return NextResponse.json({
       success: true,
       data: updatedReturnOrder,
       message: approved ? '退货订单审批通过' : '退货订单审批拒绝',
     });
-  } catch (error) {
-    console.error('审批退货订单失败:', error);
-    return NextResponse.json(
-      { success: false, error: '审批退货订单失败' },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { anyPermissions: ['returns:approve', 'returns:reject'] }
+);

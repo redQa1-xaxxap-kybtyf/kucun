@@ -25,6 +25,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Product } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
 
@@ -83,7 +84,7 @@ export function TransferProductSelector({
 
   // 获取产品列表
   const { data: productsResponse, isLoading } = useQuery({
-    queryKey: ['products', 'active'],
+    queryKey: queryKeys.products.list({ status: 'active' }),
     queryFn: getProducts,
     staleTime: 5 * 60 * 1000, // 5分钟缓存
   });
@@ -93,7 +94,9 @@ export function TransferProductSelector({
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!searchValue) {return products;}
+    if (!searchValue) {
+      return products;
+    }
 
     const search = searchValue.toLowerCase();
     return products.filter(
@@ -134,18 +137,18 @@ export function TransferProductSelector({
         >
           {selectedProduct ? (
             <div className="flex items-center gap-2 truncate">
-              <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <Package className="text-muted-foreground h-4 w-4 shrink-0" />
               <div className="flex flex-col items-start truncate">
                 <span className="truncate font-medium">
                   {selectedProduct.name}
                 </span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-muted-foreground text-xs">
                   {selectedProduct.code}
                 </span>
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2">
               <Search className="h-4 w-4" />
               <span>{placeholder}</span>
             </div>
@@ -166,7 +169,7 @@ export function TransferProductSelector({
                 '加载中...'
               ) : (
                 <div className="py-6 text-center">
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-muted-foreground text-sm">
                     未找到相关产品
                   </div>
                 </div>
@@ -177,7 +180,7 @@ export function TransferProductSelector({
               {value && (
                 <CommandItem
                   onSelect={handleClear}
-                  className="flex items-center gap-3 p-3 text-muted-foreground"
+                  className="text-muted-foreground flex items-center gap-3 p-3"
                 >
                   <div className="h-4 w-4" />
                   <div className="font-medium">清除选择</div>
@@ -212,14 +215,17 @@ export function TransferProductSelector({
 
                       {/* 产品规格 */}
                       {product.specification && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           规格：{product.specification}
                         </div>
                       )}
 
                       {/* 价格信息 */}
-                      <div className="text-xs text-muted-foreground">
-                        价格：¥{(product as any).price?.toFixed(2) || '0.00'}
+                      <div className="text-muted-foreground text-xs">
+                        价格：¥
+                        {'price' in product && typeof product.price === 'number'
+                          ? product.price.toFixed(2)
+                          : '0.00'}
                       </div>
 
                       {/* 库存状态提示（调货销售特有） */}

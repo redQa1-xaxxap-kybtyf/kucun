@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { paginationConfig } from '@/lib/env';
 import { getStatementsList } from '@/lib/services/finance-statistics';
 
@@ -12,12 +11,9 @@ import { getStatementsList } from '@/lib/services/finance-statistics';
 export async function GET(request: NextRequest) {
   try {
     // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 解析查询参数

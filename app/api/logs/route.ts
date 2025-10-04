@@ -3,18 +3,17 @@
  * 遵循 Next.js 15.4 App Router 架构和全局约定规范
  */
 
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { authOptions } from '@/lib/auth';
+import { verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
-import { SystemLogListRequestSchema } from '@/lib/schemas/settings';
 import type {
   SystemLog,
   SystemLogLevel,
   SystemLogListResponse,
   SystemLogType,
 } from '@/lib/types/settings';
+import { SystemLogListRequestSchema } from '@/lib/validations/settings';
 
 /**
  * GET /api/logs - 获取系统日志列表
@@ -22,9 +21,9 @@ import type {
  */
 export async function GET(request: NextRequest) {
   try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    // 身份验证 - 使用中间件传递的头部信息
+    const auth = verifyApiAuth(request);
+    if (!auth.success || !auth.userId) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
@@ -32,7 +31,7 @@ export async function GET(request: NextRequest) {
     }
 
     // 只有管理员可以查看日志
-    if (session.user.role !== 'admin') {
+    if (auth.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: '权限不足' },
         { status: 403 }
@@ -174,9 +173,9 @@ export async function GET(request: NextRequest) {
  */
 export async function DELETE(request: NextRequest) {
   try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
+    // 身份验证 - 使用中间件传递的头部信息
+    const auth = verifyApiAuth(request);
+    if (!auth.success || !auth.userId) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
@@ -184,7 +183,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     // 只有管理员可以清理日志
-    if (session.user.role !== 'admin') {
+    if (auth.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: '权限不足' },
         { status: 403 }

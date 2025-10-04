@@ -43,6 +43,7 @@ import {
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency } from '@/lib/utils';
 
 // 创建收款记录表单Schema
@@ -110,9 +111,11 @@ export default function CreatePaymentPage() {
 
   // 获取销售订单信息
   const { data: orderData, isLoading: _orderLoading } = useQuery({
-    queryKey: ['salesOrder', watchedOrderId],
+    queryKey: queryKeys.salesOrders.detail(watchedOrderId || ''),
     queryFn: async () => {
-      if (!watchedOrderId) {return null;}
+      if (!watchedOrderId) {
+        return null;
+      }
       const response = await fetch(`/api/sales-orders/${watchedOrderId}`);
       if (!response.ok) {
         throw new Error('获取订单信息失败');
@@ -126,7 +129,7 @@ export default function CreatePaymentPage() {
 
   // 获取可用的销售订单列表
   const { data: ordersData, isLoading: ordersLoading } = useQuery({
-    queryKey: ['salesOrders', 'unpaid'],
+    queryKey: queryKeys.salesOrders.list({ status: 'confirmed,shipped' }),
     queryFn: async () => {
       const response = await fetch(
         '/api/sales-orders?status=confirmed,shipped&hasUnpaidAmount=true'

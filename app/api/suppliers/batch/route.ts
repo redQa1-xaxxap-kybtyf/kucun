@@ -1,25 +1,15 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { BatchDeleteSuppliersSchema } from '@/lib/schemas/supplier';
 import type { BatchDeleteSuppliersResult } from '@/lib/types/supplier';
+import { BatchDeleteSuppliersSchema } from '@/lib/validations/supplier';
 
 /**
  * DELETE /api/suppliers/batch - 批量删除供应商
  */
-export async function DELETE(request: NextRequest) {
-  try {
-    // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-
+export const DELETE = withAuth(
+  async (request: NextRequest) => {
     // 解析请求体
     const body = await request.json();
     const { supplierIds } = BatchDeleteSuppliersSchema.parse(body);
@@ -77,14 +67,6 @@ export async function DELETE(request: NextRequest) {
     };
 
     return NextResponse.json(result);
-  } catch (error) {
-    console.error('批量删除供应商失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '批量删除供应商失败',
-      },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['suppliers:delete'] }
+);

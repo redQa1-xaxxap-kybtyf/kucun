@@ -32,7 +32,7 @@ import {
   getCustomer,
   updateCustomer,
 } from '@/lib/api/customers';
-import type { CustomerUpdateInput } from '@/lib/types/customer';
+import type { Customer, CustomerUpdateInput } from '@/lib/types/customer';
 
 // 简化的编辑表单验证模式
 const editFormSchema = z.object({
@@ -65,10 +65,12 @@ export function CustomerEditDialog({
   const queryClient = useQueryClient();
 
   // 获取客户详情
-  const { data: customer, isLoading: isLoadingCustomer } = useQuery({
-    queryKey: customerId ? customerQueryKeys.detail(customerId) : [],
+  const { data: customer, isLoading: isLoadingCustomer } = useQuery<Customer>({
+    queryKey: customerQueryKeys.detail(customerId || ''),
     queryFn: () => {
-      if (!customerId) {throw new Error('Customer ID is required');}
+      if (!customerId) {
+        throw new Error('Customer ID is required');
+      }
       return getCustomer(customerId);
     },
     enabled: !!customerId && open,
@@ -98,7 +100,9 @@ export function CustomerEditDialog({
   // 更新客户信息
   const updateMutation = useMutation({
     mutationFn: (data: CustomerUpdateInput) => {
-      if (!customerId) {throw new Error('Customer ID is required');}
+      if (!customerId) {
+        throw new Error('Customer ID is required');
+      }
       return updateCustomer(customerId, data);
     },
     onSuccess: () => {
@@ -162,16 +166,16 @@ export function CustomerEditDialog({
         {isLoadingCustomer ? (
           <div className="space-y-4">
             <div className="space-y-2">
-              <div className="h-4 w-16 animate-pulse rounded bg-muted" />
-              <div className="h-10 animate-pulse rounded bg-muted" />
+              <div className="bg-muted h-4 w-16 animate-pulse rounded" />
+              <div className="bg-muted h-10 animate-pulse rounded" />
             </div>
             <div className="space-y-2">
-              <div className="h-4 w-16 animate-pulse rounded bg-muted" />
-              <div className="h-10 animate-pulse rounded bg-muted" />
+              <div className="bg-muted h-4 w-16 animate-pulse rounded" />
+              <div className="bg-muted h-10 animate-pulse rounded" />
             </div>
             <div className="space-y-2">
-              <div className="h-4 w-16 animate-pulse rounded bg-muted" />
-              <div className="h-20 animate-pulse rounded bg-muted" />
+              <div className="bg-muted h-4 w-16 animate-pulse rounded" />
+              <div className="bg-muted h-20 animate-pulse rounded" />
             </div>
           </div>
         ) : (

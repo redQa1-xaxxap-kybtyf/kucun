@@ -129,7 +129,9 @@ export const paymentRecordQuerySchema = z
       .string()
       .optional()
       .refine(date => {
-        if (!date) return true;
+        if (!date) {
+          return true;
+        }
         const parsedDate = new Date(date);
         return !isNaN(parsedDate.getTime());
       }, '请输入有效的开始日期格式'),
@@ -137,7 +139,9 @@ export const paymentRecordQuerySchema = z
       .string()
       .optional()
       .refine(date => {
-        if (!date) return true;
+        if (!date) {
+          return true;
+        }
         const parsedDate = new Date(date);
         return !isNaN(parsedDate.getTime());
       }, '请输入有效的结束日期格式'),
@@ -175,7 +179,9 @@ export const accountsReceivableQuerySchema = z
       .string()
       .optional()
       .refine(date => {
-        if (!date) return true;
+        if (!date) {
+          return true;
+        }
         const parsedDate = new Date(date);
         return !isNaN(parsedDate.getTime());
       }, '请输入有效的开始日期格式'),
@@ -183,7 +189,9 @@ export const accountsReceivableQuerySchema = z
       .string()
       .optional()
       .refine(date => {
-        if (!date) return true;
+        if (!date) {
+          return true;
+        }
         const parsedDate = new Date(date);
         return !isNaN(parsedDate.getTime());
       }, '请输入有效的结束日期格式'),
@@ -258,7 +266,9 @@ export const paymentStatisticsQuerySchema = z
       .string()
       .optional()
       .refine(date => {
-        if (!date) return true;
+        if (!date) {
+          return true;
+        }
         const parsedDate = new Date(date);
         return !isNaN(parsedDate.getTime());
       }, '请输入有效的开始日期格式'),
@@ -266,7 +276,9 @@ export const paymentStatisticsQuerySchema = z
       .string()
       .optional()
       .refine(date => {
-        if (!date) return true;
+        if (!date) {
+          return true;
+        }
         const parsedDate = new Date(date);
         return !isNaN(parsedDate.getTime());
       }, '请输入有效的结束日期格式'),

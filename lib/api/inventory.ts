@@ -3,6 +3,7 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import { queryKeys } from '@/lib/queryKeys';
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
   InboundCreateInput,
@@ -19,22 +20,9 @@ import type {
 const API_BASE = '/api/inventory';
 
 /**
- * 查询键工厂
+ * 导出兼容的查询键（使用集中管理的 queryKeys）
  */
-export const inventoryQueryKeys = {
-  all: ['inventory'] as const,
-  lists: () => [...inventoryQueryKeys.all, 'list'] as const,
-  list: (params: InventoryQueryParams) =>
-    [...inventoryQueryKeys.lists(), params] as const,
-  details: () => [...inventoryQueryKeys.all, 'detail'] as const,
-  detail: (productId: string) =>
-    [...inventoryQueryKeys.details(), productId] as const,
-  stats: () => [...inventoryQueryKeys.all, 'stats'] as const,
-  alerts: () => [...inventoryQueryKeys.all, 'alerts'] as const,
-  inboundRecords: () => [...inventoryQueryKeys.all, 'inbound-records'] as const,
-  outboundRecords: () =>
-    [...inventoryQueryKeys.all, 'outbound-records'] as const,
-};
+export const inventoryQueryKeys = queryKeys.inventory;
 
 /**
  * 获取库存列表

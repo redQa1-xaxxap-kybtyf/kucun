@@ -72,7 +72,17 @@ async function generateBatchNumber(
  * 执行入库事务
  */
 async function executeInboundTransaction(
-  validatedData: any,
+  validatedData: {
+    productId: string;
+    variantId?: string;
+    quantity: number;
+    unitPrice: number;
+    supplierId?: string;
+    batchNumber?: string;
+    productionDate?: string;
+    expiryDate?: string;
+    remarks?: string;
+  },
   userId: string,
   finalBatchNumber: string | undefined
 ) {

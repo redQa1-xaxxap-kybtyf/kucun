@@ -4,6 +4,7 @@ import { env, redisConfig } from '@/lib/env';
 
 export interface RedisClientWrapper {
   getClient(): Redis;
+  ping(): Promise<string>;
   getJson<T>(key: string): Promise<T | null>;
   setJson<T>(key: string, value: T, ttlSeconds?: number): Promise<'OK' | null>;
   del(key: string): Promise<number>;
@@ -58,7 +59,6 @@ function createClient(url: string): Redis {
   client.on('error', (err: unknown) => {
     isRedisAvailable = false;
     if (env.NODE_ENV === 'development') {
-       
       console.error('[Redis] error:', err);
     }
   });
@@ -121,6 +121,18 @@ export const redis: RedisClientWrapper = {
     return pool[rrIndex];
   },
 
+  async ping(): Promise<string> {
+    try {
+      const client = this.getClient();
+      return await client.ping();
+    } catch (error) {
+      if (env.NODE_ENV === 'development') {
+        console.error('[Redis] ping failed:', error);
+      }
+      throw error;
+    }
+  },
+
   async getJson<T>(key: string): Promise<T | null> {
     const prefixedKey = prefixed(key);
 
@@ -137,7 +149,6 @@ export const redis: RedisClientWrapper = {
         }
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-           
           console.warn(
             '[Redis] getJson failed, falling back to memory:',
             error
@@ -185,7 +196,6 @@ export const redis: RedisClientWrapper = {
         return await this.getClient().set(prefixedKey, payload);
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-           
           console.warn(
             '[Redis] setJson failed, using memory cache only:',
             error
@@ -209,7 +219,6 @@ export const redis: RedisClientWrapper = {
         return await this.getClient().del(prefixedKey);
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-           
           console.warn('[Redis] del failed:', error);
         }
       }
@@ -237,7 +246,6 @@ export const redis: RedisClientWrapper = {
         const client = this.getClient();
         let cursor = '0';
         do {
-           
           const [next, keys] = await client.scan(
             cursor,
             'MATCH',
@@ -247,14 +255,12 @@ export const redis: RedisClientWrapper = {
           );
           cursor = next;
           if (keys.length > 0) {
-             
             const n = await client.unlink(...keys);
             deleted += n;
           }
         } while (cursor !== '0');
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-           
           console.warn('[Redis] scanDel failed:', error);
         }
       }

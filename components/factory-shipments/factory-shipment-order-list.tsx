@@ -27,6 +27,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { paginationConfig } from '@/lib/env';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentOrder,
@@ -114,15 +115,12 @@ export function FactoryShipmentOrderList({
   const currentPage = 1;
 
   // 查询厂家发货订单列表
-  const { data, isLoading, error } = useQuery({
-    queryKey: [
-      'factory-shipment-orders',
-      {
-        page: currentPage,
-        search: searchTerm,
-        status: statusFilter === 'all' ? undefined : statusFilter,
-      },
-    ],
+  const { data, isLoading, error } = useQuery<OrdersResponse>({
+    queryKey: queryKeys.factoryShipments.ordersList({
+      page: currentPage,
+      search: searchTerm,
+      status: statusFilter === 'all' ? undefined : statusFilter,
+    }),
     queryFn: () =>
       fetchFactoryShipmentOrders({
         page: currentPage,

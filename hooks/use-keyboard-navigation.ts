@@ -202,7 +202,7 @@ export function useListKeyboardNavigation<T>(
  * 专门用于菜单组件的键盘导航，支持子菜单
  */
 export function useMenuKeyboardNavigation(
-  menuItems: Array<{ disabled?: boolean; children?: any[] }>,
+  menuItems: Array<{ disabled?: boolean; children?: unknown[] }>,
   options: KeyboardNavigationOptions = {}
 ) {
   // 过滤掉禁用的项目

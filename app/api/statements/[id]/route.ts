@@ -1,6 +1,6 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { verifyApiAuth } from '@/lib/api-helpers';
 import { ApiError } from '@/lib/api/errors';
 import {
     calculateCustomerFinancials,
@@ -11,7 +11,6 @@ import {
     fetchSupplierWithOrders,
 } from '@/lib/api/handlers/statement-details';
 import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
-import { authOptions } from '@/lib/auth';
 
 /**
  * GET /api/statements/[id] - 获取往来账单详情
@@ -19,12 +18,12 @@ import { authOptions } from '@/lib/auth';
  */
 export const GET = withErrorHandling(
   async (
-    _request: NextRequest,
+    request: NextRequest,
     context: { params?: Promise<{ id: string }> | { id: string } }
   ) => {
     // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session) {
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
       throw ApiError.unauthorized();
     }
 

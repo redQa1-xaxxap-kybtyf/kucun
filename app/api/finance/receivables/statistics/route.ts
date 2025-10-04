@@ -1,7 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 
 /**
@@ -11,12 +10,9 @@ import { prisma } from '@/lib/db';
 export async function GET(request: NextRequest) {
   try {
     // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 解析查询参数
@@ -26,7 +22,11 @@ export async function GET(request: NextRequest) {
     const customerId = searchParams.get('customerId');
 
     // 构建查询条件
-    const whereConditions: any = {
+    const whereConditions: {
+      status?: { in: string[] };
+      createdAt?: { gte: Date; lte: Date };
+      customerId?: string;
+    } = {
       status: { in: ['confirmed', 'shipped', 'completed'] },
     };
 
@@ -113,7 +113,8 @@ export async function GET(request: NextRequest) {
       totalReceivable > 0 ? (totalReceived / totalReceivable) * 100 : 0;
 
     // 获取月度趋势数据（最近6个月）
-    const monthlyTrends = [];
+    // 构建所有月份的日期范围
+    const monthRanges = [];
     for (let i = 5; i >= 0; i--) {
       const monthStart = new Date();
       monthStart.setMonth(monthStart.getMonth() - i);
@@ -125,35 +126,55 @@ export async function GET(request: NextRequest) {
       monthEnd.setDate(0);
       monthEnd.setHours(23, 59, 59, 999);
 
-      const [monthSales, monthPayments] = await Promise.all([
-        prisma.salesOrder.aggregate({
-          where: {
-            status: { in: ['confirmed', 'shipped', 'completed'] },
-            createdAt: {
-              gte: monthStart,
-              lte: monthEnd,
-            },
-          },
-          _sum: { totalAmount: true },
-        }),
-        prisma.paymentRecord.aggregate({
-          where: {
-            status: 'confirmed',
-            paymentDate: {
-              gte: monthStart,
-              lte: monthEnd,
-            },
-          },
-          _sum: { paymentAmount: true },
-        }),
-      ]);
-
-      monthlyTrends.push({
+      monthRanges.push({
+        start: monthStart,
+        end: monthEnd,
         month: monthStart.toISOString().slice(0, 7), // YYYY-MM格式
-        salesAmount: monthSales._sum.totalAmount || 0,
-        receivedAmount: monthPayments._sum.paymentAmount || 0,
       });
     }
+
+    // 并行执行所有月份的查询
+    const monthlyQueries = monthRanges.flatMap(range => [
+      prisma.salesOrder.aggregate({
+        where: {
+          status: { in: ['confirmed', 'shipped', 'completed'] },
+          createdAt: {
+            gte: range.start,
+            lte: range.end,
+          },
+        },
+        _sum: { totalAmount: true },
+      }),
+      prisma.paymentRecord.aggregate({
+        where: {
+          status: 'confirmed',
+          paymentDate: {
+            gte: range.start,
+            lte: range.end,
+          },
+        },
+        _sum: { paymentAmount: true },
+      }),
+    ]);
+
+    // 一次性执行所有查询
+    const monthlyResults = await Promise.all(monthlyQueries);
+
+    // 解析结果构建趋势数据
+    const monthlyTrends = monthRanges.map((range, index) => {
+      const salesResult = monthlyResults[index * 2] as {
+        _sum: { totalAmount: number | null };
+      };
+      const paymentResult = monthlyResults[index * 2 + 1] as {
+        _sum: { paymentAmount: number | null };
+      };
+
+      return {
+        month: range.month,
+        salesAmount: salesResult._sum.totalAmount || 0,
+        receivedAmount: paymentResult._sum.paymentAmount || 0,
+      };
+    });
 
     // 获取客户收款统计（前10名）
     const customerStats = await prisma.customer.findMany({

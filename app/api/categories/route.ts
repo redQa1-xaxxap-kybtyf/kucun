@@ -1,16 +1,20 @@
 /**
- * 分类管理API路由
- * 严格遵循全栈项目统一约定规范
+ * 分类管理 API 路由
+ * 职责:
+ * - 身份认证和授权检查
+ * - 请求参数验证
+ * - 调用服务层业务逻辑
+ * - 数据序列化和 HTTP 响应格式化
+ * - 错误处理和统一响应格式
  */
 
-import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { withAuth } from '@/lib/auth/api-helpers';
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
-import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
-import { generateCategoryCode } from '@/lib/utils/category-code-generator';
+import { createCategory, getCategories } from '@/lib/services/category-service';
 import {
   CategoryQuerySchema,
   CreateCategorySchema,
@@ -19,202 +23,73 @@ import {
 /**
  * GET /api/categories - 获取分类列表
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  const { searchParams } = new URL(request.url);
+export const GET = withAuth(
+  async (request: NextRequest, { user }) => {
+    return withErrorHandling(async request => {
+      const { searchParams } = new URL(request.url);
 
-  // 解析查询参数
-  const queryParams = {
-    page: parseInt(searchParams.get('page') || '1'),
-    limit: parseInt(
-      searchParams.get('limit') || paginationConfig.defaultPageSize.toString()
-    ),
-    search: searchParams.get('search') || '',
-    sortBy: searchParams.get('sortBy') || 'createdAt',
-    sortOrder: searchParams.get('sortOrder') || 'desc',
-    parentId: searchParams.get('parentId') || undefined,
-  };
+      // 1. 解析查询参数
+      const queryParams = {
+        page: parseInt(searchParams.get('page') || '1'),
+        limit: parseInt(
+          searchParams.get('limit') ||
+            paginationConfig.defaultPageSize.toString()
+        ),
+        search: searchParams.get('search') || '',
+        sortBy: searchParams.get('sortBy') || 'createdAt',
+        sortOrder: searchParams.get('sortOrder') || 'desc',
+        parentId: searchParams.get('parentId') || undefined,
+      };
 
-  // 验证查询参数（Zod 错误会自动处理）
-  const validatedParams = CategoryQuerySchema.parse(queryParams);
+      // 2. 验证查询参数（Zod 错误会自动处理）
+      const validatedParams = CategoryQuerySchema.parse(queryParams);
 
-  // 构建查询条件
-  const where: Prisma.CategoryWhereInput = {
-    status: 'active', // 只返回启用的分类
-  };
+      // 3. 调用服务层
+      const result = await getCategories(validatedParams);
 
-  // 搜索条件
-  if (validatedParams.search) {
-    where.OR = [
-      { name: { contains: validatedParams.search } },
-      { code: { contains: validatedParams.search } },
-    ];
-  }
-
-  // 父级分类筛选
-  if (validatedParams.parentId) {
-    where.parentId = validatedParams.parentId;
-  }
-
-  // 计算偏移量
-  const skip = (validatedParams.page - 1) * validatedParams.limit;
-
-  // 执行查询
-  const [categories, total] = await Promise.all([
-    prisma.category.findMany({
-      where,
-      skip,
-      take: validatedParams.limit,
-      orderBy: {
-        [validatedParams.sortBy]: validatedParams.sortOrder,
-      },
-      include: {
-        parent: true,
-        children: true,
-        _count: {
-          select: {
-            products: true,
-          },
-        },
-      },
-    }),
-    prisma.category.count({ where }),
-  ]);
-
-  // 转换数据格式（snake_case -> camelCase）
-  const transformedCategories = categories.map(category => ({
-    id: category.id,
-    name: category.name,
-    code: category.code,
-    parentId: category.parentId || undefined,
-    sortOrder: category.sortOrder,
-    status: category.status as 'active' | 'inactive',
-    createdAt: category.createdAt.toISOString(),
-    updatedAt: category.updatedAt.toISOString(),
-    parent: category.parent
-      ? {
-          id: category.parent.id,
-          name: category.parent.name,
-          code: category.parent.code,
-        }
-      : undefined,
-    children: category.children.map(child => ({
-      id: child.id,
-      name: child.name,
-      code: child.code,
-    })),
-    productCount: category._count.products,
-  }));
-
-  // 计算分页信息
-  const totalPages = Math.ceil(total / validatedParams.limit);
-
-  // 返回成功响应（包含分页信息）
-  return NextResponse.json({
-    success: true,
-    data: transformedCategories,
-    pagination: {
-      page: validatedParams.page,
-      limit: validatedParams.limit,
-      total,
-      totalPages,
-    },
-  });
-});
+      // 4. 返回响应
+      return NextResponse.json({
+        success: true,
+        data: result.categories,
+        pagination: result.pagination,
+      });
+    })(request, {});
+  },
+  { permissions: ['categories:view'] }
+);
 
 /**
  * POST /api/categories - 创建分类
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  const body = await request.json();
+export const POST = withAuth(
+  async (request: NextRequest, { user }) => {
+    return withErrorHandling(async request => {
+      // 1. 解析请求体
+      const body = await request.json();
 
-  // 验证请求数据（Zod 错误会自动处理）
-  const validatedData = CreateCategorySchema.parse(body);
+      // 2. 验证请求数据（Zod 错误会自动处理）
+      const validatedData = CreateCategorySchema.parse(body);
 
-  // 生成分类编码（如果未提供）
-  let code = validatedData.code;
-  if (!code) {
-    // 使用新的编码生成器
-    const baseCode = generateCategoryCode(validatedData.name);
+      // 3. 调用服务层
+      try {
+        const category = await createCategory(validatedData);
 
-    let counter = 1;
-    code = baseCode;
-
-    // 确保编码唯一性
-    while (await prisma.category.findUnique({ where: { code } })) {
-      code = `${baseCode}_${counter}`;
-      counter++;
-    }
-  } else {
-    // 检查编码唯一性
-    const existingCategory = await prisma.category.findUnique({
-      where: { code },
-    });
-
-    if (existingCategory) {
-      throw ApiError.badRequest('分类编码已存在');
-    }
-  }
-
-  // 检查名称唯一性
-  const existingName = await prisma.category.findFirst({
-    where: { name: validatedData.name },
-  });
-
-  if (existingName) {
-    throw ApiError.badRequest('分类名称已存在');
-  }
-
-  // 创建分类
-  const category = await prisma.category.create({
-    data: {
-      name: validatedData.name,
-      code,
-      parentId: validatedData.parentId,
-      sortOrder: validatedData.sortOrder || 0,
-      status: 'active',
-    },
-    include: {
-      parent: true,
-      children: true,
-      _count: {
-        select: {
-          products: true,
-        },
-      },
-    },
-  });
-
-  // 转换数据格式
-  const transformedCategory = {
-    id: category.id,
-    name: category.name,
-    code: category.code,
-    parentId: category.parentId || undefined,
-    sortOrder: category.sortOrder,
-    status: category.status as 'active' | 'inactive',
-    createdAt: category.createdAt.toISOString(),
-    updatedAt: category.updatedAt.toISOString(),
-    parent: category.parent
-      ? {
-          id: category.parent.id,
-          name: category.parent.name,
-          code: category.parent.code,
+        // 4. 返回响应（201 Created）
+        return NextResponse.json(
+          {
+            success: true,
+            data: category,
+          },
+          { status: 201 }
+        );
+      } catch (error) {
+        // 将服务层错误转换为 API 错误
+        if (error instanceof Error) {
+          throw ApiError.badRequest(error.message);
         }
-      : undefined,
-    children: category.children.map(child => ({
-      id: child.id,
-      name: child.name,
-      code: child.code,
-    })),
-    productCount: category._count.products,
-  };
-
-  // 返回成功响应（201 Created）
-  return NextResponse.json(
-    {
-      success: true,
-      data: transformedCategory,
-    },
-    { status: 201 }
-  );
-});
+        throw error;
+      }
+    })(request, {});
+  },
+  { permissions: ['categories:create'] }
+);

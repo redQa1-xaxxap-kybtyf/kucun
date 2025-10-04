@@ -2,32 +2,17 @@
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
 import { updateReturnOrderSchema } from '@/lib/validations/return-order';
 
 /**
  * GET /api/return-orders/[id] - 获取退货订单详情
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  try {
-    // 身份验证 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-    }
+export const GET = withAuth(
+  async (request: NextRequest, { params }) => {
+    const { id } = await (params as Promise<{ id: string }>);
 
     // 查询退货订单详情
     const returnOrder = await prisma.returnOrder.findUnique({
@@ -91,32 +76,16 @@ export async function GET(
       success: true,
       data: returnOrder,
     });
-  } catch (error) {
-    console.error('获取退货订单详情失败:', error);
-    return NextResponse.json(
-      { success: false, error: '获取退货订单详情失败' },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['returns:view'] }
+);
 
 /**
  * PUT /api/return-orders/[id] - 更新退货订单
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
+export const PUT = withAuth(
+  async (request: NextRequest, { params }) => {
+    const { id } = await (params as Promise<{ id: string }>);
 
     // 解析请求体
     const body = await request.json();
@@ -164,14 +133,29 @@ export async function PUT(
     // 使用事务更新退货订单
     const updatedReturnOrder = await prisma.$transaction(async tx => {
       // 更新退货订单基本信息
-      const updateData: any = {
+      const updateData: {
+        updatedAt: Date;
+        customerId?: string;
+        returnDate?: Date;
+        reason?: string;
+        remarks?: string;
+        status?: string;
+      } = {
         updatedAt: new Date(),
       };
 
-      if (data.type) {updateData.type = data.type;}
-      if (data.processType) {updateData.processType = data.processType;}
-      if (data.reason) {updateData.reason = data.reason;}
-      if (data.remarks !== undefined) {updateData.remarks = data.remarks;}
+      if (data.type) {
+        updateData.type = data.type;
+      }
+      if (data.processType) {
+        updateData.processType = data.processType;
+      }
+      if (data.reason) {
+        updateData.reason = data.reason;
+      }
+      if (data.remarks !== undefined) {
+        updateData.remarks = data.remarks;
+      }
 
       // 如果有明细项更新
       if (data.items) {
@@ -252,32 +236,16 @@ export async function PUT(
       data: updatedReturnOrder,
       message: '退货订单更新成功',
     });
-  } catch (error) {
-    console.error('更新退货订单失败:', error);
-    return NextResponse.json(
-      { success: false, error: '更新退货订单失败' },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['returns:edit'] }
+);
 
 /**
  * DELETE /api/return-orders/[id] - 删除退货订单
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  const { id } = await params;
-  try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
+export const DELETE = withAuth(
+  async (request: NextRequest, { params }) => {
+    const { id } = await (params as Promise<{ id: string }>);
 
     // 检查退货订单是否存在
     const existingReturnOrder = await prisma.returnOrder.findUnique({
@@ -317,11 +285,6 @@ export async function DELETE(
       success: true,
       message: '退货订单删除成功',
     });
-  } catch (error) {
-    console.error('删除退货订单失败:', error);
-    return NextResponse.json(
-      { success: false, error: '删除退货订单失败' },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['returns:delete'] }
+);

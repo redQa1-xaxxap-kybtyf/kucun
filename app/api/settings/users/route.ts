@@ -5,22 +5,21 @@
 
 import bcrypt from 'bcryptjs';
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { env, paginationConfig } from '@/lib/env';
 import { extractRequestInfo, logUserAction } from '@/lib/logger';
-import {
-  CreateUserSchema,
-  UpdateUserSchema,
-  UserListQuerySchema,
-} from '@/lib/schemas/settings';
 import type {
   UpdateUserRequest,
   UserListResponse,
   UserManagementUser,
 } from '@/lib/types/settings';
+import {
+  CreateUserSchema,
+  UpdateUserSchema,
+  UserListQuerySchema,
+} from '@/lib/validations/settings';
 
 // 转换数据库用户为API响应格式
 function transformUser(user: {
@@ -46,26 +45,8 @@ function transformUser(user: {
 }
 
 // GET - 获取用户列表
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 身份验证 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-
-      // 权限检查 - 只有管理员可以访问
-      if (session.user.role !== 'admin') {
-        return NextResponse.json(
-          { success: false, error: '权限不足，只有管理员可以管理用户' },
-          { status: 403 }
-        );
-      }
-    }
 
     // 解析查询参数
     const { searchParams } = new URL(request.url);
@@ -158,36 +139,12 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { permissions: ['settings:manage_users'] });
 
 // POST - 创建新用户
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 身份验证 (开发模式下绕过)
-    let userId = 'dev-user';
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-
-      // 权限检查 - 只有管理员可以创建用户
-      if (session.user.role !== 'admin') {
-        return NextResponse.json(
-          { success: false, error: '权限不足，只有管理员可以创建用户' },
-          { status: 403 }
-        );
-      }
-      userId = session.user.id;
-    } else {
-      const user = await prisma.user.findFirst();
-      if (user) {
-        userId = user.id;
-      }
-    }
+    const userId = user.id;
 
     // 解析请求体
     const body = await request.json();
@@ -277,7 +234,7 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { permissions: ['settings:manage_users'] });
 
 // 验证用户更新权限和数据
 async function validateUserUpdate(
@@ -336,33 +293,9 @@ async function validateUserUpdate(
 }
 
 // PUT - 更新用户信息
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 身份验证 (开发模式下绕过)
-    let operatorUserId = 'dev-user';
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-
-      // 权限检查 - 只有管理员可以更新用户
-      if (session.user.role !== 'admin') {
-        return NextResponse.json(
-          { success: false, error: '权限不足，只有管理员可以更新用户' },
-          { status: 403 }
-        );
-      }
-      operatorUserId = session.user.id;
-    } else {
-      const user = await prisma.user.findFirst();
-      if (user) {
-        operatorUserId = user.id;
-      }
-    }
+    const operatorUserId = user.id;
 
     // 解析请求体
     const body = await request.json();
@@ -430,36 +363,12 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { permissions: ['settings:manage_users'] });
 
 // DELETE - 软删除用户（设置状态为inactive）
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 身份验证 (开发模式下绕过)
-    let operatorUserId = 'dev-user';
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
-
-      // 权限检查 - 只有管理员可以删除用户
-      if (session.user.role !== 'admin') {
-        return NextResponse.json(
-          { success: false, error: '权限不足，只有管理员可以删除用户' },
-          { status: 403 }
-        );
-      }
-      operatorUserId = session.user.id;
-    } else {
-      const user = await prisma.user.findFirst();
-      if (user) {
-        operatorUserId = user.id;
-      }
-    }
+    const operatorUserId = user.id;
 
     // 解析请求体
     const body = await request.json();
@@ -538,4 +447,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { permissions: ['settings:manage_users'] });

@@ -23,8 +23,6 @@ export interface ReturnableItem {
   maxReturnAmount: number;
   colorCode: string | null;
   productionDate: string | null;
-  batchNumber: string | null;
-  variantId: string | null;
 }
 
 // 可退货明细响应类型
@@ -125,14 +123,15 @@ export async function getReturnableItems(
 
   // 构建可退货明细
   const returnableItems: ReturnableItem[] = salesOrder.items
+    .filter(item => item.productId !== null) // 过滤掉没有产品ID的项
     .map(item => {
       const returnedQuantity = returnedQuantities[item.id] || 0;
       const availableQuantity = item.quantity - returnedQuantity;
 
       return {
         salesOrderItemId: item.id,
-        productId: item.productId,
-        product: item.product,
+        productId: item.productId!,
+        product: item.product!,
         originalQuantity: item.quantity,
         returnedQuantity,
         availableQuantity,
@@ -140,8 +139,6 @@ export async function getReturnableItems(
         maxReturnAmount: availableQuantity * item.unitPrice,
         colorCode: item.colorCode,
         productionDate: item.productionDate,
-        batchNumber: item.batchNumber,
-        variantId: item.variantId,
       };
     })
     .filter(item => item.availableQuantity > 0); // 只返回还可以退货的明细

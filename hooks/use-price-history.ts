@@ -1,4 +1,6 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+
+import { queryKeys } from '@/lib/queryKeys';
 
 // 价格类型
 export type PriceType = 'SALES' | 'FACTORY';
@@ -49,7 +51,7 @@ export function useCustomerPriceHistory(params: {
   priceType?: PriceType;
 }) {
   return useQuery({
-    queryKey: ['customer-price-history', params],
+    queryKey: queryKeys.customers.priceHistory(params),
     queryFn: async () => {
       if (!params.customerId) {
         return { success: true, data: [] };
@@ -90,7 +92,7 @@ export function useSupplierPriceHistory(params: {
   productId?: string;
 }) {
   return useQuery({
-    queryKey: ['supplier-price-history', params],
+    queryKey: queryKeys.suppliers.priceHistory(params),
     queryFn: async () => {
       if (!params.supplierId) {
         return { success: true, data: [] };
@@ -152,10 +154,9 @@ export function useRecordCustomerPrice() {
     onSuccess: (_, variables) => {
       // 刷新相关的价格历史查询
       queryClient.invalidateQueries({
-        queryKey: [
-          'customer-price-history',
-          { customerId: variables.customerId },
-        ],
+        queryKey: queryKeys.customers.priceHistory({
+          customerId: variables.customerId,
+        }),
       });
     },
   });
@@ -191,10 +192,9 @@ export function useRecordSupplierPrice() {
     onSuccess: (_, variables) => {
       // 刷新相关的价格历史查询
       queryClient.invalidateQueries({
-        queryKey: [
-          'supplier-price-history',
-          { supplierId: variables.supplierId },
-        ],
+        queryKey: queryKeys.suppliers.priceHistory({
+          supplierId: variables.supplierId,
+        }),
       });
     },
   });
@@ -218,8 +218,7 @@ export function getLatestPrice(
 
   // 过滤出指定产品和价格类型的价格
   const filteredPrices = prices.filter(
-    p =>
-      p.productId === productId && (!priceType || p.priceType === priceType)
+    p => p.productId === productId && (!priceType || p.priceType === priceType)
   );
 
   if (filteredPrices.length === 0) {
@@ -251,4 +250,3 @@ export function getLatestSupplierPrice(
   // 返回最新的价格（已经按创建时间降序排列）
   return filteredPrices[0].unitPrice;
 }
-

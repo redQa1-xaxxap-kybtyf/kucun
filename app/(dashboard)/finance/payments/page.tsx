@@ -34,6 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency } from '@/lib/utils';
 
 interface PaymentRecord {
@@ -137,15 +138,26 @@ export default function PaymentsPage() {
 
   // 获取收款记录数据
   const { data, isLoading, error } = useQuery({
-    queryKey: ['payments', { search, status, paymentMethod, page, pageSize }],
+    queryKey: queryKeys.payments.list({
+      search,
+      status,
+      paymentMethod,
+      page,
+      pageSize,
+    }),
     queryFn: async () => {
       const params = new URLSearchParams();
       params.set('page', page.toString());
       params.set('pageSize', pageSize.toString());
-      if (search) params.set('search', search);
-      if (status && status !== 'all') params.set('status', status);
-      if (paymentMethod && paymentMethod !== 'all')
+      if (search) {
+        params.set('search', search);
+      }
+      if (status && status !== 'all') {
+        params.set('status', status);
+      }
+      if (paymentMethod && paymentMethod !== 'all') {
         params.set('paymentMethod', paymentMethod);
+      }
 
       const response = await fetch(`/api/payments?${params}`);
       if (!response.ok) {
@@ -170,10 +182,15 @@ export default function PaymentsPage() {
   const _handleSearch = () => {
     setPage(1);
     const params = new URLSearchParams();
-    if (search) params.set('search', search);
-    if (status && status !== 'all') params.set('status', status);
-    if (paymentMethod && paymentMethod !== 'all')
+    if (search) {
+      params.set('search', search);
+    }
+    if (status && status !== 'all') {
+      params.set('status', status);
+    }
+    if (paymentMethod && paymentMethod !== 'all') {
       params.set('paymentMethod', paymentMethod);
+    }
     router.push(`/finance/payments?${params}`);
   };
 

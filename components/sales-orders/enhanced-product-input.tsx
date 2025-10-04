@@ -27,8 +27,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import type { CreateSalesOrderData } from '@/lib/schemas/sales-order';
 import type { Product } from '@/lib/types/product';
+import type { CreateSalesOrderData } from '@/lib/validations/sales-order';
 
 import { EnhancedProductSelector } from './enhanced-product-selector';
 

@@ -17,6 +17,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Separator } from '@/components/ui/separator';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   PAYABLE_SOURCE_TYPE_LABELS,
   PAYABLE_STATUS_LABELS,
@@ -87,8 +88,8 @@ export default function PayableDetailPage() {
     data: payable,
     isLoading,
     error,
-  } = useQuery({
-    queryKey: ['payable', id],
+  } = useQuery<PayableDetail>({
+    queryKey: queryKeys.payables.detail(id),
     queryFn: () => fetchPayableDetail(id),
     enabled: !!id,
   });

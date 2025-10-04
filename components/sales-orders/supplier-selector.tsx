@@ -19,6 +19,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { supplierConfig } from '@/lib/env';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Supplier } from '@/lib/types/supplier';
 import { cn } from '@/lib/utils';
 
@@ -63,7 +64,9 @@ export function SupplierSelector({
 
   // 获取供应商列表
   const { data: suppliersResponse, isLoading } = useQuery({
-    queryKey: ['suppliers', supplierConfig.defaultStatus],
+    queryKey: queryKeys.suppliers.list({
+      status: supplierConfig.defaultStatus,
+    }),
     queryFn: getSuppliers,
     staleTime: supplierConfig.cacheTtl, // 使用环境配置的缓存时间
   });
@@ -73,7 +76,9 @@ export function SupplierSelector({
 
   // 过滤供应商列表
   const filteredSuppliers = React.useMemo(() => {
-    if (!searchValue) {return suppliers;}
+    if (!searchValue) {
+      return suppliers;
+    }
 
     const search = searchValue.toLowerCase();
     return suppliers.filter(
@@ -112,20 +117,20 @@ export function SupplierSelector({
         >
           {selectedSupplier ? (
             <div className="flex items-center gap-2 truncate">
-              <Truck className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <Truck className="text-muted-foreground h-4 w-4 shrink-0" />
               <div className="flex flex-col items-start truncate">
                 <span className="truncate font-medium">
                   {selectedSupplier.name}
                 </span>
                 {selectedSupplier.phone && (
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-muted-foreground text-xs">
                     {selectedSupplier.phone}
                   </span>
                 )}
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2">
               <Search className="h-4 w-4" />
               {isLoading ? '加载中...' : placeholder}
             </div>
@@ -146,7 +151,7 @@ export function SupplierSelector({
                 '加载中...'
               ) : (
                 <div className="py-6 text-center">
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-muted-foreground text-sm">
                     未找到相关供应商
                   </div>
                 </div>
@@ -157,7 +162,7 @@ export function SupplierSelector({
               {value && (
                 <CommandItem
                   onSelect={handleClear}
-                  className="flex items-center gap-3 p-3 text-muted-foreground"
+                  className="text-muted-foreground flex items-center gap-3 p-3"
                 >
                   <div className="h-4 w-4" />
                   <div className="font-medium">清除选择</div>
@@ -187,14 +192,14 @@ export function SupplierSelector({
 
                       {/* 供应商电话 */}
                       {supplier.phone && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           {supplier.phone}
                         </div>
                       )}
 
                       {/* 供应商地址 */}
                       {supplier.address && (
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-muted-foreground text-xs">
                           {supplier.address}
                         </div>
                       )}

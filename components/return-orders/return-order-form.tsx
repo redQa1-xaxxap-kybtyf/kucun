@@ -148,7 +148,13 @@ export function ReturnOrderForm({
   });
 
   // 添加退货明细
-  const addReturnItem = (salesOrderItem: any) => {
+  const addReturnItem = (salesOrderItem: {
+    id: string;
+    productId: string;
+    quantity: number;
+    unitPrice: number;
+    product: { name: string; code: string; unit: string };
+  }) => {
     const newItem = {
       salesOrderItemId: salesOrderItem.id,
       productId: salesOrderItem.productId,
@@ -171,7 +177,7 @@ export function ReturnOrderForm({
 
   // 计算总金额
   const items = form.watch('items');
-  const totalAmount = calculateReturnItemsTotal((items as any) || []);
+  const totalAmount = calculateReturnItemsTotal(items || []);
 
   // 提交表单
   const onSubmit = (
@@ -377,7 +383,7 @@ export function ReturnOrderForm({
                   <CardDescription>选择要退货的商品明细</CardDescription>
                 </div>
                 {selectedSalesOrderId && (
-                  <div className="text-sm text-muted-foreground">
+                  <div className="text-muted-foreground text-sm">
                     已选择 {fields.length} 个明细项目
                   </div>
                 )}
@@ -386,12 +392,12 @@ export function ReturnOrderForm({
             <CardContent>
               {!selectedSalesOrderId ? (
                 <div className="py-8 text-center">
-                  <Search className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <Search className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                   <p className="text-muted-foreground">请先选择销售订单</p>
                 </div>
               ) : isLoadingItems ? (
                 <div className="py-8 text-center">
-                  <div className="mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+                  <div className="border-primary mx-auto mb-4 h-8 w-8 animate-spin rounded-full border-b-2"></div>
                   <p className="text-muted-foreground">加载可退货明细中...</p>
                 </div>
               ) : (
@@ -404,34 +410,46 @@ export function ReturnOrderForm({
                           可退货明细
                         </Label>
                         <div className="mt-2 space-y-2">
-                          {returnableItemsData.data.map((item: any) => (
-                            <div
-                              key={item.id}
-                              className="flex items-center justify-between rounded-lg border p-3"
-                            >
-                              <div className="flex-1">
-                                <div className="font-medium">
-                                  {item.product?.name}
-                                </div>
-                                <div className="text-sm text-muted-foreground">
-                                  数量: {item.quantity} {item.product?.unit} |
-                                  单价: {formatReturnAmount(item.unitPrice)}
-                                </div>
-                              </div>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => addReturnItem(item)}
-                                disabled={fields.some(
-                                  field => field.salesOrderItemId === item.id
-                                )}
+                          {returnableItemsData.data.map(
+                            (item: {
+                              id: string;
+                              productId: string;
+                              quantity: number;
+                              unitPrice: number;
+                              product: {
+                                name: string;
+                                code: string;
+                                unit: string;
+                              };
+                            }) => (
+                              <div
+                                key={item.id}
+                                className="flex items-center justify-between rounded-lg border p-3"
                               >
-                                <Plus className="mr-1 h-4 w-4" />
-                                添加
-                              </Button>
-                            </div>
-                          ))}
+                                <div className="flex-1">
+                                  <div className="font-medium">
+                                    {item.product?.name}
+                                  </div>
+                                  <div className="text-muted-foreground text-sm">
+                                    数量: {item.quantity} {item.product?.unit} |
+                                    单价: {formatReturnAmount(item.unitPrice)}
+                                  </div>
+                                </div>
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => addReturnItem(item)}
+                                  disabled={fields.some(
+                                    field => field.salesOrderItemId === item.id
+                                  )}
+                                >
+                                  <Plus className="mr-1 h-4 w-4" />
+                                  添加
+                                </Button>
+                              </div>
+                            )
+                          )}
                         </div>
                       </div>
                     )}
@@ -465,7 +483,7 @@ export function ReturnOrderForm({
                                       <div className="font-medium">
                                         产品名称
                                       </div>
-                                      <div className="text-sm text-muted-foreground">
+                                      <div className="text-muted-foreground text-sm">
                                         产品编码
                                       </div>
                                     </TableCell>
@@ -662,8 +680,8 @@ export function ReturnOrderForm({
                           <Separator />
                           <div className="flex items-center justify-between pt-4">
                             <div className="flex items-center space-x-2">
-                              <Calculator className="h-4 w-4 text-muted-foreground" />
-                              <span className="text-sm text-muted-foreground">
+                              <Calculator className="text-muted-foreground h-4 w-4" />
+                              <span className="text-muted-foreground text-sm">
                                 共 {fields.length} 个明细项目
                               </span>
                             </div>
@@ -671,7 +689,7 @@ export function ReturnOrderForm({
                               <div className="text-2xl font-bold">
                                 {formatReturnAmount(totalAmount)}
                               </div>
-                              <div className="text-sm text-muted-foreground">
+                              <div className="text-muted-foreground text-sm">
                                 退货总金额
                               </div>
                             </div>
@@ -683,7 +701,7 @@ export function ReturnOrderForm({
 
                   {fields.length === 0 && selectedSalesOrderId && (
                     <div className="py-8 text-center">
-                      <Package className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                      <Package className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                       <p className="text-muted-foreground">请添加退货明细</p>
                     </div>
                   )}

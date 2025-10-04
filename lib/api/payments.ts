@@ -35,7 +35,7 @@ export const paymentQueryKeys = {
   accountsReceivableList: (query: AccountsReceivableQuery) =>
     [...paymentQueryKeys.accountsReceivable(), query] as const,
   statistics: () => [...paymentQueryKeys.all, 'statistics'] as const,
-  statisticsData: (query: any) =>
+  statisticsData: (query: Record<string, unknown>) =>
     [...paymentQueryKeys.statistics(), query] as const,
   salesOrderPayments: (salesOrderId: string) =>
     [...paymentQueryKeys.all, 'sales-order', salesOrderId] as const,
@@ -51,18 +51,39 @@ export const paymentsApi = {
   ): Promise<PaymentRecordListResponse['data']> => {
     const params = new URLSearchParams();
 
-    if (query.page) {params.append('page', query.page.toString());}
-    if (query.pageSize) {params.append('pageSize', query.pageSize.toString());}
-    if (query.search) {params.append('search', query.search);}
-    if (query.customerId) {params.append('customerId', query.customerId);}
-    if (query.userId) {params.append('userId', query.userId);}
-    if (query.paymentMethod)
-      {params.append('paymentMethod', query.paymentMethod);}
-    if (query.status) {params.append('status', query.status);}
-    if (query.startDate) {params.append('startDate', query.startDate);}
-    if (query.endDate) {params.append('endDate', query.endDate);}
-    if (query.sortBy) {params.append('sortBy', query.sortBy);}
-    if (query.sortOrder) {params.append('sortOrder', query.sortOrder);}
+    if (query.page) {
+      params.append('page', query.page.toString());
+    }
+    if (query.pageSize) {
+      params.append('pageSize', query.pageSize.toString());
+    }
+    if (query.search) {
+      params.append('search', query.search);
+    }
+    if (query.customerId) {
+      params.append('customerId', query.customerId);
+    }
+    if (query.userId) {
+      params.append('userId', query.userId);
+    }
+    if (query.paymentMethod) {
+      params.append('paymentMethod', query.paymentMethod);
+    }
+    if (query.status) {
+      params.append('status', query.status);
+    }
+    if (query.startDate) {
+      params.append('startDate', query.startDate);
+    }
+    if (query.endDate) {
+      params.append('endDate', query.endDate);
+    }
+    if (query.sortBy) {
+      params.append('sortBy', query.sortBy);
+    }
+    if (query.sortOrder) {
+      params.append('sortOrder', query.sortOrder);
+    }
 
     const response = await fetch(`${API_BASE}?${params}`);
     if (!response.ok) {
@@ -210,16 +231,33 @@ export const paymentsApi = {
   ): Promise<AccountsReceivableResponse['data']> => {
     const params = new URLSearchParams();
 
-    if (query.page) {params.append('page', query.page.toString());}
-    if (query.pageSize) {params.append('pageSize', query.pageSize.toString());}
-    if (query.search) {params.append('search', query.search);}
-    if (query.customerId) {params.append('customerId', query.customerId);}
-    if (query.paymentStatus)
-      {params.append('paymentStatus', query.paymentStatus);}
-    if (query.startDate) {params.append('startDate', query.startDate);}
-    if (query.endDate) {params.append('endDate', query.endDate);}
-    if (query.sortBy) {params.append('sortBy', query.sortBy);}
-    if (query.sortOrder) {params.append('sortOrder', query.sortOrder);}
+    if (query.page) {
+      params.append('page', query.page.toString());
+    }
+    if (query.pageSize) {
+      params.append('pageSize', query.pageSize.toString());
+    }
+    if (query.search) {
+      params.append('search', query.search);
+    }
+    if (query.customerId) {
+      params.append('customerId', query.customerId);
+    }
+    if (query.paymentStatus) {
+      params.append('paymentStatus', query.paymentStatus);
+    }
+    if (query.startDate) {
+      params.append('startDate', query.startDate);
+    }
+    if (query.endDate) {
+      params.append('endDate', query.endDate);
+    }
+    if (query.sortBy) {
+      params.append('sortBy', query.sortBy);
+    }
+    if (query.sortOrder) {
+      params.append('sortOrder', query.sortOrder);
+    }
 
     const response = await fetch(`${API_BASE}/accounts-receivable?${params}`);
     if (!response.ok) {
@@ -236,16 +274,25 @@ export const paymentsApi = {
 
   // 获取收款统计
   getPaymentStatistics: async (
-    query: any = {}
+    query: Record<string, unknown> = {}
   ): Promise<PaymentStatisticsResponse['data']> => {
     const params = new URLSearchParams();
 
-    if (query.startDate) {params.append('startDate', query.startDate);}
-    if (query.endDate) {params.append('endDate', query.endDate);}
-    if (query.customerId) {params.append('customerId', query.customerId);}
-    if (query.paymentMethod)
-      {params.append('paymentMethod', query.paymentMethod);}
-    if (query.groupBy) {params.append('groupBy', query.groupBy);}
+    if (query.startDate) {
+      params.append('startDate', query.startDate);
+    }
+    if (query.endDate) {
+      params.append('endDate', query.endDate);
+    }
+    if (query.customerId) {
+      params.append('customerId', query.customerId);
+    }
+    if (query.paymentMethod) {
+      params.append('paymentMethod', query.paymentMethod);
+    }
+    if (query.groupBy) {
+      params.append('groupBy', query.groupBy);
+    }
 
     const response = await fetch(`${API_BASE}/statistics?${params}`);
     if (!response.ok) {
@@ -318,7 +365,7 @@ export const useAccountsReceivable = (query: AccountsReceivableQuery) =>
     staleTime: 5 * 60 * 1000,
   });
 
-export const usePaymentStatistics = (query: any = {}) =>
+export const usePaymentStatistics = (query: Record<string, unknown> = {}) =>
   useQuery({
     queryKey: paymentQueryKeys.statisticsData(query),
     queryFn: () => paymentsApi.getPaymentStatistics(query),
@@ -461,7 +508,9 @@ export const paymentUtils = {
   },
 
   calculatePaymentRate: (totalAmount: number, paidAmount: number): number => {
-    if (totalAmount === 0) {return 0;}
+    if (totalAmount === 0) {
+      return 0;
+    }
     return Math.round((paidAmount / totalAmount) * 100);
   },
 

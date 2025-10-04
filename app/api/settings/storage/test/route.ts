@@ -4,15 +4,15 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
-import { QiniuStorageTestSchema } from '@/lib/schemas/settings';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { prisma } from '@/lib/db';
 import { testQiniuConnection } from '@/lib/services/qiniu-upload';
 import type {
   QiniuStorageTestResponse,
   SettingsApiResponse,
 } from '@/lib/types/settings';
+import { QiniuStorageTestSchema } from '@/lib/validations/settings';
 
 /**
  * 测试七牛云存储连接
@@ -22,16 +22,18 @@ export async function POST(
 ): Promise<NextResponse<SettingsApiResponse<QiniuStorageTestResponse>>> {
   try {
     // 验证用户身份
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse('未授权访问', 401);
     }
 
     // 检查管理员权限
-    if (session.user.role !== 'admin') {
+    const user = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { role: true },
+    });
+
+    if (user?.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: '权限不足，只有管理员可以测试存储连接' },
         { status: 403 }
@@ -176,9 +178,10 @@ async function realQiniuConnectionTest(): Promise<QiniuStorageTestResponse> {
     return {
       success: result.success,
       message: result.message,
-      ...((result as any).bucketInfo && {
-        bucketInfo: (result as any).bucketInfo,
-      }),
+      ...('bucketInfo' in result &&
+        result.bucketInfo && {
+          bucketInfo: result.bucketInfo,
+        }),
     };
   } catch (error) {
     return {

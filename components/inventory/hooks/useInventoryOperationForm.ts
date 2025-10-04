@@ -13,9 +13,9 @@ import {
   checkInventoryAvailability,
   createInbound,
   createOutbound,
-  inventoryQueryKeys,
 } from '@/lib/api/inventory';
 import { getProduct } from '@/lib/api/products';
+import { queryKeys } from '@/lib/queryKeys';
 import { type InboundFormData } from '@/lib/types/inbound';
 import {
   type InboundRecord,
@@ -100,14 +100,14 @@ export function useInventoryOperationForm({
 
   // 获取产品信息
   const { data: productData } = useQuery({
-    queryKey: ['products', 'detail', watchedProductId],
+    queryKey: queryKeys.products.detail(watchedProductId),
     queryFn: () => getProduct(watchedProductId),
     enabled: !!watchedProductId,
   });
 
   // 检查库存可用性（仅出库时）
   const { data: availabilityData } = useQuery({
-    queryKey: ['inventory', 'availability', watchedProductId, watchedQuantity],
+    queryKey: queryKeys.inventory.availability(watchedProductId, undefined),
     queryFn: () =>
       checkInventoryAvailability(
         watchedProductId,
@@ -121,13 +121,13 @@ export function useInventoryOperationForm({
   const inboundMutation = useMutation({
     mutationFn: createInbound,
     onSuccess: response => {
-      queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.lists() });
       queryClient.invalidateQueries({
-        queryKey: ['inventory', 'availability'],
+        queryKey: queryKeys.inventory.all,
       });
       form.reset();
       setSubmitError('');
-      onSuccess?.(response as any);
+      onSuccess?.(response);
     },
     onError: error => {
       setSubmitError(error instanceof Error ? error.message : '入库失败');
@@ -138,13 +138,13 @@ export function useInventoryOperationForm({
   const outboundMutation = useMutation({
     mutationFn: createOutbound,
     onSuccess: response => {
-      queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.lists() });
       queryClient.invalidateQueries({
-        queryKey: ['inventory', 'availability'],
+        queryKey: queryKeys.inventory.all,
       });
       form.reset();
       setSubmitError('');
-      onSuccess?.(response as any);
+      onSuccess?.(response);
     },
     onError: error => {
       setSubmitError(error instanceof Error ? error.message : '出库失败');
@@ -155,10 +155,10 @@ export function useInventoryOperationForm({
   const adjustMutation = useMutation({
     mutationFn: adjustInventory,
     onSuccess: response => {
-      queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.lists() });
       form.reset();
       setSubmitError('');
-      onSuccess?.(response as any);
+      onSuccess?.(response);
     },
     onError: error => {
       setSubmitError(error instanceof Error ? error.message : '调整失败');

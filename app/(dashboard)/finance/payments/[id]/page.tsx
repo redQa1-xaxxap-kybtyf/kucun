@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency } from '@/lib/utils';
 
 interface PaymentRecord {
@@ -135,7 +136,7 @@ export default function PaymentDetailPage() {
 
   // 获取收款记录详情
   const { data, isLoading, error } = useQuery({
-    queryKey: ['payment', paymentId],
+    queryKey: queryKeys.payments.detail(paymentId),
     queryFn: async () => {
       const response = await fetch(`/api/payments/${paymentId}`);
       if (!response.ok) {

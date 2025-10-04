@@ -1,136 +1,128 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
 import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
-import { UpdateSupplierSchema } from '@/lib/schemas/supplier';
-import type { Supplier } from '@/lib/types/supplier';
+import { UpdateSupplierSchema } from '@/lib/validations/supplier';
 
 /**
  * GET /api/suppliers/[id] - 获取单个供应商详情
  */
-export const GET = withErrorHandling(
-  async (
-    _request: NextRequest,
-    context: { params?: Promise<{ id: string }> | { id: string } }
-  ) => {
-    // 验证用户身份 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        throw ApiError.unauthorized();
+export const GET = withAuth(
+  withErrorHandling(
+    async (
+      request: NextRequest,
+      context: { params?: Promise<Record<string, string>> | Record<string, string> }
+    ) => {
+      const { id } = await resolveParams(context.params);
+
+      // 查询供应商 - 使用 select 明确指定返回字段
+      const supplier = await prisma.supplier.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          address: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      if (!supplier) {
+        throw ApiError.notFound('供应商');
       }
+
+      // 直接返回，无需二次映射
+      return NextResponse.json({
+        success: true,
+        data: supplier,
+      });
     }
-
-    const { id } = await resolveParams(context.params);
-
-    // 查询供应商
-    const supplier = await prisma.supplier.findUnique({
-      where: { id },
-    });
-
-    if (!supplier) {
-      throw ApiError.notFound('供应商');
-    }
-
-    // 转换数据格式
-    const transformedSupplier: Supplier = {
-      id: supplier.id,
-      name: supplier.name,
-      phone: supplier.phone || undefined,
-      address: supplier.address || undefined,
-      status: supplier.status as 'active' | 'inactive',
-      createdAt: supplier.createdAt.toISOString(),
-      updatedAt: supplier.updatedAt.toISOString(),
-    };
-
-    return NextResponse.json({
-      success: true,
-      data: transformedSupplier,
-    });
-  }
+  ),
+  { permissions: ['suppliers:view'] }
 );
 
 /**
  * PUT /api/suppliers/[id] - 更新供应商信息
  */
-export const PUT = withErrorHandling(
-  async (
-    request: NextRequest,
-    context: { params?: Promise<{ id: string }> | { id: string } }
-  ) => {
-    // 验证用户身份 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        throw ApiError.unauthorized();
-      }
-    }
+export const PUT = withAuth(
+  withErrorHandling(
+    async (
+      request: NextRequest,
+      context: { params?: Promise<Record<string, string>> | Record<string, string> }
+    ) => {
+      const { id } = await resolveParams(context.params);
 
-    const { id } = await resolveParams(context.params);
-
-    // 检查供应商是否存在
-    const existingSupplier = await prisma.supplier.findUnique({
-      where: { id },
-    });
-
-    if (!existingSupplier) {
-      throw ApiError.notFound('供应商');
-    }
-
-    // 解析请求体
-    const body = await request.json();
-    const validatedData = UpdateSupplierSchema.parse(body);
-
-    // 如果更新名称，检查是否与其他供应商重复
-    if (validatedData.name && validatedData.name !== existingSupplier.name) {
-      const duplicateSupplier = await prisma.supplier.findFirst({
-        where: {
-          name: validatedData.name,
-          id: { not: id },
+      // 检查供应商是否存在 - 只需要 id 和 name 字段
+      const existingSupplier = await prisma.supplier.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          name: true,
         },
       });
 
-      if (duplicateSupplier) {
-        throw ApiError.badRequest('供应商名称已存在');
+      if (!existingSupplier) {
+        throw ApiError.notFound('供应商');
       }
+
+      // 解析请求体
+      const body = await request.json();
+      const validatedData = UpdateSupplierSchema.parse(body);
+
+      // 如果更新名称，检查是否与其他供应商重复
+      if (validatedData.name && validatedData.name !== existingSupplier.name) {
+        const duplicateSupplier = await prisma.supplier.findFirst({
+          where: {
+            name: validatedData.name,
+            id: { not: id },
+          },
+          select: {
+            id: true,
+          },
+        });
+
+        if (duplicateSupplier) {
+          throw ApiError.badRequest('供应商名称已存在');
+        }
+      }
+
+      // 更新供应商 - 使用 select 指定返回字段
+      const updatedSupplier = await prisma.supplier.update({
+        where: { id },
+        data: {
+          ...(validatedData.name && { name: validatedData.name }),
+          ...(validatedData.phone !== undefined && {
+            phone: validatedData.phone || null,
+          }),
+          ...(validatedData.address !== undefined && {
+            address: validatedData.address || null,
+          }),
+          ...(validatedData.status && { status: validatedData.status }),
+        },
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+          address: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      // 直接返回，无需二次映射
+      return NextResponse.json({
+        success: true,
+        data: updatedSupplier,
+        message: '供应商更新成功',
+      });
     }
-
-    // 更新供应商
-    const updatedSupplier = await prisma.supplier.update({
-      where: { id },
-      data: {
-        ...(validatedData.name && { name: validatedData.name }),
-        ...(validatedData.phone !== undefined && {
-          phone: validatedData.phone || null,
-        }),
-        ...(validatedData.address !== undefined && {
-          address: validatedData.address || null,
-        }),
-        ...(validatedData.status && { status: validatedData.status }),
-      },
-    });
-
-    // 转换数据格式
-    const transformedSupplier: Supplier = {
-      id: updatedSupplier.id,
-      name: updatedSupplier.name,
-      phone: updatedSupplier.phone || undefined,
-      address: updatedSupplier.address || undefined,
-      status: updatedSupplier.status as 'active' | 'inactive',
-      createdAt: updatedSupplier.createdAt.toISOString(),
-      updatedAt: updatedSupplier.updatedAt.toISOString(),
-    };
-
-    return NextResponse.json({
-      success: true,
-      data: transformedSupplier,
-      message: '供应商更新成功',
-    });
-  }
+  ),
+  { permissions: ['suppliers:edit'] }
 );
 
 /**
@@ -187,41 +179,39 @@ async function checkSupplierRelations(supplierId: string): Promise<void> {
 /**
  * DELETE /api/suppliers/[id] - 删除供应商
  */
-export const DELETE = withErrorHandling(
-  async (
-    _request: NextRequest,
-    context: { params?: Promise<{ id: string }> | { id: string } }
-  ) => {
-    // 验证用户身份 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session) {
-        throw ApiError.unauthorized();
+export const DELETE = withAuth(
+  withErrorHandling(
+    async (
+      request: NextRequest,
+      context: { params?: Promise<Record<string, string>> | Record<string, string> }
+    ) => {
+      const { id } = await resolveParams(context.params);
+
+      // 检查供应商是否存在 - 只需要 id 字段
+      const existingSupplier = await prisma.supplier.findUnique({
+        where: { id },
+        select: {
+          id: true,
+        },
+      });
+
+      if (!existingSupplier) {
+        throw ApiError.notFound('供应商');
       }
+
+      // 检查关联数据
+      await checkSupplierRelations(id);
+
+      // 所有检查通过,可以安全删除
+      await prisma.supplier.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: '供应商删除成功',
+      });
     }
-
-    const { id } = await resolveParams(context.params);
-
-    // 检查供应商是否存在
-    const existingSupplier = await prisma.supplier.findUnique({
-      where: { id },
-    });
-
-    if (!existingSupplier) {
-      throw ApiError.notFound('供应商');
-    }
-
-    // 检查关联数据
-    await checkSupplierRelations(id);
-
-    // 所有检查通过,可以安全删除
-    await prisma.supplier.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: '供应商删除成功',
-    });
-  }
+  ),
+  { permissions: ['suppliers:delete'] }
 );

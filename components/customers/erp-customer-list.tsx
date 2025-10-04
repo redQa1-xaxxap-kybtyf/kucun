@@ -47,6 +47,16 @@ import { paginationConfig } from '@/lib/env';
 import type { Customer, CustomerQueryParams } from '@/lib/types/customer';
 
 interface ERPCustomerListProps {
+  initialData?: {
+    data: Customer[];
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+  initialParams?: CustomerQueryParams;
   onCreateNew?: () => void;
   onViewDetail?: (customer: Customer) => void;
   onEdit?: (customer: Customer) => void;
@@ -58,6 +68,8 @@ interface ERPCustomerListProps {
  * 采用紧凑布局，符合中国ERP系统用户习惯
  */
 export function ERPCustomerList({
+  initialData,
+  initialParams,
   onCreateNew,
   onViewDetail,
   onEdit,
@@ -66,18 +78,26 @@ export function ERPCustomerList({
   const router = useRouter();
 
   // 查询参数状态
-  const [queryParams, setQueryParams] = useState<CustomerQueryParams>({
-    page: 1,
-    limit: paginationConfig.defaultPageSize,
-    search: '',
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-  });
+  const [queryParams, setQueryParams] = useState<CustomerQueryParams>(
+    initialParams || {
+      page: 1,
+      limit: paginationConfig.defaultPageSize,
+      search: '',
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    }
+  );
 
   // 获取客户列表数据
   const { data, isLoading } = useQuery({
     queryKey: customerQueryKeys.list(queryParams),
     queryFn: () => getCustomers(queryParams),
+    initialData: initialData
+      ? {
+          data: initialData.data,
+          pagination: initialData.pagination,
+        }
+      : undefined,
   });
 
   const customers = data?.data || [];

@@ -1,10 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
 
 // 产品变体更新输入验证
 const ProductVariantUpdateSchema = z.object({
@@ -28,15 +26,10 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 验证用户权限 (开发模式下跳过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    // 验证用户权限
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const { id } = params;
@@ -90,11 +83,11 @@ export async function GET(
 
     // 计算库存汇总
     const totalInventory = variant.inventory.reduce(
-      (sum: number, inv: any) => sum + inv.quantity,
+      (sum: number, inv) => sum + inv.quantity,
       0
     );
     const reservedInventory = variant.inventory.reduce(
-      (sum: number, inv: any) => sum + inv.reservedQuantity,
+      (sum: number, inv) => sum + inv.reservedQuantity,
       0
     );
 
@@ -113,7 +106,7 @@ export async function GET(
       totalInventory,
       reservedInventory,
       availableInventory: totalInventory - reservedInventory,
-      inventory: variant.inventory.map((inv: any) => ({
+      inventory: variant.inventory.map(inv => ({
         id: inv.id,
         quantity: inv.quantity,
         reservedQuantity: inv.reservedQuantity,
@@ -148,15 +141,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 验证用户权限 (开发模式下跳过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    // 验证用户权限
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const { id } = params;
@@ -310,15 +298,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    // 验证用户权限 (开发模式下跳过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    // 验证用户权限
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     const { id } = params;

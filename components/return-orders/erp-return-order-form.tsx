@@ -117,7 +117,9 @@ export function ERPReturnOrderForm({
 
   // 根据订单号查询销售订单
   const searchSalesOrderByNumber = async (orderNumber: string) => {
-    if (!orderNumber.trim()) {return;}
+    if (!orderNumber.trim()) {
+      return;
+    }
 
     setIsSearchingSalesOrder(true);
     try {
@@ -209,7 +211,12 @@ export function ERPReturnOrderForm({
   });
 
   // 添加退货明细
-  const _addReturnItem = (salesOrderItem: any) => {
+  const _addReturnItem = (salesOrderItem: {
+    id: string;
+    productId: string;
+    quantity: number;
+    unitPrice: number;
+  }) => {
     const newItem = {
       salesOrderItemId: salesOrderItem.id,
       productId: salesOrderItem.productId,
@@ -266,21 +273,21 @@ export function ERPReturnOrderForm({
   const error = createMutation.error || updateMutation.error;
 
   return (
-    <div className="rounded border bg-card">
+    <div className="bg-card rounded border">
       {/* ERP标准工具栏 */}
-      <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-muted/30 border-b px-3 py-2">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">
             {mode === 'create' ? '新建退货订单' : '编辑退货订单'}
           </h3>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-muted-foreground text-xs">
             {mode === 'create' ? '填写退货信息' : '修改退货信息'}
           </div>
         </div>
       </div>
 
       {/* 操作工具栏 */}
-      <div className="border-b bg-muted/10 px-3 py-2">
+      <div className="bg-muted/10 border-b px-3 py-2">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Button
@@ -330,8 +337,8 @@ export function ERPReturnOrderForm({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-0">
           {/* 基本信息 */}
-          <div className="border-b bg-muted/5 px-3 py-2">
-            <div className="text-xs text-muted-foreground">基本信息</div>
+          <div className="bg-muted/5 border-b px-3 py-2">
+            <div className="text-muted-foreground text-xs">基本信息</div>
           </div>
           <div className="px-3 py-3">
             <div className="grid grid-cols-1 gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -339,7 +346,7 @@ export function ERPReturnOrderForm({
                 <FormLabel className="text-xs">关联销售订单 *</FormLabel>
                 <FormControl>
                   <div className="relative">
-                    <ShoppingCart className="absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-muted-foreground" />
+                    <ShoppingCart className="text-muted-foreground absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2" />
                     <Input
                       placeholder="请输入销售订单号"
                       className="h-7 pl-7 text-xs"
@@ -361,14 +368,14 @@ export function ERPReturnOrderForm({
                       disabled={isSearchingSalesOrder}
                     />
                     {isSearchingSalesOrder && (
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2">
-                        <div className="h-3 w-3 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                      <div className="absolute top-1/2 right-2 -translate-y-1/2">
+                        <div className="border-primary h-3 w-3 animate-spin rounded-full border-2 border-t-transparent" />
                       </div>
                     )}
                   </div>
                 </FormControl>
                 {form.formState.errors.salesOrderId && (
-                  <p className="text-xs text-destructive">
+                  <p className="text-destructive text-xs">
                     {form.formState.errors.salesOrderId.message}
                   </p>
                 )}
@@ -462,17 +469,17 @@ export function ERPReturnOrderForm({
           </div>
 
           {/* 退货明细 */}
-          <div className="border-b bg-muted/5 px-3 py-2">
+          <div className="bg-muted/5 border-b px-3 py-2">
             <div className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">退货明细</div>
-              <div className="text-xs text-muted-foreground">
+              <div className="text-muted-foreground text-xs">退货明细</div>
+              <div className="text-muted-foreground text-xs">
                 总金额: ¥{calculateTotal().toFixed(2)}
               </div>
             </div>
           </div>
           <div className="px-3 py-3">
             {fields.length === 0 ? (
-              <div className="py-8 text-center text-xs text-muted-foreground">
+              <div className="text-muted-foreground py-8 text-center text-xs">
                 暂无退货明细，请先选择销售订单
               </div>
             ) : (
@@ -496,7 +503,7 @@ export function ERPReturnOrderForm({
                       <TableRow key={field.id} className="text-xs">
                         <TableCell className="h-8 px-2">
                           <div className="flex items-center gap-1">
-                            <Package className="h-3 w-3 text-muted-foreground" />
+                            <Package className="text-muted-foreground h-3 w-3" />
                             <span>产品 {index + 1}</span>
                           </div>
                         </TableCell>
@@ -611,8 +618,8 @@ export function ERPReturnOrderForm({
           </div>
 
           {/* 备注信息 */}
-          <div className="border-b bg-muted/5 px-3 py-2">
-            <div className="text-xs text-muted-foreground">
+          <div className="bg-muted/5 border-b px-3 py-2">
+            <div className="text-muted-foreground text-xs">
               备注信息（可选）
             </div>
           </div>

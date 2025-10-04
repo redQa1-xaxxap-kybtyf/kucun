@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
 import type { BatchDeleteResult } from '@/lib/api/categories';
-import { authOptions } from '@/lib/auth';
+import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 
 // 批量删除分类的验证Schema
@@ -21,12 +20,9 @@ const BatchDeleteCategoriesSchema = z.object({
 export async function DELETE(request: NextRequest) {
   try {
     // 验证用户权限
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 解析请求体

@@ -99,13 +99,17 @@ export function ERPSalesOrderForm({
   const convertQuantity = {
     // 片转件：数量 ÷ 每件片数
     piecesToUnits: (pieces: number, piecesPerUnit: number): number => {
-      if (piecesPerUnit <= 0) {return pieces;}
+      if (piecesPerUnit <= 0) {
+        return pieces;
+      }
       return Math.round((pieces / piecesPerUnit) * 100) / 100; // 保留2位小数
     },
 
     // 件转片：数量 × 每件片数
     unitsToPieces: (units: number, piecesPerUnit: number): number => {
-      if (piecesPerUnit <= 0) {return units;}
+      if (piecesPerUnit <= 0) {
+        return units;
+      }
       return Math.round(units * piecesPerUnit * 100) / 100; // 保留2位小数
     },
 
@@ -143,7 +147,9 @@ export function ERPSalesOrderForm({
       piecePrice: number,
       piecesPerUnit: number
     ): number => {
-      if (piecesPerUnit <= 0 || piecePrice <= 0) {return piecePrice;}
+      if (piecesPerUnit <= 0 || piecePrice <= 0) {
+        return piecePrice;
+      }
       return Math.round(piecePrice * piecesPerUnit * 100) / 100; // 保留2位小数
     },
 
@@ -152,7 +158,9 @@ export function ERPSalesOrderForm({
       unitPrice: number,
       piecesPerUnit: number
     ): number => {
-      if (piecesPerUnit <= 0 || unitPrice <= 0) {return unitPrice;}
+      if (piecesPerUnit <= 0 || unitPrice <= 0) {
+        return unitPrice;
+      }
       return Math.round((unitPrice / piecesPerUnit) * 100) / 100; // 保留2位小数
     },
 
@@ -191,7 +199,9 @@ export function ERPSalesOrderForm({
     totalPieces: number,
     piecesPerUnit: number
   ): string => {
-    if (piecesPerUnit <= 0 || totalPieces <= 0) {return '';}
+    if (piecesPerUnit <= 0 || totalPieces <= 0) {
+      return '';
+    }
 
     try {
       const result = calculatePieceDisplay(
@@ -333,7 +343,9 @@ export function ERPSalesOrderForm({
   const totalWeight = watchedItems.reduce((sum, item) => {
     // 查找对应的产品数据
     const product = productsData?.data?.find(p => p.id === item.productId);
-    if (!product || !product.weight) {return sum;}
+    if (!product || !product.weight) {
+      return sum;
+    }
 
     // 重量 = 系统数量（片数） × 产品重量
     return sum + (item.quantity || 0) * product.weight;
@@ -410,6 +422,7 @@ export function ERPSalesOrderForm({
           : undefined,
     };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     createMutation.mutate(processedData as any);
   };
 
@@ -430,7 +443,7 @@ export function ERPSalesOrderForm({
           </Button>
           <div>
             <h1 className="text-lg font-semibold">新建销售订单</h1>
-            <p className="text-sm text-muted-foreground">创建新的销售订单</p>
+            <p className="text-muted-foreground text-sm">创建新的销售订单</p>
           </div>
         </div>
       </div>
@@ -438,21 +451,21 @@ export function ERPSalesOrderForm({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
           {/* ERP标准布局：基本信息区域 */}
-          <div className="rounded border bg-card">
-            <div className="border-b bg-muted/30 px-3 py-2">
+          <div className="bg-card rounded border">
+            <div className="bg-muted/30 border-b px-3 py-2">
               <h3 className="text-sm font-medium">基本信息</h3>
             </div>
             <div className="p-3">
               <div className="grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-2 lg:grid-cols-4">
                 {/* 订单号 - 自动生成显示 */}
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">
+                  <Label className="text-muted-foreground text-xs">
                     订单号
                   </Label>
-                  <div className="rounded border bg-muted/50 px-2 py-1 font-mono text-xs">
+                  <div className="bg-muted/50 rounded border px-2 py-1 font-mono text-xs">
                     {autoOrderNumber || '正在生成...'}
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     系统将自动生成唯一订单号
                   </p>
                 </div>
@@ -464,7 +477,7 @@ export function ERPSalesOrderForm({
                     name="customerId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs text-muted-foreground">
+                        <FormLabel className="text-muted-foreground text-xs">
                           客户名称 <span className="text-destructive">*</span>
                         </FormLabel>
                         <FormControl>
@@ -492,7 +505,7 @@ export function ERPSalesOrderForm({
                     name="orderType"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs text-muted-foreground">
+                        <FormLabel className="text-muted-foreground text-xs">
                           订单类型 <span className="text-destructive">*</span>
                         </FormLabel>
                         <FormControl>
@@ -531,7 +544,7 @@ export function ERPSalesOrderForm({
                         name="supplierId"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-muted-foreground">
+                            <FormLabel className="text-muted-foreground text-xs">
                               供应商/调出方{' '}
                               <span className="text-destructive">*</span>
                             </FormLabel>
@@ -556,7 +569,7 @@ export function ERPSalesOrderForm({
                                         {supplier.name}
                                       </span>
                                       {supplier.phone && (
-                                        <span className="text-xs text-muted-foreground">
+                                        <span className="text-muted-foreground text-xs">
                                           ({supplier.phone})
                                         </span>
                                       )}
@@ -578,7 +591,7 @@ export function ERPSalesOrderForm({
                         name="costAmount"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel className="text-xs text-muted-foreground">
+                            <FormLabel className="text-muted-foreground text-xs">
                               成本金额{' '}
                               <span className="text-destructive">*</span>
                             </FormLabel>
@@ -608,10 +621,10 @@ export function ERPSalesOrderForm({
                     {/* 毛利显示 */}
                     {form.watch('costAmount') && form.watch('totalAmount') && (
                       <div className="space-y-1">
-                        <Label className="text-xs text-muted-foreground">
+                        <Label className="text-muted-foreground text-xs">
                           预计毛利
                         </Label>
-                        <div className="h-8 rounded-md border bg-muted/50 px-3 py-2 text-xs">
+                        <div className="bg-muted/50 h-8 rounded-md border px-3 py-2 text-xs">
                           ¥
                           {(
                             (form.watch('totalAmount') || 0) -
@@ -630,7 +643,7 @@ export function ERPSalesOrderForm({
                     name="status"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs text-muted-foreground">
+                        <FormLabel className="text-muted-foreground text-xs">
                           订单状态
                         </FormLabel>
                         <Select
@@ -677,10 +690,10 @@ export function ERPSalesOrderForm({
 
                 {/* 创建日期 */}
                 <div className="space-y-1">
-                  <Label className="text-xs text-muted-foreground">
+                  <Label className="text-muted-foreground text-xs">
                     创建日期
                   </Label>
-                  <div className="rounded border bg-muted/50 px-2 py-1 text-xs">
+                  <div className="bg-muted/50 rounded border px-2 py-1 text-xs">
                     {new Date().toLocaleDateString('zh-CN')}
                   </div>
                 </div>
@@ -693,7 +706,7 @@ export function ERPSalesOrderForm({
                   name="remarks"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs text-muted-foreground">
+                      <FormLabel className="text-muted-foreground text-xs">
                         备注信息
                       </FormLabel>
                       <FormControl>
@@ -712,8 +725,8 @@ export function ERPSalesOrderForm({
           </div>
 
           {/* ERP标准布局：订单明细表格 */}
-          <div className="rounded border bg-card">
-            <div className="flex items-center justify-between border-b bg-muted/30 px-3 py-2">
+          <div className="bg-card rounded border">
+            <div className="bg-muted/30 flex items-center justify-between border-b px-3 py-2">
               <h3 className="text-sm font-medium">订单明细</h3>
               <Button
                 type="button"
@@ -728,7 +741,7 @@ export function ERPSalesOrderForm({
             </div>
 
             {fields.length === 0 ? (
-              <div className="py-8 text-center text-muted-foreground">
+              <div className="text-muted-foreground py-8 text-center">
                 <p className="text-sm">暂无商品明细</p>
                 <p className="text-xs">
                   点击&ldquo;添加商品&rdquo;按钮开始添加
@@ -1201,7 +1214,7 @@ export function ERPSalesOrderForm({
                               variant="ghost"
                               size="sm"
                               onClick={() => remove(index)}
-                              className="h-6 w-6 p-0 text-destructive hover:bg-destructive/10"
+                              className="text-destructive hover:bg-destructive/10 h-6 w-6 p-0"
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -1216,14 +1229,14 @@ export function ERPSalesOrderForm({
           </div>
 
           {/* ERP标准布局：汇总信息 */}
-          <div className="rounded border bg-card">
-            <div className="border-b bg-muted/30 px-3 py-2">
+          <div className="bg-card rounded border">
+            <div className="bg-muted/30 border-b px-3 py-2">
               <h3 className="text-sm font-medium">汇总信息</h3>
             </div>
             <div className="p-3">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <div className="flex items-center justify-between rounded border bg-blue-50/50 px-3 py-2">
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-muted-foreground text-xs">
                     商品种类
                   </span>
                   <span className="text-sm font-semibold text-blue-600">
@@ -1231,7 +1244,7 @@ export function ERPSalesOrderForm({
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded border bg-green-50/50 px-3 py-2">
-                  <span className="text-xs text-muted-foreground">总数量</span>
+                  <span className="text-muted-foreground text-xs">总数量</span>
                   <span className="text-sm font-semibold text-green-600">
                     {fields.reduce(
                       (sum, item) => sum + (item.quantity || 0),
@@ -1241,13 +1254,13 @@ export function ERPSalesOrderForm({
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded border bg-purple-50/50 px-3 py-2">
-                  <span className="text-xs text-muted-foreground">总重量</span>
+                  <span className="text-muted-foreground text-xs">总重量</span>
                   <span className="text-sm font-semibold text-purple-600">
                     {formatWeight(totalWeight)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded border bg-orange-50/50 px-3 py-2">
-                  <span className="text-xs text-muted-foreground">
+                  <span className="text-muted-foreground text-xs">
                     订单总金额
                   </span>
                   <span className="text-lg font-bold text-orange-600">
@@ -1263,7 +1276,7 @@ export function ERPSalesOrderForm({
                 {form.watch('orderType') === 'TRANSFER' && (
                   <>
                     <div className="flex items-center justify-between rounded border bg-blue-50/50 px-3 py-2">
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         总成本
                       </span>
                       <span className="text-sm font-semibold text-blue-600">
@@ -1283,7 +1296,7 @@ export function ERPSalesOrderForm({
                       </span>
                     </div>
                     <div className="flex items-center justify-between rounded border bg-green-50/50 px-3 py-2">
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         总毛利
                       </span>
                       <span className="text-sm font-semibold text-green-600">
@@ -1304,7 +1317,7 @@ export function ERPSalesOrderForm({
                       </span>
                     </div>
                     <div className="flex items-center justify-between rounded border bg-indigo-50/50 px-3 py-2">
-                      <span className="text-xs text-muted-foreground">
+                      <span className="text-muted-foreground text-xs">
                         毛利率
                       </span>
                       <span className="text-sm font-semibold text-indigo-600">
@@ -1338,7 +1351,7 @@ export function ERPSalesOrderForm({
               items={fields.map(item => ({
                 productId: item.productId || '',
                 quantity: item.quantity,
-                batchNumber: (item as any).batchNumber || '',
+                batchNumber: '',
               }))}
               products={productsData?.data || []}
               onInventoryCheck={results => {
@@ -1349,7 +1362,7 @@ export function ERPSalesOrderForm({
           )}
 
           {/* ERP标准布局：操作按钮 */}
-          <div className="sticky bottom-0 rounded border bg-card p-3">
+          <div className="bg-card sticky bottom-0 rounded border p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Button
@@ -1407,7 +1420,7 @@ export function ERPSalesOrderForm({
             </div>
 
             <div className="mt-2 text-center">
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 保存草稿：可随时修改；提交订单：确认后进入处理流程
               </p>
             </div>

@@ -49,7 +49,9 @@ export class LRUCache<K, V> {
   get(key: K): V | undefined {
     const item = this.cache.get(key);
 
-    if (!item) {return undefined;}
+    if (!item) {
+      return undefined;
+    }
 
     // 检查是否过期
     if (Date.now() - item.timestamp > this.ttl) {
@@ -113,8 +115,9 @@ export class LRUCache<K, V> {
 
 /**
  * 防抖Hook
+ * 使用更严格的泛型约束，避免any类型
  */
-export function useDebounce<T extends (...args: any[]) => any>(
+export function useDebounce<T extends (...args: never[]) => unknown>(
   callback: T,
   delay: number
 ): T {
@@ -136,8 +139,9 @@ export function useDebounce<T extends (...args: any[]) => any>(
 
 /**
  * 节流Hook
+ * 使用更严格的泛型约束，避免any类型
  */
-export function useThrottle<T extends (...args: any[]) => any>(
+export function useThrottle<T extends (...args: never[]) => unknown>(
   callback: T,
   delay: number
 ): T {
@@ -169,8 +173,9 @@ export function useThrottle<T extends (...args: any[]) => any>(
 
 /**
  * 内存化Hook
+ * 使用更严格的泛型约束，避免any类型
  */
-export function useMemoizedCallback<T extends (...args: any[]) => any>(
+export function useMemoizedCallback<T extends (...args: never[]) => unknown>(
   callback: T,
   deps: React.DependencyList
 ): T {
@@ -200,10 +205,14 @@ export function useDeepMemo<T>(
  * 深度比较函数
  */
 function areEqual(a: React.DependencyList, b: React.DependencyList): boolean {
-  if (a.length !== b.length) {return false;}
+  if (a.length !== b.length) {
+    return false;
+  }
 
   for (let i = 0; i < a.length; i++) {
-    if (!Object.is(a[i], b[i])) {return false;}
+    if (!Object.is(a[i], b[i])) {
+      return false;
+    }
   }
 
   return true;
@@ -224,10 +233,13 @@ export function usePerformanceMonitor(componentName: string) {
     if (renderStartRef.current) {
       const renderTime = performance.now() - renderStartRef.current;
 
+      const performanceWithMemory = performance as Performance & {
+        memory?: { usedJSHeapSize: number };
+      };
       const metrics: PerformanceMetrics = {
         renderTime,
         componentCount: 1,
-        memoryUsage: (performance as any).memory?.usedJSHeapSize || 0,
+        memoryUsage: performanceWithMemory.memory?.usedJSHeapSize || 0,
         timestamp: Date.now(),
       };
 
@@ -251,7 +263,9 @@ export function usePerformanceMonitor(componentName: string) {
     getMetrics: () => metricsRef.current,
     getAverageRenderTime: () => {
       const metrics = metricsRef.current;
-      if (metrics.length === 0) {return 0;}
+      if (metrics.length === 0) {
+        return 0;
+      }
 
       const total = metrics.reduce((sum, m) => sum + m.renderTime, 0);
       return total / metrics.length;
@@ -384,7 +398,7 @@ export function useBatchUpdate<T>(initialItems: T[], batchSize: number = 50) {
  * 全局缓存实例
  * 注意：TTL 可以通过环境配置进行调整
  */
-export const globalCache = new LRUCache<string, any>({
+export const globalCache = new LRUCache<string, unknown>({
   maxSize: 1000,
   ttl: 5 * 60 * 1000, // 5分钟默认值，可通过环境配置覆盖
 });
@@ -395,8 +409,9 @@ export const globalCache = new LRUCache<string, any>({
 export const performanceUtils = {
   /**
    * 测量函数执行时间
+   * 使用更严格的泛型约束，避免any类型
    */
-  measure: <T extends (...args: any[]) => any>(fn: T, name?: string): T =>
+  measure: <T extends (...args: never[]) => unknown>(fn: T, name?: string): T =>
     ((...args: Parameters<T>) => {
       const start = performance.now();
       const result = fn(...args);
@@ -414,7 +429,14 @@ export const performanceUtils = {
    */
   getMemoryUsage: () => {
     if ('memory' in performance) {
-      const memory = (performance as any).memory;
+      const performanceWithMemory = performance as Performance & {
+        memory: {
+          usedJSHeapSize: number;
+          totalJSHeapSize: number;
+          jsHeapSizeLimit: number;
+        };
+      };
+      const memory = performanceWithMemory.memory;
       return {
         used: memory.usedJSHeapSize,
         total: memory.totalJSHeapSize,
@@ -430,7 +452,10 @@ export const performanceUtils = {
   isSlowDevice: () => {
     // 基于硬件并发数和内存判断
     const cores = navigator.hardwareConcurrency || 1;
-    const memory = (navigator as any).deviceMemory || 1;
+    const navigatorWithMemory = navigator as Navigator & {
+      deviceMemory?: number;
+    };
+    const memory = navigatorWithMemory.deviceMemory || 1;
 
     return cores <= 2 || memory <= 2;
   },

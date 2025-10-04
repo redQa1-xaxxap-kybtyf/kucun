@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
-import { cacheConfig, env, inventoryConfig } from '@/lib/env';
+import { cacheConfig, inventoryConfig } from '@/lib/env';
+import { inventoryAlertsQuerySchema } from '@/lib/validations/inventory-queries';
 
 /**
  * 库存预警API
@@ -12,20 +12,43 @@ import { cacheConfig, env, inventoryConfig } from '@/lib/env';
  */
 export async function GET(request: NextRequest) {
   try {
-    // 验证用户权限 (开发环境下临时绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' },
-          { status: 401 }
-        );
-      }
+    // 验证用户权限 - 使用中间件透传的用户信息
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
+    // 解析并验证查询参数
     const { searchParams } = new URL(request.url);
-    const severity = searchParams.get('severity') || 'all'; // all, critical, warning, info
-    const limit = parseInt(searchParams.get('limit') || '50');
+    const queryParams = {
+      severity: searchParams.get('severity') || undefined,
+      limit: searchParams.get('limit')
+        ? parseInt(searchParams.get('limit')!, 10)
+        : undefined,
+      productId: searchParams.get('productId') || undefined,
+      categoryId: searchParams.get('categoryId') || undefined,
+    };
+
+    // 使用 Zod schema 验证
+    const validationResult = inventoryAlertsQuerySchema.safeParse(queryParams);
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '查询参数验证失败',
+          details: validationResult.error.issues,
+        },
+        { status: 400 }
+      );
+    }
+
+    const {
+      severity = 'all',
+      limit = 50,
+      productId,
+      categoryId,
+    } = validationResult.data;
 
     // 构建缓存键
     const cacheKey = buildCacheKey('inventory:alerts', {
@@ -118,7 +141,7 @@ export async function GET(request: NextRequest) {
         //     productionDate: 'asc',
         //   },
         // });
-        const expiredInventory: any[] = []; // 临时空数组
+        const expiredInventory: unknown[] = []; // 临时空数组
 
         const alertList = [];
 
@@ -221,7 +244,9 @@ export async function GET(request: NextRequest) {
         alertList.sort((a, b) => {
           const severityDiff =
             severityOrder[a.severity] - severityOrder[b.severity];
-          if (severityDiff !== 0) {return severityDiff;}
+          if (severityDiff !== 0) {
+            return severityDiff;
+          }
           return (
             new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
           );

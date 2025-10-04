@@ -1,6 +1,14 @@
 {
   "permissions": {
-    "allow": ["Bash(npm run type-check:*)"],
+    "allow": [
+      "Bash(npm ls:*)",
+      "Bash(npx tsc:*)",
+      "Bash(node -e \"const fs = require(''fs''); const files = [''app/api/products/route.ts'', ''app/api/products/[id]/route.ts'', ''app/api/inventory/route.ts'', ''app/api/inventory/adjust/route.ts'', ''app/api/inventory/outbound/route.ts'']; files.forEach(f => { try { const content = fs.readFileSync(f, ''utf8''); if (content.includes(''verifyApiAuth'')) console.log(f + '': Still has verifyApiAuth''); if (content.includes(''errorResponse'') && !content.includes(''@/lib/auth/api-helpers'')) console.log(f + '': Still imports errorResponse from old location''); if (!content.includes(''withAuth'')) console.log(f + '': Missing withAuth''); } catch(e) { console.log(f + '': Error - '' + e.message); }});\")",
+      "Bash(npm run type-check:*)",
+      "Bash(node -e \"const fs = require(''fs''); const files = [''app/api/products/[id]/route.ts'', ''app/api/suppliers/[id]/route.ts'', ''app/api/return-orders/[id]/route.ts'', ''app/api/return-orders/[id]/status/route.ts'', ''app/api/return-orders/[id]/approve/route.ts'']; files.forEach(f => { try { const content = fs.readFileSync(f, ''utf8''); if (content.includes(''context: { params?: Promise<{ id: string }> |'')) console.log(f); } catch(e) { console.log(f + '': Not found''); }});\")",
+      "Bash(node:*)",
+      "Bash(awk:*)"
+    ],
     "deny": [],
     "ask": []
   }

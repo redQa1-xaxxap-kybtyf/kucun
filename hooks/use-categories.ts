@@ -17,6 +17,7 @@ import {
   type Category,
   type CategoryQueryParams,
 } from '@/lib/api/categories';
+import { queryKeys } from '@/lib/queryKeys';
 
 interface DeleteDialogState {
   open: boolean;
@@ -63,14 +64,14 @@ export function useCategories() {
   );
 
   const { data, isLoading, error } = useQuery({
-    queryKey: ['categories', queryParams],
+    queryKey: queryKeys.categories.list(queryParams),
     queryFn: () => getCategories(queryParams),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteCategory,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
       setDeleteDialog({ open: false, categoryId: null, categoryName: '' });
       setSelectedCategoryIds([]);
       toast({
@@ -90,7 +91,7 @@ export function useCategories() {
   const batchDeleteMutation = useMutation({
     mutationFn: batchDeleteCategories,
     onSuccess: (_, deletedIds) => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
       setBatchDeleteDialog({ open: false, categories: [] });
       setSelectedCategoryIds([]);
       toast({
@@ -116,7 +117,7 @@ export function useCategories() {
       status: 'active' | 'inactive';
     }) => updateCategoryStatus(id, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
       setUpdatingStatusId(null);
       toast({
         title: '状态更新成功',

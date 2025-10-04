@@ -65,8 +65,14 @@ export async function createSupplier(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
+
+    // 处理 Zod 验证错误
+    if (Array.isArray(errorData) && errorData[0]?.message) {
+      throw new Error(errorData[0].message);
+    }
+
     throw new Error(
-      errorData.error || `创建供应商失败: ${response.statusText}`
+      errorData.error || errorData.message || `创建供应商失败: ${response.statusText}`
     );
   }
 

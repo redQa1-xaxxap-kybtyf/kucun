@@ -4,23 +4,21 @@
  */
 
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import {
-  env,
   inventoryConfig,
   salesOrderConfig,
   systemConfig,
 } from '@/lib/env';
 import { extractRequestInfo, logSystemEventInfo } from '@/lib/logger';
+import type { BasicSettings, SettingsApiResponse } from '@/lib/types/settings';
+import { logSettingChanges } from '@/lib/utils/setting-change-log';
 import {
   BasicSettingsFormSchema,
   BasicSettingsSchema,
-} from '@/lib/schemas/settings';
-import type { BasicSettings, SettingsApiResponse } from '@/lib/types/settings';
-import { logSettingChanges } from '@/lib/utils/setting-change-log';
+} from '@/lib/validations/settings';
 
 // 默认基本设置 - 使用环境配置
 const DEFAULT_BASIC_SETTINGS: BasicSettings = {
@@ -42,29 +40,8 @@ const DEFAULT_BASIC_SETTINGS: BasicSettings = {
 /**
  * GET /api/settings/basic - 获取基本设置
  */
-export async function GET(_request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 验证用户身份 (开发模式下绕过)
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' } as SettingsApiResponse,
-          { status: 401 }
-        );
-      }
-
-      // 检查管理员权限
-      if (session.user.role !== 'admin') {
-        return NextResponse.json(
-          {
-            success: false,
-            error: '权限不足，只有管理员可以访问基本设置',
-          } as SettingsApiResponse,
-          { status: 403 }
-        );
-      }
-    }
 
     // 获取基本设置
     const settings = await prisma.systemSetting.findMany({
@@ -143,42 +120,14 @@ export async function GET(_request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireAdmin: true });
 
 /**
  * PUT /api/settings/basic - 更新基本设置
  */
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 验证用户身份 (开发模式下绕过)
-    let userId = 'dev-user'; // 开发环境默认用户ID
-    if (env.NODE_ENV !== 'development') {
-      const session = await getServerSession(authOptions);
-      if (!session?.user?.id) {
-        return NextResponse.json(
-          { success: false, error: '未授权访问' } as SettingsApiResponse,
-          { status: 401 }
-        );
-      }
-
-      // 检查用户权限（只有管理员可以修改设置）
-      if (session.user.role !== 'admin') {
-        return NextResponse.json(
-          {
-            success: false,
-            error: '权限不足，只有管理员可以修改系统设置',
-          } as SettingsApiResponse,
-          { status: 403 }
-        );
-      }
-      userId = session.user.id;
-    } else {
-      // 开发环境下获取第一个用户
-      const user = await prisma.user.findFirst();
-      if (user) {
-        userId = user.id;
-      }
-    }
+    const userId = user.id;
 
     const body = await request.json();
 
@@ -215,7 +164,9 @@ export async function PUT(request: NextRequest) {
     // 批量更新设置
     const updatePromises = Object.entries(settingsData).map(
       async ([key, value]) => {
-        if (value === undefined) {return null;}
+        if (value === undefined) {
+          return null;
+        }
 
         // 确定数据类型
         let dataType: 'string' | 'number' | 'boolean' | 'json' = 'string';
@@ -316,4 +267,4 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+}, { requireAdmin: true });

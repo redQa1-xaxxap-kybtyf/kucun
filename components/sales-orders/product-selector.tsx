@@ -50,7 +50,9 @@ export function ProductSelector({
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!searchValue) {return products;}
+    if (!searchValue) {
+      return products;
+    }
 
     const search = searchValue.toLowerCase();
     return products.filter(
@@ -84,13 +86,13 @@ export function ProductSelector({
                 <span className="truncate font-medium">
                   {selectedProduct.name}
                 </span>
-                <span className="truncate text-xs text-muted-foreground">
+                <span className="text-muted-foreground truncate text-xs">
                   {selectedProduct.code}
                 </span>
               </div>
             </div>
           ) : (
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="text-muted-foreground flex items-center gap-2">
               <Package className="h-4 w-4" />
               <span>{placeholder}</span>
             </div>
@@ -108,8 +110,8 @@ export function ProductSelector({
           <CommandList>
             <CommandEmpty>
               <div className="flex flex-col items-center gap-2 py-6">
-                <Search className="h-8 w-8 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
+                <Search className="text-muted-foreground h-8 w-8" />
+                <p className="text-muted-foreground text-sm">
                   未找到匹配的产品
                 </p>
               </div>
@@ -135,7 +137,7 @@ export function ProductSelector({
                         {product.code}
                       </Badge>
                     </div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-muted-foreground text-sm">
                       规格: {product.specification} | 单位: {product.unit}
                       {product.piecesPerUnit && (
                         <span>
@@ -188,12 +190,12 @@ export function ProductInfo({ product, className }: ProductInfoProps) {
   return (
     <div className={cn('space-y-2 text-sm', className)}>
       <div className="flex items-center gap-2">
-        <Package className="h-4 w-4 text-muted-foreground" />
+        <Package className="text-muted-foreground h-4 w-4" />
         <span className="font-medium">{product.name}</span>
         <Badge variant="outline">{product.code}</Badge>
       </div>
 
-      <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+      <div className="text-muted-foreground grid grid-cols-2 gap-2 text-xs">
         <div>
           <span className="font-medium">规格:</span> {product.specification}
         </div>
@@ -230,21 +232,21 @@ export function ProductInfo({ product, className }: ProductInfoProps) {
         </div>
       )}
 
-      {(product as any).tileSpecifications && (
+      {'tileSpecifications' in product && product.tileSpecifications && (
         <div className="border-t pt-2">
           <div className="mb-1 text-xs font-medium">瓷砖规格:</div>
-          <div className="grid grid-cols-2 gap-1 text-xs text-muted-foreground">
-            {(product as any).tileSpecifications.size && (
-              <div>尺寸: {(product as any).tileSpecifications.size}</div>
+          <div className="text-muted-foreground grid grid-cols-2 gap-1 text-xs">
+            {product.tileSpecifications.size && (
+              <div>尺寸: {product.tileSpecifications.size}</div>
             )}
-            {(product as any).tileSpecifications.thickness && (
-              <div>厚度: {(product as any).tileSpecifications.thickness}mm</div>
+            {product.tileSpecifications.thickness && (
+              <div>厚度: {product.tileSpecifications.thickness}mm</div>
             )}
-            {(product as any).tileSpecifications.surface && (
-              <div>表面: {(product as any).tileSpecifications.surface}</div>
+            {product.tileSpecifications.surface && (
+              <div>表面: {product.tileSpecifications.surface}</div>
             )}
-            {(product as any).tileSpecifications.grade && (
-              <div>等级: {(product as any).tileSpecifications.grade}</div>
+            {product.tileSpecifications.grade && (
+              <div>等级: {product.tileSpecifications.grade}</div>
             )}
           </div>
         </div>
@@ -277,7 +279,9 @@ export function BatchProductSelector({
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!searchValue) {return products;}
+    if (!searchValue) {
+      return products;
+    }
 
     const search = searchValue.toLowerCase();
     return products.filter(
@@ -361,7 +365,7 @@ export function BatchProductSelector({
                           {product.code}
                         </Badge>
                       </div>
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-muted-foreground text-sm">
                         {product.specification}
                       </div>
                     </div>

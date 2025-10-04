@@ -49,7 +49,7 @@ import {
   salesOrderQueryKeys,
   updateSalesOrder,
 } from '@/lib/api/sales-orders';
-import { salesOrderFormDefaults } from '@/lib/schemas/sales-order';
+import { salesOrderFormDefaults } from '@/lib/validations/sales-order';
 // 重复导入已删除
 import {
   SALES_ORDER_STATUS_LABELS,
@@ -159,7 +159,7 @@ export function SalesOrderForm({
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   // 表单提交
-  const onSubmit = async (data: any) => {
+  const onSubmit = async (data: SalesOrderFormData) => {
     setSubmitError('');
 
     try {
@@ -223,7 +223,7 @@ export function SalesOrderForm({
         {/* 订单状态显示 */}
         {isEdit && initialData && (
           <div className="flex items-center space-x-2">
-            <span className="text-sm text-muted-foreground">当前状态:</span>
+            <span className="text-muted-foreground text-sm">当前状态:</span>
             <Badge variant={SALES_ORDER_STATUS_VARIANTS[initialData.status]}>
               {SALES_ORDER_STATUS_LABELS[initialData.status]}
             </Badge>
@@ -306,7 +306,7 @@ export function SalesOrderForm({
                 {/* 订单号显示 */}
                 {isEdit && initialData && (
                   <div className="md:col-span-2">
-                    <label className="text-sm font-medium text-muted-foreground">
+                    <label className="text-muted-foreground text-sm font-medium">
                       订单号
                     </label>
                     <p className="font-mono text-lg font-medium">
@@ -346,7 +346,7 @@ export function SalesOrderForm({
 
           {/* 订单明细 */}
           <OrderItemsEditor
-            control={form.control as any}
+            control={form.control}
             name="items"
             disabled={isLoading}
             mode={mode}
@@ -406,7 +406,7 @@ function CustomerInfoDisplay({
   // 简化处理，实际应该使用客户API
 
   return (
-    <div className="text-sm text-muted-foreground">
+    <div className="text-muted-foreground text-sm">
       <p>客户信息加载中...</p>
     </div>
   );

@@ -77,7 +77,12 @@ async function testDatabase() {
     // 6. 测试库存查询
     console.log('\n6. 测试库存查询...');
     const inventory = await prisma.inventory.findMany({
-      include: {
+      select: {
+        id: true,
+        productId: true,
+        variantId: true,
+        quantity: true,
+        reservedQuantity: true,
         product: {
           select: {
             code: true,
@@ -96,7 +101,11 @@ async function testDatabase() {
     // 7. 测试入库记录查询
     console.log('\n7. 测试入库记录查询...');
     const inboundRecords = await prisma.inboundRecord.findMany({
-      include: {
+      select: {
+        id: true,
+        recordNumber: true,
+        productId: true,
+        quantity: true,
         product: {
           select: {
             code: true,
@@ -120,7 +129,10 @@ async function testDatabase() {
     // 8. 测试复杂查询 - 产品库存汇总
     console.log('\n8. 测试复杂查询 - 产品库存汇总...');
     const productInventory = await prisma.product.findMany({
-      include: {
+      select: {
+        id: true,
+        code: true,
+        name: true,
         inventory: {
           select: {
             quantity: true,

@@ -1,9 +1,9 @@
 import bcrypt from 'bcryptjs';
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
-import { authOptions, updatePassword } from '@/lib/auth';
+import { verifyApiAuth } from '@/lib/api-helpers';
+import { updatePassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { baseValidations } from '@/lib/validations/base';
 
@@ -21,9 +21,9 @@ const updatePasswordSchema = z
 
 export async function POST(request: NextRequest) {
   try {
-    // 验证用户会话
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    // 验证用户会话 - 使用中间件传递的头部信息
+    const auth = verifyApiAuth(request);
+    if (!auth.success || !auth.userId) {
       return NextResponse.json(
         { success: false, error: '未授权访问' },
         { status: 401 }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     // 获取用户当前密码
     const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
+      where: { id: auth.userId },
       select: { passwordHash: true },
     });
 
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 更新密码
-    await updatePassword(session.user.id, newPassword);
+    await updatePassword(auth.userId, newPassword);
 
     return NextResponse.json({
       success: true,

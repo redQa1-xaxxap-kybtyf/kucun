@@ -2,7 +2,20 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+import { queryKeys } from '@/lib/queryKeys';
 import type { NavigationItem } from '@/lib/types/layout';
+
+/**
+ * 库存预警数据类型
+ */
+interface InventoryAlert {
+  id: string;
+  alertLevel: 'critical' | 'danger' | 'warning' | 'info';
+  productId: string;
+  currentStock: number;
+  minStock: number;
+  maxStock: number;
+}
 
 /**
  * 导航徽章数据类型
@@ -70,15 +83,14 @@ async function fetchNavigationBadges(): Promise<NavigationBadgeData[]> {
       const alertsResult = await alertsResponse.json();
       if (alertsResult.success && alertsResult.data.length > 0) {
         // 库存预警徽章 - 所有需要关注的库存预警
-        const totalAlerts = alertsResult.data.length;
+        const alerts = alertsResult.data as InventoryAlert[];
+        const totalAlerts = alerts.length;
 
         // 根据最高预警级别确定徽章颜色
-        const hasCritical = alertsResult.data.some(
-          (alert: any) => alert.alertLevel === 'critical'
+        const hasCritical = alerts.some(
+          alert => alert.alertLevel === 'critical'
         );
-        const hasDanger = alertsResult.data.some(
-          (alert: any) => alert.alertLevel === 'danger'
-        );
+        const hasDanger = alerts.some(alert => alert.alertLevel === 'danger');
 
         let badgeVariant: 'destructive' | 'secondary' = 'secondary';
         if (hasCritical || hasDanger) {
@@ -112,7 +124,7 @@ export function useNavigationBadges() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['navigation-badges'],
+    queryKey: queryKeys.dashboard.navigationBadges(),
     queryFn: fetchNavigationBadges,
     staleTime: 30 * 1000, // 30秒内数据保持新鲜
     gcTime: 5 * 60 * 1000, // 5分钟缓存时间

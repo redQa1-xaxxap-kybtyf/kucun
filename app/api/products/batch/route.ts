@@ -1,10 +1,9 @@
 import { type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
+import { verifyApiAuth } from '@/lib/api-helpers';
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
 import { successResponse } from '@/lib/api/response';
-import { authOptions } from '@/lib/auth';
 import { invalidateProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
 import type { BatchDeleteResult } from '@/lib/types/product';
@@ -15,9 +14,9 @@ import { batchDeleteProductsSchema } from '@/lib/validations/product';
  * DELETE /api/products/batch
  */
 export const DELETE = withErrorHandling(async (request: NextRequest) => {
-  // 1. 验证用户权限
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  // 1. 验证用户权限 - 使用中间件传递的头部信息
+  const auth = verifyApiAuth(request);
+  if (!auth.success || !auth.userId) {
     throw ApiError.unauthorized();
   }
 

@@ -33,7 +33,7 @@ interface SearchResultItem {
   description?: string;
   type: 'product' | 'order' | 'customer' | 'document';
   href: string;
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -126,23 +126,34 @@ export function GlobalSearch({
       const response = await fetch(
         `/api/products/search?search=${encodeURIComponent(query)}&limit=5`
       );
-      if (!response.ok) {return [];}
+      if (!response.ok) {
+        return [];
+      }
 
       const data = await response.json();
-      return data.map((product: any) => ({
-        id: product.id,
-        title: `${product.name} ${product.code}`,
-        description: `规格: ${product.specification || '无'}, 库存: ${product.inventory?.reduce((sum: number, inv: any) => sum + inv.quantity, 0) || 0}${product.unit}`,
-        type: 'product' as const,
-        href: `/products/${product.id}`,
-        metadata: {
-          stock:
-            product.inventory?.reduce(
-              (sum: number, inv: any) => sum + inv.quantity,
-              0
-            ) || 0,
-        },
-      }));
+      return data.map(
+        (product: {
+          id: string;
+          name: string;
+          code: string;
+          specification?: string;
+          unit: string;
+          inventory?: Array<{ quantity: number }>;
+        }) => ({
+          id: product.id,
+          title: `${product.name} ${product.code}`,
+          description: `规格: ${product.specification || '无'}, 库存: ${product.inventory?.reduce((sum: number, inv) => sum + inv.quantity, 0) || 0}${product.unit}`,
+          type: 'product' as const,
+          href: `/products/${product.id}`,
+          metadata: {
+            stock:
+              product.inventory?.reduce(
+                (sum: number, inv) => sum + inv.quantity,
+                0
+              ) || 0,
+          },
+        })
+      );
     } catch {
       return [];
     }
@@ -154,17 +165,27 @@ export function GlobalSearch({
       const response = await fetch(
         `/api/sales-orders?search=${encodeURIComponent(query)}&limit=5`
       );
-      if (!response.ok) {return [];}
+      if (!response.ok) {
+        return [];
+      }
 
       const data = await response.json();
-      return (data.orders || []).map((order: any) => ({
-        id: order.id,
-        title: `销售订单 #${order.orderNumber}`,
-        description: `客户: ${order.customer?.name || '未知'}, 金额: ¥${order.totalAmount?.toLocaleString() || '0'}`,
-        type: 'order' as const,
-        href: `/sales-orders/${order.id}`,
-        metadata: { amount: order.totalAmount, status: order.status },
-      }));
+      return (data.orders || []).map(
+        (order: {
+          id: string;
+          orderNumber: string;
+          customer: { name: string };
+          totalAmount: number;
+          status: string;
+        }) => ({
+          id: order.id,
+          title: `销售订单 #${order.orderNumber}`,
+          description: `客户: ${order.customer?.name || '未知'}, 金额: ¥${order.totalAmount?.toLocaleString() || '0'}`,
+          type: 'order' as const,
+          href: `/sales-orders/${order.id}`,
+          metadata: { amount: order.totalAmount, status: order.status },
+        })
+      );
     } catch {
       return [];
     }
@@ -178,17 +199,27 @@ export function GlobalSearch({
       const response = await fetch(
         `/api/customers/search?q=${encodeURIComponent(query)}&limit=5`
       );
-      if (!response.ok) {return [];}
+      if (!response.ok) {
+        return [];
+      }
 
       const data = await response.json();
-      return data.map((customer: any) => ({
-        id: customer.id,
-        title: customer.name,
-        description: `联系人: ${customer.contactPerson || customer.name}, 电话: ${customer.phone || '未提供'}`,
-        type: 'customer' as const,
-        href: `/customers/${customer.id}`,
-        metadata: { phone: customer.phone },
-      }));
+      return data.map(
+        (customer: {
+          id: string;
+          name: string;
+          code: string;
+          phone?: string;
+          email?: string;
+        }) => ({
+          id: customer.id,
+          title: customer.name,
+          description: `联系人: ${customer.contactPerson || customer.name}, 电话: ${customer.phone || '未提供'}`,
+          type: 'customer' as const,
+          href: `/customers/${customer.id}`,
+          metadata: { phone: customer.phone },
+        })
+      );
     } catch {
       return [];
     }
@@ -299,13 +330,13 @@ export function GlobalSearch({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl p-0">
-        <DialogHeader className="px-6 pb-0 pt-6">
+        <DialogHeader className="px-6 pt-6 pb-0">
           <DialogTitle className="sr-only">全局搜索</DialogTitle>
         </DialogHeader>
 
         {/* 搜索输入框 */}
         <div className="relative px-6">
-          <Search className="absolute left-9 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="text-muted-foreground absolute top-1/2 left-9 h-4 w-4 -translate-y-1/2" />
           <Input
             ref={inputRef}
             type="search"
@@ -313,7 +344,7 @@ export function GlobalSearch({
             value={query}
             onChange={e => setQuery(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="h-12 rounded-none border-0 border-b pl-10 text-base focus-visible:border-primary focus-visible:ring-0"
+            className="focus-visible:border-primary h-12 rounded-none border-0 border-b pl-10 text-base focus-visible:ring-0"
           />
         </div>
 
@@ -322,12 +353,12 @@ export function GlobalSearch({
           <div className="px-6 pb-6">
             {isLoading ? (
               <div className="flex items-center justify-center py-8">
-                <div className="h-6 w-6 animate-spin rounded-full border-b-2 border-primary"></div>
+                <div className="border-primary h-6 w-6 animate-spin rounded-full border-b-2"></div>
               </div>
             ) : query.trim() ? (
               results.length > 0 ? (
                 <div className="space-y-2">
-                  <h3 className="mb-3 text-sm font-medium text-muted-foreground">
+                  <h3 className="text-muted-foreground mb-3 text-sm font-medium">
                     搜索结果
                   </h3>
                   {results.map((item, index) => (
@@ -341,7 +372,7 @@ export function GlobalSearch({
                       onClick={() => handleResultSelect(item)}
                     >
                       <div className="flex w-full items-start space-x-3">
-                        <div className="mt-0.5 text-muted-foreground">
+                        <div className="text-muted-foreground mt-0.5">
                           {getTypeIcon(item.type)}
                         </div>
                         <div className="min-w-0 flex-1">
@@ -352,7 +383,7 @@ export function GlobalSearch({
                             </Badge>
                           </div>
                           {item.description && (
-                            <p className="mt-1 text-sm text-muted-foreground">
+                            <p className="text-muted-foreground mt-1 text-sm">
                               {item.description}
                             </p>
                           )}
@@ -363,9 +394,9 @@ export function GlobalSearch({
                 </div>
               ) : (
                 <div className="py-8 text-center">
-                  <Search className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+                  <Search className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
                   <p className="text-muted-foreground">未找到相关结果</p>
-                  <p className="mt-1 text-sm text-muted-foreground">
+                  <p className="text-muted-foreground mt-1 text-sm">
                     尝试使用不同的关键词
                   </p>
                 </div>
@@ -374,7 +405,7 @@ export function GlobalSearch({
               <div className="space-y-4">
                 {/* 最近搜索 */}
                 <div>
-                  <h3 className="mb-3 flex items-center text-sm font-medium text-muted-foreground">
+                  <h3 className="text-muted-foreground mb-3 flex items-center text-sm font-medium">
                     <Clock className="mr-2 h-4 w-4" />
                     最近搜索
                   </h3>
@@ -392,7 +423,7 @@ export function GlobalSearch({
                           )}
                           onClick={() => handleSuggestionSelect(suggestion)}
                         >
-                          <Clock className="mr-3 h-4 w-4 text-muted-foreground" />
+                          <Clock className="text-muted-foreground mr-3 h-4 w-4" />
                           {suggestion.text}
                         </Button>
                       ))}
@@ -401,7 +432,7 @@ export function GlobalSearch({
 
                 {/* 热门搜索 */}
                 <div>
-                  <h3 className="mb-3 flex items-center text-sm font-medium text-muted-foreground">
+                  <h3 className="text-muted-foreground mb-3 flex items-center text-sm font-medium">
                     <TrendingUp className="mr-2 h-4 w-4" />
                     热门搜索
                   </h3>
@@ -423,7 +454,7 @@ export function GlobalSearch({
                             )}
                             onClick={() => handleSuggestionSelect(suggestion)}
                           >
-                            <TrendingUp className="mr-3 h-4 w-4 text-muted-foreground" />
+                            <TrendingUp className="text-muted-foreground mr-3 h-4 w-4" />
                             {suggestion.text}
                           </Button>
                         );
@@ -436,7 +467,7 @@ export function GlobalSearch({
         </ScrollArea>
 
         {/* 底部提示 */}
-        <div className="border-t px-6 py-3 text-xs text-muted-foreground">
+        <div className="text-muted-foreground border-t px-6 py-3 text-xs">
           <div className="flex items-center justify-between">
             <span>使用 ↑↓ 导航，Enter 选择，Esc 关闭</span>
             <span>Ctrl+K 快速打开</span>

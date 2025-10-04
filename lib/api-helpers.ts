@@ -15,24 +15,30 @@ import type { ZodSchema } from 'zod';
  */
 export function verifyApiAuth(request: NextRequest): {
   success: boolean;
+  authenticated: boolean; // 为了向后兼容，同时提供两个字段
   userId?: string;
   username?: string;
+  role?: string;
   error?: string;
 } {
   const userId = request.headers.get('x-user-id');
   const username = request.headers.get('x-user-name');
+  const role = request.headers.get('x-user-role');
 
   if (!userId || !username) {
     return {
       success: false,
+      authenticated: false,
       error: '未授权访问',
     };
   }
 
   return {
     success: true,
+    authenticated: true,
     userId,
     username,
+    role: role || 'user',
   };
 }
 

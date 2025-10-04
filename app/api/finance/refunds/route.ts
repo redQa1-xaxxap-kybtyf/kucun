@@ -1,44 +1,70 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
-import { z } from 'zod';
+import { type NextRequest } from 'next/server';
 
-import { authOptions } from '@/lib/auth';
+import { successResponse, withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { paginationConfig } from '@/lib/env';
-import { createRefundRecordSchema } from '@/lib/validations/refund';
+import { publishFinanceEvent } from '@/lib/events';
+import {
+  createRefundRecordSchema,
+  refundQuerySchema,
+} from '@/lib/validations/refund';
 
 /**
  * 应退货款API
  * GET /api/finance/refunds - 获取退款记录列表
  * POST /api/finance/refunds - 创建退款记录
  */
-export async function GET(request: NextRequest) {
-  try {
-    // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
+
+/**
+ * GET /api/finance/refunds - 获取退款记录列表
+ * 权限：需要 finance:view 权限
+ */
+export const GET = withAuth(
+  async (request: NextRequest) => {
+    // 解析并验证查询参数
+    const { searchParams } = new URL(request.url);
+    const queryParams = {
+      page: searchParams.get('page')
+        ? parseInt(searchParams.get('page')!, 10)
+        : undefined,
+      pageSize: searchParams.get('pageSize')
+        ? parseInt(searchParams.get('pageSize')!, 10)
+        : undefined,
+      search: searchParams.get('search') || undefined,
+      status: searchParams.get('status') || undefined,
+      customerId: searchParams.get('customerId') || undefined,
+      returnOrderId: searchParams.get('returnOrderId') || undefined,
+      salesOrderId: searchParams.get('salesOrderId') || undefined,
+      refundType: searchParams.get('refundType') || undefined,
+      startDate: searchParams.get('startDate') || undefined,
+      endDate: searchParams.get('endDate') || undefined,
+      sortBy: searchParams.get('sortBy') || undefined,
+      sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || undefined,
+    };
+
+    // 使用 Zod schema 验证
+    const validationResult = refundQuerySchema.safeParse(queryParams);
+
+    if (!validationResult.success) {
+      return successResponse(
+        null,
+        '查询参数验证失败: ' + validationResult.error.issues[0]?.message
       );
     }
 
-    // 解析查询参数
-    const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const pageSize = parseInt(
-      searchParams.get('pageSize') ||
-        paginationConfig.defaultPageSize.toString()
-    );
-
-    const search = searchParams.get('search') || '';
-    const status = searchParams.get('status');
-    const customerId = searchParams.get('customerId');
-    const refundType = searchParams.get('refundType');
-    const startDate = searchParams.get('startDate');
-    const endDate = searchParams.get('endDate');
-    const sortBy = searchParams.get('sortBy') || 'createdAt';
-    const sortOrder = searchParams.get('sortOrder') || 'desc';
+    const {
+      page = 1,
+      pageSize = 20,
+      search,
+      status,
+      customerId,
+      returnOrderId,
+      salesOrderId,
+      refundType,
+      startDate,
+      endDate,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+    } = validationResult.data;
 
     // 构建查询条件
     const where: Record<string, unknown> = {};
@@ -74,13 +100,16 @@ export async function GET(request: NextRequest) {
     }
 
     // 构建排序条件
-    const orderBy: Record<string, unknown> = {};
-    if (sortBy === 'customerName') {
-      orderBy.customer = { name: sortOrder };
-    } else if (sortBy === 'refundAmount') {
-      orderBy.refundAmount = sortOrder;
+    type OrderByType =
+      | Record<string, 'asc' | 'desc'>
+      | { customer: { name: 'asc' | 'desc' } };
+    let orderBy: OrderByType;
+
+    // customerName is not in the enum, but we handle it separately
+    if (sortBy === ('customerName' as typeof sortBy)) {
+      orderBy = { customer: { name: sortOrder } };
     } else {
-      orderBy[sortBy] = sortOrder;
+      orderBy = { [sortBy]: sortOrder };
     }
 
     // 计算分页
@@ -149,44 +178,25 @@ export async function GET(request: NextRequest) {
       user: refund.user,
     }));
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        refunds: formattedRefunds,
-        pagination: {
-          page,
-          pageSize,
-          total,
-          totalPages: Math.ceil(total / pageSize),
-        },
+    return successResponse({
+      refunds: formattedRefunds,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
       },
     });
-  } catch (error) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '获取退款记录失败',
-      },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['finance:view'] }
+);
 
 /**
- * 创建退款记录
+ * POST /api/finance/refunds - 创建退款记录
+ * 权限：需要 finance:manage 权限
  */
-export async function POST(request: NextRequest) {
-  try {
-    // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-    const userId = session.user.id;
-
+export const POST = withAuth(
+  async (request: NextRequest, { user }) => {
     // 解析请求体
     const body = await request.json();
 
@@ -269,7 +279,7 @@ export async function POST(request: NextRequest) {
           reason: validatedData.reason,
           remarks: validatedData.remarks,
           bankInfo: validatedData.bankInfo,
-          userId,
+          userId: user.id,
         },
         include: {
           customer: {
@@ -297,31 +307,19 @@ export async function POST(request: NextRequest) {
       });
     });
 
-    return NextResponse.json({
-      success: true,
-      data: newRefund,
-      message: '退款记录创建成功',
+    // 发布财务事件
+    await publishFinanceEvent({
+      action: 'created',
+      recordType: 'refund',
+      recordId: newRefund.id,
+      recordNumber: newRefund.refundNumber,
+      amount: newRefund.refundAmount,
+      customerId: newRefund.customerId,
+      customerName: newRefund.customer.name,
+      userId: user.id,
     });
-  } catch (error) {
-    console.error('创建退款记录失败:', error);
 
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '输入数据验证失败',
-          details: error.issues,
-        },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '创建退款记录失败',
-      },
-      { status: 500 }
-    );
-  }
-}
+    return successResponse(newRefund, '退款记录创建成功');
+  },
+  { permissions: ['finance:manage'] }
+);

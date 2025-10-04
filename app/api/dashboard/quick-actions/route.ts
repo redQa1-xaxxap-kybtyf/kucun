@@ -1,23 +1,19 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
 
 // 获取快速操作数据
-export async function GET(_request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 根据用户角色定义快速操作
-    const isAdmin = session.user.role === 'admin';
-    const isSales = session.user.role === 'sales';
+    const isAdmin = auth.role === 'admin';
+    const isSales = auth.role === 'sales';
 
     const quickActions = [];
 

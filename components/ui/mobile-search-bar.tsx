@@ -43,7 +43,7 @@ export interface SortOption {
 // 搜索状态接口
 export interface SearchState {
   keyword: string;
-  filters: Record<string, any>;
+  filters: Record<string, unknown>;
   sort?: {
     key: string;
     direction: 'asc' | 'desc';
@@ -107,7 +107,10 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
     };
 
     // 处理筛选器变化
-    const handleFilterChange = (key: string, filterValue: any) => {
+    const handleFilterChange = (
+      key: string,
+      filterValue: string | number | boolean | undefined
+    ) => {
       const newFilters = { ...value.filters };
       if (
         filterValue === undefined ||

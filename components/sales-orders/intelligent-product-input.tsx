@@ -13,6 +13,7 @@ import type { Product } from '@/lib/types/product';
 import { SmartProductSearch } from './smart-product-search';
 
 interface IntelligentProductInputProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React Hook Form 泛型参数
   form: UseFormReturn<any>;
   index: number;
   products: Product[];
@@ -85,6 +86,23 @@ export function IntelligentProductInput({
     onProductChange?.(null);
   };
 
+  // 转换产品数据格式以匹配 SmartProductSearch 的类型要求
+  const productsWithInventory = products.map(p => ({
+    id: p.id,
+    code: p.code,
+    name: p.name,
+    specification: p.specification,
+    unit: p.unit,
+    piecesPerUnit: p.piecesPerUnit,
+    inventory: p.inventory
+      ? {
+          totalInventory: p.inventory.totalQuantity || 0,
+          availableInventory: p.inventory.availableQuantity || 0,
+          reservedInventory: p.inventory.reservedQuantity || 0,
+        }
+      : null,
+  }));
+
   return (
     <FormField
       control={form.control}
@@ -93,7 +111,7 @@ export function IntelligentProductInput({
         <FormItem>
           <FormControl>
             <SmartProductSearch
-              products={products}
+              products={productsWithInventory}
               value={field.value || ''}
               onValueChange={value => {
                 field.onChange(value);

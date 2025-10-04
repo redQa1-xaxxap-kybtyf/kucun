@@ -25,12 +25,13 @@ import {
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
+import { queryKeys } from '@/lib/queryKeys';
+import type { Product } from '@/lib/types/product';
 import {
   calculateItemSubtotal,
   calculateOrderTotal,
   type SalesOrderItemData,
-} from '@/lib/schemas/sales-order';
-import type { Product } from '@/lib/types/product';
+} from '@/lib/utils/sales-order-utils';
 
 // API
 
@@ -43,6 +44,7 @@ type SalesOrderItemUpdateFormData = SalesOrderItemData & {
 
 // 订单明细编辑器属性
 interface OrderItemsEditorProps {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   control: Control<any>;
   name: string;
   disabled?: boolean;
@@ -117,7 +119,7 @@ export function OrderItemsEditor({
             订单明细
           </span>
           <div className="flex items-center space-x-4">
-            <div className="text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-sm">
               共{' '}
               {
                 fields.filter(
@@ -140,7 +142,7 @@ export function OrderItemsEditor({
       </CardHeader>
       <CardContent className="space-y-4">
         {fields.length === 0 ? (
-          <div className="py-8 text-center text-muted-foreground">
+          <div className="text-muted-foreground py-8 text-center">
             <Package className="mx-auto mb-4 h-12 w-12 opacity-50" />
             <p className="mb-4">还没有添加任何产品</p>
             <Button onClick={addNewItem} disabled={disabled}>
@@ -188,10 +190,10 @@ export function OrderItemsEditor({
               </Button>
 
               <div className="text-right">
-                <div className="mb-1 text-sm text-muted-foreground">
+                <div className="text-muted-foreground mb-1 text-sm">
                   订单总金额
                 </div>
-                <div className="text-2xl font-bold text-primary">
+                <div className="text-primary text-2xl font-bold">
                   ¥{orderTotal.toLocaleString()}
                 </div>
               </div>
@@ -239,11 +241,17 @@ function OrderItemRow({
 
   // 获取选中产品的信息
   const { data: productData } = useQuery({
-    queryKey: ['products', 'detail', watchedItem?.productId],
+    queryKey: watchedItem?.productId
+      ? queryKeys.products.detail(watchedItem.productId)
+      : ['products', 'detail', 'none'],
     queryFn: async () => {
-      if (!watchedItem?.productId) {return null;}
+      if (!watchedItem?.productId) {
+        return null;
+      }
       const response = await fetch(`/api/products/${watchedItem.productId}`);
-      if (!response.ok) {return null;}
+      if (!response.ok) {
+        return null;
+      }
       const result = await response.json();
       return result.data as Product;
     },
@@ -271,7 +279,7 @@ function OrderItemRow({
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <Badge variant="destructive">已删除</Badge>
-              <span className="text-sm text-muted-foreground line-through">
+              <span className="text-muted-foreground text-sm line-through">
                 {productData?.name || '未知产品'}
               </span>
             </div>
@@ -383,7 +391,7 @@ function OrderItemRow({
             {/* 小计和操作 */}
             <div className="flex items-center justify-between lg:col-span-6">
               <div className="text-right">
-                <div className="text-xs text-muted-foreground">小计</div>
+                <div className="text-muted-foreground text-xs">小计</div>
                 <div className="font-medium">¥{subtotal.toLocaleString()}</div>
               </div>
               <Button
@@ -402,7 +410,7 @@ function OrderItemRow({
 
         {/* 产品信息显示 */}
         {productData && (
-          <div className="mt-3 rounded-md bg-muted/50 p-3">
+          <div className="bg-muted/50 mt-3 rounded-md p-3">
             <div className="space-y-2">
               {/* 第一行：基本信息 */}
               <div className="flex items-center justify-between text-sm">
@@ -429,7 +437,7 @@ function OrderItemRow({
               </div>
 
               {/* 第二行：规格和物理属性 */}
-              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+              <div className="text-muted-foreground flex items-center space-x-4 text-sm">
                 {productData.specification && (
                   <span>
                     <strong>规格:</strong> {productData.specification}

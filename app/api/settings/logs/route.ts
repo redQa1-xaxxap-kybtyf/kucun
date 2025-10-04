@@ -3,17 +3,13 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { NextResponse, type NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env, logExtendedConfig } from '@/lib/env';
 import { extractRequestInfo, logSystemEventInfo } from '@/lib/logger';
-import {
-  SystemLogCleanupRequestSchema,
-  SystemLogListRequestSchema,
-} from '@/lib/schemas/settings';
 import type {
   SettingsApiResponse,
   SystemLog,
@@ -22,6 +18,10 @@ import type {
   SystemLogListResponse,
   SystemLogType,
 } from '@/lib/types/settings';
+import {
+  SystemLogCleanupRequestSchema,
+  SystemLogListRequestSchema,
+} from '@/lib/validations/settings';
 
 /**
  * 构建日志查询条件

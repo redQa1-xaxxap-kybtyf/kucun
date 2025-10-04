@@ -2,25 +2,15 @@
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 
 /**
  * GET /api/return-orders/stats - 获取退货订单统计信息
  */
-export async function GET(_request: NextRequest) {
-  try {
-    // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-
+export const GET = withAuth(
+  async (request: NextRequest) => {
     // 获取当前月份的开始和结束时间
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -124,11 +114,6 @@ export async function GET(_request: NextRequest) {
       success: true,
       data: stats,
     });
-  } catch (error) {
-    console.error('获取退货订单统计失败:', error);
-    return NextResponse.json(
-      { success: false, error: '获取退货订单统计失败' },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['returns:view'] }
+);

@@ -81,7 +81,7 @@ function formatBatchSpecifications(
         id: spec.product.id,
         name: spec.product.name,
         code: spec.product.code,
-        unit: spec.product.unit as any,
+        unit: spec.product.unit,
         piecesPerUnit: spec.piecesPerUnit, // 使用批次级别的片数
         weight: spec.weight || undefined, // 使用批次级别的重量
         status: 'active',
@@ -146,6 +146,7 @@ function buildBatchSpecificationOrderBy(queryData: {
  */
 export async function upsertBatchSpecification(
   data: CreateBatchSpecificationRequest,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tx?: any
 ): Promise<BatchSpecification> {
   // 验证产品存在

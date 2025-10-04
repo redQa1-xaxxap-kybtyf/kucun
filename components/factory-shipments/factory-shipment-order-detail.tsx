@@ -28,6 +28,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { queryKeys } from '@/lib/queryKeys';
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentOrder,
@@ -131,8 +132,8 @@ export function FactoryShipmentOrderDetail({
     data: order,
     isLoading,
     error,
-  } = useQuery({
-    queryKey: ['factory-shipment-order', orderId],
+  } = useQuery<FactoryShipmentOrder | null>({
+    queryKey: queryKeys.factoryShipments.order(orderId),
     queryFn: () => getFactoryShipmentOrder(orderId),
   });
 

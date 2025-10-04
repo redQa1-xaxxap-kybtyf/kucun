@@ -10,16 +10,24 @@ import React from 'react';
 
 import { type Category, type CategoryQueryParams } from '@/lib/api/categories';
 
+interface DialogState {
+  open: boolean;
+  categoryId?: string;
+}
+
 interface UseCategoryActionsProps {
   queryParams: CategoryQueryParams;
   setQueryParams: (params: CategoryQueryParams) => void;
   selectedCategoryIds: string[];
   setSelectedCategoryIds: (ids: string[]) => void;
-  setDeleteDialog: (state: any) => void;
-  setBatchDeleteDialog: (state: any) => void;
+  setDeleteDialog: (state: DialogState) => void;
+  setBatchDeleteDialog: (state: { open: boolean }) => void;
   setUpdatingStatusId: (id: string | null) => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   statusMutation: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   deleteMutation: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   batchDeleteMutation: any;
   categories: Category[];
 }
@@ -81,7 +89,7 @@ export function useCategoryActions({
   );
 
   const handleFilter = React.useCallback(
-    (key: string, value: any) => {
+    (key: string, value: string | number | boolean | undefined) => {
       updateURL({ [key]: value, page: 1 });
     },
     [updateURL]

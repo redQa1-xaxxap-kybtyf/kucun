@@ -176,3 +176,4 @@ export const ADDRESS_FIELD_LABELS = {
   detail: '详细地址',
   full: '完整地址',
 } as const;
+

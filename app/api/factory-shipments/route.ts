@@ -3,24 +3,23 @@
 
 import type { Prisma } from '@prisma/client';
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
+import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 import {
   createFactoryShipmentOrderSchema,
   factoryShipmentOrderListParamsSchema,
-} from '@/lib/schemas/factory-shipment';
-import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
+} from '@/lib/validations/factory-shipment';
 
 // 获取厂家发货订单列表
 export async function GET(request: NextRequest) {
   try {
     // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 解析查询参数
@@ -63,14 +62,26 @@ export async function GET(request: NextRequest) {
 
     // 构建查询条件
     const where: Prisma.FactoryShipmentOrderWhereInput = {};
-    if (status) {where.status = status;}
-    if (customerId) {where.customerId = customerId;}
-    if (containerNumber) {where.containerNumber = { contains: containerNumber };}
-    if (orderNumber) {where.orderNumber = { contains: orderNumber };}
+    if (status) {
+      where.status = status;
+    }
+    if (customerId) {
+      where.customerId = customerId;
+    }
+    if (containerNumber) {
+      where.containerNumber = { contains: containerNumber };
+    }
+    if (orderNumber) {
+      where.orderNumber = { contains: orderNumber };
+    }
     if (startDate || endDate) {
       where.createdAt = {};
-      if (startDate) {where.createdAt.gte = startDate;}
-      if (endDate) {where.createdAt.lte = endDate;}
+      if (startDate) {
+        where.createdAt.gte = startDate;
+      }
+      if (endDate) {
+        where.createdAt.lte = endDate;
+      }
     }
 
     // 分页计算
@@ -131,11 +142,11 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     // 身份验证 - 始终验证,确保安全性
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: '未授权访问' }, { status: 401 });
+    const auth = await verifyApiAuth(request);
+    if (!auth.authenticated || !auth.userId) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
-    const userId = session.user.id;
+    const userId = auth.userId;
 
     // 解析请求体
     const body = await request.json();

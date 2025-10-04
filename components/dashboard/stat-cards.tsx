@@ -129,7 +129,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
     const cardProps = href ? { href } : {};
 
     return (
-      <CardWrapper {...(cardProps as any)}>
+      <CardWrapper {...cardProps}>
         <Card
           className={cn(
             'transition-all duration-200',
@@ -142,7 +142,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div className="space-y-2">
-                <p className="text-sm font-medium text-muted-foreground">
+                <p className="text-muted-foreground text-sm font-medium">
                   {title}
                 </p>
                 <div className="flex items-baseline space-x-2">
@@ -176,7 +176,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
                   )}
                 </div>
                 {change && (
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-muted-foreground text-xs">
                     较{change.period}
                   </p>
                 )}
@@ -195,7 +195,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
             </div>
 
             {href && (
-              <div className="mt-4 flex items-center text-sm text-muted-foreground transition-colors hover:text-foreground">
+              <div className="text-muted-foreground hover:text-foreground mt-4 flex items-center text-sm transition-colors">
                 <span>查看详情</span>
                 <ArrowRight className="ml-1 h-3 w-3" />
               </div>
@@ -357,7 +357,7 @@ const MobileStatCard = React.forwardRef<HTMLDivElement, MobileStatCardProps>(
 
       return (
         <div
-          className="flex items-center justify-between rounded-lg border bg-card p-3"
+          className="bg-card flex items-center justify-between rounded-lg border p-3"
           ref={ref}
         >
           <div className="flex items-center space-x-3">
@@ -371,7 +371,7 @@ const MobileStatCard = React.forwardRef<HTMLDivElement, MobileStatCardProps>(
             </div>
             <div>
               <p className="text-sm font-medium">{props.title}</p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 {typeof props.value === 'number'
                   ? dashboardUtils.formatNumber(props.value)
                   : props.value}

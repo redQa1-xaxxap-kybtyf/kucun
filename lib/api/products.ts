@@ -3,6 +3,7 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import { queryKeys } from '@/lib/queryKeys';
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
 import type {
   BatchDeleteProductsInput,
@@ -23,16 +24,9 @@ export type ProductListQueryParams = ProductQueryParams & {
 const API_BASE = '/api/products';
 
 /**
- * 查询键工厂
+ * 导出兼容的查询键（使用集中管理的 queryKeys）
  */
-export const productQueryKeys = {
-  all: ['products'] as const,
-  lists: () => [...productQueryKeys.all, 'list'] as const,
-  list: (params: ProductListQueryParams) =>
-    [...productQueryKeys.lists(), params] as const,
-  details: () => [...productQueryKeys.all, 'detail'] as const,
-  detail: (id: string) => [...productQueryKeys.details(), id] as const,
-};
+export const productQueryKeys = queryKeys.products;
 
 /**
  * 获取产品列表

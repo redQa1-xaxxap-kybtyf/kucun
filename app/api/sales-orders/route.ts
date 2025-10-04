@@ -5,6 +5,12 @@ import {
 } from '@/lib/api/handlers/sales-orders';
 import { withAuth, withErrorHandling } from '@/lib/api/middleware';
 import { successResponse } from '@/lib/api/response';
+import {
+  buildCacheKey,
+  CACHE_STRATEGY,
+  getOrSetJSON,
+  revalidateSalesOrders,
+} from '@/lib/cache';
 import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
 
 /**
@@ -28,7 +34,22 @@ export const GET = withErrorHandling(
     // 验证查询参数
     const validatedParams = salesOrderQuerySchema.parse(rawParams);
 
-    const result = await getSalesOrders(validatedParams);
+    // 构建缓存键
+    const cacheKey = buildCacheKey('sales-orders:list', validatedParams);
+
+    // 使用缓存包装查询
+    const result = await getOrSetJSON(
+      cacheKey,
+      async () => {
+        return await getSalesOrders(validatedParams);
+      },
+      CACHE_STRATEGY.dynamicData.redisTTL, // 销售订单数据，使用5分钟缓存
+      {
+        enableRandomTTL: true, // 防止缓存雪崩
+        enableNullCache: true, // 防止缓存穿透
+      }
+    );
+
     return successResponse(result);
   })
 );
@@ -45,8 +66,12 @@ export const POST = withErrorHandling(
 
     const order = await createSalesOrder(
       validatedData,
-      (session as any).user.id
+      session?.user?.id || ''
     );
+
+    // 使用统一的缓存失效系统（自动级联失效相关缓存）
+    await revalidateSalesOrders();
+
     return successResponse(order, 201, '销售订单创建成功');
   })
 );

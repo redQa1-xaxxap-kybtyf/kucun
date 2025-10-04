@@ -365,3 +365,18 @@ export const SALES_ORDER_TYPE_OPTIONS = [
   { value: 'NORMAL', label: '普通销售' },
   { value: 'TRANSFER', label: '调货销售' },
 ] as const;
+
+// 兼容性导出：从 lib/schemas/sales-order.ts 迁移
+export const salesOrderFormDefaults = {
+  customerId: '',
+  orderType: 'NORMAL' as const,
+  status: 'draft' as const,
+  items: [],
+  remarks: '',
+  totalAmount: 0,
+};
+
+// 兼容性类型导出
+export type SalesOrderItemData = SalesOrderItemFormData;
+export type CreateSalesOrderData = SalesOrderCreateFormData;
+// SalesOrderUpdateFormData 已在上面定义，包含了 id 字段（通过 salesOrderUpdateSchema.extend({ id: ... })）

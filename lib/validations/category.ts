@@ -89,13 +89,19 @@ export const BatchDeleteCategoriesSchema = z.object({
     .max(50, '一次最多只能删除50个分类'),
 });
 
-// 导出类型推断
+// ===== 导出类型：单一真理源 =====
+// 所有类型都从Zod Schema推导，禁止在lib/types中重复定义
+
+// 表单输入类型
 export type CreateCategoryData = z.infer<typeof CreateCategorySchema>;
 export type UpdateCategoryData = z.infer<typeof UpdateCategorySchema>;
 export type CategoryQueryParams = z.infer<typeof CategoryQuerySchema>;
 export type BatchDeleteCategoriesData = z.infer<
   typeof BatchDeleteCategoriesSchema
 >;
+
+// 状态枚举类型（从Schema推导）
+export type CategoryStatus = z.infer<typeof CreateCategorySchema>['status'];
 
 // 表单默认值
 export const categoryCreateDefaults: Partial<CreateCategoryData> = {
@@ -109,5 +115,14 @@ export const categorySearchDefaults: Partial<CategoryQueryParams> = {
   search: '',
   sortBy: 'createdAt',
   sortOrder: 'desc',
+  status: 'active',
+};
+
+// 兼容旧代码：从 lib/schemas/category.ts 迁移
+export const categoryFormDefaults: CreateCategoryData = {
+  name: '',
+  code: undefined,
+  parentId: undefined,
+  sortOrder: 0,
   status: 'active',
 };

@@ -14,6 +14,10 @@ async function createAdmin() {
     // 检查是否已存在管理员用户
     const existingAdmin = await prisma.user.findFirst({
       where: { role: 'admin' },
+      select: {
+        id: true,
+        username: true,
+      },
     });
 
     if (existingAdmin) {
@@ -32,6 +36,15 @@ async function createAdmin() {
         passwordHash: hashedPassword,
         role: 'admin',
         status: 'active',
+      },
+      select: {
+        id: true,
+        email: true,
+        username: true,
+        name: true,
+        role: true,
+        status: true,
+        createdAt: true,
       },
     });
 

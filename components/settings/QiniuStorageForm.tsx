@@ -28,8 +28,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { QiniuStorageConfigSchema } from '@/lib/schemas/settings';
 import type { QiniuStorageConfig } from '@/lib/types/settings';
+import { QiniuStorageConfigSchema } from '@/lib/validations/settings';
 
 interface QiniuStorageFormProps {
   /** 初始配置数据 */
@@ -131,7 +131,7 @@ export const QiniuStorageForm = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowAccessKey(!showAccessKey)}
                     disabled={isFormDisabled}
                   >
@@ -171,7 +171,7 @@ export const QiniuStorageForm = ({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                    className="absolute top-0 right-0 h-full px-3 py-2 hover:bg-transparent"
                     onClick={() => setShowSecretKey(!showSecretKey)}
                     disabled={isFormDisabled}
                   >

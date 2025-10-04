@@ -3,6 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { queryKeys } from '@/lib/queryKeys';
 import type {
   CreateInboundRequest,
   InboundListResponse,
@@ -17,27 +18,10 @@ import type {
 const API_BASE = '/api/inventory/inbound';
 const PRODUCTS_API = '/api/products/search';
 
-// 查询键工厂
-export const inboundKeys = {
-  all: ['inbound'] as const,
-  lists: () => [...inboundKeys.all, 'list'] as const,
-  list: (params: InboundQueryParams) =>
-    [...inboundKeys.lists(), params] as const,
-  details: () => [...inboundKeys.all, 'detail'] as const,
-  detail: (id: string) => [...inboundKeys.details(), id] as const,
-  stats: () => [...inboundKeys.all, 'stats'] as const,
-};
-
-// 产品搜索查询键
-export const productSearchKeys = {
-  all: ['product-search'] as const,
-  search: (query: string) => [...productSearchKeys.all, query] as const,
-};
-
 // 获取入库记录列表
 export function useInboundRecords(params: InboundQueryParams = {}) {
   return useQuery({
-    queryKey: inboundKeys.list(params),
+    queryKey: queryKeys.inventory.inboundsList(params),
     queryFn: async (): Promise<InboundListResponse> => {
       const searchParams = new URLSearchParams();
 
@@ -78,7 +62,7 @@ export function useInboundRecords(params: InboundQueryParams = {}) {
 // 获取单个入库记录
 export function useInboundRecord(id: string) {
   return useQuery({
-    queryKey: inboundKeys.detail(id),
+    queryKey: queryKeys.inventory.inbound(id),
     queryFn: async (): Promise<InboundRecord> => {
       const response = await fetch(`${API_BASE}/${id}`);
       if (!response.ok) {
@@ -124,9 +108,11 @@ export function useCreateInboundRecord() {
     },
     onSuccess: () => {
       // 刷新入库记录列表
-      queryClient.invalidateQueries({ queryKey: inboundKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.inbounds(),
+      });
       // 刷新库存数据
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
     },
   });
 }
@@ -165,11 +151,13 @@ export function useUpdateInboundRecord() {
     },
     onSuccess: (data, variables) => {
       // 更新缓存中的记录详情
-      queryClient.setQueryData(inboundKeys.detail(variables.id), data);
+      queryClient.setQueryData(queryKeys.inventory.inbound(variables.id), data);
       // 刷新入库记录列表
-      queryClient.invalidateQueries({ queryKey: inboundKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.inbounds(),
+      });
       // 刷新库存数据
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
     },
   });
 }
@@ -196,11 +184,13 @@ export function useDeleteInboundRecord() {
     },
     onSuccess: (_, id) => {
       // 移除缓存中的记录详情
-      queryClient.removeQueries({ queryKey: inboundKeys.detail(id) });
+      queryClient.removeQueries({ queryKey: queryKeys.inventory.inbound(id) });
       // 刷新入库记录列表
-      queryClient.invalidateQueries({ queryKey: inboundKeys.lists() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.inventory.inbounds(),
+      });
       // 刷新库存数据
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
     },
   });
 }
@@ -208,7 +198,7 @@ export function useDeleteInboundRecord() {
 // 搜索产品
 export function useProductSearch(query: string) {
   return useQuery({
-    queryKey: productSearchKeys.search(query),
+    queryKey: queryKeys.products.search(query),
     queryFn: async (): Promise<ProductOption[]> => {
       if (!query.trim()) {
         return [];
@@ -240,7 +230,7 @@ export function useProductSearch(query: string) {
 // 获取入库统计数据
 export function useInboundStats() {
   return useQuery({
-    queryKey: inboundKeys.stats(),
+    queryKey: queryKeys.inventory.inboundStats(),
     queryFn: async (): Promise<InboundStats> => {
       // 这里可以创建专门的统计API，暂时使用列表API模拟
       const today = new Date();

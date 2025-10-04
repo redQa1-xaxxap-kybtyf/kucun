@@ -5,13 +5,13 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
 import type {
   CreateFactoryShipmentOrderData,
   FactoryShipmentOrderListParams,
   UpdateFactoryShipmentOrderData,
   UpdateFactoryShipmentOrderStatusData,
-} from '@/lib/schemas/factory-shipment';
-import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
+} from '@/lib/validations/factory-shipment';
 
 // Query Keys
 export const factoryShipmentQueryKeys = {
@@ -38,16 +38,30 @@ export async function getFactoryShipmentOrders(
 }> {
   const searchParams = new URLSearchParams();
 
-  if (params.page) {searchParams.set('page', params.page.toString());}
-  if (params.pageSize) {searchParams.set('limit', params.pageSize.toString());}
-  if (params.status) {searchParams.set('status', params.status);}
-  if (params.customerId) {searchParams.set('customerId', params.customerId);}
-  if (params.containerNumber)
-    {searchParams.set('containerNumber', params.containerNumber);}
-  if (params.orderNumber) {searchParams.set('orderNumber', params.orderNumber);}
-  if (params.startDate)
-    {searchParams.set('startDate', params.startDate.toISOString());}
-  if (params.endDate) {searchParams.set('endDate', params.endDate.toISOString());}
+  if (params.page) {
+    searchParams.set('page', params.page.toString());
+  }
+  if (params.pageSize) {
+    searchParams.set('limit', params.pageSize.toString());
+  }
+  if (params.status) {
+    searchParams.set('status', params.status);
+  }
+  if (params.customerId) {
+    searchParams.set('customerId', params.customerId);
+  }
+  if (params.containerNumber) {
+    searchParams.set('containerNumber', params.containerNumber);
+  }
+  if (params.orderNumber) {
+    searchParams.set('orderNumber', params.orderNumber);
+  }
+  if (params.startDate) {
+    searchParams.set('startDate', params.startDate.toISOString());
+  }
+  if (params.endDate) {
+    searchParams.set('endDate', params.endDate.toISOString());
+  }
 
   const response = await fetch(`/api/factory-shipments?${searchParams}`);
 

@@ -5,27 +5,28 @@
 
 import bcrypt from 'bcryptjs';
 import { NextResponse, type NextRequest } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
-import { ResetPasswordSchema } from '@/lib/schemas/settings';
+import { ResetPasswordSchema } from '@/lib/validations/settings';
 
 // POST - 重置用户密码
 export async function POST(request: NextRequest) {
   try {
     // 身份验证
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
+    const auth = verifyApiAuth(request);
+    if (!auth.success) {
+      return errorResponse(auth.error || '未授权访问', 401);
     }
 
     // 权限检查 - 只有管理员可以重置密码
-    if (session.user.role !== 'admin') {
+    const user = await prisma.user.findUnique({
+      where: { id: auth.userId },
+      select: { role: true },
+    });
+
+    if (user?.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: '权限不足，只有管理员可以重置用户密码' },
         { status: 403 }

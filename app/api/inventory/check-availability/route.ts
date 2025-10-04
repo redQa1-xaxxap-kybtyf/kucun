@@ -1,13 +1,12 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
-import { authOptions } from '@/lib/auth';
+import { verifyApiAuth } from '@/lib/api-helpers';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
-import { cacheConfig, env } from '@/lib/env';
+import { cacheConfig } from '@/lib/env';
 
 // 库存可用性检查请求schema
 const checkAvailabilitySchema = z.object({
@@ -69,11 +68,12 @@ function calculateAllocationPlan(
 
 type AvailabilityResult = {
   available: boolean;
-  totalAvailable: number;
-  requested: number;
-  shortfall: number;
-  allocationPlan: AllocationItem[];
+  currentStock: number;
+  availableStock: number;
+  reservedStock: number;
+  requestedQuantity?: number;
   message: string;
+  details?: AllocationItem[];
 };
 
 /**
@@ -96,9 +96,15 @@ async function checkInventoryAvailability(
     quantity: { gt: 0 },
   };
 
-  if (variantId) {whereCondition.variantId = variantId;}
-  if (batchNumber) {whereCondition.batchNumber = batchNumber;}
-  if (location) {whereCondition.location = location;}
+  if (variantId) {
+    whereCondition.variantId = variantId;
+  }
+  if (batchNumber) {
+    whereCondition.batchNumber = batchNumber;
+  }
+  if (location) {
+    whereCondition.location = location;
+  }
 
   // 查询匹配的库存记录
   const inventoryRecords = await prisma.inventory.findMany({
@@ -183,16 +189,7 @@ async function checkInventoryAvailability(
     message: available
       ? '库存充足'
       : `库存不足，需要 ${quantity} 件，可用 ${availableStock} 件`,
-    details: inventoryRecords.map(record => ({
-      inventoryId: record.id,
-      batchNumber: record.batchNumber,
-      variantId: record.variantId,
-      location: record.location,
-      quantity: record.quantity,
-      reservedQuantity: record.reservedQuantity,
-      availableQuantity: record.quantity - record.reservedQuantity,
-    })),
-    allocationPlan,
+    details: allocationPlan,
   };
 }
 
@@ -201,12 +198,10 @@ async function checkInventoryAvailability(
  * POST /api/inventory/check-availability
  */
 export const POST = withErrorHandling(async (request: NextRequest) => {
-  // 验证用户权限 (开发环境下临时绕过)
-  if (env.NODE_ENV !== 'development') {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      throw ApiError.unauthorized();
-    }
+  // 验证用户权限
+  const auth = verifyApiAuth(request);
+  if (!auth.success) {
+    throw ApiError.unauthorized();
   }
 
   const body = await request.json();

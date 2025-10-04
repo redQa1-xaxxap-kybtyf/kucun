@@ -33,7 +33,9 @@ export class Permissions {
    * 检查是否有特定权限
    */
   hasPermission(permission: string): boolean {
-    if (!this.role) {return false;}
+    if (!this.role) {
+      return false;
+    }
 
     const rolePermissions = ROLE_PERMISSIONS[this.role] || [];
     return rolePermissions.includes(permission);
@@ -306,7 +308,7 @@ export function getAccessibleNavItems(
     }
 
     // 检查用户角色是否在允许的角色列表中
-    const userRole = role || ('user' as any);
+    const userRole = role || 'user';
     return item.requiredRoles.includes(userRole);
   });
 }

@@ -3,7 +3,11 @@ import type { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
-import type { SalesOrderQueryParams as StandardSalesOrderQueryParams } from '@/lib/types/sales-order';
+import type {
+  SalesOrderStatus,
+  SalesOrderType,
+  SalesOrderQueryParams as StandardSalesOrderQueryParams,
+} from '@/lib/types/sales-order';
 import {
   salesOrderCreateSchema,
   salesOrderQuerySchema as standardSalesOrderQuerySchema,
@@ -82,7 +86,20 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
       orderBy,
       skip,
       take: limit,
-      include: {
+      select: {
+        id: true,
+        orderNumber: true,
+        customerId: true,
+        userId: true,
+        supplierId: true,
+        status: true,
+        orderType: true,
+        costAmount: true,
+        profitAmount: true,
+        totalAmount: true,
+        remarks: true,
+        createdAt: true,
+        updatedAt: true,
         customer: {
           select: {
             id: true,
@@ -103,7 +120,22 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
           },
         },
         items: {
-          include: {
+          select: {
+            id: true,
+            salesOrderId: true,
+            productId: true,
+            colorCode: true,
+            productionDate: true,
+            quantity: true,
+            unitPrice: true,
+            subtotal: true,
+            unitCost: true,
+            profitAmount: true,
+            isManualProduct: true,
+            manualProductName: true,
+            manualSpecification: true,
+            manualWeight: true,
+            manualUnit: true,
             product: {
               select: {
                 id: true,
@@ -125,7 +157,21 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
   ]);
 
   return {
-    data: orders.map(formatSalesOrder),
+    data: orders.map(order => {
+      const { _count, ...orderData } = order;
+      return {
+        ...orderData,
+        status: orderData.status as SalesOrderStatus,
+        orderType: orderData.orderType as SalesOrderType,
+        supplierId: orderData.supplierId ?? undefined,
+        costAmount: orderData.costAmount ?? undefined,
+        profitAmount: orderData.profitAmount ?? undefined,
+        remarks: orderData.remarks ?? undefined,
+        createdAt: orderData.createdAt.toISOString(),
+        updatedAt: orderData.updatedAt.toISOString(),
+        itemCount: _count.items,
+      };
+    }),
     pagination: {
       page,
       limit,
@@ -141,7 +187,20 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
 export async function getSalesOrderById(id: string) {
   const order = await prisma.salesOrder.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      orderNumber: true,
+      customerId: true,
+      userId: true,
+      supplierId: true,
+      status: true,
+      orderType: true,
+      costAmount: true,
+      profitAmount: true,
+      totalAmount: true,
+      remarks: true,
+      createdAt: true,
+      updatedAt: true,
       customer: {
         select: {
           id: true,
@@ -165,7 +224,22 @@ export async function getSalesOrderById(id: string) {
         },
       },
       items: {
-        include: {
+        select: {
+          id: true,
+          salesOrderId: true,
+          productId: true,
+          colorCode: true,
+          productionDate: true,
+          quantity: true,
+          unitPrice: true,
+          subtotal: true,
+          unitCost: true,
+          profitAmount: true,
+          isManualProduct: true,
+          manualProductName: true,
+          manualSpecification: true,
+          manualWeight: true,
+          manualUnit: true,
           product: {
             select: {
               id: true,
@@ -176,8 +250,10 @@ export async function getSalesOrderById(id: string) {
             },
           },
         },
-        orderBy: {
-          // createdAt: 'asc', // 移除不支持的排序字段
+      },
+      _count: {
+        select: {
+          items: true,
         },
       },
     },
@@ -187,80 +263,9 @@ export async function getSalesOrderById(id: string) {
     return null;
   }
 
-  return formatSalesOrder(order);
-}
-
-/**
- * 格式化销售订单数据
- */
-function formatSalesOrder(order: any): any {
   return {
-    id: order.id,
-    orderNumber: order.orderNumber,
-    customerId: order.customerId,
-    userId: order.userId,
-    supplierId: order.supplierId,
-    status: order.status,
-    orderType: order.orderType,
-    costAmount: order.costAmount,
-    profitAmount: order.profitAmount,
-    totalAmount: order.totalAmount,
-    remarks: order.remarks,
-    createdAt: order.createdAt.toISOString(),
-    updatedAt: order.updatedAt.toISOString(),
-    customer: order.customer
-      ? {
-          id: order.customer.id,
-          name: order.customer.name,
-          phone: order.customer.phone,
-          address: order.customer.address,
-        }
-      : undefined,
-    user: order.user
-      ? {
-          id: order.user.id,
-          name: order.user.name,
-        }
-      : undefined,
-    supplier: order.supplier
-      ? {
-          id: order.supplier.id,
-          name: order.supplier.name,
-          phone: order.supplier.phone,
-          address: order.supplier.address,
-        }
-      : undefined,
-    items:
-      order.items?.map((item: any) => ({
-        id: item.id,
-        salesOrderId: item.salesOrderId,
-        productId: item.productId,
-        colorCode: item.colorCode,
-        productionDate: item.productionDate,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        subtotal: item.subtotal || item.totalPrice, // 兼容旧字段名
-        unitCost: item.unitCost || item.costPrice, // 兼容旧字段名
-        costSubtotal:
-          item.costSubtotal ||
-          (item.unitCost || item.costPrice || 0) * item.quantity,
-        profitAmount: item.profitAmount,
-        isManualProduct: item.isManualProduct,
-        manualProductName: item.manualProductName,
-        manualSpecification: item.manualSpecification,
-        manualWeight: item.manualWeight,
-        manualUnit: item.manualUnit,
-        product: item.product
-          ? {
-              id: item.product.id,
-              name: item.product.name,
-              code: item.product.code,
-              unit: item.product.unit,
-              specification: item.product.specification,
-            }
-          : undefined,
-      })) || [],
-    itemCount: order._count?.items || order.items?.length || 0,
+    ...order,
+    itemCount: order._count.items,
   };
 }
 
@@ -328,7 +333,9 @@ export async function createSalesOrder(
       if (validatedData.status === 'confirmed') {
         for (const item of validatedData.items) {
           // 跳过手动输入的商品
-          if (item.isManualProduct || !item.productId) {continue;}
+          if (item.isManualProduct || !item.productId) {
+            continue;
+          }
 
           // 查找库存记录
           const inventory = await tx.inventory.findFirst({
@@ -402,7 +409,20 @@ export async function createSalesOrder(
             })),
           },
         },
-        include: {
+        select: {
+          id: true,
+          orderNumber: true,
+          customerId: true,
+          userId: true,
+          supplierId: true,
+          status: true,
+          orderType: true,
+          costAmount: true,
+          profitAmount: true,
+          totalAmount: true,
+          remarks: true,
+          createdAt: true,
+          updatedAt: true,
           customer: {
             select: {
               id: true,
@@ -423,7 +443,22 @@ export async function createSalesOrder(
             },
           },
           items: {
-            include: {
+            select: {
+              id: true,
+              salesOrderId: true,
+              productId: true,
+              colorCode: true,
+              productionDate: true,
+              quantity: true,
+              unitPrice: true,
+              subtotal: true,
+              unitCost: true,
+              profitAmount: true,
+              isManualProduct: true,
+              manualProductName: true,
+              manualSpecification: true,
+              manualWeight: true,
+              manualUnit: true,
               product: {
                 select: {
                   id: true,
@@ -432,6 +467,11 @@ export async function createSalesOrder(
                   unit: true,
                 },
               },
+            },
+          },
+          _count: {
+            select: {
+              items: true,
             },
           },
         },
@@ -498,7 +538,10 @@ export async function createSalesOrder(
     }
   );
 
-  return formatSalesOrder(order);
+  return {
+    ...order,
+    itemCount: order._count.items,
+  };
 }
 
 // 订单号生成逻辑已移至 lib/services/order-number-generator.ts

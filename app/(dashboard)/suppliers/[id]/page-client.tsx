@@ -1,0 +1,369 @@
+'use client';
+
+import {
+  ArrowLeft,
+  Calendar,
+  DollarSign,
+  Edit,
+  Mail,
+  MapPin,
+  Phone,
+  Truck,
+} from 'lucide-react';
+import { useRouter } from 'next/navigation';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatCurrency, formatDate } from '@/lib/utils';
+
+interface SupplierDetail {
+  id: string;
+  name: string;
+  phone: string | null;
+  address: string | null;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
+  _count: {
+    factoryShipments: number;
+    payableRecords: number;
+  };
+  factoryShipments: Array<{
+    id: string;
+    shipmentNumber: string;
+    status: string;
+    totalAmount: number;
+    createdAt: string;
+  }>;
+  payableRecords: Array<{
+    id: string;
+    payableNumber: string;
+    status: string;
+    payableAmount: number;
+    remainingAmount: number;
+    dueDate: string;
+    createdAt: string;
+  }>;
+}
+
+interface SupplierDetailPageClientProps {
+  supplier: SupplierDetail;
+}
+
+/**
+ * 供应商详情页面客户端组件
+ * 负责用户交互和状态管理
+ * 严格遵循前端架构规范：Client Component 层
+ */
+export function SupplierDetailPageClient({
+  supplier,
+}: SupplierDetailPageClientProps) {
+  const router = useRouter();
+
+  const getStatusBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'active':
+        return 'default';
+      case 'inactive':
+        return 'secondary';
+      case 'suspended':
+        return 'destructive';
+      default:
+        return 'outline';
+    }
+  };
+
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'active':
+        return '活跃';
+      case 'inactive':
+        return '非活跃';
+      case 'suspended':
+        return '暂停合作';
+      default:
+        return status;
+    }
+  };
+
+  const getPayableStatusBadge = (status: string) => {
+    switch (status) {
+      case 'pending':
+        return <Badge variant="outline">待付款</Badge>;
+      case 'partial':
+        return <Badge variant="secondary">部分付款</Badge>;
+      case 'paid':
+        return <Badge variant="success">已付款</Badge>;
+      case 'overdue':
+        return <Badge variant="destructive">逾期</Badge>;
+      default:
+        return <Badge variant="outline">{status}</Badge>;
+    }
+  };
+
+  const totalPayableAmount = supplier.payableRecords.reduce(
+    (sum, record) => sum + record.payableAmount,
+    0
+  );
+
+  const totalRemainingAmount = supplier.payableRecords.reduce(
+    (sum, record) => sum + record.remainingAmount,
+    0
+  );
+
+  const totalShipmentAmount = supplier.factoryShipments.reduce(
+    (sum, shipment) => sum + shipment.totalAmount,
+    0
+  );
+
+  return (
+    <div className="space-y-6">
+      {/* 页面头部 */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => router.back()}
+            className="flex items-center space-x-2"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>返回</span>
+          </Button>
+          <div>
+            <h1 className="text-2xl font-bold">{supplier.name}</h1>
+            <p className="text-muted-foreground">供应商详情</p>
+          </div>
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => router.push(`/suppliers/${supplier.id}/edit`)}
+          >
+            <Edit className="mr-2 h-4 w-4" />
+            编辑
+          </Button>
+          <Button size="sm">
+            <Truck className="mr-2 h-4 w-4" />
+            创建发货
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        {/* 基本信息 */}
+        <div className="lg:col-span-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>基本信息</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-muted-foreground text-sm font-medium">
+                    供应商状态
+                  </label>
+                  <div className="mt-1">
+                    <Badge variant={getStatusBadgeVariant(supplier.status)}>
+                      {getStatusLabel(supplier.status)}
+                    </Badge>
+                  </div>
+                </div>
+                <div>
+                  <label className="text-muted-foreground text-sm font-medium">
+                    电话号码
+                  </label>
+                  <div className="mt-1 flex items-center space-x-2">
+                    {supplier.phone ? (
+                      <>
+                        <Phone className="text-muted-foreground h-4 w-4" />
+                        <span>{supplier.phone}</span>
+                      </>
+                    ) : (
+                      <span>-</span>
+                    )}
+                  </div>
+                </div>
+                <div className="col-span-2">
+                  <label className="text-muted-foreground text-sm font-medium">
+                    地址
+                  </label>
+                  <div className="mt-1 flex items-start space-x-2">
+                    {supplier.address ? (
+                      <>
+                        <MapPin className="text-muted-foreground mt-0.5 h-4 w-4" />
+                        <span>{supplier.address}</span>
+                      </>
+                    ) : (
+                      <span>-</span>
+                    )}
+                  </div>
+                </div>
+                <div>
+                  <label className="text-muted-foreground text-sm font-medium">
+                    创建时间
+                  </label>
+                  <div className="mt-1 flex items-center space-x-2">
+                    <Calendar className="text-muted-foreground h-4 w-4" />
+                    <span>{formatDate(supplier.createdAt)}</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 统计信息 */}
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>交易统计</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(totalShipmentAmount)}
+                </p>
+                <p className="text-muted-foreground text-sm">累计发货金额</p>
+              </div>
+              <div className="grid grid-cols-2 gap-4 text-center">
+                <div>
+                  <p className="text-lg font-semibold">
+                    {supplier._count.factoryShipments}
+                  </p>
+                  <p className="text-muted-foreground text-xs">发货记录</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold">
+                    {supplier._count.payableRecords}
+                  </p>
+                  <p className="text-muted-foreground text-xs">应付记录</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>应付款统计</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-center">
+                <p className="text-2xl font-bold text-red-600">
+                  {formatCurrency(totalRemainingAmount)}
+                </p>
+                <p className="text-muted-foreground text-sm">待付款金额</p>
+              </div>
+              <div className="text-center">
+                <p className="text-muted-foreground text-lg font-semibold">
+                  {formatCurrency(totalPayableAmount)}
+                </p>
+                <p className="text-muted-foreground text-xs">累计应付金额</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* 交易历史 */}
+      <Card>
+        <CardHeader>
+          <CardTitle>交易历史</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="shipments" className="w-full">
+            <TabsList>
+              <TabsTrigger
+                value="shipments"
+                className="flex items-center space-x-2"
+              >
+                <Truck className="h-4 w-4" />
+                <span>厂家发货 ({supplier._count.factoryShipments})</span>
+              </TabsTrigger>
+              <TabsTrigger
+                value="payables"
+                className="flex items-center space-x-2"
+              >
+                <DollarSign className="h-4 w-4" />
+                <span>应付款 ({supplier._count.payableRecords})</span>
+              </TabsTrigger>
+            </TabsList>
+
+            <TabsContent value="shipments" className="space-y-4">
+              {supplier.factoryShipments.length > 0 ? (
+                <div className="space-y-3">
+                  {supplier.factoryShipments.map(shipment => (
+                    <div
+                      key={shipment.id}
+                      className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
+                      onClick={() =>
+                        router.push(`/factory-shipments/${shipment.id}`)
+                      }
+                    >
+                      <div>
+                        <p className="font-medium">{shipment.shipmentNumber}</p>
+                        <p className="text-muted-foreground text-sm">
+                          {formatDate(shipment.createdAt)}
+                        </p>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <p className="font-medium">
+                          {formatCurrency(shipment.totalAmount)}
+                        </p>
+                        <Badge variant="outline">{shipment.status}</Badge>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-muted-foreground py-8 text-center">
+                  暂无发货记录
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="payables" className="space-y-4">
+              {supplier.payableRecords.length > 0 ? (
+                <div className="space-y-3">
+                  {supplier.payableRecords.map(record => (
+                    <div
+                      key={record.id}
+                      className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
+                      onClick={() =>
+                        router.push(`/finance/payables/${record.id}`)
+                      }
+                    >
+                      <div>
+                        <p className="font-medium">{record.payableNumber}</p>
+                        <p className="text-muted-foreground text-sm">
+                          到期：{formatDate(record.dueDate)}
+                        </p>
+                      </div>
+                      <div className="space-y-1 text-right">
+                        <p className="font-medium">
+                          {formatCurrency(record.remainingAmount)}
+                        </p>
+                        <p className="text-muted-foreground text-xs">
+                          / {formatCurrency(record.payableAmount)}
+                        </p>
+                        {getPayableStatusBadge(record.status)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-muted-foreground py-8 text-center">
+                  暂无应付款记录
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

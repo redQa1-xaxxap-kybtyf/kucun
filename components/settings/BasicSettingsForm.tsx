@@ -33,28 +33,43 @@ import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { inventoryConfig, salesOrderConfig, systemConfig } from '@/lib/env';
-import { BasicSettingsFormSchema } from '@/lib/schemas/settings';
+import { queryKeys } from '@/lib/queryKeys';
 import type { BasicSettings, SettingsApiResponse } from '@/lib/types/settings';
+import { BasicSettingsFormSchema } from '@/lib/validations/settings';
 
 import { SettingsSection } from './SettingsLayout';
 
 // 表单数据类型
 type BasicSettingsFormData = Partial<BasicSettings>;
 
+// 验证错误详情类型
+interface ValidationDetail {
+  field: string;
+  message: string;
+}
+
+// 扩展的错误响应类型
+interface ErrorResponseWithDetails {
+  success: false;
+  error?: string;
+  details?: ValidationDetail[];
+}
+
 // API调用函数
 const fetchBasicSettings = async (): Promise<BasicSettings> => {
   const response = await fetch('/api/settings/basic');
-  const data: SettingsApiResponse<BasicSettings> = await response.json();
+  const data: SettingsApiResponse<BasicSettings> | ErrorResponseWithDetails =
+    await response.json();
 
   if (!data.success) {
     // 如果有详细的验证错误信息，显示具体错误
-    if ((data as any).details && Array.isArray((data as any).details)) {
-      const errorMessages = (data as any).details
-        .map((detail: any) => `${detail.field}: ${detail.message}`)
+    if ('details' in data && Array.isArray(data.details)) {
+      const errorMessages = data.details
+        .map(detail => `${detail.field}: ${detail.message}`)
         .join('; ');
       throw new Error(`设置数据验证失败：${errorMessages}`);
     }
-    throw new Error(data.error || '获取基本设置失败');
+    throw new Error(('error' in data && data.error) || '获取基本设置失败');
   }
 
   if (!data.data) {
@@ -75,17 +90,18 @@ const updateBasicSettings = async (
     body: JSON.stringify(settings),
   });
 
-  const data: SettingsApiResponse<BasicSettings> = await response.json();
+  const data: SettingsApiResponse<BasicSettings> | ErrorResponseWithDetails =
+    await response.json();
 
   if (!data.success) {
     // 如果有详细的验证错误信息，显示具体错误
-    if ((data as any).details && Array.isArray((data as any).details)) {
-      const errorMessages = (data as any).details
-        .map((detail: any) => `${detail.field}: ${detail.message}`)
+    if ('details' in data && Array.isArray(data.details)) {
+      const errorMessages = data.details
+        .map(detail => `${detail.field}: ${detail.message}`)
         .join('; ');
       throw new Error(`数据验证失败：${errorMessages}`);
     }
-    throw new Error(data.error || '更新基本设置失败');
+    throw new Error(('error' in data && data.error) || '更新基本设置失败');
   }
 
   if (!data.data) {
@@ -109,7 +125,7 @@ export function BasicSettingsForm() {
     error,
     refetch,
   } = useQuery({
-    queryKey: ['settings', 'basic'],
+    queryKey: queryKeys.settings.basic(),
     queryFn: fetchBasicSettings,
     staleTime: 5 * 60 * 1000, // 5分钟
   });
@@ -196,7 +212,7 @@ export function BasicSettingsForm() {
   if (error) {
     return (
       <div className="py-8 text-center">
-        <p className="mb-4 text-destructive">加载设置失败: {error.message}</p>
+        <p className="text-destructive mb-4">加载设置失败: {error.message}</p>
         <Button onClick={() => refetch()} variant="outline">
           <RefreshCw className="mr-2 h-4 w-4" />
           重试

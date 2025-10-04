@@ -17,32 +17,33 @@ import { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
 } from '@/components/ui/card';
 import {
-    Form,
-    FormControl,
-    FormDescription,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency } from '@/lib/utils';
 
 // 创建付款记录表单Schema
@@ -98,34 +99,34 @@ function PayableInfoSidebar({
       </CardHeader>
       <CardContent className="space-y-4">
         <div>
-          <p className="text-sm text-muted-foreground">应付款单号</p>
+          <p className="text-muted-foreground text-sm">应付款单号</p>
           <p className="font-medium">{payableRecord.payableNumber}</p>
         </div>
         <Separator />
         <div>
-          <p className="text-sm text-muted-foreground">供应商</p>
+          <p className="text-muted-foreground text-sm">供应商</p>
           <p className="font-medium">{payableRecord.supplier.name}</p>
           {payableRecord.supplier.phone && (
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {payableRecord.supplier.phone}
             </p>
           )}
         </div>
         <Separator />
         <div>
-          <p className="text-sm text-muted-foreground">应付金额</p>
+          <p className="text-muted-foreground text-sm">应付金额</p>
           <p className="text-lg font-semibold">
             {formatCurrency(payableRecord.payableAmount)}
           </p>
         </div>
         <div>
-          <p className="text-sm text-muted-foreground">已付金额</p>
+          <p className="text-muted-foreground text-sm">已付金额</p>
           <p className="font-medium text-green-600">
             {formatCurrency(payableRecord.paidAmount)}
           </p>
         </div>
         <div>
-          <p className="text-sm text-muted-foreground">剩余应付</p>
+          <p className="text-muted-foreground text-sm">剩余应付</p>
           <p className="text-lg font-semibold text-orange-600">
             {formatCurrency(payableRecord.remainingAmount)}
           </p>
@@ -340,9 +341,11 @@ function PaymentOutFormFields({
  */
 function usePayableData(payableId: string) {
   const { data: payableData } = useQuery({
-    queryKey: ['payableRecord', payableId],
+    queryKey: queryKeys.payables.detail(payableId),
     queryFn: async () => {
-      if (!payableId) {return null;}
+      if (!payableId) {
+        return null;
+      }
       const response = await fetch(`/api/finance/payables/${payableId}`);
       if (!response.ok) {
         throw new Error('获取应付款信息失败');
@@ -360,7 +363,7 @@ function usePayableData(payableId: string) {
  */
 function useAvailablePayables() {
   const { data: payablesData, isLoading } = useQuery({
-    queryKey: ['payableRecords', 'unpaid'],
+    queryKey: queryKeys.payables.list({ status: 'pending,partial' }),
     queryFn: async () => {
       const response = await fetch(
         '/api/finance/payables?status=pending,partial&limit=100'
@@ -489,7 +492,7 @@ export default function CreatePaymentOutPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold">创建付款记录</h1>
-          <p className="text-sm text-muted-foreground">填写付款信息并提交</p>
+          <p className="text-muted-foreground text-sm">填写付款信息并提交</p>
         </div>
       </div>
 

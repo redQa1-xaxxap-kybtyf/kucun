@@ -157,13 +157,10 @@ export function QuickAddCustomerDialog({
         </DialogHeader>
 
         <Form {...form}>
-          <form
-            onSubmit={form.handleSubmit(onSubmit as any)}
-            className="space-y-4"
-          >
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* 客户名称 */}
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="name"
               render={({ field }) => (
                 <FormItem>
@@ -182,7 +179,7 @@ export function QuickAddCustomerDialog({
 
             {/* 联系电话 */}
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="phone"
               render={({ field }) => (
                 <FormItem>
@@ -201,7 +198,7 @@ export function QuickAddCustomerDialog({
 
             {/* 客户地址 */}
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="address"
               render={({ field }) => (
                 <FormItem>
@@ -225,7 +222,7 @@ export function QuickAddCustomerDialog({
 
             {/* 备注信息 */}
             <FormField
-              control={form.control as any}
+              control={form.control}
               name="notes"
               render={({ field }) => (
                 <FormItem>

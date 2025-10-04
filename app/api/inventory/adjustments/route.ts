@@ -1,47 +1,25 @@
-import { getServerSession } from 'next-auth';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
-import { authOptions } from '@/lib/auth';
+import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
-import type { AdjustmentQueryParams } from '@/lib/types/inventory';
-
-/**
- * 解析调整记录查询参数
- */
-function parseAdjustmentQueryParams(
-  searchParams: URLSearchParams
-): AdjustmentQueryParams {
-  return {
-    page: Number(searchParams.get('page')) || 1,
-    limit: Math.min(Number(searchParams.get('limit')) || 20, 100),
-    search: searchParams.get('search') || undefined,
-    sortBy:
-      (searchParams.get('sortBy') as AdjustmentQueryParams['sortBy']) ||
-      'createdAt',
-    sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
-    productId: searchParams.get('productId') || undefined,
-    variantId: searchParams.get('variantId') || undefined,
-    batchNumber: searchParams.get('batchNumber') || undefined,
-    reason:
-      (searchParams.get('reason') as AdjustmentQueryParams['reason']) ||
-      undefined,
-    status:
-      (searchParams.get('status') as AdjustmentQueryParams['status']) ||
-      undefined,
-    operatorId: searchParams.get('operatorId') || undefined,
-    startDate: searchParams.get('startDate') || undefined,
-    endDate: searchParams.get('endDate') || undefined,
-  };
-}
+import { inventoryAdjustmentsQuerySchema } from '@/lib/validations/inventory-queries';
 
 /**
  * 构建调整记录查询条件
  */
-function buildAdjustmentWhereClause(
-  queryParams: AdjustmentQueryParams
-): Record<string, unknown> {
+function buildAdjustmentWhereClause(queryParams: {
+  search?: string;
+  productId?: string;
+  variantId?: string;
+  batchNumber?: string;
+  reason?: string;
+  status?: string;
+  operatorId?: string;
+  startDate?: string;
+  endDate?: string;
+}): Record<string, unknown> {
   const where: Record<string, unknown> = {};
 
   // 搜索条件
@@ -92,6 +70,10 @@ function buildAdjustmentWhereClause(
 /**
  * 构建调整记录排序配置
  */
+type AdjustmentQueryParams = {
+  sortBy?: 'createdAt' | 'adjustmentNumber' | 'quantity' | 'reason';
+};
+
 function buildAdjustmentOrderBy(
   sortBy: AdjustmentQueryParams['sortBy'],
   sortOrder: 'asc' | 'desc' | undefined
@@ -103,7 +85,8 @@ function buildAdjustmentOrderBy(
     orderBy.createdAt = finalSortOrder;
   } else if (sortBy === 'adjustmentNumber') {
     orderBy.adjustmentNumber = finalSortOrder;
-  } else if (sortBy === 'adjustQuantity') {
+  } else if (sortBy === 'quantity') {
+    // Map 'quantity' from query to 'adjustQuantity' in database
     orderBy.adjustQuantity = finalSortOrder;
   } else if (sortBy === 'reason') {
     orderBy.reason = finalSortOrder;
@@ -183,20 +166,59 @@ function formatAdjustmentData(adjustment: AdjustmentWithRelations) {
  * GET /api/inventory/adjustments
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  // 验证用户权限
-  const session = await getServerSession(authOptions);
-  if (!session?.user?.id) {
+  // 验证用户权限 - 使用中间件透传的用户信息
+  const auth = verifyApiAuth(request);
+  if (!auth.success) {
     throw ApiError.unauthorized();
   }
 
+  // 解析并验证查询参数
   const { searchParams } = new URL(request.url);
-  const queryParams = parseAdjustmentQueryParams(searchParams);
+  const queryParams = {
+    page: searchParams.get('page')
+      ? parseInt(searchParams.get('page')!, 10)
+      : undefined,
+    limit: searchParams.get('limit')
+      ? parseInt(searchParams.get('limit')!, 10)
+      : undefined,
+    search: searchParams.get('search') || undefined,
+    sortBy: searchParams.get('sortBy') || undefined,
+    sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || undefined,
+    productId: searchParams.get('productId') || undefined,
+    variantId: searchParams.get('variantId') || undefined,
+    batchNumber: searchParams.get('batchNumber') || undefined,
+    reason: searchParams.get('reason') || undefined,
+    status: searchParams.get('status') || undefined,
+    operatorId: searchParams.get('operatorId') || undefined,
+    startDate: searchParams.get('startDate') || undefined,
+    endDate: searchParams.get('endDate') || undefined,
+  };
 
-  const { page = 1, limit = 20, sortBy, sortOrder } = queryParams;
+  // 使用 Zod schema 验证
+  const validationResult = inventoryAdjustmentsQuerySchema.safeParse(queryParams);
+
+  if (!validationResult.success) {
+    return NextResponse.json(
+      {
+        success: false,
+        error: '查询参数验证失败',
+        details: validationResult.error.issues,
+      },
+      { status: 400 }
+    );
+  }
+
+  const {
+    page = 1,
+    limit = 20,
+    sortBy = 'createdAt',
+    sortOrder = 'desc',
+    ...filters
+  } = validationResult.data;
   const offset = (page - 1) * limit;
 
   // 构建查询条件和排序
-  const where = buildAdjustmentWhereClause(queryParams);
+  const where = buildAdjustmentWhereClause(filters);
   const orderBy = buildAdjustmentOrderBy(sortBy, sortOrder);
 
   // 查询数据

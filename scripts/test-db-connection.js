@@ -2,6 +2,7 @@
  * 测试数据库连接和退款记录
  */
 
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
@@ -24,7 +25,11 @@ async function testDatabaseConnection() {
     console.log('\n3. 获取前5条退款记录...');
     const refunds = await prisma.refundRecord.findMany({
       take: 5,
-      include: {
+      select: {
+        id: true,
+        refundNumber: true,
+        refundAmount: true,
+        status: true,
         customer: {
           select: {
             id: true,
@@ -64,7 +69,27 @@ async function testDatabaseConnection() {
     const where = {};
     const testRefunds = await prisma.refundRecord.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        refundNumber: true,
+        returnOrderId: true,
+        returnOrderNumber: true,
+        salesOrderId: true,
+        customerId: true,
+        refundType: true,
+        refundMethod: true,
+        refundAmount: true,
+        processedAmount: true,
+        remainingAmount: true,
+        status: true,
+        refundDate: true,
+        processedDate: true,
+        reason: true,
+        remarks: true,
+        bankInfo: true,
+        receiptNumber: true,
+        createdAt: true,
+        updatedAt: true,
         customer: {
           select: {
             id: true,

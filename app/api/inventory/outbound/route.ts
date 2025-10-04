@@ -1,12 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 
-import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
-import { authOptions } from '@/lib/auth';
-import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
+import { withAuth } from '@/lib/auth/api-helpers';
+import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
-import { env } from '@/lib/env';
+import { publishInventoryChange } from '@/lib/events';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { outboundCreateSchema } from '@/lib/validations/inventory-operations';
 import { publishWs } from '@/lib/ws/ws-server';
@@ -100,64 +98,66 @@ function formatOutboundRecord(record: OutboundRecordWithProduct) {
  * 获取出库记录列表
  * GET /api/inventory/outbound
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  // 验证用户权限
-  if (env.NODE_ENV !== 'development') {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      throw ApiError.unauthorized();
-    }
-  }
+export const GET = withAuth(
+  async (request: NextRequest, { user }) => {
+    return withErrorHandling(async () => {
+      // 解析查询参数
+      const { searchParams } = new URL(request.url);
+      const page = parseInt(searchParams.get('page') || '1');
+      const limit = parseInt(searchParams.get('limit') || '20');
+      const search = searchParams.get('search') || undefined;
+      const type = searchParams.get('type') || undefined;
+      const startDate = searchParams.get('startDate') || undefined;
+      const endDate = searchParams.get('endDate') || undefined;
 
-  // 解析查询参数
-  const { searchParams } = new URL(request.url);
-  const page = parseInt(searchParams.get('page') || '1');
-  const limit = parseInt(searchParams.get('limit') || '20');
-  const search = searchParams.get('search') || undefined;
-  const type = searchParams.get('type') || undefined;
-  const startDate = searchParams.get('startDate') || undefined;
-  const endDate = searchParams.get('endDate') || undefined;
+      // 构建查询条件
+      const where = buildOutboundWhereClause({
+        search,
+        type,
+        startDate,
+        endDate,
+      });
 
-  // 构建查询条件
-  const where = buildOutboundWhereClause({ search, type, startDate, endDate });
+      // 计算分页
+      const skip = (page - 1) * limit;
 
-  // 计算分页
-  const skip = (page - 1) * limit;
-
-  // 并行查询记录和总数
-  const [records, total] = await Promise.all([
-    prisma.outboundRecord.findMany({
-      where,
-      skip,
-      take: limit,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            specification: true,
+      // 并行查询记录和总数
+      const [records, total] = await Promise.all([
+        prisma.outboundRecord.findMany({
+          where,
+          skip,
+          take: limit,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            product: {
+              select: {
+                id: true,
+                code: true,
+                name: true,
+                specification: true,
+              },
+            },
           },
+        }),
+        prisma.outboundRecord.count({ where }),
+      ]);
+
+      // 格式化数据
+      const formattedRecords = records.map(formatOutboundRecord);
+
+      return NextResponse.json({
+        data: formattedRecords,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
         },
-      },
-    }),
-    prisma.outboundRecord.count({ where }),
-  ]);
-
-  // 格式化数据
-  const formattedRecords = records.map(formatOutboundRecord);
-
-  return NextResponse.json({
-    data: formattedRecords,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
-  });
-});
+      });
+    })(request, {});
+  },
+  { permissions: ['inventory:view'] }
+);
 
 /**
  * 执行出库事务
@@ -208,6 +208,9 @@ async function executeOutboundTransaction(
     if (!availableInventory) {
       throw new Error('未找到匹配的库存记录');
     }
+
+    // 记录出库前的数量（用于事件发布）
+    const oldQuantity = availableInventory.quantity;
 
     // 检查可用库存
     const availableQuantity =
@@ -269,72 +272,67 @@ async function executeOutboundTransaction(
       },
     });
 
-    return updatedInventory;
+    return { inventory: updatedInventory, oldQuantity };
   });
-}
-
-/**
- * 获取用户ID（开发环境或生产环境）
- */
-async function getUserId(): Promise<string> {
-  if (env.NODE_ENV === 'development') {
-    // 开发环境下使用数据库中的第一个用户
-    const user = await prisma.user.findFirst();
-    if (!user) {
-      throw ApiError.internalError('开发环境下未找到可用用户');
-    }
-    return user.id;
-  } else {
-    // 生产环境下验证会话
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      throw ApiError.unauthorized();
-    }
-    return session.user.id;
-  }
 }
 
 /**
  * 出库操作API
  * POST /api/inventory/outbound
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  // 验证用户权限并获取用户ID
-  const userId = await getUserId();
+export const POST = withAuth(
+  async (request: NextRequest, { user }) => {
+    return withErrorHandling(async () => {
+      const body = await request.json();
 
-  const body = await request.json();
+      // 验证请求数据
+      const validatedData = outboundCreateSchema.parse(body);
 
-  // 验证请求数据
-  const validatedData = outboundCreateSchema.parse(body);
+      const { idempotencyKey, productId } = validatedData;
 
-  const { idempotencyKey, productId } = validatedData;
+      // 使用幂等性包装器执行出库操作
+      const result = await withIdempotency(
+        idempotencyKey,
+        'outbound',
+        productId,
+        user.id,
+        validatedData,
+        async () => await executeOutboundTransaction(validatedData, user.id)
+      );
 
-  // 使用幂等性包装器执行出库操作
-  const result = await withIdempotency(
-    idempotencyKey,
-    'outbound',
-    productId,
-    userId,
-    validatedData,
-    async () => await executeOutboundTransaction(validatedData, userId)
-  );
+      // 使用统一的缓存失效系统（自动级联失效相关缓存）
+      await revalidateInventory(productId);
 
-  // 清除相关缓存
-  await invalidateInventoryCache(productId);
+      // 发布库存变更事件（新事件系统）
+      if (result && result.inventory) {
+        await publishInventoryChange({
+          action: 'outbound',
+          productId,
+          productName: result.inventory.product.name,
+          oldQuantity: result.oldQuantity,
+          newQuantity: result.inventory.quantity,
+          reason: validatedData.reason,
+          operator: user.name || user.username,
+          userId: user.id,
+        });
+      }
 
-  // WebSocket 推送更新
-  if (result) {
-    publishWs('inventory', {
-      type: 'outbound',
-      productId,
-      quantity: validatedData.quantity,
-      inventoryId: result.id,
-    });
-  }
+      // WebSocket 推送更新（向后兼容，后续可移除）
+      if (result && result.inventory) {
+        publishWs('inventory', {
+          type: 'outbound',
+          productId,
+          quantity: validatedData.quantity,
+          inventoryId: result.inventory.id,
+        });
+      }
 
-  return NextResponse.json({
-    success: true,
-    data: result,
-    message: '出库操作成功',
-  });
-});
+      return NextResponse.json({
+        success: true,
+        data: result?.inventory,
+        message: '出库操作成功',
+      });
+    })(request, {});
+  },
+  { permissions: ['inventory:outbound'] }
+);
