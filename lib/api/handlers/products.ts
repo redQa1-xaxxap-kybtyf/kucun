@@ -119,19 +119,35 @@ export async function updateProduct(
     }
   }
 
+  // 构建更新数据对象，只包含提供的字段
+  const updateData: Record<string, unknown> = {};
+
+  if (validatedData.name !== undefined) {
+    updateData.name = validatedData.name;
+  }
+  if (validatedData.specification !== undefined) {
+    updateData.specification = validatedData.specification;
+  }
+  if (validatedData.piecesPerUnit !== undefined) {
+    updateData.piecesPerUnit = validatedData.piecesPerUnit;
+  }
+  if (validatedData.weight !== undefined) {
+    updateData.weight = validatedData.weight;
+  }
+  if (validatedData.thickness !== undefined) {
+    updateData.thickness = validatedData.thickness;
+  }
+  if (validatedData.categoryId !== undefined) {
+    updateData.categoryId = validatedData.categoryId;
+  }
+  if (validatedData.status !== undefined) {
+    updateData.status = validatedData.status;
+  }
+
   // 更新产品
   const updatedProduct = await prisma.product.update({
     where: { id },
-    data: {
-      name: validatedData.name,
-      specification: validatedData.specification,
-      unit: validatedData.unit,
-      piecesPerUnit: validatedData.piecesPerUnit,
-      weight: validatedData.weight,
-      thickness: validatedData.thickness,
-      categoryId: validatedData.categoryId,
-      status: validatedData.status,
-    },
+    data: updateData,
     select: {
       id: true,
       code: true,
