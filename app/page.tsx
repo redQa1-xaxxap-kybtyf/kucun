@@ -1,21 +1,11 @@
 import { redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth';
-
-import { authOptions } from '@/lib/auth';
 
 /**
  * 根页面组件
- * 根据用户认证状态重定向到相应页面
- * 严格遵循App Router优先思维
+ * 重定向逻辑已移至中间件处理，避免多次 session 查询
+ * 这里仅作为备用重定向（通常不会执行到，因为中间件会先处理）
  */
-export default async function HomePage() {
-  const session = await getServerSession(authOptions);
-
-  if (session) {
-    // 已认证用户重定向到仪表盘
-    redirect('/dashboard');
-  } else {
-    // 未认证用户重定向到登录页
-    redirect('/auth/signin');
-  }
+export default function HomePage() {
+  // 备用重定向到仪表盘（中间件已处理，这里通常不会执行）
+  redirect('/dashboard');
 }

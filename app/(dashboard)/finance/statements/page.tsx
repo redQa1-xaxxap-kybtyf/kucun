@@ -92,9 +92,10 @@ export default function StatementsPage() {
       sortOrder: queryParams.sortOrder,
     });
 
-    const response = await fetch(`/api/statements?${searchParams}`);
+    const response = await fetch(`/api/finance/statements?${searchParams}`);
     if (!response.ok) {
-      throw new Error('获取往来账单失败');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || '获取往来账单失败');
     }
     return response.json();
   };

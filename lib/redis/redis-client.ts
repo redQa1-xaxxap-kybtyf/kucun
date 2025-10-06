@@ -61,7 +61,10 @@ const MAX_MEMORY_CACHE_SIZE = 1000; // 最多缓存1000个键
 const memoryCache = new Map<string, MemoryCacheEntry>();
 let isRedisAvailable = true;
 let lastRedisCheckTime = 0;
-const REDIS_CHECK_INTERVAL = 30000; // 30秒检查一次Redis可用性
+let lastSuccessfulOperation = Date.now(); // 记录最后一次成功操作的时间
+const REDIS_CHECK_INTERVAL = 60000; // 60秒检查一次Redis可用性
+const OPERATION_SUCCESS_THRESHOLD = 30000; // 30秒内有成功操作则认为可用
+const HEALTH_CHECK_TIMEOUT = 5000; // 健康检查超时时间5秒
 
 // LRU淘汰策略：删除最久未访问的键
 function evictLRU(): void {
@@ -239,32 +242,58 @@ function prefixed(key: string): string {
   return `${namespace}:${key}`;
 }
 
-// 检查Redis是否可用
+/**
+ * 非阻塞异步健康检查
+ * 在后台执行，不阻塞主流程
+ */
+async function checkHealthAsync(): Promise<void> {
+  try {
+    const client = pool[0];
+    // 使用 Promise.race 实现超时控制
+    await Promise.race([
+      client.ping(),
+      new Promise((_, reject) =>
+        setTimeout(
+          () => reject(new Error('Health check timeout')),
+          HEALTH_CHECK_TIMEOUT
+        )
+      ),
+    ]);
+    isRedisAvailable = true;
+    lastSuccessfulOperation = Date.now();
+  } catch {
+    isRedisAvailable = false;
+  } finally {
+    lastRedisCheckTime = Date.now();
+  }
+}
+
+/**
+ * 检查Redis是否可用（优化版本）
+ * 策略：
+ * 1. 如果最近有成功操作（30秒内），直接返回 true（快速路径）
+ * 2. 避免频繁健康检查（60秒间隔）
+ * 3. 使用非阻塞异步检查，不影响主流程
+ */
 async function checkRedisAvailability(): Promise<boolean> {
   const now = Date.now();
 
-  // 早期退出：如果Redis已知不可用且在检查间隔内，直接返回false
-  if (!isRedisAvailable && now - lastRedisCheckTime < REDIS_CHECK_INTERVAL) {
-    return false;
-  }
-
-  // 如果Redis可用且在检查间隔内，直接返回true
-  if (isRedisAvailable && now - lastRedisCheckTime < REDIS_CHECK_INTERVAL) {
+  // 快速路径：最近有成功操作，直接认为可用
+  if (now - lastSuccessfulOperation < OPERATION_SUCCESS_THRESHOLD) {
     return true;
   }
 
-  try {
-    const client = pool[0];
-    await client.ping();
-    isRedisAvailable = true;
-    lastRedisCheckTime = now;
-    return true;
-  } catch {
-    isRedisAvailable = false;
-    // 🔥 关键修复：在 catch 块中也要设置检查时间，避免每次调用都执行 ping
-    lastRedisCheckTime = now;
-    return false;
+  // 避免频繁健康检查
+  if (now - lastRedisCheckTime < REDIS_CHECK_INTERVAL) {
+    return isRedisAvailable;
   }
+
+  // 触发非阻塞健康检查（不等待结果）
+  checkHealthAsync().catch(() => {
+    // 静默处理错误，避免未捕获的 Promise rejection
+  });
+
+  return isRedisAvailable;
 }
 
 export const redis: RedisClientWrapper = {
@@ -293,12 +322,16 @@ export const redis: RedisClientWrapper = {
       try {
         const raw = await this.getClient().get(prefixedKey);
         if (raw) {
+          // 记录成功操作
+          lastSuccessfulOperation = Date.now();
           try {
             return JSON.parse(raw) as T;
           } catch {
             return null;
           }
         }
+        // 即使值为空，操作成功也要记录
+        lastSuccessfulOperation = Date.now();
       } catch (error) {
         if (env.NODE_ENV === 'development') {
           console.warn(
@@ -350,12 +383,15 @@ export const redis: RedisClientWrapper = {
     // 尝试写入Redis
     if (await checkRedisAvailability()) {
       try {
-        return await this.getClient().set(
+        const result = await this.getClient().set(
           prefixedKey,
           payload,
           'EX',
           effectiveTTL
         );
+        // 记录成功操作
+        lastSuccessfulOperation = Date.now();
+        return result;
       } catch (error) {
         if (env.NODE_ENV === 'development') {
           console.warn(
@@ -378,7 +414,10 @@ export const redis: RedisClientWrapper = {
     // 尝试从Redis删除
     if (await checkRedisAvailability()) {
       try {
-        return await this.getClient().del(prefixedKey);
+        const result = await this.getClient().del(prefixedKey);
+        // 记录成功操作
+        lastSuccessfulOperation = Date.now();
+        return result;
       } catch (error) {
         if (env.NODE_ENV === 'development') {
           console.warn('[Redis] del failed:', error);

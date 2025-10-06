@@ -265,11 +265,11 @@ export const POST = withAuth(
       }
 
       // 5. 验证退款总额不能超过订单金额
-      const salesOrder = await tx.salesOrder.findUnique({
+      const salesOrderWithRefunds = await tx.salesOrder.findUnique({
         where: { id: validatedData.salesOrderId },
         select: { totalAmount: true },
       });
-      if (!salesOrder) {
+      if (!salesOrderWithRefunds) {
         throw new Error('销售订单不存在');
       }
 
@@ -285,9 +285,9 @@ export const POST = withAuth(
       const totalRefundAmount =
         (existingRefunds._sum.refundAmount || 0) + validatedData.refundAmount;
 
-      if (totalRefundAmount > salesOrder.totalAmount) {
+      if (totalRefundAmount > salesOrderWithRefunds.totalAmount) {
         throw new Error(
-          `退款总额(¥${totalRefundAmount.toFixed(2)})不能超过订单金额(¥${salesOrder.totalAmount.toFixed(2)})`
+          `退款总额(¥${totalRefundAmount.toFixed(2)})不能超过订单金额(¥${salesOrderWithRefunds.totalAmount.toFixed(2)})`
         );
       }
 

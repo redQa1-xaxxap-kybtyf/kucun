@@ -5,7 +5,7 @@ import { paginationConfig } from '@/lib/env';
 import { getStatementsList } from '@/lib/services/finance-statistics';
 
 /**
- * GET /api/statements - 获取往来账单列表
+ * GET /api/finance/statements - 获取往来账单列表
  * 支持分页、搜索、筛选等查询参数
  */
 export const GET = withAuth(async (request: NextRequest) => {
@@ -26,16 +26,22 @@ export const GET = withAuth(async (request: NextRequest) => {
     // 使用财务统计服务获取数据
     const result = await getStatementsList(queryParams);
 
+    // 返回符合前端期望的数据格式
     return NextResponse.json({
       success: true,
-      data: result.data,
-      pagination: result.pagination,
-      summary: result.summary,
+      data: {
+        statements: result.data,
+        pagination: result.pagination,
+        summary: result.summary,
+      },
     });
   } catch (error) {
     console.error('获取往来账单失败:', error);
     return NextResponse.json(
-      { success: false, error: '获取往来账单失败' },
+      {
+        success: false,
+        error: error instanceof Error ? error.message : '获取往来账单失败',
+      },
       { status: 500 }
     );
   }

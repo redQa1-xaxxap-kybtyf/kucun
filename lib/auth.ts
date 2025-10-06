@@ -118,77 +118,20 @@ export const authOptions: NextAuthOptions = {
             throw new Error('CAPTCHA_SESSION_MISSING');
           }
 
-          // 调用验证码验证API
-          // 获取应用基础 URL
-          const baseUrl = (() => {
-            // 优先使用 NEXTAUTH_URL 环境变量
-            if (env.NEXTAUTH_URL) {
-              return env.NEXTAUTH_URL;
-            }
+          // 🚀 性能优化：直接调用验证码服务，避免内部 HTTP 调用开销
+          const { verifyCaptcha } = await import(
+            '@/lib/services/captcha-service'
+          );
 
-            // 生产环境必须配置 NEXTAUTH_URL
-            if (process.env.NODE_ENV === 'production') {
-              console.error('[Auth] 生产环境必须配置 NEXTAUTH_URL 环境变量');
-              throw new Error(
-                'NEXTAUTH_URL is required in production environment'
-              );
-            }
-
-            // 开发环境回退到 localhost
-            const port = process.env.PORT || 3000;
-            const fallbackUrl = `http://localhost:${port}`;
-            console.warn(
-              `[Auth] NEXTAUTH_URL 未配置，使用回退 URL: ${fallbackUrl}`
-            );
-            return fallbackUrl;
-          })();
-
-          const captchaResponse = await fetch(`${baseUrl}/api/captcha`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              // 传递客户端 IP 用于安全验证
-              'X-Forwarded-For':
-                (
-                  req as unknown as {
-                    headers?: { get?: (key: string) => string | null };
-                  }
-                )?.headers?.get?.('x-forwarded-for') || '127.0.0.1',
-            },
-            body: JSON.stringify({
-              sessionId: captchaSessionId,
-              captcha: credentials.captcha,
-              deleteAfterVerify: true, // 验证成功后删除会话
-            }),
-          });
-
-          if (!captchaResponse.ok) {
-            // 记录验证码验证失败
-            await logLoginFailure(
-              credentials.username,
-              clientIp,
-              'captcha_incorrect',
-              userAgent
-            );
-            // 尝试解析 JSON,如果失败则使用默认错误
-            try {
-              const captchaError = await captchaResponse.json();
-              throw new Error(captchaError.error || 'CAPTCHA_VERIFY_FAILED');
-            } catch {
-              throw new Error('CAPTCHA_VERIFY_FAILED');
-            }
-          }
-
-          // 尝试解析验证结果
-          let captchaResult;
-          try {
-            captchaResult = await captchaResponse.json();
-          } catch {
-            throw new Error('CAPTCHA_VERIFY_FAILED');
-          }
+          const captchaResult = await verifyCaptcha(
+            captchaSessionId,
+            credentials.captcha,
+            clientIp,
+            true // deleteAfterVerify: 验证成功后删除会话
+          );
 
           if (!captchaResult.success) {
-            // 记录验证码错误
+            // 记录验证码验证失败
             await logLoginFailure(
               credentials.username,
               clientIp,

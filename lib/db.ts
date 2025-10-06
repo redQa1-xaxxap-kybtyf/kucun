@@ -42,7 +42,9 @@ prisma.$use(async (params, next) => {
       {
         model: params.model,
         action: params.action,
-        args: JSON.stringify(params.args).substring(0, 200), // 限制日志长度
+        args: params.args
+          ? JSON.stringify(params.args).substring(0, 200)
+          : 'N/A', // 限制日志长度
         duration: `${duration}ms`,
       }
     );

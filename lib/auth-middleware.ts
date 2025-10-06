@@ -38,6 +38,7 @@ const protectedPaths = [
   '/api/batch-specifications',
   '/api/product-variants',
   '/api/seed-test-data',
+  '/api/notifications', // 通知 API
 ];
 
 // 需要管理员权限的路径
@@ -70,10 +71,6 @@ function isAdminOnlyPath(pathname: string): boolean {
 
 // 检查路径是否为公开路径
 function isPublicPath(pathname: string): boolean {
-  // 精确匹配首页
-  if (pathname === '/') {
-    return true;
-  }
   // 其他路径使用 startsWith 匹配
   return publicPaths.some(path => pathname.startsWith(path));
 }
@@ -81,6 +78,22 @@ function isPublicPath(pathname: string): boolean {
 // 认证中间件
 export async function authMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // 🚀 性能优化：处理首页重定向（避免多次 session 查询）
+  if (pathname === '/') {
+    const token = await getToken({
+      req: request,
+      secret: env.NEXTAUTH_SECRET,
+    });
+
+    if (token && token.status === 'active') {
+      // 已登录用户重定向到 dashboard
+      return NextResponse.redirect(new URL('/dashboard', request.url));
+    } else {
+      // 未登录用户重定向到登录页
+      return NextResponse.redirect(new URL('/auth/signin', request.url));
+    }
+  }
 
   // 第一层防护：静态资源和公开路径直接放行（防止循环重定向）
   if (

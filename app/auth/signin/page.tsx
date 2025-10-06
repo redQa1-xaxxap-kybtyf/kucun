@@ -167,14 +167,12 @@ export default function SignInPage() {
         variant: 'success',
       });
 
-      // 延迟跳转，让用户看到成功反馈
+      // 🚀 性能优化：减少跳转延迟（从 2 秒优化到 500ms）
       redirectTimerRef.current = setTimeout(() => {
         setIsRedirecting(true);
-        redirectDelayTimerRef.current = setTimeout(() => {
-          router.push(callbackUrl);
-          router.refresh();
-        }, 500); // 额外的短暂延迟用于显示跳转状态
-      }, 1500); // 1.5秒延迟让用户看到成功消息
+        router.push(callbackUrl);
+        router.refresh();
+      }, 500); // 500ms 足够用户看到成功消息
     },
     [callbackUrl, router, toast]
   );

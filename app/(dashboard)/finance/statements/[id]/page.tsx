@@ -83,9 +83,10 @@ export default function StatementDetailPage({
       throw new Error('ID 不能为空');
     }
 
-    const response = await fetch(`/api/statements/${id}`);
+    const response = await fetch(`/api/finance/statements/${id}`);
     if (!response.ok) {
-      throw new Error('获取账单详情失败');
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || '获取账单详情失败');
     }
     const result = await response.json();
     return result.data;

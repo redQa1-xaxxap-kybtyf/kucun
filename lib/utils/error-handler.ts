@@ -1,8 +1,8 @@
 /**
  * 错误处理统一工具
- * 
+ *
  * 提供统一的错误类型、错误处理函数和错误信息格式化
- * 
+ *
  * @see docs/ERROR_HANDLING_GUIDE.md
  */
 
@@ -10,7 +10,7 @@ import { showError } from './toast-helper';
 
 /**
  * 应用错误类
- * 
+ *
  * 统一的错误类型，包含错误码、HTTP 状态码等信息
  */
 export class AppError extends Error {
@@ -22,7 +22,7 @@ export class AppError extends Error {
   ) {
     super(message);
     this.name = 'AppError';
-    
+
     // 保持正确的原型链
     Object.setPrototypeOf(this, AppError.prototype);
   }
@@ -31,7 +31,11 @@ export class AppError extends Error {
    * 判断是否为客户端错误（4xx）
    */
   isClientError(): boolean {
-    return this.statusCode !== undefined && this.statusCode >= 400 && this.statusCode < 500;
+    return (
+      this.statusCode !== undefined &&
+      this.statusCode >= 400 &&
+      this.statusCode < 500
+    );
   }
 
   /**
@@ -78,24 +82,24 @@ export const ErrorCode = {
   NETWORK_ERROR: 'NETWORK_ERROR',
   FETCH_ERROR: 'FETCH_ERROR',
   TIMEOUT: 'TIMEOUT',
-  
+
   // 认证错误
   UNAUTHORIZED: 'UNAUTHORIZED',
   FORBIDDEN: 'FORBIDDEN',
-  
+
   // 验证错误
   VALIDATION_ERROR: 'VALIDATION_ERROR',
   INVALID_INPUT: 'INVALID_INPUT',
-  
+
   // 业务错误
   NOT_FOUND: 'NOT_FOUND',
   ALREADY_EXISTS: 'ALREADY_EXISTS',
   OPERATION_FAILED: 'OPERATION_FAILED',
-  
+
   // 服务器错误
   INTERNAL_ERROR: 'INTERNAL_ERROR',
   SERVICE_UNAVAILABLE: 'SERVICE_UNAVAILABLE',
-  
+
   // 未知错误
   UNKNOWN: 'UNKNOWN',
 } as const;
@@ -123,19 +127,29 @@ const ERROR_MESSAGES: Record<string, string> = {
  * 从 HTTP 状态码获取错误码
  */
 function getErrorCodeFromStatus(status: number): string {
-  if (status === 401) return ErrorCode.UNAUTHORIZED;
-  if (status === 403) return ErrorCode.FORBIDDEN;
-  if (status === 404) return ErrorCode.NOT_FOUND;
-  if (status === 422) return ErrorCode.VALIDATION_ERROR;
-  if (status >= 500) return ErrorCode.INTERNAL_ERROR;
+  if (status === 401) {
+    return ErrorCode.UNAUTHORIZED;
+  }
+  if (status === 403) {
+    return ErrorCode.FORBIDDEN;
+  }
+  if (status === 404) {
+    return ErrorCode.NOT_FOUND;
+  }
+  if (status === 422) {
+    return ErrorCode.VALIDATION_ERROR;
+  }
+  if (status >= 500) {
+    return ErrorCode.INTERNAL_ERROR;
+  }
   return ErrorCode.UNKNOWN;
 }
 
 /**
  * 处理 API 错误
- * 
+ *
  * 将各种类型的错误统一转换为 AppError
- * 
+ *
  * @example
  * ```ts
  * try {
@@ -181,7 +195,7 @@ export function handleApiError(error: unknown): AppError {
   // 对象类型错误（可能来自 API 响应）
   if (typeof error === 'object' && error !== null) {
     const err = error as Record<string, unknown>;
-    
+
     // 检查是否有 message 字段
     if (typeof err.message === 'string') {
       return new AppError(
@@ -217,7 +231,7 @@ export function handleApiError(error: unknown): AppError {
 
 /**
  * 处理 API 错误并显示 Toast
- * 
+ *
  * @example
  * ```ts
  * try {
@@ -232,17 +246,17 @@ export function handleApiErrorWithToast(
   customMessage?: string
 ): AppError {
   const appError = handleApiError(error);
-  
+
   showError(customMessage || '操作失败', {
     description: appError.message,
   });
-  
+
   return appError;
 }
 
 /**
  * 处理表单验证错误
- * 
+ *
  * @example
  * ```ts
  * try {
@@ -256,7 +270,7 @@ export function handleApiErrorWithToast(
  */
 export function handleValidationError(error: unknown): AppError {
   const appError = handleApiError(error);
-  
+
   // 如果不是验证错误，转换为验证错误
   if (!appError.isValidationError()) {
     return new AppError(
@@ -266,13 +280,13 @@ export function handleValidationError(error: unknown): AppError {
       appError.details
     );
   }
-  
+
   return appError;
 }
 
 /**
  * 安全地获取错误信息
- * 
+ *
  * @example
  * ```ts
  * const message = getErrorMessage(error);
@@ -283,15 +297,15 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof AppError) {
     return error.message;
   }
-  
+
   if (error instanceof Error) {
     return error.message;
   }
-  
+
   if (typeof error === 'string') {
     return error;
   }
-  
+
   if (typeof error === 'object' && error !== null) {
     const err = error as Record<string, unknown>;
     if (typeof err.message === 'string') {
@@ -301,7 +315,7 @@ export function getErrorMessage(error: unknown): string {
       return err.error;
     }
   }
-  
+
   return ERROR_MESSAGES[ErrorCode.UNKNOWN];
 }
 
@@ -312,11 +326,11 @@ export function isNetworkError(error: unknown): boolean {
   if (error instanceof AppError) {
     return error.isNetworkError();
   }
-  
+
   if (error instanceof TypeError && error.message.includes('fetch')) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -327,11 +341,10 @@ export function isAuthError(error: unknown): boolean {
   if (error instanceof AppError) {
     return error.isAuthError();
   }
-  
+
   if (error instanceof Response && error.status === 401) {
     return true;
   }
-  
+
   return false;
 }
-

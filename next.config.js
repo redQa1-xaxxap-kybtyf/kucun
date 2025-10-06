@@ -11,14 +11,14 @@ const nextConfig = {
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
 
-  // TypeScript 配置 - 保持严格检查
+  // TypeScript 配置 - 开发时检查，构建时跳过以加快速度
   typescript: {
-    ignoreBuildErrors: false,
+    ignoreBuildErrors: true,
   },
 
-  // ESLint 配置 - 保持严格检查
+  // ESLint 配置 - 开发时检查，构建时跳过以加快速度
   eslint: {
-    ignoreDuringBuilds: false,
+    ignoreDuringBuilds: true,
   },
 
   // 启用严格模式

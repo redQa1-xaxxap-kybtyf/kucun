@@ -17,7 +17,13 @@ export default async function CategoriesPage({
   const limit = Number(params.limit) || 10;
   const search = (params.search as string) || '';
   const status = params.status as 'active' | 'inactive' | undefined;
-  const sortBy = (params.sortBy as string) || 'createdAt';
+  const sortBy =
+    (params.sortBy as
+      | 'code'
+      | 'name'
+      | 'sortOrder'
+      | 'createdAt'
+      | 'updatedAt') || 'createdAt';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
 
   // 直接获取初始数据（统一模式：避免 HydrationBoundary）

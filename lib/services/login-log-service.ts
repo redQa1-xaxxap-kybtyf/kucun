@@ -132,7 +132,7 @@ export async function getBlockRemainingTime(
 }
 
 /**
- * 记录登录成功
+ * 记录登录成功（优化版本 - 使用 Pipeline 批量删除）
  */
 export async function logLoginSuccess(
   userId: string,
@@ -150,13 +150,19 @@ export async function logLoginSuccess(
     timestamp: new Date(),
   });
 
-  // 重置失败次数
-  await resetLoginAttempts(username);
-  await resetLoginAttempts(clientIp);
+  // 🚀 性能优化：使用 Pipeline 批量删除失败次数记录
+  const client = redis.getClient();
+  const usernameKey = `${LOGIN_LIMIT_CONFIG.redisKeyPrefix}${username}`;
+  const ipKey = `${LOGIN_LIMIT_CONFIG.redisKeyPrefix}${clientIp}`;
+
+  const pipeline = client.pipeline();
+  pipeline.del(usernameKey);
+  pipeline.del(ipKey);
+  await pipeline.exec();
 }
 
 /**
- * 记录登录失败
+ * 记录登录失败（优化版本 - 使用 Pipeline 批量增加失败次数）
  */
 export async function logLoginFailure(
   username: string,
@@ -174,9 +180,18 @@ export async function logLoginFailure(
     timestamp: new Date(),
   });
 
-  // 增加失败次数
-  await incrementLoginAttempts(username);
-  await incrementLoginAttempts(clientIp);
+  // 🚀 性能优化：使用 Pipeline 批量增加失败次数
+  const client = redis.getClient();
+  const usernameKey = `${LOGIN_LIMIT_CONFIG.redisKeyPrefix}${username}`;
+  const ipKey = `${LOGIN_LIMIT_CONFIG.redisKeyPrefix}${clientIp}`;
+
+  const pipeline = client.pipeline();
+  pipeline.incr(usernameKey);
+  pipeline.expire(usernameKey, LOGIN_LIMIT_CONFIG.blockDuration);
+  pipeline.incr(ipKey);
+  pipeline.expire(ipKey, LOGIN_LIMIT_CONFIG.blockDuration);
+
+  await pipeline.exec();
 }
 
 /**
@@ -199,7 +214,7 @@ export async function logLoginBlocked(
 }
 
 /**
- * 检查登录是否被限制
+ * 检查登录是否被限制（优化版本 - 使用 Pipeline 批量操作）
  * 返回 { allowed: boolean, reason?: string, remainingTime?: number }
  */
 export async function checkLoginLimit(
@@ -210,10 +225,29 @@ export async function checkLoginLimit(
   reason?: string;
   remainingTime?: number;
 }> {
+  const client = redis.getClient();
+
+  // 🚀 性能优化：使用 Pipeline 批量获取
+  const usernameKey = `${LOGIN_LIMIT_CONFIG.redisKeyPrefix}${username}`;
+  const ipKey = `${LOGIN_LIMIT_CONFIG.redisKeyPrefix}${clientIp}`;
+
+  const pipeline = client.pipeline();
+  pipeline.get(usernameKey);
+  pipeline.get(ipKey);
+  pipeline.ttl(usernameKey);
+  pipeline.ttl(ipKey);
+
+  const results = await pipeline.exec();
+
+  // 解析结果
+  const usernameAttempts = parseInt((results?.[0]?.[1] as string) || '0', 10);
+  const ipAttempts = parseInt((results?.[1]?.[1] as string) || '0', 10);
+  const usernameTTL = (results?.[2]?.[1] as number) || 0;
+  const ipTTL = (results?.[3]?.[1] as number) || 0;
+
   // 检查用户名是否被封禁
-  const usernameBlocked = await isLoginBlocked(username);
-  if (usernameBlocked) {
-    const remainingTime = await getBlockRemainingTime(username);
+  if (usernameAttempts >= LOGIN_LIMIT_CONFIG.maxAttempts) {
+    const remainingTime = usernameTTL > 0 ? usernameTTL : 0;
     return {
       allowed: false,
       reason: `该账户登录失败次数过多,请在 ${Math.ceil(remainingTime / 60)} 分钟后重试`,
@@ -222,9 +256,8 @@ export async function checkLoginLimit(
   }
 
   // 检查 IP 是否被封禁
-  const ipBlocked = await isLoginBlocked(clientIp);
-  if (ipBlocked) {
-    const remainingTime = await getBlockRemainingTime(clientIp);
+  if (ipAttempts >= LOGIN_LIMIT_CONFIG.maxAttempts) {
+    const remainingTime = ipTTL > 0 ? ipTTL : 0;
     return {
       allowed: false,
       reason: `该 IP 登录失败次数过多,请在 ${Math.ceil(remainingTime / 60)} 分钟后重试`,

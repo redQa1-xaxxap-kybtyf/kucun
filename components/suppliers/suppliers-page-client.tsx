@@ -142,8 +142,12 @@ export function SuppliersPageClient({
     setSearch(value);
     startTransition(() => {
       const params = new URLSearchParams();
-      if (value) params.set('search', value);
-      if (status) params.set('status', status);
+      if (value) {
+        params.set('search', value);
+      }
+      if (status) {
+        params.set('status', status);
+      }
       router.push(`/suppliers?${params.toString()}`);
     });
   };
@@ -153,8 +157,12 @@ export function SuppliersPageClient({
     setStatus(value);
     startTransition(() => {
       const params = new URLSearchParams();
-      if (search) params.set('search', search);
-      if (value) params.set('status', value);
+      if (search) {
+        params.set('search', search);
+      }
+      if (value) {
+        params.set('status', value);
+      }
       router.push(`/suppliers?${params.toString()}`);
     });
   };
@@ -164,8 +172,12 @@ export function SuppliersPageClient({
     startTransition(() => {
       const params = new URLSearchParams();
       params.set('page', String(page));
-      if (search) params.set('search', search);
-      if (status) params.set('status', status);
+      if (search) {
+        params.set('search', search);
+      }
+      if (status) {
+        params.set('status', status);
+      }
       router.push(`/suppliers?${params.toString()}`);
     });
   };

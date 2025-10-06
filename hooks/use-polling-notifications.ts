@@ -2,7 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import { useCallback } from 'react';
+import React, { useCallback } from 'react';
 
 import { queryKeys } from '@/lib/queryKeys';
 import type { NotificationItem } from '@/lib/types/layout';
@@ -23,8 +23,35 @@ import type { NotificationItem } from '@/lib/types/layout';
  * - 避免在渲染期间设置状态，消除双重渲染问题
  */
 export function usePollingNotifications() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const queryClient = useQueryClient();
+
+  // 🚀 性能优化：只有在完全认证且有 userId 时才启用
+  const isFullyAuthenticated =
+    status === 'authenticated' &&
+    !!session?.user?.id &&
+    session.user.id.length > 0;
+
+  // 🚀 性能优化：使用 ref 追踪首次加载，避免热重载触发请求
+  const hasInitializedRef = React.useRef(false);
+  const [isReady, setIsReady] = React.useState(false);
+
+  React.useEffect(() => {
+    if (isFullyAuthenticated) {
+      // 如果是首次认证成功，等待 300ms 确保 cookie 完全同步
+      if (!hasInitializedRef.current) {
+        hasInitializedRef.current = true;
+        const timer = setTimeout(() => setIsReady(true), 300);
+        return () => clearTimeout(timer);
+      } else {
+        // 如果已经初始化过（页面刷新等情况），立即启用
+        setIsReady(true);
+      }
+    } else {
+      setIsReady(false);
+      hasInitializedRef.current = false;
+    }
+  }, [isFullyAuthenticated]);
 
   // 轮询通知接口（每60秒）
   const {
@@ -32,10 +59,20 @@ export function usePollingNotifications() {
     isLoading,
     refetch,
   } = useQuery({
-    queryKey: queryKeys.notifications.list(),
+    // 🚀 最佳实践：将 userId 包含在 queryKey 中，确保登录前后查询隔离
+    queryKey: queryKeys.notifications.list(session?.user?.id),
     queryFn: async () => {
+      // 🚀 双重检查：确保 session 仍然有效
+      if (!session?.user?.id) {
+        return { notifications: [], unreadCount: 0 };
+      }
+
       const response = await fetch('/api/notifications');
       if (!response.ok) {
+        // 🚀 性能优化：静默处理 401 错误，避免控制台警告
+        if (response.status === 401) {
+          return { notifications: [], unreadCount: 0 };
+        }
         throw new Error('Failed to fetch notifications');
       }
       return response.json() as Promise<{
@@ -43,13 +80,16 @@ export function usePollingNotifications() {
         unreadCount: number;
       }>;
     },
-    enabled: !!session?.user?.id,
+    // 🚀 性能优化：使用 isReady 状态，确保 cookie 完全同步后再发起请求
+    enabled: isReady,
     // 每60秒轮询一次
-    refetchInterval: 60 * 1000,
-    // 窗口聚焦时重新获取
-    refetchOnWindowFocus: true,
+    refetchInterval: isReady ? 60 * 1000 : false,
+    // 窗口聚焦时重新获取（仅在已认证时）
+    refetchOnWindowFocus: isReady,
     // 保持数据新鲜5分钟
     staleTime: 5 * 60 * 1000,
+    // 🚀 性能优化：失败时不重试，避免不必要的请求
+    retry: false,
   });
 
   // 标记为已读 - 使用乐观更新

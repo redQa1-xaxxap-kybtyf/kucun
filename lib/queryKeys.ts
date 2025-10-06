@@ -407,8 +407,9 @@ export const notificationKeys = {
   all: ['notifications'] as const,
 
   lists: () => [...notificationKeys.all, 'list'] as const,
-  list: (filters?: BaseFilters & { isRead?: boolean }) =>
-    [...notificationKeys.lists(), filters] as const,
+  // 🚀 最佳实践：包含 userId 确保登录前后查询隔离
+  list: (userId?: string, filters?: BaseFilters & { isRead?: boolean }) =>
+    [...notificationKeys.lists(), userId, filters] as const,
 
   details: () => [...notificationKeys.all, 'detail'] as const,
   detail: (id: string) => [...notificationKeys.details(), id] as const,

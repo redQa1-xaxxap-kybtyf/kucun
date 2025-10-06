@@ -230,16 +230,19 @@ export function withAuth(
         params: context?.params,
       });
     } catch (error) {
-      // 错误处理
-      console.error('[API Auth] 请求处理失败:', error);
-
       // 认证错误
       if (error instanceof Error && error.message.includes('未授权')) {
+        // 🚀 性能优化：401 错误是正常流程，不记录日志（避免控制台污染）
+        // 如需调试认证问题，取消注释下面这行：
+        // console.debug('[API Auth] 未授权访问:', error.message);
         return NextResponse.json(
           { success: false, error: error.message },
           { status: 401 }
         );
       }
+
+      // 其他错误才记录详细日志
+      console.error('[API Auth] 请求处理失败:', error);
 
       // 权限错误
       if (error instanceof Error && error.message.includes('权限不足')) {
