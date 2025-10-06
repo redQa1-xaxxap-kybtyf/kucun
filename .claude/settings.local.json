@@ -76,7 +76,8 @@
       "Bash(git add:*)",
       "Bash(git commit -m \"$(cat <<''EOF''\nfix: 修复菜单快速点击性能问题和EventEmitter内存泄漏\n\n- 优化SidebarNavItem组件，添加150ms防抖和timeout管理\n- 修复memory-monitor模块的监听器重复注册问题  \n- 使用全局Symbol标志防止HMR时重复添加process监听器\n- 预期菜单快速点击性能提升50%+\n- 消除MaxListenersExceededWarning警告\n\n🤖 Generated with [Claude Code](https://claude.com/claude-code)\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nEOF\n)\")",
       "Bash(git commit:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(git reset:*)"
     ],
     "deny": [],
     "ask": []
