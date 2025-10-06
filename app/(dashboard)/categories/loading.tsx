@@ -1,9 +1,9 @@
-import { CategoryListSkeleton } from '@/components/categories/category-list-skeleton';
+import { PageLoading } from '@/components/common/loading';
 
 /**
- * 分类管理页面加载骨架屏
- * Next.js 15 会自动在页面加载时显示此组件
+ * 分类管理页面加载状态
+ * Next.js 15 自动在页面加载时显示此组件
  */
 export default function CategoriesLoading() {
-  return <CategoryListSkeleton />;
+  return <PageLoading text="加载分类列表..." />;
 }

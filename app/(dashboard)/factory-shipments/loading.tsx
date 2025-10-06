@@ -1,9 +1,9 @@
-import { FactoryShipmentOrderListSkeleton } from '@/components/factory-shipments/factory-shipment-order-list-skeleton';
+import { PageLoading } from '@/components/common/loading';
 
 /**
- * 厂家发货订单页面加载骨架屏
- * Next.js 15 会自动在页面加载时显示此组件
+ * 厂家发货订单页面加载状态
+ * Next.js 15 自动在页面加载时显示此组件
  */
 export default function FactoryShipmentsLoading() {
-  return <FactoryShipmentOrderListSkeleton />;
+  return <PageLoading text="加载厂家发货订单..." />;
 }

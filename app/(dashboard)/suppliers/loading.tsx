@@ -1,9 +1,9 @@
-import { SupplierListSkeleton } from '@/components/suppliers/supplier-list-skeleton';
+import { PageLoading } from '@/components/common/loading';
 
 /**
- * 供应商管理页面加载骨架屏
- * Next.js 15 会自动在页面加载时显示此组件
+ * 供应商管理页面加载状态
+ * Next.js 15 自动在页面加载时显示此组件
  */
 export default function SuppliersLoading() {
-  return <SupplierListSkeleton />;
+  return <PageLoading text="加载供应商列表..." />;
 }

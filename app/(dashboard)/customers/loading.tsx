@@ -1,9 +1,9 @@
-import { CustomerListSkeleton } from '@/components/customers/customer-list-skeleton';
+import { PageLoading } from '@/components/common/loading';
 
 /**
- * 客户管理页面加载骨架屏
- * Next.js 15 会自动在页面加载时显示此组件
+ * 客户管理页面加载状态
+ * Next.js 15 自动在页面加载时显示此组件
  */
 export default function CustomersLoading() {
-  return <CustomerListSkeleton />;
+  return <PageLoading text="加载客户列表..." />;
 }
