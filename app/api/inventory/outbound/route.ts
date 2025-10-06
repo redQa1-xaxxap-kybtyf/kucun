@@ -7,7 +7,6 @@ import { prisma } from '@/lib/db';
 import { publishInventoryChange } from '@/lib/events';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { outboundCreateSchema } from '@/lib/validations/inventory-operations';
-import { publishWs } from '@/lib/ws/ws-server';
 
 type OutboundWhereClause = {
   OR?: Array<{
@@ -314,16 +313,6 @@ export const POST = withAuth(
           reason: validatedData.reason,
           operator: user.name || user.username,
           userId: user.id,
-        });
-      }
-
-      // WebSocket 推送更新（向后兼容，后续可移除）
-      if (result && result.inventory) {
-        publishWs('inventory', {
-          type: 'outbound',
-          productId,
-          quantity: validatedData.quantity,
-          inventoryId: result.inventory.id,
         });
       }
 

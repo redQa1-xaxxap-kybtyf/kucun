@@ -3,7 +3,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import {
   cleanRemarks,
@@ -19,12 +19,6 @@ export async function GET(
 ) {
   const { id } = await params;
   try {
-    // 验证用户身份
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 验证参数
     const validatedId = inboundIdSchema.parse({ id });
 
@@ -92,12 +86,7 @@ export async function PUT(
   const { id } = await params;
   try {
     // 验证用户身份
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    // 验证参数
+// 验证参数
     const validatedId = inboundIdSchema.parse({ id });
     const recordId = validatedId.id;
 
@@ -227,12 +216,7 @@ export async function DELETE(
   const { id } = await params;
   try {
     // 验证用户身份
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    // 验证参数
+// 验证参数
     const validatedId = inboundIdSchema.parse({ id });
     const recordId = validatedId.id;
 
@@ -279,4 +263,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+});

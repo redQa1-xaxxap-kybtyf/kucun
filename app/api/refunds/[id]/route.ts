@@ -92,7 +92,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
 
     // 计算新的已处理金额和剩余金额
-    const newProcessedAmount = refund.processedAmount + validatedData.processedAmount;
+    const newProcessedAmount =
+      refund.processedAmount + validatedData.processedAmount;
     const newRemainingAmount = refund.refundAmount - newProcessedAmount;
 
     // 更新退款记录

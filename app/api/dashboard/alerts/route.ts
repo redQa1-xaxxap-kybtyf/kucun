@@ -1,6 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import {
   buildCacheKey,
   getOrSetWithLock,
@@ -11,14 +11,8 @@ import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
 
 // 获取库存预警数据
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 身份验证
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 使用缓存键构建
     const cacheKey = buildCacheKey('dashboard:alerts', {});
 
@@ -55,7 +49,11 @@ export async function GET(request: NextRequest) {
             const currentStock = inventory.quantity;
 
             let alertLevel: 'warning' | 'danger' | 'critical';
-            let alertType: 'low_stock' | 'out_of_stock' | 'overstock' | 'expired';
+            let alertType:
+              | 'low_stock'
+              | 'out_of_stock'
+              | 'overstock'
+              | 'expired';
             let suggestedAction: string;
 
             if (currentStock === 0) {
@@ -77,7 +75,9 @@ export async function GET(request: NextRequest) {
             // 计算预计缺货天数（使用环境配置的平均日销量）
             const averageDailySales = inventoryConfig.averageDailySales;
             const daysUntilStockout =
-              currentStock > 0 ? Math.floor(currentStock / averageDailySales) : 0;
+              currentStock > 0
+                ? Math.floor(currentStock / averageDailySales)
+                : 0;
 
             return {
               id: `alert-${inventory.id}`,
@@ -123,4 +123,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

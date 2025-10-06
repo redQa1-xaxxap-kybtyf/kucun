@@ -5,7 +5,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import { generateMemoryReport, getMemoryStats } from '@/lib/monitoring/memory-monitor';
+import {
+  generateMemoryReport,
+  getMemoryStats,
+} from '@/lib/monitoring/memory-monitor';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,10 +19,7 @@ export async function GET(request: NextRequest) {
     const expectedToken = process.env.MONITORING_TOKEN || 'dev-token';
 
     if (authHeader !== `Bearer ${expectedToken}`) {
-      return NextResponse.json(
-        { error: 'Unauthorized' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // 检查查询参数

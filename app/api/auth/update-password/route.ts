@@ -2,7 +2,7 @@ import bcrypt from 'bcryptjs';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
-import { verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { updatePassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { baseValidations } from '@/lib/validations/base';
@@ -19,17 +19,8 @@ const updatePasswordSchema = z
     path: ['confirmPassword'],
   });
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 验证用户会话 - 使用中间件传递的头部信息
-    const auth = verifyApiAuth(request);
-    if (!auth.success || !auth.userId) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-
     const body = await request.json();
 
     // 验证输入数据
@@ -48,12 +39,12 @@ export async function POST(request: NextRequest) {
     const { currentPassword, newPassword } = validationResult.data;
 
     // 获取用户当前密码
-    const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
+    const currentUser = await prisma.user.findUnique({
+      where: { id: user.id },
       select: { passwordHash: true },
     });
 
-    if (!user) {
+    if (!currentUser) {
       return NextResponse.json(
         { success: false, error: '用户不存在' },
         { status: 404 }
@@ -63,7 +54,7 @@ export async function POST(request: NextRequest) {
     // 验证当前密码
     const isCurrentPasswordValid = await bcrypt.compare(
       currentPassword,
-      user.passwordHash
+      currentUser.passwordHash
     );
 
     if (!isCurrentPasswordValid) {
@@ -74,7 +65,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 更新密码
-    await updatePassword(auth.userId, newPassword);
+    await updatePassword(user.id, newPassword);
 
     return NextResponse.json({
       success: true,
@@ -91,4 +82,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

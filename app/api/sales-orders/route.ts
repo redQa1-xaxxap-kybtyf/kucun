@@ -18,7 +18,7 @@ import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
  * 获取销售订单列表
  */
 export const GET = withErrorHandling(
-  withAuth(async (request) => {
+  withAuth(async request => {
     const { searchParams } = new URL(request.url);
     const rawParams = {
       page: searchParams.get('page'),

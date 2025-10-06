@@ -1,16 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const now = new Date();
     const startOfToday = new Date(
       now.getFullYear(),
@@ -154,4 +148,4 @@ export async function GET(request: NextRequest) {
     console.error('获取退款统计数据失败:', error);
     return NextResponse.json({ error: '获取统计数据失败' }, { status: 500 });
   }
-}
+});

@@ -3,7 +3,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import type { PayableRecordDetail } from '@/lib/types/payable';
 import { updatePayableRecordSchema } from '@/lib/validations/payable';
@@ -16,12 +16,6 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 身份验证
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const { id } = await params;
 
     // 查询应付款记录
@@ -88,13 +82,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 身份验证
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const { id } = await params;
+const { id } = await params;
 
     // 解析请求体
     const body = await request.json();
@@ -212,13 +200,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    // 身份验证
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const { id } = await params;
+const { id } = await params;
 
     // 检查应付款记录是否存在
     const existingPayable = await prisma.payableRecord.findUnique({
@@ -266,4 +248,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+});

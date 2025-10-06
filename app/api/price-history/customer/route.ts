@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { customerPriceHistoryQuerySchema } from '@/lib/validations/price-history';
 
@@ -13,15 +13,9 @@ import { customerPriceHistoryQuerySchema } from '@/lib/validations/price-history
  * - productId: 产品ID (可选，不传则返回该客户所有产品的最新价格)
  * - priceType: 价格类型 (可选: SALES | FACTORY，不传则返回所有类型)
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 验证用户登录
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const { searchParams } = new URL(request.url);
+const { searchParams } = new URL(request.url);
 
     // 使用 Zod 进行参数验证
     const validationResult = customerPriceHistoryQuerySchema.safeParse({
@@ -177,14 +171,8 @@ export async function GET(request: NextRequest) {
  *   orderType?: 'SALES_ORDER' | 'FACTORY_SHIPMENT';
  * }
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
-    // 验证用户登录
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const body = await request.json();
     const { customerId, productId, priceType, unitPrice, orderId, orderType } =
       body;
@@ -245,4 +233,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

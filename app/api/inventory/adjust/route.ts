@@ -9,7 +9,6 @@ import { publishInventoryChange } from '@/lib/events';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { inventoryAdjustSchema } from '@/lib/validations/inventory-operations';
-import { publishWs } from '@/lib/ws/ws-server';
 
 interface AdjustmentData {
   productId: string;
@@ -71,7 +70,7 @@ async function executeAdjustmentTransaction(
         updatedInventory = await tx.inventory.update({
           where: { id: existingInventory.id },
           data: {
-            quantity: { increment: adjustQuantity } // 原子递增/递减操作
+            quantity: { increment: adjustQuantity }, // 原子递增/递减操作
           },
           include: {
             product: {
@@ -177,15 +176,6 @@ export const POST = withAuth(
         reason: validatedData.reason,
         operator: user.name || user.username,
         userId: user.id,
-      });
-
-      // WebSocket 推送更新（向后兼容，后续可移除）
-      publishWs('inventory', {
-        type: 'adjust',
-        productId: validatedData.productId,
-        adjustQuantity: validatedData.adjustQuantity,
-        inventoryId: result.inventory.id,
-        adjustmentNumber: result.adjustment.adjustmentNumber,
       });
 
       return NextResponse.json({

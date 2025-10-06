@@ -5,7 +5,7 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import type {
   SystemLog,
@@ -19,19 +19,10 @@ import { SystemLogListRequestSchema } from '@/lib/validations/settings';
  * GET /api/logs - 获取系统日志列表
  * 支持分页、筛选等查询参数
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 身份验证 - 使用中间件传递的头部信息
-    const auth = verifyApiAuth(request);
-    if (!auth.success || !auth.userId) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-
     // 只有管理员可以查看日志
-    if (auth.role !== 'admin') {
+    if (user.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: '权限不足' },
         { status: 403 }
@@ -166,24 +157,15 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 /**
  * DELETE /api/logs - 清理过期日志
  */
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 身份验证 - 使用中间件传递的头部信息
-    const auth = verifyApiAuth(request);
-    if (!auth.success || !auth.userId) {
-      return NextResponse.json(
-        { success: false, error: '未授权访问' },
-        { status: 401 }
-      );
-    }
-
     // 只有管理员可以清理日志
-    if (auth.role !== 'admin') {
+    if (user.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: '权限不足' },
         { status: 403 }
@@ -229,4 +211,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

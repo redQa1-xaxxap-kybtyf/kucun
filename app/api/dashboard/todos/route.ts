@@ -1,17 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 
 // 获取待办事项数据
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 身份验证
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated || !auth.userId) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const todos: Array<{
       id: string;
       title: string;
@@ -55,7 +49,7 @@ export async function GET(request: NextRequest) {
         relatedId: order.id,
         status: 'pending' as const,
         createdAt: order.createdAt.toISOString(),
-        assignedTo: auth.userId!,
+        assignedTo: user.id,
       });
     });
 
@@ -97,7 +91,7 @@ export async function GET(request: NextRequest) {
         relatedId: item.productId,
         status: 'pending' as const,
         createdAt: item.updatedAt.toISOString(),
-        assignedTo: auth.userId!,
+        assignedTo: user.id,
       });
     });
 
@@ -137,7 +131,7 @@ export async function GET(request: NextRequest) {
         relatedId: order.id,
         status: 'pending' as const,
         createdAt: order.createdAt.toISOString(),
-        assignedTo: auth.userId!,
+        assignedTo: user.id,
       });
     });
 
@@ -168,4 +162,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

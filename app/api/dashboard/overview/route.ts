@@ -1,20 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
 import { withAuth } from '@/lib/auth/api-helpers';
-import {
-  buildCacheKey,
-  getOrSetWithLock,
-  CacheTags,
-  CACHE_STRATEGY,
-} from '@/lib/cache';
+import { buildCacheKey, CACHE_STRATEGY, getOrSetWithLock } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
-
-// 请求参数验证
-const overviewQuerySchema = z.object({
-  timeRange: z.enum(['1d', '7d', '30d', '90d', '1y']).default('30d'),
-});
+import { dashboardOverviewQuerySchema } from '@/lib/validations/dashboard';
 
 // 获取业务概览数据
 export const GET = withAuth(async (request: NextRequest, { user }) => {
@@ -23,7 +13,8 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams.entries());
 
-    const validationResult = overviewQuerySchema.safeParse(queryParams);
+    const validationResult =
+      dashboardOverviewQuerySchema.safeParse(queryParams);
     if (!validationResult.success) {
       return NextResponse.json(
         {

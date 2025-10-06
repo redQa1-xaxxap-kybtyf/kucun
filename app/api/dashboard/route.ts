@@ -1,28 +1,13 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-
-// 请求参数验证
-const dashboardQuerySchema = z.object({
-  timeRange: z.enum(['1d', '7d', '30d', '90d', '1y']).default('30d'),
-  productCategory: z.string().optional(),
-  customerType: z.string().optional(),
-  salesChannel: z.string().optional(),
-  region: z.string().optional(),
-});
+import { dashboardQuerySchema } from '@/lib/validations/dashboard';
 
 // 获取仪表盘主数据
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 身份验证 - 使用中间件透传的用户信息
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 解析查询参数
     const { searchParams } = new URL(request.url);
     const queryParams = Object.fromEntries(searchParams.entries());
@@ -151,4 +136,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

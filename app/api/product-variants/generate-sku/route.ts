@@ -1,32 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-
-// SKU生成输入验证
-const GenerateSkuSchema = z.object({
-  productCode: z
-    .string()
-    .min(1, '产品编码不能为空')
-    .max(50, '产品编码不能超过50个字符'),
-  colorCode: z.string().min(1, '色号不能为空').max(20, '色号不能超过20个字符'),
-  customSuffix: z.string().max(10, '自定义后缀不能超过10个字符').optional(),
-});
+import { productVariantGenerateSkuSchema } from '@/lib/validations/product';
 
 // SKU生成服务
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const body = await request.json();
+const body = await request.json();
 
     // 验证输入数据
-    const validationResult = GenerateSkuSchema.safeParse(body);
+    const validationResult = productVariantGenerateSkuSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -129,40 +113,13 @@ export async function POST(request: NextRequest) {
 }
 
 // 批量生成SKU
-export async function PUT(request: NextRequest) {
+export const PUT = withAuth(async (request: NextRequest) => {
   try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const body = await request.json();
 
     // 批量生成SKU输入验证
-    const BatchGenerateSkuSchema = z.object({
-      items: z
-        .array(
-          z.object({
-            productCode: z
-              .string()
-              .min(1, '产品编码不能为空')
-              .max(50, '产品编码不能超过50个字符'),
-            colorCode: z
-              .string()
-              .min(1, '色号不能为空')
-              .max(20, '色号不能超过20个字符'),
-            customSuffix: z
-              .string()
-              .max(10, '自定义后缀不能超过10个字符')
-              .optional(),
-          })
-        )
-        .min(1, '至少需要一个项目')
-        .max(100, '批量生成最多支持100个项目'),
-    });
-
-    const validationResult = BatchGenerateSkuSchema.safeParse(body);
+    const validationResult =
+      productVariantBatchGenerateSkuSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -280,4 +237,4 @@ export async function PUT(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

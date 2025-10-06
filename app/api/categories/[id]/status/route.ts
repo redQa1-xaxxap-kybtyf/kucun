@@ -4,18 +4,11 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
 import { type Category } from '@/lib/api/categories';
 import { prisma } from '@/lib/db';
 import type { ApiResponse } from '@/lib/types/api';
-
-// 状态更新Schema
-const UpdateStatusSchema = z.object({
-  status: z.enum(['active', 'inactive'], {
-    message: '状态不能为空或值无效',
-  }),
-});
+import { categoryStatusUpdateSchema } from '@/lib/validations/category';
 
 /**
  * PUT /api/categories/[id]/status - 更新分类状态
@@ -40,7 +33,7 @@ export async function PUT(
     }
 
     // 验证请求数据
-    const validatedData = UpdateStatusSchema.parse(body);
+    const validatedData = categoryStatusUpdateSchema.parse(body);
 
     // 检查分类是否存在
     const existingCategory = await prisma.category.findUnique({

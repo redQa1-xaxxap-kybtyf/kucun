@@ -1,16 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 
 // 获取快速操作数据
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 身份验证
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 根据用户角色定义快速操作
     const isAdmin = auth.role === 'admin';
     const isSales = auth.role === 'sales';
@@ -131,4 +125,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

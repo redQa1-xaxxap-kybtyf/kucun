@@ -6,16 +6,16 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import {
-    deleteBatchSpecification,
-    getBatchSpecificationById,
-    updateBatchSpecification,
-    validateUserSession,
+  deleteBatchSpecification,
+  getBatchSpecificationById,
+  updateBatchSpecification,
+  validateUserSession,
 } from '@/lib/api/batch-specification-handlers';
 import { ApiError } from '@/lib/api/errors';
 import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import {
-    batchSpecificationIdSchema,
-    updateBatchSpecificationSchema,
+  batchSpecificationIdSchema,
+  updateBatchSpecificationSchema,
 } from '@/lib/validations/batch-specification';
 
 /**

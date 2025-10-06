@@ -1,20 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 
 /**
  * 应收货款统计API
  * GET /api/finance/receivables/statistics - 获取应收账款统计数据
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 解析查询参数
     const { searchParams } = new URL(request.url);
     const startDate = searchParams.get('startDate');
@@ -254,4 +248,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

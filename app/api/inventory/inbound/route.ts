@@ -159,15 +159,6 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   );
   await invalidateInventoryCache(validatedData.productId);
 
-  // WebSocket 推送更新
-  const { publishWs } = await import('@/lib/ws/ws-server');
-  publishWs('inventory', {
-    type: 'inbound',
-    productId: validatedData.productId,
-    quantity: validatedData.quantity,
-    recordNumber: inboundRecord.recordNumber,
-  });
-
   return NextResponse.json({
     success: true,
     data: inboundRecord,

@@ -6,23 +6,17 @@
 import bcrypt from 'bcryptjs';
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
 import { ResetPasswordSchema } from '@/lib/validations/settings';
 
 // POST - 重置用户密码
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 身份验证
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 权限检查 - 只有管理员可以重置密码
     const user = await prisma.user.findUnique({
-      where: { id: auth.userId },
+      where: { id: user.id },
       select: { role: true },
     });
 
@@ -77,4 +71,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

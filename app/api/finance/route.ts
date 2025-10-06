@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { buildCacheKey, getOrSetJSON, CACHE_STRATEGY } from '@/lib/cache';
 import {
   getFinanceOverview,
@@ -13,14 +13,8 @@ import { financeStatisticsQuerySchema } from '@/lib/validations/finance';
  * 财务管理概览API
  * GET /api/finance - 获取财务管理概览数据
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 使用缓存包装查询
     const cacheKey = buildCacheKey('finance:overview', {});
     const financeOverview = await getOrSetJSON(
@@ -50,20 +44,14 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 /**
  * 财务数据统计API
  * POST /api/finance - 获取指定条件的财务统计数据
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 解析并验证请求参数
     const body = await request.json();
     const validationResult = financeStatisticsQuerySchema.safeParse(body);
@@ -110,4 +98,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

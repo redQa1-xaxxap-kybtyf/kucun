@@ -1,30 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
 import type { BatchDeleteResult } from '@/lib/api/categories';
-import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-
-// 批量删除分类的验证Schema
-const BatchDeleteCategoriesSchema = z.object({
-  categoryIds: z
-    .array(z.string().min(1, '分类ID不能为空'))
-    .min(1, '至少需要选择一个分类')
-    .max(100, '一次最多只能删除100个分类'),
-});
+import { BatchDeleteCategoriesSchema } from '@/lib/validations/category';
 
 /**
  * 批量删除分类
  * DELETE /api/categories/batch
  */
-export async function DELETE(request: NextRequest) {
+export const DELETE = withAuth(async (request: NextRequest) => {
   try {
-    // 验证用户权限
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 解析请求体
     const body = await request.json();
 
@@ -148,4 +134,4 @@ export async function DELETE(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

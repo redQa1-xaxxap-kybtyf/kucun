@@ -1,6 +1,6 @@
 import { type NextRequest } from 'next/server';
 
-import { verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
 import { successResponse } from '@/lib/api/response';
@@ -13,14 +13,8 @@ import { batchDeleteProductsSchema } from '@/lib/validations/product';
  * 批量删除产品
  * DELETE /api/products/batch
  */
-export const DELETE = withErrorHandling(async (request: NextRequest) => {
-  // 1. 验证用户权限 - 使用中间件传递的头部信息
-  const auth = verifyApiAuth(request);
-  if (!auth.success || !auth.userId) {
-    throw ApiError.unauthorized();
-  }
-
-  // 2. 解析请求体
+export const DELETE = withAuth(async (request: NextRequest, { user }) => {
+  // 1. 解析请求体
   const body = await request.json();
 
   // 3. 验证输入数据（Zod 错误会自动处理）
@@ -140,6 +134,6 @@ export const DELETE = withErrorHandling(async (request: NextRequest) => {
     await invalidateProductCache();
   }
 
-  // 12. 返回成功响应
+  // 11. 返回成功响应
   return successResponse(result);
 });

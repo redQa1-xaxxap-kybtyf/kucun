@@ -1,7 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig, returnRefundConfig } from '@/lib/env';
 import {
@@ -13,14 +13,8 @@ import {
  * GET /api/refunds - 获取退款记录列表
  * 支持分页、搜索、筛选等查询参数
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 身份验证
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 解析查询参数
     const searchParams = new URL(request.url).searchParams;
     const queryResult = refundQuerySchema.safeParse({
@@ -161,19 +155,13 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});
 
 /**
  * POST /api/refunds - 创建退款记录
  */
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 身份验证
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 解析请求体
     const body = await request.json();
     const validationResult = createRefundRecordSchema.safeParse(body);
@@ -223,7 +211,7 @@ export async function POST(request: NextRequest) {
       data: {
         ...data,
         refundNumber,
-        userId: auth.userId!,
+        userId: user.id,
         refundDate: new Date(data.refundDate),
         remainingAmount,
       },
@@ -264,4 +252,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

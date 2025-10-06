@@ -1,38 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-
-// 产品变体更新输入验证
-const ProductVariantUpdateSchema = z.object({
-  colorCode: z
-    .string()
-    .min(1, '色号不能为空')
-    .max(20, '色号不能超过20个字符')
-    .optional(),
-  colorName: z.string().max(50, '色号名称不能超过50个字符').optional(),
-  colorValue: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确')
-    .optional(),
-  sku: z.string().max(50, 'SKU不能超过50个字符').optional(),
-  status: z.enum(['active', 'inactive']).optional(),
-});
+import { productVariantUpdateSchema } from '@/lib/validations/product';
 
 // 获取单个产品变体详情
-export async function GET(
+export const GET = withAuth(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: {  id: string  } }
+) => {
   try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const { id } = params;
+const { id } = params;
 
     // 验证ID格式
     if (!id || typeof id !== 'string') {
@@ -136,17 +114,11 @@ export async function GET(
 }
 
 // 更新产品变体
-export async function PUT(
+export const PUT = withAuth(async (
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const { id } = params;
     const body = await request.json();
 
@@ -159,7 +131,7 @@ export async function PUT(
     }
 
     // 验证输入数据
-    const validationResult = ProductVariantUpdateSchema.safeParse(body);
+    const validationResult = productVariantUpdateSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -293,18 +265,12 @@ export async function PUT(
 }
 
 // 删除产品变体
-export async function DELETE(
+export const DELETE = withAuth(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: {  id: string  } }
+) => {
   try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const { id } = params;
+const { id } = params;
 
     // 验证ID格式
     if (!id || typeof id !== 'string') {
@@ -370,4 +336,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-}
+});

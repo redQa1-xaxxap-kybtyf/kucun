@@ -1,23 +1,15 @@
-import { type NextRequest, NextResponse } from 'next/server';
-import { z } from 'zod';
+import { NextResponse, type NextRequest } from 'next/server';
 
-import { ApiError } from '@/lib/api/errors';
-import { withErrorHandling } from '@/lib/api/middleware';
-import { verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { cacheConfig } from '@/lib/env';
+import {
+  inventoryAvailabilityCheckSchema,
+  type InventoryAvailabilityCheckInput,
+} from '@/lib/validations/inventory';
 
-// 库存可用性检查请求schema
-const checkAvailabilitySchema = z.object({
-  productId: z.string().min(1, '产品ID不能为空'),
-  quantity: z.number().min(1, '数量必须大于0'),
-  variantId: z.string().optional(),
-  batchNumber: z.string().optional(),
-  location: z.string().optional(),
-});
-
-type AvailabilityParams = z.infer<typeof checkAvailabilitySchema>;
+type AvailabilityParams = InventoryAvailabilityCheckInput;
 
 type InventoryRecord = {
   id: string;
@@ -197,17 +189,11 @@ async function checkInventoryAvailability(
  * 库存可用性检查API
  * POST /api/inventory/check-availability
  */
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  // 验证用户权限
-  const auth = verifyApiAuth(request);
-  if (!auth.success) {
-    throw ApiError.unauthorized();
-  }
-
+export const POST = withAuth(async (request: NextRequest) => {
   const body = await request.json();
 
   // 验证请求数据
-  const validatedData = checkAvailabilitySchema.parse(body);
+  const validatedData = inventoryAvailabilityCheckSchema.parse(body);
 
   // 构建缓存键
   const cacheKey = buildCacheKey('inventory:availability', validatedData);

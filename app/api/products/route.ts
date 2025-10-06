@@ -2,14 +2,10 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
-import {
-  revalidateProducts,
-  publishDataUpdate,
-} from '@/lib/cache';
+import { revalidateProducts, publishDataUpdate } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { paginationConfig, productConfig } from '@/lib/env';
 import { productCreateSchema } from '@/lib/validations/product';
-import { publishWs } from '@/lib/ws/ws-server';
 import { getProductsForServer } from '@/lib/api/products-server';
 import type { ProductListQueryParams } from '@/lib/api/products';
 
@@ -17,7 +13,9 @@ import type { ProductListQueryParams } from '@/lib/api/products';
  * 解析 URLSearchParams 为产品查询参数
  * 遵循 Context 7 规范：函数不超过 50 行
  */
-function parseProductQueryParams(searchParams: URLSearchParams): ProductListQueryParams {
+function parseProductQueryParams(
+  searchParams: URLSearchParams
+): ProductListQueryParams {
   const includeInventory = searchParams.get('includeInventory')
     ? searchParams.get('includeInventory') === 'true'
     : productConfig.defaultIncludeInventory;
@@ -134,46 +132,51 @@ export const POST = withAuth(
       // 创建产品 - 依赖数据库唯一约束防止重复
       try {
         return await tx.product.create({
-        data: {
-          code,
-          name,
-          specification,
-          description,
-          unit: 'piece', // 默认单位为"件"
-          thickness,
-          categoryId: processedCategoryId,
-          thumbnailUrl,
-          images: images ? JSON.stringify(images) : null,
-          status: 'active',
-        },
-        select: {
-          id: true,
-          code: true,
-          name: true,
-          specification: true,
-          description: true,
-          unit: true,
-          piecesPerUnit: true,
-          weight: true,
-          thickness: true,
-          status: true,
-          categoryId: true,
-          thumbnailUrl: true,
-          images: true,
-          category: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-            },
+          data: {
+            code,
+            name,
+            specification,
+            description,
+            unit: 'piece', // 默认单位为"件"
+            thickness,
+            categoryId: processedCategoryId,
+            thumbnailUrl,
+            images: images ? JSON.stringify(images) : null,
+            status: 'active',
           },
-          createdAt: true,
-          updatedAt: true,
-        },
-      });
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            specification: true,
+            description: true,
+            unit: true,
+            piecesPerUnit: true,
+            weight: true,
+            thickness: true,
+            status: true,
+            categoryId: true,
+            thumbnailUrl: true,
+            images: true,
+            category: {
+              select: {
+                id: true,
+                name: true,
+                code: true,
+              },
+            },
+            createdAt: true,
+            updatedAt: true,
+          },
+        });
       } catch (error: unknown) {
         // 处理唯一约束冲突错误 (Prisma P2002)
-        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          error.code === 'P2002'
+        ) {
           throw new Error('产品编码已存在');
         }
         throw error;
@@ -186,7 +189,9 @@ export const POST = withAuth(
     if (product.images) {
       try {
         const parsed = JSON.parse(
-          typeof product.images === 'string' ? product.images : String(product.images)
+          typeof product.images === 'string'
+            ? product.images
+            : String(product.images)
         );
         parsedImages = Array.isArray(parsed) ? parsed : [];
       } catch (error) {
@@ -225,13 +230,6 @@ export const POST = withAuth(
 
     // 发布实时更新事件
     await publishDataUpdate('products', formattedProduct.id, 'create');
-
-    // WebSocket 推送（向后兼容）
-    publishWs('products', {
-      type: 'created',
-      id: formattedProduct.id,
-      code: formattedProduct.code,
-    });
 
     return createDateTimeResponse(formattedProduct, 201, '产品创建成功');
   },

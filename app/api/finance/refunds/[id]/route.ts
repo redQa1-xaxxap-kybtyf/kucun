@@ -1,22 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { updateRefundRecordSchema } from '@/lib/validations/refund';
 
 // GET /api/finance/refunds/[id] - 获取单个退款记录详情
-export async function GET(
+export const GET = withAuth(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: {  id: string  } }
+) => {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const refund = await prisma.refundRecord.findUnique({
+const refund = await prisma.refundRecord.findUnique({
       where: { id: params.id },
       include: {
         salesOrder: {
@@ -42,17 +36,11 @@ export async function GET(
 }
 
 // PUT /api/finance/refunds/[id] - 更新退款记录
-export async function PUT(
+export const PUT = withAuth(async (
   request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const body = await request.json();
     const validatedData = updateRefundRecordSchema.parse(body);
 
@@ -130,18 +118,12 @@ export async function PUT(
 }
 
 // DELETE /api/finance/refunds/[id] - 删除退款记录
-export async function DELETE(
+export const DELETE = withAuth(async (
   request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+  { params }: { params: {  id: string  } }
+) => {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    // 检查退款记录是否存在且可以删除
+// 检查退款记录是否存在且可以删除
     const refund = await prisma.refundRecord.findUnique({
       where: { id: params.id },
     });
@@ -169,4 +151,4 @@ export async function DELETE(
     console.error('删除退款记录失败:', error);
     return NextResponse.json({ error: '删除退款记录失败' }, { status: 500 });
   }
-}
+});

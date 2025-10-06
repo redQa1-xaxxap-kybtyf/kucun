@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { cacheConfig, inventoryConfig } from '@/lib/env';
@@ -10,14 +10,8 @@ import { inventoryAlertsQuerySchema } from '@/lib/validations/inventory-queries'
  * 库存预警API
  * GET /api/inventory/alerts
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 验证用户权限 - 使用中间件透传的用户信息
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 解析并验证查询参数
     const { searchParams } = request.nextUrl;
     const queryParams = {
@@ -299,4 +293,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

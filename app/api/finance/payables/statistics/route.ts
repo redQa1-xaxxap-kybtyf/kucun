@@ -3,21 +3,15 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { verifyApiAuth, errorResponse } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import type { PayableStatistics } from '@/lib/types/payable';
 
 /**
  * GET /api/finance/payables/statistics - 获取应付款统计数据
  */
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 身份验证
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     // 获取当前日期范围
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -157,4 +151,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

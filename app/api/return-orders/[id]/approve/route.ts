@@ -147,17 +147,17 @@ export const POST = withAuth(
 
       // ✅ 事务成功提交后才发布事件，避免事件发送但数据未提交的情况
       await publishApprovalResult({
-      approved,
-      resourceType: 'return',
-      resourceId: updatedReturnOrder.id,
-      resourceNumber: updatedReturnOrder.returnNumber,
-      requesterId: existingReturnOrder.userId,
-      requesterName: existingReturnOrder.user?.name || '未知用户',
-      approverId: user.id,
-      approverName: user.name || user.username,
-      comment: remarks,
-      userId: user.id,
-    });
+        approved,
+        resourceType: 'return',
+        resourceId: updatedReturnOrder.id,
+        resourceNumber: updatedReturnOrder.returnNumber,
+        requesterId: existingReturnOrder.userId,
+        requesterName: existingReturnOrder.user?.name || '未知用户',
+        approverId: user.id,
+        approverName: user.name || user.username,
+        comment: remarks,
+        userId: user.id,
+      });
 
       return NextResponse.json({
         success: true,

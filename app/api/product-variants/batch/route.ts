@@ -1,50 +1,13 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-
-// 批量创建产品变体输入验证
-const BatchCreateVariantsSchema = z.object({
-  productId: z.string().uuid('产品ID格式不正确'),
-  variants: z
-    .array(
-      z.object({
-        colorCode: z
-          .string()
-          .min(1, '色号不能为空')
-          .max(20, '色号不能超过20个字符'),
-        colorName: z.string().max(50, '色号名称不能超过50个字符').optional(),
-        colorValue: z
-          .string()
-          .regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确')
-          .optional(),
-        sku: z.string().max(50, 'SKU不能超过50个字符').optional(),
-      })
-    )
-    .min(1, '至少需要一个变体')
-    .max(50, '批量创建最多支持50个变体'),
-});
-
-// 批量操作输入验证
-const BatchOperationSchema = z.object({
-  operation: z.enum(['delete', 'activate', 'deactivate']),
-  variantIds: z
-    .array(z.string().uuid('变体ID格式不正确'))
-    .min(1, '至少需要选择一个变体')
-    .max(100, '批量操作最多支持100个变体'),
-});
+import { productVariantBatchCreateSchema } from '@/lib/validations/product';
 
 // 批量创建产品变体
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const body = await request.json();
+const body = await request.json();
 
     // 检查是否为批量操作
     if (body.operation) {
@@ -52,7 +15,7 @@ export async function POST(request: NextRequest) {
     }
 
     // 验证批量创建输入数据
-    const validationResult = BatchCreateVariantsSchema.safeParse(body);
+    const validationResult = productVariantBatchCreateSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -219,12 +182,9 @@ export async function POST(request: NextRequest) {
 }
 
 // 处理批量操作
-async function handleBatchOperation(
-  body: z.infer<typeof BatchOperationSchema>
-) {
-  try {
-    // 验证批量操作输入数据
-    const validationResult = BatchOperationSchema.safeParse(body);
+async function handleBatchOperation(body: unknown) {
+  // 验证批量操作输入数据
+  const validationResult = productVariantBatchOperationSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -328,4 +288,4 @@ async function handleBatchOperation(
       { status: 500 }
     );
   }
-}
+});

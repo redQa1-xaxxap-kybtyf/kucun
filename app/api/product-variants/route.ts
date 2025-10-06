@@ -1,49 +1,14 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { env, paginationConfig } from '@/lib/env';
-
-// 产品变体查询参数验证
-const ProductVariantQuerySchema = z.object({
-  productId: z.string().uuid('产品ID格式不正确').optional(),
-  colorCode: z.string().max(20, '色号不能超过20个字符').optional(),
-  status: z.enum(['active', 'inactive']).optional(),
-  page: z.coerce.number().int().min(1).default(1),
-  limit: z.coerce
-    .number()
-    .int()
-    .min(1)
-    .max(paginationConfig.maxPageSize)
-    .default(paginationConfig.defaultPageSize),
-  sortBy: z.enum(['colorCode', 'sku', 'createdAt']).default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
-});
-
-// 产品变体创建输入验证
-const ProductVariantCreateSchema = z.object({
-  productId: z.string().uuid('产品ID格式不正确'),
-  colorCode: z.string().min(1, '色号不能为空').max(20, '色号不能超过20个字符'),
-  colorName: z.string().max(50, '色号名称不能超过50个字符').optional(),
-  colorValue: z
-    .string()
-    .regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确')
-    .optional(),
-  sku: z.string().max(50, 'SKU不能超过50个字符').optional(),
-});
+import { productVariantQuerySchema } from '@/lib/validations/product';
 
 // 获取产品变体列表
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const { searchParams } = new URL(request.url);
+const { searchParams } = new URL(request.url);
     const queryParams = {
       productId: searchParams.get('productId') || undefined,
       colorCode: searchParams.get('colorCode') || undefined,
@@ -55,7 +20,7 @@ export async function GET(request: NextRequest) {
     };
 
     // 验证查询参数
-    const validationResult = ProductVariantQuerySchema.safeParse(queryParams);
+    const validationResult = productVariantQuerySchema.safeParse(queryParams);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -174,18 +139,12 @@ export async function GET(request: NextRequest) {
 }
 
 // 创建产品变体
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const body = await request.json();
 
     // 验证输入数据
-    const validationResult = ProductVariantCreateSchema.safeParse(body);
+    const validationResult = productVariantCreateSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -305,4 +264,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

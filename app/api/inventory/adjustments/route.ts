@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { inventoryAdjustmentsQuerySchema } from '@/lib/validations/inventory-queries';
 
@@ -167,48 +167,6 @@ function formatAdjustmentData(adjustment: AdjustmentWithRelations) {
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // 验证用户权限 - 使用中间件透传的用户信息
-  const auth = verifyApiAuth(request);
-  if (!auth.success) {
-    throw ApiError.unauthorized();
-  }
-
-  // 解析并验证查询参数
-  const { searchParams } = request.nextUrl;
-  const queryParams = {
-    page: searchParams.get('page')
-      ? parseInt(searchParams.get('page')!, 10)
-      : undefined,
-    limit: searchParams.get('limit')
-      ? parseInt(searchParams.get('limit')!, 10)
-      : undefined,
-    search: searchParams.get('search') || undefined,
-    sortBy: searchParams.get('sortBy') || undefined,
-    sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || undefined,
-    productId: searchParams.get('productId') || undefined,
-    variantId: searchParams.get('variantId') || undefined,
-    batchNumber: searchParams.get('batchNumber') || undefined,
-    reason: searchParams.get('reason') || undefined,
-    status: searchParams.get('status') || undefined,
-    operatorId: searchParams.get('operatorId') || undefined,
-    startDate: searchParams.get('startDate') || undefined,
-    endDate: searchParams.get('endDate') || undefined,
-  };
-
-  // 使用 Zod schema 验证
-  const validationResult =
-    inventoryAdjustmentsQuerySchema.safeParse(queryParams);
-
-  if (!validationResult.success) {
-    return NextResponse.json(
-      {
-        success: false,
-        error: '查询参数验证失败',
-        details: validationResult.error.issues,
-      },
-      { status: 400 }
-    );
-  }
-
   const {
     page = 1,
     limit = 20,

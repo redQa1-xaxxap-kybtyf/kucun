@@ -3,7 +3,6 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { updateFactoryShipmentStatus } from '@/lib/api/handlers/factory-shipment-status';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateFactoryShipmentOrderStatusSchema } from '@/lib/validations/factory-shipment';
@@ -27,12 +26,6 @@ interface RouteParams {
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
-    // 身份验证
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated || !auth.userId) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const { id } = params;
 
     // 解析请求体
@@ -67,7 +60,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       idempotencyKey,
       'factory_shipment_status_change',
       id,
-      auth.userId!,
+      user.id,
       {
         status,
         containerNumber,

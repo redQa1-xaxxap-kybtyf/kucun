@@ -2,9 +2,12 @@ import { type NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { z } from 'zod';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { uploadConfig } from '@/lib/env';
 import { uploadToQiniu } from '@/lib/services/qiniu-upload';
+
+// 声明使用 Node.js 运行时（sharp 和 Buffer 需要 Node.js 环境）
+export const runtime = 'nodejs';
 
 // 文件上传验证
 const uploadValidation = z.object({
@@ -20,15 +23,9 @@ const SUPPORTED_IMAGE_TYPES = [
   'image/gif',
 ] as const;
 
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const formData = await request.formData();
+const formData = await request.formData();
     const file = formData.get('file') as File;
     const type = (formData.get('type') as string) || 'product';
 
@@ -88,7 +85,7 @@ export async function POST(request: NextRequest) {
         let sharpInstance = sharp(buffer);
 
         // 获取图片信息
-        const _metadata = await sharpInstance.metadata();
+        await sharpInstance.metadata();
 
         // 根据上传类型进行不同的优化
         switch (type) {
@@ -157,7 +154,7 @@ export async function POST(request: NextRequest) {
         url: uploadResult.url,
         key: uploadResult.key,
         uploadedAt: new Date().toISOString(),
-        uploadedBy: auth.userId,
+        uploadedBy: user.id,
       },
       message: '文件上传成功',
     });
@@ -176,13 +173,8 @@ export async function POST(request: NextRequest) {
 }
 
 // 获取上传文件信息（可选功能）
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'product';
 
@@ -202,4 +194,4 @@ export async function GET(request: NextRequest) {
       { status: 500 }
     );
   }
-}
+});

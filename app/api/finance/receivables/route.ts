@@ -10,7 +10,11 @@
 
 import { type NextRequest } from 'next/server';
 
-import { errorResponse, successResponse, withAuth } from '@/lib/auth/api-helpers';
+import {
+  errorResponse,
+  successResponse,
+  withAuth,
+} from '@/lib/auth/api-helpers';
 import { buildCacheKey, CACHE_STRATEGY, getOrSetJSON } from '@/lib/cache';
 import { getReceivables } from '@/lib/services/receivables-service';
 import { accountsReceivableQuerySchema } from '@/lib/validations/payment';

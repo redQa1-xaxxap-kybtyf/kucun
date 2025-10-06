@@ -3,7 +3,6 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { prisma } from '@/lib/db';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateFactoryShipmentOrderSchema } from '@/lib/validations/factory-shipment';
@@ -17,12 +16,6 @@ interface RouteParams {
 // 获取单个厂家发货订单详情
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const { id } = params;
 
     // 查询订单详情
@@ -69,13 +62,6 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 // 更新厂家发货订单
 export async function PUT(request: NextRequest, { params }: RouteParams) {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated || !auth.userId) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-    const userId = auth.userId;
-
     const { id } = params;
 
     // 检查订单是否存在
@@ -322,12 +308,6 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 // 删除厂家发货订单
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
-    // 身份验证
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const { id } = params;
 
     // 检查订单是否存在

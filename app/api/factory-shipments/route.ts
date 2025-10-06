@@ -4,7 +4,7 @@
 import type { Prisma } from '@prisma/client';
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
@@ -14,15 +14,9 @@ import {
 } from '@/lib/validations/factory-shipment';
 
 // 获取厂家发货订单列表
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    // 解析查询参数
+// 解析查询参数
     const { searchParams } = new URL(request.url);
     const queryParams = {
       page: searchParams.get('page')
@@ -169,14 +163,9 @@ export async function GET(request: NextRequest) {
 }
 
 // 创建厂家发货订单
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
-    // 身份验证 - 始终验证,确保安全性
-    const auth = await verifyApiAuth(request);
-    if (!auth.authenticated || !auth.userId) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-    const userId = auth.userId;
+    const userId = user.id;
 
     // 解析请求体
     const body = await request.json();
@@ -390,4 +379,4 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ error: '创建订单失败' }, { status: 500 });
   }
-}
+});

@@ -1,33 +1,22 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
-import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-
-// SKU检查查询参数验证
-const CheckSkuQuerySchema = z.object({
-  sku: z.string().min(1, 'SKU不能为空').max(50, 'SKU不能超过50个字符'),
-  excludeId: z.string().uuid('排除的变体ID格式不正确').optional(),
-});
+import { productVariantCheckSkuSchema } from '@/lib/validations/product';
 
 // SKU可用性检查服务
-export async function GET(request: NextRequest) {
+export const GET = withAuth(async (request: NextRequest) => {
   try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const { searchParams } = new URL(request.url);
+const { searchParams } = new URL(request.url);
     const queryParams = {
       sku: searchParams.get('sku') || '',
       excludeId: searchParams.get('excludeId') || undefined,
     };
 
     // 验证查询参数
-    const validationResult = CheckSkuQuerySchema.safeParse(queryParams);
+    const validationResult =
+      productVariantCheckSkuSchema.safeParse(queryParams);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -108,33 +97,12 @@ export async function GET(request: NextRequest) {
 }
 
 // 批量SKU可用性检查
-export async function POST(request: NextRequest) {
+export const POST = withAuth(async (request: NextRequest) => {
   try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
     const body = await request.json();
 
     // 批量检查输入验证
-    const BatchCheckSkuSchema = z.object({
-      skus: z
-        .array(
-          z.object({
-            sku: z
-              .string()
-              .min(1, 'SKU不能为空')
-              .max(50, 'SKU不能超过50个字符'),
-            excludeId: z.string().uuid('排除的变体ID格式不正确').optional(),
-          })
-        )
-        .min(1, '至少需要一个SKU')
-        .max(100, '批量检查最多支持100个SKU'),
-    });
-
-    const validationResult = BatchCheckSkuSchema.safeParse(body);
+    const validationResult = productVariantBatchCheckSkuSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -293,4 +261,4 @@ async function generateSkuSuggestions(baseSku: string): Promise<string[]> {
     console.error('生成SKU建议错误:', error);
     return [];
   }
-}
+});
