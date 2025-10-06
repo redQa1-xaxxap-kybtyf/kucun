@@ -25,11 +25,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { useToast } from '@/components/ui/use-toast';
+import { useProcessRefund, useRefundDetail } from '@/lib/api/refunds';
 
 interface RefundProcessPageProps {
-  params: {
-    id: string;
-  };
+  params: Promise<{ id: string }>;
 }
 
 /**
@@ -38,7 +38,14 @@ interface RefundProcessPageProps {
  */
 export default function RefundProcessPage({ params }: RefundProcessPageProps) {
   const router = useRouter();
-  const [loading, setLoading] = React.useState(false);
+  const { toast } = useToast();
+  const [refundId, setRefundId] = React.useState<string>('');
+
+  // 从 params 获取 ID
+  React.useEffect(() => {
+    params.then(p => setRefundId(p.id));
+  }, [params]);
+
   const [formData, setFormData] = React.useState({
     processedAmount: '',
     processedDate: new Date().toISOString().split('T')[0],
@@ -46,24 +53,11 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
     remarks: '',
   });
 
-  // 模拟数据 - 实际项目中应该从API获取
-  const mockRefund = {
-    id: params.id,
-    refundNumber: 'RT-2025-001',
-    returnNumber: 'RET-2025-001',
-    salesOrderNumber: 'SO-2025-001',
-    customerName: '张三建材',
-    refundAmount: 5000.0,
-    processedAmount: 0.0,
-    remainingAmount: 5000.0,
-    status: 'pending',
-    refundDate: '2025-01-15',
-    reason: '产品质量问题',
-    type: 'refund',
-    refundMethod: 'bank_transfer',
-    bankInfo: '中国银行 6222 **** **** 1234',
-    createdAt: '2025-01-15T10:00:00Z',
-  };
+  // 获取退款详情
+  const { data: refund, isLoading, error } = useRefundDetail(refundId);
+
+  // 处理退款 mutation
+  const processRefundMutation = useProcessRefund();
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('zh-CN', {
@@ -109,32 +103,60 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      // 这里应该调用API处理退款
-      // TODO: 实现实际的API调用
-      // await processRefund(params.id, {
-      //   ...formData,
-      //   processedAmount: parseFloat(formData.processedAmount),
-      // });
+      await processRefundMutation.mutateAsync({
+        id: refundId,
+        data: {
+          processedAmount: parseFloat(formData.processedAmount),
+          processedDate: formData.processedDate,
+          status: formData.status,
+          remarks: formData.remarks,
+        },
+      });
 
-      // 模拟API调用
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      toast({
+        title: '处理成功',
+        description: formData.status === 'completed' ? '退款已批准' : '退款已拒绝',
+        variant: 'success',
+      });
 
       // 处理成功后跳转
       router.push('/finance/refunds');
     } catch (error) {
-      // TODO: 实现错误处理和用户提示
-      // setError('处理退款失败，请重试');
-    } finally {
-      setLoading(false);
+      toast({
+        title: '处理失败',
+        description: error instanceof Error ? error.message : '处理退款失败，请重试',
+        variant: 'destructive',
+      });
     }
   };
 
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  // 加载状态
+  if (isLoading || !refundId) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
+      </div>
+    );
+  }
+
+  // 错误状态
+  if (error || !refund) {
+    return (
+      <Card>
+        <CardContent className="pt-6">
+          <div className="text-center text-red-600">
+            {error ? '加载退款详情失败' : '退款记录不存在'}
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -147,7 +169,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
         <div>
           <h1 className="text-3xl font-bold tracking-tight">处理退款申请</h1>
           <p className="text-muted-foreground">
-            退款单号：{mockRefund.refundNumber}
+            退款单号：{refund.refundNumber}
           </p>
         </div>
       </div>
@@ -165,33 +187,35 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
             <div className="grid gap-4">
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">退款单号</span>
-                <span className="font-medium">{mockRefund.refundNumber}</span>
+                <span className="font-medium">{refund.refundNumber}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">退货单号</span>
-                <span className="font-medium">{mockRefund.returnNumber}</span>
+                <span className="font-medium">{refund.returnOrder?.returnNumber || '-'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">原订单号</span>
                 <span className="font-medium">
-                  {mockRefund.salesOrderNumber}
+                  {refund.salesOrder?.orderNumber || '-'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">客户名称</span>
-                <span className="font-medium">{mockRefund.customerName}</span>
+                <span className="font-medium">{refund.customer?.name || '-'}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">退款原因</span>
-                <span className="font-medium">{mockRefund.reason}</span>
+                <span className="font-medium">{refund.reason}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">申请日期</span>
-                <span className="font-medium">{mockRefund.refundDate}</span>
+                <span className="font-medium">
+                  {new Date(refund.refundDate).toLocaleDateString('zh-CN')}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span className="text-sm text-muted-foreground">当前状态</span>
-                {getStatusBadge(mockRefund.status)}
+                {getStatusBadge(refund.status)}
               </div>
             </div>
 
@@ -202,7 +226,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                     退款金额
                   </span>
                   <span className="text-lg font-bold text-orange-600">
-                    {formatCurrency(mockRefund.refundAmount)}
+                    {formatCurrency(refund.refundAmount)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -210,7 +234,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                     已处理金额
                   </span>
                   <span className="font-medium text-green-600">
-                    {formatCurrency(mockRefund.processedAmount)}
+                    {formatCurrency(refund.processedAmount)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
@@ -218,19 +242,19 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                     待处理金额
                   </span>
                   <span className="font-medium text-blue-600">
-                    {formatCurrency(mockRefund.remainingAmount)}
+                    {formatCurrency(refund.remainingAmount)}
                   </span>
                 </div>
               </div>
             </div>
 
-            {mockRefund.bankInfo && (
+            {refund.bankInfo && (
               <div className="border-t pt-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">
                     退款账户
                   </span>
-                  <span className="font-medium">{mockRefund.bankInfo}</span>
+                  <span className="font-medium">{refund.bankInfo}</span>
                 </div>
               </div>
             )}
@@ -254,7 +278,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                   type="number"
                   step="0.01"
                   min="0"
-                  max={mockRefund.remainingAmount}
+                  max={refund.remainingAmount}
                   value={formData.processedAmount}
                   onChange={e =>
                     handleInputChange('processedAmount', e.target.value)
@@ -263,7 +287,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                   required
                 />
                 <p className="text-xs text-muted-foreground">
-                  最大可处理金额：{formatCurrency(mockRefund.remainingAmount)}
+                  最大可处理金额：{formatCurrency(refund.remainingAmount)}
                 </p>
               </div>
 
@@ -322,16 +346,16 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                   type="button"
                   variant="outline"
                   onClick={() => router.back()}
-                  disabled={loading}
+                  disabled={processRefundMutation.isPending}
                 >
                   取消
                 </Button>
                 <Button
                   type="submit"
-                  disabled={loading || !formData.processedAmount}
+                  disabled={processRefundMutation.isPending || !formData.processedAmount}
                   className="flex-1"
                 >
-                  {loading ? (
+                  {processRefundMutation.isPending ? (
                     <>
                       <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
                       处理中...

@@ -4,6 +4,7 @@ import { withErrorHandling } from '@/lib/api/middleware';
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
 import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
+import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { publishInventoryChange } from '@/lib/events';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
 import { withIdempotency } from '@/lib/utils/idempotency';
@@ -64,16 +65,34 @@ async function executeAdjustmentTransaction(
       let updatedInventory;
 
       if (existingInventory) {
-        // 更新现有库存
+        // 乐观锁方案：使用数据库原子操作避免并发冲突
+        // 使用 increment 而不是先读后写，保证操作的原子性
+        // 这样即使多个请求同时调整同一库存，也不会发生数据丢失
         updatedInventory = await tx.inventory.update({
           where: { id: existingInventory.id },
-          data: { quantity: afterQuantity },
+          data: {
+            quantity: { increment: adjustQuantity } // 原子递增/递减操作
+          },
           include: {
             product: {
               select: { id: true, name: true, code: true },
             },
           },
         });
+
+        // 并发安全检查：验证更新后的库存不为负数
+        if (updatedInventory.quantity < 0) {
+          throw new Error(
+            `并发调整导致库存为负数。当前库存: ${updatedInventory.quantity}, 请重试`
+          );
+        }
+
+        // 并发安全检查：验证更新后的可用库存不低于预留量
+        if (updatedInventory.quantity < updatedInventory.reservedQuantity) {
+          throw new Error(
+            `并发调整导致可用库存(${updatedInventory.quantity})低于预留数量(${updatedInventory.reservedQuantity})，请重试`
+          );
+        }
       } else {
         // 创建新的库存记录（仅当调整数量为正数时）
         if (adjustQuantity <= 0) {
@@ -117,13 +136,7 @@ async function executeAdjustmentTransaction(
 
       return { inventory: updatedInventory, adjustment: adjustmentRecord };
     },
-    {
-      // 修复：SQLite不支持Serializable隔离级别，根据数据库类型动态设置
-      ...(process.env.DATABASE_URL?.includes('mysql') && {
-        isolationLevel: 'Serializable' as const,
-      }),
-      timeout: 10000,
-    }
+    getStandardTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable）
   );
 }
 

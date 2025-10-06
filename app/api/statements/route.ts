@@ -34,11 +34,9 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      data: {
-        statements: result.data,
-        pagination: result.pagination,
-        summary: result.summary,
-      },
+      data: result.data,
+      pagination: result.pagination,
+      summary: result.summary,
     });
   } catch (error) {
     console.error('获取往来账单失败:', error);

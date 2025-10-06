@@ -173,7 +173,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   }
 
   // 解析并验证查询参数
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = request.nextUrl;
   const queryParams = {
     page: searchParams.get('page')
       ? parseInt(searchParams.get('page')!, 10)

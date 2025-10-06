@@ -1,25 +1,46 @@
-'use client';
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
+import { Suspense } from 'react';
 
-import { useRouter } from 'next/navigation';
-
-import { FactoryShipmentOrderList } from '@/components/factory-shipments/factory-shipment-order-list';
-import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
+import { FactoryShipmentOrderListSkeleton } from '@/components/factory-shipments/factory-shipment-order-list-skeleton';
+import { FactoryShipmentOrderListWrapper } from '@/components/factory-shipments/factory-shipment-order-list-wrapper';
+import { factoryShipmentQueryKeys } from '@/lib/api/factory-shipments';
+import { getFactoryShipmentOrdersServer } from '@/lib/api/factory-shipments-server';
 
 /**
  * 厂家发货订单页面
  * 采用中国ERP系统标准布局，严格遵循全栈项目统一约定规范
+ * 服务端组件 - 优先使用 App Router SSR，在服务端预取数据
  */
-export default function FactoryShipmentsPage() {
-  const router = useRouter();
+export default async function FactoryShipmentsPage() {
+  // 创建 QueryClient 用于服务端预取
+  const queryClient = new QueryClient();
 
-  // 处理订单选择
-  const handleOrderSelect = (order: FactoryShipmentOrder) => {
-    router.push(`/factory-shipments/${order.id}`);
-  };
+  // 预取第一页数据
+  await queryClient.prefetchQuery({
+    queryKey: factoryShipmentQueryKeys.list({
+      page: 1,
+      limit: 20,
+    }),
+    queryFn: () =>
+      getFactoryShipmentOrdersServer({
+        page: 1,
+        limit: 20,
+      }),
+  });
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <FactoryShipmentOrderList onOrderSelect={handleOrderSelect} />
-    </div>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+        <div className="space-y-4">
+          <Suspense fallback={<FactoryShipmentOrderListSkeleton />}>
+            <FactoryShipmentOrderListWrapper />
+          </Suspense>
+        </div>
+      </div>
+    </HydrationBoundary>
   );
 }

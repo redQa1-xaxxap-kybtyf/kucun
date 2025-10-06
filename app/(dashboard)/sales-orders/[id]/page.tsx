@@ -2,29 +2,31 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowLeft,
-  Download,
-  Edit,
-  MoreHorizontal,
-  Printer,
+    ArrowLeft,
+    Download,
+    Edit,
+    MoreHorizontal,
+    Printer,
+    ShoppingCart,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ErrorMessage } from '@/components/ui/error-message';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Separator } from '@/components/ui/separator';
 import { queryKeys } from '@/lib/queryKeys';
 import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { getErrorMessage } from '@/lib/utils/error-handler';
 
 interface SalesOrderDetail {
   id: string;
@@ -111,20 +113,14 @@ export default function SalesOrderDetailPage() {
   });
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <ContentLoading />;
   }
 
   if (error) {
     return (
       <ErrorMessage
         title="加载失败"
-        message={
-          error instanceof Error ? error.message : '获取销售订单详情失败'
-        }
+        message={getErrorMessage(error)}
         onRetry={() => window.location.reload()}
       />
     );
@@ -163,46 +159,83 @@ export default function SalesOrderDetailPage() {
     );
 
   return (
-    <div className="space-y-6">
-      {/* 页面头部 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>返回</span>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">销售订单详情</h1>
-            <p className="text-muted-foreground">订单号：{order.orderNumber}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center space-x-2">
-          <Button variant="outline" size="sm">
-            <Printer className="mr-2 h-4 w-4" />
-            打印
-          </Button>
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            导出
-          </Button>
-          <Button variant="outline" size="sm">
-            <Edit className="mr-2 h-4 w-4" />
-            编辑
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem>复制订单</DropdownMenuItem>
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <ShoppingCart className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-3">
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                      销售订单详情
+                    </h1>
+                    <Badge
+                      variant={getStatusBadgeVariant(order.status)}
+                      className="text-xs"
+                    >
+                      {order.status}
+                    </Badge>
+                    {getOrderTypeBadge(order.orderType)}
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    订单号：
+                    <span className="font-mono font-medium text-blue-600">
+                      {order.orderNumber}
+                    </span>
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  打印
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  导出
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  编辑
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => router.back()}
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  返回
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>复制订单</DropdownMenuItem>
               <DropdownMenuItem>发送邮件</DropdownMenuItem>
               <DropdownMenuItem className="text-destructive">
                 删除订单
@@ -210,15 +243,19 @@ export default function SalesOrderDetailPage() {
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
-      </div>
+      </CardContent>
+    </Card>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* 基本信息 */}
-        <div className="space-y-6 lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>基本信息</CardTitle>
-            </CardHeader>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* 基本信息 */}
+          <div className="space-y-6 lg:col-span-2">
+            <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+                <CardTitle className="flex items-center text-gray-900">
+                  <ShoppingCart className="mr-2 h-5 w-5 text-blue-600" />
+                  基本信息
+                </CardTitle>
+              </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -294,9 +331,12 @@ export default function SalesOrderDetailPage() {
           </Card>
 
           {/* 订单明细 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>订单明细</CardTitle>
+          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+              <CardTitle className="flex items-center text-gray-900">
+                <ShoppingCart className="mr-2 h-5 w-5 text-blue-600" />
+                订单明细
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -348,9 +388,12 @@ export default function SalesOrderDetailPage() {
 
         {/* 金额汇总 */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>金额汇总</CardTitle>
+          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+              <CardTitle className="flex items-center text-gray-900">
+                <ShoppingCart className="mr-2 h-5 w-5 text-blue-600" />
+                金额汇总
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex justify-between">
@@ -391,9 +434,12 @@ export default function SalesOrderDetailPage() {
           </Card>
 
           {/* 操作历史 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>操作历史</CardTitle>
+          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+              <CardTitle className="flex items-center text-gray-900">
+                <ShoppingCart className="mr-2 h-5 w-5 text-blue-600" />
+                操作历史
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">

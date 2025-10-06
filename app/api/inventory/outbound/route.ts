@@ -102,7 +102,7 @@ export const GET = withAuth(
   async (request: NextRequest, { user }) => {
     return withErrorHandling(async () => {
       // 解析查询参数
-      const { searchParams } = new URL(request.url);
+      const { searchParams } = request.nextUrl;
       const page = parseInt(searchParams.get('page') || '1');
       const limit = parseInt(searchParams.get('limit') || '20');
       const search = searchParams.get('search') || undefined;

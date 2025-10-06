@@ -24,8 +24,10 @@ export default async function ProductEditPage({
   }
 
   return (
-    <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      <ProductEditClient productId={id} initialData={product} />
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        <ProductEditClient productId={id} initialData={product} />
+      </div>
     </div>
   );
 }

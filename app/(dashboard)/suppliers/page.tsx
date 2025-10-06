@@ -1,9 +1,6 @@
-import Link from 'next/link';
-import { Plus } from 'lucide-react';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
 
-import { Button } from '@/components/ui/button';
 import { SupplierListSkeleton } from '@/components/suppliers/supplier-list-skeleton';
 import { SuppliersPageClient } from '@/components/suppliers/suppliers-page-client';
 import { getSuppliers } from '@/lib/services/supplier-service';
@@ -45,28 +42,15 @@ export default async function SuppliersPage({
   });
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">供应商管理</h1>
-          <p className="text-muted-foreground">管理供应商信息</p>
-        </div>
-        <Button asChild>
-          <Link href="/suppliers/create">
-            <Plus className="mr-2 h-4 w-4" />
-            新建供应商
-          </Link>
-        </Button>
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        <Suspense fallback={<SupplierListSkeleton />}>
+          <SuppliersPageClient
+            initialData={initialData}
+            initialParams={{ page, limit, search, status, sortBy, sortOrder }}
+          />
+        </Suspense>
       </div>
-
-      {/* 客户端交互组件 */}
-      <Suspense fallback={<SupplierListSkeleton />}>
-        <SuppliersPageClient
-          initialData={initialData}
-          initialParams={{ page, limit, search, status, sortBy, sortOrder }}
-        />
-      </Suspense>
     </div>
   );
 }

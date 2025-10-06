@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import {
   Download,
   Eye,
+  FileText,
   Filter,
   Receipt,
   Search,
@@ -153,28 +154,48 @@ export default function StatementsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题和操作 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">往来账单</h1>
-          <p className="text-muted-foreground">
-            管理客户和供应商的综合账务往来
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            导出对账单
-          </Button>
-          <Button variant="outline" size="sm">
-            <Receipt className="mr-2 h-4 w-4" />
-            生成报表
-          </Button>
-        </div>
-      </div>
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <FileText className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    往来账单管理
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    管理客户和供应商的综合账务往来，跟踪账单状态
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  导出对账单
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Receipt className="mr-2 h-4 w-4" />
+                  生成报表
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* 统计卡片 */}
+        {/* 统计卡片 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -229,12 +250,9 @@ export default function StatementsPage() {
         </Card>
       </div>
 
-      {/* 搜索和筛选 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>往来账单列表</CardTitle>
-        </CardHeader>
-        <CardContent>
+        {/* 搜索和筛选 */}
+        <Card className="shadow-md shadow-gray-200/50">
+          <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 items-center gap-2">
               <div className="relative max-w-sm flex-1">
@@ -463,6 +481,7 @@ export default function StatementsPage() {
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

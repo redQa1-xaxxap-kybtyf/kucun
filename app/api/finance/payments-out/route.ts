@@ -3,9 +3,10 @@
 
 import { type NextRequest } from 'next/server';
 
-import { successResponse, withAuth } from '@/lib/auth/api-helpers';
+import { errorResponse, successResponse, withAuth } from '@/lib/auth/api-helpers';
 import { clearCacheAfterPaymentOut } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
+import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import type {
   PaymentOutRecordDetail,
   PaymentOutRecordListResponse,
@@ -53,9 +54,9 @@ export const GET = withAuth(
 
     if (search) {
       where.OR = [
-        { paymentNumber: { contains: search } },
-        { supplier: { name: { contains: search } } },
-        { voucherNumber: { contains: search } },
+        { paymentNumber: { contains: search, mode: 'insensitive' } },
+        { supplier: { name: { contains: search, mode: 'insensitive' } } },
+        { voucherNumber: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -76,17 +77,14 @@ export const GET = withAuth(
     }
 
     if (startDate || endDate) {
-      where.paymentDate = {} as { gte?: Date; lte?: Date };
+      const dateFilter: { gte?: Date; lte?: Date } = {};
       if (startDate) {
-        (where.paymentDate as { gte?: Date; lte?: Date }).gte = new Date(
-          startDate
-        );
+        dateFilter.gte = new Date(startDate);
       }
       if (endDate) {
-        (where.paymentDate as { gte?: Date; lte?: Date }).lte = new Date(
-          endDate
-        );
+        dateFilter.lte = new Date(endDate);
       }
+      where.paymentDate = dateFilter;
     }
 
     // 计算分页
@@ -287,10 +285,7 @@ export const POST = withAuth(
 
         return newPayment;
       },
-      {
-        isolationLevel: 'Serializable',
-        timeout: 10000, // 10秒超时
-      }
+      getStandardTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable）
     );
 
     // 清除相关缓存

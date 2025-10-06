@@ -26,7 +26,7 @@ import {
 export const GET = withAuth(
   async (request: NextRequest, { user }) => {
     return withErrorHandling(async request => {
-      const { searchParams } = new URL(request.url);
+      const { searchParams } = request.nextUrl;
 
       // 1. 解析查询参数
       const queryParams = {
@@ -39,6 +39,7 @@ export const GET = withAuth(
         sortBy: searchParams.get('sortBy') || 'createdAt',
         sortOrder: searchParams.get('sortOrder') || 'desc',
         parentId: searchParams.get('parentId') || undefined,
+        status: searchParams.get('status') || undefined,
       };
 
       // 2. 验证查询参数（Zod 错误会自动处理）

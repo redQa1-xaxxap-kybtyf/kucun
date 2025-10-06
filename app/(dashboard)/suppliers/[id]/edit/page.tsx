@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Building2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { use, useEffect } from 'react';
@@ -118,10 +118,12 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   // 错误处理
   if (error) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="text-center text-red-600">
-          加载供应商信息失败: {error.message}
-        </div>
+      <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+        <Card className="shadow-lg shadow-gray-200/50">
+          <CardContent className="py-8 text-center text-red-600">
+            加载供应商信息失败: {error.message}
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -129,8 +131,12 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   // 加载中
   if (isLoadingSupplier) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="text-center">加载中...</div>
+      <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+        <Card className="shadow-lg shadow-gray-200/50">
+          <CardContent className="py-8 text-center text-gray-500">
+            加载中...
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -138,8 +144,12 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   // 供应商不存在
   if (!supplierData?.data) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="text-center text-red-600">供应商不存在</div>
+      <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+        <Card className="shadow-lg shadow-gray-200/50">
+          <CardContent className="py-8 text-center text-red-600">
+            供应商不存在
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -147,30 +157,52 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   const supplier = supplierData.data;
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
-      {/* 页面标题和导航 */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/suppliers">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">编辑供应商</h1>
-          <p className="text-muted-foreground">
-            修改供应商 &ldquo;{supplier.name}&rdquo; 的信息
-          </p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <Building2 className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    编辑供应商
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    修改供应商 &ldquo;{supplier.name}&rdquo; 的信息
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+              >
+                <Link href="/suppliers">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  返回
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* 表单 */}
-      <div className="max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle>基本信息</CardTitle>
+        {/* 表单 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+            <CardTitle className="flex items-center text-gray-900">
+              <Building2 className="mr-2 h-5 w-5 text-blue-600" />
+              基本信息
+            </CardTitle>
+            <CardDescription>
+              填写供应商的基本信息，包括名称、联系方式和地址
+            </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-6">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -272,17 +304,35 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
                 />
 
                 {/* 提交按钮 */}
-                <div className="flex gap-4 pt-4">
-                  <Button type="submit" disabled={isLoading} className="flex-1">
-                    {isLoading ? '更新中...' : '更新供应商'}
-                  </Button>
+                <div className="flex justify-end gap-4 pt-4">
                   <Button
                     type="button"
                     variant="outline"
+                    size="lg"
                     onClick={() => router.push('/suppliers')}
                     disabled={isLoading}
+                    className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
                   >
+                    <X className="mr-2 h-4 w-4" />
                     取消
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={isLoading}
+                    className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                  >
+                    {isLoading ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        更新中...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        更新供应商
+                      </>
+                    )}
                   </Button>
                 </div>
               </form>

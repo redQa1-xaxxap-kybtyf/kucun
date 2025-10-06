@@ -72,28 +72,37 @@ export default function CreateSupplierPage() {
   const isLoading = createMutation.isPending;
 
   return (
-    <div className="container mx-auto space-y-6 py-6">
-      {/* 页面标题和导航 */}
-      <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/suppliers">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">新建供应商</h1>
-          <p className="text-muted-foreground">创建新的供应商信息</p>
-        </div>
-      </div>
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button variant="ghost" size="sm" asChild>
+                  <Link href="/suppliers">
+                    <ArrowLeft className="mr-2 h-4 w-4" />
+                    返回
+                  </Link>
+                </Button>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    新建供应商
+                  </h1>
+                  <p className="text-sm text-gray-600">创建新的供应商信息</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* 表单 */}
-      <div className="max-w-2xl">
-        <Card>
-          <CardHeader>
-            <CardTitle>基本信息</CardTitle>
-          </CardHeader>
-          <CardContent>
+        {/* 表单 */}
+        <div className="max-w-2xl">
+          <Card className="shadow-lg shadow-gray-200/50">
+            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+              <CardTitle>基本信息</CardTitle>
+            </CardHeader>
+            <CardContent className="pt-6">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -187,6 +196,7 @@ export default function CreateSupplierPage() {
             </Form>
           </CardContent>
         </Card>
+        </div>
       </div>
     </div>
   );

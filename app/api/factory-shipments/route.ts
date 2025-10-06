@@ -28,9 +28,9 @@ export async function GET(request: NextRequest) {
       page: searchParams.get('page')
         ? parseInt(searchParams.get('page') || '1')
         : 1,
-      pageSize: searchParams.get('pageSize')
+      limit: searchParams.get('limit')
         ? parseInt(
-            searchParams.get('pageSize') ||
+            searchParams.get('limit') ||
               paginationConfig.defaultPageSize.toString()
           )
         : paginationConfig.defaultPageSize,
@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
       factoryShipmentOrderListParamsSchema.parse(queryParams);
     const {
       page = 1,
-      pageSize = paginationConfig.defaultPageSize,
+      limit = paginationConfig.defaultPageSize,
       status,
       customerId,
       containerNumber,
@@ -85,16 +85,30 @@ export async function GET(request: NextRequest) {
     }
 
     // 分页计算
-    const skip = (page - 1) * pageSize;
+    const skip = (page - 1) * limit;
 
-    // 查询订单列表
+    // ✅ 优化关联查询,只查询必要字段,减少数据传输量
+    // 从查询所有字段改为 select 指定字段
     const [orders, totalCount] = await Promise.all([
       prisma.factoryShipmentOrder.findMany({
         where,
         skip,
-        take: pageSize,
+        take: limit,
         orderBy: { createdAt: 'desc' },
-        include: {
+        select: {
+          id: true,
+          orderNumber: true,
+          containerNumber: true,
+          customerId: true,
+          userId: true,
+          status: true,
+          totalAmount: true,
+          receivableAmount: true,
+          depositAmount: true,
+          remarks: true,
+          planDate: true,
+          createdAt: true,
+          updatedAt: true,
           customer: {
             select: { id: true, name: true, phone: true, address: true },
           },
@@ -102,7 +116,23 @@ export async function GET(request: NextRequest) {
             select: { id: true, name: true, email: true },
           },
           items: {
-            include: {
+            select: {
+              id: true,
+              productId: true,
+              supplierId: true,
+              quantity: true,
+              unitPrice: true,
+              totalPrice: true,
+              isManualProduct: true,
+              manualProductName: true,
+              manualSpecification: true,
+              manualWeight: true,
+              manualUnit: true,
+              displayName: true,
+              specification: true,
+              unit: true,
+              weight: true,
+              remarks: true,
               product: {
                 select: {
                   id: true,
@@ -127,9 +157,9 @@ export async function GET(request: NextRequest) {
       orders,
       pagination: {
         page,
-        pageSize,
+        limit,
         totalCount,
-        totalPages: Math.ceil(totalCount / pageSize),
+        totalPages: Math.ceil(totalCount / limit),
       },
     });
   } catch (error) {
@@ -304,37 +334,47 @@ export async function POST(request: NextRequest) {
         },
       });
 
+      // ✅ 使用批量创建优化性能 (从 20 次数据库往返降至 2 次)
       // 记录客户产品价格历史（厂家发货价格类型）
-      for (const item of items) {
-        if (!item.isManualProduct && item.productId && item.unitPrice) {
-          await tx.customerProductPrice.create({
-            data: {
-              customerId,
-              productId: item.productId,
-              priceType: 'FACTORY',
-              unitPrice: item.unitPrice,
-              orderId: newOrder.id,
-              orderType: 'FACTORY_SHIPMENT',
-            },
-          });
-        }
+      const customerPriceData = items
+        .filter(
+          item => !item.isManualProduct && item.productId && item.unitPrice
+        )
+        .map(item => ({
+          customerId,
+          productId: item.productId!,
+          priceType: 'FACTORY' as const,
+          unitPrice: item.unitPrice,
+          orderId: newOrder.id,
+          orderType: 'FACTORY_SHIPMENT' as const,
+        }));
 
-        // 记录供应商产品价格历史
-        if (
-          !item.isManualProduct &&
-          item.productId &&
-          item.supplierId &&
-          item.unitPrice
-        ) {
-          await tx.supplierProductPrice.create({
-            data: {
-              supplierId: item.supplierId,
-              productId: item.productId,
-              unitPrice: item.unitPrice,
-              orderId: newOrder.id,
-            },
-          });
-        }
+      if (customerPriceData.length > 0) {
+        await tx.customerProductPrice.createMany({
+          data: customerPriceData,
+        });
+      }
+
+      // 记录供应商产品价格历史
+      const supplierPriceData = items
+        .filter(
+          item =>
+            !item.isManualProduct &&
+            item.productId &&
+            item.supplierId &&
+            item.unitPrice
+        )
+        .map(item => ({
+          supplierId: item.supplierId!,
+          productId: item.productId!,
+          unitPrice: item.unitPrice,
+          orderId: newOrder.id,
+        }));
+
+      if (supplierPriceData.length > 0) {
+        await tx.supplierProductPrice.createMany({
+          data: supplierPriceData,
+        });
       }
 
       return newOrder;

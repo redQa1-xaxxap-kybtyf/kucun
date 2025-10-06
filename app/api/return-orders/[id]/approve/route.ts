@@ -63,87 +63,90 @@ export const POST = withAuth(
       );
     }
 
-    // 使用事务处理审批
-    const updatedReturnOrder = await prisma.$transaction(async tx => {
-      // 准备更新数据
-      const updateData: {
-        status: string;
-        approvedAt: Date;
-        updatedAt: Date;
-        approvedBy?: string;
-        remarks?: string;
-        refundAmount?: number;
-      } = {
-        status: approved ? 'approved' : 'rejected',
-        approvedAt: new Date(),
-        updatedAt: new Date(),
-      };
+    // ✅ 使用事务处理审批，事件发布在事务成功后
+    let updatedReturnOrder;
 
-      if (remarks) {
-        updateData.remarks = remarks;
-      }
+    try {
+      updatedReturnOrder = await prisma.$transaction(async tx => {
+        // 准备更新数据
+        const updateData: {
+          status: string;
+          approvedAt: Date;
+          updatedAt: Date;
+          approvedBy?: string;
+          remarks?: string;
+          refundAmount?: number;
+        } = {
+          status: approved ? 'approved' : 'rejected',
+          approvedAt: new Date(),
+          updatedAt: new Date(),
+        };
 
-      // 如果审批通过且设置了退款金额
-      if (approved && refundAmount !== undefined) {
-        updateData.refundAmount = refundAmount;
-      }
+        if (remarks) {
+          updateData.remarks = remarks;
+        }
 
-      // 更新退货订单
-      const returnOrder = await tx.returnOrder.update({
-        where: { id },
-        data: updateData,
-        include: {
-          customer: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
+        // 如果审批通过且设置了退款金额
+        if (approved && refundAmount !== undefined) {
+          updateData.refundAmount = refundAmount;
+        }
+
+        // 更新退货订单
+        const returnOrder = await tx.returnOrder.update({
+          where: { id },
+          data: updateData,
+          include: {
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                phone: true,
+              },
             },
-          },
-          salesOrder: {
-            select: {
-              id: true,
-              orderNumber: true,
-              totalAmount: true,
-              status: true,
+            salesOrder: {
+              select: {
+                id: true,
+                orderNumber: true,
+                totalAmount: true,
+                status: true,
+              },
             },
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
+            user: {
+              select: {
+                id: true,
+                name: true,
+              },
             },
-          },
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  code: true,
+            items: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    name: true,
+                    code: true,
+                  },
                 },
               },
             },
           },
-        },
+        });
+
+        // 如果审批通过，可以选择自动进入处理状态
+        if (approved) {
+          // 这里可以添加自动处理逻辑，比如：
+          // 1. 通知仓库准备收货
+          // 2. 发送客户通知
+          // 3. 创建相关任务等
+          console.log(`退货订单 ${returnOrder.returnNumber} 审批通过`);
+        } else {
+          console.log(`退货订单 ${returnOrder.returnNumber} 审批拒绝`);
+        }
+
+        return returnOrder;
       });
 
-      // 如果审批通过，可以选择自动进入处理状态
-      if (approved) {
-        // 这里可以添加自动处理逻辑，比如：
-        // 1. 通知仓库准备收货
-        // 2. 发送客户通知
-        // 3. 创建相关任务等
-        console.log(`退货订单 ${returnOrder.returnNumber} 审批通过`);
-      } else {
-        console.log(`退货订单 ${returnOrder.returnNumber} 审批拒绝`);
-      }
-
-      return returnOrder;
-    });
-
-    // 发布审核结果事件
-    await publishApprovalResult({
+      // ✅ 事务成功提交后才发布事件，避免事件发送但数据未提交的情况
+      await publishApprovalResult({
       approved,
       resourceType: 'return',
       resourceId: updatedReturnOrder.id,
@@ -156,11 +159,27 @@ export const POST = withAuth(
       userId: user.id,
     });
 
-    return NextResponse.json({
-      success: true,
-      data: updatedReturnOrder,
-      message: approved ? '退货订单审批通过' : '退货订单审批拒绝',
-    });
+      return NextResponse.json({
+        success: true,
+        data: updatedReturnOrder,
+        message: approved ? '退货订单审批通过' : '退货订单审批拒绝',
+      });
+    } catch (error) {
+      // 如果事件发布失败，记录错误但不影响业务流程
+      console.error('Event publish failed:', error);
+
+      // 如果是事务执行失败，抛出错误
+      if (!updatedReturnOrder) {
+        throw error;
+      }
+
+      // 事务成功但事件发布失败，仍返回成功（事件发布为非关键路径）
+      return NextResponse.json({
+        success: true,
+        data: updatedReturnOrder,
+        message: approved ? '退货订单审批通过' : '退货订单审批拒绝',
+      });
+    }
   },
   { anyPermissions: ['returns:approve', 'returns:reject'] }
 );

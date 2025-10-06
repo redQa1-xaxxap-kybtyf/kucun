@@ -7,16 +7,17 @@ import { toast } from 'sonner';
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
 import { useInventoryUpdates } from '@/hooks/use-websocket';
+import type { FormattedInventory } from '@/lib/api/inventory-formatter';
 import type { CategoryOption } from '@/lib/types/category';
 import type {
   Inventory,
+  InventoryListResponse,
   InventoryQueryParams,
-  InventoryQueryResult,
 } from '@/lib/types/inventory';
 
 interface InventoryPageClientProps {
   initialData: {
-    data: InventoryQueryResult[];
+    data: FormattedInventory[];
     pagination: {
       page: number;
       limit: number;
@@ -42,16 +43,48 @@ export function InventoryPageClient({
   const [queryParams, setQueryParams] =
     React.useState<InventoryQueryParams>(initialParams);
 
+  // 将 FormattedInventory 转换为 Inventory 类型
+  const convertedInitialData: InventoryListResponse = {
+    success: true,
+    data: {
+      inventories: initialData.data.map(item => ({
+        id: item.id,
+        productId: item.productId,
+        batchNumber: item.batchNumber,
+        quantity: item.quantity,
+        reservedQuantity: item.reservedQuantity,
+        unitCost: item.unitCost,
+        location: item.location,
+        updatedAt: item.updatedAt,
+        product: {
+          id: item.product.id,
+          code: item.product.code,
+          name: item.product.name,
+          specification: item.product.specification,
+          unit: item.product.unit as import('@/lib/config/product').ProductUnit,
+          piecesPerUnit: item.product.piecesPerUnit,
+          status: item.product
+            .status as import('@/lib/config/product').ProductStatus,
+          categoryId: item.product.categoryId,
+          category: item.product.category
+            ? {
+                id: item.product.category.id,
+                name: item.product.category.name,
+                code: item.product.category.code,
+              }
+            : undefined,
+          createdAt: new Date().toISOString(), // 占位值，不影响显示
+          updatedAt: item.updatedAt,
+        },
+      })),
+      pagination: initialData.pagination,
+    },
+  };
+
   // 获取库存列表数据（使用优化Hook，内置缓存与预取，保持上一页数据）
   const { data, isLoading, error } = useOptimizedInventoryQuery({
     params: queryParams,
-    initialData: {
-      success: true,
-      data: {
-        inventories: initialData.data,
-        pagination: initialData.pagination,
-      },
-    },
+    initialData: convertedInitialData,
   });
 
   // 订阅库存实时更新
@@ -145,14 +178,50 @@ export function InventoryPageClient({
   }
 
   return (
-    <ERPInventoryList
-      data={normalizedData}
-      categoryOptions={categoryOptions}
-      queryParams={queryParams}
-      onSearch={handleSearch}
-      onFilter={handleFilter}
-      onPageChange={handlePageChange}
-      isLoading={isLoading}
-    />
+    <>
+      {/* 页面标题卡片 */}
+      <div className="overflow-hidden rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-lg shadow-gray-200/50">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-6 w-6 text-white"
+            >
+              <path d="M16.5 9.4 7.55 4.24" />
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
+              <polyline points="3.29 7 12 12 20.71 7" />
+              <line x1="12" x2="12" y1="22" y2="12" />
+            </svg>
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              库存管理
+            </h1>
+            <p className="text-sm text-gray-600">
+              实时监控产品库存，管理入库、出库和库存调整
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* 库存列表 */}
+      <ERPInventoryList
+        data={normalizedData}
+        categoryOptions={categoryOptions}
+        queryParams={queryParams}
+        onSearch={handleSearch}
+        onFilter={handleFilter}
+        onPageChange={handlePageChange}
+        isLoading={isLoading}
+      />
+    </>
   );
 }

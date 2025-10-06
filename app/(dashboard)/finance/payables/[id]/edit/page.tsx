@@ -2,28 +2,28 @@ import { CreditCard } from 'lucide-react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
-import { PayableDetailClient } from '@/components/finance/payable-detail-client';
+import { PayableEditClient } from '@/components/finance/payable-edit-client';
 import { Card, CardContent } from '@/components/ui/card';
 import { payablesApi } from '@/lib/api/payables';
 
 export const metadata: Metadata = {
-  title: '应付款详情 - 财务管理',
-  description: '查看应付款详细信息',
+  title: '编辑应付款 - 财务管理',
+  description: '编辑应付款记录信息',
 };
 
-interface PayableDetailPageProps {
+interface PayableEditPageProps {
   params: Promise<{
     id: string;
   }>;
 }
 
 /**
- * 应付款详情页面
+ * 编辑应付款页面
  * 遵循 Next.js 15.4 App Router 架构和全局约定规范
  */
-export default async function PayableDetailPage({
+export default async function EditPayablePage({
   params,
-}: PayableDetailPageProps) {
+}: PayableEditPageProps) {
   const { id } = await params;
 
   // 服务器端获取应付款详情
@@ -35,6 +35,11 @@ export default async function PayableDetailPage({
   }
 
   if (!payable) {
+    notFound();
+  }
+
+  // 只允许编辑待付款和部分付款状态的应付款
+  if (payable.status !== 'pending' && payable.status !== 'partial') {
     notFound();
   }
 
@@ -50,7 +55,7 @@ export default async function PayableDetailPage({
               </div>
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                  应付款详情
+                  编辑应付款
                 </h1>
                 <p className="text-sm text-gray-600">
                   应付款单号：{payable.payableNumber}
@@ -60,9 +65,10 @@ export default async function PayableDetailPage({
           </CardContent>
         </Card>
 
-        {/* 详情内容 */}
-        <PayableDetailClient payable={payable} />
+        {/* 表单内容 */}
+        <PayableEditClient payableId={id} initialData={payable} />
       </div>
     </div>
   );
 }
+

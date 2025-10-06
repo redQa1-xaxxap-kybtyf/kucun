@@ -1,10 +1,11 @@
-import { Download, Plus } from 'lucide-react';
+import { Download, Plus, TrendingDown } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
 import { RefundsClient } from '@/components/finance/refunds-client';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
 import type {
@@ -196,39 +197,63 @@ export default async function RefundsPage({
   const initialData = await getRefundsData(searchParams);
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题和操作 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">应退货款</h1>
-          <p className="text-muted-foreground">管理退货订单产生的应退账款</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/finance/refunds/export">
-              <Download className="mr-2 h-4 w-4" />
-              导出
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/return-orders/create">
-              <Plus className="mr-2 h-4 w-4" />
-              新建退货订单
-            </Link>
-          </Button>
-        </div>
-      </div>
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <TrendingDown className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    应退货款管理
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    管理退货订单产生的应退账款，跟踪退款处理状态
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  asChild
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Link href="/finance/refunds/export">
+                    <Download className="mr-2 h-4 w-4" />
+                    导出
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  asChild
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Link href="/return-orders/create">
+                    <Plus className="mr-2 h-4 w-4" />
+                    新建退货订单
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* 客户端交互组件 */}
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">加载中...</div>
-          </div>
-        }
-      >
-        <RefundsClient initialData={initialData} />
-      </Suspense>
+        {/* 客户端交互组件 */}
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center py-12">
+              <div className="text-muted-foreground">加载中...</div>
+            </div>
+          }
+        >
+          <RefundsClient initialData={initialData} />
+        </Suspense>
+      </div>
     </div>
   );
 }

@@ -3,10 +3,7 @@
 
 import { type NextRequest } from 'next/server';
 
-import { ApiError } from '@/lib/api/errors';
-import { withErrorHandling } from '@/lib/api/middleware';
-import { successResponse } from '@/lib/api/response';
-import { verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import type { ProductOption } from '@/lib/types/inbound';
 import { productSearchSchema } from '@/lib/validations/inbound';
@@ -74,9 +71,9 @@ async function searchProducts(search: string, limit: number) {
   const where = {
     status: 'active' as const,
     OR: [
-      { name: { contains: search } },
-      { code: { contains: search } },
-      { specification: { contains: search } },
+      { name: { contains: search, mode: 'insensitive' as const } },
+      { code: { contains: search, mode: 'insensitive' as const } },
+      { specification: { contains: search, mode: 'insensitive' as const } },
     ],
   };
 
@@ -144,27 +141,27 @@ function transformToOptions(
 }
 
 // GET /api/products/search - 搜索产品
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  // 1. 验证用户身份
-  const auth = verifyApiAuth(request);
-  if (!auth.success) {
-    throw ApiError.unauthorized();
-  }
+export const GET = withAuth(
+  async (request: NextRequest) => {
+    // 1. 解析查询参数
+    const { searchParams } = request.nextUrl;
+    const { search, limit } = productSearchSchema.parse({
+      search: searchParams.get('search'),
+      limit: searchParams.get('limit')
+        ? parseInt(searchParams.get('limit') || '20')
+        : 20,
+    });
 
-  // 2. 解析查询参数
-  const { searchParams } = new URL(request.url);
-  const { search, limit } = productSearchSchema.parse({
-    search: searchParams.get('search'),
-    limit: searchParams.get('limit')
-      ? parseInt(searchParams.get('limit') || '20')
-      : 20,
-  });
+    // 2. 搜索产品并转换格式
+    const products = await searchProducts(search, limit);
+    const options = transformToOptions(products);
+    const sortedOptions = sortSearchResults(options, search);
 
-  // 3. 搜索产品并转换格式
-  const products = await searchProducts(search, limit);
-  const options = transformToOptions(products);
-  const sortedOptions = sortSearchResults(options, search);
-
-  // 4. 返回成功响应
-  return successResponse(sortedOptions);
-});
+    // 3. 返回成功响应
+    return Response.json({
+      success: true,
+      data: sortedOptions,
+    });
+  },
+  { permissions: ['products:view'] }
+);

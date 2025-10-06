@@ -6,8 +6,10 @@ import { ProductCreateClient } from '@/components/products/product-create-client
  */
 export default async function CreateProductPage() {
   return (
-    <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      <ProductCreateClient />
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        <ProductCreateClient />
+      </div>
     </div>
   );
 }

@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/inbound-handlers';
 import { withErrorHandling } from '@/lib/api/middleware';
 import { prisma } from '@/lib/db';
+import { getLongTransactionOptions } from '@/lib/db/transaction-options';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { createInboundSchema } from '@/lib/validations/inbound';
 
@@ -21,7 +22,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   await validateUserSession();
 
   // 解析查询参数
-  const { searchParams } = new URL(request.url);
+  const { searchParams } = request.nextUrl;
   const queryData = parseInboundQueryParams(searchParams);
 
   // 获取入库记录列表
@@ -85,6 +86,7 @@ async function executeInboundTransaction(
   userId: string,
   finalBatchNumber: string | undefined
 ) {
+  // ✅ P2优化: 使用事务超时配置,防止长时间阻塞
   return await prisma.$transaction(async tx => {
     // 创建入库记录
     const record = await createInboundRecord(
@@ -114,7 +116,7 @@ async function executeInboundTransaction(
     );
 
     return record;
-  });
+  }, getLongTransactionOptions());
 }
 
 // POST /api/inventory/inbound - 创建入库记录

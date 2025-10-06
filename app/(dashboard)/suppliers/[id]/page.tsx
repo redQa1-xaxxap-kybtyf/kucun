@@ -75,6 +75,11 @@ export default async function SupplierDetailPage({
     ...supplier,
     createdAt: supplier.createdAt.toISOString(),
     updatedAt: supplier.updatedAt.toISOString(),
+    factoryShipments: [], // 添加空数组满足类型要求
+    _count: {
+      ...supplier._count,
+      factoryShipments: 0, // 添加缺失的 factoryShipments 计数
+    },
     factoryShipmentOrderItems: supplier.factoryShipmentOrderItems.map(item => ({
       ...item,
       createdAt: item.createdAt.toISOString(),

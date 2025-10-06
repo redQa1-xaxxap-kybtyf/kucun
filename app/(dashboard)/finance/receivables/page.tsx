@@ -1,13 +1,14 @@
-import { Download, Plus } from 'lucide-react';
+import { Download, Plus, TrendingUp } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
 import { ReceivablesClient } from '@/components/finance/receivables-client';
 import { Button } from '@/components/ui/button';
-import { getReceivables } from '@/lib/services/receivables-service';
+import { Card, CardContent } from '@/components/ui/card';
 import { paginationConfig } from '@/lib/env';
 import type { PaymentStatus } from '@/lib/services/receivables-service';
+import { getReceivables } from '@/lib/services/receivables-service';
 
 export const metadata: Metadata = {
   title: '应收货款管理 - 财务管理',
@@ -46,7 +47,7 @@ export default async function ReceivablesPage({
   // 服务器端获取初始数据
   const initialData = await getReceivables({
     page,
-    pageSize: limit,
+    limit,
     search,
     paymentStatus: status,
     sortBy,
@@ -54,39 +55,63 @@ export default async function ReceivablesPage({
   });
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题和操作 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">应收货款</h1>
-          <p className="text-muted-foreground">管理销售订单产生的应收账款</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/finance/receivables/export">
-              <Download className="mr-2 h-4 w-4" />
-              导出
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/sales-orders/create">
-              <Plus className="mr-2 h-4 w-4" />
-              新建销售订单
-            </Link>
-          </Button>
-        </div>
-      </div>
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <TrendingUp className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    应收货款管理
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    管理销售订单产生的应收账款，跟踪收款状态和逾期情况
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  asChild
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Link href="/finance/receivables/export">
+                    <Download className="mr-2 h-4 w-4" />
+                    导出
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  asChild
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Link href="/sales-orders/create">
+                    <Plus className="mr-2 h-4 w-4" />
+                    新建销售订单
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* 客户端交互组件 */}
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">加载中...</div>
-          </div>
-        }
-      >
-        <ReceivablesClient initialData={initialData} />
-      </Suspense>
+        {/* 客户端交互组件 */}
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center py-12">
+              <div className="text-muted-foreground">加载中...</div>
+            </div>
+          }
+        >
+          <ReceivablesClient initialData={initialData} />
+        </Suspense>
+      </div>
     </div>
   );
 }

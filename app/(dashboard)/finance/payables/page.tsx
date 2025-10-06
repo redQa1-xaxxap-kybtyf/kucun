@@ -1,10 +1,11 @@
-import { Download, Plus } from 'lucide-react';
+import { CreditCard, Download, Plus } from 'lucide-react';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { Suspense } from 'react';
 
 import { PayablesClient } from '@/components/finance/payables-client';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { prisma } from '@/lib/db';
 
 export const metadata: Metadata = {
@@ -161,39 +162,63 @@ export default async function PayablesPage({
   const initialData = await getPayablesData(searchParams);
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题和操作 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">应付款管理</h1>
-          <p className="text-muted-foreground">管理供应商应付款和付款记录</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" asChild>
-            <Link href="/finance/payables/export">
-              <Download className="mr-2 h-4 w-4" />
-              导出
-            </Link>
-          </Button>
-          <Button asChild>
-            <Link href="/finance/payables/create">
-              <Plus className="mr-2 h-4 w-4" />
-              新建应付款
-            </Link>
-          </Button>
-        </div>
-      </div>
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <CreditCard className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    应付款管理
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    管理供应商应付款和付款记录，跟踪付款状态和逾期情况
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  asChild
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Link href="/finance/payables/export">
+                    <Download className="mr-2 h-4 w-4" />
+                    导出
+                  </Link>
+                </Button>
+                <Button
+                  size="lg"
+                  asChild
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Link href="/finance/payables/create">
+                    <Plus className="mr-2 h-4 w-4" />
+                    新建应付款
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* 客户端交互组件 */}
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center py-12">
-            <div className="text-muted-foreground">加载中...</div>
-          </div>
-        }
-      >
-        <PayablesClient initialData={initialData} />
-      </Suspense>
+        {/* 客户端交互组件 */}
+        <Suspense
+          fallback={
+            <div className="flex items-center justify-center py-12">
+              <div className="text-muted-foreground">加载中...</div>
+            </div>
+          }
+        >
+          <PayablesClient initialData={initialData} />
+        </Suspense>
+      </div>
     </div>
   );
 }

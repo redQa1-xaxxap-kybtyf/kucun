@@ -37,39 +37,41 @@ export default function InventoryAdjustPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <InventoryAdjustHeader
-        onBack={handleBack}
-        onNewAdjust={openAdjustDialog}
-      />
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <InventoryAdjustHeader
+          onBack={handleBack}
+          onNewAdjust={openAdjustDialog}
+        />
 
-      {/* 调整对话框 */}
-      <Dialog open={showAdjustDialog} onOpenChange={closeAdjustDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>库存调整</DialogTitle>
-          </DialogHeader>
-          <InventoryOperationForm
-            mode="adjust"
-            onSuccess={handleAdjustSuccess}
-            onCancel={closeAdjustDialog}
-          />
-        </DialogContent>
-      </Dialog>
+        {/* 调整对话框 */}
+        <Dialog open={showAdjustDialog} onOpenChange={closeAdjustDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>库存调整</DialogTitle>
+            </DialogHeader>
+            <InventoryOperationForm
+              mode="adjust"
+              onSuccess={handleAdjustSuccess}
+              onCancel={closeAdjustDialog}
+            />
+          </DialogContent>
+        </Dialog>
 
-      {/* 当前库存列表 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>当前库存状态</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <InventoryAdjustTable
-            inventoryRecords={inventoryRecords}
-            isLoading={isLoading}
-          />
-        </CardContent>
-      </Card>
+        {/* 当前库存列表 */}
+        <Card className="shadow-md shadow-gray-200/50">
+          <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+            <CardTitle>当前库存状态</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <InventoryAdjustTable
+              inventoryRecords={inventoryRecords}
+              isLoading={isLoading}
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

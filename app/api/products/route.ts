@@ -3,264 +3,79 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
 import {
-  buildCacheKey,
-  getOrSetJSON,
   revalidateProducts,
   publishDataUpdate,
-  CACHE_STRATEGY,
 } from '@/lib/cache';
-import { getBatchCachedInventorySummary } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { paginationConfig, productConfig } from '@/lib/env';
-import { paginationValidations } from '@/lib/validations/base';
 import { productCreateSchema } from '@/lib/validations/product';
 import { publishWs } from '@/lib/ws/ws-server';
+import { getProductsForServer } from '@/lib/api/products-server';
+import type { ProductListQueryParams } from '@/lib/api/products';
 
-const DEFAULT_INVENTORY = {
-  totalQuantity: 0,
-  reservedQuantity: 0,
-  availableQuantity: 0,
-};
+/**
+ * 解析 URLSearchParams 为产品查询参数
+ * 遵循 Context 7 规范：函数不超过 50 行
+ */
+function parseProductQueryParams(searchParams: URLSearchParams): ProductListQueryParams {
+  const includeInventory = searchParams.get('includeInventory')
+    ? searchParams.get('includeInventory') === 'true'
+    : productConfig.defaultIncludeInventory;
 
-// 获取产品列表
+  const includeStatistics = searchParams.get('includeStatistics')
+    ? searchParams.get('includeStatistics') === 'true'
+    : productConfig.defaultIncludeStatistics;
+
+  const page = parseInt(searchParams.get('page') || '1', 10);
+  const limit = parseInt(
+    searchParams.get('limit') || paginationConfig.defaultPageSize.toString(),
+    10
+  );
+  const search = searchParams.get('search') || undefined;
+  const categoryId = searchParams.get('categoryId') || undefined;
+  const status = searchParams.get('status') || undefined;
+  const sortBy = searchParams.get('sortBy') || 'createdAt';
+  const sortOrder = (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc';
+
+  return {
+    page,
+    limit,
+    search,
+    categoryId,
+    status: status as 'active' | 'inactive' | undefined,
+    sortBy,
+    sortOrder,
+    includeInventory,
+    includeStatistics,
+  };
+}
+
+/**
+ * 获取产品列表 API
+ * 复用 products-server.ts 逻辑，避免代码重复
+ * 遵循 Context 7 规范：函数不超过 50 行
+ */
 export const GET = withAuth(
-  async (request: NextRequest, { user }) => {
-    const { searchParams } = new URL(request.url);
+  async (request: NextRequest) => {
+    try {
+      // 解析查询参数
+      const params = parseProductQueryParams(request.nextUrl.searchParams);
 
-    const includeInventory = searchParams.get('includeInventory')
-      ? searchParams.get('includeInventory') === 'true'
-      : productConfig.defaultIncludeInventory;
-    const includeStatistics = searchParams.get('includeStatistics')
-      ? searchParams.get('includeStatistics') === 'true'
-      : productConfig.defaultIncludeStatistics;
+      // 调用服务器端函数（复用缓存和逻辑）
+      const data = await getProductsForServer(params);
 
-    // 性能优化：限制聚合查询的使用
-    const requestLimit = parseInt(
-      searchParams.get('limit') || paginationConfig.defaultPageSize.toString()
-    );
-    // 降低阈值以减少数据库负载，统计数据通常只在详情页需要
-    const shouldLimitAggregation = requestLimit > 20; // 超过20条记录时限制聚合查询
-
-    const finalIncludeStatistics = includeStatistics && !shouldLimitAggregation;
-
-    const rawStatus = searchParams.get('status');
-    const rawCategoryId = searchParams.get('categoryId');
-    const filterUncategorized = rawCategoryId === 'none';
-
-    const queryParams = {
-      page: searchParams.get('page') || '1',
-      limit:
-        searchParams.get('limit') ||
-        paginationConfig.defaultPageSize.toString(),
-      search: searchParams.get('search') || undefined,
-      sortBy: searchParams.get('sortBy') || 'createdAt',
-      sortOrder: searchParams.get('sortOrder') || 'desc',
-      status: rawStatus && rawStatus !== 'all' ? rawStatus : undefined,
-      unit: searchParams.get('unit') || undefined,
-      categoryId: filterUncategorized ? undefined : rawCategoryId || undefined,
-    };
-
-    // 验证查询参数
-    const validationResult = paginationValidations.query.safeParse(queryParams);
-    if (!validationResult.success) {
+      // 返回成功响应
+      return successResponse(data);
+    } catch (error) {
+      console.error('[产品列表] 查询失败:', error);
       return NextResponse.json(
         {
           success: false,
-          error: '查询参数格式不正确',
-          details: validationResult.error.issues,
+          error: error instanceof Error ? error.message : '获取产品列表失败',
         },
-        { status: 400 }
+        { status: 500 }
       );
     }
-
-    const { page, limit, search, sortBy, sortOrder } = validationResult.data;
-
-    // 构建查询条件
-    const where: Record<string, unknown> = {};
-
-    // 搜索条件 - 优化为使用索引的查询
-    // code使用startsWith可以利用索引，name使用contains有索引支持
-    // 移除specification搜索以避免全表扫描
-    if (search) {
-      where.OR = [
-        { code: { startsWith: search } }, // 可以使用索引的前缀匹配
-        { name: { contains: search } }, // name字段有索引
-      ];
-    }
-
-    if (queryParams.status) {
-      (where as Record<string, unknown>).status = queryParams.status;
-    }
-
-    if (queryParams.unit) {
-      (where as Record<string, unknown>).unit = queryParams.unit;
-    }
-
-    if (filterUncategorized) {
-      (where as Record<string, unknown>).categoryId = null;
-    } else if (queryParams.categoryId) {
-      (where as Record<string, unknown>).categoryId = queryParams.categoryId;
-    }
-
-    // Redis 缓存键
-    const cacheKey = buildCacheKey('products:list', {
-      page,
-      limit,
-      search,
-      sortBy,
-      sortOrder,
-      status: queryParams.status,
-      unit: queryParams.unit,
-      categoryId: queryParams.categoryId,
-      includeInventory,
-      includeStatistics: finalIncludeStatistics,
-      uncategorized: filterUncategorized,
-    });
-
-    // 性能监控：记录查询开始时间
-    const queryStartTime = Date.now();
-
-    // 命中缓存则直接返回
-    const cached = await getOrSetJSON(
-      cacheKey,
-      async () => {
-        const baseProductSelect = {
-          id: true,
-          code: true,
-          name: true,
-          specification: true,
-          unit: true,
-          piecesPerUnit: true,
-          weight: true,
-          thickness: true,
-          status: true,
-          categoryId: true,
-          category: {
-            select: {
-              id: true,
-              name: true,
-              code: true,
-            },
-          },
-          createdAt: true,
-          updatedAt: true,
-        } as const;
-
-        const productSelect = finalIncludeStatistics
-          ? {
-              ...baseProductSelect,
-              _count: {
-                select: {
-                  inventory: true,
-                  salesOrderItems: true,
-                  inboundRecords: true,
-                },
-              },
-            }
-          : baseProductSelect;
-
-        const [products, total] = await Promise.all([
-          prisma.product.findMany({
-            where,
-            select: productSelect,
-            orderBy: { [sortBy as string]: sortOrder },
-            skip: (page - 1) * limit,
-            take: limit,
-          }),
-          prisma.product.count({ where }),
-        ]);
-
-        let inventoryMap = new Map<string, typeof DEFAULT_INVENTORY>();
-        if (includeInventory && products.length > 0) {
-          const productIds = products.map(product => product.id as string);
-          // 使用缓存优化的批量库存查询（已在顶部导入，避免动态导入延迟）
-          inventoryMap = await getBatchCachedInventorySummary(productIds);
-        }
-
-        const formattedProducts = products.map(product => {
-          const inventory = includeInventory
-            ? (inventoryMap.get(product.id as string) ?? {
-                ...DEFAULT_INVENTORY,
-              })
-            : { ...DEFAULT_INVENTORY };
-
-          const counts =
-            includeStatistics && '_count' in product
-              ? (
-                  product as {
-                    _count: {
-                      inventory: number;
-                      salesOrderItems: number;
-                      inboundRecords: number;
-                    };
-                  }
-                )._count
-              : undefined;
-
-          return {
-            id: product.id,
-            code: product.code,
-            name: product.name,
-            specification: product.specification,
-            unit: product.unit,
-            piecesPerUnit: product.piecesPerUnit,
-            weight: product.weight,
-            thickness: product.thickness,
-            status: product.status,
-            categoryId: product.categoryId,
-            category: product.category
-              ? {
-                  id: product.category.id,
-                  name: product.category.name,
-                  code: product.category.code,
-                }
-              : null,
-            inventory,
-            statistics: counts
-              ? {
-                  inventory: counts.inventory,
-                  salesOrderItems: counts.salesOrderItems,
-                  inboundRecords: counts.inboundRecords,
-                }
-              : undefined,
-            createdAt: product.createdAt,
-            updatedAt: product.updatedAt,
-          };
-        });
-
-        const totalPages = Math.ceil(total / limit);
-
-        return {
-          data: formattedProducts,
-          pagination: {
-            page,
-            limit,
-            total,
-            totalPages,
-          },
-        } as const;
-      },
-      CACHE_STRATEGY.dynamicData.redisTTL, // 使用统一的动态数据缓存策略 (5分钟)
-      {
-        enableRandomTTL: true, // 防止缓存雪崩
-        enableNullCache: true, // 防止缓存穿透
-      }
-    );
-
-    // 性能监控：记录慢查询
-    const queryDuration = Date.now() - queryStartTime;
-    if (queryDuration > 1000) {
-      console.warn(`[性能警告] 产品列表查询耗时过长: ${queryDuration}ms`, {
-        cacheKey,
-        includeInventory,
-        includeStatistics: finalIncludeStatistics,
-        search,
-        page,
-        limit,
-      });
-    }
-
-    return createDateTimeResponse(cached);
   },
   { permissions: ['products:view'] }
 );
@@ -288,30 +103,17 @@ export const POST = withAuth(
       name,
       specification,
       description,
-      unit,
       thickness,
       categoryId,
       thumbnailUrl,
       images,
     } = validationResult.data;
 
-    // 检查产品编码是否已存在
-    const existingProduct = await prisma.product.findUnique({
-      where: { code },
-    });
-
-    if (existingProduct) {
-      return NextResponse.json(
-        { success: false, error: '产品编码已存在' },
-        { status: 400 }
-      );
-    }
-
     // 处理分类ID：如果是"uncategorized"则设置为null
     const processedCategoryId =
       categoryId === 'uncategorized' ? null : categoryId;
 
-    // 使用事务创建产品
+    // ✅ 使用事务和数据库唯一约束防止并发创建重复编码
     const product = await prisma.$transaction(async tx => {
       // 检查分类是否存在（如果提供了分类ID）
       if (processedCategoryId) {
@@ -329,14 +131,15 @@ export const POST = withAuth(
         }
       }
 
-      // 创建产品
-      return await tx.product.create({
+      // 创建产品 - 依赖数据库唯一约束防止重复
+      try {
+        return await tx.product.create({
         data: {
           code,
           name,
           specification,
           description,
-          unit,
+          unit: 'piece', // 默认单位为"件"
           thickness,
           categoryId: processedCategoryId,
           thumbnailUrl,
@@ -368,9 +171,30 @@ export const POST = withAuth(
           updatedAt: true,
         },
       });
+      } catch (error: unknown) {
+        // 处理唯一约束冲突错误 (Prisma P2002)
+        if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+          throw new Error('产品编码已存在');
+        }
+        throw error;
+      }
     });
 
     // 转换数据格式
+    // ✅ 类型安全的 JSON 解析（避免 as string 断言）
+    let parsedImages: unknown[] = [];
+    if (product.images) {
+      try {
+        const parsed = JSON.parse(
+          typeof product.images === 'string' ? product.images : String(product.images)
+        );
+        parsedImages = Array.isArray(parsed) ? parsed : [];
+      } catch (error) {
+        console.error('解析产品图片失败:', error);
+        parsedImages = [];
+      }
+    }
+
     const formattedProduct = {
       id: product.id,
       code: product.code,
@@ -384,7 +208,7 @@ export const POST = withAuth(
       status: product.status,
       categoryId: product.categoryId,
       thumbnailUrl: product.thumbnailUrl,
-      images: product.images ? JSON.parse(product.images as string) : [],
+      images: parsedImages,
       category: product.category
         ? {
             id: product.category.id,

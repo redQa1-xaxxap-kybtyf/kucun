@@ -3,7 +3,7 @@
  * 包含标题、描述和操作按钮
  */
 
-import { ArrowLeft, Edit, Plus } from 'lucide-react';
+import { ArrowLeft, PackagePlus, Plus } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 
@@ -17,26 +17,41 @@ export function InventoryAdjustHeader({
   onNewAdjust,
 }: InventoryAdjustHeaderProps) {
   return (
-    <div className="flex items-center justify-between">
-      <div className="flex items-center space-x-4">
-        <Button variant="outline" size="sm" onClick={onBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          返回库存管理
-        </Button>
-        <div>
-          <h1 className="flex items-center text-3xl font-bold tracking-tight">
-            <Edit className="mr-3 h-8 w-8" />
-            库存调整
-          </h1>
-          <p className="text-muted-foreground">
-            查看当前库存状态并进行调整操作
-          </p>
+    <div className="overflow-hidden rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-lg shadow-gray-200/50">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+            <PackagePlus className="h-6 w-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+              库存调整
+            </h1>
+            <p className="text-sm text-gray-600">
+              查看当前库存状态并进行调整操作
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="lg"
+            className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+            onClick={onBack}
+          >
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            返回
+          </Button>
+          <Button
+            size="lg"
+            className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+            onClick={onNewAdjust}
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            新增调整
+          </Button>
         </div>
       </div>
-      <Button onClick={onNewAdjust}>
-        <Plus className="mr-2 h-4 w-4" />
-        新增调整
-      </Button>
     </div>
   );
 }

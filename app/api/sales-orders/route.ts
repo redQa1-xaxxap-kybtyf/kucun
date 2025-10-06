@@ -3,7 +3,8 @@ import {
   getSalesOrders,
   salesOrderQuerySchema,
 } from '@/lib/api/handlers/sales-orders';
-import { withAuth, withErrorHandling } from '@/lib/api/middleware';
+import { withAuth } from '@/lib/auth/api-helpers';
+import { withErrorHandling } from '@/lib/api/middleware';
 import { successResponse } from '@/lib/api/response';
 import {
   buildCacheKey,
@@ -17,7 +18,7 @@ import { salesOrderCreateSchema } from '@/lib/validations/sales-order';
  * 获取销售订单列表
  */
 export const GET = withErrorHandling(
-  withAuth(async (request, _context, _session) => {
+  withAuth(async (request) => {
     const { searchParams } = new URL(request.url);
     const rawParams = {
       page: searchParams.get('page'),

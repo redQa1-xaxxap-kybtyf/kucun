@@ -3,7 +3,7 @@
 
 import { type NextRequest } from 'next/server';
 
-import { successResponse, withAuth } from '@/lib/auth/api-helpers';
+import { errorResponse, successResponse, withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import type {
   PayableRecordDetail,
@@ -51,9 +51,9 @@ export const GET = withAuth(
 
     if (search) {
       where.OR = [
-        { payableNumber: { contains: search } },
-        { supplier: { name: { contains: search } } },
-        { sourceNumber: { contains: search } },
+        { payableNumber: { contains: search, mode: 'insensitive' } },
+        { supplier: { name: { contains: search, mode: 'insensitive' } } },
+        { sourceNumber: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -70,15 +70,14 @@ export const GET = withAuth(
     }
 
     if (startDate || endDate) {
-      where.createdAt = {} as { gte?: Date; lte?: Date };
+      const dateFilter: { gte?: Date; lte?: Date } = {};
       if (startDate) {
-        (where.createdAt as { gte?: Date; lte?: Date }).gte = new Date(
-          startDate
-        );
+        dateFilter.gte = new Date(startDate);
       }
       if (endDate) {
-        (where.createdAt as { gte?: Date; lte?: Date }).lte = new Date(endDate);
+        dateFilter.lte = new Date(endDate);
       }
+      where.createdAt = dateFilter;
     }
 
     // 计算分页
@@ -177,36 +176,40 @@ export const POST = withAuth(
       return errorResponse('供应商状态异常，无法创建应付款', 400);
     }
 
-    // 生成应付款单号(使用数据库序列表确保并发安全)
-    const payableNumber = await generatePayableNumber();
+    // ✅ 使用事务确保单号生成和记录创建的原子性
+    // 如果记录创建失败,单号不会被浪费
+    const payable = await prisma.$transaction(async tx => {
+      // 在事务内生成应付款单号
+      const payableNumber = await generatePayableNumber(tx);
 
-    // 创建应付款记录
-    const payable = await prisma.payableRecord.create({
-      data: {
-        ...data,
-        payableNumber,
-        userId: user.id,
-        remainingAmount: data.payableAmount,
-        dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
-      },
-      include: {
-        supplier: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            address: true,
-          },
+      // 创建应付款记录
+      return await tx.payableRecord.create({
+        data: {
+          ...data,
+          payableNumber,
+          userId: user.id,
+          remainingAmount: data.payableAmount,
+          dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
+        include: {
+          supplier: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              address: true,
+            },
           },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          paymentOutRecords: true,
         },
-        paymentOutRecords: true,
-      },
+      });
     });
 
     return successResponse(payable, 201, '应付款记录创建成功');

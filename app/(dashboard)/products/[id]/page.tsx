@@ -23,5 +23,11 @@ export default async function ProductDetailPage({
     notFound();
   }
 
-  return <ERPProductDetail product={product} />;
+  return (
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        <ERPProductDetail product={product} />
+      </div>
+    </div>
+  );
 }

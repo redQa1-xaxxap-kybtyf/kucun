@@ -17,7 +17,7 @@ import {
 // 获取库存列表
 export const GET = withAuth(
   async (request: NextRequest, { user }) => {
-    const { searchParams } = new URL(request.url);
+    const { searchParams } = request.nextUrl;
 
     // 直接传递字符串参数给验证器，让验证器自己转换
     const rawQueryParams = {
@@ -106,9 +106,16 @@ export const POST = withAuth(
 
     const { productId } = validationResult.data;
 
-    // 验证产品是否存在
+    // 验证产品是否存在（productId 已通过 Zod 验证，确保为 string）
+    if (typeof productId !== 'string') {
+      return NextResponse.json(
+        { success: false, error: '产品ID格式不正确' },
+        { status: 400 }
+      );
+    }
+
     const product = await prisma.product.findUnique({
-      where: { id: productId as string },
+      where: { id: productId },
     });
     if (!product) {
       return NextResponse.json(

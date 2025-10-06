@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 
 import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
-import { getCategoryOptions } from '@/lib/api/categories';
+import { getCategoriesServer } from '@/lib/api/categories-server';
 import { formatPaginatedResponse } from '@/lib/api/inventory-formatter';
 import {
   getInventoryCount,
@@ -45,11 +45,22 @@ export default async function InventoryPage({
   };
 
   // 并行获取初始数据
-  const [inventoryRecords, total, categoryOptions] = await Promise.all([
+  const [inventoryRecords, total, categoriesResult] = await Promise.all([
     getOptimizedInventoryList(queryParams),
     getInventoryCount(queryParams),
-    getCategoryOptions(),
+    getCategoriesServer({ page: 1, limit: 100, sortBy: 'name', sortOrder: 'asc' }),
   ]);
+
+  // 转换分类数据格式
+  const categoryOptions = categoriesResult.data.map(cat => ({
+    id: cat.id,
+    name: cat.name,
+    code: cat.code,
+    status: cat.status,
+    createdAt: cat.createdAt.toISOString(),
+    updatedAt: cat.updatedAt.toISOString(),
+    sortOrder: cat.sortOrder,
+  }));
 
   // 格式化响应数据
   const initialData = formatPaginatedResponse(

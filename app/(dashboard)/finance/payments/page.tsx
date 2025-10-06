@@ -15,6 +15,7 @@ import {
   Download,
   Filter,
   Plus,
+  Receipt,
   Search,
   TrendingUp,
   XCircle,
@@ -27,6 +28,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { calculatePagination, Pagination } from '@/components/ui/pagination';
 import {
   Select,
   SelectContent,
@@ -143,12 +145,12 @@ export default function PaymentsPage() {
       status,
       paymentMethod,
       page,
-      pageSize,
+      limit: pageSize,
     }),
     queryFn: async () => {
       const params = new URLSearchParams();
       params.set('page', page.toString());
-      params.set('pageSize', pageSize.toString());
+      params.set('limit', pageSize.toString());
       if (search) {
         params.set('search', search);
       }
@@ -176,7 +178,14 @@ export default function PaymentsPage() {
     pendingAmount: 0,
     recordCount: 0,
   };
-  const pagination = data?.data?.pagination || { total: 0, pages: 0 };
+  const paginationData = data?.data?.pagination || { total: 0, pages: 0 };
+
+  // 计算分页信息
+  const pagination = calculatePagination(
+    page,
+    pageSize,
+    paginationData.total || 0
+  );
 
   // 处理搜索
   const _handleSearch = () => {
@@ -204,272 +213,278 @@ export default function PaymentsPage() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题和操作 */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">收款记录</h1>
-          <p className="text-muted-foreground">管理和查看所有收款记录</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Download className="mr-2 h-4 w-4" />
-            导出
-          </Button>
-          <Button asChild>
-            <Link href="/finance/payments/create">
-              <Plus className="mr-2 h-4 w-4" />
-              新建收款
-            </Link>
-          </Button>
-        </div>
-      </div>
-
-      {/* 统计卡片 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">总收款金额</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(summary.totalAmount)}
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {summary.recordCount} 条收款记录
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">已确认金额</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-green-600">
-              {formatCurrency(summary.confirmedAmount)}
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {summary.totalAmount > 0
-                ? Math.round(
-                    (summary.confirmedAmount / summary.totalAmount) * 100
-                  )
-                : 0}
-              % 确认率
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">待确认金额</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
-              {formatCurrency(summary.pendingAmount)}
-            </div>
-            <p className="text-muted-foreground text-xs">待财务确认</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">本月收款</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
-              {formatCurrency(summary.confirmedAmount)}
-            </div>
-            <p className="text-muted-foreground text-xs">较上月增长 12%</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 搜索和筛选 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>收款记录列表</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 items-center gap-2">
-              <div className="relative max-w-sm flex-1">
-                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  placeholder="搜索收款单号、客户名称..."
-                  value={search}
-                  onChange={e => setSearch(e.target.value)}
-                  className="pl-9"
-                  onKeyDown={e => e.key === 'Enter' && _handleSearch()}
-                />
-              </div>
-              <Select
-                value={status || 'all'}
-                onValueChange={value => setStatus(value === 'all' ? '' : value)}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="pending">待确认</SelectItem>
-                  <SelectItem value="confirmed">已确认</SelectItem>
-                  <SelectItem value="cancelled">已取消</SelectItem>
-                </SelectContent>
-              </Select>
-
-              {/* 收款方式筛选 */}
-              <Select
-                value={paymentMethod || 'all'}
-                onValueChange={value =>
-                  setPaymentMethod(value === 'all' ? '' : value)
-                }
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="收款方式" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部方式</SelectItem>
-                  <SelectItem value="cash">现金</SelectItem>
-                  <SelectItem value="bank_transfer">银行转账</SelectItem>
-                  <SelectItem value="alipay">支付宝</SelectItem>
-                  <SelectItem value="wechat">微信支付</SelectItem>
-                  <SelectItem value="check">支票</SelectItem>
-                  <SelectItem value="other">其他</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          {/* 收款记录列表 */}
-          <div className="mt-6 space-y-4">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-muted-foreground">加载中...</div>
-              </div>
-            ) : error ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-red-600">
-                  加载失败: {(error as Error).message}
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <Receipt className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    收款记录管理
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    管理和查看所有收款记录，跟踪收款状态
+                  </p>
                 </div>
               </div>
-            ) : !payments.length ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <DollarSign className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-                  <p className="text-muted-foreground">暂无收款记录</p>
-                </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  导出
+                </Button>
+                <Button
+                  size="lg"
+                  asChild
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Link href="/finance/payments/create">
+                    <Plus className="mr-2 h-4 w-4" />
+                    新建收款
+                  </Link>
+                </Button>
               </div>
-            ) : (
-              <>
-                {payments.map(payment => (
-                  <Card
-                    key={payment.id}
-                    className="transition-shadow hover:shadow-md"
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-center justify-between">
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-3">
-                            <h3 className="font-semibold">
-                              {payment.paymentNumber}
-                            </h3>
-                            <StatusBadge status={payment.status} />
-                            <PaymentMethodBadge
-                              method={payment.paymentMethod}
-                            />
-                          </div>
-                          <p className="text-muted-foreground text-sm">
-                            客户：{payment.customer.name}
-                            {payment.customer.phone &&
-                              ` (${payment.customer.phone})`}
-                          </p>
-                          <div className="text-muted-foreground flex items-center gap-4 text-sm">
-                            <span>
-                              收款日期：
-                              {format(
-                                new Date(payment.paymentDate),
-                                'yyyy-MM-dd'
-                              )}
-                            </span>
-                            <span>
-                              关联订单：{payment.salesOrder.orderNumber}
-                            </span>
-                          </div>
-                          {payment.remarks && (
-                            <p className="text-muted-foreground text-sm">
-                              备注：{payment.remarks}
-                            </p>
-                          )}
-                        </div>
-                        <div className="space-y-2 text-right">
-                          <div>
-                            <p className="text-muted-foreground text-sm">
-                              收款金额
-                            </p>
-                            <p className="font-semibold text-green-600">
-                              {formatCurrency(payment.paymentAmount)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-sm">
-                              订单金额
-                            </p>
-                            <p className="font-semibold">
-                              {formatCurrency(payment.salesOrder.totalAmount)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() =>
-                            router.push(`/finance/payments/${payment.id}`)
-                          }
-                        >
-                          查看详情
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </>
-            )}
-          </div>
-
-          {/* 分页 */}
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-muted-foreground text-sm">
-              共 {pagination.total} 条记录
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page <= 1}
-                onClick={() => setPage(page - 1)}
-              >
-                上一页
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= pagination.pages}
-                onClick={() => setPage(page + 1)}
-              >
-                下一页
-              </Button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+
+        {/* 统计卡片 */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">总收款金额</CardTitle>
+              <DollarSign className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {formatCurrency(summary.totalAmount)}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                {summary.recordCount} 条收款记录
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">已确认金额</CardTitle>
+              <CheckCircle className="h-4 w-4 text-green-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">
+                {formatCurrency(summary.confirmedAmount)}
+              </div>
+              <p className="text-muted-foreground text-xs">
+                {summary.totalAmount > 0
+                  ? Math.round(
+                      (summary.confirmedAmount / summary.totalAmount) * 100
+                    )
+                  : 0}
+                % 确认率
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">待确认金额</CardTitle>
+              <Clock className="h-4 w-4 text-orange-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-orange-600">
+                {formatCurrency(summary.pendingAmount)}
+              </div>
+              <p className="text-muted-foreground text-xs">待财务确认</p>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">本月收款</CardTitle>
+              <TrendingUp className="h-4 w-4 text-blue-600" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-blue-600">
+                {formatCurrency(summary.confirmedAmount)}
+              </div>
+              <p className="text-muted-foreground text-xs">较上月增长 12%</p>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* 搜索和筛选 */}
+        <Card className="shadow-md shadow-gray-200/50">
+          <CardContent className="pt-6">
+            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-1 items-center gap-2">
+                <div className="relative max-w-sm flex-1">
+                  <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+                  <Input
+                    placeholder="搜索收款单号、客户名称..."
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                    className="pl-9"
+                    onKeyDown={e => e.key === 'Enter' && _handleSearch()}
+                  />
+                </div>
+                <Select
+                  value={status || 'all'}
+                  onValueChange={value =>
+                    setStatus(value === 'all' ? '' : value)
+                  }
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <Filter className="mr-2 h-4 w-4" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部状态</SelectItem>
+                    <SelectItem value="pending">待确认</SelectItem>
+                    <SelectItem value="confirmed">已确认</SelectItem>
+                    <SelectItem value="cancelled">已取消</SelectItem>
+                  </SelectContent>
+                </Select>
+
+                {/* 收款方式筛选 */}
+                <Select
+                  value={paymentMethod || 'all'}
+                  onValueChange={value =>
+                    setPaymentMethod(value === 'all' ? '' : value)
+                  }
+                >
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue placeholder="收款方式" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部方式</SelectItem>
+                    <SelectItem value="cash">现金</SelectItem>
+                    <SelectItem value="bank_transfer">银行转账</SelectItem>
+                    <SelectItem value="alipay">支付宝</SelectItem>
+                    <SelectItem value="wechat">微信支付</SelectItem>
+                    <SelectItem value="check">支票</SelectItem>
+                    <SelectItem value="other">其他</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* 收款记录列表 */}
+            <div className="mt-6 space-y-4">
+              {isLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-muted-foreground">加载中...</div>
+                </div>
+              ) : error ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-red-600">
+                    加载失败: {(error as Error).message}
+                  </div>
+                </div>
+              ) : !payments.length ? (
+                <div className="flex items-center justify-center py-8">
+                  <div className="text-center">
+                    <DollarSign className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
+                    <p className="text-muted-foreground">暂无收款记录</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {payments.map(payment => (
+                    <Card
+                      key={payment.id}
+                      className="transition-shadow hover:shadow-md"
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex items-center justify-between">
+                          <div className="space-y-2">
+                            <div className="flex items-center gap-3">
+                              <h3 className="font-semibold">
+                                {payment.paymentNumber}
+                              </h3>
+                              <StatusBadge status={payment.status} />
+                              <PaymentMethodBadge
+                                method={payment.paymentMethod}
+                              />
+                            </div>
+                            <p className="text-muted-foreground text-sm">
+                              客户：{payment.customer.name}
+                              {payment.customer.phone &&
+                                ` (${payment.customer.phone})`}
+                            </p>
+                            <div className="text-muted-foreground flex items-center gap-4 text-sm">
+                              <span>
+                                收款日期：
+                                {format(
+                                  new Date(payment.paymentDate),
+                                  'yyyy-MM-dd'
+                                )}
+                              </span>
+                              <span>
+                                关联订单：{payment.salesOrder.orderNumber}
+                              </span>
+                            </div>
+                            {payment.remarks && (
+                              <p className="text-muted-foreground text-sm">
+                                备注：{payment.remarks}
+                              </p>
+                            )}
+                          </div>
+                          <div className="space-y-2 text-right">
+                            <div>
+                              <p className="text-muted-foreground text-sm">
+                                收款金额
+                              </p>
+                              <p className="font-semibold text-green-600">
+                                {formatCurrency(payment.paymentAmount)}
+                              </p>
+                            </div>
+                            <div>
+                              <p className="text-muted-foreground text-sm">
+                                订单金额
+                              </p>
+                              <p className="font-semibold">
+                                {formatCurrency(payment.salesOrder.totalAmount)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              router.push(`/finance/payments/${payment.id}`)
+                            }
+                          >
+                            查看详情
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </>
+              )}
+            </div>
+
+            {/* 分页 */}
+            <Pagination
+              pagination={pagination}
+              onPageChange={setPage}
+              showTotal
+              disabled={isLoading}
+              containerClassName="mt-6"
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

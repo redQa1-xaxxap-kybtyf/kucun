@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { errorResponse, verifyApiAuth } from '@/lib/api-helpers';
 import { clearCacheAfterPayment } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
+import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { publishFinanceEvent } from '@/lib/events';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     const searchParams = new URL(request.url).searchParams;
     const queryResult = paymentRecordQuerySchema.safeParse({
       page: parseInt(searchParams.get('page') || '1'),
-      pageSize: parseInt(searchParams.get('pageSize') || '20'),
+      limit: parseInt(searchParams.get('limit') || '20'),
       search: searchParams.get('search') || undefined,
       status: searchParams.get('status') || undefined,
       paymentMethod: searchParams.get('paymentMethod') || undefined,
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
 
     const {
       page,
-      pageSize,
+      limit,
       search,
       status,
       paymentMethod,
@@ -124,8 +125,8 @@ export async function GET(request: NextRequest) {
         orderBy: {
           paymentDate: 'desc',
         },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (page - 1) * limit,
+        take: limit,
       }),
       prisma.paymentRecord.count({ where }),
     ]);
@@ -136,9 +137,9 @@ export async function GET(request: NextRequest) {
         payments,
         pagination: {
           page,
-          pageSize,
+          limit,
           total,
-          totalPages: Math.ceil(total / pageSize),
+          totalPages: Math.ceil(total / limit),
         },
       },
     });
@@ -289,10 +290,7 @@ export async function POST(request: NextRequest) {
 
         return newPayment;
       },
-      {
-        isolationLevel: 'Serializable',
-        timeout: 10000, // 10秒超时
-      }
+      getStandardTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable）
     );
 
     // 清除相关缓存

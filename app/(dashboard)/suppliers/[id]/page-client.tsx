@@ -119,48 +119,55 @@ export function SupplierDetailPageClient({
   );
 
   return (
-    <div className="space-y-6">
-      {/* 页面头部 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>返回</span>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{supplier.name}</h1>
-            <p className="text-muted-foreground">供应商详情</p>
-          </div>
-        </div>
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => router.back()}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  返回
+                </Button>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    {supplier.name}
+                  </h1>
+                  <p className="text-sm text-gray-600">供应商详情</p>
+                </div>
+              </div>
 
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push(`/suppliers/${supplier.id}/edit`)}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            编辑
-          </Button>
-          <Button size="sm">
-            <Truck className="mr-2 h-4 w-4" />
-            创建发货
-          </Button>
-        </div>
-      </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => router.push(`/suppliers/${supplier.id}/edit`)}
+                  className="h-11"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  编辑
+                </Button>
+                <Button size="lg" className="h-11">
+                  <Truck className="mr-2 h-4 w-4" />
+                  创建发货
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* 基本信息 */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>基本信息</CardTitle>
-            </CardHeader>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {/* 基本信息 */}
+          <div className="lg:col-span-2">
+            <Card className="shadow-lg shadow-gray-200/50">
+              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+                <CardTitle>基本信息</CardTitle>
+              </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
@@ -218,9 +225,9 @@ export function SupplierDetailPageClient({
         </div>
 
         {/* 统计信息 */}
-        <div className="space-y-6">
-          <Card>
-            <CardHeader>
+        <div className="space-y-4">
+          <Card className="shadow-lg shadow-gray-200/50">
+            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
               <CardTitle>交易统计</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">

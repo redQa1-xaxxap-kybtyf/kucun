@@ -33,9 +33,7 @@ function formatSalesOrder(salesOrder: {
     productionDate?: string | null;
     quantity: number;
     unitPrice: number;
-    totalPrice: number;
-    subtotal?: number;
-    remarks?: string | null;
+    subtotal: number;
     product?: unknown;
   }>;
 }) {
@@ -56,7 +54,8 @@ function formatSalesOrder(salesOrder: {
       productionDate: item.productionDate,
       quantity: item.quantity,
       unitPrice: item.unitPrice,
-      subtotal: item.subtotal ?? item.totalPrice,
+      totalPrice: item.subtotal ?? item.quantity * item.unitPrice,
+      subtotal: item.subtotal ?? item.quantity * item.unitPrice,
       product: item.product,
     })),
     createdAt: salesOrder.createdAt,

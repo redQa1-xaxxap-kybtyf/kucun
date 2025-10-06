@@ -1,92 +1,48 @@
-'use client';
+import { Suspense } from 'react';
+
+import { CategoryListSkeleton } from '@/components/categories/category-list-skeleton';
+import { CategoryPageWrapper } from '@/components/categories/category-page-wrapper';
+import { getCategoriesServer } from '@/lib/api/categories-server';
 
 /**
  * 分类管理页面
  * 严格遵循全栈项目统一约定规范
+ * 服务端组件 - 优先使用 App Router SSR，统一使用直接数据获取模式
  */
+export default async function CategoriesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  // 解析查询参数
+  const params = await searchParams;
+  const page = Number(params.page) || 1;
+  const limit = Number(params.limit) || 10;
+  const search = (params.search as string) || '';
+  const status = params.status as 'active' | 'inactive' | undefined;
+  const sortBy = (params.sortBy as string) || 'createdAt';
+  const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
 
-import { CategoryPageContent } from '@/components/categories/category-page-content';
-import { useCategories } from '@/hooks/use-categories';
-import { useCategoryActions } from '@/hooks/use-category-actions';
-
-/**
- * 分类管理页面组件
- */
-function CategoriesPage() {
-  const {
-    data,
-    isLoading,
-    error,
-    queryParams,
-    selectedCategoryIds,
-    deleteDialog,
-    batchDeleteDialog,
-    updatingStatusId,
-    setQueryParams,
-    setSelectedCategoryIds,
-    setDeleteDialog,
-    setBatchDeleteDialog,
-    setUpdatingStatusId,
-    deleteMutation,
-    batchDeleteMutation,
-    statusMutation,
-  } = useCategories();
-
-  const categories = data?.data || [];
-  const pagination = data?.pagination;
-
-  const {
-    handleSearch,
-    handleFilter,
-    handlePageChange,
-    handleDeleteCategory,
-    confirmDelete,
-    handleSelectCategory,
-    handleSelectAll,
-    handleBatchDelete,
-    confirmBatchDelete,
-    toggleCategoryStatus,
-  } = useCategoryActions({
-    queryParams,
-    setQueryParams,
-    selectedCategoryIds,
-    setSelectedCategoryIds,
-    setDeleteDialog,
-    setBatchDeleteDialog,
-    setUpdatingStatusId,
-    statusMutation,
-    deleteMutation,
-    batchDeleteMutation,
-    categories,
+  // 直接获取初始数据（统一模式：避免 HydrationBoundary）
+  const initialData = await getCategoriesServer({
+    page,
+    limit,
+    search,
+    status,
+    sortBy,
+    sortOrder,
   });
 
   return (
-    <CategoryPageContent
-      isLoading={isLoading}
-      error={error}
-      categories={categories}
-      pagination={pagination}
-      queryParams={queryParams}
-      selectedCategoryIds={selectedCategoryIds}
-      deleteDialog={deleteDialog}
-      batchDeleteDialog={batchDeleteDialog}
-      updatingStatusId={updatingStatusId}
-      deleteMutation={deleteMutation}
-      batchDeleteMutation={batchDeleteMutation}
-      setDeleteDialog={setDeleteDialog}
-      setBatchDeleteDialog={setBatchDeleteDialog}
-      handleSearch={handleSearch}
-      handleFilter={handleFilter}
-      handlePageChange={handlePageChange}
-      handleDeleteCategory={handleDeleteCategory}
-      confirmDelete={confirmDelete}
-      handleSelectCategory={handleSelectCategory}
-      handleSelectAll={handleSelectAll}
-      handleBatchDelete={handleBatchDelete}
-      confirmBatchDelete={confirmBatchDelete}
-      toggleCategoryStatus={toggleCategoryStatus}
-    />
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        <Suspense fallback={<CategoryListSkeleton />}>
+          <CategoryPageWrapper
+            initialData={initialData}
+            initialParams={{ page, limit, search, status, sortBy, sortOrder }}
+          />
+        </Suspense>
+      </div>
+    </div>
   );
 }
-
-export default CategoriesPage;

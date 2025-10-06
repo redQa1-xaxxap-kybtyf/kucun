@@ -58,14 +58,14 @@ export default function AdjustmentRecordsPage() {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="rounded border bg-card">
+      <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+        <div className="space-y-4">
           <AdjustmentRecordsToolbar
             onGoBack={handleGoBack}
             onAdjust={handleOpenAdjust}
           />
-          <div className="p-6 text-center">
-            <div className="text-sm text-destructive">
+          <div className="bg-card rounded-lg border p-6 text-center shadow-md shadow-gray-200/50">
+            <div className="text-destructive text-sm">
               加载调整记录失败，请稍后重试
             </div>
           </div>
@@ -75,51 +75,53 @@ export default function AdjustmentRecordsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      {/* ERP标准工具栏 */}
-      <div className="rounded border bg-card">
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
         <AdjustmentRecordsToolbar
           onGoBack={handleGoBack}
           onAdjust={handleOpenAdjust}
         />
+
+        {/* 筛选条件 */}
+        <AdjustmentRecordsFilters
+          filters={queryParams}
+          onFiltersChange={updateQueryParams}
+          onReset={resetFilters}
+        />
+
+        {/* 调整记录表格 */}
+        <AdjustmentRecordsTable
+          adjustments={adjustments}
+          isLoading={isLoading}
+          onViewDetail={viewDetail}
+        />
+
+        {/* 调整对话框 */}
+        <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>库存调整</DialogTitle>
+            </DialogHeader>
+            <InventoryOperationForm
+              mode="adjust"
+              onSuccess={handleAdjustSuccess}
+              onCancel={handleCloseAdjust}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* 详情对话框 */}
+        <AdjustmentDetailDialog
+          adjustment={selectedAdjustment}
+          open={showDetailDialog}
+          onOpenChange={open => {
+            if (!open) {
+              closeDetailDialog();
+            }
+          }}
+        />
       </div>
-
-      {/* 筛选条件 */}
-      <AdjustmentRecordsFilters
-        filters={queryParams}
-        onFiltersChange={updateQueryParams}
-        onReset={resetFilters}
-      />
-
-      {/* 调整记录表格 */}
-      <AdjustmentRecordsTable
-        adjustments={adjustments}
-        isLoading={isLoading}
-        onViewDetail={viewDetail}
-      />
-
-      {/* 调整对话框 */}
-      <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>库存调整</DialogTitle>
-          </DialogHeader>
-          <InventoryOperationForm
-            mode="adjust"
-            onSuccess={handleAdjustSuccess}
-            onCancel={handleCloseAdjust}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* 详情对话框 */}
-      <AdjustmentDetailDialog
-        adjustment={selectedAdjustment}
-        open={showDetailDialog}
-        onOpenChange={open => {
-          if (!open) {closeDetailDialog();}
-        }}
-      />
     </div>
   );
 }

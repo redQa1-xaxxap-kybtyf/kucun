@@ -25,9 +25,8 @@ export async function GET(request: NextRequest) {
     const searchParams = new URL(request.url).searchParams;
     const queryResult = refundQuerySchema.safeParse({
       page: parseInt(searchParams.get('page') || '1'),
-      pageSize: parseInt(
-        searchParams.get('pageSize') ||
-          paginationConfig.defaultPageSize.toString()
+      limit: parseInt(
+        searchParams.get('limit') || paginationConfig.defaultPageSize.toString()
       ),
       search: searchParams.get('search') || undefined,
       status: searchParams.get('status') || undefined,
@@ -52,7 +51,7 @@ export async function GET(request: NextRequest) {
 
     const {
       page = 1,
-      pageSize = paginationConfig.defaultPageSize,
+      limit = paginationConfig.defaultPageSize,
       search,
       status,
       refundType,
@@ -137,8 +136,8 @@ export async function GET(request: NextRequest) {
         orderBy: {
           refundDate: 'desc',
         },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (page - 1) * limit,
+        take: limit,
       }),
       prisma.refundRecord.count({ where }),
     ]);
@@ -149,9 +148,9 @@ export async function GET(request: NextRequest) {
         refunds,
         pagination: {
           page,
-          pageSize,
+          limit,
           total,
-          totalPages: Math.ceil(total / pageSize),
+          totalPages: Math.ceil(total / limit),
         },
       },
     });

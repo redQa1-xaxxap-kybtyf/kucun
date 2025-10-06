@@ -1,6 +1,10 @@
 import { type NextRequest } from 'next/server';
 
-import { successResponse, withAuth } from '@/lib/auth/api-helpers';
+import {
+  errorResponse,
+  successResponse,
+  withAuth,
+} from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { publishFinanceEvent } from '@/lib/events';
 import {
@@ -53,12 +57,12 @@ export const GET = withAuth(
 
     const {
       page = 1,
-      pageSize = 20,
+      limit = 20,
       search,
       status,
       customerId,
-      returnOrderId,
-      salesOrderId,
+      returnOrderId: _returnOrderId,
+      salesOrderId: _salesOrderId,
       refundType,
       startDate,
       endDate,
@@ -90,13 +94,14 @@ export const GET = withAuth(
     }
 
     if (startDate || endDate) {
-      where.refundDate = {};
+      const dateFilter: { gte?: Date; lte?: Date } = {};
       if (startDate) {
-        (where.refundDate as Record<string, unknown>).gte = new Date(startDate);
+        dateFilter.gte = new Date(startDate);
       }
       if (endDate) {
-        (where.refundDate as Record<string, unknown>).lte = new Date(endDate);
+        dateFilter.lte = new Date(endDate);
       }
+      where.refundDate = dateFilter;
     }
 
     // 构建排序条件
@@ -113,7 +118,7 @@ export const GET = withAuth(
     }
 
     // 计算分页
-    const skip = (page - 1) * pageSize;
+    const skip = (page - 1) * limit;
 
     // 使用真实数据库查询退款记录
     const [refunds, total] = await Promise.all([
@@ -144,7 +149,7 @@ export const GET = withAuth(
         },
         orderBy,
         skip,
-        take: pageSize,
+        take: limit,
       }),
       prisma.refundRecord.count({ where }),
     ]);
@@ -182,9 +187,9 @@ export const GET = withAuth(
       refunds: formattedRefunds,
       pagination: {
         page,
-        pageSize,
+        limit,
         total,
-        totalPages: Math.ceil(total / pageSize),
+        totalPages: Math.ceil(total / limit),
       },
     });
   },
@@ -246,22 +251,50 @@ export const POST = withAuth(
         throw new Error('指定的客户不存在');
       }
 
-      // 4. 检查是否已经有相同的退款记录
-      const existingRefund = await tx.refundRecord.findFirst({
-        where: {
-          salesOrderId: validatedData.salesOrderId,
-          returnOrderId: validatedData.returnOrderId,
-          status: { in: ['pending', 'processing', 'completed'] },
-        },
-      });
-      if (existingRefund) {
-        throw new Error('该订单已存在退款记录');
+      // 4. 检查是否已经有相同的退款记录（防止重复退款）
+      if (validatedData.returnOrderId) {
+        const existingRefund = await tx.refundRecord.findFirst({
+          where: {
+            returnOrderId: validatedData.returnOrderId,
+            status: { in: ['pending', 'processing', 'completed'] },
+          },
+        });
+        if (existingRefund) {
+          throw new Error('该退货单已存在退款记录');
+        }
       }
 
-      // 5. 生成退款单号
+      // 5. 验证退款总额不能超过订单金额
+      const salesOrder = await tx.salesOrder.findUnique({
+        where: { id: validatedData.salesOrderId },
+        select: { totalAmount: true },
+      });
+      if (!salesOrder) {
+        throw new Error('销售订单不存在');
+      }
+
+      // 查询已有退款总额
+      const existingRefunds = await tx.refundRecord.aggregate({
+        where: {
+          salesOrderId: validatedData.salesOrderId,
+          status: { in: ['pending', 'processing', 'completed'] },
+        },
+        _sum: { refundAmount: true },
+      });
+
+      const totalRefundAmount =
+        (existingRefunds._sum.refundAmount || 0) + validatedData.refundAmount;
+
+      if (totalRefundAmount > salesOrder.totalAmount) {
+        throw new Error(
+          `退款总额(¥${totalRefundAmount.toFixed(2)})不能超过订单金额(¥${salesOrder.totalAmount.toFixed(2)})`
+        );
+      }
+
+      // 6. 生成退款单号
       const refundNumber = `RT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
 
-      // 6. 创建退款记录
+      // 7. 创建退款记录
       return await tx.refundRecord.create({
         data: {
           refundNumber,

@@ -60,16 +60,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
-    console.log('[验证码API] 收到验证请求:', JSON.stringify(body));
+    console.log('[验证码API] 收到验证请求');
 
     // 使用 Zod schema 验证输入
     const validationResult = verifyCaptchaSchema.safeParse(body);
 
     if (!validationResult.success) {
-      console.log(
-        '[验证码API] Zod验证失败:',
-        JSON.stringify(validationResult.error.issues)
-      );
+      console.log('[验证码API] 参数验证失败');
       return NextResponse.json(
         {
           success: false,
@@ -81,12 +78,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const { sessionId, captcha, deleteAfterVerify } = validationResult.data;
-    console.log(
-      '[验证码API] Zod验证通过 - SessionID:',
-      sessionId,
-      'Captcha:',
-      captcha
-    );
+    console.log('[验证码API] 开始验证会话:', sessionId);
 
     // 获取客户端IP地址
     const clientIp =

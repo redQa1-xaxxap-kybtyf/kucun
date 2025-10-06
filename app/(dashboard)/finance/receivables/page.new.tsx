@@ -26,7 +26,7 @@ async function fetchReceivables(searchParams: Record<string, string>) {
   // 构建查询参数
   const params = new URLSearchParams({
     page: searchParams.page || '1',
-    pageSize: searchParams.limit || String(paginationConfig.defaultPageSize),
+    limit: searchParams.limit || String(paginationConfig.defaultPageSize),
     ...(searchParams.search && { search: searchParams.search }),
     ...(searchParams.status && { paymentStatus: searchParams.status }),
     ...(searchParams.customerId && { customerId: searchParams.customerId }),
@@ -71,7 +71,7 @@ export default async function ReceivablesPage({
   // 验证查询参数
   const validatedParams = accountsReceivableQuerySchema.safeParse({
     page: parseInt(searchParams.page || '1'),
-    pageSize: parseInt(
+    limit: parseInt(
       searchParams.limit || String(paginationConfig.defaultPageSize)
     ),
     search: searchParams.search,
@@ -88,7 +88,7 @@ export default async function ReceivablesPage({
     ? validatedParams.data
     : {
         page: 1,
-        pageSize: paginationConfig.defaultPageSize,
+        limit: paginationConfig.defaultPageSize,
         sortBy: 'orderDate',
         sortOrder: 'desc' as const,
       };
@@ -108,7 +108,7 @@ export default async function ReceivablesPage({
     queryFn: async () => {
       const headersList = await headers();
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/customers?pageSize=100`,
+        `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/customers?limit=100`,
         {
           headers: {
             cookie: headersList.get('cookie') || '',
@@ -153,8 +153,9 @@ export default async function ReceivablesPage({
               receivableCount: 0,
               totalOverdue: 0,
               overdueCount: 0,
-              collectionRate: 0,
-              averageAccountPeriod: 0,
+              paidCount: 0,
+              unpaidCount: 0,
+              partialCount: 0,
             },
             pagination: {
               page: 1,

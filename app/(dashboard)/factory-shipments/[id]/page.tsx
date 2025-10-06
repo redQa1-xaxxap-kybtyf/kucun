@@ -1,35 +1,41 @@
-'use client';
+import { HydrationBoundary, QueryClient, dehydrate } from '@tanstack/react-query';
+import { Suspense } from 'react';
 
-import { useParams, useRouter } from 'next/navigation';
+import { FactoryShipmentOrderDetailSkeleton } from '@/components/factory-shipments/factory-shipment-order-detail-skeleton';
+import { FactoryShipmentOrderDetailWrapper } from '@/components/factory-shipments/factory-shipment-order-detail-wrapper';
+import { factoryShipmentQueryKeys } from '@/lib/api/factory-shipments';
+import { getFactoryShipmentOrderServer } from '@/lib/api/factory-shipments-server';
 
-import { FactoryShipmentOrderDetail } from '@/components/factory-shipments/factory-shipment-order-detail';
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
 
 /**
  * 厂家发货订单详情页面
  * 采用中国ERP系统标准布局，严格遵循全栈项目统一约定规范
+ * 服务端组件 - 优先使用 App Router SSR，在服务端预取数据
  */
-export default function FactoryShipmentDetailPage() {
-  const params = useParams();
-  const router = useRouter();
-  const orderId = params.id as string;
+export default async function FactoryShipmentDetailPage({
+  params,
+}: PageProps) {
+  const { id } = await params;
 
-  // 处理编辑
-  const handleEdit = () => {
-    router.push(`/factory-shipments/${orderId}/edit`);
-  };
+  // 创建 QueryClient 用于服务端预取
+  const queryClient = new QueryClient();
 
-  // 处理返回
-  const handleBack = () => {
-    router.push('/factory-shipments');
-  };
+  // 预取订单详情数据
+  await queryClient.prefetchQuery({
+    queryKey: factoryShipmentQueryKeys.detail(id),
+    queryFn: () => getFactoryShipmentOrderServer(id),
+  });
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
-      <FactoryShipmentOrderDetail
-        orderId={orderId}
-        onEdit={handleEdit}
-        onBack={handleBack}
-      />
-    </div>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <div className="mx-auto max-w-6xl px-4 py-4 sm:px-6 lg:px-8">
+        <Suspense fallback={<FactoryShipmentOrderDetailSkeleton />}>
+          <FactoryShipmentOrderDetailWrapper orderId={id} />
+        </Suspense>
+      </div>
+    </HydrationBoundary>
   );
 }

@@ -192,7 +192,7 @@ export async function GET(request: NextRequest) {
     // 解构验证后的数据
     const validatedData = validation.data!;
     const page = validatedData.page ?? 1;
-    const pageSize = validatedData.pageSize ?? 20;
+    const limit = validatedData.limit ?? 20;
     const search = validatedData.search;
     const status = validatedData.paymentStatus;
     const customerId = validatedData.customerId;
@@ -239,8 +239,8 @@ export async function GET(request: NextRequest) {
           },
         },
         orderBy: orderByClause,
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (page - 1) * limit,
+        take: limit,
       }),
 
       // 查询2：总记录数
@@ -338,8 +338,8 @@ export async function GET(request: NextRequest) {
 
       // 应用分页
       filteredReceivables = filteredReceivables.slice(
-        (page - 1) * pageSize,
-        page * pageSize
+        (page - 1) * limit,
+        page * limit
       );
     }
 
@@ -349,9 +349,9 @@ export async function GET(request: NextRequest) {
         receivables: filteredReceivables,
         pagination: {
           page,
-          pageSize,
+          limit,
           total: filteredTotal,
-          totalPages: Math.ceil(filteredTotal / pageSize),
+          totalPages: Math.ceil(filteredTotal / limit),
         },
         summary,
       },

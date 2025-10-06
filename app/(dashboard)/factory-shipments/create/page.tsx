@@ -1,8 +1,12 @@
 'use client';
 
+import { ArrowLeft, Truck } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { FactoryShipmentOrderForm } from '@/components/factory-shipments/factory-shipment-order-form';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 
 /**
  * 创建厂家发货订单页面
@@ -23,18 +27,46 @@ export default function CreateFactoryShipmentPage() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-4 sm:px-6 lg:px-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">创建厂家发货订单</h1>
-        <p className="mt-1 text-sm text-gray-600">
-          创建新的厂家发货订单，支持多供应商商品和临时商品管理
-        </p>
-      </div>
+    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <Truck className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    创建厂家发货订单
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    创建新的厂家发货订单，支持多供应商商品和临时商品管理
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+              >
+                <Link href="/factory-shipments">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  返回
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-      <FactoryShipmentOrderForm
-        onSuccess={handleSuccess}
-        onCancel={handleCancel}
-      />
+        {/* 表单 */}
+        <FactoryShipmentOrderForm
+          onSuccess={handleSuccess}
+          onCancel={handleCancel}
+        />
+      </div>
     </div>
   );
 }

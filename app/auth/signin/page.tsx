@@ -6,7 +6,7 @@ import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import { getSession, signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useCallback, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -46,6 +46,10 @@ export default function SignInPage() {
   const [isRedirecting, setIsRedirecting] = useState(false);
 
   const { toast } = useToast();
+
+  // 用于清理定时器的引用
+  const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const redirectDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // 表单配置
   const form = useForm<UserLoginInput>({
@@ -154,9 +158,9 @@ export default function SignInPage() {
       });
 
       // 延迟跳转，让用户看到成功反馈
-      setTimeout(() => {
+      redirectTimerRef.current = setTimeout(() => {
         setIsRedirecting(true);
-        setTimeout(() => {
+        redirectDelayTimerRef.current = setTimeout(() => {
           router.push(callbackUrl);
           router.refresh();
         }, 500); // 额外的短暂延迟用于显示跳转状态
@@ -164,6 +168,18 @@ export default function SignInPage() {
     },
     [callbackUrl, router, toast]
   );
+
+  // 组件卸载时清理所有定时器
+  useEffect(() => {
+    return () => {
+      if (redirectTimerRef.current) {
+        clearTimeout(redirectTimerRef.current);
+      }
+      if (redirectDelayTimerRef.current) {
+        clearTimeout(redirectDelayTimerRef.current);
+      }
+    };
+  }, []);
 
   // 处理登录失败逻辑
   const handleLoginError = useCallback(

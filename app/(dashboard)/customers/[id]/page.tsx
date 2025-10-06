@@ -13,14 +13,15 @@ import {
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
-import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { getErrorMessage } from '@/lib/utils/error-handler';
 
 interface CustomerDetail {
   id: string;
@@ -88,18 +89,14 @@ export default function CustomerDetailPage() {
   });
 
   if (isLoading) {
-    return (
-      <div className="flex min-h-[400px] items-center justify-center">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <ContentLoading />;
   }
 
   if (error) {
     return (
       <ErrorMessage
         title="加载失败"
-        message={error instanceof Error ? error.message : '获取客户详情失败'}
+        message={getErrorMessage(error)}
         onRetry={() => window.location.reload()}
       />
     );

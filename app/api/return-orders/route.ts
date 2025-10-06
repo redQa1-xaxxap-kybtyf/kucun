@@ -1,6 +1,7 @@
 // 退货订单API路由
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
+import { Prisma } from '@prisma/client';
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
@@ -34,7 +35,7 @@ export const GET = withAuth(
 
     const {
       page = 1,
-      pageSize = paginationConfig.defaultPageSize,
+      limit = paginationConfig.defaultPageSize,
       search,
       customerId,
       salesOrderId,
@@ -152,8 +153,8 @@ export const GET = withAuth(
         orderBy: {
           [sortBy]: sortOrder,
         },
-        skip: (page - 1) * pageSize,
-        take: pageSize,
+        skip: (page - 1) * limit,
+        take: limit,
       }),
       prisma.returnOrder.count({ where }),
     ]);
@@ -164,9 +165,9 @@ export const GET = withAuth(
         returnOrders,
         pagination: {
           page,
-          pageSize,
+          limit,
           total,
-          totalPages: Math.ceil(total / pageSize),
+          totalPages: Math.ceil(total / limit),
         },
       },
     });
@@ -264,91 +265,109 @@ export const POST = withAuth(
       return sum + calculatedSubtotal;
     }, 0);
 
-    // 验证退货数量
-    for (const returnItem of data.items) {
-      // 查找对应的销售订单明细
-      const salesOrderItem = salesOrder.items.find(
-        item => item.id === returnItem.salesOrderItemId
-      );
-
-      if (!salesOrderItem) {
-        throw new Error(`销售订单明细不存在: ${returnItem.salesOrderItemId}`);
-      }
-
-      // 查询该销售订单明细已退货的数量
-      const existingReturns = await prisma.returnOrderItem.aggregate({
-        where: {
-          salesOrderItemId: returnItem.salesOrderItemId,
-          returnOrder: {
-            status: {
-              notIn: ['cancelled', 'rejected'],
+    // ✅ 使用 Serializable 事务防止并发退货导致超额退货
+    const returnOrder = await prisma.$transaction(
+      async tx => {
+        // 在事务内批量查询已退货数量
+        const salesOrderItemIds = data.items.map(item => item.salesOrderItemId);
+        const existingReturnsMap = await tx.returnOrderItem.groupBy({
+          by: ['salesOrderItemId'],
+          where: {
+            salesOrderItemId: { in: salesOrderItemIds },
+            returnOrder: {
+              status: {
+                notIn: ['cancelled', 'rejected'],
+              },
             },
           },
-        },
-        _sum: {
-          returnQuantity: true,
-        },
-      });
+          _sum: {
+            returnQuantity: true,
+          },
+        });
 
-      const alreadyReturnedQuantity = existingReturns._sum.returnQuantity || 0;
-      const remainingQuantity =
-        salesOrderItem.quantity - alreadyReturnedQuantity;
-
-      // 验证退货数量
-      if (returnItem.returnQuantity > remainingQuantity) {
-        const productName =
-          salesOrder.items.find(item => item.id === returnItem.salesOrderItemId)
-            ?.product?.name || '未知产品';
-        throw new Error(
-          `产品 ${productName} 退货数量超过可退数量。` +
-            `已购买: ${salesOrderItem.quantity}, 已退货: ${alreadyReturnedQuantity}, ` +
-            `可退: ${remainingQuantity}, 本次退货: ${returnItem.returnQuantity}`
+        // 转换为 Map 快速查找
+        const returnsMap = new Map(
+          existingReturnsMap.map(r => [
+            r.salesOrderItemId,
+            r._sum.returnQuantity || 0,
+          ])
         );
+
+        // 验证每个退货明细
+        for (const returnItem of data.items) {
+          const salesOrderItem = salesOrder.items.find(
+            item => item.id === returnItem.salesOrderItemId
+          );
+
+          if (!salesOrderItem) {
+            throw new Error(
+              `销售订单明细不存在: ${returnItem.salesOrderItemId}`
+            );
+          }
+
+          const alreadyReturnedQuantity: number =
+            returnsMap.get(returnItem.salesOrderItemId) || 0;
+          const remainingQuantity: number =
+            salesOrderItem.quantity - alreadyReturnedQuantity;
+
+          // 验证退货数量
+          if (returnItem.returnQuantity > remainingQuantity) {
+            const productName =
+              salesOrder.items.find(
+                item => item.id === returnItem.salesOrderItemId
+              )?.product?.name || '未知产品';
+            throw new Error(
+              `产品 ${productName} 退货数量超过可退数量。` +
+                `已购买: ${salesOrderItem.quantity}, 已退货: ${alreadyReturnedQuantity}, ` +
+                `可退: ${remainingQuantity}, 本次退货: ${returnItem.returnQuantity}`
+            );
+          }
+        }
+        // 使用服务器计算的金额
+        const totalAmount = calculatedTotalAmount;
+        const refundAmount = calculatedTotalAmount;
+
+        // 创建退货订单
+        const newReturnOrder = await tx.returnOrder.create({
+          data: {
+            returnNumber,
+            salesOrderId: data.salesOrderId,
+            customerId: data.customerId,
+            userId,
+            type: data.type,
+            processType: data.processType,
+            status: 'draft',
+            reason: data.reason,
+            remarks: data.remarks,
+            totalAmount,
+            refundAmount,
+          },
+        });
+
+        // 创建退货明细
+        await tx.returnOrderItem.createMany({
+          data: data.items.map(item => ({
+            returnOrderId: newReturnOrder.id,
+            salesOrderItemId: item.salesOrderItemId,
+            productId: item.productId,
+            colorCode: item.colorCode,
+            productionDate: item.productionDate,
+            returnQuantity: item.returnQuantity,
+            originalQuantity: item.originalQuantity,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal,
+            reason: item.reason,
+            condition: item.condition,
+          })),
+        });
+
+        return newReturnOrder;
+      },
+      {
+        isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
+        timeout: 15000, // 15秒超时
       }
-    }
-
-    // 使用事务创建退货订单
-    const returnOrder = await prisma.$transaction(async tx => {
-      // 使用服务器计算的金额
-      const totalAmount = calculatedTotalAmount;
-      const refundAmount = calculatedTotalAmount;
-
-      // 创建退货订单
-      const newReturnOrder = await tx.returnOrder.create({
-        data: {
-          returnNumber,
-          salesOrderId: data.salesOrderId,
-          customerId: data.customerId,
-          userId,
-          type: data.type,
-          processType: data.processType,
-          status: 'draft',
-          reason: data.reason,
-          remarks: data.remarks,
-          totalAmount,
-          refundAmount,
-        },
-      });
-
-      // 创建退货明细
-      await tx.returnOrderItem.createMany({
-        data: data.items.map(item => ({
-          returnOrderId: newReturnOrder.id,
-          salesOrderItemId: item.salesOrderItemId,
-          productId: item.productId,
-          colorCode: item.colorCode,
-          productionDate: item.productionDate,
-          returnQuantity: item.returnQuantity,
-          originalQuantity: item.originalQuantity,
-          unitPrice: item.unitPrice,
-          subtotal: item.subtotal,
-          reason: item.reason,
-          condition: item.condition,
-        })),
-      });
-
-      return newReturnOrder;
-    });
+    );
 
     // 获取完整的退货订单信息
     const fullReturnOrder = await prisma.returnOrder.findUnique({

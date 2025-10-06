@@ -1,78 +1,9 @@
-import { cookies } from 'next/headers';
 import { Suspense } from 'react';
 
 import { ERPProductList } from '@/components/products/erp-product-list';
 import { ProductListSkeleton } from '@/components/products/product-list-skeleton';
-import type { ProductListQueryParams } from '@/lib/api/products';
+import { getProductsForServer } from '@/lib/api/products-server';
 import { paginationConfig, productConfig } from '@/lib/env';
-
-// 临时创建一个服务器端的产品获取函数
-async function getProducts(params: ProductListQueryParams) {
-  // 构建查询参数
-  const searchParams = new URLSearchParams();
-
-  if (params.page) {
-    searchParams.set('page', params.page.toString());
-  }
-  if (params.limit) {
-    searchParams.set('limit', params.limit.toString());
-  }
-  if (params.search) {
-    searchParams.set('search', params.search);
-  }
-  if (params.categoryId) {
-    searchParams.set('categoryId', params.categoryId);
-  }
-  if (params.status) {
-    searchParams.set('status', params.status);
-  }
-  if (params.sortBy) {
-    searchParams.set('sortBy', params.sortBy);
-  }
-  if (params.sortOrder) {
-    searchParams.set('sortOrder', params.sortOrder);
-  }
-  if (params.includeInventory !== undefined) {
-    searchParams.set('includeInventory', params.includeInventory.toString());
-  }
-  if (params.includeStatistics !== undefined) {
-    searchParams.set('includeStatistics', params.includeStatistics.toString());
-  }
-
-  // 获取 cookies 用于认证
-  const cookieStore = await cookies();
-  const cookieHeader = cookieStore
-    .getAll()
-    .map(cookie => `${cookie.name}=${cookie.value}`)
-    .join('; ');
-
-  // 调用内部 API - 使用相对路径避免端口硬编码
-  const baseUrl =
-    process.env.NODE_ENV === 'development'
-      ? `http://localhost:${process.env.PORT || 3000}`
-      : '';
-  const response = await fetch(
-    `${baseUrl}/api/products?${searchParams.toString()}`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        Cookie: cookieHeader,
-      },
-    }
-  );
-
-  if (!response.ok) {
-    throw new Error(`获取产品列表失败: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-  if (!result.success) {
-    throw new Error(result.error || '获取产品列表失败');
-  }
-
-  return result.data;
-}
 
 /**
  * 产品管理页面 - 使用服务器组件优化首屏加载
@@ -98,8 +29,8 @@ export default async function ProductsPage({
     params.includeStatistics === 'true' ||
     productConfig.defaultIncludeStatistics;
 
-  // 服务器端获取初始数据
-  const initialData = await getProducts({
+  // 服务器端直接获取初始数据，避免 HTTP 跳转
+  const initialData = await getProductsForServer({
     page,
     limit,
     search,

@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 
 import { ERPSalesOrderList } from '@/components/sales-orders/erp-sales-order-list';
 import { SalesOrderListSkeleton } from '@/components/sales-orders/sales-order-list-skeleton';
+import { SalesOrderPageHeader } from '@/components/sales-orders/sales-order-page-header';
 import { getSalesOrders } from '@/lib/api/handlers/sales-orders';
 import { paginationConfig } from '@/lib/env';
 
@@ -49,23 +50,26 @@ export default async function SalesOrdersPage({
 
   return (
     <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <Suspense fallback={<SalesOrderListSkeleton />}>
-        <ERPSalesOrderList
-          _initialData={{
-            data: initialData.data,
-            pagination: initialData.pagination,
-          }}
-          initialParams={{
-            page,
-            limit,
-            search,
-            status,
-            customerId,
-            sortBy,
-            sortOrder,
-          }}
-        />
-      </Suspense>
+      <div className="space-y-4">
+        <SalesOrderPageHeader />
+        <Suspense fallback={<SalesOrderListSkeleton />}>
+          <ERPSalesOrderList
+            _initialData={{
+              data: initialData.data,
+              pagination: initialData.pagination,
+            }}
+            initialParams={{
+              page,
+              limit,
+              search,
+              status,
+              customerId,
+              sortBy,
+              sortOrder,
+            }}
+          />
+        </Suspense>
+      </div>
     </div>
   );
 }
