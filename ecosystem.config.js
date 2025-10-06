@@ -84,7 +84,7 @@ module.exports = {
       repo: 'git@github.com:your-repo/kucun.git', // Git 仓库
       path: '/var/www/kucun', // 部署路径
       'post-deploy':
-        'npm ci --production && npm run build && pm2 reload ecosystem.config.js --env production',
+        'npm ci --production && npm run build && npx prisma migrate deploy && pm2 reload ecosystem.config.js --env production',
       'pre-setup': 'mkdir -p /var/www/kucun',
     },
   },
