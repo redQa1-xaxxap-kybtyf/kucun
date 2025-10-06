@@ -21,6 +21,7 @@ import {
 import Link from 'next/link';
 import * as React from 'react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -30,7 +31,6 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
 import type { QuickAction } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
 
@@ -136,7 +136,7 @@ const QuickActionItem = React.forwardRef<HTMLDivElement, QuickActionItemProps>(
 
     if (compact) {
       return (
-        <Link href={action.href}>
+        <Link href={action.href} prefetch={false}>
           <div
             className={cn(
               'flex cursor-pointer items-center space-x-3 rounded-lg border p-3 transition-all duration-200',
@@ -161,7 +161,7 @@ const QuickActionItem = React.forwardRef<HTMLDivElement, QuickActionItemProps>(
               <p className={cn('text-sm font-medium', colorConfig.text)}>
                 {action.title}
               </p>
-              <p className="truncate text-xs text-muted-foreground">
+              <p className="text-muted-foreground truncate text-xs">
                 {action.description}
               </p>
             </div>
@@ -180,7 +180,7 @@ const QuickActionItem = React.forwardRef<HTMLDivElement, QuickActionItemProps>(
     }
 
     return (
-      <Link href={action.href}>
+      <Link href={action.href} prefetch={false}>
         <Card
           className={cn(
             'cursor-pointer transition-all duration-200 hover:scale-[1.02] hover:shadow-md',
@@ -217,7 +217,7 @@ const QuickActionItem = React.forwardRef<HTMLDivElement, QuickActionItemProps>(
                   <h3 className={cn('text-sm font-semibold', colorConfig.text)}>
                     {action.title}
                   </h3>
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     {action.description}
                   </p>
                 </div>
@@ -341,33 +341,8 @@ const QuickActions = React.forwardRef<HTMLDivElement, QuickActionsProps>(
     if (loading) {
       return (
         <Card className={className} ref={ref} {...props}>
-          {showHeader && (
-            <CardHeader>
-              <Skeleton className="mb-2 h-5 w-24" />
-              <Skeleton className="h-4 w-32" />
-            </CardHeader>
-          )}
-          <CardContent>
-            <div
-              className={cn(
-                'grid gap-4',
-                compact
-                  ? 'grid-cols-1'
-                  : `grid-cols-1 md:grid-cols-2 lg:grid-cols-${columns}`
-              )}
-            >
-              {Array.from({ length: compact ? 4 : 6 }).map((_, i) => (
-                <div key={i} className="rounded-lg border p-4">
-                  <div className="flex items-center space-x-3">
-                    <Skeleton className="h-10 w-10 rounded-lg" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-24" />
-                      <Skeleton className="h-3 w-32" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
+          <CardContent className="p-6">
+            <ContentLoading text="加载快速操作..." />
           </CardContent>
         </Card>
       );
@@ -388,7 +363,7 @@ const QuickActions = React.forwardRef<HTMLDivElement, QuickActionsProps>(
         <CardContent>
           {displayActions.length === 0 ? (
             <div className="py-8 text-center">
-              <Plus className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+              <Plus className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
               <p className="text-muted-foreground">暂无快速操作</p>
             </div>
           ) : (

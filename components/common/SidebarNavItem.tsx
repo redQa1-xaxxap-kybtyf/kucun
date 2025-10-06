@@ -31,6 +31,7 @@ const ChildMenuList = React.memo(
             <Link
               key={child.id}
               href={child.href}
+              prefetch={false}
               className={cn('block rounded-md transition-all duration-200')}
             >
               <Button
@@ -175,6 +176,7 @@ export const SidebarNavItem = React.memo(
             href={item.href}
             ref={ref}
             tabIndex={tabIndex}
+            prefetch={false}
             onClick={handleNavClick}
             className={cn(
               'block rounded-md transition-all duration-150',

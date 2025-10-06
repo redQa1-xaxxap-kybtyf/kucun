@@ -8,8 +8,8 @@ import Link from 'next/link';
 import * as React from 'react';
 import { useState } from 'react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
-import { FactoryShipmentOrderListSkeleton } from '@/components/factory-shipments/factory-shipment-order-list-skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -133,9 +133,9 @@ export function FactoryShipmentOrderList({
     setCurrentPage(page);
   };
 
-  // 加载状态 - 使用骨架屏
+  // 加载状态
   if (isLoading) {
-    return <FactoryShipmentOrderListSkeleton />;
+    return <ContentLoading text="加载厂家发货订单..." />;
   }
 
   if (error) {
@@ -295,6 +295,7 @@ export function FactoryShipmentOrderList({
                   <TableCell className="font-mono font-medium text-blue-600">
                     <Link
                       href={`/factory-shipments/${order.id}`}
+                      prefetch={false}
                       className="hover:underline"
                       onClick={e => e.stopPropagation()}
                     >
