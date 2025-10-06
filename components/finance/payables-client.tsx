@@ -217,7 +217,6 @@ export function PayablesClient({ initialData }: PayablesClientProps) {
                 key: 'status',
                 label: '状态',
                 options: [
-                  { label: '全部状态', value: 'all' },
                   { label: '待付款', value: 'pending' },
                   { label: '部分付款', value: 'partial' },
                   { label: '已付款', value: 'paid' },
@@ -229,7 +228,6 @@ export function PayablesClient({ initialData }: PayablesClientProps) {
                 key: 'sourceType',
                 label: '来源类型',
                 options: [
-                  { label: '全部类型', value: 'all' },
                   { label: '采购订单', value: 'purchase_order' },
                   { label: '厂家发货', value: 'factory_shipment' },
                   { label: '服务费用', value: 'service' },

@@ -180,7 +180,7 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
           )}
 
           {/* 搜索框 */}
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative w-[280px] min-w-[200px] sm:w-[320px]">
             <Search
               className={cn(
                 'text-muted-foreground absolute top-1/2 left-3 -translate-y-1/2',

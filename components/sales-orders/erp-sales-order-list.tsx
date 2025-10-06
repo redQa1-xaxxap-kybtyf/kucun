@@ -161,7 +161,6 @@ export function ERPSalesOrderList({
                 key: 'status',
                 label: '状态',
                 options: [
-                  { label: '全部', value: 'all' },
                   { label: '草稿', value: 'draft' },
                   { label: '已确认', value: 'confirmed' },
                   { label: '已发货', value: 'shipped' },

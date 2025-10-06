@@ -205,7 +205,6 @@ export function ReceivablesClient({ initialData }: ReceivablesClientProps) {
                 key: 'status',
                 label: '状态',
                 options: [
-                  { label: '全部状态', value: 'all' },
                   { label: '未收款', value: 'unpaid' },
                   { label: '部分收款', value: 'partial' },
                   { label: '已收款', value: 'paid' },

@@ -228,15 +228,12 @@ export function FactoryShipmentOrderList({
               {
                 key: 'status',
                 label: '状态',
-                options: [
-                  { label: '全部状态', value: 'all' },
-                  ...Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(
-                    ([status, label]) => ({
-                      label,
-                      value: status,
-                    })
-                  ),
-                ],
+                options: Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(
+                  ([status, label]) => ({
+                    label,
+                    value: status,
+                  })
+                ),
                 width: 'w-full sm:w-48',
               },
             ]}

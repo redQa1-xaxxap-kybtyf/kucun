@@ -300,7 +300,6 @@ export function ERPReturnOrderList({
                 key: 'status',
                 label: '状态',
                 options: [
-                  { label: '全部状态', value: 'all' },
                   { label: '草稿', value: 'draft' },
                   { label: '已提交', value: 'submitted' },
                   { label: '已审核', value: 'approved' },

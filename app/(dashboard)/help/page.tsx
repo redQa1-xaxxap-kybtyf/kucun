@@ -150,47 +150,70 @@ const contactMethods = [
  */
 export default function HelpPage() {
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-8">
-      {/* 页面标题 */}
-      <div className="mb-8">
-        <h1 className="mb-2 text-3xl font-bold text-gray-900">帮助中心</h1>
-        <p className="text-gray-600">
-          欢迎使用库存管理工具帮助中心，这里有您需要的所有使用指南和支持信息
-        </p>
-      </div>
+    <div className="mx-auto max-w-none space-y-6 px-4 py-4 sm:px-6 lg:px-8">
+      {/* 页面头部 */}
+      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+        <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+              <HelpCircle className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                帮助中心
+              </h1>
+              <p className="text-sm text-gray-600">
+                欢迎使用库存管理工具帮助中心，这里有您需要的所有使用指南和支持信息
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* 快速链接 */}
-      <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
-        <Card className="transition-shadow hover:shadow-md">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50 transition-all hover:scale-105 hover:shadow-xl">
           <CardContent className="p-6 text-center">
             <Video className="mx-auto mb-3 h-8 w-8 text-blue-600" />
-            <h3 className="mb-2 font-semibold">视频教程</h3>
+            <h3 className="mb-2 font-semibold text-gray-900">视频教程</h3>
             <p className="mb-4 text-sm text-gray-600">观看操作演示视频</p>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              className="transition-all hover:border-blue-300 hover:bg-blue-50"
+            >
               <ExternalLink className="mr-2 h-4 w-4" />
               观看视频
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="transition-shadow hover:shadow-md">
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50 transition-all hover:scale-105 hover:shadow-xl">
           <CardContent className="p-6 text-center">
             <Download className="mx-auto mb-3 h-8 w-8 text-green-600" />
-            <h3 className="mb-2 font-semibold">用户手册</h3>
+            <h3 className="mb-2 font-semibold text-gray-900">用户手册</h3>
             <p className="mb-4 text-sm text-gray-600">下载完整操作手册</p>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              className="transition-all hover:border-green-300 hover:bg-green-50"
+            >
               <Download className="mr-2 h-4 w-4" />
               下载PDF
             </Button>
           </CardContent>
         </Card>
 
-        <Card className="transition-shadow hover:shadow-md">
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50 transition-all hover:scale-105 hover:shadow-xl">
           <CardContent className="p-6 text-center">
             <MessageCircle className="mx-auto mb-3 h-8 w-8 text-purple-600" />
-            <h3 className="mb-2 font-semibold">在线支持</h3>
+            <h3 className="mb-2 font-semibold text-gray-900">在线支持</h3>
             <p className="mb-4 text-sm text-gray-600">联系技术支持团队</p>
-            <Button variant="outline" size="sm">
+            <Button
+              variant="outline"
+              size="sm"
+              className="transition-all hover:border-purple-300 hover:bg-purple-50"
+            >
               <MessageCircle className="mr-2 h-4 w-4" />
               联系客服
             </Button>
@@ -198,74 +221,84 @@ export default function HelpPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         {/* 帮助分类 */}
         <div className="lg:col-span-2">
-          <h2 className="mb-6 text-2xl font-semibold">使用指南</h2>
-          <div className="space-y-6">
-            {helpCategories.map(category => {
-              const IconComponent = category.icon;
-              return (
-                <Card
-                  key={category.id}
-                  className="transition-shadow hover:shadow-md"
-                >
-                  <CardHeader>
-                    <div className="flex items-center gap-3">
-                      <IconComponent className="h-6 w-6 text-blue-600" />
-                      <div>
-                        <CardTitle className="text-lg">
-                          {category.title}
-                        </CardTitle>
-                        <CardDescription>
-                          {category.description}
-                        </CardDescription>
+          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+              <CardTitle className="flex items-center text-gray-900">
+                <BookOpen className="mr-2 h-5 w-5 text-blue-600" />
+                使用指南
+              </CardTitle>
+              <CardDescription>
+                系统功能详细说明和操作指导
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                {helpCategories.map(category => {
+                  const IconComponent = category.icon;
+                  return (
+                    <div
+                      key={category.id}
+                      className="rounded-lg border bg-white p-4 shadow-sm transition-all hover:shadow-md"
+                    >
+                      <div className="mb-4 flex items-center gap-3">
+                        <IconComponent className="h-6 w-6 text-blue-600" />
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900">
+                            {category.title}
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            {category.description}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        {category.items.map((item, index) => (
+                          <Button
+                            key={index}
+                            variant="ghost"
+                            className="h-auto justify-start p-3 text-left transition-all hover:bg-blue-50"
+                          >
+                            <div>
+                              <div className="text-sm font-medium text-gray-900">
+                                {item.title}
+                              </div>
+                              <div className="mt-1 text-xs text-gray-500">
+                                {item.description}
+                              </div>
+                            </div>
+                          </Button>
+                        ))}
                       </div>
                     </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      {category.items.map((item, index) => (
-                        <Button
-                          key={index}
-                          variant="ghost"
-                          className="h-auto justify-start p-3 text-left"
-                        >
-                          <div>
-                            <div className="text-sm font-medium">
-                              {item.title}
-                            </div>
-                            <div className="mt-1 text-xs text-gray-500">
-                              {item.description}
-                            </div>
-                          </div>
-                        </Button>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+                  );
+                })}
+              </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* 侧边栏 */}
         <div className="space-y-6">
           {/* 常见问题 */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <HelpCircle className="h-5 w-5" />
+          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+              <CardTitle className="flex items-center gap-2 text-gray-900">
+                <HelpCircle className="h-5 w-5 text-blue-600" />
                 常见问题
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 p-6">
               {faqItems.map((faq, index) => (
                 <div
                   key={index}
                   className="border-b border-gray-100 pb-3 last:border-0 last:pb-0"
                 >
-                  <h4 className="mb-2 text-sm font-medium">{faq.question}</h4>
+                  <h4 className="mb-2 text-sm font-medium text-gray-900">
+                    {faq.question}
+                  </h4>
                   <p className="text-xs text-gray-600">{faq.answer}</p>
                 </div>
               ))}
@@ -273,27 +306,29 @@ export default function HelpPage() {
           </Card>
 
           {/* 联系支持 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>联系支持</CardTitle>
+          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+              <CardTitle className="text-gray-900">联系支持</CardTitle>
               <CardDescription>
                 需要更多帮助？联系我们的支持团队
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
+            <CardContent className="space-y-3 p-6">
               {contactMethods.map((method, index) => {
                 const IconComponent = method.icon;
                 return (
                   <Button
                     key={index}
                     variant="outline"
-                    className="h-auto w-full justify-start p-3"
+                    className="h-auto w-full justify-start p-3 transition-all hover:border-blue-300 hover:bg-blue-50"
                     asChild
                   >
                     <a href={method.href}>
                       <IconComponent className="mr-3 h-4 w-4" />
                       <div className="text-left">
-                        <div className="text-sm font-medium">{method.type}</div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {method.type}
+                        </div>
                         <div className="text-xs text-gray-500">
                           {method.description}
                         </div>
@@ -306,13 +341,13 @@ export default function HelpPage() {
           </Card>
 
           {/* 系统状态 */}
-          <Card>
-            <CardHeader>
-              <CardTitle>系统状态</CardTitle>
+          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+              <CardTitle className="text-gray-900">系统状态</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <div className="flex items-center justify-between">
-                <span className="text-sm">服务状态</span>
+                <span className="text-sm text-gray-900">服务状态</span>
                 <Badge
                   variant="secondary"
                   className="bg-green-100 text-green-800"
