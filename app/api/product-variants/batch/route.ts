@@ -7,7 +7,7 @@ import { productVariantBatchCreateSchema } from '@/lib/validations/product';
 // 批量创建产品变体
 export const POST = withAuth(async (request: NextRequest) => {
   try {
-const body = await request.json();
+    const body = await request.json();
 
     // 检查是否为批量操作
     if (body.operation) {
@@ -179,12 +179,13 @@ const body = await request.json();
       { status: 500 }
     );
   }
-}
+});
 
 // 处理批量操作
 async function handleBatchOperation(body: unknown) {
-  // 验证批量操作输入数据
-  const validationResult = productVariantBatchOperationSchema.safeParse(body);
+  try {
+    // 验证批量操作输入数据
+    const validationResult = productVariantBatchOperationSchema.safeParse(body);
     if (!validationResult.success) {
       return NextResponse.json(
         {
@@ -288,4 +289,4 @@ async function handleBatchOperation(body: unknown) {
       { status: 500 }
     );
   }
-});
+}

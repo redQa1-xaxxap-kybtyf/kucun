@@ -25,7 +25,7 @@ const SUPPORTED_IMAGE_TYPES = [
 
 export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
-const formData = await request.formData();
+    const formData = await request.formData();
     const file = formData.get('file') as File;
     const type = (formData.get('type') as string) || 'product';
 
@@ -170,7 +170,7 @@ const formData = await request.formData();
       { status: 500 }
     );
   }
-}
+});
 
 // 获取上传文件信息（可选功能）
 export const GET = withAuth(async (request: NextRequest) => {

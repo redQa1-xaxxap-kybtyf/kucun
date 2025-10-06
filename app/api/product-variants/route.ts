@@ -8,7 +8,7 @@ import { productVariantQuerySchema } from '@/lib/validations/product';
 // 获取产品变体列表
 export const GET = withAuth(async (request: NextRequest) => {
   try {
-const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(request.url);
     const queryParams = {
       productId: searchParams.get('productId') || undefined,
       colorCode: searchParams.get('colorCode') || undefined,
@@ -136,7 +136,7 @@ const { searchParams } = new URL(request.url);
       { status: 500 }
     );
   }
-}
+});
 
 // 创建产品变体
 export const POST = withAuth(async (request: NextRequest) => {

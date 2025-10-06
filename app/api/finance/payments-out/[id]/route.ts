@@ -3,7 +3,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import type { PaymentOutRecordDetail } from '@/lib/types/payable';
 import { updatePaymentOutRecordSchema } from '@/lib/validations/payable';
@@ -76,7 +75,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-const { id } = await params;
+    const { id } = await params;
 
     // 解析请求体
     const body = await request.json();
@@ -240,7 +239,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-const { id } = await params;
+    const { id } = await params;
 
     // 检查付款记录是否存在
     const existingPayment = await prisma.paymentOutRecord.findUnique({
@@ -322,4 +321,4 @@ const { id } = await params;
       { status: 500 }
     );
   }
-});
+}

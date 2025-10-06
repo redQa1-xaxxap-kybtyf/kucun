@@ -3,7 +3,6 @@
 
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import {
   cleanRemarks,
@@ -86,7 +85,7 @@ export async function PUT(
   const { id } = await params;
   try {
     // 验证用户身份
-// 验证参数
+    // 验证参数
     const validatedId = inboundIdSchema.parse({ id });
     const recordId = validatedId.id;
 
@@ -216,7 +215,7 @@ export async function DELETE(
   const { id } = await params;
   try {
     // 验证用户身份
-// 验证参数
+    // 验证参数
     const validatedId = inboundIdSchema.parse({ id });
     const recordId = validatedId.id;
 
@@ -263,4 +262,4 @@ export async function DELETE(
       { status: 500 }
     );
   }
-});
+}

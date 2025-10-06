@@ -3,7 +3,6 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import type { PayableRecordDetail } from '@/lib/types/payable';
 import { updatePayableRecordSchema } from '@/lib/validations/payable';
@@ -82,7 +81,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-const { id } = await params;
+    const { id } = await params;
 
     // 解析请求体
     const body = await request.json();
@@ -200,7 +199,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-const { id } = await params;
+    const { id } = await params;
 
     // 检查应付款记录是否存在
     const existingPayable = await prisma.payableRecord.findUnique({
@@ -248,4 +247,4 @@ const { id } = await params;
       { status: 500 }
     );
   }
-});
+}

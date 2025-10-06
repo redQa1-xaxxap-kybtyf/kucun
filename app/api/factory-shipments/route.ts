@@ -16,7 +16,7 @@ import {
 // 获取厂家发货订单列表
 export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
-// 解析查询参数
+    // 解析查询参数
     const { searchParams } = new URL(request.url);
     const queryParams = {
       page: searchParams.get('page')
@@ -160,7 +160,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     console.error('获取厂家发货订单列表失败:', error);
     return NextResponse.json({ error: '获取订单列表失败' }, { status: 500 });
   }
-}
+});
 
 // 创建厂家发货订单
 export const POST = withAuth(async (request: NextRequest, { user }) => {

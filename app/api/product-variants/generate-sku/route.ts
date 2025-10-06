@@ -7,7 +7,7 @@ import { productVariantGenerateSkuSchema } from '@/lib/validations/product';
 // SKU生成服务
 export const POST = withAuth(async (request: NextRequest) => {
   try {
-const body = await request.json();
+    const body = await request.json();
 
     // 验证输入数据
     const validationResult = productVariantGenerateSkuSchema.safeParse(body);
@@ -110,7 +110,7 @@ const body = await request.json();
       { status: 500 }
     );
   }
-}
+});
 
 // 批量生成SKU
 export const PUT = withAuth(async (request: NextRequest) => {

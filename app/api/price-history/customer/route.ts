@@ -15,7 +15,7 @@ import { customerPriceHistoryQuerySchema } from '@/lib/validations/price-history
  */
 export const GET = withAuth(async (request: NextRequest) => {
   try {
-const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(request.url);
 
     // 使用 Zod 进行参数验证
     const validationResult = customerPriceHistoryQuerySchema.safeParse({
@@ -155,7 +155,7 @@ const { searchParams } = new URL(request.url);
       { status: 500 }
     );
   }
-}
+});
 
 /**
  * POST /api/price-history/customer

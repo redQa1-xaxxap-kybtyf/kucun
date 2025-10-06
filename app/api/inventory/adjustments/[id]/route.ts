@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 
 interface RouteParams {
@@ -117,4 +116,4 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     );
   }
-});
+}

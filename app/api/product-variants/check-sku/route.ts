@@ -8,7 +8,7 @@ import { productVariantCheckSkuSchema } from '@/lib/validations/product';
 // SKU可用性检查服务
 export const GET = withAuth(async (request: NextRequest) => {
   try {
-const { searchParams } = new URL(request.url);
+    const { searchParams } = new URL(request.url);
     const queryParams = {
       sku: searchParams.get('sku') || '',
       excludeId: searchParams.get('excludeId') || undefined,
@@ -94,7 +94,7 @@ const { searchParams } = new URL(request.url);
       { status: 500 }
     );
   }
-}
+});
 
 // 批量SKU可用性检查
 export const POST = withAuth(async (request: NextRequest) => {
@@ -201,7 +201,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       { status: 500 }
     );
   }
-}
+});
 
 // 生成SKU建议的辅助函数
 async function generateSkuSuggestions(baseSku: string): Promise<string[]> {
@@ -261,4 +261,4 @@ async function generateSkuSuggestions(baseSku: string): Promise<string[]> {
     console.error('生成SKU建议错误:', error);
     return [];
   }
-});
+}
