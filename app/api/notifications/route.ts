@@ -1,83 +1,71 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
-import { errorResponse, successResponse, verifyApiAuth } from '@/lib/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
+import { prisma } from '@/lib/db';
 
 /**
- * 获取用户通知历史
+ * 获取通知列表
  * GET /api/notifications
- *
- * 说明：这是一个简化实现，实际项目中应该：
- * 1. 从数据库存储的通知表中读取
- * 2. 支持分页、筛选、排序
- * 3. 与 WebSocket 实时推送协同工作
  */
-export async function GET(request: NextRequest) {
-  try {
-    // 验证用户权限
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
+export const GET = withAuth(
+  async (request, { user }) => {
+    try {
+      const { searchParams } = request.nextUrl;
+      const page = parseInt(searchParams.get('page') || '1');
+      const limit = parseInt(searchParams.get('limit') || '20');
+      const skip = (page - 1) * limit;
+
+      // 获取通知列表（这里是模拟数据，实际应该从数据库读取）
+      // TODO: 创建 Notification 数据模型
+      const notifications = await prisma.notification.findMany({
+        where: {
+          userId: user.id,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        skip,
+        take: limit,
+      });
+
+      const unreadCount = await prisma.notification.count({
+        where: {
+          userId: user.id,
+          isRead: false,
+        },
+      });
+
+      return NextResponse.json({
+        notifications: notifications.map(n => ({
+          id: n.id,
+          title: n.title,
+          message: n.message,
+          type: n.type,
+          isRead: n.isRead,
+          href: n.href,
+          createdAt: n.createdAt,
+        })),
+        unreadCount,
+      });
+    } catch (error) {
+      console.error('[通知列表] 查询失败:', error);
+
+      // 如果是表不存在的错误，返回空列表（向后兼容）
+      if (error instanceof Error && error.message.includes('does not exist')) {
+        return NextResponse.json({
+          notifications: [],
+          unreadCount: 0,
+        });
+      }
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: error instanceof Error ? error.message : '获取通知列表失败',
+        },
+        { status: 500 }
+      );
     }
-
-    // 简化实现：返回空通知列表
-    // 实时通知完全由 WebSocket 推送提供
-    // 如果需要持久化通知历史，应该：
-    // 1. 创建 Notification 表存储通知记录
-    // 2. 在推送通知时同步写入数据库
-    // 3. 这里从数据库查询返回
-
-    return successResponse({
-      notifications: [],
-      total: 0,
-      unreadCount: 0,
-    });
-  } catch (error) {
-    console.error('获取通知失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '获取通知失败',
-      },
-      { status: 500 }
-    );
-  }
-}
-
-/**
- * 标记通知为已读
- * PATCH /api/notifications/:id/read
- *
- * 简化实现：由于使用客户端状态管理，此端点暂时不需要
- * 如果实现持久化，应该更新数据库中的 isRead 状态
- */
-export async function PATCH(request: NextRequest) {
-  try {
-    const auth = verifyApiAuth(request);
-    if (!auth.success) {
-      return errorResponse(auth.error || '未授权访问', 401);
-    }
-
-    const body = await request.json();
-    const { notificationIds } = body as { notificationIds: string[] };
-
-    // TODO: 更新数据库中的通知状态
-    // await prisma.notification.updateMany({
-    //   where: {
-    //     id: { in: notificationIds },
-    //     userId: auth.user.id
-    //   },
-    //   data: { isRead: true }
-    // });
-
-    return successResponse({ updated: notificationIds.length });
-  } catch (error) {
-    console.error('标记通知已读失败:', error);
-    return NextResponse.json(
-      {
-        success: false,
-        error: error instanceof Error ? error.message : '标记通知失败',
-      },
-      { status: 500 }
-    );
-  }
-}
+  },
+  { permissions: ['notifications:view'] }
+);

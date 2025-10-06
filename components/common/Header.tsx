@@ -14,7 +14,7 @@ import {
   Sun,
   User,
 } from 'lucide-react';
-import { signOut, useSession } from 'next-auth/react';
+import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
@@ -32,7 +32,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { useRealtimeNotifications } from '@/hooks/use-realtime-notifications';
+import { usePollingNotifications } from '@/hooks/use-polling-notifications';
 import type { NotificationItem } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 
@@ -72,22 +72,21 @@ function HeaderComponent({
   onSearch,
   user,
 }: HeaderProps) {
-  const { data: session } = useSession();
   const router = useRouter();
   const queryClient = useQueryClient();
 
-  // 优先使用传递的用户信息，回退到 session
-  const currentUser = user || session?.user;
+  // 直接使用传递的用户信息，避免重复的会话请求
+  const currentUser = user;
 
-  // 实时通知系统（WebSocket 推送）
+  // 通知系统（轮询方式 - 更简单可靠）
+  // 注意：必须在所有条件语句之前调用 Hooks
   const {
     notifications,
     unreadCount,
-    isConnected: wsConnected,
+    isLoading: notificationsLoading,
     markAsRead,
     markAllAsRead,
-    clearNotification,
-  } = useRealtimeNotifications();
+  } = usePollingNotifications();
 
   // 搜索状态
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -97,6 +96,51 @@ function HeaderComponent({
   const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>(
     'light'
   );
+
+  // 数据刷新回调 - 必须在条件返回之前定义
+  const handleRefreshData = React.useCallback(() => {
+    // 刷新页面数据 - 使用 React Query 的缓存失效机制
+    // 根据当前路径选择性失效相关查询
+    const pathname = window.location.pathname;
+
+    if (pathname.startsWith('/inventory')) {
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    } else if (pathname.startsWith('/products')) {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    } else if (pathname.startsWith('/sales-orders')) {
+      queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
+    } else if (pathname.startsWith('/factory-shipments')) {
+      queryClient.invalidateQueries({ queryKey: ['factory-shipments'] });
+    } else if (pathname.startsWith('/finance')) {
+      queryClient.invalidateQueries({ queryKey: ['finance'] });
+    } else if (pathname.startsWith('/customers')) {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    } else if (pathname.startsWith('/suppliers')) {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+    } else if (pathname.startsWith('/categories')) {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    } else {
+      // 其他页面失效所有查询
+      queryClient.invalidateQueries();
+    }
+  }, [queryClient]);
+
+  // 如果没有用户信息，显示简化的 Header（登录提示）
+  if (!currentUser) {
+    return (
+      <header
+        className={cn(
+          'bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur-sm',
+          className
+        )}
+      >
+        <div className="flex h-16 items-center justify-between px-4">
+          <div className="text-muted-foreground text-sm">请登录以访问系统</div>
+          <Button onClick={() => router.push('/auth/signin')}>登录</Button>
+        </div>
+      </header>
+    );
+  }
 
   // 事件处理函数
   const handleSignOut = async () => {
@@ -133,33 +177,6 @@ function HeaderComponent({
     // 实际项目中应该保存到localStorage或用户设置
     localStorage.setItem('theme', newTheme);
   };
-
-  const handleRefreshData = React.useCallback(() => {
-    // 刷新页面数据 - 使用 React Query 的缓存失效机制
-    // 根据当前路径选择性失效相关查询
-    const pathname = window.location.pathname;
-
-    if (pathname.startsWith('/inventory')) {
-      queryClient.invalidateQueries({ queryKey: ['inventory'] });
-    } else if (pathname.startsWith('/products')) {
-      queryClient.invalidateQueries({ queryKey: ['products'] });
-    } else if (pathname.startsWith('/sales-orders')) {
-      queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
-    } else if (pathname.startsWith('/factory-shipments')) {
-      queryClient.invalidateQueries({ queryKey: ['factory-shipments'] });
-    } else if (pathname.startsWith('/finance')) {
-      queryClient.invalidateQueries({ queryKey: ['finance'] });
-    } else if (pathname.startsWith('/customers')) {
-      queryClient.invalidateQueries({ queryKey: ['customers'] });
-    } else if (pathname.startsWith('/suppliers')) {
-      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
-    } else if (pathname.startsWith('/categories')) {
-      queryClient.invalidateQueries({ queryKey: ['categories'] });
-    } else {
-      // 其他页面失效所有查询
-      queryClient.invalidateQueries();
-    }
-  }, [queryClient]);
 
   // 获取用户姓名首字母作为头像占位符
   const getUserInitials = (name: string) =>
@@ -282,15 +299,13 @@ function HeaderComponent({
               <DropdownMenuLabel className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <span>通知</span>
-                  {/* WebSocket 连接状态指示器 */}
+                  {/* 轮询状态指示器 */}
                   <div
                     className={cn(
                       'h-2 w-2 rounded-full',
-                      wsConnected ? 'bg-green-500' : 'bg-gray-400'
+                      !notificationsLoading ? 'bg-green-500' : 'bg-gray-400'
                     )}
-                    title={
-                      wsConnected ? 'WebSocket 已连接' : 'WebSocket 未连接'
-                    }
+                    title={!notificationsLoading ? '轮询正常' : '加载中...'}
                   />
                 </div>
                 {unreadCount > 0 && (
