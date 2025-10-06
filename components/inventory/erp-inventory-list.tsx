@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 
+import { InventoryListToolbar } from '@/components/inventory/inventory-list-toolbar';
 import { InventoryTable } from '@/components/inventory/erp/inventory-table';
 import { InventorySearchToolbar } from '@/components/inventory/InventorySearchToolbar';
 import { Pagination } from '@/components/ui/pagination';
@@ -33,6 +34,7 @@ interface ERPInventoryListProps {
  * ERP风格库存列表组件
  * 符合中国ERP系统的用户体验标准
  * 使用React.memo和子组件优化性能
+ * ✅ 符合产品模块UI风格规范
  */
 export const ERPInventoryList = React.memo<ERPInventoryListProps>(
   ({
@@ -59,8 +61,15 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     } = useERPInventoryList(data, onPageChange);
 
     return (
-      <div className="space-y-4">
-        {/* 搜索工具栏 */}
+      <div className="space-y-6">
+        {/* 工具栏 */}
+        <InventoryListToolbar
+          selectedCount={selectedInventoryIds.length}
+          onBatchInbound={handleInbound}
+          onBatchOutbound={handleOutbound}
+        />
+
+        {/* 搜索和筛选 */}
         <InventorySearchToolbar
           queryParams={queryParams}
           categoryOptions={categoryOptions}
@@ -73,15 +82,6 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
 
         {/* 库存表格 */}
         <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
-          <div className="bg-muted/50 border-b px-3 py-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">库存列表</h3>
-              <div className="text-muted-foreground text-sm">
-                {hasData ? `共 ${data.data.length} 条记录` : '暂无数据'}
-              </div>
-            </div>
-          </div>
-
           <InventoryTable
             data={data.data}
             selectedIds={selectedInventoryIds}
@@ -93,7 +93,7 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
             useVirtualization={data.data.length > 50}
           />
 
-          {/* 分页 */}
+          {/* 分页组件 */}
           {data.pagination && (
             <div className="border-t bg-gray-50/50 px-4 py-3">
               <Pagination

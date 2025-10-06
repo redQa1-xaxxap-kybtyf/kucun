@@ -25,6 +25,7 @@ interface ERPInboundFormProps {
 /**
  * ERP风格产品入库表单组件
  * 符合中国ERP系统的紧凑布局和操作习惯
+ * ✅ 符合产品模块UI风格规范
  */
 export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   // 使用自定义Hook管理表单状态
@@ -66,7 +67,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   }, [watchedInputQuantity, watchedInputUnit, watchedPiecesPerUnit, form]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* 页面标题卡片 */}
       <InboundFormToolbar
         isSubmitting={isSubmitting}
@@ -75,41 +76,51 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       />
 
       {/* 表单内容区域 */}
-      <div className="bg-card rounded-lg border p-6 shadow-md shadow-gray-200/50">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            {/* 产品选择区域 */}
-            <InboundProductSection
-              form={form}
-              selectedProduct={selectedProduct}
-              onProductSelect={handleProductSelect}
-            />
+      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+        <div className="p-6">
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* 产品选择区域 */}
+              <InboundProductSection
+                form={form}
+                selectedProduct={selectedProduct}
+                onProductSelect={handleProductSelect}
+              />
 
-            {/* 入库数量信息 */}
-            <div className="space-y-4">
-              <h3 className="text-base font-medium">入库数量</h3>
-              <InboundQuantityFields form={form} />
-            </div>
+              {/* 入库数量信息 */}
+              <div className="space-y-4">
+                <h3 className="text-base font-medium text-gray-900">
+                  入库数量
+                </h3>
+                <InboundQuantityFields form={form} />
+              </div>
 
-            {/* 产品规格信息 */}
-            <div className="space-y-4">
-              <h3 className="text-base font-medium">产品规格</h3>
-              <InboundSpecificationFields form={form} />
-            </div>
+              {/* 产品规格信息 */}
+              <div className="space-y-4">
+                <h3 className="text-base font-medium text-gray-900">
+                  产品规格
+                </h3>
+                <InboundSpecificationFields form={form} />
+              </div>
 
-            {/* 入库原因 */}
-            <div className="space-y-4">
-              <h3 className="text-base font-medium">入库原因</h3>
-              <InboundReasonField form={form} />
-            </div>
+              {/* 入库原因 */}
+              <div className="space-y-4">
+                <h3 className="text-base font-medium text-gray-900">
+                  入库原因
+                </h3>
+                <InboundReasonField form={form} />
+              </div>
 
-            {/* 可选信息 */}
-            <div className="space-y-4">
-              <h3 className="text-base font-medium">可选信息</h3>
-              <InboundOptionalFields form={form} />
-            </div>
-          </form>
-        </Form>
+              {/* 可选信息 */}
+              <div className="space-y-4">
+                <h3 className="text-base font-medium text-gray-900">
+                  可选信息
+                </h3>
+                <InboundOptionalFields form={form} />
+              </div>
+            </form>
+          </Form>
+        </div>
       </div>
     </div>
   );

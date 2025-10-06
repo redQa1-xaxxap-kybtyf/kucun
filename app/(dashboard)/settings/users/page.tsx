@@ -1,6 +1,7 @@
 /**
  * 用户管理设置页面
  * 严格遵循全栈项目统一约定规范
+ * ✅ 符合产品模块UI风格规范
  */
 
 'use client';
@@ -8,7 +9,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Plus, Search, Users } from 'lucide-react';
 import { useSession } from 'next-auth/react';
-import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import React from 'react';
 
 import { UserForm } from '@/components/settings/UserForm';
@@ -41,6 +42,7 @@ import type {
 } from '@/lib/types/settings';
 
 export default function UsersSettingsPage() {
+  const router = useRouter();
   const { data: session } = useSession();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -302,22 +304,36 @@ export default function UsersSettingsPage() {
   // 检查权限
   if (session?.user?.role !== 'admin') {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
-            <Link href="/settings">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="mr-2 h-4 w-4" />
+      <div className="mx-auto max-w-none space-y-6 px-4 py-4 sm:px-6 lg:px-8">
+        {/* 页面头部 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    用户管理
+                  </h1>
+                  <p className="text-sm text-gray-600">管理系统用户账户和权限</p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => router.push('/settings')}
+                className="h-11 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md"
+              >
+                <ArrowLeft className="h-4 w-4" />
                 返回设置
               </Button>
-            </Link>
-            <div>
-              <h1 className="text-3xl font-bold tracking-tight">用户管理</h1>
-              <p className="text-muted-foreground">管理系统用户账户和权限</p>
             </div>
-          </div>
-        </div>
-        <Card className="border-amber-200 bg-amber-50">
+          </CardContent>
+        </Card>
+
+        <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
           <CardHeader>
             <CardTitle className="flex items-center text-amber-800">
               <Users className="mr-2 h-5 w-5" />
@@ -340,35 +356,49 @@ export default function UsersSettingsPage() {
     resetPasswordMutation.isPending;
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题和导航 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Link href="/settings">
-            <Button variant="ghost" size="sm">
-              <ArrowLeft className="mr-2 h-4 w-4" />
+    <div className="mx-auto max-w-none space-y-6 px-4 py-4 sm:px-6 lg:px-8">
+      {/* 页面头部 */}
+      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+        <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  用户管理
+                </h1>
+                <p className="text-sm text-gray-600">
+                  管理系统用户账户和权限
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => router.push('/settings')}
+              className="h-11 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md"
+            >
+              <ArrowLeft className="h-4 w-4" />
               返回设置
             </Button>
-          </Link>
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">用户管理</h1>
-            <p className="text-muted-foreground">管理系统用户账户和权限</p>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* 用户管理卡片 */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <Users className="mr-2 h-5 w-5" />
+      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+        <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+          <CardTitle className="flex items-center text-gray-900">
+            <Users className="mr-2 h-5 w-5 text-blue-600" />
             用户账户管理
           </CardTitle>
           <CardDescription>
             创建、编辑和管理系统用户账户，控制用户权限和状态
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="space-y-6 p-6">
           {/* 操作栏 */}
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-1 items-center space-x-2">

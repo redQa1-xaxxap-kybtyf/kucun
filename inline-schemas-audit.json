@@ -1,0 +1,136 @@
+[
+  {
+    "file": "app\\api\\categories\\batch\\route.ts",
+    "hasInlineSchema": true,
+    "schemas": [
+      {
+        "name": "BatchDeleteCategoriesSchema",
+        "line": 9,
+        "code": "const BatchDeleteCategoriesSchema = z.object({"
+      }
+    ],
+    "issues": [
+      {
+        "type": "no-validation-middleware",
+        "message": "未使用统一的验证中间件"
+      }
+    ]
+  },
+  {
+    "file": "app\\api\\categories\\[id]\\status\\route.ts",
+    "hasInlineSchema": true,
+    "schemas": [
+      {
+        "name": "UpdateStatusSchema",
+        "line": 14,
+        "code": "const UpdateStatusSchema = z.object({"
+      }
+    ],
+    "issues": [
+      {
+        "type": "no-validation-middleware",
+        "message": "未使用统一的验证中间件"
+      }
+    ]
+  },
+  {
+    "file": "app\\api\\dashboard\\overview\\route.ts",
+    "hasInlineSchema": true,
+    "schemas": [
+      {
+        "name": "overviewQuerySchema",
+        "line": 15,
+        "code": "const overviewQuerySchema = z.object({"
+      }
+    ],
+    "issues": [
+      {
+        "type": "no-validation-middleware",
+        "message": "未使用统一的验证中间件"
+      }
+    ]
+  },
+  {
+    "file": "app\\api\\dashboard\\route.ts",
+    "hasInlineSchema": true,
+    "schemas": [
+      {
+        "name": "dashboardQuerySchema",
+        "line": 9,
+        "code": "const dashboardQuerySchema = z.object({"
+      }
+    ],
+    "issues": [
+      {
+        "type": "no-validation-middleware",
+        "message": "未使用统一的验证中间件"
+      }
+    ]
+  },
+  {
+    "file": "app\\api\\product-variants\\batch\\route.ts",
+    "hasInlineSchema": true,
+    "schemas": [
+      {
+        "name": "BatchCreateVariantsSchema",
+        "line": 8,
+        "code": "const BatchCreateVariantsSchema = z.object({"
+      },
+      {
+        "name": "BatchOperationSchema",
+        "line": 30,
+        "code": "const BatchOperationSchema = z.object({"
+      }
+    ],
+    "issues": [
+      {
+        "type": "no-validation-middleware",
+        "message": "未使用统一的验证中间件"
+      }
+    ]
+  },
+  {
+    "file": "app\\api\\product-variants\\check-sku\\route.ts",
+    "hasInlineSchema": true,
+    "schemas": [
+      {
+        "name": "CheckSkuQuerySchema",
+        "line": 9,
+        "code": "const CheckSkuQuerySchema = z.object({"
+      },
+      {
+        "name": "BatchCheckSkuSchema",
+        "line": 122,
+        "code": "const BatchCheckSkuSchema = z.object({"
+      }
+    ],
+    "issues": [
+      {
+        "type": "no-validation-middleware",
+        "message": "未使用统一的验证中间件"
+      }
+    ]
+  },
+  {
+    "file": "app\\api\\product-variants\\generate-sku\\route.ts",
+    "hasInlineSchema": true,
+    "schemas": [
+      {
+        "name": "GenerateSkuSchema",
+        "line": 8,
+        "code": "const GenerateSkuSchema = z.object({"
+      },
+      {
+        "name": "BatchGenerateSkuSchema",
+        "line": 143,
+        "code": "const BatchGenerateSkuSchema = z.object({"
+      }
+    ],
+    "issues": [
+      {
+        "type": "no-validation-middleware",
+        "message": "未使用统一的验证中间件"
+      }
+    ]
+  }
+]

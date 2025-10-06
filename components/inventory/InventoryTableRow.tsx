@@ -1,6 +1,7 @@
 /**
  * 库存表格行组件
  * 使用React.memo优化渲染性能
+ * ✅ 符合产品模块UI风格规范
  */
 
 'use client';
@@ -122,7 +123,10 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
     );
 
     return (
-      <TableRow className={`text-xs ${className || ''}`} style={style}>
+      <TableRow
+        className={`text-xs transition-colors hover:bg-blue-50/50 ${className || ''}`}
+        style={style}
+      >
         <TableCell>
           <input
             type="checkbox"
@@ -131,7 +135,9 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
             className="rounded border border-input"
           />
         </TableCell>
-        <TableCell className="font-mono">{item.product?.code || '-'}</TableCell>
+        <TableCell className="font-medium text-blue-600">
+          {item.product?.code || '-'}
+        </TableCell>
         <TableCell className="font-medium">
           {item.product?.name || '-'}
         </TableCell>

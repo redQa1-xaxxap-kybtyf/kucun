@@ -93,6 +93,10 @@ const formatSpecification = (specification?: string) => {
     : specification;
 };
 
+/**
+ * 入库记录表格组件
+ * ✅ 符合产品模块UI风格规范
+ */
 export function InboundRecordsTable({
   records,
   isLoading,
@@ -102,11 +106,11 @@ export function InboundRecordsTable({
   }
 
   return (
-    <div className="bg-card rounded border">
-      <div className="bg-muted/30 border-b px-3 py-2">
+    <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+      <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-4 py-3">
         <div className="flex items-center gap-2">
-          <Package className="h-4 w-4" />
-          <span className="text-sm font-medium">
+          <Package className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-gray-900">
             入库记录 ({records.length} 条)
           </span>
         </div>
@@ -138,11 +142,14 @@ export function InboundRecordsTable({
               </TableRow>
             ) : (
               records.map(record => (
-                <TableRow key={record.id} className="h-12">
-                  <TableCell className="text-xs font-medium">
+                <TableRow
+                  key={record.id}
+                  className="h-12 transition-colors hover:bg-blue-50/50"
+                >
+                  <TableCell className="text-xs font-medium text-blue-600">
                     {record.product?.code || record.productId}
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell className="text-xs font-medium">
                     {record.product?.name || '未知产品'}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">

@@ -1,10 +1,8 @@
 'use client';
 
-import { Package } from 'lucide-react';
 import * as React from 'react';
 
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
-import { Card, CardContent } from '@/components/ui/card';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
 import type { FormattedInventory } from '@/lib/api/inventory-formatter';
 import type { CategoryOption } from '@/lib/types/category';
@@ -158,36 +156,14 @@ export function InventoryPageClient({
   }
 
   return (
-    <>
-      {/* 页面标题卡片 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-              <Package className="h-6 w-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                库存管理
-              </h1>
-              <p className="text-sm text-gray-600">
-                实时监控产品库存，管理入库、出库和库存调整
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 库存列表 */}
-      <ERPInventoryList
-        data={normalizedData}
-        categoryOptions={categoryOptions}
-        queryParams={queryParams}
-        onSearch={handleSearch}
-        onFilter={handleFilter}
-        onPageChange={handlePageChange}
-        isLoading={isLoading}
-      />
-    </>
+    <ERPInventoryList
+      data={normalizedData}
+      categoryOptions={categoryOptions}
+      queryParams={queryParams}
+      onSearch={handleSearch}
+      onFilter={handleFilter}
+      onPageChange={handlePageChange}
+      isLoading={isLoading}
+    />
   );
 }
