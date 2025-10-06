@@ -1,7 +1,7 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import type { Session } from 'next-auth';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { useMediaQuery } from '@/hooks/use-media-query';
@@ -11,7 +11,7 @@ import { cn } from '@/lib/utils';
 import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
 import { Breadcrumb } from './Breadcrumb';
-import { GlobalSearch } from './GlobalSearch';
+import { GlobalSearch } from './GlobalSearch/index';
 import { Header } from './Header';
 import { MobileNav } from './MobileNav';
 import { SidebarClient } from './SidebarClient';
@@ -146,7 +146,9 @@ export function DashboardLayoutClient({
   }, []);
 
   const onTouchEnd = React.useCallback(() => {
-    if (!touchStart || !touchEnd) {return;}
+    if (!touchStart || !touchEnd) {
+      return;
+    }
 
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
@@ -194,7 +196,7 @@ export function DashboardLayoutClient({
 
   return (
     <>
-      <div className={cn('min-h-screen bg-background', className)}>
+      <div className={cn('bg-background min-h-screen', className)}>
         {/* 顶部导航栏 */}
         {showHeader && (
           <Header

@@ -4,7 +4,6 @@ import { getServerSession } from 'next-auth';
 
 import QueryProvider from '@/components/providers/query-provider';
 import AuthSessionProvider from '@/components/providers/session-provider';
-import { WebSocketProvider } from '@/components/providers/websocket-provider';
 import { Toaster } from '@/components/ui/toaster';
 import { authOptions } from '@/lib/auth';
 import './globals.css';
@@ -29,10 +28,8 @@ export default async function RootLayout({
       <body className={inter.className}>
         <AuthSessionProvider session={session}>
           <QueryProvider>
-            <WebSocketProvider>
-              <div className="bg-background min-h-screen">{children}</div>
-              <Toaster />
-            </WebSocketProvider>
+            <div className="bg-background min-h-screen">{children}</div>
+            <Toaster />
           </QueryProvider>
         </AuthSessionProvider>
       </body>
