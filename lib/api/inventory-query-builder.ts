@@ -5,34 +5,40 @@
  */
 
 import { Prisma } from '@prisma/client';
+import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 
 /**
- * 库存查询结果类型
+ * 库存查询结果 Zod Schema (用于运行时验证)
  */
-export interface InventoryQueryResult {
-  id: string;
-  productId: string;
-  batchNumber: string | null;
-  quantity: number;
-  reservedQuantity: number;
-  location: string | null;
-  unitCost: number | null;
-  updatedAt: Date;
-  product_id: string;
-  product_code: string;
-  product_name: string;
-  specification_size: string | null;
-  product_unit: string;
-  product_piecesPerUnit: number;
-  product_status: string;
-  category_id: string | null;
-  category_name: string | null;
-  category_code: string | null;
-}
+const inventoryQueryResultSchema = z.object({
+  id: z.string(),
+  productId: z.string(),
+  batchNumber: z.string().nullable(),
+  quantity: z.number(),
+  reservedQuantity: z.number(),
+  location: z.string().nullable(),
+  unitCost: z.number().nullable(),
+  updatedAt: z.date(),
+  product_id: z.string(),
+  product_code: z.string(),
+  product_name: z.string(),
+  specification_size: z.string().nullable(),
+  product_unit: z.string(),
+  product_piecesPerUnit: z.number(),
+  product_status: z.string(),
+  category_id: z.string().nullable(),
+  category_name: z.string().nullable(),
+  category_code: z.string().nullable(),
+});
+
+/**
+ * 库存查询结果类型 (从 Zod Schema 推导)
+ */
+export type InventoryQueryResult = z.infer<typeof inventoryQueryResultSchema>;
 
 /**
  * 构建WHERE子句
@@ -41,12 +47,11 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
   const conditions: Prisma.Sql[] = [];
 
   // 搜索条件 - 优化为使用索引的查询
-  // code 使用前缀匹配可以利用索引
-  // name 使用全文搜索但保留备选方案
+  // 性能优化：所有 LIKE 查询都使用前缀匹配以利用索引
   if (params.search) {
     conditions.push(Prisma.sql`(
       p.code LIKE ${`${params.search}%`} OR
-      p.name LIKE ${`%${params.search}%`} OR
+      p.name LIKE ${`${params.search}%`} OR
       i.batch_number = ${params.search} OR
       i.location LIKE ${`${params.search}%`}
     )`);
@@ -121,6 +126,7 @@ function buildOrderByClause(
 /**
  * 优化的库存列表查询
  * 使用原生SQL JOIN查询，解决N+1问题
+ * 包含运行时验证确保数据安全
  */
 export async function getOptimizedInventoryList(
   params: InventoryQueryParams
@@ -136,8 +142,8 @@ export async function getOptimizedInventoryList(
   const orderByClause = buildOrderByClause(sortBy, sortOrder);
   const offset = (page - 1) * limit;
 
-  // 使用Prisma的原生SQL查询，保持类型安全
-  const inventoryRecords = await prisma.$queryRaw<InventoryQueryResult[]>`
+  // 使用Prisma的原生SQL查询
+  const rawRecords = await prisma.$queryRaw<unknown[]>`
     SELECT
       i.id,
       i.product_id as productId,
@@ -165,7 +171,24 @@ export async function getOptimizedInventoryList(
     LIMIT ${limit} OFFSET ${offset}
   `;
 
-  return inventoryRecords;
+  // 运行时验证查询结果
+  try {
+    const validatedRecords = rawRecords.map((record, index) => {
+      const result = inventoryQueryResultSchema.safeParse(record);
+      if (!result.success) {
+        console.error(`库存查询结果验证失败 (索引 ${index}):`, result.error);
+        throw new Error(
+          `数据库返回的库存数据格式不正确: ${result.error.message}`
+        );
+      }
+      return result.data;
+    });
+
+    return validatedRecords;
+  } catch (error) {
+    console.error('库存查询结果验证失败:', error);
+    throw new Error('数据库返回的库存数据格式不正确');
+  }
 }
 
 /**

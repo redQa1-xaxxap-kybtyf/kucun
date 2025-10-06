@@ -67,13 +67,14 @@ function sortSearchResults(
 }
 
 // 搜索产品数据库查询
+// 性能优化：使用 startsWith 前缀匹配以利用索引
 async function searchProducts(search: string, limit: number) {
   const where = {
     status: 'active' as const,
     OR: [
-      { name: { contains: search, mode: 'insensitive' as const } },
-      { code: { contains: search, mode: 'insensitive' as const } },
-      { specification: { contains: search, mode: 'insensitive' as const } },
+      { name: { startsWith: search } }, // 优化：前缀匹配，可利用索引
+      { code: { startsWith: search } }, // 优化：前缀匹配，可利用索引
+      { specification: { contains: search } }, // 保留全文匹配，规格字段需要
     ],
   };
 

@@ -27,24 +27,29 @@ if (env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// 慢查询监控（生产环境）
-if (env.NODE_ENV === 'production') {
-  prisma.$use(async (params, next) => {
-    const before = Date.now();
-    const result = await next(params);
-    const after = Date.now();
-    const duration = after - before;
+// 慢查询监控（所有环境）
+// 优化：降低阈值到100ms，增加详细日志，开发环境也启用
+prisma.$use(async (params, next) => {
+  const before = Date.now();
+  const result = await next(params);
+  const after = Date.now();
+  const duration = after - before;
 
-    // 记录超过1秒的查询
-    if (duration > 1000) {
-      console.warn(
-        `[Prisma] Slow query detected: ${params.model}.${params.action} took ${duration}ms`
-      );
-    }
+  // 记录超过100ms的查询（优化前：1000ms）
+  if (duration > 100) {
+    console.warn(
+      `[Prisma] Slow query detected: ${params.model}.${params.action} took ${duration}ms`,
+      {
+        model: params.model,
+        action: params.action,
+        args: JSON.stringify(params.args).substring(0, 200), // 限制日志长度
+        duration: `${duration}ms`,
+      }
+    );
+  }
 
-    return result;
-  });
-}
+  return result;
+});
 
 // 数据库连接测试函数
 export async function testDatabaseConnection() {
@@ -134,5 +139,5 @@ export async function cleanupExpiredData() {
 }
 
 // 导出类型
-export type { PrismaClient } from '@prisma/client';
 export * from '@prisma/client';
+export type { PrismaClient } from '@prisma/client';
