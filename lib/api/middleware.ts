@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/errors';
 import { authOptions } from '@/lib/auth';
 import { env } from '@/lib/env';
+import { checkRateLimit, RateLimitType } from '@/lib/rate-limit';
 
 import { badRequestResponse, unauthorizedResponse } from './response';
 
@@ -48,18 +49,38 @@ export type AuthenticatedHandler<
 ) => Promise<Response>;
 
 /**
+ * 认证中间件选项
+ */
+export interface WithAuthOptions {
+  /** 所需权限列表（预留，后续可扩展基于权限的访问控制） */
+  permissions?: string[];
+  /** 速率限制类型 */
+  rateLimit?: RateLimitType;
+}
+
+/**
  * 带认证的API处理器包装器
  * 所有环境都强制进行身份验证,确保安全性
+ * 支持可选的速率限制
  */
 export function withAuth<
   TParams extends Record<string, string> = Record<string, string>,
->(handler: AuthenticatedHandler<TParams>) {
+>(handler: AuthenticatedHandler<TParams>, options?: WithAuthOptions) {
   return async (
     request: NextRequest,
     context: { params?: Promise<TParams> | TParams } = {}
   ) => {
     try {
-      // 获取用户会话
+      // 1. 速率限制检查（如果配置）
+      if (options?.rateLimit) {
+        const rateLimitResult = await checkRateLimit(request, options.rateLimit);
+
+        if (rateLimitResult.limited && rateLimitResult.response) {
+          return rateLimitResult.response;
+        }
+      }
+
+      // 2. 获取用户会话
       const session = await getServerSession(authOptions);
 
       // 验证会话是否存在
@@ -67,7 +88,7 @@ export function withAuth<
         return unauthorizedResponse('请先登录');
       }
 
-      // 执行处理器
+      // 3. 执行处理器
       return await handler(request, context, session);
     } catch (error) {
       // 使用日志库记录错误(生产环境不使用 console.error)

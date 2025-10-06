@@ -16,13 +16,15 @@ export interface WsClient {
   disconnect(): void;
   subscribe(channel: string): void;
   unsubscribe(channel: string): void;
-  onMessage<T>(callback: (message: WsMessage<T>) => void): void;
+  onMessage<T>(callback: (message: WsMessage<T>) => void): () => void;
+  onConnectionChange(callback: (connected: boolean) => void): void;
   isConnected(): boolean;
 }
 
 export function createWsClient(): WsClient {
   let ws: WebSocket | null = null;
-  let messageCallback: ((message: WsMessage) => void) | null = null;
+  const messageCallbacks = new Set<(message: WsMessage) => void>();
+  let connectionChangeCallback: ((connected: boolean) => void) | null = null;
   let reconnectTimer: NodeJS.Timeout | null = null;
   let reconnectAttempts = 0;
   const maxReconnectAttempts = 5;
@@ -43,18 +45,22 @@ export function createWsClient(): WsClient {
           clearTimeout(reconnectTimer);
           reconnectTimer = null;
         }
+        // 通知连接状态变化
+        connectionChangeCallback?.(true);
       };
 
       ws.onmessage = event => {
         try {
           const message = JSON.parse(event.data) as WsMessage;
-          messageCallback?.(message);
+          messageCallbacks.forEach(callback => callback(message));
         } catch {
           // 忽略格式错误的消息
         }
       };
 
       ws.onclose = () => {
+        // 通知连接状态变化
+        connectionChangeCallback?.(false);
         if (reconnectAttempts < maxReconnectAttempts) {
           reconnectTimer = setTimeout(
             () => {
@@ -96,8 +102,18 @@ export function createWsClient(): WsClient {
     }
   }
 
-  function onMessage<T>(callback: (message: WsMessage<T>) => void) {
-    messageCallback = callback as (message: WsMessage) => void;
+  function onMessage<T>(callback: (message: WsMessage<T>) => void): () => void {
+    const typedCallback = callback as (message: WsMessage) => void;
+    messageCallbacks.add(typedCallback);
+
+    // 返回清理函数
+    return () => {
+      messageCallbacks.delete(typedCallback);
+    };
+  }
+
+  function onConnectionChange(callback: (connected: boolean) => void) {
+    connectionChangeCallback = callback;
   }
 
   function isConnected(): boolean {
@@ -110,6 +126,7 @@ export function createWsClient(): WsClient {
     subscribe,
     unsubscribe,
     onMessage,
+    onConnectionChange,
     isConnected,
   };
 }

@@ -55,7 +55,7 @@ export function useInboundRecords(params: InboundQueryParams = {}) {
         pagination: result.pagination,
       };
     },
-    staleTime: 30 * 1000, // 30秒内认为数据是新鲜的
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 }
 
@@ -265,6 +265,6 @@ export function useInboundStats() {
         recentRecords: recentData,
       };
     },
-    staleTime: 60 * 1000, // 1分钟内认为数据是新鲜的
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 }

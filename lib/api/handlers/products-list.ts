@@ -53,7 +53,6 @@ export function parseProductListParams(searchParams: URLSearchParams) {
       sortBy: searchParams.get('sortBy') || 'createdAt',
       sortOrder: searchParams.get('sortOrder') || 'desc',
       status: rawStatus && rawStatus !== 'all' ? rawStatus : undefined,
-      unit: searchParams.get('unit') || undefined,
       categoryId: filterUncategorized ? undefined : rawCategoryId || undefined,
     },
   };
@@ -65,7 +64,6 @@ export function parseProductListParams(searchParams: URLSearchParams) {
 export function buildProductWhereClause(params: {
   search?: string;
   status?: string;
-  unit?: string;
   categoryId?: string;
   filterUncategorized: boolean;
 }): Prisma.ProductWhereInput {
@@ -81,10 +79,6 @@ export function buildProductWhereClause(params: {
 
   if (params.status) {
     where.status = params.status;
-  }
-
-  if (params.unit) {
-    where.unit = params.unit;
   }
 
   if (params.filterUncategorized) {

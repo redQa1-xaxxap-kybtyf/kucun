@@ -43,6 +43,7 @@ export interface CategoryQueryParams {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   parentId?: string;
+  status?: 'active' | 'inactive' | 'all';
 }
 
 export interface CategoryListResult {
@@ -70,16 +71,22 @@ export interface CreateCategoryParams {
 function buildWhereConditions(params: {
   search?: string;
   parentId?: string;
+  status?: 'active' | 'inactive' | 'all';
 }): Prisma.CategoryWhereInput {
-  const where: Prisma.CategoryWhereInput = {
-    status: 'active', // 只返回启用的分类
-  };
+  const where: Prisma.CategoryWhereInput = {};
 
-  // 搜索条件
+  // 状态过滤：'all' 时不添加条件，默认为 'active'
+  if (params.status && params.status !== 'all') {
+    where.status = params.status;
+  } else if (!params.status) {
+    where.status = 'active'; // 未指定时默认只返回启用的分类
+  }
+
+  // 搜索条件（大小写不敏感）
   if (params.search) {
     where.OR = [
-      { name: { contains: params.search } },
-      { code: { contains: params.search } },
+      { name: { contains: params.search, mode: 'insensitive' } },
+      { code: { contains: params.search, mode: 'insensitive' } },
     ];
   }
 

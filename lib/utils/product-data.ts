@@ -54,8 +54,13 @@ export class ProductDataTransformer {
         ? undefined
         : formData.categoryId;
 
+    // 从formData中移除id字段（如果存在）
+    const { id: _id, ...dataWithoutId } = formData as ProductUpdateFormData & {
+      id?: string;
+    };
+
     return {
-      ...formData,
+      ...dataWithoutId,
       categoryId: normalizedCategoryId,
       // 清理规格字段,确保是纯字符串
       specification: ProductDataTransformer.cleanSpecification(
@@ -63,6 +68,9 @@ export class ProductDataTransformer {
       ),
       // 处理数值字段：0值转为undefined
       thickness: formData.thickness === 0 ? undefined : formData.thickness,
+      weight: formData.weight === 0 ? undefined : formData.weight,
+      piecesPerUnit:
+        formData.piecesPerUnit === 0 ? undefined : formData.piecesPerUnit,
     };
   }
 
@@ -141,7 +149,6 @@ export class ProductDataTransformer {
         product.specification
       ),
       description: product.description || '',
-      unit: product.unit,
       thickness: product.thickness || undefined,
       status: product.status,
       categoryId:
@@ -224,9 +231,21 @@ export class ProductDataValidator {
    * 验证产品对象是否有效
    */
   static isValidProduct(data: unknown): data is Product {
+    if (
+      !data ||
+      typeof data !== 'object' ||
+      !('id' in data) ||
+      !('code' in data) ||
+      !('name' in data) ||
+      !('unit' in data) ||
+      !('status' in data) ||
+      !('createdAt' in data) ||
+      !('updatedAt' in data)
+    ) {
+      return false;
+    }
+
     return (
-      data &&
-      typeof data === 'object' &&
       typeof data.id === 'string' &&
       typeof data.code === 'string' &&
       typeof data.name === 'string' &&
@@ -362,7 +381,6 @@ export class ProductDataDefaults {
       name: '',
       specification: '',
       description: '',
-      unit: 'piece',
       status: 'active',
       thickness: undefined,
       images: [],

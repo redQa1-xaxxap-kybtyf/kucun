@@ -5,6 +5,29 @@
  */
 
 import { prisma, withTransaction } from '@/lib/db';
+import {
+  findAvailableInventory,
+  hasEnoughInventory,
+  getAvailableQuantity,
+} from '@/lib/utils/inventory-variant-mapper';
+
+/**
+ * 扩展的销售订单明细类型(包含库存查询所需字段)
+ */
+interface SalesOrderItemWithInventoryFields {
+  id: string;
+  salesOrderId: string;
+  productId: string | null;
+  colorCode: string | null;
+  productionDate: string | null;
+  quantity: number;
+  unitPrice: number;
+  subtotal: number;
+  product?: {
+    id: string;
+    name: string;
+  } | null;
+}
 
 /**
  * 订单状态更新结果
@@ -66,32 +89,34 @@ async function executeOrderStatusUpdateWithInventory(
       },
     });
 
-    // 更新库存（减少可用库存）- 使用乐观锁
+    // 更新库存(减少可用库存) - 使用乐观锁
     for (const item of existingOrder.items) {
-      if (!item.productId) {continue;} // 跳过手动输入的商品
+      if (!item.productId) {
+        continue;
+      } // 跳过手动输入的商品
 
-      // 查找库存记录
-      const inventory = await tx.inventory.findFirst({
-        where: {
-          productId: item.productId,
-          variantId:
-            (item as unknown as { variantId?: string }).variantId || null,
-          batchNumber:
-            (item as unknown as { batchNumber?: string }).batchNumber || null,
-        },
-      });
+      // 使用类型安全的库存查找（支持变体和批次映射）
+      const inventory = await findAvailableInventory(
+        item.productId,
+        item.quantity,
+        {
+          colorCode: item.colorCode,
+          productionDate: item.productionDate,
+          tx,
+        }
+      );
 
       if (!inventory) {
         throw new Error(
-          `产品 ${item.product?.name || '未知产品'} 库存记录不存在`
+          `产品 ${item.product?.name || '未知产品'} ${item.colorCode ? `(色号: ${item.colorCode})` : ''} 库存记录不存在或数量不足`
         );
       }
 
-      // 检查库存是否足够
-      const availableQuantity = inventory.quantity - inventory.reservedQuantity;
-      if (availableQuantity < item.quantity) {
+      // 检查库存是否足够（考虑预留量）
+      if (!hasEnoughInventory(inventory, item.quantity)) {
+        const availableQty = getAvailableQuantity(inventory);
         throw new Error(
-          `产品 ${item.product?.name || '未知产品'} (色号: ${item.colorCode || '无'}) 库存不足。可用: ${availableQuantity}, 需要: ${item.quantity}`
+          `产品 ${item.product?.name || '未知产品'} (色号: ${item.colorCode || '无'}) 库存不足。可用: ${availableQty}, 需要: ${item.quantity}`
         );
       }
 
@@ -103,14 +128,10 @@ async function executeOrderStatusUpdateWithInventory(
         },
         data: {
           quantity: { decrement: item.quantity },
-          // 同步减少预留量,确保预留量不超过实际库存
-          reservedQuantity: Math.max(
-            0,
-            Math.min(
-              inventory.reservedQuantity,
-              inventory.quantity - item.quantity
-            )
-          ),
+          // 直接减少预留量（不超过当前预留量）
+          reservedQuantity: {
+            decrement: Math.min(item.quantity, inventory.reservedQuantity),
+          },
         },
       });
 
@@ -175,15 +196,15 @@ async function executeOrderCancellation(
 
     // 释放预留库存
     for (const item of existingOrder.items) {
-      if (!item.productId) {continue;} // 跳过手动输入的商品
+      if (!item.productId) {
+        continue;
+      } // 跳过手动输入的商品
 
+      // 查找对应的库存记录
       const inventory = await tx.inventory.findFirst({
         where: {
           productId: item.productId,
-          variantId:
-            (item as unknown as { variantId?: string }).variantId || null,
-          batchNumber:
-            (item as unknown as { batchNumber?: string }).batchNumber || null,
+          // 同样简化处理,仅按productId查找
         },
       });
 

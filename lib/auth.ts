@@ -1,6 +1,6 @@
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
 import bcrypt from 'bcryptjs';
-import type { NextAuthOptions } from 'next-auth';
+import NextAuth, { type NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 
 import { prisma } from './db';
@@ -437,3 +437,6 @@ export async function updateUserStatus(
     select: { id: true },
   });
 }
+
+// 导出 NextAuth 实例（用于 API 路由）
+export default NextAuth(authOptions);

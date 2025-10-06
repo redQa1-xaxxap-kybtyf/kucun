@@ -119,7 +119,7 @@ export const updatePaymentRecordSchema = z
 export const paymentRecordQuerySchema = z
   .object({
     page: z.number().int().positive().optional().default(1),
-    pageSize: z.number().int().positive().max(100).optional().default(10),
+    limit: z.number().int().positive().max(100).optional().default(10),
     search: z.string().optional(),
     customerId: z.string().optional(),
     userId: z.string().optional(),
@@ -171,7 +171,7 @@ export const paymentRecordQuerySchema = z
 export const accountsReceivableQuerySchema = z
   .object({
     page: z.number().int().positive().optional().default(1),
-    pageSize: z.number().int().positive().max(100).optional().default(10),
+    limit: z.number().int().positive().max(100).optional().default(10),
     search: z.string().optional(),
     customerId: z.string().optional(),
     paymentStatus: z.enum(['unpaid', 'partial', 'paid', 'overdue']).optional(),

@@ -42,7 +42,7 @@ export interface ReceivableSummary {
 
 export interface ReceivablesQueryParams {
   page?: number;
-  pageSize?: number;
+  limit?: number;
   search?: string;
   customerId?: string;
   paymentStatus?: 'unpaid' | 'partial' | 'paid' | 'overdue';
@@ -56,7 +56,7 @@ export interface ReceivablesResult {
   receivables: ReceivableItem[];
   pagination: {
     page: number;
-    pageSize: number;
+    limit: number;
     total: number;
     totalPages: number;
   };
@@ -277,7 +277,7 @@ export async function getReceivables(
 ): Promise<ReceivablesResult> {
   const {
     page = 1,
-    pageSize = 20,
+    limit = 20,
     paymentStatus,
     sortBy,
     sortOrder,
@@ -328,17 +328,17 @@ export async function getReceivables(
 
   // 分页处理
   const total = receivables.length;
-  const totalPages = Math.ceil(total / pageSize);
+  const totalPages = Math.ceil(total / limit);
   const paginatedReceivables = receivables.slice(
-    (page - 1) * pageSize,
-    page * pageSize
+    (page - 1) * limit,
+    page * limit
   );
 
   return {
     receivables: paginatedReceivables,
     pagination: {
       page,
-      pageSize,
+      limit,
       total,
       totalPages,
     },

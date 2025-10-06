@@ -189,6 +189,12 @@ export async function cleanupExpiredIdempotencyRecords(): Promise<number> {
 /**
  * 幂等性包装器
  * 自动处理幂等性检查和记录
+ *
+ * 修复说明：
+ * - 使用乐观锁策略（先创建后检查）避免检查-创建竞态条件
+ * - 当检测到并发请求时，实现轮询等待机制而非直接抛出错误
+ * - 添加重试计数和超时保护，防止无限等待
+ * - 利用数据库唯一约束保证原子性
  */
 export async function withIdempotency<T>(
   idempotencyKey: string,
@@ -198,43 +204,89 @@ export async function withIdempotency<T>(
   requestData: Record<string, unknown>,
   operation: () => Promise<T>
 ): Promise<T> {
-  // 1. 检查幂等性
-  const check = await checkIdempotency(idempotencyKey);
+  const maxRetries = 20; // 最大重试次数（总等待时间约2-4秒）
+  const retryDelayMs = 100; // 初始重试延迟(毫秒)
+  const maxRetryDelayMs = 500; // 最大重试延迟(毫秒)
 
-  // 如果操作已完成,直接返回之前的结果
-  if (!check.isNew && check.data) {
-    return check.data as T;
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      // 策略1：乐观锁 - 先尝试创建记录
+      // 优点：在无并发时性能最优，避免了先检查后创建的竞态窗口
+      // 如果创建成功，说明是第一个请求，直接执行操作
+      await prisma.inventoryOperation.create({
+        data: {
+          idempotencyKey,
+          operationType,
+          productId,
+          operatorId,
+          status: 'processing',
+          requestData: JSON.stringify(requestData),
+          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24小时后过期
+        },
+      });
+
+      // 创建成功，说明这是第一个请求，执行实际操作
+      try {
+        const result = await operation();
+
+        // 操作成功，标记为完成
+        await completeIdempotencyRecord(
+          idempotencyKey,
+          result as Record<string, unknown>
+        );
+
+        return result;
+      } catch (error) {
+        // 操作失败，标记为失败状态
+        const errorMessage = error instanceof Error ? error.message : '操作失败';
+        await failIdempotencyRecord(idempotencyKey, errorMessage);
+        throw error;
+      }
+
+    } catch (error: unknown) {
+      // 策略2：处理唯一约束冲突 - 说明已有其他请求在处理
+      // Prisma唯一约束错误码: P2002
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+        // 查询现有记录的状态
+        const existing = await checkIdempotency(idempotencyKey);
+
+        // 情况1：操作已完成，直接返回之前的结果
+        if (!existing.isNew && existing.data) {
+          return existing.data as T;
+        }
+
+        // 情况2：操作仍在处理中，等待后重试
+        if (!existing.isNew && existing.operation?.status === 'processing') {
+          // 使用指数退避策略，避免过度轮询
+          const delay = Math.min(
+            retryDelayMs * Math.pow(1.5, attempt),
+            maxRetryDelayMs
+          );
+          await new Promise(resolve => setTimeout(resolve, delay));
+          continue; // 继续下一次重试
+        }
+
+        // 情况3：操作失败，允许重试
+        // 直接进入下一轮循环，尝试重新创建记录
+        if (!existing.isNew && existing.operation?.status === 'failed') {
+          // 稍微延迟后重试创建
+          await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+          continue;
+        }
+
+        // 情况4：其他未知状态，等待后重试
+        await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+        continue;
+      }
+
+      // 其他数据库错误直接抛出，不重试
+      throw error;
+    }
   }
 
-  // 如果操作正在处理中,抛出错误
-  if (!check.isNew && check.operation?.status === 'processing') {
-    throw new Error('操作正在处理中,请稍后重试');
-  }
-
-  // 2. 创建幂等性记录
-  await createIdempotencyRecord(
-    idempotencyKey,
-    operationType,
-    productId,
-    operatorId,
-    requestData
+  // 超过最大重试次数，说明操作持续时间过长或系统负载过高
+  throw new Error(
+    `操作超时：请求处理时间过长（超过${maxRetries}次重试），请稍后重试。` +
+    `这可能是由于系统繁忙或操作耗时过长导致的。`
   );
-
-  try {
-    // 3. 执行操作
-    const result = await operation();
-
-    // 4. 标记为完成
-    await completeIdempotencyRecord(
-      idempotencyKey,
-      result as Record<string, unknown>
-    );
-
-    return result;
-  } catch (error) {
-    // 5. 标记为失败
-    const errorMessage = error instanceof Error ? error.message : '操作失败';
-    await failIdempotencyRecord(idempotencyKey, errorMessage);
-    throw error;
-  }
 }

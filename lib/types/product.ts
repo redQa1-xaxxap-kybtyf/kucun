@@ -109,6 +109,15 @@ export interface Product {
   createdAt: string;
   /** 更新时间 */
   updatedAt: string;
+  /** 产品变体列表（关联查询时包含） */
+  variants?: ProductVariant[];
+  /** 统计计数信息（关联查询时包含） */
+  counts?: {
+    variants: number;
+    inventory: number;
+    salesOrderItems: number;
+    inboundRecords: number;
+  };
   /** 库存汇总信息（来自API响应） */
   inventory?: ProductInventory;
   /** 统计信息（来自API响应） */
@@ -173,7 +182,6 @@ export interface ProductQueryParams {
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
   status?: ProductStatus;
-  unit?: ProductUnit;
   categoryId?: string;
 }
 

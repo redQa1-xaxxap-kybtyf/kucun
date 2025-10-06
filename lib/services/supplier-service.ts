@@ -61,8 +61,8 @@ function buildWhereConditions(params: {
 
   if (params.search) {
     where.OR = [
-      { name: { contains: params.search } },
-      { phone: { contains: params.search } },
+      { name: { contains: params.search, mode: 'insensitive' } },
+      { phone: { contains: params.search, mode: 'insensitive' } },
     ];
   }
 

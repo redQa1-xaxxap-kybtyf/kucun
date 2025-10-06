@@ -16,33 +16,32 @@ import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 
 /**
  * 获取缓存的库存列表
+ *
+ * @deprecated 已废弃 - 库存列表不应该缓存，应该直接查询数据库
+ * 库存数据变化频繁，用户期望看到实时数据，缓存会导致数据不一致
+ *
+ * 推荐做法：在 API 路由中直接使用 getOrSetJSON，设置极短 TTL（如5-10秒）
+ * 或完全不缓存，使用数据库查询优化（索引、分页、字段选择）
  */
 export async function getCachedInventory(
   params: InventoryQueryParams
 ): Promise<PaginatedResponse<Inventory> | null> {
-  const cacheKey = buildCacheKey(
-    'inventory:list',
-    params as Record<string, unknown>
-  );
-  return getOrSetJSON(cacheKey, null);
+  // 返回 null，强制调用方直接查询数据库
+  return null;
 }
 
 /**
  * 设置库存列表缓存
+ *
+ * @deprecated 已废弃 - 库存列表不应该缓存
+ * 该函数已停用，不会设置任何缓存
  */
 export async function setCachedInventory(
   params: InventoryQueryParams,
   data: PaginatedResponse<Inventory>
 ): Promise<void> {
-  const cacheKey = buildCacheKey(
-    'inventory:list',
-    params as Record<string, unknown>
-  );
-  await getOrSetJSON(
-    cacheKey,
-    () => Promise.resolve(data),
-    cacheConfig.inventoryTtl
-  );
+  // 空实现 - 不再缓存列表数据
+  // 如果确实需要短期缓存，请在 API 路由中直接使用 getOrSetJSON
 }
 
 /**
@@ -87,6 +86,9 @@ export async function getCachedProductInventorySummary(
 
 /**
  * 批量获取产品库存汇总缓存
+ * 优化说明：
+ * - Redis 可用时：批量从 Redis 获取，未命中的从数据库查询并回填缓存
+ * - Redis 不可用时：checkRedisAvailability 会快速失败（30秒缓存），直接查询数据库
  */
 export async function getBatchCachedInventorySummary(
   productIds: string[]
@@ -96,7 +98,9 @@ export async function getBatchCachedInventorySummary(
   const inventoryMap = new Map<string, InventorySummary>();
   const uncachedIds: string[] = [];
 
-  // 批量从缓存获取，避免 N+1 查询
+  // 批量从缓存获取
+  // 由于 checkRedisAvailability 的修复，如果 Redis 不可用，
+  // 第一次调用会设置 lastRedisCheckTime，后续调用会在 30 秒内直接返回 false
   const cacheKeys = productIds.map(id => `inventory:summary:${id}`);
   const cachedResults = await Promise.all(
     cacheKeys.map(async (key, index) => {
@@ -177,28 +181,42 @@ export async function getBatchCachedInventorySummary(
 }
 
 /**
- * 清除库存相关缓存
- * 修复：完善缓存失效策略，确保相关统计数据一致性
+ * 清除库存相关缓存 - 精准失效策略
+ *
+ * 修复说明：
+ * - 单个产品库存变更时，只清除该产品相关的缓存
+ * - 移除了过度失效的 finance:receivables 和 dashboard:stats
+ * - 列表缓存已改为直接查询（不缓存），无需失效
+ * - 使用 revalidate.ts 的级联失效机制处理相关缓存
+ *
+ * @param productId 产品ID（可选）
+ * @param options 失效选项
  */
 export async function invalidateInventoryCache(
-  productId?: string
+  productId?: string,
+  options?: {
+    /** 是否失效仪表盘缓存（默认false，由级联失效处理） */
+    invalidateDashboard?: boolean;
+  }
 ): Promise<void> {
+  const { invalidateDashboard = false } = options || {};
+
   if (productId) {
-    // 清除特定产品的库存汇总缓存
+    // 精准失效：只清除特定产品的库存汇总缓存
     await invalidateNamespace(`inventory:summary:${productId}`);
+  } else {
+    // 全局失效：清除所有库存汇总缓存
+    await invalidateNamespace('inventory:summary:*');
   }
 
-  // 修复：清除所有相关的缓存，确保数据一致性
-  const cachePatterns = [
-    'inventory:list:*', // 库存列表缓存
-    'inventory:stats:*', // 库存统计缓存
-    'inventory:summary:*', // 库存汇总缓存（如果没有指定productId）
-    'finance:receivables:*', // 财务应收账款缓存（库存变更可能影响订单状态）
-    'dashboard:stats:*', // 仪表盘统计缓存
-  ];
+  // 库存列表已改为直接查询（使用极短TTL），不需要主动失效
+  // 列表缓存会在60秒内自动过期，避免缓存雪崩
 
-  // 并行清除所有相关缓存
-  await Promise.all(cachePatterns.map(pattern => invalidateNamespace(pattern)));
+  // 可选：失效仪表盘缓存（仅在明确需要时）
+  // 通常由 revalidate.ts 的级联失效机制自动处理
+  if (invalidateDashboard) {
+    await invalidateNamespace('dashboard:stats:*');
+  }
 }
 
 /**

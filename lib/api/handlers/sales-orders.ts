@@ -2,6 +2,7 @@ import type { Prisma } from '@prisma/client';
 import type { z } from 'zod';
 
 import { prisma } from '@/lib/db';
+import { getLongTransactionOptions } from '@/lib/db/transaction-options';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
 import type {
   SalesOrderStatus,
@@ -43,9 +44,9 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
 
   if (search) {
     where.OR = [
-      { orderNumber: { contains: search } },
-      { customer: { name: { contains: search } } },
-      { remarks: { contains: search } },
+      { orderNumber: { contains: search, mode: 'insensitive' } },
+      { customer: { name: { contains: search, mode: 'insensitive' } } },
+      { remarks: { contains: search, mode: 'insensitive' } },
     ];
   }
 
@@ -285,12 +286,15 @@ export async function createSalesOrder(
   // 计算订单金额
   let totalAmount = 0;
   let costAmount = 0;
-  const profitAmount = 0;
+  let profitAmount = 0;
 
   for (const item of validatedData.items) {
-    totalAmount += item.subtotal || 0;
-    costAmount += (item.unitCost || 0) * item.quantity;
-    // profitAmount += item.profitAmount || 0; // 属性不存在，暂时注释
+    const itemSubtotal = item.subtotal || (item.quantity * item.unitPrice);
+    const itemCost = (item.unitCost || 0) * item.quantity;
+
+    totalAmount += itemSubtotal;
+    costAmount += itemCost;
+    profitAmount += itemSubtotal - itemCost;  // 正确计算：销售额 - 成本
   }
 
   // 使用事务创建订单，确保数据一致性
@@ -316,34 +320,64 @@ export async function createSalesOrder(
         }
       }
 
-      // 验证产品是否存在（对于非手动输入的产品）
-      for (const item of validatedData.items) {
-        if (!item.isManualProduct && item.productId) {
-          const product = await tx.product.findUnique({
-            where: { id: item.productId },
-            select: { id: true },
-          });
-          if (!product) {
-            throw new Error(`产品ID ${item.productId} 不存在`);
+      // ✅ 性能优化1: 批量验证产品是否存在（对于非手动输入的产品）
+      // 优化前：N次查询（N=订单项数量），10个订单项=10次查询
+      // 优化后：1次批量查询，10个订单项=1次查询（减少90%）
+      const productIds = validatedData.items
+        .filter(item => !item.isManualProduct && item.productId)
+        .map(item => item.productId!)
+        .filter((id, index, self) => self.indexOf(id) === index); // 去重：相同产品ID只查询一次
+
+      if (productIds.length > 0) {
+        // 批量查询所有产品
+        const products = await tx.product.findMany({
+          where: { id: { in: productIds } },
+          select: { id: true },
+        });
+
+        // 构建已存在的产品ID集合，用于O(1)查找
+        const existingProductIds = new Set(products.map(p => p.id));
+
+        // 验证所有产品都存在
+        for (const productId of productIds) {
+          if (!existingProductIds.has(productId)) {
+            throw new Error(`产品ID ${productId} 不存在`);
           }
         }
       }
 
-      // 如果订单状态为confirmed,需要预留库存
+      // ✅ 性能优化2: 批量查询和预留库存（如果订单状态为confirmed）
+      // 优化前：N次库存查询 + N次库存更新，10个订单项=20次数据库操作
+      // 优化后：1次批量查询 + N次更新（Map缓存），10个订单项=11次操作（减少45%）
       if (validatedData.status === 'confirmed') {
+        // 1. 收集所有需要查询库存的产品ID
+        const inventoryProductIds = validatedData.items
+          .filter(item => !item.isManualProduct && item.productId)
+          .map(item => item.productId!)
+          .filter((id, index, self) => self.indexOf(id) === index); // 去重
+
+        // 2. 批量查询所有库存记录（一次性查询）
+        const inventories = await tx.inventory.findMany({
+          where: {
+            productId: { in: inventoryProductIds },
+            // TODO: 添加variantId和batchNumber支持
+          },
+        });
+
+        // 3. 构建库存查找Map（productId -> inventory），实现O(1)查找性能
+        const inventoryMap = new Map(
+          inventories.map(inv => [inv.productId, inv])
+        );
+
+        // 4. 循环验证和预留库存（无额外数据库查询，只有更新操作）
         for (const item of validatedData.items) {
           // 跳过手动输入的商品
           if (item.isManualProduct || !item.productId) {
             continue;
           }
 
-          // 查找库存记录
-          const inventory = await tx.inventory.findFirst({
-            where: {
-              productId: item.productId,
-              // TODO: 添加variantId和batchNumber支持
-            },
-          });
+          // 从Map中O(1)时间查找库存记录
+          const inventory = inventoryMap.get(item.productId);
 
           if (!inventory) {
             throw new Error(`产品ID ${item.productId} 库存记录不存在`);
@@ -358,7 +392,7 @@ export async function createSalesOrder(
             );
           }
 
-          // 预留库存 - 使用乐观锁
+          // 预留库存 - 使用乐观锁（保持原有的并发安全机制）
           const updatedCount = await tx.inventory.updateMany({
             where: {
               id: inventory.id,
@@ -477,22 +511,30 @@ export async function createSalesOrder(
         },
       });
 
-      // 记录客户产品价格历史（仅记录非手动输入的产品）
+      // ✅ 性能优化3: 批量插入客户产品价格历史（仅记录非手动输入的产品）
+      // 优化前：N次单独插入，10个订单项=10次INSERT操作
+      // 优化后：1次批量插入，10个订单项=1次INSERT操作（减少90%）
       const priceType =
         validatedData.orderType === 'NORMAL' ? 'SALES' : 'FACTORY';
-      for (const item of validatedData.items) {
-        if (!item.isManualProduct && item.productId && item.unitPrice) {
-          await tx.customerProductPrice.create({
-            data: {
-              customerId: validatedData.customerId,
-              productId: item.productId,
-              priceType,
-              unitPrice: item.unitPrice,
-              orderId: salesOrder.id,
-              orderType: 'SALES_ORDER',
-            },
-          });
-        }
+
+      // 收集所有需要记录的价格数据
+      const priceRecords = validatedData.items
+        .filter(item => !item.isManualProduct && item.productId && item.unitPrice)
+        .map(item => ({
+          customerId: validatedData.customerId,
+          productId: item.productId!,
+          priceType,
+          unitPrice: item.unitPrice!,
+          orderId: salesOrder.id,
+          orderType: 'SALES_ORDER' as const,
+        }));
+
+      // 批量插入所有价格记录（一次性完成）
+      if (priceRecords.length > 0) {
+        await tx.customerProductPrice.createMany({
+          data: priceRecords,
+          skipDuplicates: true, // 跳过重复记录，避免唯一索引冲突
+        });
       }
 
       // 如果是调货销售且状态为confirmed，自动创建应付款记录
@@ -532,10 +574,7 @@ export async function createSalesOrder(
 
       return salesOrder;
     },
-    {
-      isolationLevel: 'Serializable',
-      timeout: 15000, // 15秒超时
-    }
+    getLongTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable，15秒超时）
   );
 
   return {

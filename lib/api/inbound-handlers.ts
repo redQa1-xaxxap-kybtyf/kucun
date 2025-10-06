@@ -3,6 +3,7 @@
  * 将复杂的API逻辑拆分为更小的、可复用的函数
  */
 
+import type { PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
@@ -369,7 +370,7 @@ export async function createInboundRecord(
     weight?: number; // 产品重量（入库时确定）
   },
   userId: string,
-  tx?: typeof prisma // 事务上下文
+  tx?: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'> // 事务上下文
 ) {
   // 验证产品存在
   await validateProductExists(data.productId);
@@ -477,7 +478,7 @@ export async function updateInventoryQuantity(
   options?: {
     variantId?: string;
   },
-  tx?: typeof prisma // 事务上下文
+  tx?: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'> // 事务上下文
 ) {
   const prismaClient = tx || prisma;
 

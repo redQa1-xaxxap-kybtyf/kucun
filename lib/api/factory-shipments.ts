@@ -41,8 +41,8 @@ export async function getFactoryShipmentOrders(
   if (params.page) {
     searchParams.set('page', params.page.toString());
   }
-  if (params.pageSize) {
-    searchParams.set('limit', params.pageSize.toString());
+  if (params.limit) {
+    searchParams.set('limit', params.limit.toString());
   }
   if (params.status) {
     searchParams.set('status', params.status);

@@ -119,14 +119,13 @@ export const productCreateSchema = z.object({
   images: baseValidations.images,
 });
 
-// 产品更新表单验证 - 移除计量单位字段
+// 产品更新表单验证
 export const productUpdateSchema = z.object({
-  id: z.string().min(1, '产品ID不能为空'),
   code: baseValidations.code.optional(),
   name: baseValidations.name.optional(),
   specification: baseValidations.specification,
   description: baseValidations.description,
-  piecesPerUnit: baseValidations.piecesPerUnit.optional(),
+  piecesPerUnit: baseValidations.piecesPerUnit,
   weight: baseValidations.weight,
   thickness: baseValidations.thickness,
   status: baseValidations.status.optional(),

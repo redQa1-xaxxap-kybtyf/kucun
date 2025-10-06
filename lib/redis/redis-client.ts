@@ -19,12 +19,36 @@ const namespace = redisConfig.namespace;
 interface MemoryCacheEntry {
   value: unknown;
   expiry: number;
+  lastAccessed: number; // 用于LRU淘汰
 }
 
+// LRU缓存配置
+const MAX_MEMORY_CACHE_SIZE = 1000; // 最多缓存1000个键
 const memoryCache = new Map<string, MemoryCacheEntry>();
 let isRedisAvailable = true;
 let lastRedisCheckTime = 0;
 const REDIS_CHECK_INTERVAL = 30000; // 30秒检查一次Redis可用性
+
+// LRU淘汰策略：删除最久未访问的键
+function evictLRU(): void {
+  if (memoryCache.size < MAX_MEMORY_CACHE_SIZE) {
+    return;
+  }
+
+  let oldestKey: string | null = null;
+  let oldestTime = Infinity;
+
+  for (const [key, entry] of memoryCache.entries()) {
+    if (entry.lastAccessed < oldestTime) {
+      oldestTime = entry.lastAccessed;
+      oldestKey = key;
+    }
+  }
+
+  if (oldestKey) {
+    memoryCache.delete(oldestKey);
+  }
+}
 
 // 清理过期的内存缓存
 function cleanExpiredMemoryCache(): void {
@@ -122,16 +146,18 @@ function createClient(url: string): Redis {
 // 修复: 防止热重载时的连接泄漏
 // 在开发环境中，使用全局变量存储连接池，避免每次热重载都创建新连接
 declare global {
+  // eslint-disable-next-line no-var
   var __redisPool: Redis[] | undefined;
 }
 
 // Simple round-robin pool
 const pool: Redis[] =
-  global.__redisPool ||
+  (typeof global !== 'undefined' && global.__redisPool) ?
+  global.__redisPool :
   Array.from({ length: poolSize }, () => createClient(redisUrl));
 
 // 在开发环境中保存连接池到全局变量
-if (env.NODE_ENV === 'development') {
+if (env.NODE_ENV === 'development' && typeof global !== 'undefined') {
   global.__redisPool = pool;
 }
 
@@ -233,6 +259,8 @@ export const redis: RedisClientWrapper = {
     const cached = memoryCache.get(prefixedKey);
     if (cached) {
       if (cached.expiry === 0 || cached.expiry > Date.now()) {
+        // 更新最后访问时间（LRU）
+        cached.lastAccessed = Date.now();
         return cached.value as T;
       }
       memoryCache.delete(prefixedKey);
@@ -255,8 +283,15 @@ export const redis: RedisClientWrapper = {
       ttlSeconds && ttlSeconds > 0 ? ttlSeconds : DEFAULT_TTL;
     const expiry = Date.now() + effectiveTTL * 1000;
 
+    // 在写入前执行LRU淘汰
+    evictLRU();
+
     // 始终写入内存缓存作为备份
-    memoryCache.set(prefixedKey, { value, expiry });
+    memoryCache.set(prefixedKey, {
+      value,
+      expiry,
+      lastAccessed: Date.now(),
+    });
 
     // 尝试写入Redis
     if (await checkRedisAvailability()) {
@@ -340,5 +375,23 @@ export const redis: RedisClientWrapper = {
     }
 
     return deleted;
+  },
+
+  // 获取内存缓存统计信息（用于监控）
+  getMemoryCacheStats(): {
+    size: number;
+    maxSize: number;
+    hitRate: number;
+  } {
+    return {
+      size: memoryCache.size,
+      maxSize: MAX_MEMORY_CACHE_SIZE,
+      hitRate: 0, // 可以后续添加命中率统计
+    };
+  },
+
+  // 清空内存缓存（用于测试或紧急情况）
+  clearMemoryCache(): void {
+    memoryCache.clear();
   },
 };

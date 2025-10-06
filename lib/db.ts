@@ -18,11 +18,32 @@ export const prisma =
         url: env.DATABASE_URL,
       },
     },
+    // 性能监控（可选）
+    errorFormat: 'minimal',
   });
 
 // 在开发环境中保存实例到全局变量，避免热重载时重复创建
 if (env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
+}
+
+// 慢查询监控（生产环境）
+if (env.NODE_ENV === 'production') {
+  prisma.$use(async (params, next) => {
+    const before = Date.now();
+    const result = await next(params);
+    const after = Date.now();
+    const duration = after - before;
+
+    // 记录超过1秒的查询
+    if (duration > 1000) {
+      console.warn(
+        `[Prisma] Slow query detected: ${params.model}.${params.action} took ${duration}ms`
+      );
+    }
+
+    return result;
+  });
 }
 
 // 数据库连接测试函数

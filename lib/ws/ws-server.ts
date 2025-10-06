@@ -40,6 +40,53 @@ function createServer(): ServerApi {
   let redisSubscriber: ReturnType<typeof redis.getClient> | null = null;
   let redisPublisher: ReturnType<typeof redis.getClient> | null = null;
 
+  // 优雅关闭函数
+  function gracefulShutdown() {
+    logger.info('ws-server', '开始优雅关闭 WebSocket 服务器...');
+
+    // 关闭所有客户端连接
+    clients.forEach(client => {
+      try {
+        client.socket.close(1001, '服务器关闭');
+      } catch (error) {
+        logger.error('ws-server', '关闭客户端连接失败:', error);
+      }
+    });
+    clients.clear();
+
+    // 取消所有 Redis 订阅
+    if (redisSubscriber) {
+      try {
+        redisSubscriber.unsubscribe();
+        redisSubscriber.quit();
+      } catch (error) {
+        logger.error('ws-server', '关闭 Redis 订阅客户端失败:', error);
+      }
+      redisSubscriber = null;
+    }
+
+    // 关闭 Redis 发布客户端
+    if (redisPublisher) {
+      try {
+        redisPublisher.quit();
+      } catch (error) {
+        logger.error('ws-server', '关闭 Redis 发布客户端失败:', error);
+      }
+      redisPublisher = null;
+    }
+
+    // 关闭 WebSocket 服务器
+    if (wss) {
+      wss.close(() => {
+        logger.info('ws-server', 'WebSocket 服务器已关闭');
+      });
+      wss = null;
+    }
+
+    // 清理频道映射
+    channels.clear();
+  }
+
   function initializeServer() {
     try {
       if (wss) {
@@ -78,6 +125,13 @@ function createServer(): ServerApi {
       });
 
       setupWebSocketHandlers();
+
+      // 注册进程退出事件监听器（仅在首次初始化时注册）
+      if (typeof process !== 'undefined') {
+        process.once('SIGTERM', gracefulShutdown);
+        process.once('SIGINT', gracefulShutdown);
+        process.once('beforeExit', gracefulShutdown);
+      }
     } catch (error) {
       console.error('Failed to initialize WebSocket server:', error);
       throw error;
@@ -204,9 +258,12 @@ function createServer(): ServerApi {
       });
 
       socket.on('close', () => {
-        client.channels.forEach(ch => channels.get(ch)?.delete(socket));
-        clients.delete(client);
+        // 清理心跳定时器
         clearInterval(interval);
+        // 清理所有订阅的频道
+        client.channels.forEach(ch => channels.get(ch)?.delete(socket));
+        // 从客户端集合中移除
+        clients.delete(client);
       });
     });
 

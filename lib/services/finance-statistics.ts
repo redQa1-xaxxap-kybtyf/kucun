@@ -220,7 +220,6 @@ export async function calculateSupplierStatements(
   for (const supplier of suppliers) {
     // 计算调货销售订单统计
     const transferOrders = supplier.salesOrders;
-    const totalOrders = transferOrders.length;
     const transferAmount = transferOrders.reduce(
       (sum, order) => sum + (order.costAmount || 0),
       0
@@ -241,12 +240,24 @@ export async function calculateSupplierStatements(
       0
     );
 
-    // 问题3修复：厂家发货订单的付款金额从订单本身的paidAmount字段获取
-    const factoryPaidAmount = supplier.factoryShipmentOrderItems.reduce(
-      (sum, item) => sum + (item.factoryShipmentOrder.paidAmount || 0),
+    // 修复重复计算bug：使用Map去重factoryShipmentOrder，避免同一订单的paidAmount被重复累加
+    const uniqueFactoryOrders = new Map<string, number>();
+    supplier.factoryShipmentOrderItems.forEach((item) => {
+      const orderId = item.factoryShipmentOrder.id;
+      const paidAmount = item.factoryShipmentOrder.paidAmount || 0;
+      // 只记录每个订单一次
+      if (!uniqueFactoryOrders.has(orderId)) {
+        uniqueFactoryOrders.set(orderId, paidAmount);
+      }
+    });
+
+    const factoryPaidAmount = Array.from(uniqueFactoryOrders.values()).reduce(
+      (sum, paidAmount) => sum + paidAmount,
       0
     );
 
+    // 修复totalOrders计算：应该包括调货订单数+厂家发货订单数
+    const totalOrders = transferOrders.length + uniqueFactoryOrders.size;
     const totalAmount = transferAmount + factoryOrderAmount;
     const paidAmount = transferPaidAmount + factoryPaidAmount;
     const pendingAmount = Math.max(0, totalAmount - paidAmount);

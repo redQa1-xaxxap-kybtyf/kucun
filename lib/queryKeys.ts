@@ -19,8 +19,7 @@
  */
 export interface PaginationParams {
   page?: number;
-  pageSize?: number;
-  limit?: number; // 兼容旧代码
+  limit?: number;
 }
 
 /**

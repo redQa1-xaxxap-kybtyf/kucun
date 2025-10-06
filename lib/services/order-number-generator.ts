@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import { getLongTransactionOptions } from '@/lib/db/transaction-options';
 import { salesOrderConfig } from '@/lib/env';
 
 /**
@@ -112,10 +113,7 @@ export async function generateUniqueOrderNumber(
 
           return orderNumber;
         },
-        {
-          // 修复：SQLite不支持Serializable隔离级别，移除该设置
-          timeout: 10000, // 10秒超时
-        }
+        getStandardTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable）
       );
     } catch (error) {
       attempt++;
@@ -245,10 +243,7 @@ export async function batchGenerateOrderNumbers(
 
       return orderNumbers;
     },
-    {
-      isolationLevel: 'Serializable',
-      timeout: 15000, // 15秒超时
-    }
+    getLongTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable，15秒超时）
   );
 }
 

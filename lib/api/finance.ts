@@ -374,7 +374,7 @@ export const useReceivablesStatistics = () =>
   useQuery({
     queryKey: financeQueryKeys.receivablesStats(),
     queryFn: () => financeApi.getReceivablesStatistics(),
-    staleTime: 10 * 60 * 1000, // 10分钟
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
 export const useRefunds = (query: RefundRecordQuery) =>
@@ -396,7 +396,7 @@ export const useRefundsStatistics = () =>
   useQuery({
     queryKey: financeQueryKeys.refundsStats(),
     queryFn: () => financeApi.getRefundsStatistics(),
-    staleTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
 export const useStatements = (query: StatementQuery) =>
@@ -418,14 +418,14 @@ export const useStatementsStatistics = () =>
   useQuery({
     queryKey: financeQueryKeys.statementsStats(),
     queryFn: () => financeApi.getStatementsStatistics(),
-    staleTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
 export const useAgingAnalysis = (query: AgingAnalysisQuery) =>
   useQuery({
     queryKey: financeQueryKeys.agingAnalysis(query),
     queryFn: () => financeApi.getAgingAnalysis(query),
-    staleTime: 10 * 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
 // Mutation Hooks

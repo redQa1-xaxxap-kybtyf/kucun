@@ -7,6 +7,7 @@
 import { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import { inventoryConfig } from '@/lib/env';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 
 /**
@@ -73,11 +74,15 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
 
   // 库存状态筛选
   if (params.lowStock && params.hasStock) {
-    // 同时筛选低库存和有库存：0 < 数量 <= 10
-    conditions.push(Prisma.sql`i.quantity > 0 AND i.quantity <= 10`);
+    // 同时筛选低库存和有库存：0 < 数量 <= 低库存阈值
+    conditions.push(
+      Prisma.sql`i.quantity > 0 AND i.quantity <= ${inventoryConfig.lowStockThreshold}`
+    );
   } else if (params.lowStock) {
-    // 仅筛选低库存：数量 <= 10
-    conditions.push(Prisma.sql`i.quantity <= 10`);
+    // 仅筛选低库存：数量 <= 低库存阈值
+    conditions.push(
+      Prisma.sql`i.quantity <= ${inventoryConfig.lowStockThreshold}`
+    );
   } else if (params.hasStock) {
     // 仅筛选有库存：数量 > 0
     conditions.push(Prisma.sql`i.quantity > 0`);

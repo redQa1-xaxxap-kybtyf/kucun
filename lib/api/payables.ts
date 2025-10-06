@@ -302,7 +302,7 @@ export const usePayableStatistics = () =>
   useQuery({
     queryKey: payableQueryKeys.statistics(),
     queryFn: () => payablesApi.getPayableStatistics(),
-    staleTime: 10 * 60 * 1000, // 10分钟
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
 export const usePaymentOutRecords = (query: PaymentOutRecordQuery) =>

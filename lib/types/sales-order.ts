@@ -60,7 +60,7 @@ export interface SalesOrder {
   updatedAt: string;
 
   // 关联数据（可选，根据查询需要包含）
-  customer?: Customer;
+  customer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
   user?: User;
   supplier?: {
     id: string;

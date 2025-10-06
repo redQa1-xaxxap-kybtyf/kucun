@@ -18,7 +18,7 @@ export interface PaginatedResponse<T> {
   items: T[];
   total: number;
   page: number;
-  pageSize: number;
+  limit: number;
   totalPages: number;
 }
 
@@ -177,7 +177,7 @@ export function extractApiData<T>(response: ApiResponse<T>): T {
  * @param items - 数据项数组
  * @param total - 总数
  * @param page - 当前页码
- * @param pageSize - 每页大小
+ * @param limit - 每页大小
  * @returns 分页响应对象
  *
  * @example
@@ -189,14 +189,14 @@ export function createPaginatedResponse<T>(
   items: T[],
   total: number,
   page: number,
-  pageSize: number
+  limit: number
 ): PaginatedResponse<T> {
   return {
     items,
     total,
     page,
-    pageSize,
-    totalPages: Math.ceil(total / pageSize),
+    limit,
+    totalPages: Math.ceil(total / limit),
   };
 }
 

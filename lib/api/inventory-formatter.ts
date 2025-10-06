@@ -12,22 +12,22 @@ import type { InventoryQueryResult } from './inventory-query-builder';
 export interface FormattedInventory {
   id: string;
   productId: string;
-  batchNumber: string | null;
+  batchNumber?: string;
   quantity: number;
   reservedQuantity: number;
   availableQuantity: number;
-  location: string | null;
-  unitCost: number | null;
-  updatedAt: Date;
+  location?: string;
+  unitCost?: number;
+  updatedAt: string;
   product: {
     id: string;
     code: string;
     name: string;
-    specification: string | null;
+    specification?: string;
     unit: string;
     piecesPerUnit: number;
     status: string;
-    categoryId: string | null;
+    categoryId?: string;
     category: {
       id: string;
       name: string;
@@ -45,22 +45,22 @@ export function formatInventoryRecord(
   return {
     id: record.id,
     productId: record.productId,
-    batchNumber: record.batchNumber,
+    batchNumber: record.batchNumber ?? undefined,
     quantity: record.quantity,
     reservedQuantity: record.reservedQuantity,
     availableQuantity: record.quantity - record.reservedQuantity,
-    location: record.location,
-    unitCost: record.unitCost,
-    updatedAt: record.updatedAt,
+    location: record.location ?? undefined,
+    unitCost: record.unitCost ?? undefined,
+    updatedAt: record.updatedAt.toISOString(),
     product: {
       id: record.product_id,
       code: record.product_code,
       name: record.product_name,
-      specification: record.specification_size,
+      specification: record.specification_size ?? undefined,
       unit: record.product_unit,
       piecesPerUnit: record.product_piecesPerUnit,
       status: record.product_status,
-      categoryId: record.category_id,
+      categoryId: record.category_id ?? undefined,
       category:
         record.category_id && record.category_name
           ? {

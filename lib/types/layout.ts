@@ -26,9 +26,13 @@ export interface NavigationItem {
   disabled?: boolean;
   /** 权限要求 */
   requiredRoles?: string[];
-  /** 徽章文本（如通知数量） */
+  /**
+   * @deprecated 已废弃 - 徽章功能已移除，保留此字段仅为向后兼容
+   */
   badge?: string | number;
-  /** 徽章变体 */
+  /**
+   * @deprecated 已废弃 - 徽章功能已移除，保留此字段仅为向后兼容
+   */
   badgeVariant?: 'default' | 'secondary' | 'destructive' | 'outline';
 }
 

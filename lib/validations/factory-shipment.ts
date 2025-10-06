@@ -187,7 +187,7 @@ export const updateFactoryShipmentOrderSchema = z
 export const factoryShipmentOrderListParamsSchema = z
   .object({
     page: z.number().int().min(1, '页码必须大于0').optional(),
-    pageSize: z
+    limit: z
       .number()
       .int()
       .min(1, '每页数量必须大于0')

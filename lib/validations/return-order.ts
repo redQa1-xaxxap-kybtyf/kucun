@@ -151,7 +151,7 @@ export const updateReturnStatusSchema = z.object({
 // 退货订单查询验证规则（API使用）
 export const returnOrderQuerySchema = z.object({
   page: z.coerce.number().int().min(1).default(1),
-  pageSize: z.coerce.number().int().min(1).max(100).default(20),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
   search: z.string().optional(),
   customerId: z.string().optional(),
   salesOrderId: z.string().optional(),

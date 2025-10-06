@@ -153,25 +153,38 @@ export async function updateProduct(
   id: string,
   productData: ProductUpdateFormData
 ): Promise<Product> {
-  // 确保包含id字段用于后端验证
-  const dataWithId = {
-    ...productData,
-  };
-
   const response = await fetch(`${API_BASE}/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
     },
     credentials: 'include', // 包含cookies以传递会话信息
-    body: JSON.stringify(dataWithId),
+    body: JSON.stringify(productData),
   });
 
   if (!response.ok) {
     if (response.status === 404) {
       throw new Error('产品不存在');
     }
-    throw new Error(`更新产品失败: ${response.statusText}`);
+
+    let errorMessage = `更新产品失败: ${response.statusText}`;
+
+    try {
+      const errorBody = await response.json();
+      if (errorBody?.error) {
+        errorMessage = `更新产品失败: ${errorBody.error}`;
+      }
+      if (Array.isArray(errorBody?.details) && errorBody.details.length > 0) {
+        const firstDetail = errorBody.details[0];
+        if (firstDetail?.message) {
+          errorMessage = `${errorMessage} (${firstDetail.message})`;
+        }
+      }
+    } catch {
+      // 忽略解析错误，保留原始状态码消息
+    }
+
+    throw new Error(errorMessage);
   }
 
   const data: ApiResponse<Product> = await response.json();

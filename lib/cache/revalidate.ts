@@ -130,101 +130,142 @@ export async function revalidateCachePath(
 }
 
 /**
- * 级联失效相关缓存
- * 根据业务逻辑自动失效相关的缓存标签
+ * 级联失效相关缓存 - 优化版
+ *
+ * 优化说明：
+ * 1. 移除了过度级联：库存变更不再失效订单列表、产品列表
+ * 2. 分级失效：立即失效关键缓存，延迟失效次要缓存
+ * 3. 精准失效：只失效真正相关的缓存，不失效列表缓存
+ * 4. 防止雪崩：使用延迟执行，避免同时失效大量缓存
  */
 async function cascadeInvalidate(tag: string): Promise<void> {
-  const cascadeMap: Record<string, string[]> = {
-    // 产品变更 → 失效库存、订单相关缓存
+  /**
+   * 立即失效的级联规则（直接相关，必须同步失效）
+   */
+  const immediateCascadeMap: Record<string, string[]> = {
+    // 产品变更 → 只失效库存汇总（产品详情已在调用方失效）
     [CacheTags.Products.all]: [
-      CacheTags.Inventory.all,
-      CacheTags.SalesOrders.list,
-      CacheTags.Dashboard.overview,
+      CacheTags.Inventory.all, // 库存汇总需要立即失效
     ],
 
-    // 库存变更 → 失效产品、仪表盘缓存
+    // 库存变更 → 只失效仪表盘预警（不失效列表和订单）
     [CacheTags.Inventory.all]: [
-      CacheTags.Products.list,
-      CacheTags.Dashboard.overview,
-      CacheTags.Dashboard.alerts,
-      CacheTags.SalesOrders.list,
+      CacheTags.Dashboard.alerts, // 库存预警需要立即更新
     ],
 
     // 客户变更 → 失效订单、财务缓存
     [CacheTags.Customers.all]: [
-      CacheTags.SalesOrders.list,
       CacheTags.Finance.receivablesList,
       CacheTags.Finance.statementsList,
     ],
 
-    // 供应商变更 → 失效采购、财务缓存
+    // 供应商变更 → 失效财务缓存
     [CacheTags.Suppliers.all]: [
       CacheTags.Finance.payablesList,
       CacheTags.Finance.statementsList,
     ],
 
-    // 销售订单变更 → 失效财务、库存、仪表盘缓存
+    // 销售订单变更 → 失效财务、库存汇总
     [CacheTags.SalesOrders.all]: [
       CacheTags.Finance.receivablesList,
       CacheTags.Finance.statementsList,
-      CacheTags.Inventory.all,
-      CacheTags.Dashboard.overview,
-      CacheTags.Dashboard.stats,
+      CacheTags.Inventory.all, // 订单影响库存预留
     ],
 
-    // 退货订单变更 → 失效财务、库存缓存
+    // 退货订单变更 → 失效财务、库存
     [CacheTags.ReturnOrders.all]: [
       CacheTags.Finance.refundsList,
       CacheTags.Inventory.all,
-      CacheTags.SalesOrders.list,
     ],
 
-    // 财务数据变更 → 失效仪表盘、往来账单缓存
+    // 财务数据变更 → 失效往来账单、统计
     [CacheTags.Finance.receivables]: [
-      CacheTags.Dashboard.overview,
       CacheTags.Finance.statementsList,
       CacheTags.Finance.receivablesStats,
     ],
 
     [CacheTags.Finance.payables]: [
-      CacheTags.Dashboard.overview,
       CacheTags.Finance.statementsList,
       CacheTags.Finance.payablesStats,
     ],
 
     [CacheTags.Finance.refunds]: [
-      CacheTags.Dashboard.overview,
       CacheTags.Finance.statementsList,
       CacheTags.Finance.refundsStats,
     ],
 
-    // 支付记录变更 → 失效应收款、往来账单、仪表盘
+    // 支付记录变更 → 失效应收款、往来账单
     [CacheTags.Finance.payments]: [
       CacheTags.Finance.receivablesList,
       CacheTags.Finance.statementsList,
-      CacheTags.Dashboard.overview,
     ],
 
-    // 付款记录变更 → 失效应付款、往来账单、仪表盘
+    // 付款记录变更 → 失效应付款、往来账单
     [CacheTags.Finance.paymentsOut]: [
       CacheTags.Finance.payablesList,
       CacheTags.Finance.statementsList,
-      CacheTags.Dashboard.overview,
     ],
   };
 
-  // 查找级联规则（支持前缀匹配）
-  const cascadeKeys = Object.keys(cascadeMap);
-  for (const key of cascadeKeys) {
+  /**
+   * 延迟失效的级联规则（间接相关，异步失效）
+   */
+  const deferredCascadeMap: Record<string, string[]> = {
+    // 产品变更 → 延迟失效仪表盘概览
+    [CacheTags.Products.all]: [CacheTags.Dashboard.overview],
+
+    // 库存变更 → 延迟失效仪表盘统计
+    [CacheTags.Inventory.all]: [CacheTags.Dashboard.stats],
+
+    // 销售订单变更 → 延迟失效仪表盘
+    [CacheTags.SalesOrders.all]: [
+      CacheTags.Dashboard.overview,
+      CacheTags.Dashboard.stats,
+    ],
+
+    // 财务数据变更 → 延迟失效仪表盘
+    [CacheTags.Finance.receivables]: [CacheTags.Dashboard.overview],
+    [CacheTags.Finance.payables]: [CacheTags.Dashboard.overview],
+    [CacheTags.Finance.refunds]: [CacheTags.Dashboard.overview],
+    [CacheTags.Finance.payments]: [CacheTags.Dashboard.overview],
+    [CacheTags.Finance.paymentsOut]: [CacheTags.Dashboard.overview],
+  };
+
+  // 1. 立即失效直接相关的缓存
+  const immediateKeys = Object.keys(immediateCascadeMap);
+  for (const key of immediateKeys) {
     if (tag === key || tag.startsWith(`${key}:`)) {
-      const relatedTags = cascadeMap[key];
-      // 递归失效相关标签（但禁用级联，避免循环）
+      const relatedTags = immediateCascadeMap[key];
       await Promise.all(
         relatedTags.map(relatedTag =>
           revalidateCache(relatedTag, { cascade: false })
         )
       );
-      break;
+      break; // 只执行第一个匹配的规则
+    }
+  }
+
+  // 2. 延迟失效间接相关的缓存（不阻塞主流程）
+  const deferredKeys = Object.keys(deferredCascadeMap);
+  for (const key of deferredKeys) {
+    if (tag === key || tag.startsWith(`${key}:`)) {
+      const relatedTags = deferredCascadeMap[key];
+
+      // 延迟1秒执行，避免阻塞主流程
+      setTimeout(async () => {
+        try {
+          await Promise.all(
+            relatedTags.map(relatedTag =>
+              revalidateCache(relatedTag, { cascade: false, broadcast: false })
+            )
+          );
+        } catch (error) {
+          console.error('[缓存级联] 延迟失效执行失败:', error);
+          // 不抛出错误，避免影响后台任务
+        }
+      }, 1000);
+
+      break; // 只执行第一个匹配的规则
     }
   }
 }

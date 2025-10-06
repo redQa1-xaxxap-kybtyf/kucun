@@ -86,16 +86,18 @@ export async function generatePaymentOutNumber(): Promise<string> {
 
 /**
  * 生成应付款记录号
+ * @param tx - 可选的事务上下文,如果提供则在该事务内生成单号
  * @returns 应付款记录号,格式: YFK-YYYYMMDD-XXX
  */
-export async function generatePayableNumber(): Promise<string> {
+export async function generatePayableNumber(
+  tx?: Parameters<Parameters<typeof prisma.$transaction>[0]>[0]
+): Promise<string> {
   const now = new Date();
   const dateKey = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
   const prefix = `YFK-${dateKey}`;
 
-  // 使用事务确保序号的唯一性
-  const result = await prisma.$transaction(async tx => {
-    // 查找或创建当天的序号记录
+  // 如果传入了事务上下文,直接在该事务内执行
+  if (tx) {
     const sequence = await tx.orderSequence.upsert({
       where: {
         sequenceType_dateKey: {
@@ -115,7 +117,31 @@ export async function generatePayableNumber(): Promise<string> {
       },
     });
 
-    // 生成完整的应付款记录号
+    const sequenceNumber = sequence.currentSequence.toString().padStart(3, '0');
+    return `${prefix}-${sequenceNumber}`;
+  }
+
+  // 如果没有传入事务上下文,创建新的事务
+  const result = await prisma.$transaction(async newTx => {
+    const sequence = await newTx.orderSequence.upsert({
+      where: {
+        sequenceType_dateKey: {
+          sequenceType: 'payable',
+          dateKey,
+        },
+      },
+      update: {
+        currentSequence: {
+          increment: 1,
+        },
+      },
+      create: {
+        sequenceType: 'payable',
+        dateKey,
+        currentSequence: 1,
+      },
+    });
+
     const sequenceNumber = sequence.currentSequence.toString().padStart(3, '0');
     return `${prefix}-${sequenceNumber}`;
   });

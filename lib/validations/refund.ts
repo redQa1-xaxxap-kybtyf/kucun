@@ -187,7 +187,7 @@ export const updateRefundRecordSchema = z
 // 退款查询参数验证规则
 export const refundQuerySchema = z.object({
   page: z.number().int().positive().optional(),
-  pageSize: z
+  limit: z
     .number()
     .int()
     .positive()
