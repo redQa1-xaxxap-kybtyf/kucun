@@ -2,12 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-    ArrowLeft,
-    Download,
-    Edit,
-    MoreHorizontal,
-    Printer,
-    ShoppingCart,
+  ArrowLeft,
+  Download,
+  Edit,
+  MoreHorizontal,
+  Printer,
+  ShoppingCart,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -16,10 +16,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Separator } from '@/components/ui/separator';
@@ -236,15 +236,16 @@ export default function SalesOrderDetailPage() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem>复制订单</DropdownMenuItem>
-              <DropdownMenuItem>发送邮件</DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive">
-                删除订单
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </CardContent>
-    </Card>
+                    <DropdownMenuItem>发送邮件</DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive">
+                      删除订单
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* 基本信息 */}
@@ -256,216 +257,218 @@ export default function SalesOrderDetailPage() {
                   基本信息
                 </CardTitle>
               </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    订单状态
-                  </label>
-                  <div className="mt-1">
-                    <Badge variant={getStatusBadgeVariant(order.status)}>
-                      {SALES_ORDER_STATUS_LABELS[
-                        order.status as keyof typeof SALES_ORDER_STATUS_LABELS
-                      ] || order.status}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    订单类型
-                  </label>
-                  <div className="mt-1">
-                    {getOrderTypeBadge(order.orderType)}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    客户名称
-                  </label>
-                  <p className="mt-1">{order.customer.name}</p>
-                </div>
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    客户电话
-                  </label>
-                  <p className="mt-1">{order.customer.phone || '-'}</p>
-                </div>
-                {order.supplier && (
-                  <>
-                    <div>
-                      <label className="text-muted-foreground text-sm font-medium">
-                        供应商
-                      </label>
-                      <p className="mt-1">{order.supplier.name}</p>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      订单状态
+                    </label>
+                    <div className="mt-1">
+                      <Badge variant={getStatusBadgeVariant(order.status)}>
+                        {SALES_ORDER_STATUS_LABELS[
+                          order.status as keyof typeof SALES_ORDER_STATUS_LABELS
+                        ] || order.status}
+                      </Badge>
                     </div>
-                  </>
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      订单类型
+                    </label>
+                    <div className="mt-1">
+                      {getOrderTypeBadge(order.orderType)}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      客户名称
+                    </label>
+                    <p className="mt-1">{order.customer.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      客户电话
+                    </label>
+                    <p className="mt-1">{order.customer.phone || '-'}</p>
+                  </div>
+                  {order.supplier && (
+                    <>
+                      <div>
+                        <label className="text-muted-foreground text-sm font-medium">
+                          供应商
+                        </label>
+                        <p className="mt-1">{order.supplier.name}</p>
+                      </div>
+                    </>
+                  )}
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      创建人
+                    </label>
+                    <p className="mt-1">{order.user.name}</p>
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      创建时间
+                    </label>
+                    <p className="mt-1">{formatDate(order.createdAt)}</p>
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      更新时间
+                    </label>
+                    <p className="mt-1">{formatDate(order.updatedAt)}</p>
+                  </div>
+                </div>
+                {order.remarks && (
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      备注信息
+                    </label>
+                    <p className="mt-1 text-sm">{order.remarks}</p>
+                  </div>
                 )}
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    创建人
-                  </label>
-                  <p className="mt-1">{order.user.name}</p>
-                </div>
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    创建时间
-                  </label>
-                  <p className="mt-1">{formatDate(order.createdAt)}</p>
-                </div>
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    更新时间
-                  </label>
-                  <p className="mt-1">{formatDate(order.updatedAt)}</p>
-                </div>
-              </div>
-              {order.remarks && (
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    备注信息
-                  </label>
-                  <p className="mt-1 text-sm">{order.remarks}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
 
-          {/* 订单明细 */}
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-              <CardTitle className="flex items-center text-gray-900">
-                <ShoppingCart className="mr-2 h-5 w-5 text-blue-600" />
-                订单明细
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {order.items.map((item, index) => (
-                  <div key={item.id}>
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <h4 className="font-medium">
-                          {item.isManualProduct
-                            ? item.manualProductName
-                            : item.product?.name}
-                        </h4>
-                        <div className="text-muted-foreground space-y-1 text-sm">
-                          {!item.isManualProduct && (
-                            <p>产品编码：{item.product?.code}</p>
-                          )}
-                          {item.colorCode && <p>颜色：{item.colorCode}</p>}
-                          {item.productionDate && (
-                            <p>生产日期：{formatDate(item.productionDate)}</p>
-                          )}
-                          {item.isManualProduct && item.manualSpecification && (
-                            <p>规格：{item.manualSpecification}</p>
+            {/* 订单明细 */}
+            <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+                <CardTitle className="flex items-center text-gray-900">
+                  <ShoppingCart className="mr-2 h-5 w-5 text-blue-600" />
+                  订单明细
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {order.items.map((item, index) => (
+                    <div key={item.id}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h4 className="font-medium">
+                            {item.isManualProduct
+                              ? item.manualProductName
+                              : item.product?.name}
+                          </h4>
+                          <div className="text-muted-foreground space-y-1 text-sm">
+                            {!item.isManualProduct && (
+                              <p>产品编码：{item.product?.code}</p>
+                            )}
+                            {item.colorCode && <p>颜色：{item.colorCode}</p>}
+                            {item.productionDate && (
+                              <p>生产日期：{formatDate(item.productionDate)}</p>
+                            )}
+                            {item.isManualProduct &&
+                              item.manualSpecification && (
+                                <p>规格：{item.manualSpecification}</p>
+                              )}
+                          </div>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <p className="font-medium">
+                            {formatCurrency(item.subtotal)}
+                          </p>
+                          <p className="text-muted-foreground text-sm">
+                            {item.quantity} × {formatCurrency(item.unitPrice)}
+                          </p>
+                          {item.costSubtotal && (
+                            <p className="text-muted-foreground text-xs">
+                              成本：{formatCurrency(item.costSubtotal)}
+                            </p>
                           )}
                         </div>
                       </div>
-                      <div className="space-y-1 text-right">
-                        <p className="font-medium">
-                          {formatCurrency(item.subtotal)}
-                        </p>
-                        <p className="text-muted-foreground text-sm">
-                          {item.quantity} × {formatCurrency(item.unitPrice)}
-                        </p>
-                        {item.costSubtotal && (
-                          <p className="text-muted-foreground text-xs">
-                            成本：{formatCurrency(item.costSubtotal)}
-                          </p>
-                        )}
-                      </div>
+                      {index < order.items.length - 1 && (
+                        <Separator className="mt-4" />
+                      )}
                     </div>
-                    {index < order.items.length - 1 && (
-                      <Separator className="mt-4" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 金额汇总 */}
-        <div className="space-y-6">
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-              <CardTitle className="flex items-center text-gray-900">
-                <ShoppingCart className="mr-2 h-5 w-5 text-blue-600" />
-                金额汇总
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-muted-foreground">订单总金额</span>
-                <span className="font-medium">
-                  {formatCurrency(order.totalAmount)}
-                </span>
-              </div>
-              {order.orderType === 'TRANSFER' && (
-                <>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">总成本</span>
-                    <span className="font-medium">
-                      {formatCurrency(order.costAmount)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">总毛利</span>
-                    <span className="font-medium text-green-600">
-                      {formatCurrency(order.profitAmount)}
-                    </span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">毛利率</span>
-                    <span className="font-medium text-green-600">
-                      {order.totalAmount > 0
-                        ? (
-                            (order.profitAmount / order.totalAmount) *
-                            100
-                          ).toFixed(1)
-                        : '0.0'}
-                      %
-                    </span>
-                  </div>
-                </>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* 操作历史 */}
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-              <CardTitle className="flex items-center text-gray-900">
-                <ShoppingCart className="mr-2 h-5 w-5 text-blue-600" />
-                操作历史
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center space-x-3">
-                  <div className="h-2 w-2 rounded-full bg-blue-500"></div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium">订单创建</p>
-                    <p className="text-muted-foreground text-xs">
-                      {formatDate(order.createdAt)}
-                    </p>
-                  </div>
+                  ))}
                 </div>
-                {order.updatedAt !== order.createdAt && (
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 金额汇总 */}
+          <div className="space-y-6">
+            <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+                <CardTitle className="flex items-center text-gray-900">
+                  <ShoppingCart className="mr-2 h-5 w-5 text-blue-600" />
+                  金额汇总
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">订单总金额</span>
+                  <span className="font-medium">
+                    {formatCurrency(order.totalAmount)}
+                  </span>
+                </div>
+                {order.orderType === 'TRANSFER' && (
+                  <>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">总成本</span>
+                      <span className="font-medium">
+                        {formatCurrency(order.costAmount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">总毛利</span>
+                      <span className="font-medium text-green-600">
+                        {formatCurrency(order.profitAmount)}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">毛利率</span>
+                      <span className="font-medium text-green-600">
+                        {order.totalAmount > 0
+                          ? (
+                              (order.profitAmount / order.totalAmount) *
+                              100
+                            ).toFixed(1)
+                          : '0.0'}
+                        %
+                      </span>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* 操作历史 */}
+            <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+                <CardTitle className="flex items-center text-gray-900">
+                  <ShoppingCart className="mr-2 h-5 w-5 text-blue-600" />
+                  操作历史
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
                   <div className="flex items-center space-x-3">
-                    <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                    <div className="h-2 w-2 rounded-full bg-blue-500"></div>
                     <div className="flex-1">
-                      <p className="text-sm font-medium">订单更新</p>
+                      <p className="text-sm font-medium">订单创建</p>
                       <p className="text-muted-foreground text-xs">
-                        {formatDate(order.updatedAt)}
+                        {formatDate(order.createdAt)}
                       </p>
                     </div>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
+                  {order.updatedAt !== order.createdAt && (
+                    <div className="flex items-center space-x-3">
+                      <div className="h-2 w-2 rounded-full bg-green-500"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">订单更新</p>
+                        <p className="text-muted-foreground text-xs">
+                          {formatDate(order.updatedAt)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
       </div>
     </div>

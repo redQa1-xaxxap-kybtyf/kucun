@@ -126,11 +126,7 @@ export function SupplierDetailPageClient({
           <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => router.back()}
-                >
+                <Button variant="ghost" size="sm" onClick={() => router.back()}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   返回
                 </Button>
@@ -168,209 +164,212 @@ export function SupplierDetailPageClient({
               <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
                 <CardTitle>基本信息</CardTitle>
               </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    供应商状态
-                  </label>
-                  <div className="mt-1">
-                    <Badge variant={getStatusBadgeVariant(supplier.status)}>
-                      {getStatusLabel(supplier.status)}
-                    </Badge>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      供应商状态
+                    </label>
+                    <div className="mt-1">
+                      <Badge variant={getStatusBadgeVariant(supplier.status)}>
+                        {getStatusLabel(supplier.status)}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      电话号码
+                    </label>
+                    <div className="mt-1 flex items-center space-x-2">
+                      {supplier.phone ? (
+                        <>
+                          <Phone className="text-muted-foreground h-4 w-4" />
+                          <span>{supplier.phone}</span>
+                        </>
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <label className="text-muted-foreground text-sm font-medium">
+                      地址
+                    </label>
+                    <div className="mt-1 flex items-start space-x-2">
+                      {supplier.address ? (
+                        <>
+                          <MapPin className="text-muted-foreground mt-0.5 h-4 w-4" />
+                          <span>{supplier.address}</span>
+                        </>
+                      ) : (
+                        <span>-</span>
+                      )}
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      创建时间
+                    </label>
+                    <div className="mt-1 flex items-center space-x-2">
+                      <Calendar className="text-muted-foreground h-4 w-4" />
+                      <span>{formatDate(supplier.createdAt)}</span>
+                    </div>
                   </div>
                 </div>
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    电话号码
-                  </label>
-                  <div className="mt-1 flex items-center space-x-2">
-                    {supplier.phone ? (
-                      <>
-                        <Phone className="text-muted-foreground h-4 w-4" />
-                        <span>{supplier.phone}</span>
-                      </>
-                    ) : (
-                      <span>-</span>
-                    )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* 统计信息 */}
+          <div className="space-y-4">
+            <Card className="shadow-lg shadow-gray-200/50">
+              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+                <CardTitle>交易统计</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-blue-600">
+                    {formatCurrency(totalShipmentAmount)}
+                  </p>
+                  <p className="text-muted-foreground text-sm">累计发货金额</p>
+                </div>
+                <div className="grid grid-cols-2 gap-4 text-center">
+                  <div>
+                    <p className="text-lg font-semibold">
+                      {supplier._count.factoryShipments}
+                    </p>
+                    <p className="text-muted-foreground text-xs">发货记录</p>
+                  </div>
+                  <div>
+                    <p className="text-lg font-semibold">
+                      {supplier._count.payableRecords}
+                    </p>
+                    <p className="text-muted-foreground text-xs">应付记录</p>
                   </div>
                 </div>
-                <div className="col-span-2">
-                  <label className="text-muted-foreground text-sm font-medium">
-                    地址
-                  </label>
-                  <div className="mt-1 flex items-start space-x-2">
-                    {supplier.address ? (
-                      <>
-                        <MapPin className="text-muted-foreground mt-0.5 h-4 w-4" />
-                        <span>{supplier.address}</span>
-                      </>
-                    ) : (
-                      <span>-</span>
-                    )}
-                  </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>应付款统计</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="text-center">
+                  <p className="text-2xl font-bold text-red-600">
+                    {formatCurrency(totalRemainingAmount)}
+                  </p>
+                  <p className="text-muted-foreground text-sm">待付款金额</p>
                 </div>
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    创建时间
-                  </label>
-                  <div className="mt-1 flex items-center space-x-2">
-                    <Calendar className="text-muted-foreground h-4 w-4" />
-                    <span>{formatDate(supplier.createdAt)}</span>
-                  </div>
+                <div className="text-center">
+                  <p className="text-muted-foreground text-lg font-semibold">
+                    {formatCurrency(totalPayableAmount)}
+                  </p>
+                  <p className="text-muted-foreground text-xs">累计应付金额</p>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        {/* 统计信息 */}
-        <div className="space-y-4">
-          <Card className="shadow-lg shadow-gray-200/50">
-            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-              <CardTitle>交易统计</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-blue-600">
-                  {formatCurrency(totalShipmentAmount)}
-                </p>
-                <p className="text-muted-foreground text-sm">累计发货金额</p>
-              </div>
-              <div className="grid grid-cols-2 gap-4 text-center">
-                <div>
-                  <p className="text-lg font-semibold">
-                    {supplier._count.factoryShipments}
-                  </p>
-                  <p className="text-muted-foreground text-xs">发货记录</p>
-                </div>
-                <div>
-                  <p className="text-lg font-semibold">
-                    {supplier._count.payableRecords}
-                  </p>
-                  <p className="text-muted-foreground text-xs">应付记录</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        {/* 交易历史 */}
+        <Card>
+          <CardHeader>
+            <CardTitle>交易历史</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Tabs defaultValue="shipments" className="w-full">
+              <TabsList>
+                <TabsTrigger
+                  value="shipments"
+                  className="flex items-center space-x-2"
+                >
+                  <Truck className="h-4 w-4" />
+                  <span>厂家发货 ({supplier._count.factoryShipments})</span>
+                </TabsTrigger>
+                <TabsTrigger
+                  value="payables"
+                  className="flex items-center space-x-2"
+                >
+                  <DollarSign className="h-4 w-4" />
+                  <span>应付款 ({supplier._count.payableRecords})</span>
+                </TabsTrigger>
+              </TabsList>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>应付款统计</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-center">
-                <p className="text-2xl font-bold text-red-600">
-                  {formatCurrency(totalRemainingAmount)}
-                </p>
-                <p className="text-muted-foreground text-sm">待付款金额</p>
-              </div>
-              <div className="text-center">
-                <p className="text-muted-foreground text-lg font-semibold">
-                  {formatCurrency(totalPayableAmount)}
-                </p>
-                <p className="text-muted-foreground text-xs">累计应付金额</p>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+              <TabsContent value="shipments" className="space-y-4">
+                {supplier.factoryShipments.length > 0 ? (
+                  <div className="space-y-3">
+                    {supplier.factoryShipments.map(shipment => (
+                      <div
+                        key={shipment.id}
+                        className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
+                        onClick={() =>
+                          router.push(`/factory-shipments/${shipment.id}`)
+                        }
+                      >
+                        <div>
+                          <p className="font-medium">
+                            {shipment.shipmentNumber}
+                          </p>
+                          <p className="text-muted-foreground text-sm">
+                            {formatDate(shipment.createdAt)}
+                          </p>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <p className="font-medium">
+                            {formatCurrency(shipment.totalAmount)}
+                          </p>
+                          <Badge variant="outline">{shipment.status}</Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground py-8 text-center">
+                    暂无发货记录
+                  </div>
+                )}
+              </TabsContent>
+
+              <TabsContent value="payables" className="space-y-4">
+                {supplier.payableRecords.length > 0 ? (
+                  <div className="space-y-3">
+                    {supplier.payableRecords.map(record => (
+                      <div
+                        key={record.id}
+                        className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
+                        onClick={() =>
+                          router.push(`/finance/payables/${record.id}`)
+                        }
+                      >
+                        <div>
+                          <p className="font-medium">{record.payableNumber}</p>
+                          <p className="text-muted-foreground text-sm">
+                            到期：{formatDate(record.dueDate)}
+                          </p>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <p className="font-medium">
+                            {formatCurrency(record.remainingAmount)}
+                          </p>
+                          <p className="text-muted-foreground text-xs">
+                            / {formatCurrency(record.payableAmount)}
+                          </p>
+                          {getPayableStatusBadge(record.status)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-muted-foreground py-8 text-center">
+                    暂无应付款记录
+                  </div>
+                )}
+              </TabsContent>
+            </Tabs>
+          </CardContent>
+        </Card>
       </div>
-
-      {/* 交易历史 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>交易历史</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Tabs defaultValue="shipments" className="w-full">
-            <TabsList>
-              <TabsTrigger
-                value="shipments"
-                className="flex items-center space-x-2"
-              >
-                <Truck className="h-4 w-4" />
-                <span>厂家发货 ({supplier._count.factoryShipments})</span>
-              </TabsTrigger>
-              <TabsTrigger
-                value="payables"
-                className="flex items-center space-x-2"
-              >
-                <DollarSign className="h-4 w-4" />
-                <span>应付款 ({supplier._count.payableRecords})</span>
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="shipments" className="space-y-4">
-              {supplier.factoryShipments.length > 0 ? (
-                <div className="space-y-3">
-                  {supplier.factoryShipments.map(shipment => (
-                    <div
-                      key={shipment.id}
-                      className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
-                      onClick={() =>
-                        router.push(`/factory-shipments/${shipment.id}`)
-                      }
-                    >
-                      <div>
-                        <p className="font-medium">{shipment.shipmentNumber}</p>
-                        <p className="text-muted-foreground text-sm">
-                          {formatDate(shipment.createdAt)}
-                        </p>
-                      </div>
-                      <div className="space-y-1 text-right">
-                        <p className="font-medium">
-                          {formatCurrency(shipment.totalAmount)}
-                        </p>
-                        <Badge variant="outline">{shipment.status}</Badge>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-muted-foreground py-8 text-center">
-                  暂无发货记录
-                </div>
-              )}
-            </TabsContent>
-
-            <TabsContent value="payables" className="space-y-4">
-              {supplier.payableRecords.length > 0 ? (
-                <div className="space-y-3">
-                  {supplier.payableRecords.map(record => (
-                    <div
-                      key={record.id}
-                      className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
-                      onClick={() =>
-                        router.push(`/finance/payables/${record.id}`)
-                      }
-                    >
-                      <div>
-                        <p className="font-medium">{record.payableNumber}</p>
-                        <p className="text-muted-foreground text-sm">
-                          到期：{formatDate(record.dueDate)}
-                        </p>
-                      </div>
-                      <div className="space-y-1 text-right">
-                        <p className="font-medium">
-                          {formatCurrency(record.remainingAmount)}
-                        </p>
-                        <p className="text-muted-foreground text-xs">
-                          / {formatCurrency(record.payableAmount)}
-                        </p>
-                        {getPayableStatusBadge(record.status)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-muted-foreground py-8 text-center">
-                  暂无应付款记录
-                </div>
-              )}
-            </TabsContent>
-          </Tabs>
-        </CardContent>
-      </Card>
     </div>
   );
 }
