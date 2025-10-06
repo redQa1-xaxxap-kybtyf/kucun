@@ -82,7 +82,7 @@ function isPublicPath(pathname: string): boolean {
 export async function authMiddleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 静态资源和公开路径直接放行
+  // 第一层防护：静态资源和公开路径直接放行（防止循环重定向）
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/favicon.ico') ||
@@ -92,7 +92,7 @@ export async function authMiddleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // 检查是否需要认证
+  // 第二层防护：检查是否需要认证（非受保护路径直接放行）
   if (!isProtectedPath(pathname)) {
     return NextResponse.next();
   }

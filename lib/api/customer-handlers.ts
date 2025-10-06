@@ -43,15 +43,26 @@ export async function validateUserSession(): Promise<void> {
  * @throws {Error} 当客户不存在时抛出错误
  */
 export async function getCustomerDetail(id: string): Promise<Customer> {
+  // 优化: 使用 select 替代 include,明确指定所有需要的字段
   const customer = await prisma.customer.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      address: true,
+      extendedInfo: true,
+      parentCustomerId: true,
+      createdAt: true,
+      updatedAt: true,
+      // 父客户信息
       parentCustomer: {
         select: {
           id: true,
           name: true,
         },
       },
+      // 子客户列表
       childCustomers: {
         select: {
           id: true,
@@ -62,6 +73,7 @@ export async function getCustomerDetail(id: string): Promise<Customer> {
           createdAt: 'desc',
         },
       },
+      // 最近的订单
       salesOrders: {
         select: {
           id: true,

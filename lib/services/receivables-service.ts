@@ -155,11 +155,13 @@ function buildWhereConditions(params: {
 
 /**
  * 构建排序条件
+ * 优化: 使用对象字面量映射,更清晰的默认值处理
  */
 function buildOrderBy(
   sortBy: string = 'orderDate',
   sortOrder: 'asc' | 'desc' = 'desc'
 ): Prisma.SalesOrderOrderByWithRelationInput {
+  // 使用对象字面量映射,避免运行时查找
   const orderByMap: Record<string, Prisma.SalesOrderOrderByWithRelationInput> =
     {
       orderDate: { createdAt: sortOrder },
@@ -167,7 +169,8 @@ function buildOrderBy(
       customerName: { customer: { name: sortOrder } },
     };
 
-  return orderByMap[sortBy] || { createdAt: sortOrder };
+  // 默认按创建时间排序
+  return orderByMap[sortBy] ?? { createdAt: sortOrder };
 }
 
 /**

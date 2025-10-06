@@ -2,6 +2,14 @@ import Redis from 'ioredis';
 
 import { env, redisConfig } from '@/lib/env';
 
+/**
+ * 事务回调函数类型
+ * 接收一个 Redis Pipeline 对象，返回 Promise
+ */
+export type TransactionCallback<T> = (
+  pipeline: ReturnType<Redis['multi']>
+) => Promise<T>;
+
 export interface RedisClientWrapper {
   getClient(): Redis;
   ping(): Promise<string>;
@@ -9,6 +17,32 @@ export interface RedisClientWrapper {
   setJson<T>(key: string, value: T, ttlSeconds?: number): Promise<'OK' | null>;
   del(key: string): Promise<number>;
   scanDel(pattern: string): Promise<number>;
+  transaction<T>(callback: TransactionCallback<T>): Promise<T>;
+  getMemoryCacheStats(): {
+    size: number;
+    maxSize: number;
+    hitRate: number;
+  };
+  clearMemoryCache(): void;
+  getPoolHealth(): {
+    total: number;
+    ready: number;
+    connecting: number;
+    reconnecting: number;
+    disconnected: number;
+    isRedisAvailable: boolean;
+  };
+  getConfig(): {
+    url: string;
+    poolSize: number;
+    namespace: string;
+    db: number;
+    tlsEnabled: boolean;
+    connectTimeout: number;
+    commandTimeout: number;
+    keepAlive: number;
+    maxRetries: number;
+  };
 }
 
 const poolSize = redisConfig.poolSize;
@@ -67,26 +101,41 @@ cleanupInterval.unref();
 
 function createClient(url: string): Redis {
   const client = new Redis(url, {
+    // 基本配置
+    password: redisConfig.password,
+    db: redisConfig.db,
     maxRetriesPerRequest: 3,
     enableAutoPipelining: true,
     lazyConnect: false,
-    connectTimeout: 10000,
-    // 修复: 增加 keepAlive 时间，避免频繁断开连接
-    keepAlive: 60000, // 60秒
-    // 修复: 添加命令超时设置
-    commandTimeout: 5000,
-    // 修复: 优化重试策略，避免过于频繁的重连
+
+    // 连接超时配置
+    connectTimeout: redisConfig.connectTimeout,
+    commandTimeout: redisConfig.commandTimeout,
+    keepAlive: redisConfig.keepAlive,
+
+    // TLS/SSL 配置
+    tls: redisConfig.tlsEnabled ? {} : undefined,
+    // 生产环境建议配置证书验证：
+    // tls: redisConfig.tlsEnabled ? {
+    //   ca: fs.readFileSync('/path/to/ca.crt'),
+    //   cert: fs.readFileSync('/path/to/client.crt'),
+    //   key: fs.readFileSync('/path/to/client.key'),
+    //   rejectUnauthorized: true,
+    // } : undefined,
+
+    // 优化重试策略，避免过于频繁的重连
     retryStrategy: (times: number) => {
-      // 如果重试次数过多，标记 Redis 不可用并停止重试
-      if (times > 5) {
+      // 如果重试次数超过配置的最大值，标记 Redis 不可用并停止重试
+      if (times > redisConfig.maxRetries) {
         isRedisAvailable = false;
         return null; // 停止重试
       }
-      // 指数退避: 1s, 2s, 4s, 8s, 16s
+      // 指数退避: 1s, 2s, 4s, 8s, 16s，最大30秒
       const delay = Math.min(Math.pow(2, times) * 1000, 30000);
       return delay;
     },
-    // 修复: 添加重连延迟，避免立即重连
+
+    // 添加重连延迟，避免立即重连
     reconnectOnError: (err: Error) => {
       const targetError = 'READONLY';
       if (err.message.includes(targetError)) {
@@ -146,15 +195,14 @@ function createClient(url: string): Redis {
 // 修复: 防止热重载时的连接泄漏
 // 在开发环境中，使用全局变量存储连接池，避免每次热重载都创建新连接
 declare global {
-  // eslint-disable-next-line no-var
   var __redisPool: Redis[] | undefined;
 }
 
 // Simple round-robin pool
 const pool: Redis[] =
-  (typeof global !== 'undefined' && global.__redisPool) ?
-  global.__redisPool :
-  Array.from({ length: poolSize }, () => createClient(redisUrl));
+  typeof global !== 'undefined' && global.__redisPool
+    ? global.__redisPool
+    : Array.from({ length: poolSize }, () => createClient(redisUrl));
 
 // 在开发环境中保存连接池到全局变量
 if (env.NODE_ENV === 'development' && typeof global !== 'undefined') {
@@ -175,7 +223,13 @@ function gracefulShutdown(): void {
 }
 
 // 修复: 监听进程退出事件，确保连接正确关闭
-if (typeof process !== 'undefined') {
+// 使用全局标记防止热重载时重复添加监听器
+declare global {
+  var __redisShutdownRegistered: boolean | undefined;
+}
+
+if (typeof process !== 'undefined' && !global.__redisShutdownRegistered) {
+  global.__redisShutdownRegistered = true;
   process.on('SIGTERM', gracefulShutdown);
   process.on('SIGINT', gracefulShutdown);
   process.on('beforeExit', gracefulShutdown);
@@ -377,6 +431,44 @@ export const redis: RedisClientWrapper = {
     return deleted;
   },
 
+  /**
+   * 执行 Redis 事务（MULTI/EXEC）
+   * 提供原子性保证，所有命令要么全部执行，要么全部不执行
+   *
+   * @param callback - 事务回调函数，接收 Pipeline 对象
+   * @returns 事务执行结果
+   *
+   * @example
+   * ```typescript
+   * // 原子性地增加库存和减少预留
+   * const result = await redis.transaction(async (pipeline) => {
+   *   pipeline.hincrby('inventory:product-1', 'quantity', 10);
+   *   pipeline.hincrby('inventory:product-1', 'reserved', -10);
+   *   return pipeline.exec();
+   * });
+   * ```
+   */
+  async transaction<T>(callback: TransactionCallback<T>): Promise<T> {
+    if (!(await checkRedisAvailability())) {
+      throw new Error('[Redis] Transaction failed: Redis is not available');
+    }
+
+    try {
+      const client = this.getClient();
+      const pipeline = client.multi();
+
+      // 执行回调函数，构建事务命令
+      const result = await callback(pipeline);
+
+      return result;
+    } catch (error) {
+      if (env.NODE_ENV === 'development') {
+        console.error('[Redis] Transaction failed:', error);
+      }
+      throw error;
+    }
+  },
+
   // 获取内存缓存统计信息（用于监控）
   getMemoryCacheStats(): {
     size: number;
@@ -393,5 +485,60 @@ export const redis: RedisClientWrapper = {
   // 清空内存缓存（用于测试或紧急情况）
   clearMemoryCache(): void {
     memoryCache.clear();
+  },
+
+  // 获取连接池健康状态（用于监控）
+  getPoolHealth(): {
+    total: number;
+    ready: number;
+    connecting: number;
+    reconnecting: number;
+    disconnected: number;
+    isRedisAvailable: boolean;
+  } {
+    const statusCounts = {
+      ready: 0,
+      connecting: 0,
+      reconnecting: 0,
+      disconnected: 0,
+    };
+
+    pool.forEach(client => {
+      const status = client.status;
+      if (status in statusCounts) {
+        statusCounts[status as keyof typeof statusCounts]++;
+      }
+    });
+
+    return {
+      total: pool.length,
+      ...statusCounts,
+      isRedisAvailable,
+    };
+  },
+
+  // 获取 Redis 配置信息（用于调试）
+  getConfig(): {
+    url: string;
+    poolSize: number;
+    namespace: string;
+    db: number;
+    tlsEnabled: boolean;
+    connectTimeout: number;
+    commandTimeout: number;
+    keepAlive: number;
+    maxRetries: number;
+  } {
+    return {
+      url: redisConfig.url,
+      poolSize: redisConfig.poolSize,
+      namespace: redisConfig.namespace,
+      db: redisConfig.db,
+      tlsEnabled: redisConfig.tlsEnabled,
+      connectTimeout: redisConfig.connectTimeout,
+      commandTimeout: redisConfig.commandTimeout,
+      keepAlive: redisConfig.keepAlive,
+      maxRetries: redisConfig.maxRetries,
+    };
   },
 };

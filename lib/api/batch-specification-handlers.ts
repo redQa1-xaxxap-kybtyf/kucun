@@ -3,6 +3,8 @@
  * 提供批次规格参数的CRUD操作和业务逻辑
  */
 
+import type { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 import type {
   BatchSpecification,
@@ -99,8 +101,8 @@ function buildBatchSpecificationWhereClause(queryData: {
   search?: string;
   productId?: string;
   batchNumber?: string;
-}) {
-  const where: Record<string, unknown> = {};
+}): Prisma.BatchSpecificationWhereInput {
+  const where: Prisma.BatchSpecificationWhereInput = {};
 
   // 搜索条件
   if (queryData.search) {
@@ -130,15 +132,15 @@ function buildBatchSpecificationWhereClause(queryData: {
 function buildBatchSpecificationOrderBy(queryData: {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
-}) {
-  const orderBy: Record<string, 'asc' | 'desc'> = {};
-
+}): Prisma.BatchSpecificationOrderByWithRelationInput {
   if (queryData.sortBy === 'productName') {
     return { product: { name: queryData.sortOrder } };
   }
 
-  orderBy[queryData.sortBy] = queryData.sortOrder;
-  return orderBy;
+  // 使用类型安全的方式构建 orderBy
+  return {
+    [queryData.sortBy]: queryData.sortOrder,
+  } as Prisma.BatchSpecificationOrderByWithRelationInput;
 }
 
 /**
@@ -146,8 +148,7 @@ function buildBatchSpecificationOrderBy(queryData: {
  */
 export async function upsertBatchSpecification(
   data: CreateBatchSpecificationRequest,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tx?: any
+  tx?: Prisma.TransactionClient
 ): Promise<BatchSpecification> {
   // 验证产品存在
   await validateProductExists(data.productId);

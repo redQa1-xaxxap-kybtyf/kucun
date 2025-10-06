@@ -32,6 +32,7 @@ export type {
 export {
   inboundRecordSearchDefaults,
   inboundRecordSearchSchema,
+  inventoryAvailabilityCheckSchema,
   inventoryQuerySchema,
   inventorySearchDefaults,
   inventorySearchSchema,
@@ -41,6 +42,7 @@ export {
 
 export type {
   InboundRecordSearchFormData,
+  InventoryAvailabilityCheckInput,
   InventorySearchFormData,
   OutboundRecordSearchFormData,
 } from './inventory-queries';

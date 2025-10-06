@@ -12,6 +12,7 @@
 import { revalidatePath, revalidateTag } from 'next/cache';
 
 import { redis } from '@/lib/redis/redis-client';
+import { publish, subscribe } from '@/lib/redis/redis-pubsub';
 
 import { CacheTags, RedisCachePrefix, tagToRedisKey } from './tags';
 
@@ -70,14 +71,9 @@ export async function revalidateCache(
       await redis.scanDel(`${redisKey}*`);
     }
 
-    // 3. 通过 Pub/Sub 通知其他进程
+    // 3. 通过 Pub/Sub 通知其他进程（使用新的 Pub/Sub 模块）
     if (opts.broadcast) {
-      await redis
-        .getClient()
-        .publish(
-          CACHE_INVALIDATION_CHANNEL,
-          JSON.stringify({ tag, options: opts })
-        );
+      await publish(CACHE_INVALIDATION_CHANNEL, { tag, options: opts });
     }
 
     // 4. 级联失效相关缓存
@@ -273,41 +269,36 @@ async function cascadeInvalidate(tag: string): Promise<void> {
 /**
  * 订阅 Redis Pub/Sub 缓存失效通知
  * 在应用启动时调用，用于跨进程缓存同步
+ * 使用新的 Pub/Sub 模块，自动处理重连和错误
  */
-export function subscribeCacheInvalidation(): void {
-  const subscriber = redis.getClient().duplicate();
+export async function subscribeCacheInvalidation(): Promise<void> {
+  try {
+    await subscribe(CACHE_INVALIDATION_CHANNEL, (message: string) => {
+      try {
+        const { tag } = JSON.parse(message) as {
+          tag: string;
+          options: RevalidateOptions;
+        };
 
-  subscriber.subscribe(CACHE_INVALIDATION_CHANNEL, err => {
-    if (err) {
-      console.error(
-        '[Cache] Failed to subscribe to cache invalidation channel:',
-        err
-      );
-      return;
-    }
+        // 只失效本地 Next.js 缓存，不再广播（避免循环）
+        revalidateTag(tag);
+
+        console.log(`[Cache] Invalidated cache for tag: ${tag}`);
+      } catch (error) {
+        console.error(
+          '[Cache] Failed to process cache invalidation message:',
+          error
+        );
+      }
+    });
+
     console.log('[Cache] Subscribed to cache invalidation channel');
-  });
-
-  subscriber.on('message', async (channel, message) => {
-    if (channel !== CACHE_INVALIDATION_CHANNEL) {
-      return;
-    }
-
-    try {
-      const { tag } = JSON.parse(message) as {
-        tag: string;
-        options: RevalidateOptions;
-      };
-
-      // 只失效本地 Next.js 缓存，不再广播（避免循环）
-      revalidateTag(tag);
-    } catch (error) {
-      console.error(
-        '[Cache] Failed to process cache invalidation message:',
-        error
-      );
-    }
-  });
+  } catch (error) {
+    console.error(
+      '[Cache] Failed to subscribe to cache invalidation channel:',
+      error
+    );
+  }
 }
 
 // ==================== 便捷失效函数 ====================

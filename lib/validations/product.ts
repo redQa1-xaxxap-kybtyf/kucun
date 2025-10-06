@@ -173,12 +173,166 @@ export const productQuerySchema = z.object({
   categoryId: z.string().optional(),
 });
 
+// 产品变体查询参数验证
+export const productVariantQuerySchema = z.object({
+  productId: z.string().uuid('产品ID格式不正确').optional(),
+  colorCode: z.string().max(20, '色号不能超过20个字符').optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(paginationConfig.maxPageSize)
+    .default(paginationConfig.defaultPageSize),
+  sortBy: z.enum(['colorCode', 'sku', 'createdAt']).default('createdAt'),
+  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+});
+
+// 产品变体创建验证
+export const productVariantCreateSchema = z.object({
+  productId: z.string().uuid('产品ID格式不正确'),
+  colorCode: z.string().min(1, '色号不能为空').max(20, '色号不能超过20个字符'),
+  colorName: z.string().max(50, '色号名称不能超过50个字符').optional(),
+  colorValue: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确')
+    .optional(),
+  sku: z.string().max(50, 'SKU不能超过50个字符').optional(),
+});
+
+// 产品变体更新验证
+export const productVariantUpdateSchema = z.object({
+  colorCode: z
+    .string()
+    .min(1, '色号不能为空')
+    .max(20, '色号不能超过20个字符')
+    .optional(),
+  colorName: z.string().max(50, '色号名称不能超过50个字符').optional(),
+  colorValue: z
+    .string()
+    .regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确')
+    .optional(),
+  sku: z.string().max(50, 'SKU不能超过50个字符').optional(),
+  status: z.enum(['active', 'inactive']).optional(),
+});
+
+// 产品变体批量创建验证
+export const productVariantBatchCreateSchema = z.object({
+  productId: z.string().uuid('产品ID格式不正确'),
+  variants: z
+    .array(
+      z.object({
+        colorCode: z
+          .string()
+          .min(1, '色号不能为空')
+          .max(20, '色号不能超过20个字符'),
+        colorName: z.string().max(50, '色号名称不能超过50个字符').optional(),
+        colorValue: z
+          .string()
+          .regex(/^#[0-9A-Fa-f]{6}$/, '颜色值格式不正确')
+          .optional(),
+        sku: z.string().max(50, 'SKU不能超过50个字符').optional(),
+      })
+    )
+    .min(1, '至少需要一个变体')
+    .max(50, '批量创建最多支持50个变体'),
+});
+
+// 产品变体批量操作验证
+export const productVariantBatchOperationSchema = z.object({
+  operation: z.enum(['delete', 'activate', 'deactivate']),
+  variantIds: z
+    .array(z.string().uuid('变体ID格式不正确'))
+    .min(1, '至少需要选择一个变体')
+    .max(100, '批量操作最多支持100个变体'),
+});
+
+// 产品变体SKU检查验证
+export const productVariantCheckSkuSchema = z.object({
+  sku: z.string().min(1, 'SKU不能为空').max(50, 'SKU不能超过50个字符'),
+  excludeId: z.string().uuid('排除的变体ID格式不正确').optional(),
+});
+
+// 产品变体批量SKU检查验证
+export const productVariantBatchCheckSkuSchema = z.object({
+  skus: z
+    .array(
+      z.object({
+        sku: z.string().min(1, 'SKU不能为空').max(50, 'SKU不能超过50个字符'),
+        excludeId: z.string().uuid('排除的变体ID格式不正确').optional(),
+      })
+    )
+    .min(1, '至少需要一个SKU')
+    .max(100, '批量检查最多支持100个SKU'),
+});
+
+// 产品变体SKU生成验证
+export const productVariantGenerateSkuSchema = z.object({
+  productCode: z
+    .string()
+    .min(1, '产品编码不能为空')
+    .max(50, '产品编码不能超过50个字符'),
+  colorCode: z.string().min(1, '色号不能为空').max(20, '色号不能超过20个字符'),
+  customSuffix: z.string().max(10, '自定义后缀不能超过10个字符').optional(),
+});
+
+// 产品变体批量SKU生成验证
+export const productVariantBatchGenerateSkuSchema = z.object({
+  items: z
+    .array(
+      z.object({
+        productCode: z
+          .string()
+          .min(1, '产品编码不能为空')
+          .max(50, '产品编码不能超过50个字符'),
+        colorCode: z
+          .string()
+          .min(1, '色号不能为空')
+          .max(20, '色号不能超过20个字符'),
+        customSuffix: z
+          .string()
+          .max(10, '自定义后缀不能超过10个字符')
+          .optional(),
+      })
+    )
+    .min(1, '至少需要一个项目')
+    .max(100, '批量生成最多支持100个项目'),
+});
+
 // 导出类型推断
 export type ProductCreateFormData = z.infer<typeof productCreateSchema>;
 export type ProductUpdateFormData = z.infer<typeof productUpdateSchema>;
 export type ProductSearchFormData = z.infer<typeof productSearchSchema>;
 export type BatchDeleteProductsData = z.infer<typeof batchDeleteProductsSchema>;
 export type ProductQueryParams = z.infer<typeof productQuerySchema>;
+export type ProductVariantQueryParams = z.infer<
+  typeof productVariantQuerySchema
+>;
+export type ProductVariantCreateInput = z.infer<
+  typeof productVariantCreateSchema
+>;
+export type ProductVariantUpdateInput = z.infer<
+  typeof productVariantUpdateSchema
+>;
+export type ProductVariantBatchCreateInput = z.infer<
+  typeof productVariantBatchCreateSchema
+>;
+export type ProductVariantBatchOperationInput = z.infer<
+  typeof productVariantBatchOperationSchema
+>;
+export type ProductVariantCheckSkuInput = z.infer<
+  typeof productVariantCheckSkuSchema
+>;
+export type ProductVariantBatchCheckSkuInput = z.infer<
+  typeof productVariantBatchCheckSkuSchema
+>;
+export type ProductVariantGenerateSkuInput = z.infer<
+  typeof productVariantGenerateSkuSchema
+>;
+export type ProductVariantBatchGenerateSkuInput = z.infer<
+  typeof productVariantBatchGenerateSkuSchema
+>;
 
 // 表单默认值 - 移除重量、每单位片数和计量单位的默认值
 export const productCreateDefaults: Partial<ProductCreateFormData> = {

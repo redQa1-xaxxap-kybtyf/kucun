@@ -42,11 +42,12 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
   // 构建查询条件
   const where: Prisma.SalesOrderWhereInput = {};
 
+  // 搜索条件 (MySQL 默认不区分大小写)
   if (search) {
     where.OR = [
-      { orderNumber: { contains: search, mode: 'insensitive' } },
-      { customer: { name: { contains: search, mode: 'insensitive' } } },
-      { remarks: { contains: search, mode: 'insensitive' } },
+      { orderNumber: { contains: search } },
+      { customer: { name: { contains: search } } },
+      { remarks: { contains: search } },
     ];
   }
 
@@ -289,12 +290,12 @@ export async function createSalesOrder(
   let profitAmount = 0;
 
   for (const item of validatedData.items) {
-    const itemSubtotal = item.subtotal || (item.quantity * item.unitPrice);
+    const itemSubtotal = item.subtotal || item.quantity * item.unitPrice;
     const itemCost = (item.unitCost || 0) * item.quantity;
 
     totalAmount += itemSubtotal;
     costAmount += itemCost;
-    profitAmount += itemSubtotal - itemCost;  // 正确计算：销售额 - 成本
+    profitAmount += itemSubtotal - itemCost; // 正确计算：销售额 - 成本
   }
 
   // 使用事务创建订单，确保数据一致性
@@ -519,7 +520,9 @@ export async function createSalesOrder(
 
       // 收集所有需要记录的价格数据
       const priceRecords = validatedData.items
-        .filter(item => !item.isManualProduct && item.productId && item.unitPrice)
+        .filter(
+          item => !item.isManualProduct && item.productId && item.unitPrice
+        )
         .map(item => ({
           customerId: validatedData.customerId,
           productId: item.productId!,

@@ -52,6 +52,7 @@ export interface CreateSupplierParams {
 
 /**
  * 构建查询条件
+ * 优化: 移除 MySQL 不支持的 mode: 'insensitive'
  */
 function buildWhereConditions(params: {
   search?: string;
@@ -59,13 +60,15 @@ function buildWhereConditions(params: {
 }): Prisma.SupplierWhereInput {
   const where: Prisma.SupplierWhereInput = {};
 
+  // 搜索条件 (MySQL 默认不区分大小写)
   if (params.search) {
     where.OR = [
-      { name: { contains: params.search, mode: 'insensitive' } },
-      { phone: { contains: params.search, mode: 'insensitive' } },
+      { name: { contains: params.search } },
+      { phone: { contains: params.search } },
     ];
   }
 
+  // 状态筛选
   if (params.status) {
     where.status = params.status;
   }

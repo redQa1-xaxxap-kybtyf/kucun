@@ -7,6 +7,15 @@ import { paginationConfig } from '@/lib/env';
  * 包含库存查询、入库记录查询、出库记录查询、库存预警等API验证规则
  */
 
+// 库存可用性检查验证规则
+export const inventoryAvailabilityCheckSchema = z.object({
+  productId: z.string().min(1, '产品ID不能为空'),
+  quantity: z.number().min(1, '数量必须大于0'),
+  variantId: z.string().optional(),
+  batchNumber: z.string().optional(),
+  location: z.string().optional(),
+});
+
 // 库存预警查询验证规则
 export const inventoryAlertsQuerySchema = z.object({
   severity: z
@@ -294,6 +303,9 @@ export const outboundRecordSearchSchema = z
   );
 
 // 表单数据类型推导
+export type InventoryAvailabilityCheckInput = z.infer<
+  typeof inventoryAvailabilityCheckSchema
+>;
 export type InventorySearchFormData = z.infer<typeof inventorySearchSchema>;
 export type InboundRecordSearchFormData = z.infer<
   typeof inboundRecordSearchSchema

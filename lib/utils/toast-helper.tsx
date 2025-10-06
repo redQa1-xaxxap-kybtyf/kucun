@@ -57,14 +57,14 @@ export function showSuccess(
   } = options || {};
 
   return baseToast({
-    title: showIcon ? (
+    title: (showIcon ? (
       <div className="flex items-center gap-2">
         <CheckCircle2 className="h-4 w-4" />
         <span>{message}</span>
       </div>
     ) : (
       message
-    ),
+    )) as React.ReactNode,
     description,
     variant: 'success',
     duration,

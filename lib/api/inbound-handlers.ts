@@ -3,7 +3,7 @@
  * 将复杂的API逻辑拆分为更小的、可复用的函数
  */
 
-import type { PrismaClient } from '@prisma/client';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
@@ -128,6 +128,7 @@ export function parseInboundQueryParams(searchParams: URLSearchParams) {
 
 /**
  * 构建入库记录查询条件
+ * 优化: 使用 Prisma 类型替代 Record<string, unknown>,移除复杂的类型断言
  */
 export function buildInboundWhereClause(queryData: {
   search?: string;
@@ -136,16 +137,16 @@ export function buildInboundWhereClause(queryData: {
   userId?: string;
   startDate?: string;
   endDate?: string;
-}) {
-  const where: Record<string, unknown> = {};
+}): Prisma.InboundRecordWhereInput {
+  const where: Prisma.InboundRecordWhereInput = {};
 
   // 搜索条件 - 支持产品名称、编码、批次号搜索
   if (queryData.search) {
     where.OR = [
       { recordNumber: { contains: queryData.search } },
       { product: { name: { contains: queryData.search } } },
-      { product: { code: { contains: queryData.search } } }, // 使用 code 字段而不是 sku
-      { batchNumber: { contains: queryData.search } }, // 新增批次号搜索
+      { product: { code: { contains: queryData.search } } },
+      { batchNumber: { contains: queryData.search } },
       { remarks: { contains: queryData.search } },
     ];
   }
@@ -165,18 +166,16 @@ export function buildInboundWhereClause(queryData: {
     where.userId = queryData.userId;
   }
 
-  // 日期范围筛选
+  // 日期范围筛选 - 简化逻辑,移除类型断言
   if (queryData.startDate || queryData.endDate) {
-    where.createdAt = {} as { gte?: Date; lte?: Date };
+    where.createdAt = {};
     if (queryData.startDate) {
-      (where.createdAt as { gte?: Date; lte?: Date }).gte = new Date(
-        queryData.startDate
-      );
+      where.createdAt.gte = new Date(queryData.startDate);
     }
     if (queryData.endDate) {
       const endDate = new Date(queryData.endDate);
       endDate.setHours(23, 59, 59, 999);
-      (where.createdAt as { gte?: Date; lte?: Date }).lte = endDate;
+      where.createdAt.lte = endDate;
     }
   }
 
@@ -185,14 +184,24 @@ export function buildInboundWhereClause(queryData: {
 
 /**
  * 构建入库记录排序条件
+ * 优化: 使用 Prisma 类型,支持关联字段排序
  */
 export function buildInboundOrderBy(queryData: {
   sortBy: string;
   sortOrder: 'asc' | 'desc';
-}) {
-  const orderBy: Record<string, 'asc' | 'desc'> = {};
-  orderBy[queryData.sortBy] = queryData.sortOrder;
-  return orderBy;
+}): Prisma.InboundRecordOrderByWithRelationInput {
+  // 使用对象字面量映射,支持关联字段排序
+  const orderByMap: Record<
+    string,
+    Prisma.InboundRecordOrderByWithRelationInput
+  > = {
+    createdAt: { createdAt: queryData.sortOrder },
+    quantity: { quantity: queryData.sortOrder },
+    productName: { product: { name: queryData.sortOrder } },
+  };
+
+  // 默认按创建时间排序
+  return orderByMap[queryData.sortBy] ?? { createdAt: queryData.sortOrder };
 }
 
 /**
@@ -370,7 +379,10 @@ export async function createInboundRecord(
     weight?: number; // 产品重量（入库时确定）
   },
   userId: string,
-  tx?: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'> // 事务上下文
+  tx?: Omit<
+    PrismaClient,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  > // 事务上下文
 ) {
   // 验证产品存在
   await validateProductExists(data.productId);
@@ -478,7 +490,10 @@ export async function updateInventoryQuantity(
   options?: {
     variantId?: string;
   },
-  tx?: Omit<PrismaClient, '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'> // 事务上下文
+  tx?: Omit<
+    PrismaClient,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  > // 事务上下文
 ) {
   const prismaClient = tx || prisma;
 

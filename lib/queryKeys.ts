@@ -400,6 +400,23 @@ export const settingsKeys = {
   storage: () => [...settingsKeys.all, 'storage'] as const,
 } as const;
 
+/**
+ * 通知相关的 Query Keys
+ */
+export const notificationKeys = {
+  all: ['notifications'] as const,
+
+  lists: () => [...notificationKeys.all, 'list'] as const,
+  list: (filters?: BaseFilters & { isRead?: boolean }) =>
+    [...notificationKeys.lists(), filters] as const,
+
+  details: () => [...notificationKeys.all, 'detail'] as const,
+  detail: (id: string) => [...notificationKeys.details(), id] as const,
+
+  // 未读数量
+  unreadCount: () => [...notificationKeys.all, 'unread-count'] as const,
+} as const;
+
 // ============================================================================
 // 导出所有 Query Keys
 // ============================================================================
@@ -443,4 +460,5 @@ export const queryKeys = {
   payables: payableKeys,
   paymentsOut: paymentOutKeys,
   settings: settingsKeys,
+  notifications: notificationKeys,
 } as const;

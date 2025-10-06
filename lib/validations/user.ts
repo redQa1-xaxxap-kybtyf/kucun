@@ -20,7 +20,40 @@ export const userStatusSchema = z.enum(['active', 'inactive', 'suspended'], {
 });
 
 /**
+ * 用户注册验证规则
+ * 用于公开注册接口,字段较少
+ */
+export const userRegisterSchema = z.object({
+  username: z
+    .string({ message: '用户名必须是字符串' })
+    .min(3, { message: '用户名至少3个字符' })
+    .max(50, { message: '用户名不能超过50个字符' })
+    .regex(/^[a-zA-Z0-9_-]+$/, {
+      message: '用户名只能包含字母、数字、下划线和短横线',
+    }),
+
+  email: z
+    .string({ message: '邮箱必须是字符串' })
+    .email({ message: '请输入有效的邮箱地址' })
+    .max(100, { message: '邮箱不能超过100个字符' }),
+
+  password: z
+    .string({ message: '密码必须是字符串' })
+    .min(8, { message: '密码至少8个字符' })
+    .max(100, { message: '密码不能超过100个字符' })
+    .regex(/[A-Z]/, { message: '密码必须包含至少一个大写字母' })
+    .regex(/[a-z]/, { message: '密码必须包含至少一个小写字母' })
+    .regex(/[0-9]/, { message: '密码必须包含至少一个数字' }),
+
+  name: z
+    .string({ message: '姓名必须是字符串' })
+    .min(1, { message: '请输入姓名' })
+    .max(100, { message: '姓名不能超过100个字符' }),
+});
+
+/**
  * 用户创建验证规则
+ * 用于管理员创建用户,包含更多字段
  */
 export const createUserSchema = z
   .object({
@@ -198,6 +231,7 @@ export const changePasswordSchema = z
   });
 
 // 导出类型定义
+export type UserRegisterInput = z.infer<typeof userRegisterSchema>;
 export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type UpdateUserInput = z.infer<typeof updateUserSchema>;
 export type UserQueryInput = z.infer<typeof userQuerySchema>;

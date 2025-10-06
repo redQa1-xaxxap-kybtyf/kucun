@@ -56,16 +56,65 @@ const envSchema = z.object({
     .url('REDIS_URL 必须是有效的URL，形如 redis://localhost:6379')
     .default('redis://127.0.0.1:6379')
     .describe('Redis 连接地址'),
+  REDIS_PASSWORD: z
+    .string()
+    .optional()
+    .describe('Redis 密码（生产环境强烈推荐配置）'),
   REDIS_POOL_SIZE: z
     .string()
     .regex(/^\d+$/, 'REDIS_POOL_SIZE 必须是数字')
     .transform(val => parseInt(val, 10))
+    .refine(val => val >= 1 && val <= 50, {
+      message: 'REDIS_POOL_SIZE 必须在 1-50 之间',
+    })
     .default(3)
-    .describe('Redis 连接池大小'),
+    .describe('Redis 连接池大小（推荐 3-10）'),
   REDIS_NAMESPACE: z
     .string()
+    .min(1, 'REDIS_NAMESPACE 不能为空')
     .default('kucun')
     .describe('Redis 缓存命名空间前缀'),
+  REDIS_DB: z
+    .string()
+    .regex(/^\d+$/, 'REDIS_DB 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .refine(val => val >= 0 && val <= 15, {
+      message: 'REDIS_DB 必须在 0-15 之间',
+    })
+    .default(0)
+    .describe('Redis 数据库索引（0-15）'),
+  REDIS_TLS_ENABLED: z
+    .string()
+    .transform(val => val === 'true')
+    .default(false)
+    .describe('是否启用 Redis TLS/SSL 连接'),
+  REDIS_CONNECT_TIMEOUT: z
+    .string()
+    .regex(/^\d+$/, 'REDIS_CONNECT_TIMEOUT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default(10000)
+    .describe('Redis 连接超时时间（毫秒）'),
+  REDIS_COMMAND_TIMEOUT: z
+    .string()
+    .regex(/^\d+$/, 'REDIS_COMMAND_TIMEOUT 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default(5000)
+    .describe('Redis 命令超时时间（毫秒）'),
+  REDIS_KEEPALIVE: z
+    .string()
+    .regex(/^\d+$/, 'REDIS_KEEPALIVE 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default(60000)
+    .describe('Redis TCP KeepAlive 时间（毫秒）'),
+  REDIS_MAX_RETRIES: z
+    .string()
+    .regex(/^\d+$/, 'REDIS_MAX_RETRIES 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .refine(val => val >= 1 && val <= 10, {
+      message: 'REDIS_MAX_RETRIES 必须在 1-10 之间',
+    })
+    .default(5)
+    .describe('Redis 最大重试次数'),
 
   // WebSocket 配置
   WS_PORT: z
@@ -461,6 +510,68 @@ const envSchema = z.object({
     .enum(['error', 'warn', 'info', 'debug'])
     .default('info')
     .describe('日志级别'),
+
+  // 速率限制配置
+  RATE_LIMIT_ENABLED: z
+    .string()
+    .transform(val => val === 'true')
+    .default(true)
+    .describe('是否启用速率限制'),
+
+  RATE_LIMIT_GLOBAL: z
+    .string()
+    .regex(/^[\d]+$/, 'RATE_LIMIT_GLOBAL 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default(100)
+    .describe('全局速率限制（请求数/分钟）'),
+
+  RATE_LIMIT_AUTH: z
+    .string()
+    .regex(/^[\d]+$/, 'RATE_LIMIT_AUTH 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default(5)
+    .describe('认证API速率限制（请求数/分钟）'),
+
+  RATE_LIMIT_READ: z
+    .string()
+    .regex(/^[\d]+$/, 'RATE_LIMIT_READ 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default(60)
+    .describe('读取API速率限制（请求数/分钟）'),
+
+  RATE_LIMIT_WRITE: z
+    .string()
+    .regex(/^[\d]+$/, 'RATE_LIMIT_WRITE 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default(30)
+    .describe('写入API速率限制（请求数/分钟）'),
+
+  RATE_LIMIT_LOGIN: z
+    .string()
+    .regex(/^[\d]+$/, 'RATE_LIMIT_LOGIN 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default(5)
+    .describe('登录速率限制（请求数/分钟）'),
+
+  RATE_LIMIT_CAPTCHA: z
+    .string()
+    .regex(/^[\d]+$/, 'RATE_LIMIT_CAPTCHA 必须是数字')
+    .transform(val => parseInt(val, 10))
+    .default(10)
+    .describe('验证码速率限制（请求数/分钟）'),
+
+  // 性能监控配置
+  ENABLE_MEMORY_MONITOR: z
+    .string()
+    .transform(val => val === 'true')
+    .default(false)
+    .describe('是否启用内存监控'),
+
+  MONITORING_TOKEN: z
+    .string()
+    .min(1, 'MONITORING_TOKEN 不能为空')
+    .default('dev-token-change-in-production')
+    .describe('内存监控API访问令牌'),
 });
 
 // 环境变量类型推断
@@ -525,6 +636,41 @@ function validateEnv(): Env {
         FACTORY_SHIPMENT_ORDER_PREFIX: 'FS',
         FACTORY_SHIPMENT_QUERY_LIMIT: 1000,
         LOG_LEVEL: 'info',
+        BCRYPT_SALT_ROUNDS: 12,
+        REFUND_ORDER_PREFIX: 'REF',
+        RETURN_ORDER_PREFIX: 'RT',
+        RETURN_ORDER_ITEMS_LIMIT: 50,
+        REFUND_BATCH_LIMIT: 50,
+        FINANCE_CREDIT_LIMIT: 100000,
+        FINANCE_CACHE_TTL: 300,
+        SALES_ORDER_PREFIX: 'SO',
+        SALES_ORDER_NUMBER_LENGTH: 4,
+        SUPPLIER_QUERY_LIMIT: 100,
+        SUPPLIER_CACHE_TTL: 300000,
+        SUPPLIER_DEFAULT_STATUS: 'active',
+        SYSTEM_DEFAULT_LANGUAGE: 'zh',
+        SYSTEM_COMPANY_NAME: '库存管理系统',
+        SYSTEM_TIMEZONE: 'Asia/Shanghai',
+        USER_PASSWORD_MIN_LENGTH: 8,
+        USER_MAX_LOGIN_ATTEMPTS: 5,
+        USER_SESSION_TIMEOUT: 90,
+        STORAGE_MAX_FILE_SIZE: 10485760,
+        STORAGE_ALLOWED_FILE_TYPES: 'jpg,jpeg,png,pdf,doc,docx,xls,xlsx',
+        STORAGE_ENCRYPTION_KEY: '',
+        STORAGE_REGION: 'z0',
+        LOG_RETENTION_DAYS: 30,
+        LOG_CRITICAL_ACTIONS: 'login,logout,delete,update_settings',
+        LOG_CRITICAL_TYPES: 'security,system,error',
+        LOG_CRITICAL_LEVELS: 'error,warn,info',
+        RATE_LIMIT_ENABLED: true,
+        RATE_LIMIT_GLOBAL: 100,
+        RATE_LIMIT_AUTH: 5,
+        RATE_LIMIT_READ: 60,
+        RATE_LIMIT_WRITE: 30,
+        RATE_LIMIT_LOGIN: 5,
+        RATE_LIMIT_CAPTCHA: 10,
+        ENABLE_MEMORY_MONITOR: false,
+        MONITORING_TOKEN: 'dev-token',
       } as Env;
     } catch (error) {
       // 客户端环境变量验证失败时使用默认值
@@ -534,8 +680,15 @@ function validateEnv(): Env {
         NEXTAUTH_URL: '',
         NODE_ENV: 'development',
         REDIS_URL: '',
+        REDIS_PASSWORD: undefined,
         REDIS_POOL_SIZE: 3,
         REDIS_NAMESPACE: '',
+        REDIS_DB: 0,
+        REDIS_TLS_ENABLED: false,
+        REDIS_CONNECT_TIMEOUT: 10000,
+        REDIS_COMMAND_TIMEOUT: 5000,
+        REDIS_KEEPALIVE: 60000,
+        REDIS_MAX_RETRIES: 5,
         WS_PORT: 3002,
         WS_ALLOWED_ORIGINS: '',
         NEXT_PUBLIC_WS_PORT: 3002,
@@ -566,6 +719,41 @@ function validateEnv(): Env {
         FACTORY_SHIPMENT_ORDER_PREFIX: 'FS',
         FACTORY_SHIPMENT_QUERY_LIMIT: 1000,
         LOG_LEVEL: 'info',
+        BCRYPT_SALT_ROUNDS: 12,
+        REFUND_ORDER_PREFIX: 'REF',
+        RETURN_ORDER_PREFIX: 'RT',
+        RETURN_ORDER_ITEMS_LIMIT: 50,
+        REFUND_BATCH_LIMIT: 50,
+        FINANCE_CREDIT_LIMIT: 100000,
+        FINANCE_CACHE_TTL: 300,
+        SALES_ORDER_PREFIX: 'SO',
+        SALES_ORDER_NUMBER_LENGTH: 4,
+        SUPPLIER_QUERY_LIMIT: 100,
+        SUPPLIER_CACHE_TTL: 300000,
+        SUPPLIER_DEFAULT_STATUS: 'active',
+        SYSTEM_DEFAULT_LANGUAGE: 'zh',
+        SYSTEM_COMPANY_NAME: '库存管理系统',
+        SYSTEM_TIMEZONE: 'Asia/Shanghai',
+        USER_PASSWORD_MIN_LENGTH: 8,
+        USER_MAX_LOGIN_ATTEMPTS: 5,
+        USER_SESSION_TIMEOUT: 90,
+        STORAGE_MAX_FILE_SIZE: 10485760,
+        STORAGE_ALLOWED_FILE_TYPES: 'jpg,jpeg,png,pdf,doc,docx,xls,xlsx',
+        STORAGE_ENCRYPTION_KEY: '',
+        STORAGE_REGION: 'z0',
+        LOG_RETENTION_DAYS: 30,
+        LOG_CRITICAL_ACTIONS: 'login,logout,delete,update_settings',
+        LOG_CRITICAL_TYPES: 'security,system,error',
+        LOG_CRITICAL_LEVELS: 'error,warn,info',
+        RATE_LIMIT_ENABLED: true,
+        RATE_LIMIT_GLOBAL: 100,
+        RATE_LIMIT_AUTH: 5,
+        RATE_LIMIT_READ: 60,
+        RATE_LIMIT_WRITE: 30,
+        RATE_LIMIT_LOGIN: 5,
+        RATE_LIMIT_CAPTCHA: 10,
+        ENABLE_MEMORY_MONITOR: false,
+        MONITORING_TOKEN: 'dev-token',
       } as Env;
     }
   }
@@ -580,9 +768,8 @@ function validateEnv(): Env {
         (err: z.ZodIssue) => `${err.path.join('.')}: ${err.message}`
       );
 
-      // eslint-disable-next-line no-console
       console.error('❌ 环境变量验证失败:');
-      // eslint-disable-next-line no-console
+
       errorMessages.forEach((msg: string) => console.error(`  - ${msg}`));
 
       throw new Error(`环境变量验证失败:\n${errorMessages.join('\n')}`);
@@ -632,8 +819,15 @@ export const authConfig = {
  */
 export const redisConfig = {
   url: env.REDIS_URL,
+  password: env.REDIS_PASSWORD,
   poolSize: env.REDIS_POOL_SIZE,
   namespace: env.REDIS_NAMESPACE,
+  db: env.REDIS_DB,
+  tlsEnabled: env.REDIS_TLS_ENABLED,
+  connectTimeout: env.REDIS_CONNECT_TIMEOUT,
+  commandTimeout: env.REDIS_COMMAND_TIMEOUT,
+  keepAlive: env.REDIS_KEEPALIVE,
+  maxRetries: env.REDIS_MAX_RETRIES,
 } as const;
 
 /**
@@ -816,6 +1010,27 @@ export const logExtendedConfig = {
  */
 export const logConfig = {
   level: env.LOG_LEVEL,
+} as const;
+
+/**
+ * 速率限制配置对象
+ */
+export const rateLimitConfig = {
+  enabled: env.RATE_LIMIT_ENABLED,
+  global: env.RATE_LIMIT_GLOBAL,
+  auth: env.RATE_LIMIT_AUTH,
+  read: env.RATE_LIMIT_READ,
+  write: env.RATE_LIMIT_WRITE,
+  login: env.RATE_LIMIT_LOGIN,
+  captcha: env.RATE_LIMIT_CAPTCHA,
+} as const;
+
+/**
+ * 性能监控配置对象
+ */
+export const monitoringConfig = {
+  enableMemoryMonitor: env.ENABLE_MEMORY_MONITOR,
+  token: env.MONITORING_TOKEN,
 } as const;
 
 // 在开发环境下打印配置信息（不包含敏感信息）

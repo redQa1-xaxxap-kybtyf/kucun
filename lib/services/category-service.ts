@@ -67,6 +67,7 @@ export interface CreateCategoryParams {
 
 /**
  * 构建查询条件
+ * 优化: 移除 MySQL 不支持的 mode: 'insensitive',简化状态过滤逻辑
  */
 function buildWhereConditions(params: {
   search?: string;
@@ -75,18 +76,16 @@ function buildWhereConditions(params: {
 }): Prisma.CategoryWhereInput {
   const where: Prisma.CategoryWhereInput = {};
 
-  // 状态过滤：'all' 时不添加条件，默认为 'active'
-  if (params.status && params.status !== 'all') {
-    where.status = params.status;
-  } else if (!params.status) {
-    where.status = 'active'; // 未指定时默认只返回启用的分类
+  // 状态过滤: 使用简洁的逻辑
+  if (params.status !== 'all') {
+    where.status = params.status || 'active'; // 默认为 'active'
   }
 
-  // 搜索条件（大小写不敏感）
+  // 搜索条件 (MySQL 默认不区分大小写)
   if (params.search) {
     where.OR = [
-      { name: { contains: params.search, mode: 'insensitive' } },
-      { code: { contains: params.search, mode: 'insensitive' } },
+      { name: { contains: params.search } },
+      { code: { contains: params.search } },
     ];
   }
 
@@ -171,7 +170,7 @@ export async function getCategories(
   // 计算偏移量
   const skip = (page - 1) * limit;
 
-  // 执行查询
+  // 执行查询 - 优化: 使用 select 替代 include,只选择需要的字段
   const [categories, total] = await Promise.all([
     prisma.category.findMany({
       where,
@@ -180,9 +179,33 @@ export async function getCategories(
       orderBy: {
         [sortBy]: sortOrder,
       },
-      include: {
-        parent: true,
-        children: true,
+      select: {
+        id: true,
+        name: true,
+        code: true,
+        parentId: true,
+        sortOrder: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        // 只选择父分类的必要字段
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+          },
+        },
+        // 只选择子分类的必要字段
+        children: {
+          select: {
+            id: true,
+            name: true,
+            code: true,
+            status: true,
+          },
+        },
+        // 产品计数
         _count: {
           select: {
             products: true,
