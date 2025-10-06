@@ -345,6 +345,9 @@ model Inventory {
   @@index([batchNumber], map: "idx_inventory_batch")
   @@index([location], map: "idx_inventory_location")
   @@index([updatedAt], map: "idx_inventory_updated_at")
+  // ✅ P2优化: 复合索引支持库存预警和库存查询优化
+  @@index([productId, quantity], map: "idx_inventory_product_quantity")
+  @@index([productId, variantId, quantity], map: "idx_inventory_variant_quantity")
   @@map("inventory")
 }
 
@@ -700,6 +703,8 @@ model ReturnOrderItem {
   @@index([returnOrderId], map: "idx_return_order_items_return_order")
   @@index([salesOrderItemId], map: "idx_return_order_items_sales_order_item")
   @@index([productId], map: "idx_return_order_items_product")
+  // ✅ P2优化: 复合索引支持退货数量验证查询 (app/api/return-orders/route.ts:272)
+  @@index([salesOrderItemId, returnOrderId], map: "idx_return_items_sales_return")
   @@map("return_order_items")
 }
 
