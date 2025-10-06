@@ -249,11 +249,8 @@ export function RefundsClient({ initialData }: RefundsClientProps) {
       </div>
 
       {/* 搜索和筛选 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>退款申请列表</CardTitle>
-        </CardHeader>
-        <CardContent>
+      <Card className="shadow-md shadow-gray-200/50">
+        <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 items-center gap-2">
               <div className="relative max-w-sm flex-1">

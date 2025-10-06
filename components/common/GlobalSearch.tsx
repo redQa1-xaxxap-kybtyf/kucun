@@ -1,5 +1,6 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
 import {
   Clock,
   FileText,
@@ -75,56 +76,47 @@ export function GlobalSearch({
 }: GlobalSearchProps) {
   const router = useRouter();
   const [query, setQuery] = React.useState('');
-  const [results, setResults] = React.useState<SearchResultItem[]>([]);
   const [suggestions] = React.useState<SearchSuggestion[]>(
     getSearchSuggestions()
   );
-  const [isLoading, setIsLoading] = React.useState(false);
   const [selectedIndex, setSelectedIndex] = React.useState(-1);
 
   // 搜索输入框引用
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  // 搜索函数
-  const performSearch = React.useCallback(async (searchQuery: string) => {
-    if (!searchQuery.trim()) {
-      setResults([]);
-      return;
-    }
+  // 使用 TanStack Query 管理搜索请求
+  const { data: results = [], isLoading } = useQuery({
+    queryKey: ['global-search', query.trim()],
+    queryFn: async ({ signal }) => {
+      if (!query.trim()) {
+        return [];
+      }
 
-    setIsLoading(true);
-
-    try {
-      // 待办：实现真实的全局搜索API调用
-      // 可以并行搜索产品、订单、客户等多个数据源
+      // 并行搜索多个数据源，使用 AbortController 支持取消
       const [productResults, orderResults, customerResults] = await Promise.all(
         [
-          searchProducts(searchQuery),
-          searchOrders(searchQuery),
-          searchCustomers(searchQuery),
+          searchProducts(query.trim(), signal),
+          searchOrders(query.trim(), signal),
+          searchCustomers(query.trim(), signal),
         ]
       );
 
-      const allResults = [
-        ...productResults,
-        ...orderResults,
-        ...customerResults,
-      ];
-
-      setResults(allResults);
-    } catch (error) {
-      console.error('搜索失败:', error);
-      setResults([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
+      return [...productResults, ...orderResults, ...customerResults];
+    },
+    enabled: query.trim().length > 0,
+    staleTime: 30 * 1000, // 30秒内不重新请求
+    gcTime: 5 * 60 * 1000, // 5分钟后清理缓存
+  });
 
   // 搜索产品
-  const searchProducts = async (query: string): Promise<SearchResultItem[]> => {
+  const searchProducts = async (
+    query: string,
+    signal?: AbortSignal
+  ): Promise<SearchResultItem[]> => {
     try {
       const response = await fetch(
-        `/api/products/search?search=${encodeURIComponent(query)}&limit=5`
+        `/api/products/search?search=${encodeURIComponent(query)}&limit=5`,
+        { signal }
       );
       if (!response.ok) {
         return [];
@@ -160,10 +152,14 @@ export function GlobalSearch({
   };
 
   // 搜索订单
-  const searchOrders = async (query: string): Promise<SearchResultItem[]> => {
+  const searchOrders = async (
+    query: string,
+    signal?: AbortSignal
+  ): Promise<SearchResultItem[]> => {
     try {
       const response = await fetch(
-        `/api/sales-orders?search=${encodeURIComponent(query)}&limit=5`
+        `/api/sales-orders?search=${encodeURIComponent(query)}&limit=5`,
+        { signal }
       );
       if (!response.ok) {
         return [];
@@ -193,11 +189,13 @@ export function GlobalSearch({
 
   // 搜索客户
   const searchCustomers = async (
-    query: string
+    query: string,
+    signal?: AbortSignal
   ): Promise<SearchResultItem[]> => {
     try {
       const response = await fetch(
-        `/api/customers/search?q=${encodeURIComponent(query)}&limit=5`
+        `/api/customers/search?q=${encodeURIComponent(query)}&limit=5`,
+        { signal }
       );
       if (!response.ok) {
         return [];
@@ -214,7 +212,7 @@ export function GlobalSearch({
         }) => ({
           id: customer.id,
           title: customer.name,
-          description: `联系人: ${customer.contactPerson || customer.name}, 电话: ${customer.phone || '未提供'}`,
+          description: `联系人: ${customer.name}, 电话: ${customer.phone || '未提供'}`,
           type: 'customer' as const,
           href: `/customers/${customer.id}`,
           metadata: { phone: customer.phone },
@@ -225,14 +223,7 @@ export function GlobalSearch({
     }
   };
 
-  // 防抖搜索
-  React.useEffect(() => {
-    const timer = setTimeout(() => {
-      performSearch(query);
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [query, performSearch]);
+  // TanStack Query 已经内置了防抖和缓存机制，无需额外处理
 
   // 处理搜索结果选择
   const handleResultSelect = (item: SearchResultItem) => {
@@ -287,11 +278,11 @@ export function GlobalSearch({
   React.useEffect(() => {
     if (!open) {
       setQuery('');
-      setResults([]);
       setSelectedIndex(-1);
     } else {
       // 对话框打开时聚焦输入框
-      setTimeout(() => inputRef.current?.focus(), 100);
+      const timer = setTimeout(() => inputRef.current?.focus(), 100);
+      return () => clearTimeout(timer);
     }
   }, [open]);
 

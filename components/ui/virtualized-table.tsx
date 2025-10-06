@@ -132,76 +132,86 @@ export function VirtualizedTable<T>({
         className="overflow-auto"
         style={{ height: `${containerHeight}px` }}
       >
-        <Table>
-          {/* 表头 */}
-          <TableHeader className="sticky top-0 z-10 bg-muted/30">
-            <TableRow>
-              {columns.map(column => (
-                <TableHead
-                  key={column.key}
-                  className={cn(
-                    'h-10 text-xs font-medium',
-                    column.align === 'center' && 'text-center',
-                    column.align === 'right' && 'text-right',
-                    column.headerClassName
-                  )}
-                  style={{ width: column.width }}
-                >
-                  {column.header}
-                </TableHead>
-              ))}
-            </TableRow>
-          </TableHeader>
+        {/* 虚拟空间容器 - 遵循 TanStack Virtual 最佳实践 */}
+        <div
+          style={{
+            height: `${rowVirtualizer.getTotalSize()}px`,
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          <Table>
+            {/* 表头 */}
+            <TableHeader className="sticky top-0 z-10 bg-muted/30">
+              <TableRow>
+                {columns.map(column => (
+                  <TableHead
+                    key={column.key}
+                    className={cn(
+                      'h-10 text-xs font-medium',
+                      column.align === 'center' && 'text-center',
+                      column.align === 'right' && 'text-right',
+                      column.headerClassName
+                    )}
+                    style={{ width: column.width }}
+                  >
+                    {column.header}
+                  </TableHead>
+                ))}
+              </TableRow>
+            </TableHeader>
 
-          {/* 虚拟化表体 - 只渲染可见行 */}
-          <TableBody>
-            {rowVirtualizer.getVirtualItems().map((virtualRow, index) => {
-              const item = data[virtualRow.index];
-              const rowKey = getRowKey(item, virtualRow.index);
-              const className =
-                typeof rowClassName === 'function'
-                  ? rowClassName(item, virtualRow.index)
-                  : rowClassName;
+            {/* 虚拟化表体 - 只渲染可见行 */}
+            <TableBody>
+              {rowVirtualizer.getVirtualItems().map(virtualRow => {
+                const item = data[virtualRow.index];
+                const rowKey = getRowKey(item, virtualRow.index);
+                const className =
+                  typeof rowClassName === 'function'
+                    ? rowClassName(item, virtualRow.index)
+                    : rowClassName;
 
-              return (
-                <TableRow
-                  key={rowKey}
-                  data-index={virtualRow.index}
-                  className={cn('cursor-pointer hover:bg-muted/50', className)}
-                  style={{
-                    position: 'absolute',
-                    top: 0,
-                    left: 0,
-                    width: '100%',
-                    height: `${virtualRow.size}px`,
-                    // 表格行的 transform 计算：基于行的初始位置
-                    // 需要减去 index * virtualRow.size 来正确计算偏移
-                    // 参考: https://tanstack.com/virtual/latest/docs/framework/react/examples/table
-                    transform: `translateY(${virtualRow.start - index * virtualRow.size}px)`,
-                  }}
-                  onClick={() => onRowClick?.(item, virtualRow.index)}
-                >
-                  {columns.map(column => (
-                    <TableCell
-                      key={column.key}
-                      className={cn(
-                        'h-full text-xs',
-                        column.align === 'center' && 'text-center',
-                        column.align === 'right' && 'text-right',
-                        column.cellClassName
-                      )}
-                      style={{
-                        width: column.width ? `${column.width}px` : undefined,
-                      }}
-                    >
-                      {column.render(item, virtualRow.index)}
-                    </TableCell>
-                  ))}
-                </TableRow>
-              );
-            })}
-          </TableBody>
-        </Table>
+                return (
+                  <TableRow
+                    key={rowKey}
+                    data-index={virtualRow.index}
+                    className={cn(
+                      'cursor-pointer hover:bg-muted/50',
+                      className
+                    )}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      width: '100%',
+                      height: `${virtualRow.size}px`,
+                      // 遵循 TanStack Virtual 最佳实践：直接使用 virtualRow.start
+                      transform: `translateY(${virtualRow.start}px)`,
+                    }}
+                    onClick={() => onRowClick?.(item, virtualRow.index)}
+                  >
+                    {columns.map(column => (
+                      <TableCell
+                        key={column.key}
+                        className={cn(
+                          'h-full text-xs',
+                          column.align === 'center' && 'text-center',
+                          column.align === 'right' && 'text-right',
+                          column.cellClassName
+                        )}
+                        style={{
+                          width: column.width ? `${column.width}px` : undefined,
+                        }}
+                      >
+                        {column.render(item, virtualRow.index)}
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
       </div>
     </div>
   );

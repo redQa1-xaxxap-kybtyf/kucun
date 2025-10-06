@@ -2,9 +2,9 @@
 
 import * as React from 'react';
 
-import { InventoryPagination } from '@/components/inventory/erp/inventory-pagination';
 import { InventoryTable } from '@/components/inventory/erp/inventory-table';
 import { InventorySearchToolbar } from '@/components/inventory/InventorySearchToolbar';
+import { Pagination } from '@/components/ui/pagination';
 import { useERPInventoryList } from '@/hooks/use-erp-inventory-list';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 
@@ -72,11 +72,11 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
         />
 
         {/* 库存表格 */}
-        <div className="rounded border bg-card">
-          <div className="border-b bg-muted/30 px-3 py-2">
+        <div className="bg-card rounded border">
+          <div className="bg-muted/30 border-b px-3 py-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium">库存列表</h3>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-muted-foreground text-sm">
                 {hasData ? `共 ${data.data.length} 条记录` : '暂无数据'}
               </div>
             </div>
@@ -94,11 +94,14 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
           />
 
           {/* 分页 */}
-          <InventoryPagination
-            pagination={data.pagination}
-            onPrevPage={handlePrevPage}
-            onNextPage={handleNextPage}
-          />
+          {data.pagination && (
+            <Pagination
+              pagination={data.pagination}
+              onPageChange={onPageChange}
+              showRange
+              showTotal
+            />
+          )}
         </div>
       </div>
     );

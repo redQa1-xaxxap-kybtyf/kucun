@@ -86,7 +86,10 @@ export function ProductTable({
       </TableHeader>
       <TableBody>
         {products.map(product => (
-          <TableRow key={product.id}>
+          <TableRow
+            key={product.id}
+            className="transition-colors hover:bg-blue-50/50"
+          >
             <TableCell>
               <Checkbox
                 checked={selectedProductIds.includes(product.id)}
@@ -95,9 +98,13 @@ export function ProductTable({
                 }
               />
             </TableCell>
-            <TableCell className="font-medium">{product.code}</TableCell>
-            <TableCell>{product.name}</TableCell>
-            <TableCell>{product.category?.name || '-'}</TableCell>
+            <TableCell className="font-medium text-blue-600">
+              {product.code}
+            </TableCell>
+            <TableCell className="font-medium">{product.name}</TableCell>
+            <TableCell className="text-gray-600">
+              {product.category?.name || '-'}
+            </TableCell>
             <TableCell className="text-muted-foreground">
               {ProductDataUtils.formatter.formatSpecification(
                 product.specification

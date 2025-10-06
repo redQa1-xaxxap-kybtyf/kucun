@@ -121,54 +121,50 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
   };
 
   return (
-    <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      {/* ERP标准工具栏 */}
-      <div className="bg-card rounded border">
-        <div className="bg-muted/30 border-b px-3 py-2">
+    <div className="space-y-6">
+      {/* 页面标题卡片 */}
+      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium">产品详情</h3>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7"
-                onClick={() => router.back()}
-              >
-                <ArrowLeft className="mr-1 h-3 w-3" />
-                返回
-              </Button>
-            </div>
-          </div>
-        </div>
-        <div className="p-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                <Edit className="h-6 w-6 text-white" />
+              </div>
               <div>
-                <div className="text-sm font-medium">{product.name}</div>
-                <div className="text-muted-foreground text-xs">
-                  编码: {product.code}
-                </div>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  {product.name}
+                </h1>
+                <p className="text-sm text-gray-600">编码: {product.code}</p>
               </div>
               {getStatusBadge(product.status)}
             </div>
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
-                size="sm"
-                className="h-7"
-                onClick={() => router.push(`/products/${product.id}/edit`)}
+                size="lg"
+                onClick={() => router.back()}
+                className="h-11 gap-2 transition-all hover:scale-105 hover:border-gray-400"
               >
-                <Edit className="mr-1 h-3 w-3" />
+                <ArrowLeft className="h-4 w-4" />
+                返回
+              </Button>
+              <Button
+                variant="outline"
+                size="lg"
+                onClick={() => router.push(`/products/${product.id}/edit`)}
+                className="h-11 gap-2 bg-blue-600 text-white shadow-md shadow-blue-600/30 transition-all hover:scale-105 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/40"
+              >
+                <Edit className="h-4 w-4" />
                 编辑
               </Button>
               <Button
                 variant="outline"
-                size="sm"
-                className="h-7 text-red-600 hover:text-red-700"
+                size="lg"
                 onClick={handleDelete}
                 disabled={deleteMutation.isPending}
+                className="h-11 gap-2 border-red-200 text-red-600 transition-all hover:scale-105 hover:border-red-300 hover:bg-red-50"
               >
-                <Trash2 className="mr-1 h-3 w-3" />
+                <Trash2 className="h-4 w-4" />
                 删除
               </Button>
             </div>
@@ -177,55 +173,53 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
       </div>
 
       {/* 基本信息区域 */}
-      <div className="bg-card rounded border">
-        <div className="bg-muted/30 border-b px-3 py-2">
-          <h4 className="text-sm font-medium">基本信息</h4>
+      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+        <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-6 py-4">
+          <h4 className="font-semibold text-gray-900">基本信息</h4>
         </div>
-        <div className="p-4">
-          <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="p-6">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             <div>
-              <div className="text-muted-foreground text-xs font-medium">
-                产品编码
+              <div className="text-xs font-medium text-gray-500">产品编码</div>
+              <div className="mt-2 font-medium text-blue-600">
+                {product.code}
               </div>
-              <div className="mt-1 text-sm">{product.code}</div>
             </div>
             <div>
-              <div className="text-muted-foreground text-xs font-medium">
-                产品名称
+              <div className="text-xs font-medium text-gray-500">产品名称</div>
+              <div className="mt-2 font-medium text-gray-900">
+                {product.name}
               </div>
-              <div className="mt-1 text-sm">{product.name}</div>
             </div>
             <div>
-              <div className="text-muted-foreground text-xs font-medium">
-                规格
-              </div>
-              <div className="mt-1 text-sm">
+              <div className="text-xs font-medium text-gray-500">规格</div>
+              <div className="mt-2 text-sm text-gray-700">
                 {formatSpecification(product.specification)}
               </div>
             </div>
             <div>
-              <div className="text-muted-foreground text-xs font-medium">
+              <div className="text-xs font-medium text-gray-500">
                 每单位片数
               </div>
-              <div className="mt-1 text-sm">{product.piecesPerUnit || '-'}</div>
+              <div className="mt-2 text-sm text-gray-700">
+                {product.piecesPerUnit || '-'}
+              </div>
             </div>
             <div>
-              <div className="text-muted-foreground text-xs font-medium">
-                重量 (kg)
+              <div className="text-xs font-medium text-gray-500">重量 (kg)</div>
+              <div className="mt-2 text-sm text-gray-700">
+                {product.weight || '-'}
               </div>
-              <div className="mt-1 text-sm">{product.weight || '-'}</div>
             </div>
             <div>
-              <div className="text-muted-foreground text-xs font-medium">
-                厚度 (mm)
+              <div className="text-xs font-medium text-gray-500">厚度 (mm)</div>
+              <div className="mt-2 text-sm text-gray-700">
+                {product.thickness || '-'}
               </div>
-              <div className="mt-1 text-sm">{product.thickness || '-'}</div>
             </div>
             <div>
-              <div className="text-muted-foreground text-xs font-medium">
-                产品分类
-              </div>
-              <div className="mt-1 text-sm">
+              <div className="text-xs font-medium text-gray-500">产品分类</div>
+              <div className="mt-2 text-sm text-gray-700">
                 {product.category ? product.category.name : '未分类'}
               </div>
             </div>
@@ -234,31 +228,25 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
       </div>
 
       {/* 系统信息区域 */}
-      <div className="bg-card rounded border">
-        <div className="bg-muted/30 border-b px-3 py-2">
-          <h4 className="text-sm font-medium">系统信息</h4>
+      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+        <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-6 py-4">
+          <h4 className="font-semibold text-gray-900">系统信息</h4>
         </div>
-        <div className="p-4">
-          <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="p-6">
+          <div className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
             <div>
-              <div className="text-muted-foreground text-xs font-medium">
-                产品状态
-              </div>
-              <div className="mt-1">{getStatusBadge(product.status)}</div>
+              <div className="text-xs font-medium text-gray-500">产品状态</div>
+              <div className="mt-2">{getStatusBadge(product.status)}</div>
             </div>
             <div>
-              <div className="text-muted-foreground text-xs font-medium">
-                创建时间
-              </div>
-              <div className="mt-1 text-sm">
+              <div className="text-xs font-medium text-gray-500">创建时间</div>
+              <div className="mt-2 text-sm text-gray-700">
                 {new Date(product.createdAt).toLocaleString('zh-CN')}
               </div>
             </div>
             <div>
-              <div className="text-muted-foreground text-xs font-medium">
-                更新时间
-              </div>
-              <div className="mt-1 text-sm">
+              <div className="text-xs font-medium text-gray-500">更新时间</div>
+              <div className="mt-2 text-sm text-gray-700">
                 {new Date(product.updatedAt).toLocaleString('zh-CN')}
               </div>
             </div>
@@ -267,23 +255,19 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
       </div>
 
       {/* 扩展信息区域 - 预留给未来功能 */}
-      <div className="bg-card rounded border">
-        <div className="bg-muted/30 border-b px-3 py-2">
-          <h4 className="text-sm font-medium">扩展信息</h4>
+      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+        <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-6 py-4">
+          <h4 className="font-semibold text-gray-900">扩展信息</h4>
         </div>
-        <div className="p-4">
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-            <div className="border-muted-foreground/25 rounded border border-dashed p-4 text-center">
-              <div className="text-muted-foreground text-xs">库存信息</div>
-              <div className="text-muted-foreground mt-1 text-sm">
-                功能开发中
-              </div>
+        <div className="p-6">
+          <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
+            <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50/50 p-6 text-center transition-all hover:border-blue-300 hover:bg-blue-50/50">
+              <div className="text-xs font-medium text-gray-500">库存信息</div>
+              <div className="mt-2 text-sm text-gray-600">功能开发中</div>
             </div>
-            <div className="border-muted-foreground/25 rounded border border-dashed p-4 text-center">
-              <div className="text-muted-foreground text-xs">销售记录</div>
-              <div className="text-muted-foreground mt-1 text-sm">
-                功能开发中
-              </div>
+            <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50/50 p-6 text-center transition-all hover:border-blue-300 hover:bg-blue-50/50">
+              <div className="text-xs font-medium text-gray-500">销售记录</div>
+              <div className="mt-2 text-sm text-gray-600">功能开发中</div>
             </div>
             <div className="border-muted-foreground/25 rounded border border-dashed p-4 text-center">
               <div className="text-muted-foreground text-xs">操作历史</div>

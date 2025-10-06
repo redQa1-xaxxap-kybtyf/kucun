@@ -7,56 +7,56 @@
 
 import { CategoryDeleteDialogs } from '@/components/categories/category-delete-dialogs';
 import { CategoryList } from '@/components/categories/category-list';
+import { CategoryPageContentSkeleton } from '@/components/categories/category-page-content-skeleton';
 import { CategoryPageHeader } from '@/components/categories/category-page-header';
-import { CategoryPagination } from '@/components/categories/category-pagination';
 import { CategorySearchFilters } from '@/components/categories/category-search-filters';
 import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
-import { type Category } from '@/lib/api/categories';
+import { Pagination } from '@/components/ui/pagination';
+import { type Category, type CategoryQueryParams } from '@/lib/api/categories';
+
+interface DeleteDialogState {
+  open: boolean;
+  categoryId: string | null;
+  categoryName: string;
+}
+
+interface BatchDeleteDialogState {
+  open: boolean;
+  categories: Category[];
+}
 
 interface CategoryPageContentProps {
   isLoading: boolean;
   error: Error | null;
   categories: Category[];
-  pagination: {
+  pagination?: {
     page: number;
     limit: number;
     total: number;
     totalPages: number;
   };
-  queryParams: {
-    search?: string;
-    status?: string;
-    parentId?: string;
-    page?: number;
-    limit?: number;
-  };
+  queryParams: CategoryQueryParams;
   selectedCategoryIds: string[];
-  deleteDialog: {
-    open: boolean;
-    categoryId: string;
-    categoryName: string;
-  };
-  batchDeleteDialog: {
-    open: boolean;
-  };
+  deleteDialog: DeleteDialogState;
+  batchDeleteDialog: BatchDeleteDialogState;
   updatingStatusId: string | null;
   deleteMutation: {
     mutate: (id: string) => void;
     isPending: boolean;
   };
   batchDeleteMutation: {
-    mutate: (ids: string[]) => void;
+    mutate: (input: { categoryIds: string[] }) => void;
     isPending: boolean;
   };
-  setDeleteDialog: (state: {
-    open: boolean;
-    categoryId: string;
-    categoryName: string;
-  }) => void;
-  setBatchDeleteDialog: (state: { open: boolean }) => void;
+  setDeleteDialog: React.Dispatch<React.SetStateAction<DeleteDialogState>>;
+  setBatchDeleteDialog: React.Dispatch<
+    React.SetStateAction<BatchDeleteDialogState>
+  >;
   handleSearch: (value: string) => void;
-  handleFilter: (key: string, value: string | undefined) => void;
+  handleFilter: <K extends keyof CategoryQueryParams>(
+    key: K,
+    value: CategoryQueryParams[K]
+  ) => void;
   handlePageChange: (page: number) => void;
   handleDeleteCategory: (categoryId: string, categoryName: string) => void;
   confirmDelete: () => void;
@@ -94,26 +94,7 @@ export function CategoryPageContent({
 }: CategoryPageContentProps) {
   // 加载状态
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <Skeleton className="h-8 w-32" />
-            <Skeleton className="mt-2 h-4 w-48" />
-          </div>
-          <Skeleton className="h-10 w-24" />
-        </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="h-12 w-full" />
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <CategoryPageContentSkeleton />;
   }
 
   // 错误状态
@@ -161,9 +142,11 @@ export function CategoryPageContent({
       />
 
       {pagination && (
-        <CategoryPagination
+        <Pagination
           pagination={pagination}
           onPageChange={handlePageChange}
+          showRange
+          showTotal
         />
       )}
 

@@ -24,7 +24,6 @@ export function useProductListState(initialParams?: ProductQueryParams) {
       limit: paginationConfig.defaultPageSize,
       search: '',
       status: undefined,
-      unit: undefined,
       categoryId: undefined,
       sortBy: 'createdAt',
       sortOrder: 'desc',
@@ -55,7 +54,7 @@ export function useProductListState(initialParams?: ProductQueryParams) {
 
   // 筛选处理
   const handleFilter = (
-    filters: Partial<Pick<ProductQueryParams, 'status' | 'unit' | 'categoryId'>>
+    filters: Partial<Pick<ProductQueryParams, 'status' | 'categoryId'>>
   ) => {
     setQueryParams(prev => ({ ...prev, ...filters, page: 1 }));
   };

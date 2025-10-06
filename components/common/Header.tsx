@@ -14,9 +14,11 @@ import {
   Sun,
   User,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { signOut, useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
+
+import { useQueryClient } from '@tanstack/react-query';
 
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
@@ -30,7 +32,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { useNavigationBadges } from '@/hooks/use-navigation-badges';
+import { useRealtimeNotifications } from '@/hooks/use-realtime-notifications';
 import type { NotificationItem } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 
@@ -45,6 +47,16 @@ interface HeaderProps {
   showSearch?: boolean;
   /** 搜索回调 */
   onSearch?: (query: string) => void;
+  /** 用户信息（从服务端传递，避免客户端重复请求） */
+  user?: {
+    id: string;
+    email: string;
+    username: string;
+    name: string;
+    role: string;
+    status: string;
+    avatar?: string;
+  };
 }
 
 /**
@@ -52,16 +64,30 @@ interface HeaderProps {
  * 包含用户信息、通知、设置等功能，支持移动端适配
  * 集成搜索、主题切换、快捷操作等功能
  */
-export function Header({
+function HeaderComponent({
   showMobileMenuButton = false,
   onMobileMenuClick,
   className,
   showSearch = true,
   onSearch,
+  user,
 }: HeaderProps) {
   const { data: session } = useSession();
   const router = useRouter();
-  const { getTotalBadgeCount, getUrgentBadgeCount } = useNavigationBadges();
+  const queryClient = useQueryClient();
+
+  // 优先使用传递的用户信息，回退到 session
+  const currentUser = user || session?.user;
+
+  // 实时通知系统（WebSocket 推送）
+  const {
+    notifications,
+    unreadCount,
+    isConnected: wsConnected,
+    markAsRead,
+    markAllAsRead,
+    clearNotification,
+  } = useRealtimeNotifications();
 
   // 搜索状态
   const [searchQuery, setSearchQuery] = React.useState('');
@@ -71,32 +97,6 @@ export function Header({
   const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>(
     'light'
   );
-
-  // 通知状态
-  const [notifications] = React.useState<NotificationItem[]>([
-    {
-      id: '1',
-      title: '库存预警',
-      message: '产品 "白色瓷砖 W001" 库存不足',
-      type: 'warning',
-      isRead: false,
-      createdAt: new Date(),
-      href: '/inventory',
-    },
-    {
-      id: '2',
-      title: '新订单',
-      message: '收到来自客户张三的新订单',
-      type: 'info',
-      isRead: false,
-      createdAt: new Date(),
-      href: '/sales-orders',
-    },
-  ]);
-
-  const unreadCount = notifications.filter(n => !n.isRead).length;
-  const totalBadgeCount = getTotalBadgeCount();
-  const urgentCount = getUrgentBadgeCount();
 
   // 事件处理函数
   const handleSignOut = async () => {
@@ -108,7 +108,13 @@ export function Header({
   };
 
   const handleNotificationClick = (notification: NotificationItem) => {
-    if (notification.href) {
+    // 标记为已读
+    markAsRead(notification.id);
+
+    // 导航到相关页面
+    if (notification.onClick) {
+      notification.onClick();
+    } else if (notification.href) {
       router.push(notification.href);
     }
   };
@@ -128,10 +134,32 @@ export function Header({
     localStorage.setItem('theme', newTheme);
   };
 
-  const handleRefreshData = () => {
-    // 刷新页面数据
-    window.location.reload();
-  };
+  const handleRefreshData = React.useCallback(() => {
+    // 刷新页面数据 - 使用 React Query 的缓存失效机制
+    // 根据当前路径选择性失效相关查询
+    const pathname = window.location.pathname;
+
+    if (pathname.startsWith('/inventory')) {
+      queryClient.invalidateQueries({ queryKey: ['inventory'] });
+    } else if (pathname.startsWith('/products')) {
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    } else if (pathname.startsWith('/sales-orders')) {
+      queryClient.invalidateQueries({ queryKey: ['sales-orders'] });
+    } else if (pathname.startsWith('/factory-shipments')) {
+      queryClient.invalidateQueries({ queryKey: ['factory-shipments'] });
+    } else if (pathname.startsWith('/finance')) {
+      queryClient.invalidateQueries({ queryKey: ['finance'] });
+    } else if (pathname.startsWith('/customers')) {
+      queryClient.invalidateQueries({ queryKey: ['customers'] });
+    } else if (pathname.startsWith('/suppliers')) {
+      queryClient.invalidateQueries({ queryKey: ['suppliers'] });
+    } else if (pathname.startsWith('/categories')) {
+      queryClient.invalidateQueries({ queryKey: ['categories'] });
+    } else {
+      // 其他页面失效所有查询
+      queryClient.invalidateQueries();
+    }
+  }, [queryClient]);
 
   // 获取用户姓名首字母作为头像占位符
   const getUserInitials = (name: string) =>
@@ -142,27 +170,10 @@ export function Header({
       .toUpperCase()
       .slice(0, 2);
 
-  // 快捷键处理
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl/Cmd + K 打开搜索
-      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-        event.preventDefault();
-        const searchInput = document.querySelector(
-          'input[type="search"]'
-        ) as HTMLInputElement;
-        searchInput?.focus();
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, []);
-
   return (
     <header
       className={cn(
-        'sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur-sm supports-backdrop-filter:bg-background/60',
+        'bg-background/95 supports-backdrop-filter:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur-sm',
         className
       )}
     >
@@ -185,7 +196,7 @@ export function Header({
           {showSearch && (
             <div className="hidden items-center space-x-2 md:flex">
               <form onSubmit={handleSearch} className="relative">
-                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   type="search"
                   placeholder="搜索产品、订单... (Ctrl+K)"
@@ -194,7 +205,7 @@ export function Header({
                   onFocus={() => setIsSearchFocused(true)}
                   onBlur={() => setIsSearchFocused(false)}
                   className={cn(
-                    'h-9 w-64 pl-10 pr-3 transition-all duration-200',
+                    'h-9 w-64 pr-3 pl-10 transition-all duration-200',
                     isSearchFocused && 'w-80'
                   )}
                 />
@@ -203,7 +214,7 @@ export function Header({
                     type="button"
                     variant="ghost"
                     size="sm"
-                    className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0"
+                    className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 p-0"
                     onClick={() => setSearchQuery('')}
                   >
                     ×
@@ -257,63 +268,96 @@ export function Header({
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="relative">
                 <Bell className="h-4 w-4" />
-                {(unreadCount > 0 || urgentCount > 0) && (
+                {unreadCount > 0 && (
                   <Badge
-                    variant={urgentCount > 0 ? 'destructive' : 'secondary'}
-                    className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
+                    variant="destructive"
+                    className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full p-0 text-xs"
                   >
-                    {Math.max(unreadCount, urgentCount) > 9
-                      ? '9+'
-                      : Math.max(unreadCount, urgentCount)}
+                    {unreadCount > 9 ? '9+' : unreadCount}
                   </Badge>
                 )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-80">
               <DropdownMenuLabel className="flex items-center justify-between">
-                <span>通知</span>
-                {totalBadgeCount > 0 && (
+                <div className="flex items-center gap-2">
+                  <span>通知</span>
+                  {/* WebSocket 连接状态指示器 */}
+                  <div
+                    className={cn(
+                      'h-2 w-2 rounded-full',
+                      wsConnected ? 'bg-green-500' : 'bg-gray-400'
+                    )}
+                    title={
+                      wsConnected ? 'WebSocket 已连接' : 'WebSocket 未连接'
+                    }
+                  />
+                </div>
+                {unreadCount > 0 && (
                   <Badge variant="outline" className="text-xs">
-                    {totalBadgeCount} 项待处理
+                    {unreadCount} 项未读
                   </Badge>
                 )}
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               {notifications.length > 0 ? (
-                notifications.map(notification => (
-                  <DropdownMenuItem
-                    key={notification.id}
-                    onClick={() => handleNotificationClick(notification)}
-                    className="flex cursor-pointer flex-col items-start p-3 hover:bg-accent"
-                  >
-                    <div className="flex w-full items-start justify-between">
-                      <div className="flex-1">
-                        <p className="text-sm font-medium">
-                          {notification.title}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {notification.message}
-                        </p>
-                        <p className="mt-1 text-xs text-muted-foreground">
-                          {notification.createdAt.toLocaleTimeString()}
-                        </p>
-                      </div>
-                      {!notification.isRead && (
-                        <div className="ml-2 mt-1 h-2 w-2 rounded-full bg-primary" />
-                      )}
-                    </div>
-                  </DropdownMenuItem>
-                ))
+                <>
+                  <div className="max-h-96 overflow-y-auto">
+                    {notifications.slice(0, 10).map(notification => (
+                      <DropdownMenuItem
+                        key={notification.id}
+                        onClick={() => handleNotificationClick(notification)}
+                        className={cn(
+                          'hover:bg-accent flex cursor-pointer flex-col items-start p-3',
+                          notification.isRead && 'opacity-60'
+                        )}
+                      >
+                        <div className="flex w-full items-start justify-between">
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">
+                              {notification.title}
+                            </p>
+                            <p className="text-muted-foreground mt-1 text-xs">
+                              {notification.message}
+                            </p>
+                            <p className="text-muted-foreground mt-1 text-xs">
+                              {notification.createdAt.toLocaleTimeString()}
+                            </p>
+                          </div>
+                          {!notification.isRead && (
+                            <div className="bg-primary mt-1 ml-2 h-2 w-2 rounded-full" />
+                          )}
+                        </div>
+                      </DropdownMenuItem>
+                    ))}
+                  </div>
+                  <DropdownMenuSeparator />
+                  <div className="flex gap-2 p-2">
+                    {unreadCount > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="flex-1 text-xs"
+                        onClick={e => {
+                          e.stopPropagation();
+                          markAllAsRead();
+                        }}
+                      >
+                        全部标记为已读
+                      </Button>
+                    )}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="flex-1 text-xs"
+                      onClick={() => router.push('/notifications')}
+                    >
+                      查看所有通知
+                    </Button>
+                  </div>
+                </>
               ) : (
                 <DropdownMenuItem disabled>暂无通知</DropdownMenuItem>
-              )}
-              {notifications.length > 0 && (
-                <>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem className="text-center text-sm text-muted-foreground">
-                    查看所有通知
-                  </DropdownMenuItem>
-                </>
               )}
             </DropdownMenuContent>
           </DropdownMenu>
@@ -324,12 +368,12 @@ export function Header({
               <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                 <Avatar className="h-8 w-8">
                   <AvatarImage
-                    src={session?.user?.avatar}
-                    alt={session?.user?.name || ''}
+                    src={currentUser?.avatar}
+                    alt={currentUser?.name || ''}
                   />
                   <AvatarFallback>
-                    {session?.user?.name
-                      ? getUserInitials(session.user.name)
+                    {currentUser?.name
+                      ? getUserInitials(currentUser.name)
                       : 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -338,14 +382,14 @@ export function Header({
             <DropdownMenuContent className="w-56" align="end" forceMount>
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
-                  <p className="text-sm font-medium leading-none">
-                    {session?.user?.name || '用户'}
+                  <p className="text-sm leading-none font-medium">
+                    {currentUser?.name || '用户'}
                   </p>
-                  <p className="text-xs leading-none text-muted-foreground">
-                    {session?.user?.email}
+                  <p className="text-muted-foreground text-xs leading-none">
+                    {currentUser?.email}
                   </p>
                   <Badge variant="outline" className="w-fit text-xs">
-                    {session?.user?.role === 'admin' ? '管理员' : '销售员'}
+                    {currentUser?.role === 'admin' ? '管理员' : '销售员'}
                   </Badge>
                 </div>
               </DropdownMenuLabel>
@@ -408,3 +452,9 @@ export function Header({
     </header>
   );
 }
+
+/**
+ * 使用 React.memo 优化 Header 组件
+ * 避免因父组件重渲染导致的不必要更新
+ */
+export const Header = React.memo(HeaderComponent);

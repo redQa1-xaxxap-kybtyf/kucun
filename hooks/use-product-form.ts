@@ -14,6 +14,7 @@ import {
 } from '@/lib/api/products';
 import { type Product } from '@/lib/types/product';
 import { ProductDataUtils } from '@/lib/utils/product-data';
+import { showError, showSuccess } from '@/lib/utils/toast-helper';
 import {
   productCreateSchema,
   productUpdateSchema,
@@ -69,15 +70,27 @@ export function useProductForm({
   const createMutation = useMutation({
     mutationFn: createProduct,
     onSuccess: async product => {
-      // 等待缓存失效并重新获取完成，确保列表数据会被重新获取
+      showSuccess('创建成功', {
+        description: '产品已成功创建',
+      });
+
+      // 立即失效所有产品相关的查询缓存,确保数据最新
       await queryClient.invalidateQueries({
         queryKey: productQueryKeys.all,
-        refetchType: 'active', // 立即重新获取所有活跃的查询
+        refetchType: 'all', // 强制重新获取所有相关查询,不仅仅是活跃的
       });
+
+      // 强制刷新Router Cache,确保Server Component数据也更新
+      router.refresh();
+
       onSuccess?.(product);
     },
     onError: (error: Error) => {
-      setSubmitError(error.message || '创建产品失败');
+      const errorMessage = error.message || '创建产品失败';
+      setSubmitError(errorMessage);
+      showError('创建失败', {
+        description: errorMessage,
+      });
     },
   });
 
@@ -86,15 +99,27 @@ export function useProductForm({
     mutationFn: ({ id, data }: { id: string; data: ProductUpdateFormData }) =>
       updateProduct(id, data),
     onSuccess: async product => {
-      // 等待缓存失效并重新获取完成，确保列表和详情数据会被重新获取
+      showSuccess('更新成功', {
+        description: '产品已成功更新',
+      });
+
+      // 立即失效所有产品相关的查询缓存,确保数据最新
       await queryClient.invalidateQueries({
         queryKey: productQueryKeys.all,
-        refetchType: 'active', // 立即重新获取所有活跃的查询
+        refetchType: 'all', // 强制重新获取所有相关查询,不仅仅是活跃的
       });
+
+      // 强制刷新Router Cache,确保Server Component数据也更新
+      router.refresh();
+
       onSuccess?.(product);
     },
     onError: (error: Error) => {
-      setSubmitError(error.message || '更新产品失败');
+      const errorMessage = error.message || '更新产品失败';
+      setSubmitError(errorMessage);
+      showError('更新失败', {
+        description: errorMessage,
+      });
     },
   });
 

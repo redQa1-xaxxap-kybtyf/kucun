@@ -1,27 +1,21 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit, Eye, MoreHorizontal, Plus, Search, Trash2 } from 'lucide-react';
+import { Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { toast } from 'sonner';
 
+import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -74,10 +68,10 @@ export function ERPSalesOrderList({
   const { data, isLoading, error } = useQuery({
     queryKey: salesOrderQueryKeys.list(queryParams),
     queryFn: () => getSalesOrders(queryParams),
-    // initialData, // 移除 initialData 以避免类型冲突
+    initialData: _initialData, // 使用服务端预取的数据优化首屏加载
     staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
     refetchOnWindowFocus: false, // 避免不必要的重新获取
-    // keepPreviousData: true, // TanStack Query v5 中已移除
+    placeholderData: previousData => previousData, // 切换查询参数时保持上一次数据
     refetchOnMount: false, // 避免挂载时重新获取
   });
 
@@ -110,17 +104,30 @@ export function ERPSalesOrderList({
   );
 
   // 搜索处理
-  const handleSearch = (value: string) => {
+  const handleSearch = React.useCallback((value: string) => {
     setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
-  };
+  }, []);
 
-  // 筛选处理
-  const handleFilter = (
-    key: keyof SalesOrderQueryParams,
-    value: string | number | boolean
-  ) => {
-    setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
-  };
+  // 筛选处理 - 统一处理筛选器变更
+  const handleFilterChange = React.useCallback(
+    (key: string, value: string | undefined) => {
+      if (key === 'status') {
+        setQueryParams(prev => ({
+          ...prev,
+          status:
+            value === 'all' || !value ? undefined : (value as SalesOrderStatus),
+          page: 1,
+        }));
+      } else if (key === 'sortBy') {
+        setQueryParams(prev => ({
+          ...prev,
+          sortBy: value as SalesOrderQueryParams['sortBy'],
+          page: 1,
+        }));
+      }
+    },
+    []
+  );
 
   // 分页处理
   const handlePageChange = (page: number) => {
@@ -165,79 +172,58 @@ export function ERPSalesOrderList({
   }
 
   return (
-    <div className="space-y-3">
-      {/* ERP标准工具栏 */}
-      <div className="bg-card rounded border">
-        <div className="bg-muted/30 border-b px-3 py-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium">销售订单</h3>
-            <div className="text-muted-foreground text-xs">
-              {data?.pagination ? `共 ${data.pagination.total} 条记录` : ''}
-            </div>
-          </div>
-        </div>
-        <div className="p-3">
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => router.push('/sales-orders/create')}
-              className="h-7 text-xs"
-            >
-              <Plus className="mr-1 h-3 w-3" />
-              新建
-            </Button>
-            <div className="flex-1">
-              <div className="relative max-w-sm">
-                <Search className="text-muted-foreground absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2" />
-                <Input
-                  placeholder="订单号/客户名称"
-                  value={queryParams.search}
-                  onChange={e => handleSearch(e.target.value)}
-                  className="h-7 pl-7 text-xs"
-                />
-              </div>
-            </div>
-            <Select
-              value={queryParams.status || 'all'}
-              onValueChange={value =>
-                handleFilter('status', value === 'all' ? '' : (value as string))
-              }
-            >
-              <SelectTrigger className="h-7 w-20 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部</SelectItem>
-                <SelectItem value="draft">草稿</SelectItem>
-                <SelectItem value="confirmed">已确认</SelectItem>
-                <SelectItem value="shipped">已发货</SelectItem>
-                <SelectItem value="completed">已完成</SelectItem>
-                <SelectItem value="cancelled">已取消</SelectItem>
-              </SelectContent>
-            </Select>
-            <Select
-              value={queryParams.sortBy || 'createdAt'}
-              onValueChange={value => handleFilter('sortBy', value)}
-            >
-              <SelectTrigger className="h-7 w-20 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt">创建时间</SelectItem>
-                <SelectItem value="orderNumber">订单号</SelectItem>
-                <SelectItem value="totalAmount">金额</SelectItem>
-                <SelectItem value="updatedAt">更新时间</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-4">
+      {/* 搜索筛选卡片 */}
+      <Card className="shadow-md shadow-gray-200/50">
+        <CardContent className="pt-6">
+          <UnifiedSearchBar
+            // 搜索配置
+            searchValue={queryParams.search || ''}
+            onSearchChange={handleSearch}
+            searchPlaceholder="搜索订单号或客户名称..."
+            debounceDelay={400}
+            compact={true}
+            // 筛选器配置
+            filters={[
+              {
+                key: 'status',
+                label: '状态',
+                options: [
+                  { label: '全部', value: 'all' },
+                  { label: '草稿', value: 'draft' },
+                  { label: '已确认', value: 'confirmed' },
+                  { label: '已发货', value: 'shipped' },
+                  { label: '已完成', value: 'completed' },
+                  { label: '已取消', value: 'cancelled' },
+                ],
+                width: 'w-24',
+              },
+              {
+                key: 'sortBy',
+                label: '排序',
+                options: [
+                  { label: '创建时间', value: 'createdAt' },
+                  { label: '订单号', value: 'orderNumber' },
+                  { label: '金额', value: 'totalAmount' },
+                  { label: '更新时间', value: 'updatedAt' },
+                ],
+                width: 'w-24',
+              },
+            ]}
+            filterValues={{
+              status: queryParams.status || 'all',
+              sortBy: queryParams.sortBy || 'createdAt',
+            }}
+            onFilterChange={handleFilterChange}
+          />
+        </CardContent>
+      </Card>
 
-      {/* ERP标准数据表格 */}
-      <div className="bg-card rounded border">
+      {/* 数据表格 */}
+      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/20">
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
               <TableHead className="h-8 text-xs font-medium">序号</TableHead>
               <TableHead className="h-8 text-xs font-medium">订单号</TableHead>
               <TableHead className="h-8 text-xs font-medium">
@@ -277,7 +263,7 @@ export function ERPSalesOrderList({
               data.data.map((order, index) => (
                 <TableRow
                   key={order.id}
-                  className="hover:bg-muted/50 cursor-pointer"
+                  className="cursor-pointer transition-colors hover:bg-blue-50/50"
                   onClick={() => onOrderSelect?.(order)}
                 >
                   <TableCell className="text-muted-foreground h-8 text-xs">
@@ -285,10 +271,10 @@ export function ERPSalesOrderList({
                       index +
                       1}
                   </TableCell>
-                  <TableCell className="h-8 text-xs font-medium">
+                  <TableCell className="h-8 font-mono text-xs font-medium text-blue-600">
                     {order.orderNumber}
                   </TableCell>
-                  <TableCell className="h-8 text-xs">
+                  <TableCell className="h-8 text-xs font-medium text-gray-900">
                     {order.customer?.name || '-'}
                   </TableCell>
                   <TableCell className="h-8 text-xs">

@@ -55,6 +55,7 @@ import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import type { Customer } from '@/lib/types/customer';
 import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
+import { transformFormDataToCreateInput } from '@/lib/utils/sales-order-transforms';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
@@ -271,19 +272,13 @@ export function EnhancedSalesOrderForm({
 
   // 表单提交
   const onSubmit = (data: CreateSalesOrderData) => {
-    // 不传递orderNumber，让后端自动生成，添加计算的总金额
+    // 不传递orderNumber，让后端自动生成
     const { orderNumber: _orderNumber, ...submitData } = data;
-    const orderData = {
-      ...submitData,
-      totalAmount,
-      items: submitData.items.map(item => ({
-        ...item,
-        subtotal: item.quantity * (item.unitPrice || 0),
-      })),
-    };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    createMutation.mutate(orderData as any);
+    // 使用类型安全的转换函数
+    const apiData = transformFormDataToCreateInput(submitData);
+
+    createMutation.mutate(apiData);
   };
 
   return (

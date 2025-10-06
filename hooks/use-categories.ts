@@ -8,7 +8,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 
-import { useToast } from '@/components/ui/use-toast';
 import {
   batchDeleteCategories,
   deleteCategory,
@@ -18,6 +17,7 @@ import {
   type CategoryQueryParams,
 } from '@/lib/api/categories';
 import { queryKeys } from '@/lib/queryKeys';
+import type { PaginatedResponse } from '@/lib/types/api';
 
 interface DeleteDialogState {
   open: boolean;
@@ -30,18 +30,22 @@ interface BatchDeleteDialogState {
   categories: Category[];
 }
 
-export function useCategories() {
+export function useCategories(
+  initialData?: PaginatedResponse<Category>,
+  initialParams?: CategoryQueryParams
+) {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
 
-  const [queryParams, setQueryParams] = React.useState<CategoryQueryParams>({
-    page: 1,
-    limit: 10,
-    search: '',
-    status: undefined,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-  });
+  const [queryParams, setQueryParams] = React.useState<CategoryQueryParams>(
+    initialParams || {
+      page: 1,
+      limit: 10,
+      search: '',
+      status: undefined,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    }
+  );
 
   const [selectedCategoryIds, setSelectedCategoryIds] = React.useState<
     string[]
@@ -66,6 +70,11 @@ export function useCategories() {
   const { data, isLoading, error } = useQuery({
     queryKey: queryKeys.categories.list(queryParams),
     queryFn: () => getCategories(queryParams),
+    initialData, // 使用服务端预取的数据
+    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
+    refetchOnMount: false, // 避免重复请求
+    refetchOnWindowFocus: false,
+    placeholderData: previousData => previousData, // 保持上一次数据
   });
 
   const deleteMutation = useMutation({
@@ -74,16 +83,13 @@ export function useCategories() {
       queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
       setDeleteDialog({ open: false, categoryId: null, categoryName: '' });
       setSelectedCategoryIds([]);
-      toast({
-        title: '删除成功',
+      showSuccess('删除成功', {
         description: '分类删除成功！相关数据已清理完毕。',
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: '删除失败',
+      showError('删除失败', {
         description: error.message || '删除分类时发生错误，请重试。',
-        variant: 'destructive',
       });
     },
   });
@@ -94,16 +100,13 @@ export function useCategories() {
       queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
       setBatchDeleteDialog({ open: false, categories: [] });
       setSelectedCategoryIds([]);
-      toast({
-        title: '批量删除成功',
+      showSuccess('批量删除成功', {
         description: `成功删除 ${deletedIds.categoryIds.length} 个分类！`,
       });
     },
     onError: (error: Error) => {
-      toast({
-        title: '批量删除失败',
+      showError('批量删除失败', {
         description: error.message || '批量删除分类时发生错误，请重试。',
-        variant: 'destructive',
       });
     },
   });
@@ -119,17 +122,14 @@ export function useCategories() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
       setUpdatingStatusId(null);
-      toast({
-        title: '状态更新成功',
+      showSuccess('状态更新成功', {
         description: '分类状态已更新！',
       });
     },
     onError: (error: Error) => {
       setUpdatingStatusId(null);
-      toast({
-        title: '状态更新失败',
+      showError('状态更新失败', {
         description: error.message || '更新分类状态时发生错误，请重试。',
-        variant: 'destructive',
       });
     },
   });

@@ -52,35 +52,59 @@ export function AuthLayout({
   // 全局搜索状态
   const [globalSearchOpen, setGlobalSearchOpen] = React.useState(false);
 
-  // 认证检查
-  React.useEffect(() => {
-    if (status === 'loading') {return;}
-
-    if (requireAuth && status === 'unauthenticated') {
-      // 未认证用户重定向到登录页
-      const signInUrl = `/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`;
-      router.push(signInUrl);
-      return;
+  // 缓存权限检查结果，避免重复计算
+  const authState = React.useMemo(() => {
+    if (status === 'loading') {
+      return { isLoading: true, isAuthorized: false, shouldRedirect: false, redirectUrl: '' };
     }
 
+    // 检查是否需要认证但未登录
+    if (requireAuth && status === 'unauthenticated') {
+      return {
+        isLoading: false,
+        isAuthorized: false,
+        shouldRedirect: true,
+        redirectUrl: `/auth/signin?callbackUrl=${encodeURIComponent(pathname)}`,
+      };
+    }
+
+    // 检查角色权限
     if (session?.user && requiredRoles.length > 0) {
-      // 检查角色权限
       const hasRequiredRole = requiredRoles.includes(session.user.role);
       if (!hasRequiredRole) {
-        router.push('/auth/error?error=AccessDenied');
-        return;
+        return {
+          isLoading: false,
+          isAuthorized: false,
+          shouldRedirect: true,
+          redirectUrl: '/auth/error?error=AccessDenied',
+        };
       }
     }
 
+    // 检查路径访问权限
     if (session?.user) {
-      // 检查路径访问权限
       const canAccess = canAccessPath(session.user.role as UserRole, pathname);
       if (!canAccess) {
-        router.push('/auth/error?error=AccessDenied');
-        return;
+        return {
+          isLoading: false,
+          isAuthorized: false,
+          shouldRedirect: true,
+          redirectUrl: '/auth/error?error=AccessDenied',
+        };
       }
     }
-  }, [status, session, requireAuth, requiredRoles, pathname, router]);
+
+    return { isLoading: false, isAuthorized: true, shouldRedirect: false, redirectUrl: '' };
+  }, [status, session?.user, requireAuth, requiredRoles, pathname]);
+
+  // 只在需要时执行重定向
+  const hasRedirectedRef = React.useRef(false);
+  React.useEffect(() => {
+    if (authState.shouldRedirect && !hasRedirectedRef.current) {
+      hasRedirectedRef.current = true;
+      router.push(authState.redirectUrl);
+    }
+  }, [authState.shouldRedirect, authState.redirectUrl, router]);
 
   // 全局键盘快捷键
   React.useEffect(() => {
@@ -98,11 +122,11 @@ export function AuthLayout({
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [enableGlobalSearch]);
 
-  // 处理搜索
-  const handleSearch = (query: string) => {
+  // 处理搜索（使用 useCallback 避免不必要的重新创建）
+  const handleSearch = React.useCallback((query: string) => {
     console.log('搜索:', query);
     // 这里可以添加搜索逻辑或导航到搜索结果页面
-  };
+  }, []);
 
   // 加载状态
   if (status === 'loading') {

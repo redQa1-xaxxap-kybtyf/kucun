@@ -3,19 +3,20 @@
 import {
   AlertCircle,
   Calendar,
-  CreditCard,
   Eye,
   Package,
   RefreshCw,
-  RotateCcw,
   ShoppingCart,
   Users,
   Zap,
 } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { FactoryShipments } from '@/components/dashboard/factory-shipments';
+import { RecentOrders } from '@/components/dashboard/recent-orders';
+import { StatCardsGrid } from '@/components/dashboard/stat-cards';
 import { Button } from '@/components/ui/button';
 import {
   Select,
@@ -30,6 +31,8 @@ import type {
   DashboardData,
   TimeRange,
 } from '@/lib/types/dashboard';
+import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
+import type { SalesOrder } from '@/lib/types/sales-order';
 import { cn } from '@/lib/utils';
 
 /**
@@ -84,6 +87,14 @@ export function ERPDashboard({
   const [isLoading, setIsLoading] = React.useState(!initialData);
   const [selectedPeriod, setSelectedPeriod] = React.useState(initialTimeRange);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
+
+  // 订单数据状态
+  const [recentOrders, setRecentOrders] = React.useState<SalesOrder[]>([]);
+  const [pendingOrders, setPendingOrders] = React.useState<SalesOrder[]>([]);
+  const [factoryShipments, setFactoryShipments] = React.useState<
+    FactoryShipmentOrder[]
+  >([]);
+  const [isLoadingOrders, setIsLoadingOrders] = React.useState(true);
 
   // 移除mockData，完全依赖真实API数据
 
@@ -147,6 +158,43 @@ export function ERPDashboard({
     }
   }, [dashboardApiData]);
 
+  // 获取订单数据
+  const loadOrdersData = React.useCallback(async () => {
+    setIsLoadingOrders(true);
+    try {
+      // 获取最近订单（最新的10条）
+      const recentResponse = await fetch(
+        '/api/sales-orders?page=1&limit=10&sortBy=createdAt&sortOrder=desc'
+      );
+      if (recentResponse.ok) {
+        const recentData = await recentResponse.json();
+        setRecentOrders(recentData.data?.salesOrders || []);
+      }
+
+      // 获取待处理订单（草稿状态）
+      const pendingResponse = await fetch(
+        '/api/sales-orders?page=1&limit=10&status=draft&sortBy=createdAt&sortOrder=asc'
+      );
+      if (pendingResponse.ok) {
+        const pendingData = await pendingResponse.json();
+        setPendingOrders(pendingData.data?.salesOrders || []);
+      }
+
+      // 获取厂家发货订单（最新的8条）
+      const shipmentsResponse = await fetch(
+        '/api/factory-shipments?page=1&limit=8&sortBy=createdAt&sortOrder=desc'
+      );
+      if (shipmentsResponse.ok) {
+        const shipmentsData = await shipmentsResponse.json();
+        setFactoryShipments(shipmentsData.data?.factoryShipmentOrders || []);
+      }
+    } catch (error) {
+      console.error('加载订单数据失败:', error);
+    } finally {
+      setIsLoadingOrders(false);
+    }
+  }, []);
+
   // 刷新数据
   const refreshData = async () => {
     setIsRefreshing(true);
@@ -157,6 +205,8 @@ export function ERPDashboard({
       } else {
         await loadDashboardData();
       }
+      // 同时刷新订单数据
+      await loadOrdersData();
     } catch (error) {
       console.error('刷新仪表盘数据失败:', error);
     } finally {
@@ -180,72 +230,22 @@ export function ERPDashboard({
     }
   }, [loadDashboardData, selectedPeriod, isApiLoading, initialData]);
 
+  // 初始化加载订单数据
+  React.useEffect(() => {
+    loadOrdersData();
+  }, [loadOrdersData]);
+
   // 合并加载状态
   const isLoadingData = isLoading || isApiLoading;
 
-  // 格式化货币
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-    }).format(amount);
-
-  // 格式化时间
-  const formatTime = (date: Date) => {
-    const now = new Date();
-    const diff = now.getTime() - date.getTime();
-    const minutes = Math.floor(diff / (1000 * 60));
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-
-    if (minutes < 60) {
-      return `${minutes}分钟前`;
-    } else if (hours < 24) {
-      return `${hours}小时前`;
-    } else {
-      return date.toLocaleDateString('zh-CN');
-    }
-  };
-
-  // 获取活动图标
-  const getActivityIcon = (type: Activity['type']) => {
-    switch (type) {
-      case 'order':
-        return <ShoppingCart className="h-3 w-3" />;
-      case 'inventory':
-        return <Package className="h-3 w-3" />;
-      case 'customer':
-        return <Users className="h-3 w-3" />;
-      case 'payment':
-        return <CreditCard className="h-3 w-3" />;
-      default:
-        return <AlertCircle className="h-3 w-3" />;
-    }
-  };
-
-  // 获取状态颜色
-  const getStatusColor = (status: Activity['status']) => {
-    switch (status) {
-      case 'success':
-        return 'text-green-600';
-      case 'warning':
-        return 'text-yellow-600';
-      case 'error':
-        return 'text-red-600';
-      case 'info':
-        return 'text-blue-600';
-      default:
-        return 'text-muted-foreground';
-    }
-  };
-
   if (isLoadingData) {
     return (
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <h3 className="text-sm font-medium">业务概览</h3>
         </div>
         <div className="px-3 py-8">
-          <div className="text-center text-xs text-muted-foreground">
+          <div className="text-muted-foreground text-center text-xs">
             正在加载数据...
           </div>
         </div>
@@ -255,8 +255,8 @@ export function ERPDashboard({
 
   if (!dashboardData) {
     return (
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-card rounded border">
+        <div className="bg-muted/30 border-b px-3 py-2">
           <h3 className="text-sm font-medium">业务概览</h3>
         </div>
         <div className="px-3 py-8">
@@ -269,236 +269,152 @@ export function ERPDashboard({
   }
 
   return (
-    <div className="space-y-4">
-      {/* 欢迎信息和操作栏 */}
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-medium">业务概览</h3>
-            <div className="text-xs text-muted-foreground">
-              欢迎回来，{session?.user?.name || '用户'}
-            </div>
-          </div>
+    <div className="space-y-6">
+      {/* 页面标题和操作栏 */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h2 className="text-2xl font-bold tracking-tight">业务概览</h2>
+          <p className="text-muted-foreground text-sm">
+            欢迎回来，{session?.user?.name || '用户'}
+          </p>
         </div>
-        <div className="border-b bg-muted/10 px-3 py-2">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Calendar className="h-3 w-3 text-muted-foreground" />
-              <span className="text-xs text-muted-foreground">数据周期</span>
-              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-                <SelectTrigger className="h-6 w-20 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="1d">今天</SelectItem>
-                  <SelectItem value="7d">7天</SelectItem>
-                  <SelectItem value="30d">30天</SelectItem>
-                  <SelectItem value="90d">90天</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-6"
-                onClick={refreshData}
-                disabled={isRefreshing}
-              >
-                <RefreshCw
-                  className={cn('mr-1 h-3 w-3', isRefreshing && 'animate-spin')}
-                />
-                刷新
-              </Button>
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <Calendar className="text-muted-foreground h-4 w-4" />
+            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+              <SelectTrigger className="h-9 w-[120px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1d">今天</SelectItem>
+                <SelectItem value="7d">最近7天</SelectItem>
+                <SelectItem value="30d">最近30天</SelectItem>
+                <SelectItem value="90d">最近90天</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-        </div>
-
-        {/* 统计数据 */}
-        <div className="border-b bg-muted/5 px-3 py-1">
-          <div className="text-xs text-muted-foreground">核心指标</div>
-        </div>
-        <div className="px-3 py-3">
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-5">
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                <ShoppingCart className="h-3 w-3" />
-                销售单总数
-              </div>
-              <div className="mt-1 text-lg font-bold">
-                {dashboardData.totalOrders}
-              </div>
-              {dashboardApiData?.sales?.ordersGrowth !== undefined && (
-                <div
-                  className={cn(
-                    'text-xs',
-                    dashboardApiData.sales.ordersGrowth >= 0
-                      ? 'text-green-600'
-                      : 'text-red-600'
-                  )}
-                >
-                  {dashboardApiData.sales.ordersGrowth >= 0 ? '+' : ''}
-                  {dashboardApiData.sales.ordersGrowth.toFixed(1)}%
-                </div>
-              )}
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                <Package className="h-3 w-3" />
-                产品总数
-              </div>
-              <div className="mt-1 text-lg font-bold">
-                {dashboardData.totalProducts}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                <RotateCcw className="h-3 w-3" />
-                退货订单
-              </div>
-              <div className="mt-1 text-lg font-bold">
-                {dashboardData.totalReturns}
-              </div>
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                <Users className="h-3 w-3" />
-                客户总数
-              </div>
-              <div className="mt-1 text-lg font-bold">
-                {dashboardData.totalCustomers}
-              </div>
-              {dashboardApiData?.customers?.customerGrowth !== undefined && (
-                <div
-                  className={cn(
-                    'text-xs',
-                    dashboardApiData.customers.customerGrowth >= 0
-                      ? 'text-green-600'
-                      : 'text-red-600'
-                  )}
-                >
-                  {dashboardApiData.customers.customerGrowth >= 0 ? '+' : ''}
-                  {dashboardApiData.customers.customerGrowth.toFixed(1)}%
-                </div>
-              )}
-            </div>
-            <div className="text-center">
-              <div className="flex items-center justify-center gap-1 text-xs text-muted-foreground">
-                <CreditCard className="h-3 w-3" />
-                总收入
-              </div>
-              <div className="mt-1 text-lg font-bold">
-                {formatCurrency(dashboardData.totalRevenue)}
-              </div>
-              {dashboardApiData?.sales?.revenueGrowth !== undefined && (
-                <div
-                  className={cn(
-                    'text-xs',
-                    dashboardApiData.sales.revenueGrowth >= 0
-                      ? 'text-green-600'
-                      : 'text-red-600'
-                  )}
-                >
-                  {dashboardApiData.sales.revenueGrowth >= 0 ? '+' : ''}
-                  {dashboardApiData.sales.revenueGrowth.toFixed(1)}%
-                </div>
-              )}
-            </div>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={refreshData}
+            disabled={isRefreshing}
+          >
+            <RefreshCw
+              className={cn('mr-2 h-4 w-4', isRefreshing && 'animate-spin')}
+            />
+            刷新
+          </Button>
         </div>
       </div>
 
-      {/* 快速操作和警告信息 */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* 快速操作 */}
-        <div className="rounded border bg-card">
-          <div className="border-b bg-muted/30 px-3 py-2">
-            <h3 className="text-sm font-medium">快速操作</h3>
+      {/* 核心指标卡片 */}
+      {dashboardApiData && (
+        <StatCardsGrid overview={dashboardApiData} loading={isLoadingData} />
+      )}
+
+      {/* 快速操作和需要关注 - 紧凑布局 */}
+      <div className="grid gap-4 lg:grid-cols-2">
+        {/* 快速操作 - 紧凑版 */}
+        <div className="bg-card overflow-hidden rounded-lg border shadow-sm">
+          <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-4 py-3">
+            <h3 className="font-semibold text-gray-900">快速操作</h3>
           </div>
-          <div className="px-3 py-3">
+          <div className="p-4">
             <div className="grid grid-cols-2 gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="h-12 flex-col gap-1"
+                className="h-16 flex-col gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
                 onClick={() => router.push('/products/create')}
               >
-                <Package className="h-4 w-4" />
-                <span className="text-xs">新建产品</span>
+                <Package className="h-4 w-4 text-blue-600" />
+                <span className="text-xs font-medium">新建产品</span>
               </Button>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="h-12 flex-col gap-1"
+                className="h-16 flex-col gap-1.5 transition-all hover:border-green-300 hover:bg-green-50"
                 onClick={() => router.push('/sales-orders/create')}
               >
-                <ShoppingCart className="h-4 w-4" />
-                <span className="text-xs">新建订单</span>
+                <ShoppingCart className="h-4 w-4 text-green-600" />
+                <span className="text-xs font-medium">新建订单</span>
               </Button>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="h-12 flex-col gap-1"
+                className="h-16 flex-col gap-1.5 transition-all hover:border-purple-300 hover:bg-purple-50"
                 onClick={() => router.push('/customers/create')}
               >
-                <Users className="h-4 w-4" />
-                <span className="text-xs">新建客户</span>
+                <Users className="h-4 w-4 text-purple-600" />
+                <span className="text-xs font-medium">新建客户</span>
               </Button>
               <Button
-                variant="ghost"
+                variant="outline"
                 size="sm"
-                className="h-12 flex-col gap-1"
+                className="h-16 flex-col gap-1.5 transition-all hover:border-yellow-300 hover:bg-yellow-50"
                 onClick={() => router.push('/inventory')}
               >
-                <Zap className="h-4 w-4" />
-                <span className="text-xs">库存管理</span>
+                <Zap className="h-4 w-4 text-yellow-600" />
+                <span className="text-xs font-medium">库存管理</span>
               </Button>
             </div>
           </div>
         </div>
 
-        {/* 需要关注 */}
-        <div className="rounded border bg-card">
-          <div className="border-b bg-muted/30 px-3 py-2">
-            <div className="flex items-center gap-1">
-              <AlertCircle className="h-3 w-3 text-yellow-600" />
-              <h3 className="text-sm font-medium">需要关注</h3>
+        {/* 需要关注 - 紧凑版 */}
+        <div className="bg-card overflow-hidden rounded-lg border shadow-sm">
+          <div className="border-b bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-600" />
+              <h3 className="font-semibold text-gray-900">需要关注</h3>
             </div>
           </div>
-          <div className="px-3 py-3">
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-medium">库存不足</div>
-                  <div className="text-xs text-muted-foreground">
-                    {dashboardData.lowStockItems} 个产品库存不足
+          <div className="p-4">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50 p-3 transition-all hover:shadow-sm">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100">
+                    <Package className="h-4 w-4 text-yellow-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-yellow-900">
+                      库存不足
+                    </div>
+                    <div className="text-xs text-yellow-700">
+                      {dashboardData.lowStockItems} 个产品
+                    </div>
                   </div>
                 </div>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6"
+                  className="h-7 text-yellow-700 hover:bg-yellow-100"
                   onClick={() => router.push('/inventory')}
                 >
-                  <Eye className="mr-1 h-3 w-3" />
-                  查看
+                  <Eye className="h-3.5 w-3.5" />
                 </Button>
               </div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="text-xs font-medium">待处理订单</div>
-                  <div className="text-xs text-muted-foreground">
-                    {dashboardData.pendingOrders} 个订单待处理
+              <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-3 transition-all hover:shadow-sm">
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                    <ShoppingCart className="h-4 w-4 text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-sm font-medium text-blue-900">
+                      待处理订单
+                    </div>
+                    <div className="text-xs text-blue-700">
+                      {pendingOrders.length} 个订单
+                    </div>
                   </div>
                 </div>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="h-6"
+                  className="h-7 text-blue-700 hover:bg-blue-100"
                   onClick={() => router.push('/sales-orders')}
                 >
-                  <Eye className="mr-1 h-3 w-3" />
-                  查看
+                  <Eye className="h-3.5 w-3.5" />
                 </Button>
               </div>
             </div>
@@ -506,34 +422,16 @@ export function ERPDashboard({
         </div>
       </div>
 
-      {/* 最近活动 */}
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
-          <h3 className="text-sm font-medium">最近活动</h3>
-        </div>
-        <div className="border-b bg-muted/5 px-3 py-1">
-          <div className="text-xs text-muted-foreground">系统动态</div>
-        </div>
-        <div className="px-3 py-3">
-          <div className="space-y-2">
-            {dashboardData.recentActivities.map(activity => (
-              <div key={activity.id} className="flex items-start gap-2 text-xs">
-                <div className={cn('mt-0.5', getStatusColor(activity.status))}>
-                  {getActivityIcon(activity.type)}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="font-medium">{activity.title}</div>
-                  <div className="text-muted-foreground">
-                    {activity.description}
-                  </div>
-                  <div className="mt-1 text-muted-foreground">
-                    {formatTime(activity.timestamp)}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      {/* 订单动态区域 - 主要内容区 */}
+      <div className="grid gap-6 xl:grid-cols-2">
+        {/* 实时订单动态 */}
+        <RecentOrders
+          orders={recentOrders.slice(0, 8)}
+          loading={isLoadingOrders}
+        />
+
+        {/* 厂家发货订单列表 */}
+        <FactoryShipments orders={factoryShipments} loading={isLoadingOrders} />
       </div>
     </div>
   );

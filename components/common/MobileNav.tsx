@@ -12,12 +12,11 @@ import {
   Users,
   Warehouse,
 } from 'lucide-react';
+import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
@@ -28,7 +27,6 @@ import {
   SheetTitle,
   SheetTrigger,
 } from '@/components/ui/sheet';
-import { useNavigationBadges } from '@/hooks/use-navigation-badges';
 import type { NavigationItem } from '@/lib/types/layout';
 import type { UserRole } from '@/lib/types/user';
 import { cn } from '@/lib/utils';
@@ -122,35 +120,39 @@ interface MobileNavProps {
  * 提供与桌面端一致的导航功能，适配移动端交互
  * 集成权限控制、徽章显示、手势支持等功能
  */
-export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
+function MobileNavComponent({ open, onOpenChange, className }: MobileNavProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const { addBadgesToNavItems } = useNavigationBadges();
 
   // 触摸手势状态
   const [touchStart, setTouchStart] = React.useState<number | null>(null);
   const [touchEnd, setTouchEnd] = React.useState<number | null>(null);
 
+  // 提取用户角色，避免依赖整个 session 对象
+  const userRole = session?.user?.role as UserRole | undefined;
+
   // 根据用户权限过滤导航项
   const accessibleNavItems = React.useMemo(() => {
-    if (!session?.user?.role) {return [];}
+    if (!userRole) {
+      return [];
+    }
 
-    const filteredItems = getAccessibleNavItems(
+    return getAccessibleNavItems(
       mobileNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
-      session.user.role as UserRole
-    );
-    return addBadgesToNavItems(filteredItems as NavigationItem[]);
-  }, [session?.user?.role, addBadgesToNavItems]);
+      userRole
+    ) as NavigationItem[];
+  }, [userRole]);
 
   const accessibleBottomNavItems = React.useMemo(() => {
-    if (!session?.user?.role) {return [];}
+    if (!userRole) {
+      return [];
+    }
 
-    const filteredItems = getAccessibleNavItems(
+    return getAccessibleNavItems(
       mobileBottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
-      session.user.role as UserRole
-    );
-    return addBadgesToNavItems(filteredItems as NavigationItem[]);
-  }, [session?.user?.role, addBadgesToNavItems]);
+      userRole
+    ) as NavigationItem[];
+  }, [userRole]);
 
   const handleNavItemClick = () => {
     // 点击导航项后关闭抽屉
@@ -178,7 +180,9 @@ export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
   };
 
   const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) {return;}
+    if (!touchStart || !touchEnd) {
+      return;
+    }
 
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
@@ -201,8 +205,8 @@ export function MobileNav({ open, onOpenChange, className }: MobileNavProps) {
         <SheetHeader className="border-b px-6 py-4">
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center space-x-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
-                <Package className="h-4 w-4 text-primary-foreground" />
+              <div className="bg-primary flex h-8 w-8 items-center justify-center rounded">
+                <Package className="text-primary-foreground h-4 w-4" />
               </div>
               <span className="text-lg font-semibold">库存管理</span>
             </SheetTitle>
@@ -259,7 +263,11 @@ interface MobileNavItemProps {
  * 移动端导航项组件
  * 优化的移动端交互体验
  */
-function MobileNavItem({ item, isActive, onClick }: MobileNavItemProps) {
+const MobileNavItem = React.memo(function MobileNavItem({
+  item,
+  isActive,
+  onClick,
+}: MobileNavItemProps) {
   const Icon = item.icon;
   const [isPressed, setIsPressed] = React.useState(false);
 
@@ -289,19 +297,11 @@ function MobileNavItem({ item, isActive, onClick }: MobileNavItemProps) {
         <div>
           <Icon className="mr-3 h-5 w-5" />
           <span className="flex-1 text-left text-base">{item.title}</span>
-          {item.badge && (
-            <Badge
-              variant={item.badgeVariant || 'secondary'}
-              className="ml-auto h-5 px-2 text-xs"
-            >
-              {item.badge}
-            </Badge>
-          )}
         </div>
       </Button>
     </Link>
   );
-}
+});
 
 /**
  * 移动端导航触发器组件
@@ -325,3 +325,9 @@ export function MobileNavTrigger({
     </Sheet>
   );
 }
+
+/**
+ * 使用 React.memo 优化 MobileNav 组件
+ * 避免因父组件重渲染导致的不必要更新
+ */
+export const MobileNav = React.memo(MobileNavComponent);

@@ -12,9 +12,8 @@ import type { Product } from '@/lib/types/product';
 
 import { SmartProductSearch } from './smart-product-search';
 
-interface IntelligentProductInputProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React Hook Form 泛型参数
-  form: UseFormReturn<any>;
+interface IntelligentProductInputProps<TFieldValues extends Record<string, unknown> = Record<string, unknown>> {
+  form: UseFormReturn<TFieldValues>;
   index: number;
   products: Product[];
   onProductChange?: (product: Product | null) => void;
@@ -24,12 +23,12 @@ interface IntelligentProductInputProps {
  * 智能产品输入组件
  * 集成智能搜索和临时产品添加功能
  */
-export function IntelligentProductInput({
+export function IntelligentProductInput<TFieldValues extends Record<string, unknown> = Record<string, unknown>>({
   form,
   index,
   products,
   onProductChange,
-}: IntelligentProductInputProps) {
+}: IntelligentProductInputProps<TFieldValues>) {
   // 处理库存产品选择
   const handleProductSelect = (productId: string) => {
     const product = products.find(p => p.id === productId);

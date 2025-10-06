@@ -1,9 +1,11 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 
 import { ProductForm } from '@/components/products/product-form';
 import { useToast } from '@/components/ui/use-toast';
+import { productQueryKeys } from '@/lib/api/products';
 import type { Product } from '@/lib/types/product';
 
 /**
@@ -13,8 +15,9 @@ import type { Product } from '@/lib/types/product';
 export function ProductCreateClient() {
   const router = useRouter();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const handleSuccess = (product: Product) => {
+  const handleSuccess = async (product: Product) => {
     // 显示成功提示
     toast({
       title: '创建成功',
@@ -22,10 +25,14 @@ export function ProductCreateClient() {
       variant: 'success',
     });
 
-    // 延迟跳转，让用户看到成功提示
-    setTimeout(() => {
-      router.push('/products');
-    }, 1500);
+    // 失效产品列表缓存，确保列表数据最新
+    await queryClient.invalidateQueries({
+      queryKey: productQueryKeys.all,
+      refetchType: 'active',
+    });
+
+    // 跳转到产品列表
+    router.push('/products');
   };
 
   return <ProductForm mode="create" variant="erp" onSuccess={handleSuccess} />;

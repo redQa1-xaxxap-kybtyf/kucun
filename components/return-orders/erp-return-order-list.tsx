@@ -1,39 +1,22 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  ArrowLeft,
-  Calendar,
-  Edit,
-  Eye,
-  Filter,
-  MoreHorizontal,
-  Package,
-  Plus,
-  RotateCcw,
-  Search,
-  TrendingDown,
-  User,
-} from 'lucide-react';
+import { Edit, Eye, MoreHorizontal, Plus, TrendingDown } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import * as React from 'react';
 import { useState } from 'react';
 
+import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -123,41 +106,33 @@ export function ERPReturnOrderList({
   const displayData = error ? mockData : queryData;
 
   // 处理搜索
-  const handleSearch = (search: string) => {
+  const handleSearch = React.useCallback((search: string) => {
     setQueryParams(prev => ({
       ...prev,
       search: search || undefined,
       page: 1,
     }));
-  };
+  }, []);
 
-  // 处理状态筛选
-  const handleStatusFilter = (status: string) => {
-    setQueryParams(prev => ({
-      ...prev,
-      status: status === 'all' ? undefined : status,
-      page: 1,
-    }));
-  };
-
-  // 处理排序
-  const handleSort = (sortBy: string) => {
-    setQueryParams(prev => ({
-      ...prev,
-      sortBy,
-      page: 1,
-    }));
-  };
-
-  // 重置筛选
-  const handleReset = () => {
-    setQueryParams({
-      page: 1,
-      limit: 20,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    });
-  };
+  // 统一处理筛选器变更
+  const handleFilterChange = React.useCallback(
+    (key: string, value: string | undefined) => {
+      if (key === 'status') {
+        setQueryParams(prev => ({
+          ...prev,
+          status: value === 'all' || !value ? undefined : value,
+          page: 1,
+        }));
+      } else if (key === 'sortBy') {
+        setQueryParams(prev => ({
+          ...prev,
+          sortBy: value || 'createdAt',
+          page: 1,
+        }));
+      }
+    },
+    []
+  );
 
   // 处理新建
   const handleCreateNew = () => {
@@ -234,145 +209,142 @@ export function ERPReturnOrderList({
   // 如果有真实数据错误且没有模拟数据，显示错误
   if (error && !displayData) {
     return (
-      <div className="bg-card rounded border">
-        <div className="bg-muted/30 border-b px-3 py-2">
-          <h3 className="text-sm font-medium">退货订单管理</h3>
-        </div>
-        <div className="px-3 py-8">
-          <div className="text-muted-foreground text-center text-xs">
-            加载失败: {error.message}
-          </div>
-        </div>
+      <div className="space-y-4">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <TrendingDown className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    退货订单管理
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    管理客户退货订单，处理退货申请和退款流程
+                  </p>
+                </div>
+              </div>
+              <Link href="/return-orders/create">
+                <Button
+                  size="lg"
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Plus className="mr-2 h-4 w-4" />
+                  新建退货
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="shadow-lg shadow-gray-200/50">
+          <CardContent className="pt-6">
+            <div className="text-center text-red-600">
+              加载退货订单失败: {error.message}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="bg-card rounded border">
-      {/* ERP标准工具栏 */}
-      <div className="bg-muted/30 border-b px-3 py-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">退货订单管理</h3>
-          <div className="text-muted-foreground text-xs">
-            {displayData?.data.pagination
-              ? `共 ${displayData.data.pagination.total} 条记录`
-              : ''}
-          </div>
-        </div>
-      </div>
-
-      {/* 操作工具栏 */}
-      <div className="bg-muted/10 border-b px-3 py-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="mr-1 h-3 w-3" />
-              返回
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" className="h-7" onClick={handleCreateNew}>
-              <Plus className="mr-1 h-3 w-3" />
-              新建退货
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* 筛选工具栏 */}
-      <div className="bg-muted/5 border-b px-3 py-2">
-        <div className="flex items-center gap-2">
-          <Filter className="text-muted-foreground h-3 w-3" />
-          <span className="text-muted-foreground text-xs">筛选条件</span>
-        </div>
-        <div className="mt-2 flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-1">
-            <span className="text-muted-foreground text-xs">搜索订单</span>
-            <div className="relative">
-              <Search className="text-muted-foreground absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2" />
-              <Input
-                placeholder="退货单号或客户名称"
-                className="h-7 w-48 pl-7 text-xs"
-                value={queryParams.search || ''}
-                onChange={e => handleSearch(e.target.value)}
-              />
+    <div className="space-y-4">
+      {/* 页面标题卡片 */}
+      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+        <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                <TrendingDown className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  退货订单管理
+                </h1>
+                <p className="text-sm text-gray-600">
+                  管理客户退货订单，处理退货申请和退款流程
+                </p>
+              </div>
             </div>
+            <Link href="/return-orders/create">
+              <Button
+                size="lg"
+                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                新建退货
+              </Button>
+            </Link>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="text-muted-foreground text-xs">订单状态</span>
-            <Select
-              value={queryParams.status || 'all'}
-              onValueChange={handleStatusFilter}
-            >
-              <SelectTrigger className="h-7 w-24 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="draft">草稿</SelectItem>
-                <SelectItem value="submitted">已提交</SelectItem>
-                <SelectItem value="approved">已审核</SelectItem>
-                <SelectItem value="rejected">已拒绝</SelectItem>
-                <SelectItem value="processing">处理中</SelectItem>
-                <SelectItem value="completed">已完成</SelectItem>
-                <SelectItem value="cancelled">已取消</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1">
-            <span className="text-muted-foreground text-xs">排序方式</span>
-            <Select
-              value={queryParams.sortBy || 'createdAt'}
-              onValueChange={handleSort}
-            >
-              <SelectTrigger className="h-7 w-24 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt">创建时间</SelectItem>
-                <SelectItem value="returnNumber">退货单号</SelectItem>
-                <SelectItem value="totalAmount">退货金额</SelectItem>
-                <SelectItem value="status">订单状态</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7"
-              onClick={handleReset}
-            >
-              <RotateCcw className="mr-1 h-3 w-3" />
-              重置
-            </Button>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
+
+      {/* 搜索和筛选 */}
+      <Card className="shadow-md shadow-gray-200/50">
+        <CardContent className="pt-6">
+          <UnifiedSearchBar
+            // 搜索配置
+            searchValue={queryParams.search || ''}
+            onSearchChange={handleSearch}
+            searchPlaceholder="搜索退货单号或客户名称..."
+            debounceDelay={400}
+            compact={true}
+            // 筛选器配置
+            filters={[
+              {
+                key: 'status',
+                label: '状态',
+                options: [
+                  { label: '全部状态', value: 'all' },
+                  { label: '草稿', value: 'draft' },
+                  { label: '已提交', value: 'submitted' },
+                  { label: '已审核', value: 'approved' },
+                  { label: '已拒绝', value: 'rejected' },
+                  { label: '处理中', value: 'processing' },
+                  { label: '已完成', value: 'completed' },
+                  { label: '已取消', value: 'cancelled' },
+                ],
+                width: 'w-24',
+              },
+              {
+                key: 'sortBy',
+                label: '排序',
+                options: [
+                  { label: '创建时间', value: 'createdAt' },
+                  { label: '退货单号', value: 'returnNumber' },
+                  { label: '退货金额', value: 'totalAmount' },
+                  { label: '订单状态', value: 'status' },
+                ],
+                width: 'w-24',
+              },
+            ]}
+            filterValues={{
+              status: queryParams.status || 'all',
+              sortBy: queryParams.sortBy || 'createdAt',
+            }}
+            onFilterChange={handleFilterChange}
+          />
+        </CardContent>
+      </Card>
 
       {/* 数据表格 */}
-      <div className="bg-muted/5 border-b px-3 py-1">
-        <div className="text-muted-foreground text-xs">退货订单列表</div>
-      </div>
-
-      <div className="overflow-x-auto">
+      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
         <Table>
           <TableHeader>
-            <TableRow className="text-xs">
-              <TableHead className="h-8 px-2">退货单号</TableHead>
-              <TableHead className="h-8 px-2">关联销售单</TableHead>
-              <TableHead className="h-8 px-2">客户名称</TableHead>
-              <TableHead className="h-8 px-2">退货类型</TableHead>
-              <TableHead className="h-8 px-2">处理方式</TableHead>
-              <TableHead className="h-8 px-2">退货金额</TableHead>
-              <TableHead className="h-8 px-2">订单状态</TableHead>
-              <TableHead className="h-8 px-2">创建时间</TableHead>
-              <TableHead className="h-8 px-2 text-center">操作</TableHead>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead>退货单号</TableHead>
+              <TableHead>关联销售单</TableHead>
+              <TableHead>客户名称</TableHead>
+              <TableHead>退货类型</TableHead>
+              <TableHead>处理方式</TableHead>
+              <TableHead>退货金额</TableHead>
+              <TableHead>订单状态</TableHead>
+              <TableHead>创建时间</TableHead>
+              <TableHead className="text-center">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -419,84 +391,76 @@ export function ERPReturnOrderList({
               </TableRow>
             ) : (
               displayData?.data.returnOrders.map((returnOrder: ReturnOrder) => (
-                <TableRow key={returnOrder.id} className="text-xs">
-                  <TableCell className="h-8 px-2">
-                    <div className="flex items-center gap-1">
-                      <Package className="text-muted-foreground h-3 w-3" />
-                      <span className="font-mono">
-                        {returnOrder.returnNumber}
-                      </span>
-                    </div>
+                <TableRow
+                  key={returnOrder.id}
+                  className="cursor-pointer transition-colors hover:bg-blue-50/50"
+                  onClick={() => handleViewDetail(returnOrder)}
+                >
+                  <TableCell className="font-mono font-medium text-blue-600">
+                    {returnOrder.returnNumber}
                   </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <span className="text-muted-foreground font-mono">
-                      {returnOrder.salesOrder?.orderNumber || '-'}
-                    </span>
+                  <TableCell className="text-muted-foreground font-mono">
+                    {returnOrder.salesOrder?.orderNumber || '-'}
                   </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <div className="flex items-center gap-1">
-                      <User className="text-muted-foreground h-3 w-3" />
-                      <span>{returnOrder.customer?.name || '-'}</span>
-                    </div>
+                  <TableCell className="font-medium text-gray-900">
+                    {returnOrder.customer?.name || '-'}
                   </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <span className="text-muted-foreground">
-                      {RETURN_ORDER_TYPE_LABELS[returnOrder.type]}
-                    </span>
+                  <TableCell className="text-muted-foreground">
+                    {RETURN_ORDER_TYPE_LABELS[returnOrder.type]}
                   </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <span className="text-muted-foreground">
-                      {RETURN_PROCESS_TYPE_LABELS[returnOrder.processType]}
-                    </span>
+                  <TableCell className="text-muted-foreground">
+                    {RETURN_PROCESS_TYPE_LABELS[returnOrder.processType]}
                   </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <div className="flex items-center gap-1">
-                      <TrendingDown className="text-muted-foreground h-3 w-3" />
-                      <span className="font-mono">
-                        {formatAmount(returnOrder.totalAmount)}
-                      </span>
-                    </div>
+                  <TableCell className="font-mono">
+                    {formatAmount(returnOrder.totalAmount)}
                   </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <Badge
-                      variant={getStatusColor(returnOrder.status)}
-                      className="text-xs"
-                    >
+                  <TableCell>
+                    <Badge variant={getStatusColor(returnOrder.status)}>
                       {RETURN_ORDER_STATUS_LABELS[returnOrder.status]}
                     </Badge>
                   </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <div className="flex items-center gap-1">
-                      <Calendar className="text-muted-foreground h-3 w-3" />
-                      <span>{formatDate(returnOrder.createdAt)}</span>
-                    </div>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(returnOrder.createdAt)}
                   </TableCell>
-                  <TableCell className="h-8 px-2">
+                  <TableCell className="text-center">
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-6 w-6 p-0">
-                          <MoreHorizontal className="h-3 w-3" />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="text-xs">
+                      <DropdownMenuContent align="end">
                         <DropdownMenuItem
-                          onClick={() => handleViewDetail(returnOrder)}
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleViewDetail(returnOrder);
+                          }}
                         >
-                          <Eye className="mr-1 h-3 w-3" />
+                          <Eye className="mr-2 h-4 w-4" />
                           查看详情
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          onClick={() => handleEdit(returnOrder)}
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleEdit(returnOrder);
+                          }}
                         >
-                          <Edit className="mr-1 h-3 w-3" />
+                          <Edit className="mr-2 h-4 w-4" />
                           编辑
                         </DropdownMenuItem>
                         {onDelete && (
                           <DropdownMenuItem
                             className="text-red-600"
-                            onClick={() => handleDelete(returnOrder)}
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleDelete(returnOrder);
+                            }}
                           >
-                            <TrendingDown className="mr-1 h-3 w-3" />
+                            <TrendingDown className="mr-2 h-4 w-4" />
                             删除
                           </DropdownMenuItem>
                         )}

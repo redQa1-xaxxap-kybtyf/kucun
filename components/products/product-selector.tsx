@@ -171,7 +171,7 @@ export function ProductSelector({
     queryKey: productQueryKeys.list(queryInput),
     queryFn: () => getProducts(queryInput),
     enabled: open,
-    staleTime: 30_000,
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
   const products = productsResponse?.data ?? [];
@@ -189,7 +189,7 @@ export function ProductSelector({
     queryKey: productQueryKeys.detail(value || ''),
     queryFn: () => getProduct(value as string),
     enabled: shouldQueryById,
-    staleTime: 60_000,
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
   const selectedProduct = selectedProductFromList || selectedProductFallback;
@@ -321,7 +321,7 @@ export function MultiProductSelector({
     queryKey: productQueryKeys.list(queryInput),
     queryFn: () => getProducts(queryInput),
     enabled: open,
-    staleTime: 30_000,
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
   const products = productsResponse?.data ?? [];
@@ -346,7 +346,7 @@ export function MultiProductSelector({
         .map(item => item.value);
     },
     enabled: value.length > 0,
-    staleTime: 60_000,
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
   const productMap = React.useMemo(() => {

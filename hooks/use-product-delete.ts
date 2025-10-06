@@ -1,13 +1,15 @@
 'use client';
 
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 
-import { toast } from '@/components/ui/use-toast';
 import {
   batchDeleteProducts,
   deleteProduct,
   productQueryKeys,
 } from '@/lib/api/products';
+
+import { showError, showSuccess } from '@/lib/utils/toast-helper';
 
 interface UseProductDeleteProps {
   onDeleteSuccess?: () => void;
@@ -19,30 +21,30 @@ export function useProductDelete({
   onBatchDeleteSuccess,
 }: UseProductDeleteProps = {}) {
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   // 单个删除mutation
   const deleteMutation = useMutation({
     mutationFn: deleteProduct,
     onSuccess: async () => {
-      toast({
-        title: '删除成功',
+      showSuccess('删除成功', {
         description: '产品已成功删除',
-        variant: 'success',
       });
 
-      // 等待缓存失效并重新获取完成，确保所有产品相关查询都会被重新获取
+      // 立即失效所有产品相关的查询缓存,确保数据最新
       await queryClient.invalidateQueries({
         queryKey: productQueryKeys.all,
-        refetchType: 'active', // 立即重新获取所有活跃的查询
+        refetchType: 'all', // 强制重新获取所有相关查询,不仅仅是活跃的
       });
+
+      // 强制刷新Router Cache,确保Server Component数据也更新
+      router.refresh();
 
       onDeleteSuccess?.();
     },
     onError: (error: Error) => {
-      toast({
-        title: '删除失败',
+      showError('删除失败', {
         description: error.message || '删除产品时发生错误',
-        variant: 'destructive',
       });
     },
   });
@@ -52,16 +54,12 @@ export function useProductDelete({
     mutationFn: batchDeleteProducts,
     onSuccess: async result => {
       if (result.success) {
-        toast({
-          title: '批量删除完成',
+        showSuccess('批量删除完成', {
           description: result.message,
-          variant: 'success',
         });
       } else {
-        toast({
-          title: '批量删除部分失败',
+        showWarning('批量删除部分失败', {
           description: result.message,
-          variant: 'destructive',
         });
       }
 
@@ -71,26 +69,25 @@ export function useProductDelete({
           .map(p => `${p.code}: ${p.reason}`)
           .join('\n');
 
-        toast({
-          title: `${result.failedCount} 个产品删除失败`,
+        showError(`${result.failedCount} 个产品删除失败`, {
           description: failedDetails,
-          variant: 'destructive',
         });
       }
 
-      // 等待缓存失效并重新获取完成，确保所有产品相关查询都会被重新获取
+      // 立即失效所有产品相关的查询缓存,确保数据最新
       await queryClient.invalidateQueries({
         queryKey: productQueryKeys.all,
-        refetchType: 'active', // 立即重新获取所有活跃的查询
+        refetchType: 'all', // 强制重新获取所有相关查询,不仅仅是活跃的
       });
+
+      // 强制刷新Router Cache,确保Server Component数据也更新
+      router.refresh();
 
       onBatchDeleteSuccess?.();
     },
     onError: (error: Error) => {
-      toast({
-        title: '批量删除失败',
+      showError('批量删除失败', {
         description: error.message || '批量删除产品时发生错误',
-        variant: 'destructive',
       });
     },
   });

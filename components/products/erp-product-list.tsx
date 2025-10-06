@@ -6,11 +6,11 @@ import {
   ProductBatchDeleteDialog,
   ProductDeleteDialog,
 } from '@/components/products/product-delete-dialogs';
+import { ProductListSkeleton } from '@/components/products/product-list-skeleton';
 import { ProductListToolbar } from '@/components/products/product-list-toolbar';
-import { ProductPagination } from '@/components/products/product-pagination';
 import { ProductSearchFilters } from '@/components/products/product-search-filters';
 import { ProductTable } from '@/components/products/product-table';
-import { Skeleton } from '@/components/ui/skeleton';
+import { Pagination } from '@/components/ui/pagination';
 import { useProductDelete } from '@/hooks/use-product-delete';
 import { useProductListState } from '@/hooks/use-product-list-state';
 import { categoryQueryKeys, getCategories } from '@/lib/api/categories';
@@ -81,16 +81,17 @@ export function ERPProductList({
   const { data, isLoading, error } = useQuery({
     queryKey: productQueryKeys.list(queryParams),
     queryFn: () => getProducts(queryParams),
-    staleTime: 30 * 1000, // 30秒内认为数据是新鲜的（降低缓存时间以便更快看到更新）
-    refetchOnMount: 'always', // 组件挂载时总是重新获取数据
+    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的（与服务端缓存策略保持一致）
+    refetchOnMount: false, // 避免重复请求，使用缓存数据
     refetchOnWindowFocus: false, // 避免不必要的重新获取
+    initialData: _initialData, // 使用服务端预取的数据
+    placeholderData: previousData => previousData, // 切换查询参数时保持上一次数据
   });
 
   // 处理筛选器清空
   const handleClearFilters = () => {
     handleFilter({
       status: undefined,
-      unit: undefined,
       categoryId: undefined,
     });
   };
@@ -122,19 +123,6 @@ export function ERPProductList({
   const products = data?.data || [];
   const pagination = data?.pagination;
 
-  // 分页处理函数
-  const handlePrevPage = () => {
-    if (pagination && pagination.page > 1) {
-      handlePageChange(pagination.page - 1);
-    }
-  };
-
-  const handleNextPage = () => {
-    if (pagination && pagination.page < pagination.totalPages) {
-      handlePageChange(pagination.page + 1);
-    }
-  };
-
   return (
     <div className="space-y-6">
       {/* 工具栏 */}
@@ -147,19 +135,17 @@ export function ERPProductList({
       <ProductSearchFilters
         searchValue={queryParams.search || ''}
         statusFilter={queryParams.status}
-        unitFilter={queryParams.unit}
         categoryFilter={queryParams.categoryId}
         categories={categories}
         isLoadingCategories={isLoadingCategories}
         onSearchChange={handleSearch}
         onStatusChange={value => handleFilter({ status: value })}
-        onUnitChange={value => handleFilter({ unit: value })}
         onCategoryChange={value => handleFilter({ categoryId: value })}
         onClearFilters={handleClearFilters}
       />
 
       {/* 产品表格 */}
-      <div className="rounded-md border">
+      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
         <ProductTable
           products={products}
           selectedProductIds={selectedProductIds}
@@ -170,11 +156,16 @@ export function ERPProductList({
         />
 
         {/* 分页组件 */}
-        <ProductPagination
-          pagination={pagination}
-          onPrevPage={handlePrevPage}
-          onNextPage={handleNextPage}
-        />
+        {pagination && (
+          <div className="border-t bg-gray-50/50 px-4 py-3">
+            <Pagination
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              showRange
+              showTotal
+            />
+          </div>
+        )}
       </div>
 
       {/* 删除确认对话框 */}
@@ -194,32 +185,6 @@ export function ERPProductList({
         onOpenChange={open => setBatchDeleteDialog(prev => ({ ...prev, open }))}
         onConfirm={handleConfirmBatchDelete}
       />
-    </div>
-  );
-}
-
-// 加载骨架屏组件
-function ProductListSkeleton() {
-  return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <Skeleton className="h-8 w-32" />
-        <Skeleton className="h-10 w-24" />
-      </div>
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-full" />
-        <div className="flex gap-4">
-          <Skeleton className="h-10 w-32" />
-          <Skeleton className="h-10 w-32" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-      </div>
-      <div className="space-y-2">
-        <Skeleton className="h-12 w-full" />
-        {Array.from({ length: 5 }).map((_, i) => (
-          <Skeleton key={i} className="h-16 w-full" />
-        ))}
-      </div>
     </div>
   );
 }

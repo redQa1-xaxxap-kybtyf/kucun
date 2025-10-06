@@ -24,15 +24,13 @@ import {
   Warehouse,
 } from 'lucide-react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { useNavigationBadges } from '@/hooks/use-navigation-badges';
 import type { NavigationItem, SidebarState } from '@/lib/types/layout';
 import type { UserRole } from '@/lib/types/user';
 import { cn } from '@/lib/utils';
@@ -236,35 +234,39 @@ interface SidebarProps {
  * 包含主要功能模块导航、当前页面高亮、折叠展开功能
  * 集成权限控制、徽章显示、键盘导航等功能
  */
-export function Sidebar({ state, className }: SidebarProps) {
+function SidebarComponent({ state, className }: SidebarProps) {
   const pathname = usePathname();
   const { data: session } = useSession();
-  const { addBadgesToNavItems } = useNavigationBadges();
 
   // 键盘导航状态
   const [focusedIndex, setFocusedIndex] = React.useState(-1);
   const navItemsRef = React.useRef<(HTMLAnchorElement | null)[]>([]);
 
+  // 提取用户角色，避免依赖整个 session 对象
+  const userRole = session?.user?.role as UserRole | undefined;
+
   // 根据用户权限过滤导航项
   const accessibleNavItems = React.useMemo(() => {
-    if (!session?.user?.role) {return [];}
+    if (!userRole) {
+      return [];
+    }
 
-    const filteredItems = getAccessibleNavItems(
+    return getAccessibleNavItems(
       navigationItems as Array<{ requiredRoles?: UserRole[] }>,
-      session.user.role as UserRole
-    );
-    return addBadgesToNavItems(filteredItems as NavigationItem[]);
-  }, [session?.user?.role, addBadgesToNavItems]);
+      userRole
+    ) as NavigationItem[];
+  }, [userRole]);
 
   const accessibleBottomNavItems = React.useMemo(() => {
-    if (!session?.user?.role) {return [];}
+    if (!userRole) {
+      return [];
+    }
 
-    const filteredItems = getAccessibleNavItems(
+    return getAccessibleNavItems(
       bottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
-      session.user.role as UserRole
-    );
-    return addBadgesToNavItems(filteredItems as NavigationItem[]);
-  }, [session?.user?.role, addBadgesToNavItems]);
+      userRole
+    ) as NavigationItem[];
+  }, [userRole]);
 
   // 键盘导航处理
   React.useEffect(() => {
@@ -286,9 +288,12 @@ export function Sidebar({ state, className }: SidebarProps) {
         case 'Enter':
         case ' ':
           event.preventDefault();
-          if (focusedIndex >= 0 && navItemsRef.current[focusedIndex]) {
-            navItemsRef.current[focusedIndex]?.click();
-          }
+          setFocusedIndex(current => {
+            if (current >= 0 && navItemsRef.current[current]) {
+              navItemsRef.current[current]?.click();
+            }
+            return current;
+          });
           break;
         case 'Escape':
           setFocusedIndex(-1);
@@ -302,7 +307,6 @@ export function Sidebar({ state, className }: SidebarProps) {
     state.isOpen,
     accessibleNavItems.length,
     accessibleBottomNavItems.length,
-    focusedIndex,
   ]);
 
   // 检查路径是否匹配（支持子路由）
@@ -405,13 +409,16 @@ interface SidebarNavItemProps {
 /**
  * 侧边栏导航项组件
  * 支持键盘导航、hover效果、徽章显示、子菜单展开等功能
+ * 使用 React.memo 优化渲染性能
  */
-const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
-  ({ item, isActive, isCollapsed, isFocused = false, tabIndex }, ref) => {
+const SidebarNavItem = React.memo(
+  React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
+    ({ item, isActive, isCollapsed, isFocused = false, tabIndex }, ref) => {
     const Icon = item.icon;
     const [isHovered, setIsHovered] = React.useState(false);
     const [isExpanded, setIsExpanded] = React.useState(false);
     const pathname = usePathname();
+    const router = useRouter();
 
     // 检查是否有子菜单项处于激活状态
     const hasActiveChild = item.children?.some(
@@ -432,6 +439,7 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
           href={item.href}
           ref={ref}
           tabIndex={tabIndex}
+          prefetch={false} // 禁用预取，菜单切换更快
           className={cn(
             'block rounded-md transition-all duration-200',
             isFocused && 'ring-2 ring-ring ring-offset-2'
@@ -461,32 +469,7 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
                   isHovered && 'scale-110'
                 )}
               />
-              {!isCollapsed && (
-                <>
-                  <span className="flex-1 text-left">{item.title}</span>
-                  {item.badge && (
-                    <Badge
-                      variant={item.badgeVariant || 'secondary'}
-                      className={cn(
-                        'ml-auto h-5 px-1.5 text-xs transition-all duration-200',
-                        isHovered && 'scale-105'
-                      )}
-                    >
-                      {item.badge}
-                    </Badge>
-                  )}
-                </>
-              )}
-              {isCollapsed && item.badge && (
-                <Badge
-                  variant={item.badgeVariant || 'secondary'}
-                  className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center p-0 text-xs"
-                >
-                  {typeof item.badge === 'number' && item.badge > 9
-                    ? '9+'
-                    : item.badge}
-                </Badge>
-              )}
+              {!isCollapsed && <span className="flex-1 text-left">{item.title}</span>}
             </div>
           </Button>
         </Link>
@@ -510,7 +493,7 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
           onClick={() => {
             if (isCollapsed) {
               // 折叠状态下直接跳转到主页面
-              window.location.href = item.href;
+              router.push(item.href);
             } else {
               // 展开状态下切换子菜单
               setIsExpanded(!isExpanded);
@@ -538,28 +521,7 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
                   isExpanded && 'rotate-180'
                 )}
               />
-              {item.badge && (
-                <Badge
-                  variant={item.badgeVariant || 'secondary'}
-                  className={cn(
-                    'ml-2 h-5 px-1.5 text-xs transition-all duration-200',
-                    isHovered && 'scale-105'
-                  )}
-                >
-                  {item.badge}
-                </Badge>
-              )}
             </>
-          )}
-          {isCollapsed && item.badge && (
-            <Badge
-              variant={item.badgeVariant || 'secondary'}
-              className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center p-0 text-xs"
-            >
-              {typeof item.badge === 'number' && item.badge > 9
-                ? '9+'
-                : item.badge}
-            </Badge>
           )}
         </Button>
 
@@ -574,6 +536,7 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
                 <Link
                   key={child.id}
                   href={child.href}
+                  prefetch={false} // 子菜单也禁用预取
                   className={cn('block rounded-md transition-all duration-200')}
                 >
                   <Button
@@ -589,14 +552,6 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
                     <div>
                       <ChildIcon className="mr-3 h-3.5 w-3.5" />
                       <span className="flex-1 text-left">{child.title}</span>
-                      {child.badge && (
-                        <Badge
-                          variant={child.badgeVariant || 'secondary'}
-                          className="ml-auto h-4 px-1 text-xs"
-                        >
-                          {child.badge}
-                        </Badge>
-                      )}
                     </div>
                   </Button>
                 </Link>
@@ -606,7 +561,13 @@ const SidebarNavItem = React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
         )}
       </div>
     );
-  }
+  })
 );
 
 SidebarNavItem.displayName = 'SidebarNavItem';
+
+/**
+ * 使用 React.memo 优化 Sidebar 组件
+ * 仅当 state 或 className 发生变化时才重新渲染
+ */
+export const Sidebar = React.memo(SidebarComponent);

@@ -58,7 +58,7 @@ function ProductCodeInput({
               {...field}
             />
           </FormControl>
-          <FormDescription>产品的唯一标识码，用于系统内部识别</FormDescription>
+          <FormDescription>产品的业务编码，用于业务识别</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -229,6 +229,42 @@ function ProductStatusSelect({
   );
 }
 
+function ProductThicknessInput({
+  control,
+  disabled,
+}: {
+  control: ProductFormControl;
+  disabled: boolean;
+}) {
+  return (
+    <FormField
+      control={control}
+      name="thickness"
+      render={({ field }) => (
+        <FormItem>
+          <FormLabel>厚度 (mm)</FormLabel>
+          <FormControl>
+            <Input
+              type="number"
+              min="0"
+              step="0.1"
+              placeholder="0.0"
+              disabled={disabled}
+              {...field}
+              onChange={e => {
+                const value = e.target.value;
+                field.onChange(value === '' ? undefined : Number(value));
+              }}
+            />
+          </FormControl>
+          <FormDescription>产品厚度，单位：毫米</FormDescription>
+          <FormMessage />
+        </FormItem>
+      )}
+    />
+  );
+}
+
 export function ProductBasicInfoForm({
   control,
   isLoading,
@@ -240,6 +276,7 @@ export function ProductBasicInfoForm({
       <ProductNameInput control={control} disabled={isLoading} />
       <ProductCategorySelect control={control} disabled={isLoading} />
       <ProductSpecificationInput control={control} disabled={isLoading} />
+      <ProductThicknessInput control={control} disabled={isLoading} />
       <ProductStatusSelect control={control} disabled={isLoading} />
     </div>
   );

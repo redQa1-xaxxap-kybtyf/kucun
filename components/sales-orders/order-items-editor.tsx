@@ -43,21 +43,20 @@ type SalesOrderItemUpdateFormData = SalesOrderItemData & {
 };
 
 // 订单明细编辑器属性
-interface OrderItemsEditorProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  control: Control<any>;
+interface OrderItemsEditorProps<TFieldValues extends Record<string, unknown> = Record<string, unknown>> {
+  control: Control<TFieldValues>;
   name: string;
   disabled?: boolean;
   mode?: 'create' | 'edit';
 }
 
 // 订单明细编辑器组件
-export function OrderItemsEditor({
+export function OrderItemsEditor<TFieldValues extends Record<string, unknown> = Record<string, unknown>>({
   control,
   name,
   disabled = false,
   mode = 'create',
-}: OrderItemsEditorProps) {
+}: OrderItemsEditorProps<TFieldValues>) {
   const { fields, append, remove, update } = useFieldArray({
     control,
     name: 'items',

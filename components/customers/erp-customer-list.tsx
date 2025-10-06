@@ -2,38 +2,28 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
-  ArrowLeft,
-  Calendar,
   Edit,
   Eye,
-  Filter,
   MoreHorizontal,
-  Phone,
   Plus,
   RotateCcw,
-  Search,
   Trash2,
   Users,
 } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import {
   Table,
   TableBody,
@@ -166,240 +156,217 @@ export function ERPCustomerList({
     new Date(dateString).toLocaleDateString('zh-CN');
 
   return (
-    <div className="bg-card rounded border">
-      {/* ERP标准工具栏 */}
-      <div className="bg-muted/30 border-b px-3 py-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">客户管理</h3>
-          <div className="text-muted-foreground text-xs">
-            {data?.pagination ? `共 ${data.pagination.total} 条记录` : ''}
-          </div>
-        </div>
-      </div>
-
-      {/* 操作按钮区 */}
-      <div className="bg-muted/10 border-b px-3 py-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-7"
-              onClick={() => router.back()}
-            >
-              <ArrowLeft className="mr-1 h-3 w-3" />
-              返回
-            </Button>
-          </div>
-          <div className="flex items-center gap-2">
-            <Button size="sm" className="h-7" onClick={handleCreateNew}>
-              <Plus className="mr-1 h-3 w-3" />
-              新建客户
-            </Button>
-          </div>
-        </div>
-      </div>
-
-      {/* 筛选区域 */}
-      <div className="bg-muted/5 border-b px-3 py-2">
-        <div className="flex items-center gap-2 text-xs">
-          <Filter className="text-muted-foreground h-3 w-3" />
-          <span className="text-muted-foreground">筛选条件</span>
-        </div>
-        <div className="mt-2 grid grid-cols-1 gap-x-4 gap-y-2 md:grid-cols-4">
-          <div className="space-y-1">
-            <label className="text-muted-foreground text-xs">搜索客户</label>
-            <div className="relative">
-              <Search className="text-muted-foreground absolute top-1/2 left-2 h-3 w-3 -translate-y-1/2" />
-              <Input
-                placeholder="客户名称或电话"
-                value={queryParams.search}
-                onChange={e => handleSearch(e.target.value)}
-                className="h-7 pl-7 text-xs"
-              />
+    <div className="space-y-4">
+      {/* 页面标题卡片 */}
+      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+        <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  客户管理
+                </h1>
+                <p className="text-sm text-gray-600">
+                  管理客户信息，维护客户关系
+                </p>
+              </div>
             </div>
-          </div>
-          <div className="space-y-1">
-            <label className="text-muted-foreground text-xs">排序方式</label>
-            <Select
-              value={queryParams.sortBy || 'createdAt'}
-              onValueChange={handleSort}
-            >
-              <SelectTrigger className="h-7 text-xs">
-                <SelectValue placeholder="排序方式" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="createdAt">创建时间</SelectItem>
-                <SelectItem value="name">客户名称</SelectItem>
-                <SelectItem value="updatedAt">更新时间</SelectItem>
-                <SelectItem value="transactionCount">交易次数</SelectItem>
-                <SelectItem value="cooperationDays">合作天数</SelectItem>
-                <SelectItem value="returnOrderCount">退货次数</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-1">
-            <label className="text-muted-foreground text-xs">&nbsp;</label>
-            <div className="flex items-center gap-2">
+            <Link href="/customers/create">
               <Button
-                variant="outline"
-                size="sm"
-                className="h-7"
-                onClick={resetFilters}
+                size="lg"
+                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
               >
-                <RotateCcw className="mr-1 h-3 w-3" />
-                重置
+                <Plus className="mr-2 h-4 w-4" />
+                新建客户
               </Button>
-            </div>
+            </Link>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
+
+      {/* 搜索和筛选 */}
+      <Card className="shadow-md shadow-gray-200/50">
+        <CardContent className="pt-6">
+          <UnifiedSearchBar
+            searchValue={queryParams.search || ''}
+            onSearchChange={handleSearch}
+            searchPlaceholder="搜索客户名称、手机号..."
+            debounceDelay={400}
+            compact={true}
+            filters={[
+              {
+                key: 'sortBy',
+                label: '排序',
+                options: [
+                  { label: '创建时间', value: 'createdAt' },
+                  { label: '客户名称', value: 'name' },
+                  { label: '更新时间', value: 'updatedAt' },
+                  { label: '交易次数', value: 'transactionCount' },
+                  { label: '合作天数', value: 'cooperationDays' },
+                  { label: '退货次数', value: 'returnOrderCount' },
+                ],
+                width: 'w-32',
+              },
+            ]}
+            filterValues={{
+              sortBy: queryParams.sortBy || 'createdAt',
+            }}
+            onFilterChange={(key, value) => {
+              if (key === 'sortBy' && value) {
+                handleSort(value);
+              }
+            }}
+            actionButtons={[
+              {
+                label: '重置',
+                icon: <RotateCcw className="mr-1 h-3 w-3" />,
+                onClick: resetFilters,
+                variant: 'outline',
+              },
+            ]}
+          />
+        </CardContent>
+      </Card>
 
       {/* 表格区域 */}
-      <div className="px-3 py-2">
-        <div className="text-muted-foreground mb-2 text-xs font-medium">
-          客户列表
-        </div>
-        <div className="rounded border">
-          <Table>
-            <TableHeader>
-              <TableRow className="h-8">
-                <TableHead className="h-8 px-2 text-xs">客户名称</TableHead>
-                <TableHead className="h-8 px-2 text-xs">联系电话</TableHead>
-                <TableHead className="h-8 px-2 text-xs">地址</TableHead>
-                <TableHead className="h-8 px-2 text-xs">交易次数</TableHead>
-                <TableHead className="h-8 px-2 text-xs">合作天数</TableHead>
-                <TableHead className="h-8 px-2 text-xs">退货次数</TableHead>
-                <TableHead className="h-8 px-2 text-xs">创建时间</TableHead>
-                <TableHead className="h-8 w-[80px] px-2 text-xs">
-                  操作
-                </TableHead>
+      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-muted/50 hover:bg-muted/50">
+              <TableHead>客户名称</TableHead>
+              <TableHead>联系电话</TableHead>
+              <TableHead>地址</TableHead>
+              <TableHead>交易次数</TableHead>
+              <TableHead>合作天数</TableHead>
+              <TableHead>退货次数</TableHead>
+              <TableHead>创建时间</TableHead>
+              <TableHead className="text-center">操作</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="text-muted-foreground h-10 text-center text-xs"
+                >
+                  加载中...
+                </TableCell>
               </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="text-muted-foreground h-10 text-center text-xs"
-                  >
-                    加载中...
+            ) : customers.length === 0 ? (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="text-muted-foreground h-10 text-center text-xs"
+                >
+                  暂无客户记录
+                </TableCell>
+              </TableRow>
+            ) : (
+              customers.map(customer => (
+                <TableRow
+                  key={customer.id}
+                  className="cursor-pointer transition-colors hover:bg-blue-50/50"
+                  onClick={() => handleViewDetail(customer)}
+                >
+                  <TableCell className="font-medium text-gray-900">
+                    {customer.name}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {customer.phone || '-'}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <div
+                      className="max-w-[200px] truncate"
+                      title={customer.address}
+                    >
+                      {customer.address || '-'}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant="outline">
+                      {customer.transactionCount || 0}次
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        customer.cooperationDays !== undefined
+                          ? 'default'
+                          : 'secondary'
+                      }
+                    >
+                      {customer.cooperationDays !== undefined
+                        ? `${customer.cooperationDays}天`
+                        : '未下单'}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <Badge
+                      variant={
+                        customer.returnOrderCount &&
+                        customer.returnOrderCount > 0
+                          ? 'destructive'
+                          : 'outline'
+                      }
+                    >
+                      {customer.returnOrderCount || 0}次
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    {formatDate(customer.createdAt)}
+                  </TableCell>
+                  <TableCell className="text-center">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleViewDetail(customer);
+                          }}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          查看详情
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleEdit(customer);
+                          }}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          编辑
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          className="text-red-600"
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleDelete(customer);
+                          }}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          删除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              ) : customers.length === 0 ? (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="text-muted-foreground h-10 text-center text-xs"
-                  >
-                    暂无客户记录
-                  </TableCell>
-                </TableRow>
-              ) : (
-                customers.map(customer => (
-                  <TableRow key={customer.id} className="h-10">
-                    <TableCell className="px-2 py-1">
-                      <div className="flex items-center gap-2">
-                        <Users className="text-muted-foreground h-3 w-3" />
-                        <span className="text-xs font-medium">
-                          {customer.name}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-2 py-1">
-                      <div className="flex items-center gap-1">
-                        <Phone className="text-muted-foreground h-3 w-3" />
-                        <span className="text-xs">{customer.phone || '-'}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-2 py-1">
-                      <div
-                        className="max-w-[120px] truncate text-xs"
-                        title={customer.address}
-                      >
-                        {customer.address || '-'}
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-2 py-1">
-                      <Badge variant="outline" className="text-xs">
-                        {customer.transactionCount || 0}次
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-2 py-1">
-                      <Badge
-                        variant={
-                          customer.cooperationDays !== undefined
-                            ? 'default'
-                            : 'secondary'
-                        }
-                        className="text-xs"
-                      >
-                        {customer.cooperationDays !== undefined
-                          ? `${customer.cooperationDays}天`
-                          : '未下单'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-2 py-1">
-                      <Badge
-                        variant={
-                          customer.returnOrderCount &&
-                          customer.returnOrderCount > 0
-                            ? 'destructive'
-                            : 'outline'
-                        }
-                        className="text-xs"
-                      >
-                        {customer.returnOrderCount || 0}次
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="px-2 py-1">
-                      <div className="flex items-center gap-1">
-                        <Calendar className="text-muted-foreground h-3 w-3" />
-                        <span className="text-xs">
-                          {formatDate(customer.createdAt)}
-                        </span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="px-2 py-1">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                          >
-                            <MoreHorizontal className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="text-xs">
-                          <DropdownMenuItem
-                            onClick={() => handleViewDetail(customer)}
-                          >
-                            <Eye className="mr-1 h-3 w-3" />
-                            查看详情
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleEdit(customer)}
-                          >
-                            <Edit className="mr-1 h-3 w-3" />
-                            编辑
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            className="text-red-600"
-                            onClick={() => handleDelete(customer)}
-                          >
-                            <Trash2 className="mr-1 h-3 w-3" />
-                            删除
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </div>
+              ))
+            )}
+          </TableBody>
+        </Table>
       </div>
     </div>
   );

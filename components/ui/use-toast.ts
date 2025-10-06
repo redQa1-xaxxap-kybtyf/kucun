@@ -3,7 +3,7 @@ import * as React from 'react';
 import type { ToastActionElement, ToastProps } from '@/components/ui/toast';
 
 const TOAST_LIMIT = 1;
-const TOAST_REMOVE_DELAY = 1000000;
+const TOAST_REMOVE_DELAY = 5000; // 默认5秒后移除Toast
 
 type ToasterToast = ToastProps & {
   id: string;
@@ -53,8 +53,10 @@ interface State {
 const toastTimeouts = new Map<string, ReturnType<typeof setTimeout>>();
 
 const addToRemoveQueue = (toastId: string) => {
-  if (toastTimeouts.has(toastId)) {
-    return;
+  // 如果已存在定时器，先清理旧的定时器
+  const existingTimeout = toastTimeouts.get(toastId);
+  if (existingTimeout) {
+    clearTimeout(existingTimeout);
   }
 
   const timeout = setTimeout(() => {
@@ -66,6 +68,21 @@ const addToRemoveQueue = (toastId: string) => {
   }, TOAST_REMOVE_DELAY);
 
   toastTimeouts.set(toastId, timeout);
+};
+
+// 清理单个Toast的定时器
+const removeFromQueue = (toastId: string) => {
+  const timeout = toastTimeouts.get(toastId);
+  if (timeout) {
+    clearTimeout(timeout);
+    toastTimeouts.delete(toastId);
+  }
+};
+
+// 清理所有定时器（用于组件卸载或重置）
+export const clearAllToastTimeouts = () => {
+  toastTimeouts.forEach(timeout => clearTimeout(timeout));
+  toastTimeouts.clear();
 };
 
 export const reducer = (state: State, action: Action): State => {
@@ -111,11 +128,15 @@ export const reducer = (state: State, action: Action): State => {
     }
     case 'REMOVE_TOAST':
       if (action.toastId === undefined) {
+        // 清理所有Toast时，清理所有定时器
+        state.toasts.forEach(t => removeFromQueue(t.id));
         return {
           ...state,
           toasts: [],
         };
       }
+      // 清理单个Toast的定时器
+      removeFromQueue(action.toastId);
       return {
         ...state,
         toasts: state.toasts.filter(t => t.id !== action.toastId),
@@ -153,7 +174,9 @@ function toast({ ...props }: Toast) {
       id,
       open: true,
       onOpenChange: open => {
-        if (!open) {dismiss();}
+        if (!open) {
+          dismiss();
+        }
       },
     },
   });

@@ -15,10 +15,8 @@ export function ERPOutboundRecords() {
 
   return (
     <div className="space-y-4">
-      {/* ERP标准工具栏 */}
-      <div className="rounded border bg-card">
-        <OutboundRecordsToolbar />
-      </div>
+      {/* 页面标题卡片 */}
+      <OutboundRecordsToolbar />
 
       {/* 筛选条件 */}
       <OutboundRecordsFilters

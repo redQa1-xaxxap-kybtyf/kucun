@@ -1,21 +1,15 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { AlertCircle, Calendar, Filter, Search } from 'lucide-react';
+import { AlertCircle, Calendar } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
+import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Pagination } from '@/components/ui/pagination';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
@@ -53,7 +47,7 @@ export function ReceivablesClient({ initialData }: ReceivablesClientProps) {
     queryFn: async () => {
       const params = new URLSearchParams();
       params.set('page', queryParams.page.toString());
-      params.set('pageSize', queryParams.limit.toString());
+      params.set('limit', queryParams.limit.toString());
       if (queryParams.search) {
         params.set('search', queryParams.search);
       }
@@ -98,17 +92,35 @@ export function ReceivablesClient({ initialData }: ReceivablesClientProps) {
     );
   };
 
-  const handleSearch = (value: string) => {
+  const handleSearch = React.useCallback((value: string) => {
     setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
-  };
+  }, []);
 
-  const handleStatusFilter = (value: string) => {
-    setQueryParams(prev => ({
-      ...prev,
-      status: value === 'all' ? undefined : value,
-      page: 1,
-    }));
-  };
+  // 统一处理筛选器变更
+  const handleFilterChange = React.useCallback(
+    (key: string, value: string | undefined) => {
+      if (key === 'status') {
+        setQueryParams(prev => ({
+          ...prev,
+          status: value === 'all' || !value ? undefined : value,
+          page: 1,
+        }));
+      } else if (key === 'sortBy') {
+        setQueryParams(prev => ({
+          ...prev,
+          sortBy: value || 'orderDate',
+          page: 1,
+        }));
+      } else if (key === 'sortOrder') {
+        setQueryParams(prev => ({
+          ...prev,
+          sortOrder: (value as 'asc' | 'desc') || 'desc',
+          page: 1,
+        }));
+      }
+    },
+    []
+  );
 
   const handlePageChange = (newPage: number) => {
     setQueryParams(prev => ({ ...prev, page: newPage }));
@@ -179,76 +191,56 @@ export function ReceivablesClient({ initialData }: ReceivablesClientProps) {
       </div>
 
       {/* 搜索和筛选 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>应收账款列表</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 items-center gap-2">
-              <div className="relative max-w-sm flex-1">
-                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  placeholder="搜索订单号或客户名称..."
-                  value={queryParams.search}
-                  onChange={e => handleSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select
-                value={queryParams.status || 'all'}
-                onValueChange={handleStatusFilter}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="unpaid">未收款</SelectItem>
-                  <SelectItem value="partial">部分收款</SelectItem>
-                  <SelectItem value="paid">已收款</SelectItem>
-                  <SelectItem value="overdue">逾期</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={queryParams.sortBy}
-                onValueChange={value =>
-                  setQueryParams(prev => ({ ...prev, sortBy: value, page: 1 }))
-                }
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="orderDate">订单日期</SelectItem>
-                  <SelectItem value="totalAmount">订单金额</SelectItem>
-                  <SelectItem value="customerName">客户名称</SelectItem>
-                  <SelectItem value="createdAt">创建时间</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={queryParams.sortOrder}
-                onValueChange={value =>
-                  setQueryParams(prev => ({
-                    ...prev,
-                    sortOrder: value as 'asc' | 'desc',
-                    page: 1,
-                  }))
-                }
-              >
-                <SelectTrigger className="w-[100px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="desc">降序</SelectItem>
-                  <SelectItem value="asc">升序</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      <Card className="shadow-md shadow-gray-200/50">
+        <CardContent className="pt-6">
+          <UnifiedSearchBar
+            // 搜索配置
+            searchValue={queryParams.search}
+            onSearchChange={handleSearch}
+            searchPlaceholder="搜索订单号或客户名称..."
+            debounceDelay={400}
+            // 筛选器配置
+            filters={[
+              {
+                key: 'status',
+                label: '状态',
+                options: [
+                  { label: '全部状态', value: 'all' },
+                  { label: '未收款', value: 'unpaid' },
+                  { label: '部分收款', value: 'partial' },
+                  { label: '已收款', value: 'paid' },
+                  { label: '逾期', value: 'overdue' },
+                ],
+                width: 'w-[140px]',
+              },
+              {
+                key: 'sortBy',
+                label: '排序字段',
+                options: [
+                  { label: '订单日期', value: 'orderDate' },
+                  { label: '订单金额', value: 'totalAmount' },
+                  { label: '客户名称', value: 'customerName' },
+                  { label: '创建时间', value: 'createdAt' },
+                ],
+                width: 'w-[140px]',
+              },
+              {
+                key: 'sortOrder',
+                label: '排序方向',
+                options: [
+                  { label: '降序', value: 'desc' },
+                  { label: '升序', value: 'asc' },
+                ],
+                width: 'w-[100px]',
+              },
+            ]}
+            filterValues={{
+              status: queryParams.status || 'all',
+              sortBy: queryParams.sortBy,
+              sortOrder: queryParams.sortOrder,
+            }}
+            onFilterChange={handleFilterChange}
+          />
 
           {/* 应收账款列表 */}
           <div className="mt-6 space-y-4">
@@ -354,36 +346,15 @@ export function ReceivablesClient({ initialData }: ReceivablesClientProps) {
           </div>
 
           {/* 分页 */}
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-muted-foreground text-sm">
-              共 {currentData.pagination?.total || 0} 条记录
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={queryParams.page <= 1 || isLoading}
-                onClick={() => handlePageChange(queryParams.page - 1)}
-              >
-                上一页
-              </Button>
-              <span className="text-muted-foreground text-sm">
-                第 {queryParams.page} /{' '}
-                {currentData.pagination?.totalPages || 1} 页
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={
-                  queryParams.page >=
-                    (currentData.pagination?.totalPages || 1) || isLoading
-                }
-                onClick={() => handlePageChange(queryParams.page + 1)}
-              >
-                下一页
-              </Button>
-            </div>
-          </div>
+          {currentData.pagination && (
+            <Pagination
+              pagination={currentData.pagination}
+              onPageChange={handlePageChange}
+              showTotal
+              disabled={isLoading}
+              containerClassName="mt-6"
+            />
+          )}
         </CardContent>
       </Card>
     </div>

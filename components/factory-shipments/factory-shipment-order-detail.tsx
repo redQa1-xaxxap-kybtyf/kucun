@@ -16,6 +16,7 @@ import {
 import { useState } from 'react';
 
 import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
+import { FactoryShipmentOrderDetailSkeleton } from '@/components/factory-shipments/factory-shipment-order-detail-skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,7 +29,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { queryKeys } from '@/lib/queryKeys';
+import {
+  factoryShipmentQueryKeys,
+  getFactoryShipmentOrder,
+} from '@/lib/api/factory-shipments';
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentOrder,
@@ -40,13 +44,6 @@ interface FactoryShipmentOrderDetailProps {
   onEdit?: () => void;
   onBack?: () => void;
 }
-
-// 模拟API调用 - 后续替换为真实API
-const getFactoryShipmentOrder = async (
-  _id: string
-): Promise<FactoryShipmentOrder | null> =>
-  // TODO: 实现真实API调用
-  null;
 
 // 获取状态徽章样式 - 与列表页面保持一致
 const getStatusBadgeVariant = (
@@ -127,22 +124,19 @@ export function FactoryShipmentOrderDetail({
 }: FactoryShipmentOrderDetailProps) {
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
 
-  // 查询订单详情
+  // 查询订单详情 - 使用真实API
   const {
     data: order,
     isLoading,
     error,
-  } = useQuery<FactoryShipmentOrder | null>({
-    queryKey: queryKeys.factoryShipments.order(orderId),
+  } = useQuery<FactoryShipmentOrder>({
+    queryKey: factoryShipmentQueryKeys.detail(orderId),
     queryFn: () => getFactoryShipmentOrder(orderId),
+    enabled: !!orderId,
   });
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-8">
-        <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
-      </div>
-    );
+    return <FactoryShipmentOrderDetailSkeleton />;
   }
 
   if (error || !order) {

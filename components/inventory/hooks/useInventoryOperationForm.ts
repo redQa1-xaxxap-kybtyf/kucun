@@ -114,7 +114,7 @@ export function useInventoryOperationForm({
         Number(watchedQuantity) || 0
       ),
     enabled: mode === 'outbound' && !!watchedProductId && !!watchedQuantity,
-    staleTime: 30000, // 30秒内不重新获取
+    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
   // 入库 Mutation

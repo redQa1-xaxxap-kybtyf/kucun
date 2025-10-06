@@ -1,27 +1,13 @@
 'use client';
 
-import {
-  AlertCircle,
-  CheckCircle,
-  Clock,
-  DollarSign,
-  Filter,
-  Search,
-} from 'lucide-react';
+import { AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
+import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { usePayableRecords } from '@/lib/api/payables';
 import {
   type PayableRecordDetail,
@@ -97,41 +83,44 @@ export function PayablesClient({ initialData }: PayablesClientProps) {
   };
 
   // 处理搜索
-  const handleSearch = (search: string) => {
+  const handleSearch = React.useCallback((search: string) => {
     setQuery(prev => ({ ...prev, search: search || undefined, page: 1 }));
-  };
+  }, []);
 
-  // 处理状态筛选
-  const handleStatusFilter = (status: string) => {
-    setQuery(prev => ({
-      ...prev,
-      status: status === 'all' ? undefined : (status as PayableStatus),
-      page: 1,
-    }));
-  };
-
-  // 处理来源类型筛选
-  const handleSourceTypeFilter = (sourceType: string) => {
-    setQuery(prev => ({
-      ...prev,
-      sourceType:
-        sourceType === 'all' ? undefined : (sourceType as PayableSourceType),
-      page: 1,
-    }));
-  };
-
-  // 处理排序
-  const handleSort = (sortBy: string) => {
-    setQuery(prev => ({
-      ...prev,
-      sortBy: sortBy as
-        | 'createdAt'
-        | 'payableAmount'
-        | 'dueDate'
-        | 'remainingAmount',
-      page: 1,
-    }));
-  };
+  // 统一处理筛选器变更
+  const handleFilterChange = React.useCallback(
+    (key: string, value: string | undefined) => {
+      if (key === 'status') {
+        setQuery(prev => ({
+          ...prev,
+          status:
+            value === 'all' || !value ? undefined : (value as PayableStatus),
+          page: 1,
+        }));
+      } else if (key === 'sourceType') {
+        setQuery(prev => ({
+          ...prev,
+          sourceType:
+            value === 'all' || !value
+              ? undefined
+              : (value as PayableSourceType),
+          page: 1,
+        }));
+      } else if (key === 'sortBy') {
+        setQuery(prev => ({
+          ...prev,
+          sortBy:
+            (value as
+              | 'createdAt'
+              | 'payableAmount'
+              | 'dueDate'
+              | 'remainingAmount') || 'createdAt',
+          page: 1,
+        }));
+      }
+    },
+    []
+  );
 
   const handlePageChange = (newPage: number) => {
     setQuery(prev => ({ ...prev, page: newPage }));
@@ -214,71 +203,59 @@ export function PayablesClient({ initialData }: PayablesClientProps) {
       </div>
 
       {/* 搜索和筛选 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>应付款列表</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 items-center gap-2">
-              <div className="relative max-w-sm flex-1">
-                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  placeholder="搜索应付款单号或供应商名称..."
-                  value={query.search || ''}
-                  onChange={e => handleSearch(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              <Select
-                value={query.status || 'all'}
-                onValueChange={handleStatusFilter}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="pending">待付款</SelectItem>
-                  <SelectItem value="partial">部分付款</SelectItem>
-                  <SelectItem value="paid">已付款</SelectItem>
-                  <SelectItem value="overdue">逾期</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={query.sourceType || 'all'}
-                onValueChange={handleSourceTypeFilter}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue placeholder="来源类型" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部类型</SelectItem>
-                  <SelectItem value="purchase_order">采购订单</SelectItem>
-                  <SelectItem value="factory_shipment">厂家发货</SelectItem>
-                  <SelectItem value="service">服务费用</SelectItem>
-                  <SelectItem value="other">其他</SelectItem>
-                </SelectContent>
-              </Select>
-
-              <Select
-                value={query.sortBy || 'createdAt'}
-                onValueChange={handleSort}
-              >
-                <SelectTrigger className="w-[140px]">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="createdAt">创建时间</SelectItem>
-                  <SelectItem value="payableAmount">应付金额</SelectItem>
-                  <SelectItem value="dueDate">到期日期</SelectItem>
-                  <SelectItem value="remainingAmount">剩余金额</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
+      <Card className="shadow-md shadow-gray-200/50">
+        <CardContent className="pt-6">
+          <UnifiedSearchBar
+            // 搜索配置
+            searchValue={query.search || ''}
+            onSearchChange={handleSearch}
+            searchPlaceholder="搜索应付款单号或供应商名称..."
+            debounceDelay={400}
+            // 筛选器配置
+            filters={[
+              {
+                key: 'status',
+                label: '状态',
+                options: [
+                  { label: '全部状态', value: 'all' },
+                  { label: '待付款', value: 'pending' },
+                  { label: '部分付款', value: 'partial' },
+                  { label: '已付款', value: 'paid' },
+                  { label: '逾期', value: 'overdue' },
+                ],
+                width: 'w-[140px]',
+              },
+              {
+                key: 'sourceType',
+                label: '来源类型',
+                options: [
+                  { label: '全部类型', value: 'all' },
+                  { label: '采购订单', value: 'purchase_order' },
+                  { label: '厂家发货', value: 'factory_shipment' },
+                  { label: '服务费用', value: 'service' },
+                  { label: '其他', value: 'other' },
+                ],
+                width: 'w-[140px]',
+              },
+              {
+                key: 'sortBy',
+                label: '排序',
+                options: [
+                  { label: '创建时间', value: 'createdAt' },
+                  { label: '应付金额', value: 'payableAmount' },
+                  { label: '到期日期', value: 'dueDate' },
+                  { label: '剩余金额', value: 'remainingAmount' },
+                ],
+                width: 'w-[140px]',
+              },
+            ]}
+            filterValues={{
+              status: query.status || 'all',
+              sourceType: query.sourceType || 'all',
+              sortBy: query.sortBy || 'createdAt',
+            }}
+            onFilterChange={handleFilterChange}
+          />
 
           {/* 应付款列表 */}
           <div className="mt-6 space-y-4">

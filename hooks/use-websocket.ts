@@ -22,46 +22,66 @@ export interface UseWebSocketReturn {
   disconnect: () => void;
 }
 
+// 全局单例客户端实例，避免重复连接
+let globalWsClient: WsClient | null = null;
+let connectionRefCount = 0;
+
+function getGlobalWsClient(): WsClient {
+  if (!globalWsClient) {
+    globalWsClient = createWsClient();
+  }
+  return globalWsClient;
+}
+
 export function useWebSocket(
   options: UseWebSocketOptions = {}
 ): UseWebSocketReturn {
   const { channels = [], onMessage, autoConnect = true } = options;
   const [isConnected, setIsConnected] = useState(false);
-  const clientRef = useRef<WsClient | null>(null);
   const subscribedChannelsRef = useRef<Set<string>>(new Set());
+  const messageHandlerRef = useRef(onMessage);
+
+  // 更新消息处理器引用
+  useEffect(() => {
+    messageHandlerRef.current = onMessage;
+  }, [onMessage]);
 
   useEffect(() => {
-    if (!clientRef.current) {
-      clientRef.current = createWsClient();
-    }
+    const client = getGlobalWsClient();
+    connectionRefCount++;
 
-    const client = clientRef.current;
+    // 注册消息处理器
+    const handleMessage = (message: WsMessage) => {
+      messageHandlerRef.current?.(message);
+    };
+    const unsubscribeMessage = client.onMessage(handleMessage);
 
-    client.onMessage(message => {
-      onMessage?.(message);
+    // 使用事件驱动方式监听连接状态变化
+    client.onConnectionChange(connected => {
+      setIsConnected(connected);
     });
 
-    if (autoConnect) {
+    if (autoConnect && !client.isConnected()) {
       client.connect();
     }
-
-    // Check connection status periodically
-    const statusInterval = setInterval(() => {
-      setIsConnected(client.isConnected());
-    }, 1000);
+    // 立即检查一次连接状态
+    setIsConnected(client.isConnected());
 
     return () => {
-      clearInterval(statusInterval);
-      client.disconnect();
+      // 清理消息处理器
+      unsubscribeMessage();
+
+      connectionRefCount--;
+      // 只有当没有任何组件使用时才断开连接
+      if (connectionRefCount <= 0) {
+        client.disconnect();
+        connectionRefCount = 0;
+      }
     };
-  }, [onMessage, autoConnect]);
+  }, [autoConnect]);
 
   useEffect(() => {
-    if (!clientRef.current) {
-      return;
-    }
-
-    const client = clientRef.current;
+    const client = getGlobalWsClient();
 
     // Subscribe to new channels
     channels.forEach(channel => {
@@ -80,27 +100,29 @@ export function useWebSocket(
     });
   }, [channels]);
 
-  const subscribe = (channel: string) => {
-    if (clientRef.current && !subscribedChannelsRef.current.has(channel)) {
-      clientRef.current.subscribe(channel);
+  const subscribe = useCallback((channel: string) => {
+    const client = getGlobalWsClient();
+    if (!subscribedChannelsRef.current.has(channel)) {
+      client.subscribe(channel);
       subscribedChannelsRef.current.add(channel);
     }
-  };
+  }, []);
 
-  const unsubscribe = (channel: string) => {
-    if (clientRef.current && subscribedChannelsRef.current.has(channel)) {
-      clientRef.current.unsubscribe(channel);
+  const unsubscribe = useCallback((channel: string) => {
+    const client = getGlobalWsClient();
+    if (subscribedChannelsRef.current.has(channel)) {
+      client.unsubscribe(channel);
       subscribedChannelsRef.current.delete(channel);
     }
-  };
+  }, []);
 
-  const connect = () => {
-    clientRef.current?.connect();
-  };
+  const connect = useCallback(() => {
+    getGlobalWsClient().connect();
+  }, []);
 
-  const disconnect = () => {
-    clientRef.current?.disconnect();
-  };
+  const disconnect = useCallback(() => {
+    getGlobalWsClient().disconnect();
+  }, []);
 
   return {
     isConnected,

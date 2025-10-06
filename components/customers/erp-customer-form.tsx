@@ -4,6 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
 import {
@@ -55,6 +56,9 @@ export function ERPCustomerForm({
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
+  // 用于清理导航定时器的引用
+  const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
   // 表单配置
   const form = useForm<CreateCustomerData>({
     resolver: zodResolver(CreateCustomerSchema),
@@ -69,6 +73,15 @@ export function ERPCustomerForm({
           : {},
     },
   });
+
+  // 组件卸载时清理定时器
+  useEffect(() => {
+    return () => {
+      if (navigationTimerRef.current) {
+        clearTimeout(navigationTimerRef.current);
+      }
+    };
+  }, []);
 
   // 创建客户Mutation
   const createMutation = useMutation({
@@ -85,7 +98,7 @@ export function ERPCustomerForm({
         onSuccess();
       } else {
         // 延迟跳转到客户列表页，让用户看到成功提示
-        setTimeout(() => {
+        navigationTimerRef.current = setTimeout(() => {
           router.push('/customers');
         }, 1500);
       }
@@ -118,7 +131,7 @@ export function ERPCustomerForm({
         onSuccess();
       } else {
         // 延迟跳转到客户列表页，让用户看到成功提示
-        setTimeout(() => {
+        navigationTimerRef.current = setTimeout(() => {
           router.push('/customers');
         }, 1500);
       }

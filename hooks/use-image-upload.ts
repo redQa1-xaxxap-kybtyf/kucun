@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { getErrorMessage } from '@/lib/utils/error-handler';
+
 interface ProductImage {
   url: string;
   type: 'main' | 'effect';
@@ -99,9 +101,8 @@ export function useImageUpload({
         onImagesChange([...currentImages, ...newImages]);
       }
     } catch (error) {
-      setUploadError(
-        error instanceof Error ? error.message : '上传失败，请重试'
-      );
+      const errorMessage = getErrorMessage(error);
+      setUploadError(errorMessage);
     } finally {
       setUploading(false);
       setUploadProgress(0);

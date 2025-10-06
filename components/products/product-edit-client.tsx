@@ -26,10 +26,8 @@ export function ProductEditClient({
       variant: 'success',
     });
 
-    // 延迟跳转，让用户看到成功提示
-    setTimeout(() => {
-      router.push('/products');
-    }, 1500);
+    // 跳转到产品列表页(缓存失效已在use-product-form中处理)
+    router.push('/products');
   };
 
   return (

@@ -24,8 +24,8 @@ export function useOptimizedInventoryList(
     ...initialParams,
   });
 
-  // 选中的库存ID
-  const [selectedIds, setSelectedIds] = React.useState<string[]>([]);
+  // 选中的库存ID（使用 Set 以配合虚拟表格组件）
+  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
 
   // 使用优化的查询Hook
   const { data, isLoading, isError, error, cache } = useOptimizedInventoryQuery(
@@ -69,12 +69,7 @@ export function useOptimizedInventoryList(
     () => ({
       handleInbound: () => router.push('/inventory/inbound'),
       handleOutbound: () => router.push('/inventory/outbound'),
-      handleAdjust: (inventoryId?: string) => {
-        const path = inventoryId
-          ? `/inventory/adjust/${inventoryId}`
-          : '/inventory/adjust';
-        router.push(path);
-      },
+      handleAdjust: () => router.push('/inventory/adjust'),
     }),
     [router]
   );
@@ -83,10 +78,10 @@ export function useOptimizedInventoryList(
   const handleSelectAll = React.useCallback(
     (checked: boolean) => {
       const responseData = data as InventoryListResponse;
-      if (checked && responseData?.data?.inventories) {
-        setSelectedIds(responseData.data.inventories.map(item => item.id));
+      if (checked && responseData?.data?.data) {
+        setSelectedIds(new Set(responseData.data.data.map(item => item.id)));
       } else {
-        setSelectedIds([]);
+        setSelectedIds(new Set());
       }
     },
     [data]
@@ -94,18 +89,20 @@ export function useOptimizedInventoryList(
 
   const handleSelectRow = React.useCallback((id: string, checked: boolean) => {
     setSelectedIds(prev => {
+      const newSet = new Set(prev);
       if (checked) {
-        return [...prev, id];
+        newSet.add(id);
       } else {
-        return prev.filter(selectedId => selectedId !== id);
+        newSet.delete(id);
       }
+      return newSet;
     });
   }, []);
 
   // 使用useMemo优化计算
   const inventoryData = React.useMemo(() => {
     const responseData = data as InventoryListResponse;
-    return responseData?.data?.inventories || [];
+    return responseData?.data?.data || [];
   }, [data]);
 
   const pagination = React.useMemo(() => {

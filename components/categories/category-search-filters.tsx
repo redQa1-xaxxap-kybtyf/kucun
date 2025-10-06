@@ -3,19 +3,11 @@
 /**
  * 分类搜索和筛选组件
  * 严格遵循全栈项目统一约定规范
+ * ✅ 已迁移到使用 UnifiedSearchBar
  */
 
-import { Search } from 'lucide-react';
-
+import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Card, CardContent } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import type { CategoryQueryParams } from '@/lib/api/categories';
 
 interface CategorySearchFiltersProps {
@@ -32,43 +24,39 @@ export function CategorySearchFilters({
   onSearch,
   onFilter,
 }: CategorySearchFiltersProps) {
+  // 统一处理筛选器变更
+  const handleFilterChange = (key: string, value: string | undefined) => {
+    if (key === 'status') {
+      onFilter('status', value as 'active' | 'inactive' | undefined);
+    }
+  };
+
   return (
-    <Card>
+    <Card className="shadow-md shadow-gray-200/50">
       <CardContent className="pt-6">
-        <div className="flex flex-col gap-4 md:flex-row md:items-center">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="搜索分类名称..."
-                value={queryParams.search}
-                onChange={e => onSearch(e.target.value)}
-                className="pl-10"
-              />
-            </div>
-          </div>
-          <div className="flex gap-2">
-            <Select
-              value={queryParams.status || 'all'}
-              onValueChange={value => {
-                const statusValue =
-                  value === 'all'
-                    ? undefined
-                    : (value as 'active' | 'inactive');
-                onFilter('status', statusValue);
-              }}
-            >
-              <SelectTrigger className="w-32">
-                <SelectValue placeholder="状态" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">全部状态</SelectItem>
-                <SelectItem value="active">启用</SelectItem>
-                <SelectItem value="inactive">禁用</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </div>
+        <UnifiedSearchBar
+          // 搜索配置
+          searchValue={queryParams.search || ''}
+          onSearchChange={onSearch}
+          searchPlaceholder="搜索分类名称..."
+          debounceDelay={400}
+          // 筛选器配置
+          filters={[
+            {
+              key: 'status',
+              label: '状态',
+              options: [
+                { label: '启用', value: 'active' },
+                { label: '禁用', value: 'inactive' },
+              ],
+              width: 'w-32',
+            },
+          ]}
+          filterValues={{
+            status: queryParams.status,
+          }}
+          onFilterChange={handleFilterChange}
+        />
       </CardContent>
     </Card>
   );

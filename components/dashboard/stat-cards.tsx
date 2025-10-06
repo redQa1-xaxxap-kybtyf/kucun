@@ -132,8 +132,9 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
       <CardWrapper {...cardProps}>
         <Card
           className={cn(
-            'transition-all duration-200',
-            href && 'cursor-pointer hover:scale-[1.02] hover:shadow-md',
+            'group relative overflow-hidden transition-all duration-300',
+            href &&
+              'cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-black/5',
             className
           )}
           ref={ref}
@@ -146,7 +147,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
                   {title}
                 </p>
                 <div className="flex items-baseline space-x-2">
-                  <p className="text-2xl font-bold">
+                  <p className="text-2xl font-bold tracking-tight">
                     {typeof value === 'number'
                       ? dashboardUtils.formatNumber(value)
                       : value}
@@ -154,24 +155,28 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
                   {change && (
                     <div className="flex items-center space-x-1">
                       {change.type === 'increase' && (
-                        <TrendingUp className="h-3 w-3 text-green-500" />
+                        <TrendingUp className="h-4 w-4 text-green-500" />
                       )}
                       {change.type === 'decrease' && (
-                        <TrendingDown className="h-3 w-3 text-red-500" />
+                        <TrendingDown className="h-4 w-4 text-red-500" />
                       )}
                       {change.type === 'neutral' && (
-                        <Minus className="h-3 w-3 text-gray-500" />
+                        <Minus className="h-4 w-4 text-gray-500" />
                       )}
-                      <span
+                      <Badge
+                        variant="outline"
                         className={cn(
                           'text-xs font-medium',
-                          change.type === 'increase' && 'text-green-600',
-                          change.type === 'decrease' && 'text-red-600',
-                          change.type === 'neutral' && 'text-gray-600'
+                          change.type === 'increase' &&
+                            'border-green-200 bg-green-50 text-green-700',
+                          change.type === 'decrease' &&
+                            'border-red-200 bg-red-50 text-red-700',
+                          change.type === 'neutral' &&
+                            'border-gray-200 bg-gray-50 text-gray-700'
                         )}
                       >
                         {dashboardUtils.formatPercentage(change.value)}
-                      </span>
+                      </Badge>
                     </div>
                   )}
                 </div>
@@ -184,20 +189,19 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
 
               <div
                 className={cn(
-                  'flex h-12 w-12 items-center justify-center rounded-lg',
+                  'flex h-14 w-14 items-center justify-center rounded-xl border-2 shadow-sm transition-transform duration-300 group-hover:scale-110',
                   colorClasses.bg,
-                  colorClasses.border,
-                  'border'
+                  colorClasses.border
                 )}
               >
-                <IconComponent className={cn('h-6 w-6', colorClasses.icon)} />
+                <IconComponent className={cn('h-7 w-7', colorClasses.icon)} />
               </div>
             </div>
 
             {href && (
-              <div className="text-muted-foreground hover:text-foreground mt-4 flex items-center text-sm transition-colors">
+              <div className="text-muted-foreground group-hover:text-foreground mt-4 flex items-center text-sm transition-colors">
                 <span>查看详情</span>
-                <ArrowRight className="ml-1 h-3 w-3" />
+                <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-1" />
               </div>
             )}
           </CardContent>
@@ -218,7 +222,7 @@ export interface StatCardsGridProps {
 
 const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
   ({ overview, loading = false, className, ...props }, ref) => {
-    // 构建统计卡片数据
+    // 构建统计卡片数据 - 只保留4个核心指标
     const statCards: StatCardProps[] = React.useMemo(
       () => [
         {
@@ -274,40 +278,6 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
           loading,
         },
         {
-          title: '活跃客户',
-          value: overview?.customers?.activeCustomers || 0,
-          change: {
-            value: overview?.customers?.customerGrowth || 0,
-            type:
-              (overview?.customers?.customerGrowth || 0) >= 0
-                ? 'increase'
-                : 'decrease',
-            period: '上月',
-          },
-          icon: 'users',
-          color: 'blue',
-          href: '/customers',
-          loading,
-        },
-        {
-          title: '库存预警',
-          value:
-            (overview?.inventory?.lowStockCount || 0) +
-            (overview?.inventory?.outOfStockCount || 0),
-          change: overview?.inventory?.lowStockCount
-            ? {
-                value: overview.inventory.lowStockCount,
-                type: 'neutral' as const,
-                period: '库存不足',
-              }
-            : undefined,
-          icon: 'alert-triangle',
-          color:
-            (overview?.inventory?.lowStockCount || 0) > 0 ? 'red' : 'green',
-          href: '/inventory?filter=alerts',
-          loading,
-        },
-        {
           title: '退货处理',
           value: overview?.returns?.pendingReturns || 0,
           change: {
@@ -328,7 +298,7 @@ const StatCardsGrid = React.forwardRef<HTMLDivElement, StatCardsGridProps>(
     return (
       <div
         className={cn(
-          'grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3',
+          'grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4',
           className
         )}
         ref={ref}

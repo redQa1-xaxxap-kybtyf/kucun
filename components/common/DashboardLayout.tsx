@@ -6,11 +6,17 @@ import * as React from 'react';
 
 import { useMediaQuery } from '@/hooks/use-media-query';
 import type { LayoutConfig, SidebarState } from '@/lib/types/layout';
+import type { UserRole } from '@/lib/types/user';
 import { cn } from '@/lib/utils';
+import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
 import { Header } from './Header';
 import { MobileNav } from './MobileNav';
-import { Sidebar } from './Sidebar';
+import { SidebarClient } from './SidebarClient';
+import {
+  bottomNavigationItems,
+  navigationItems,
+} from './sidebar-navigation-config';
 
 interface DashboardLayoutProps {
   /** 子组件 */
@@ -39,26 +45,58 @@ export function DashboardLayout({
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
 
-  // 侧边栏状态管理
-  const [sidebarState, setSidebarState] = React.useState<SidebarState>({
-    isOpen: !isMobile,
-    isCollapsed: isTablet,
-    toggle: () =>
-      setSidebarState(prev => ({
-        ...prev,
-        isCollapsed: !prev.isCollapsed,
-      })),
-    setOpen: (open: boolean) =>
-      setSidebarState(prev => ({
-        ...prev,
-        isOpen: open,
-      })),
-    setCollapsed: (collapsed: boolean) =>
-      setSidebarState(prev => ({
-        ...prev,
-        isCollapsed: collapsed,
-      })),
-  });
+  // 在客户端根据用户角色过滤导航项
+  const userRole = session?.user?.role as UserRole | undefined;
+  const accessibleNavItems = React.useMemo(
+    () =>
+      userRole
+        ? getAccessibleNavItems(
+            navigationItems as Array<{ requiredRoles?: UserRole[] }>,
+            userRole
+          )
+        : [],
+    [userRole]
+  );
+
+  const accessibleBottomNavItems = React.useMemo(
+    () =>
+      userRole
+        ? getAccessibleNavItems(
+            bottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
+            userRole
+          )
+        : [],
+    [userRole]
+  );
+
+  // 侧边栏状态管理（优化：避免状态更新循环）
+  const [isOpen, setIsOpen] = React.useState<boolean>(() => !isMobile);
+  const [isCollapsed, setIsCollapsed] = React.useState<boolean>(() => isTablet);
+
+  // 使用 useCallback 优化状态更新函数，避免每次渲染都创建新函数
+  const toggle = React.useCallback(() => {
+    setIsCollapsed(prev => !prev);
+  }, []);
+
+  const setOpenCallback = React.useCallback((open: boolean) => {
+    setIsOpen(open);
+  }, []);
+
+  const setCollapsedCallback = React.useCallback((collapsed: boolean) => {
+    setIsCollapsed(collapsed);
+  }, []);
+
+  // 组合 sidebarState 对象（使用 useMemo 避免每次渲染都创建新对象）
+  const sidebarState = React.useMemo<SidebarState>(
+    () => ({
+      isOpen,
+      isCollapsed,
+      toggle,
+      setOpen: setOpenCallback,
+      setCollapsed: setCollapsedCallback,
+    }),
+    [isOpen, isCollapsed, toggle, setOpenCallback, setCollapsedCallback]
+  );
 
   // 移动端导航状态
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
@@ -67,44 +105,40 @@ export function DashboardLayout({
   const [touchStart, setTouchStart] = React.useState<number | null>(null);
   const [touchEnd, setTouchEnd] = React.useState<number | null>(null);
 
-  // 响应式布局调整
+  // 响应式布局调整（只在状态真正需要改变时才更新）
   React.useEffect(() => {
     if (isMobile) {
-      setSidebarState(prev => ({
-        ...prev,
-        isOpen: false,
-        isCollapsed: false,
-      }));
-      // 移动端时关闭移动导航
+      if (isOpen !== false || isCollapsed !== false) {
+        setIsOpen(false);
+        setIsCollapsed(false);
+      }
       setMobileNavOpen(false);
     } else if (isTablet) {
-      setSidebarState(prev => ({
-        ...prev,
-        isOpen: true,
-        isCollapsed: true,
-      }));
+      if (isOpen !== true || isCollapsed !== true) {
+        setIsOpen(true);
+        setIsCollapsed(true);
+      }
     } else {
-      setSidebarState(prev => ({
-        ...prev,
-        isOpen: true,
-        isCollapsed: false,
-      }));
+      if (isOpen !== true || isCollapsed !== false) {
+        setIsOpen(true);
+        setIsCollapsed(false);
+      }
     }
-  }, [isMobile, isTablet]);
+  }, [isMobile, isTablet, isOpen, isCollapsed]);
 
-  // 手势处理
+  // 手势处理（使用 useCallback 优化）
   const minSwipeDistance = 50;
 
-  const onTouchStart = (e: React.TouchEvent) => {
+  const onTouchStart = React.useCallback((e: React.TouchEvent) => {
     setTouchEnd(null);
     setTouchStart(e.targetTouches[0].clientX);
-  };
+  }, []);
 
-  const onTouchMove = (e: React.TouchEvent) => {
+  const onTouchMove = React.useCallback((e: React.TouchEvent) => {
     setTouchEnd(e.targetTouches[0].clientX);
-  };
+  }, []);
 
-  const onTouchEnd = () => {
+  const onTouchEnd = React.useCallback(() => {
     if (!touchStart || !touchEnd) {return;}
 
     const distance = touchStart - touchEnd;
@@ -119,7 +153,7 @@ export function DashboardLayout({
         setMobileNavOpen(false);
       }
     }
-  };
+  }, [touchStart, touchEnd, isMobile, mobileNavOpen]);
 
   // 认证检查
   React.useEffect(() => {
@@ -145,7 +179,7 @@ export function DashboardLayout({
   const _layoutConfig: LayoutConfig = {
     showSidebar,
     showHeader,
-    sidebarCollapsed: sidebarState.isCollapsed,
+    sidebarCollapsed: isCollapsed,
     isMobile,
     theme: 'light', // 后续可以从用户设置中获取
   };
@@ -162,8 +196,12 @@ export function DashboardLayout({
 
       <div className="flex flex-1">
         {/* 桌面端侧边栏 */}
-        {showSidebar && !isMobile && sidebarState.isOpen && (
-          <Sidebar state={sidebarState} />
+        {showSidebar && !isMobile && isOpen && (
+          <SidebarClient
+            state={sidebarState}
+            accessibleNavItems={accessibleNavItems}
+            accessibleBottomNavItems={accessibleBottomNavItems}
+          />
         )}
 
         {/* 移动端抽屉导航 */}
@@ -178,8 +216,8 @@ export function DashboardLayout({
             // 根据侧边栏状态调整内容区域
             showSidebar &&
               !isMobile &&
-              sidebarState.isOpen &&
-              (sidebarState.isCollapsed ? 'ml-0' : 'ml-0'),
+              isOpen &&
+              (isCollapsed ? 'ml-0' : 'ml-0'),
             // 内边距调整
             isMobile ? 'p-4' : 'p-6',
             // 顶部间距调整（如果有header）

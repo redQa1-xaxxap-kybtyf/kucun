@@ -21,16 +21,50 @@ export function WebSocketProvider({ children }: WebSocketProviderProps) {
   const wsClient = useWebSocket({
     channels: ['products', 'inventory'],
     onMessage: message => {
-      // Handle real-time updates
+      // Handle real-time updates with optimistic updates
       switch (message.channel) {
         case 'products': {
-          // Invalidate product queries when products are updated
-          queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
+          // Use optimistic updates for specific product changes
+          if (message.data?.productId) {
+            queryClient.setQueryData(
+              productQueryKeys.byId(message.data.productId),
+              (oldProduct: unknown) => {
+                if (!oldProduct) {
+                  return oldProduct;
+                }
+                return {
+                  ...oldProduct,
+                  ...message.data,
+                  updatedAt: new Date(),
+                };
+              }
+            );
+          } else {
+            // Only invalidate if we don't have specific product ID
+            queryClient.invalidateQueries({ queryKey: productQueryKeys.all });
+          }
           break;
         }
         case 'inventory': {
-          // Invalidate inventory queries when inventory is updated
-          queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.all });
+          // Use optimistic updates for specific inventory changes
+          if (message.data?.productId) {
+            queryClient.setQueryData(
+              inventoryQueryKeys.byProduct(message.data.productId),
+              (oldInventory: unknown) => {
+                if (!oldInventory) {
+                  return oldInventory;
+                }
+                return {
+                  ...oldInventory,
+                  ...message.data,
+                  updatedAt: new Date(),
+                };
+              }
+            );
+          } else {
+            // Only invalidate if we don't have specific product ID
+            queryClient.invalidateQueries({ queryKey: inventoryQueryKeys.all });
+          }
           break;
         }
         default:

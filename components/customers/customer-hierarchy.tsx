@@ -254,9 +254,8 @@ export function CustomerHierarchyTree({
 }
 
 // 客户选择器组件属性
-interface CustomerSelectorProps {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- React Hook Form Control 泛型参数
-  control: Control<any>;
+interface CustomerSelectorProps<TFieldValues extends Record<string, unknown> = Record<string, unknown>> {
+  control: Control<TFieldValues>;
   name: string;
   label?: string;
   placeholder?: string;
@@ -266,7 +265,7 @@ interface CustomerSelectorProps {
 }
 
 // 客户选择器组件
-export function CustomerSelector({
+export function CustomerSelector<TFieldValues extends Record<string, unknown> = Record<string, unknown>>({
   control,
   name,
   label = '选择客户',
@@ -274,7 +273,7 @@ export function CustomerSelector({
   disabled = false,
   excludeId,
   onlyParents = false,
-}: CustomerSelectorProps) {
+}: CustomerSelectorProps<TFieldValues>) {
   const [open, setOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -288,7 +287,7 @@ export function CustomerSelector({
     queryKey: queryKeys.customers.list({ search: searchQuery, excludeId }),
     queryFn: () => searchCustomers(searchQuery, { excludeId }),
     enabled: searchQuery.length > 0,
-    staleTime: 30000, // 30秒缓存
+    staleTime: 5 * 60 * 1000, // 5分钟缓存（与全局策略一致）
   });
 
   // 获取选中的客户信息

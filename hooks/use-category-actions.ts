@@ -7,28 +7,150 @@
 
 import { useRouter, useSearchParams } from 'next/navigation';
 import React from 'react';
+import type { UseMutationResult } from '@tanstack/react-query';
 
-import { type Category, type CategoryQueryParams } from '@/lib/api/categories';
+import type {
+  BatchDeleteCategoriesInput,
+  BatchDeleteResult,
+  Category,
+  CategoryQueryParams,
+} from '@/lib/api/categories';
+import type { ApiResponse } from '@/lib/types/api';
 
-interface DialogState {
+interface DeleteDialogState {
   open: boolean;
-  categoryId?: string;
+  categoryId: string | null;
+  categoryName: string;
+}
+
+interface BatchDeleteDialogState {
+  open: boolean;
+  categories: Category[];
+}
+
+type UpdateStatusVariables = {
+  id: string;
+  status: 'active' | 'inactive';
+};
+
+type NormalizedCategoryQueryParams = Required<
+  Pick<CategoryQueryParams, 'page' | 'limit' | 'search' | 'sortBy' | 'sortOrder'>
+> &
+  Pick<CategoryQueryParams, 'status' | 'parentId'>;
+
+const DEFAULT_QUERY_PARAMS: Required<
+  Pick<CategoryQueryParams, 'page' | 'limit' | 'search' | 'sortBy' | 'sortOrder'>
+> = {
+  page: 1,
+  limit: 10,
+  search: '',
+  sortBy: 'createdAt',
+  sortOrder: 'desc',
+};
+
+const SORT_BY_VALUES = new Set<CategoryQueryParams['sortBy']>([
+  'name',
+  'code',
+  'sortOrder',
+  'createdAt',
+]);
+
+function parseNumber(value: string | null, fallback: number): number {
+  if (!value) {
+    return fallback;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function parseStatus(value: string | null): CategoryQueryParams['status'] {
+  if (value === 'active' || value === 'inactive') {
+    return value;
+  }
+  return undefined;
+}
+
+function parseSortBy(value: string | null): CategoryQueryParams['sortBy'] {
+  if (value && SORT_BY_VALUES.has(value as CategoryQueryParams['sortBy'])) {
+    return value as CategoryQueryParams['sortBy'];
+  }
+  return DEFAULT_QUERY_PARAMS.sortBy;
+}
+
+function parseSortOrder(value: string | null): Required<
+  Pick<CategoryQueryParams, 'sortOrder'>
+>['sortOrder'] {
+  return value === 'asc' ? 'asc' : 'desc';
+}
+
+function parseQueryParams(
+  searchParams: ReadonlyURLSearchParams
+): CategoryQueryParams {
+  return {
+    page: parseNumber(searchParams.get('page'), DEFAULT_QUERY_PARAMS.page),
+    limit: parseNumber(searchParams.get('limit'), DEFAULT_QUERY_PARAMS.limit),
+    search: searchParams.get('search') ?? DEFAULT_QUERY_PARAMS.search,
+    status: parseStatus(searchParams.get('status')),
+    sortBy: parseSortBy(searchParams.get('sortBy')),
+    sortOrder: parseSortOrder(searchParams.get('sortOrder')),
+    parentId: searchParams.get('parentId') || undefined,
+  };
+}
+
+function normalizeCategoryQueryParams(
+  params: CategoryQueryParams
+): NormalizedCategoryQueryParams {
+  return {
+    page: params.page ?? DEFAULT_QUERY_PARAMS.page,
+    limit: params.limit ?? DEFAULT_QUERY_PARAMS.limit,
+    search: params.search ?? DEFAULT_QUERY_PARAMS.search,
+    sortBy: params.sortBy ?? DEFAULT_QUERY_PARAMS.sortBy,
+    sortOrder: params.sortOrder ?? DEFAULT_QUERY_PARAMS.sortOrder,
+    status: params.status,
+    parentId: params.parentId,
+  };
+}
+
+function areCategoryQueryParamsEqual(
+  a: CategoryQueryParams,
+  b: CategoryQueryParams
+): boolean {
+  const normalizedA = normalizeCategoryQueryParams(a);
+  const normalizedB = normalizeCategoryQueryParams(b);
+
+  return (
+    normalizedA.page === normalizedB.page &&
+    normalizedA.limit === normalizedB.limit &&
+    normalizedA.search === normalizedB.search &&
+    normalizedA.sortBy === normalizedB.sortBy &&
+    normalizedA.sortOrder === normalizedB.sortOrder &&
+    normalizedA.status === normalizedB.status &&
+    normalizedA.parentId === normalizedB.parentId
+  );
 }
 
 interface UseCategoryActionsProps {
   queryParams: CategoryQueryParams;
-  setQueryParams: (params: CategoryQueryParams) => void;
+  setQueryParams: React.Dispatch<React.SetStateAction<CategoryQueryParams>>;
   selectedCategoryIds: string[];
-  setSelectedCategoryIds: (ids: string[]) => void;
-  setDeleteDialog: (state: DialogState) => void;
-  setBatchDeleteDialog: (state: { open: boolean }) => void;
-  setUpdatingStatusId: (id: string | null) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  statusMutation: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  deleteMutation: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  batchDeleteMutation: any;
+  setSelectedCategoryIds: React.Dispatch<React.SetStateAction<string[]>>;
+  deleteDialog: DeleteDialogState;
+  setDeleteDialog: React.Dispatch<React.SetStateAction<DeleteDialogState>>;
+  setBatchDeleteDialog: React.Dispatch<React.SetStateAction<BatchDeleteDialogState>>;
+  setUpdatingStatusId: React.Dispatch<React.SetStateAction<string | null>>;
+  statusMutation: UseMutationResult<
+    ApiResponse<Category>,
+    Error,
+    UpdateStatusVariables,
+    unknown
+  >;
+  deleteMutation: UseMutationResult<ApiResponse<void>, Error, string, unknown>;
+  batchDeleteMutation: UseMutationResult<
+    BatchDeleteResult,
+    Error,
+    BatchDeleteCategoriesInput,
+    unknown
+  >;
   categories: Category[];
 }
 
@@ -37,6 +159,7 @@ export function useCategoryActions({
   setQueryParams,
   selectedCategoryIds,
   setSelectedCategoryIds,
+  deleteDialog,
   setDeleteDialog,
   setBatchDeleteDialog,
   setUpdatingStatusId,
@@ -50,35 +173,69 @@ export function useCategoryActions({
 
   // 同步URL参数
   React.useEffect(() => {
-    const params = new URLSearchParams(searchParams);
-    const newParams: CategoryQueryParams = {
-      page: Number(params.get('page')) || 1,
-      limit: Number(params.get('limit')) || 10,
-      search: params.get('search') || '',
-      status: (params.get('status') as 'active' | 'inactive') || undefined,
-      sortBy:
-        (params.get('sortBy') as 'name' | 'code' | 'sortOrder' | 'createdAt') ||
-        'createdAt',
-      sortOrder: (params.get('sortOrder') as 'asc' | 'desc') || 'desc',
-    };
+    const parsedParams = parseQueryParams(searchParams);
 
-    setQueryParams(newParams);
+    setQueryParams(prev =>
+      areCategoryQueryParamsEqual(prev, parsedParams) ? prev : parsedParams
+    );
   }, [searchParams, setQueryParams]);
 
   const updateURL = React.useCallback(
-    (newParams: Partial<CategoryQueryParams>) => {
+    (partialParams: Partial<CategoryQueryParams>) => {
+      const mergedParams: CategoryQueryParams = {
+        ...DEFAULT_QUERY_PARAMS,
+        ...queryParams,
+        ...partialParams,
+      };
+
+      if (areCategoryQueryParamsEqual(queryParams, mergedParams)) {
+        return;
+      }
+
+      setQueryParams(prev =>
+        areCategoryQueryParamsEqual(prev, mergedParams) ? prev : mergedParams
+      );
+
       const params = new URLSearchParams();
-      const finalParams = { ...queryParams, ...newParams };
 
-      Object.entries(finalParams).forEach(([key, value]) => {
-        if (value !== undefined && value !== '' && value !== null) {
-          params.set(key, String(value));
-        }
-      });
+      if (mergedParams.page && mergedParams.page !== DEFAULT_QUERY_PARAMS.page) {
+        params.set('page', String(mergedParams.page));
+      }
 
-      router.push(`/categories?${params.toString()}`);
+      if (mergedParams.limit && mergedParams.limit !== DEFAULT_QUERY_PARAMS.limit) {
+        params.set('limit', String(mergedParams.limit));
+      }
+
+      if (mergedParams.search && mergedParams.search.length > 0) {
+        params.set('search', mergedParams.search);
+      }
+
+      if (mergedParams.status) {
+        params.set('status', mergedParams.status);
+      }
+
+      if (
+        mergedParams.sortBy &&
+        mergedParams.sortBy !== DEFAULT_QUERY_PARAMS.sortBy
+      ) {
+        params.set('sortBy', mergedParams.sortBy);
+      }
+
+      if (
+        mergedParams.sortOrder &&
+        mergedParams.sortOrder !== DEFAULT_QUERY_PARAMS.sortOrder
+      ) {
+        params.set('sortOrder', mergedParams.sortOrder);
+      }
+
+      if (mergedParams.parentId) {
+        params.set('parentId', mergedParams.parentId);
+      }
+
+      const search = params.toString();
+      router.push(search ? `/categories?${search}` : '/categories');
     },
-    [queryParams, router]
+    [queryParams, router, setQueryParams]
   );
 
   const handleSearch = React.useCallback(
@@ -89,7 +246,10 @@ export function useCategoryActions({
   );
 
   const handleFilter = React.useCallback(
-    (key: string, value: string | number | boolean | undefined) => {
+    <K extends keyof CategoryQueryParams>(
+      key: K,
+      value: CategoryQueryParams[K]
+    ) => {
       updateURL({ [key]: value, page: 1 });
     },
     [updateURL]
@@ -110,21 +270,19 @@ export function useCategoryActions({
   );
 
   const confirmDelete = React.useCallback(() => {
-    const categoryId = selectedCategoryIds[0];
+    const categoryId = deleteDialog.categoryId;
     if (categoryId) {
       deleteMutation.mutate(categoryId);
     }
-  }, [selectedCategoryIds, deleteMutation]);
+  }, [deleteDialog.categoryId, deleteMutation]);
 
   const handleSelectCategory = React.useCallback(
     (categoryId: string, checked: boolean) => {
-      setSelectedCategoryIds(
-        checked
-          ? [...selectedCategoryIds, categoryId]
-          : selectedCategoryIds.filter(id => id !== categoryId)
+      setSelectedCategoryIds(prevIds =>
+        checked ? [...prevIds, categoryId] : prevIds.filter(id => id !== categoryId)
       );
     },
-    [selectedCategoryIds, setSelectedCategoryIds]
+    [setSelectedCategoryIds]
   );
 
   const handleSelectAll = React.useCallback(
@@ -145,14 +303,15 @@ export function useCategoryActions({
 
   const confirmBatchDelete = React.useCallback(() => {
     if (selectedCategoryIds.length > 0) {
-      batchDeleteMutation.mutate(selectedCategoryIds);
+      batchDeleteMutation.mutate({ categoryIds: selectedCategoryIds });
     }
   }, [selectedCategoryIds, batchDeleteMutation]);
 
   const toggleCategoryStatus = React.useCallback(
     (category: Category) => {
       setUpdatingStatusId(category.id);
-      const newStatus = category.status === 'active' ? 'inactive' : 'active';
+      const newStatus: UpdateStatusVariables['status'] =
+        category.status === 'active' ? 'inactive' : 'active';
       statusMutation.mutate({ id: category.id, status: newStatus });
     },
     [setUpdatingStatusId, statusMutation]

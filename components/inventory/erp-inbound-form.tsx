@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 
 import {
   InboundOptionalFields,
@@ -66,8 +66,8 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   }, [watchedInputQuantity, watchedInputUnit, watchedPiecesPerUnit, form]);
 
   return (
-    <div className="rounded border bg-card">
-      {/* ERP标准工具栏 */}
+    <div className="space-y-4">
+      {/* 页面标题卡片 */}
       <InboundFormToolbar
         isSubmitting={isSubmitting}
         onReset={handleReset}
@@ -75,7 +75,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
       />
 
       {/* 表单内容区域 */}
-      <div className="p-6">
+      <div className="bg-card rounded-lg border p-6 shadow-md shadow-gray-200/50">
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {/* 产品选择区域 */}

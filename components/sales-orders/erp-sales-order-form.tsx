@@ -50,6 +50,7 @@ import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
 import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+import { transformFormDataToCreateInput } from '@/lib/utils/sales-order-transforms';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
@@ -413,17 +414,10 @@ export function ERPSalesOrderForm({
     // 不传递orderNumber，让后端自动生成
     const { orderNumber: _orderNumber, ...submitData } = data;
 
-    // 处理调货销售的字段：空字符串转为undefined
-    const processedData = {
-      ...submitData,
-      supplierId:
-        submitData.supplierId && submitData.supplierId.trim() !== ''
-          ? submitData.supplierId
-          : undefined,
-    };
+    // 使用类型安全的转换函数
+    const apiData = transformFormDataToCreateInput(submitData);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    createMutation.mutate(processedData as any);
+    createMutation.mutate(apiData);
   };
 
   return (

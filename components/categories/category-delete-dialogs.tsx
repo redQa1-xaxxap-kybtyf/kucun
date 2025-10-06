@@ -45,8 +45,8 @@ interface CategoryDeleteDialogsProps {
   batchDeleteDialog: BatchDeleteDialogState;
   isDeleting: boolean;
   isBatchDeleting: boolean;
-  onDeleteDialogChange: (state: DeleteDialogState) => void;
-  onBatchDeleteDialogChange: (state: BatchDeleteDialogState) => void;
+  onDeleteDialogChange: React.Dispatch<React.SetStateAction<DeleteDialogState>>;
+  onBatchDeleteDialogChange: React.Dispatch<React.SetStateAction<BatchDeleteDialogState>>;
   onConfirmDelete: () => void;
   onConfirmBatchDelete: () => void;
 }

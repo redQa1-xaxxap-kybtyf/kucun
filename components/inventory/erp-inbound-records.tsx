@@ -1,7 +1,6 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import React from 'react';
 
 import { InboundRecordsFilters } from '@/components/inventory/forms/inbound-records-filters';
 import { InboundRecordsTable } from '@/components/inventory/forms/inbound-records-table';
@@ -39,23 +38,21 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
 
   if (error) {
     return (
-      <div className="rounded border bg-card">
+      <>
         <InboundRecordsToolbar onCreateNew={handleCreateNew} />
-        <div className="p-6 text-center">
-          <div className="text-sm text-destructive">
+        <div className="bg-card rounded-lg border p-6 text-center shadow-md shadow-gray-200/50">
+          <div className="text-destructive text-sm">
             加载入库记录失败，请稍后重试
           </div>
         </div>
-      </div>
+      </>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* ERP标准工具栏 */}
-      <div className="rounded border bg-card">
-        <InboundRecordsToolbar onCreateNew={handleCreateNew} />
-      </div>
+      {/* 页面标题卡片 */}
+      <InboundRecordsToolbar onCreateNew={handleCreateNew} />
 
       {/* 筛选条件 */}
       <InboundRecordsFilters
