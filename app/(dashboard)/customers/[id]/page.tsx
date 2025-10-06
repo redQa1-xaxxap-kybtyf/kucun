@@ -165,22 +165,12 @@ export default function CustomerDetailPage() {
 
   return (
     <div className="space-y-6">
-      {/* 页面头部 */}
+      {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-4">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => router.back()}
-            className="flex items-center space-x-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>返回</span>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">{customer.name}</h1>
-            <p className="text-muted-foreground">客户详情</p>
-          </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-muted-foreground">
+            客户名称：{customer.name}
+          </span>
         </div>
 
         <div className="flex items-center space-x-2">

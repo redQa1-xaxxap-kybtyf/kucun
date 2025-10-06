@@ -153,54 +153,26 @@ export default function ReceivableDetailPage() {
   return (
     <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
       <div className="space-y-4">
-        {/* 页面头部卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                  <TrendingUp className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    应收款详情
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    应收款单号：{receivable.receivableNumber}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => router.back()}
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  返回
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  编辑
-                </Button>
-                {receivable.status !== 'received' && (
-                  <Button
-                    size="lg"
-                    className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                  >
-                    <DollarSign className="mr-2 h-4 w-4" />
-                    记录收款
-                  </Button>
-                )}
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="text-muted-foreground">
+              应收款单号：{receivable.receivableNumber}
+            </span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm">
+              <Edit className="mr-2 h-4 w-4" />
+              编辑
+            </Button>
+            {receivable.status !== 'received' && (
+              <Button size="sm">
+                <DollarSign className="mr-2 h-4 w-4" />
+                记录收款
+              </Button>
+            )}
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* 基本信息 */}

@@ -126,19 +126,12 @@ export default async function RefundDetailPage({
 
   return (
     <div className="container mx-auto max-w-4xl px-4 py-6">
-      {/* 页面标题和操作 */}
+      {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
       <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/finance/refunds">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              返回列表
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">退款详情</h1>
-            <p className="text-gray-600">退款编号：{refund.refundNumber}</p>
-          </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-muted-foreground">
+            退款编号：{refund.refundNumber}
+          </span>
         </div>
         <div className="flex items-center gap-2">
           <StatusBadge status={refund.status} />

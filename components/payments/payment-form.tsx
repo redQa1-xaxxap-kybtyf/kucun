@@ -50,7 +50,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentLoading } from '@/components/common/loading';
 import { Textarea } from '@/components/ui/textarea';
 import { paymentUtils } from '@/lib/api/payments';
 import {
@@ -310,7 +310,7 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <DollarSign className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <DollarSign className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                           <Input
                             type="number"
                             step="0.01"
@@ -395,7 +395,7 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                       </FormLabel>
                       <FormControl>
                         <div className="relative">
-                          <Receipt className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                          <Receipt className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
                           <Input
                             placeholder={
                               PAYMENT_FORM_FIELDS.receiptNumber.placeholder
@@ -537,32 +537,8 @@ PaymentForm.displayName = 'PaymentForm';
 function PaymentFormSkeleton() {
   return (
     <Card className="w-full">
-      <CardHeader>
-        <div className="flex items-center space-x-2">
-          <Skeleton className="h-5 w-5" />
-          <Skeleton className="h-6 w-32" />
-        </div>
-        <Skeleton className="h-4 w-48" />
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-6">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-10 w-full" />
-              </div>
-            ))}
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-4 w-16" />
-            <Skeleton className="h-20 w-full" />
-          </div>
-          <div className="flex justify-end space-x-4 border-t pt-6">
-            <Skeleton className="h-10 w-16" />
-            <Skeleton className="h-10 w-16" />
-          </div>
-        </div>
+      <CardContent className="p-6">
+        <ContentLoading text="加载表单..." />
       </CardContent>
     </Card>
   );

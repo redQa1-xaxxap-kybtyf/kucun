@@ -68,33 +68,65 @@ interface SalesTrendData {
 /**
  * ERP风格的仪表盘组件
  * 采用紧凑布局，符合中国ERP系统用户习惯
+ *
+ * 优化说明：
+ * 1. 使用 RSC 预取的 initialData 作为初始状态
+ * 2. TanStack Query 配置 initialData + staleTime，避免重复请求
+ * 3. 仅在用户主动刷新/切换筛选时才触发客户端请求
  */
 interface ERPDashboardProps {
   initialData?: DashboardData | null;
   initialTimeRange?: string;
+  initialOrders?: {
+    recent: SalesOrder[];
+    pending: SalesOrder[];
+    shipments: FactoryShipmentOrder[];
+  };
 }
 
 export function ERPDashboard({
   initialData,
   initialTimeRange = '7d',
+  initialOrders,
 }: ERPDashboardProps) {
   const { data: session } = useSession();
   const router = useRouter();
 
-  // 数据状态 - 延迟初始化以避免函数声明顺序问题
+  // 转换初始数据的辅助函数
+  const getInitialDashboardData = React.useCallback(() => {
+    if (initialData?.overview) {
+      return {
+        totalProducts: initialData.overview.inventory.totalProducts,
+        totalOrders: initialData.overview.sales.totalOrders,
+        totalCustomers: initialData.overview.customers.totalCustomers,
+        totalRevenue: initialData.overview.sales.totalRevenue,
+        totalReturns: initialData.overview.returns.totalReturns,
+        lowStockItems: initialData.overview.inventory.lowStockCount,
+        pendingOrders: initialData.overview.sales.monthlyOrders,
+        recentActivities: [],
+        salesTrend: [],
+      };
+    }
+    return null;
+  }, [initialData]);
+
+  // 数据状态 - 使用 RSC 预取的数据作为初始状态
   const [dashboardData, setDashboardData] =
-    React.useState<DashboardStats | null>(null);
-  const [isLoading, setIsLoading] = React.useState(!initialData);
+    React.useState<DashboardStats | null>(getInitialDashboardData);
   const [selectedPeriod, setSelectedPeriod] = React.useState(initialTimeRange);
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
-  // 订单数据状态
-  const [recentOrders, setRecentOrders] = React.useState<SalesOrder[]>([]);
-  const [pendingOrders, setPendingOrders] = React.useState<SalesOrder[]>([]);
+  // 订单数据状态 - 使用 RSC 预取的数据作为初始状态
+  const [recentOrders, setRecentOrders] = React.useState<SalesOrder[]>(
+    initialOrders?.recent || []
+  );
+  const [pendingOrders, setPendingOrders] = React.useState<SalesOrder[]>(
+    initialOrders?.pending || []
+  );
   const [factoryShipments, setFactoryShipments] = React.useState<
     FactoryShipmentOrder[]
-  >([]);
-  const [isLoadingOrders, setIsLoadingOrders] = React.useState(true);
+  >(initialOrders?.shipments || []);
+  const [isLoadingOrders, setIsLoadingOrders] = React.useState(!initialOrders);
 
   // 移除mockData，完全依赖真实API数据
 
@@ -129,16 +161,25 @@ export function ERPDashboard({
     salesTrend: [], // 暂时为空，后续可以从API获取
   });
 
-  // 使用真实API获取仪表盘数据
+  // 🚀 使用 TanStack Query 获取仪表盘数据
+  // 配置 initialData 和 staleTime 避免重复请求
   const {
     data: dashboardApiData,
     isLoading: isApiLoading,
     refetch,
-  } = useBusinessOverview(mapPeriodToTimeRange(selectedPeriod));
+  } = useBusinessOverview(mapPeriodToTimeRange(selectedPeriod), {
+    // 使用 RSC 预取的数据作为初始值
+    initialData: initialData?.overview || undefined,
+    // 数据在 5 分钟内保持新鲜，不会重新请求
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    // 仅在组件挂载时获取一次，后续切换标签页不会重新请求
+    refetchOnWindowFocus: false,
+    // 用户主动刷新时才重新请求
+    refetchOnMount: false,
+  });
 
   // 加载数据 - 完全使用真实API数据
   const loadDashboardData = React.useCallback(async () => {
-    setIsLoading(true);
     try {
       if (dashboardApiData) {
         // 转换API数据格式
@@ -153,12 +194,10 @@ export function ERPDashboard({
       console.error('加载仪表盘数据失败:', error);
       // 错误时设置为null，显示错误状态
       setDashboardData(null);
-    } finally {
-      setIsLoading(false);
     }
   }, [dashboardApiData]);
 
-  // 获取订单数据
+  // 刷新订单数据（仅在用户主动刷新时调用）
   const loadOrdersData = React.useCallback(async () => {
     setIsLoadingOrders(true);
     try {
@@ -214,44 +253,15 @@ export function ERPDashboard({
     }
   };
 
-  // 处理初始数据
-  React.useEffect(() => {
-    if (initialData?.overview && !dashboardData) {
-      const transformedData = transformDashboardData(initialData.overview);
-      setDashboardData(transformedData);
-      setIsLoading(false);
-    }
-  }, [initialData, dashboardData]);
+  // 注意：订单数据和仪表盘数据已通过 state 初始化使用 RSC 的预取数据
+  // 无需额外的 useEffect 处理初始数据
 
-  // 初始化加载 - 结合API加载状态
+  // 仅在没有初始数据且API加载完成时加载数据
   React.useEffect(() => {
-    if (!isApiLoading && !initialData) {
+    if (!isApiLoading && !initialData && !dashboardData) {
       loadDashboardData();
     }
-  }, [loadDashboardData, selectedPeriod, isApiLoading, initialData]);
-
-  // 初始化加载订单数据
-  React.useEffect(() => {
-    loadOrdersData();
-  }, [loadOrdersData]);
-
-  // 合并加载状态
-  const isLoadingData = isLoading || isApiLoading;
-
-  if (isLoadingData) {
-    return (
-      <div className="bg-card rounded border">
-        <div className="bg-muted/30 border-b px-3 py-2">
-          <h3 className="text-sm font-medium">业务概览</h3>
-        </div>
-        <div className="px-3 py-8">
-          <div className="text-muted-foreground text-center text-xs">
-            正在加载数据...
-          </div>
-        </div>
-      </div>
-    );
-  }
+  }, [loadDashboardData, isApiLoading, initialData, dashboardData]);
 
   if (!dashboardData) {
     return (
@@ -309,7 +319,7 @@ export function ERPDashboard({
 
       {/* 核心指标卡片 */}
       {dashboardApiData && (
-        <StatCardsGrid overview={dashboardApiData} loading={isLoadingData} />
+        <StatCardsGrid overview={dashboardApiData} loading={false} />
       )}
 
       {/* 快速操作和需要关注 - 紧凑布局 */}

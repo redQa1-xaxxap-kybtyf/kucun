@@ -1,6 +1,3 @@
-import { Suspense } from 'react';
-
-import { ReturnOrderListSkeleton } from '@/components/return-orders/return-order-list-skeleton';
 import { ReturnOrdersPageClient } from './page-client';
 
 /**
@@ -11,9 +8,7 @@ import { ReturnOrdersPageClient } from './page-client';
 export default function ReturnOrdersPage() {
   return (
     <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      <Suspense fallback={<ReturnOrderListSkeleton />}>
-        <ReturnOrdersPageClient />
-      </Suspense>
+      <ReturnOrdersPageClient />
     </div>
   );
 }

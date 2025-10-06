@@ -2,11 +2,11 @@
 
 import { useQuery } from '@tanstack/react-query';
 
+import { ContentLoading } from '@/components/common/loading';
 import {
   ProductBatchDeleteDialog,
   ProductDeleteDialog,
 } from '@/components/products/product-delete-dialogs';
-import { ProductListSkeleton } from '@/components/products/product-list-skeleton';
 import { ProductListToolbar } from '@/components/products/product-list-toolbar';
 import { ProductSearchFilters } from '@/components/products/product-search-filters';
 import { ProductTable } from '@/components/products/product-table';
@@ -109,7 +109,7 @@ export function ERPProductList({
   };
 
   if (isLoading) {
-    return <ProductListSkeleton />;
+    return <ContentLoading text="加载产品列表中..." />;
   }
 
   if (error) {

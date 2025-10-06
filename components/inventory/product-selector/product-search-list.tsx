@@ -2,6 +2,7 @@
 
 import React from 'react';
 
+import { InlineLoading } from '@/components/common/loading';
 import { ProductOptionItem } from '@/components/inventory/product-selector/product-option-item';
 import {
   Command,
@@ -11,7 +12,6 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command';
-import { Skeleton } from '@/components/ui/skeleton';
 import type { ProductOption } from '@/lib/types/inbound';
 
 interface ProductSearchListProps {
@@ -25,25 +25,15 @@ interface ProductSearchListProps {
 
 function LoadingState() {
   return (
-    <div className="p-2">
-      <div className="space-y-2">
-        {Array.from({ length: 3 }).map((_, i) => (
-          <div key={i} className="flex items-center gap-2">
-            <Skeleton className="h-4 w-4" />
-            <div className="flex-1 space-y-1">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-3 w-24" />
-            </div>
-          </div>
-        ))}
-      </div>
+    <div className="p-4">
+      <InlineLoading text="搜索产品中..." />
     </div>
   );
 }
 
 function ErrorState({ error }: { error: Error }) {
   return (
-    <div className="p-4 text-center text-sm text-muted-foreground">
+    <div className="text-muted-foreground p-4 text-center text-sm">
       搜索失败: {error.message}
     </div>
   );

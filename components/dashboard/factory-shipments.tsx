@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentLoading } from '@/components/common/loading';
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentOrder,
@@ -107,25 +107,6 @@ const formatTime = (dateString: string) => {
   });
 };
 
-// 加载骨架屏
-const LoadingSkeleton = () => (
-  <div className="space-y-3">
-    {[1, 2, 3].map(i => (
-      <div
-        key={i}
-        className="flex items-center gap-3 rounded-lg border border-gray-200 bg-white p-4"
-      >
-        <Skeleton className="h-10 w-10 rounded-lg" />
-        <div className="flex-1 space-y-2">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-3 w-24" />
-        </div>
-        <Skeleton className="h-6 w-16" />
-      </div>
-    ))}
-  </div>
-);
-
 export function FactoryShipments({ orders, loading }: FactoryShipmentsProps) {
   if (loading) {
     return (
@@ -144,7 +125,7 @@ export function FactoryShipments({ orders, loading }: FactoryShipmentsProps) {
           </div>
         </CardHeader>
         <CardContent className="p-6">
-          <LoadingSkeleton />
+          <ContentLoading text="加载发货订单..." />
         </CardContent>
       </Card>
     );

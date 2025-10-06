@@ -7,7 +7,7 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentLoading } from '@/components/common/loading';
 import {
   Table,
   TableBody,
@@ -153,30 +153,7 @@ function MobileDataTable<T extends Record<string, unknown>>({
   if (loading) {
     return (
       <div className={cn('space-y-4', className)}>
-        {/* 桌面端骨架屏 */}
-        <div className="hidden md:block">
-          <div className="rounded-lg border">
-            <div className="p-4">
-              <Skeleton className="mb-2 h-4 w-full" />
-              {Array.from({ length: 5 }).map((_, i) => (
-                <Skeleton key={i} className="mb-2 h-12 w-full" />
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* 移动端骨架屏 */}
-        <div className="space-y-3 md:hidden">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i}>
-              <CardContent className="p-4">
-                <Skeleton className="mb-2 h-4 w-3/4" />
-                <Skeleton className="mb-2 h-3 w-1/2" />
-                <Skeleton className="h-3 w-full" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <ContentLoading text="加载数据..." />
       </div>
     );
   }

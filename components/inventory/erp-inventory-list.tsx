@@ -72,8 +72,8 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
         />
 
         {/* 库存表格 */}
-        <div className="bg-card rounded border">
-          <div className="bg-muted/30 border-b px-3 py-2">
+        <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+          <div className="bg-muted/50 border-b px-3 py-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium">库存列表</h3>
               <div className="text-muted-foreground text-sm">
@@ -95,12 +95,14 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
 
           {/* 分页 */}
           {data.pagination && (
-            <Pagination
-              pagination={data.pagination}
-              onPageChange={onPageChange}
-              showRange
-              showTotal
-            />
+            <div className="border-t bg-gray-50/50 px-4 py-3">
+              <Pagination
+                pagination={data.pagination}
+                onPageChange={onPageChange}
+                showRange
+                showTotal
+              />
+            </div>
           )}
         </div>
       </div>

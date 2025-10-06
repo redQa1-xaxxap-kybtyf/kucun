@@ -41,24 +41,12 @@ export default async function PayableDetailPage({
   return (
     <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
       <div className="space-y-4">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                <CreditCard className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                  应付款详情
-                </h1>
-                <p className="text-sm text-gray-600">
-                  应付款单号：{payable.payableNumber}
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
+        <div className="flex items-center space-x-2">
+          <span className="text-muted-foreground">
+            应付款单号：{payable.payableNumber}
+          </span>
+        </div>
 
         {/* 详情内容 */}
         <PayableDetailClient payable={payable} />

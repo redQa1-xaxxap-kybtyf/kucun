@@ -3,10 +3,10 @@
 import { Package } from 'lucide-react';
 import React from 'react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { InventoryAlertCard } from '@/components/inventory/variant/inventory-alert-card';
 import { InventoryOverviewCard } from '@/components/inventory/variant/inventory-overview-card';
 import { InventoryStatsCard } from '@/components/inventory/variant/inventory-stats-card';
-import { InventorySummarySkeleton } from '@/components/inventory/variant/inventory-summary-skeleton';
 import { LocationDistributionCard } from '@/components/inventory/variant/location-distribution-card';
 import { Card, CardContent } from '@/components/ui/card';
 import { useVariantInventorySummary } from '@/hooks/use-variant-inventory-summary';
@@ -20,7 +20,7 @@ function ErrorState() {
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="text-center text-muted-foreground">
+        <div className="text-muted-foreground text-center">
           <Package className="mx-auto mb-2 h-8 w-8" />
           <p className="text-sm">加载库存汇总失败</p>
         </div>
@@ -43,7 +43,7 @@ export function VariantInventorySummary({
   } = useVariantInventorySummary(variantId);
 
   if (isLoading) {
-    return <InventorySummarySkeleton />;
+    return <ContentLoading text="加载库存汇总中..." />;
   }
 
   if (error || !summaryData) {

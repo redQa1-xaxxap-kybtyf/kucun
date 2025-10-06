@@ -15,8 +15,8 @@ import {
 } from 'lucide-react';
 import { useState } from 'react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { ConfirmShipmentDialog } from '@/components/factory-shipments/confirm-shipment-dialog';
-import { FactoryShipmentOrderDetailSkeleton } from '@/components/factory-shipments/factory-shipment-order-detail-skeleton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -136,7 +136,7 @@ export function FactoryShipmentOrderDetail({
   });
 
   if (isLoading) {
-    return <FactoryShipmentOrderDetailSkeleton />;
+    return <ContentLoading text="加载订单详情中..." />;
   }
 
   if (error || !order) {

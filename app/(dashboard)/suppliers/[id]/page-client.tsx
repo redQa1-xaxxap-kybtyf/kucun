@@ -121,41 +121,29 @@ export function SupplierDetailPageClient({
   return (
     <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
       <div className="space-y-4">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <Button variant="ghost" size="sm" onClick={() => router.back()}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  返回
-                </Button>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    {supplier.name}
-                  </h1>
-                  <p className="text-sm text-gray-600">供应商详情</p>
-                </div>
-              </div>
+        {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <span className="text-muted-foreground">
+              供应商名称：{supplier.name}
+            </span>
+          </div>
 
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  onClick={() => router.push(`/suppliers/${supplier.id}/edit`)}
-                  className="h-11"
-                >
-                  <Edit className="mr-2 h-4 w-4" />
-                  编辑
-                </Button>
-                <Button size="lg" className="h-11">
-                  <Truck className="mr-2 h-4 w-4" />
-                  创建发货
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => router.push(`/suppliers/${supplier.id}/edit`)}
+            >
+              <Edit className="mr-2 h-4 w-4" />
+              编辑
+            </Button>
+            <Button size="sm">
+              <Truck className="mr-2 h-4 w-4" />
+              创建发货
+            </Button>
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* 基本信息 */}

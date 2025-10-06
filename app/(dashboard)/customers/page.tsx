@@ -1,6 +1,3 @@
-import { Suspense } from 'react';
-
-import { CustomerListSkeleton } from '@/components/customers/customer-list-skeleton';
 import { getCustomerList } from '@/lib/api/customer-handlers';
 import { paginationConfig } from '@/lib/env';
 import { CustomersPageClient } from './page-client';
@@ -43,12 +40,10 @@ export default async function CustomersPage({
 
   return (
     <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      <Suspense fallback={<CustomerListSkeleton />}>
-        <CustomersPageClient
-          initialData={initialData}
-          initialParams={{ page, limit, search, sortBy, sortOrder }}
-        />
-      </Suspense>
+      <CustomersPageClient
+        initialData={initialData}
+        initialParams={{ page, limit, search, sortBy, sortOrder }}
+      />
     </div>
   );
 }

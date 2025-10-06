@@ -15,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentLoading } from '@/components/common/loading';
 import { cn } from '@/lib/utils';
 import type { SalesOrder } from '@/lib/types/sales-order';
 
@@ -56,22 +56,6 @@ const formatDate = (dateString: string) => {
   });
 };
 
-// 加载骨架屏
-const OrderSkeleton = () => (
-  <div className="flex items-center gap-4 rounded-lg border bg-gradient-to-br from-white to-gray-50/50 p-4">
-    <Skeleton className="h-12 w-12 rounded-xl" />
-    <div className="flex-1 space-y-2">
-      <Skeleton className="h-4 w-32" />
-      <Skeleton className="h-3 w-24" />
-      <div className="flex gap-2">
-        <Skeleton className="h-5 w-16" />
-        <Skeleton className="h-5 w-20" />
-      </div>
-    </div>
-    <Skeleton className="h-9 w-20" />
-  </div>
-);
-
 export function PendingOrders({ orders, loading }: PendingOrdersProps) {
   if (loading) {
     return (
@@ -83,7 +67,9 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
                 <AlertCircle className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">待处理订单</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  待处理订单
+                </h3>
                 <p className="text-sm text-gray-600">需要及时处理的订单</p>
               </div>
             </div>
@@ -93,9 +79,7 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-3 p-6">
-          {[...Array(5)].map((_, i) => (
-            <OrderSkeleton key={i} />
-          ))}
+          <ContentLoading text="加载待处理订单..." />
         </CardContent>
       </Card>
     );
@@ -111,7 +95,9 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
                 <AlertCircle className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">待处理订单</h3>
+                <h3 className="text-lg font-semibold text-gray-900">
+                  待处理订单
+                </h3>
                 <p className="text-sm text-gray-600">需要及时处理的订单</p>
               </div>
             </div>
@@ -135,7 +121,9 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
               <AlertCircle className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">待处理订单</h3>
+              <h3 className="text-lg font-semibold text-gray-900">
+                待处理订单
+              </h3>
               <p className="text-sm text-gray-600">需要及时处理的订单</p>
             </div>
           </div>
@@ -194,7 +182,7 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
                       {urgent && (
                         <Badge
                           variant="destructive"
-                          className="bg-red-100 text-red-700 border-red-200"
+                          className="border-red-200 bg-red-100 text-red-700"
                         >
                           <AlertCircle className="mr-1 h-3 w-3" />
                           紧急
@@ -253,4 +241,3 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
     </Card>
   );
 }
-

@@ -1,7 +1,4 @@
-import { Suspense } from 'react';
-
 import { ERPProductList } from '@/components/products/erp-product-list';
-import { ProductListSkeleton } from '@/components/products/product-list-skeleton';
 import { getProductsForServer } from '@/lib/api/products-server';
 import { paginationConfig, productConfig } from '@/lib/env';
 
@@ -45,20 +42,18 @@ export default async function ProductsPage({
   return (
     <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
       <div className="space-y-4">
-        <Suspense fallback={<ProductListSkeleton />}>
-          <ERPProductList
-            _initialData={initialData}
-            initialParams={{
-              page,
-              limit,
-              search,
-              categoryId,
-              status,
-              sortBy,
-              sortOrder,
-            }}
-          />
-        </Suspense>
+        <ERPProductList
+          _initialData={initialData}
+          initialParams={{
+            page,
+            limit,
+            search,
+            categoryId,
+            status,
+            sortBy,
+            sortOrder,
+          }}
+        />
       </div>
     </div>
   );

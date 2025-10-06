@@ -2,9 +2,9 @@
 
 import { AlertCircle, BellOff, RefreshCw } from 'lucide-react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { InventoryAlertStats } from '@/components/inventory/alerts/inventory-alert-stats';
 import { InventoryAlertTable } from '@/components/inventory/alerts/inventory-alert-table';
-import { InventoryAlertsSkeleton } from '@/components/inventory/alerts/inventory-alerts-skeleton';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
@@ -60,7 +60,7 @@ function renderErrorState(
 
 function renderEmptyState() {
   return (
-    <div className="py-8 text-center text-muted-foreground">
+    <div className="text-muted-foreground py-8 text-center">
       <BellOff className="mx-auto mb-2 h-12 w-12" />
       <p className="text-lg font-medium">暂无库存预警</p>
       <p className="text-sm">所有产品库存状态正常</p>
@@ -90,7 +90,7 @@ export function InventoryAlerts({
   } = useInventoryAlerts(maxItems);
 
   if (isLoading) {
-    return <InventoryAlertsSkeleton showTitle={showTitle} />;
+    return <ContentLoading text="加载库存预警中..." />;
   }
 
   if (error) {

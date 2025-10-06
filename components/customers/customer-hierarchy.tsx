@@ -31,7 +31,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
+import { InlineLoading } from '@/components/common/loading';
 // API and Types
 import { searchCustomers } from '@/lib/api/customers';
 import { queryKeys } from '@/lib/queryKeys';
@@ -254,7 +254,9 @@ export function CustomerHierarchyTree({
 }
 
 // 客户选择器组件属性
-interface CustomerSelectorProps<TFieldValues extends Record<string, unknown> = Record<string, unknown>> {
+interface CustomerSelectorProps<
+  TFieldValues extends Record<string, unknown> = Record<string, unknown>,
+> {
   control: Control<TFieldValues>;
   name: string;
   label?: string;
@@ -265,7 +267,9 @@ interface CustomerSelectorProps<TFieldValues extends Record<string, unknown> = R
 }
 
 // 客户选择器组件
-export function CustomerSelector<TFieldValues extends Record<string, unknown> = Record<string, unknown>>({
+export function CustomerSelector<
+  TFieldValues extends Record<string, unknown> = Record<string, unknown>,
+>({
   control,
   name,
   label = '选择客户',
@@ -361,7 +365,7 @@ export function CustomerSelector<TFieldValues extends Record<string, unknown> = 
             <CommandList>
               {isLoading && (
                 <div className="p-2">
-                  <Skeleton className="h-8 w-full" />
+                  <InlineLoading text="搜索中..." />
                 </div>
               )}
 

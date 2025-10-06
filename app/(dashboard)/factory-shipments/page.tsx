@@ -3,9 +3,7 @@ import {
   QueryClient,
   dehydrate,
 } from '@tanstack/react-query';
-import { Suspense } from 'react';
 
-import { FactoryShipmentOrderListSkeleton } from '@/components/factory-shipments/factory-shipment-order-list-skeleton';
 import { FactoryShipmentOrderListWrapper } from '@/components/factory-shipments/factory-shipment-order-list-wrapper';
 import { factoryShipmentQueryKeys } from '@/lib/api/factory-shipments';
 import { getFactoryShipmentOrdersServer } from '@/lib/api/factory-shipments-server';
@@ -36,9 +34,7 @@ export default async function FactoryShipmentsPage() {
     <HydrationBoundary state={dehydrate(queryClient)}>
       <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
         <div className="space-y-4">
-          <Suspense fallback={<FactoryShipmentOrderListSkeleton />}>
-            <FactoryShipmentOrderListWrapper />
-          </Suspense>
+          <FactoryShipmentOrderListWrapper />
         </div>
       </div>
     </HydrationBoundary>

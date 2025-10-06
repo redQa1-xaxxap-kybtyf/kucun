@@ -3,8 +3,8 @@
  * 显示当前库存状态和相关信息
  */
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -28,7 +28,9 @@ export function InventoryAdjustTable({
 }: InventoryAdjustTableProps) {
   // 格式化日期
   const formatDate = (dateString: string | Date) => {
-    if (!dateString) {return null;}
+    if (!dateString) {
+      return null;
+    }
     return formatDateTimeCN(dateString);
   };
 
@@ -45,7 +47,7 @@ export function InventoryAdjustTable({
           </Badge>
         </div>
         {stockData.reservedQuantity > 0 && (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-sm">
             可用: {stockData.formattedAvailable}
           </div>
         )}
@@ -54,18 +56,12 @@ export function InventoryAdjustTable({
   };
 
   if (isLoading) {
-    return (
-      <div className="space-y-3">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <Skeleton key={index} className="h-16 w-full" />
-        ))}
-      </div>
-    );
+    return <ContentLoading text="加载库存调整记录..." />;
   }
 
   if (inventoryRecords.length === 0) {
     return (
-      <div className="py-8 text-center text-muted-foreground">暂无库存记录</div>
+      <div className="text-muted-foreground py-8 text-center">暂无库存记录</div>
     );
   }
 
@@ -88,12 +84,12 @@ export function InventoryAdjustTable({
                   {record.product?.name || '未知产品'}
                 </span>
                 {record.product?.code && (
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     编码: {record.product.code}
                   </span>
                 )}
                 {record.product?.specification && (
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     规格:{' '}
                     {(() => {
                       const spec = record.product.specification;
@@ -124,7 +120,7 @@ export function InventoryAdjustTable({
                   </span>
                 )}
                 {record.variant?.sku && (
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     SKU: {record.variant.sku}
                   </span>
                 )}

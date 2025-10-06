@@ -27,7 +27,7 @@ import {
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentLoading } from '@/components/common/loading';
 import { dashboardUtils, useCompleteTodoItem } from '@/lib/api/dashboard';
 import type { TodoItem } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
@@ -121,7 +121,7 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
       return (
         <div
           className={cn(
-            'flex items-center space-x-3 rounded-lg border bg-card p-3',
+            'bg-card flex items-center space-x-3 rounded-lg border p-3',
             todo.status === 'completed' && 'opacity-60',
             className
           )}
@@ -152,7 +152,7 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
             >
               {todo.title}
             </p>
-            <p className="truncate text-xs text-muted-foreground">
+            <p className="text-muted-foreground truncate text-xs">
               {todo.description}
             </p>
           </div>
@@ -188,7 +188,7 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
     return (
       <div
         className={cn(
-          'rounded-lg border bg-card p-4 transition-colors',
+          'bg-card rounded-lg border p-4 transition-colors',
           todo.status === 'completed' && 'opacity-60',
           className
         )}
@@ -241,9 +241,9 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
               )}
             </div>
 
-            <p className="text-sm text-muted-foreground">{todo.description}</p>
+            <p className="text-muted-foreground text-sm">{todo.description}</p>
 
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
+            <div className="text-muted-foreground flex items-center justify-between text-xs">
               <div className="flex items-center space-x-4">
                 <span>{typeConfig.label}</span>
                 {todo.dueDate && (
@@ -341,7 +341,9 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
         const priorityOrder = { urgent: 4, high: 3, medium: 2, low: 1 };
         const priorityDiff =
           priorityOrder[b.priority] - priorityOrder[a.priority];
-        if (priorityDiff !== 0) {return priorityDiff;}
+        if (priorityDiff !== 0) {
+          return priorityDiff;
+        }
 
         return (
           new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
@@ -364,7 +366,9 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
           stats.completed++;
         } else {
           stats.pending++;
-          if (todo.priority === 'urgent') {stats.urgent++;}
+          if (todo.priority === 'urgent') {
+            stats.urgent++;
+          }
           if (todo.dueDate && new Date(todo.dueDate) < new Date()) {
             stats.overdue++;
           }
@@ -377,35 +381,8 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
     if (loading) {
       return (
         <Card className={className} ref={ref} {...props}>
-          {showHeader && (
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <div>
-                  <Skeleton className="mb-2 h-5 w-24" />
-                  <Skeleton className="h-4 w-32" />
-                </div>
-                <div className="flex space-x-2">
-                  <Skeleton className="h-8 w-8" />
-                  <Skeleton className="h-8 w-8" />
-                </div>
-              </div>
-            </CardHeader>
-          )}
-          <CardContent>
-            <div className="space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="rounded-lg border p-3">
-                  <div className="flex items-center space-x-3">
-                    <Skeleton className="h-4 w-4" />
-                    <div className="flex-1 space-y-2">
-                      <Skeleton className="h-4 w-48" />
-                      <Skeleton className="h-3 w-32" />
-                    </div>
-                    <Skeleton className="h-6 w-12" />
-                  </div>
-                </div>
-              ))}
-            </div>
+          <CardContent className="p-6">
+            <ContentLoading text="加载待办事项..." />
           </CardContent>
         </Card>
       );
@@ -452,11 +429,11 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
         <CardContent>
           {filteredTodos.length === 0 ? (
             <div className="py-8 text-center">
-              <CheckSquare className="mx-auto mb-4 h-12 w-12 text-muted-foreground" />
+              <CheckSquare className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
               <p className="text-muted-foreground">
                 {showCompleted ? '暂无待办事项' : '暂无未完成的待办事项'}
               </p>
-              <p className="mt-1 text-sm text-muted-foreground">
+              <p className="text-muted-foreground mt-1 text-sm">
                 {showCompleted ? '添加新的待办事项' : '所有任务已完成'}
               </p>
             </div>
@@ -478,7 +455,7 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
 
           {todoStats.completed > 0 && !showCompleted && (
             <div className="mt-4 border-t pt-4 text-center">
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 已完成 {todoStats.completed} 个任务
               </p>
             </div>

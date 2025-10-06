@@ -13,6 +13,7 @@ import {
   PRODUCT_STATUS_OPTIONS,
   type ProductStatus,
 } from '@/lib/config/product';
+import { SEARCH_CONFIG } from '@/lib/config/search';
 
 interface Category {
   id: string;
@@ -62,7 +63,7 @@ export function ProductSearchFilters({
           searchValue={searchValue}
           onSearchChange={onSearchChange}
           searchPlaceholder="搜索产品编码、名称或规格..."
-          debounceDelay={500}
+          debounceDelay={SEARCH_CONFIG.DEBOUNCE_DELAY.DEFAULT}
           // 筛选器配置
           filters={[
             {

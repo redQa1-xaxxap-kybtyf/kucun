@@ -1,6 +1,3 @@
-import { Suspense } from 'react';
-
-import { CategoryListSkeleton } from '@/components/categories/category-list-skeleton';
 import { CategoryPageWrapper } from '@/components/categories/category-page-wrapper';
 import { getCategoriesServer } from '@/lib/api/categories-server';
 
@@ -36,12 +33,10 @@ export default async function CategoriesPage({
   return (
     <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
       <div className="space-y-4">
-        <Suspense fallback={<CategoryListSkeleton />}>
-          <CategoryPageWrapper
-            initialData={initialData}
-            initialParams={{ page, limit, search, status, sortBy, sortOrder }}
-          />
-        </Suspense>
+        <CategoryPageWrapper
+          initialData={initialData}
+          initialParams={{ page, limit, search, status, sortBy, sortOrder }}
+        />
       </div>
     </div>
   );

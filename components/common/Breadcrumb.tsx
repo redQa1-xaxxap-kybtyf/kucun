@@ -37,6 +37,7 @@ const PATH_TITLES: Record<string, string> = {
   '/sales-orders': '销售订单',
   '/sales-orders/create': '新建订单',
   '/return-orders': '退货订单',
+  '/return-orders/create': '新建退货',
   '/customers': '客户管理',
   '/customers/create': '新建客户',
   '/suppliers': '供应商管理',
@@ -81,6 +82,19 @@ const PATH_TITLES: Record<string, string> = {
   payments: '收款记录',
   payables: '应付款',
   'payments-out': '付款记录',
+
+  // 设置模块路径映射
+  '/settings/logs': '系统日志',
+  '/settings/basic': '基本设置',
+  '/settings/storage': '存储设置',
+  '/settings/users': '用户管理',
+
+  // 特殊子路径（用于动态路由识别）
+  process: '处理',
+  logs: '日志',
+  basic: '基本设置',
+  storage: '存储',
+  users: '用户',
 };
 
 /**

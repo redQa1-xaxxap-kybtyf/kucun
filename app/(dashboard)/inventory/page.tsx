@@ -1,6 +1,3 @@
-import { Suspense } from 'react';
-
-import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
 import { getCategoriesServer } from '@/lib/api/categories-server';
 import { formatPaginatedResponse } from '@/lib/api/inventory-formatter';
 import {
@@ -48,7 +45,12 @@ export default async function InventoryPage({
   const [inventoryRecords, total, categoriesResult] = await Promise.all([
     getOptimizedInventoryList(queryParams),
     getInventoryCount(queryParams),
-    getCategoriesServer({ page: 1, limit: 100, sortBy: 'name', sortOrder: 'asc' }),
+    getCategoriesServer({
+      page: 1,
+      limit: 100,
+      sortBy: 'name',
+      sortOrder: 'asc',
+    }),
   ]);
 
   // 转换分类数据格式
@@ -72,13 +74,11 @@ export default async function InventoryPage({
 
   return (
     <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      <Suspense fallback={<InventoryListSkeleton />}>
-        <InventoryPageClient
-          initialData={initialData}
-          initialParams={queryParams}
-          categoryOptions={categoryOptions}
-        />
-      </Suspense>
+      <InventoryPageClient
+        initialData={initialData}
+        initialParams={queryParams}
+        categoryOptions={categoryOptions}
+      />
     </div>
   );
 }

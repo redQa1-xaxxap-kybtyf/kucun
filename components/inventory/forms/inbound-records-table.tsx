@@ -4,8 +4,8 @@ import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import { Package, User } from 'lucide-react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
-import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -98,29 +98,7 @@ export function InboundRecordsTable({
   isLoading,
 }: InboundRecordsTableProps) {
   if (isLoading) {
-    return (
-      <div className="bg-card rounded border">
-        <div className="bg-muted/30 border-b px-3 py-2">
-          <div className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            <span className="text-sm font-medium">入库记录</span>
-          </div>
-        </div>
-        <div className="p-4">
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center space-x-4">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-4 w-16" />
-                <Skeleton className="h-4 w-24" />
-                <Skeleton className="h-4 w-32" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <ContentLoading text="加载入库记录..." />;
   }
 
   return (

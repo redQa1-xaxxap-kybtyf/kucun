@@ -12,7 +12,7 @@ import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentLoading } from '@/components/common/loading';
 import type { SalesOrder } from '@/lib/types/sales-order';
 import { cn } from '@/lib/utils';
 
@@ -86,22 +86,6 @@ const formatTime = (dateString: string) => {
   });
 };
 
-// 加载骨架屏
-const OrderSkeleton = () => (
-  <div className="flex items-start gap-4 rounded-lg border bg-gradient-to-br from-white to-gray-50/50 p-4">
-    <Skeleton className="h-12 w-12 rounded-xl" />
-    <div className="flex-1 space-y-2">
-      <Skeleton className="h-4 w-32" />
-      <Skeleton className="h-3 w-24" />
-      <div className="flex gap-2">
-        <Skeleton className="h-5 w-16" />
-        <Skeleton className="h-5 w-20" />
-      </div>
-    </div>
-    <Skeleton className="h-6 w-20" />
-  </div>
-);
-
 export function RecentOrders({ orders, loading }: RecentOrdersProps) {
   if (loading) {
     return (
@@ -125,9 +109,7 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
           </div>
         </CardHeader>
         <CardContent className="space-y-3 p-6">
-          {[...Array(5)].map((_, i) => (
-            <OrderSkeleton key={i} />
-          ))}
+          <ContentLoading text="加载订单中..." />
         </CardContent>
       </Card>
     );

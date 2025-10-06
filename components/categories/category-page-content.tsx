@@ -5,9 +5,9 @@
  * 严格遵循全栈项目统一约定规范
  */
 
+import { ContentLoading } from '@/components/common/loading';
 import { CategoryDeleteDialogs } from '@/components/categories/category-delete-dialogs';
 import { CategoryList } from '@/components/categories/category-list';
-import { CategoryPageContentSkeleton } from '@/components/categories/category-page-content-skeleton';
 import { CategoryPageHeader } from '@/components/categories/category-page-header';
 import { CategorySearchFilters } from '@/components/categories/category-search-filters';
 import { Card, CardContent } from '@/components/ui/card';
@@ -94,7 +94,7 @@ export function CategoryPageContent({
 }: CategoryPageContentProps) {
   // 加载状态
   if (isLoading) {
-    return <CategoryPageContentSkeleton />;
+    return <ContentLoading text="加载分类列表中..." />;
   }
 
   // 错误状态

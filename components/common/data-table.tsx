@@ -1,13 +1,13 @@
 /**
  * 统一的数据表格组件
- * 
+ *
  * 提供统一的数据表格，包括：
  * - 标准的表格布局
  * - 操作列支持
  * - 空状态显示
  * - 加载状态
  * - 分页支持
- * 
+ *
  * @see docs/DATA_TABLE_GUIDE.md
  */
 
@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Skeleton } from '@/components/ui/skeleton';
+import { InlineLoading } from '@/components/common/loading';
 import {
   Table,
   TableBody,
@@ -42,17 +42,17 @@ export interface DataTableColumn<TData> {
    * 列标题
    */
   header: string;
-  
+
   /**
    * 列宽度
    */
   width?: string;
-  
+
   /**
    * 列对齐方式
    */
   align?: 'left' | 'center' | 'right';
-  
+
   /**
    * 渲染单元格内容
    */
@@ -67,22 +67,22 @@ export interface DataTableAction<TData> {
    * 操作标签
    */
   label: string;
-  
+
   /**
    * 操作图标
    */
   icon?: React.ReactNode;
-  
+
   /**
    * 操作回调
    */
   onClick: (row: TData) => void;
-  
+
   /**
    * 是否为危险操作
    */
   destructive?: boolean;
-  
+
   /**
    * 是否显示分隔线
    */
@@ -97,37 +97,37 @@ export interface DataTableProps<TData> {
    * 表格列定义
    */
   columns: DataTableColumn<TData>[];
-  
+
   /**
    * 表格数据
    */
   data: TData[];
-  
+
   /**
    * 操作列定义
    */
   actions?: DataTableAction<TData>[];
-  
+
   /**
    * 是否正在加载
    */
   isLoading?: boolean;
-  
+
   /**
    * 空状态标题
    */
   emptyTitle?: string;
-  
+
   /**
    * 空状态描述
    */
   emptyDescription?: string;
-  
+
   /**
    * 空状态操作
    */
   emptyAction?: React.ReactNode;
-  
+
   /**
    * 获取行的唯一键
    */
@@ -136,7 +136,7 @@ export interface DataTableProps<TData> {
 
 /**
  * 数据表格组件
- * 
+ *
  * @example
  * ```tsx
  * <DataTable
@@ -199,20 +199,15 @@ export function DataTable<TData>({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {Array.from({ length: 5 }).map((_, index) => (
-              <TableRow key={index}>
-                {columns.map((_, colIndex) => (
-                  <TableCell key={colIndex}>
-                    <Skeleton className="h-5 w-full" />
-                  </TableCell>
-                ))}
-                {actions && actions.length > 0 && (
-                  <TableCell>
-                    <Skeleton className="h-8 w-8" />
-                  </TableCell>
-                )}
-              </TableRow>
-            ))}
+            <TableRow>
+              <TableCell
+                colSpan={
+                  columns.length + (actions && actions.length > 0 ? 1 : 0)
+                }
+              >
+                <InlineLoading text="加载数据..." />
+              </TableCell>
+            </TableRow>
           </TableBody>
         </Table>
       </div>
@@ -227,7 +222,9 @@ export function DataTable<TData>({
           <div className="space-y-2">
             <h3 className="text-lg font-semibold">{emptyTitle}</h3>
             {emptyDescription && (
-              <p className="text-sm text-muted-foreground">{emptyDescription}</p>
+              <p className="text-muted-foreground text-sm">
+                {emptyDescription}
+              </p>
             )}
           </div>
           {emptyAction}
@@ -291,10 +288,14 @@ export function DataTable<TData>({
                     <DropdownMenuContent align="end">
                       {actions.map((action, index) => (
                         <React.Fragment key={index}>
-                          {action.separator && index > 0 && <DropdownMenuSeparator />}
+                          {action.separator && index > 0 && (
+                            <DropdownMenuSeparator />
+                          )}
                           <DropdownMenuItem
                             onClick={() => action.onClick(row)}
-                            className={action.destructive ? 'text-destructive' : ''}
+                            className={
+                              action.destructive ? 'text-destructive' : ''
+                            }
                           >
                             {action.icon && (
                               <span className="mr-2">{action.icon}</span>
@@ -314,4 +315,3 @@ export function DataTable<TData>({
     </div>
   );
 }
-

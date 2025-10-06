@@ -1,7 +1,7 @@
 'use client';
 
-import { usePathname, useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { usePathname, useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import type { UserRole } from '@/lib/types/user';
@@ -9,7 +9,7 @@ import { canAccessPath } from '@/lib/utils/permissions';
 
 import { Breadcrumb } from './Breadcrumb';
 import { DashboardLayout } from './DashboardLayout';
-import { GlobalSearch } from './GlobalSearch';
+import { GlobalSearch } from './GlobalSearch/index';
 
 interface AuthLayoutProps {
   /** 子组件 */
@@ -55,7 +55,12 @@ export function AuthLayout({
   // 缓存权限检查结果，避免重复计算
   const authState = React.useMemo(() => {
     if (status === 'loading') {
-      return { isLoading: true, isAuthorized: false, shouldRedirect: false, redirectUrl: '' };
+      return {
+        isLoading: true,
+        isAuthorized: false,
+        shouldRedirect: false,
+        redirectUrl: '',
+      };
     }
 
     // 检查是否需要认证但未登录
@@ -94,7 +99,12 @@ export function AuthLayout({
       }
     }
 
-    return { isLoading: false, isAuthorized: true, shouldRedirect: false, redirectUrl: '' };
+    return {
+      isLoading: false,
+      isAuthorized: true,
+      shouldRedirect: false,
+      redirectUrl: '',
+    };
   }, [status, session?.user, requireAuth, requiredRoles, pathname]);
 
   // 只在需要时执行重定向
@@ -157,7 +167,7 @@ export function AuthLayout({
               <div>
                 <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
                 {description && (
-                  <p className="mt-2 text-muted-foreground">{description}</p>
+                  <p className="text-muted-foreground mt-2">{description}</p>
                 )}
               </div>
             )}
@@ -185,12 +195,12 @@ export function AuthLayout({
  */
 function AuthLoadingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="bg-background flex min-h-screen items-center justify-center">
       <div className="space-y-4 text-center">
-        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-b-2 border-primary"></div>
+        <div className="border-primary mx-auto h-12 w-12 animate-spin rounded-full border-b-2"></div>
         <div className="space-y-2">
           <h2 className="text-lg font-semibold">正在加载...</h2>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-muted-foreground text-sm">
             请稍候，正在验证您的身份
           </p>
         </div>
@@ -206,10 +216,10 @@ function AccessDeniedScreen() {
   const router = useRouter();
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
+    <div className="bg-background flex min-h-screen items-center justify-center">
       <div className="max-w-md space-y-6 text-center">
         <div className="space-y-2">
-          <h1 className="text-4xl font-bold text-destructive">403</h1>
+          <h1 className="text-destructive text-4xl font-bold">403</h1>
           <h2 className="text-xl font-semibold">访问被拒绝</h2>
           <p className="text-muted-foreground">
             抱歉，您没有权限访问此页面。请联系管理员获取相应权限。
@@ -219,13 +229,13 @@ function AccessDeniedScreen() {
         <div className="flex flex-col justify-center gap-4 sm:flex-row">
           <button
             onClick={() => router.back()}
-            className="px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground px-4 py-2 text-sm font-medium transition-colors"
           >
             返回上一页
           </button>
           <button
             onClick={() => router.push('/dashboard')}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/90"
+            className="bg-primary text-primary-foreground hover:bg-primary/90 rounded-md px-4 py-2 text-sm font-medium transition-colors"
           >
             返回首页
           </button>

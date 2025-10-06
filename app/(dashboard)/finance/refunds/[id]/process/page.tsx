@@ -117,7 +117,8 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
 
       toast({
         title: '处理成功',
-        description: formData.status === 'completed' ? '退款已批准' : '退款已拒绝',
+        description:
+          formData.status === 'completed' ? '退款已批准' : '退款已拒绝',
         variant: 'success',
       });
 
@@ -126,7 +127,8 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
     } catch (error) {
       toast({
         title: '处理失败',
-        description: error instanceof Error ? error.message : '处理退款失败，请重试',
+        description:
+          error instanceof Error ? error.message : '处理退款失败，请重试',
         variant: 'destructive',
       });
     }
@@ -160,18 +162,11 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
 
   return (
     <div className="space-y-6">
-      {/* 页面标题和导航 */}
-      <div className="flex items-center gap-4">
-        <Button variant="outline" size="sm" onClick={() => router.back()}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          返回
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">处理退款申请</h1>
-          <p className="text-muted-foreground">
-            退款单号：{refund.refundNumber}
-          </p>
-        </div>
+      {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
+      <div className="flex items-center space-x-2">
+        <span className="text-muted-foreground">
+          退款单号：{refund.refundNumber}
+        </span>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -186,35 +181,39 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
           <CardContent className="space-y-4">
             <div className="grid gap-4">
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">退款单号</span>
+                <span className="text-muted-foreground text-sm">退款单号</span>
                 <span className="font-medium">{refund.refundNumber}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">退货单号</span>
-                <span className="font-medium">{refund.returnOrder?.returnNumber || '-'}</span>
+                <span className="text-muted-foreground text-sm">退货单号</span>
+                <span className="font-medium">
+                  {refund.returnOrder?.returnNumber || '-'}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">原订单号</span>
+                <span className="text-muted-foreground text-sm">原订单号</span>
                 <span className="font-medium">
                   {refund.salesOrder?.orderNumber || '-'}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">客户名称</span>
-                <span className="font-medium">{refund.customer?.name || '-'}</span>
+                <span className="text-muted-foreground text-sm">客户名称</span>
+                <span className="font-medium">
+                  {refund.customer?.name || '-'}
+                </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">退款原因</span>
+                <span className="text-muted-foreground text-sm">退款原因</span>
                 <span className="font-medium">{refund.reason}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">申请日期</span>
+                <span className="text-muted-foreground text-sm">申请日期</span>
                 <span className="font-medium">
                   {new Date(refund.refundDate).toLocaleDateString('zh-CN')}
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">当前状态</span>
+                <span className="text-muted-foreground text-sm">当前状态</span>
                 {getStatusBadge(refund.status)}
               </div>
             </div>
@@ -222,7 +221,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
             <div className="border-t pt-4">
               <div className="grid gap-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     退款金额
                   </span>
                   <span className="text-lg font-bold text-orange-600">
@@ -230,7 +229,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     已处理金额
                   </span>
                   <span className="font-medium text-green-600">
@@ -238,7 +237,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     待处理金额
                   </span>
                   <span className="font-medium text-blue-600">
@@ -251,7 +250,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
             {refund.bankInfo && (
               <div className="border-t pt-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     退款账户
                   </span>
                   <span className="font-medium">{refund.bankInfo}</span>
@@ -286,7 +285,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                   placeholder="请输入处理金额"
                   required
                 />
-                <p className="text-xs text-muted-foreground">
+                <p className="text-muted-foreground text-xs">
                   最大可处理金额：{formatCurrency(refund.remainingAmount)}
                 </p>
               </div>
@@ -352,7 +351,9 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={processRefundMutation.isPending || !formData.processedAmount}
+                  disabled={
+                    processRefundMutation.isPending || !formData.processedAmount
+                  }
                   className="flex-1"
                 >
                   {processRefundMutation.isPending ? (

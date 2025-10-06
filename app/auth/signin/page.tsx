@@ -6,7 +6,13 @@ import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
 import { getSession, signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -49,7 +55,9 @@ export default function SignInPage() {
 
   // 用于清理定时器的引用
   const redirectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const redirectDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const redirectDelayTimerRef = useRef<ReturnType<typeof setTimeout> | null>(
+    null
+  );
 
   // 表单配置
   const form = useForm<UserLoginInput>({
@@ -140,7 +148,9 @@ export default function SignInPage() {
   // 处理登录成功逻辑
   const handleLoginSuccess = useCallback(
     async (session: Awaited<ReturnType<typeof getSession>>) => {
-      if (!session) {return;}
+      if (!session) {
+        return;
+      }
 
       // 设置成功状态
       setIsSuccess(true);
@@ -439,7 +449,7 @@ export default function SignInPage() {
                               }}
                             />
                           ) : (
-                            <div className="h-10 w-[120px] animate-pulse rounded border bg-gray-200">
+                            <div className="h-10 w-[120px] rounded border bg-gray-200">
                               <div className="flex h-full items-center justify-center text-xs text-gray-400">
                                 加载中...
                               </div>
@@ -490,7 +500,7 @@ export default function SignInPage() {
                 没有账户？{' '}
                 <Link
                   href="/auth/register"
-                  className="font-medium text-primary hover:text-primary/80"
+                  className="text-primary hover:text-primary/80 font-medium"
                 >
                   立即注册
                 </Link>

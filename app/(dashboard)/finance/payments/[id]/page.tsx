@@ -178,19 +178,12 @@ export default function PaymentDetailPage() {
 
   return (
     <div className="container mx-auto max-w-6xl px-4 py-6">
-      {/* 页面标题 */}
+      {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
       <div className="mb-6 flex items-center justify-between">
-        <div className="flex items-center gap-4">
-          <Button variant="ghost" size="sm" asChild>
-            <Link href="/finance/payments">
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              返回列表
-            </Link>
-          </Button>
-          <div>
-            <h1 className="text-2xl font-bold">收款记录详情</h1>
-            <p className="text-gray-600">{payment.paymentNumber}</p>
-          </div>
+        <div className="flex items-center space-x-2">
+          <span className="text-muted-foreground">
+            收款单号：{payment.paymentNumber}
+          </span>
         </div>
 
         <div className="flex items-center gap-2">

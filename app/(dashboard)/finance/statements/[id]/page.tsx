@@ -5,6 +5,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Button } from '@/components/ui/button';
 import { queryKeys } from '@/lib/queryKeys';
 
@@ -112,18 +113,8 @@ export default function StatementDetailPage({
             <ArrowLeft className="mr-2 h-4 w-4" />
             返回
           </Button>
-          <div className="animate-pulse">
-            <div className="h-8 w-48 rounded bg-gray-200"></div>
-          </div>
         </div>
-        <div className="grid gap-6 lg:grid-cols-3">
-          {[...Array(3)].map((_, index) => (
-            <div
-              key={index}
-              className="h-64 animate-pulse rounded bg-gray-200"
-            ></div>
-          ))}
-        </div>
+        <ContentLoading text="加载账单详情..." />
       </div>
     );
   }
@@ -173,7 +164,7 @@ export default function StatementDetailPage({
 
   return (
     <div className="space-y-6">
-      {/* 页面标题和操作 */}
+      {/* 页面头部 - StatementHeader组件已经正确实现，保持不变 */}
       <StatementHeader
         name={statement.name}
         type={statement.type}

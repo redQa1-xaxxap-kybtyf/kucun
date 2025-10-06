@@ -24,7 +24,6 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { useOrderUpdates } from '@/hooks/use-websocket';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { paginationConfig } from '@/lib/env';
 import { type PaginatedResponse } from '@/lib/types/api';
@@ -70,38 +69,11 @@ export function ERPSalesOrderList({
     queryFn: () => getSalesOrders(queryParams),
     initialData: _initialData, // 使用服务端预取的数据优化首屏加载
     staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
-    refetchOnWindowFocus: false, // 避免不必要的重新获取
+    refetchInterval: 60 * 1000, // 每60秒轮询更新（替代 WebSocket）
+    refetchOnWindowFocus: true, // 窗口聚焦时重新获取
     placeholderData: previousData => previousData, // 切换查询参数时保持上一次数据
     refetchOnMount: false, // 避免挂载时重新获取
   });
-
-  // 订阅订单状态实时更新
-  useOrderUpdates(
-    React.useCallback(
-      event => {
-        // 更新本地订单缓存
-        queryClient.setQueryData(
-          salesOrderQueryKeys.detail(event.orderId),
-          (old: SalesOrder | undefined) =>
-            old ? { ...old, status: event.newStatus } : old
-        );
-
-        // 刷新订单列表
-        queryClient.invalidateQueries({
-          queryKey: salesOrderQueryKeys.lists(),
-        });
-
-        // 显示状态变更通知
-        const statusLabel =
-          SALES_ORDER_STATUS_LABELS[event.newStatus as SalesOrderStatus] ||
-          event.newStatus;
-        toast.info(`订单 ${event.orderNumber} 状态更新`, {
-          description: `${event.oldStatus} → ${statusLabel}`,
-        });
-      },
-      [queryClient]
-    )
-  );
 
   // 搜索处理
   const handleSearch = React.useCallback((value: string) => {

@@ -2,6 +2,7 @@
 
 import { Package, User } from 'lucide-react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -39,7 +40,9 @@ interface OutboundRecordsTableProps {
 
 // 格式化产品规格显示（限制11个字符，避免JSON字符串显示）
 const formatSpecification = (specification?: string) => {
-  if (!specification) {return null;}
+  if (!specification) {
+    return null;
+  }
 
   // 如果是JSON字符串，尝试解析并提取关键信息
   if (specification.startsWith('{') && specification.endsWith('}')) {
@@ -72,34 +75,12 @@ export function OutboundRecordsTable({
   isLoading,
 }: OutboundRecordsTableProps) {
   if (isLoading) {
-    return (
-      <div className="rounded border bg-card">
-        <div className="border-b bg-muted/30 px-3 py-2">
-          <div className="flex items-center gap-2">
-            <Package className="h-4 w-4" />
-            <span className="text-sm font-medium">出库记录</span>
-          </div>
-        </div>
-        <div className="p-4">
-          <div className="space-y-3">
-            {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="flex items-center space-x-4">
-                <div className="h-4 w-20 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-16 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-                <div className="h-4 w-32 animate-pulse rounded bg-muted" />
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    );
+    return <ContentLoading text="加载出库记录..." />;
   }
 
   return (
-    <div className="rounded border bg-card">
-      <div className="border-b bg-muted/30 px-3 py-2">
+    <div className="bg-card rounded border">
+      <div className="bg-muted/30 border-b px-3 py-2">
         <div className="flex items-center gap-2">
           <Package className="h-4 w-4" />
           <span className="text-sm font-medium">
@@ -125,7 +106,7 @@ export function OutboundRecordsTable({
             {records.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="h-24 text-center">
-                  <div className="flex flex-col items-center gap-2 text-muted-foreground">
+                  <div className="text-muted-foreground flex flex-col items-center gap-2">
                     <Package className="h-8 w-8" />
                     <span className="text-sm">暂无出库记录</span>
                   </div>
@@ -140,7 +121,7 @@ export function OutboundRecordsTable({
                   <TableCell className="text-xs">
                     {record.productName}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-xs">
                     {formatSpecification(record.productSpecification) || '-'}
                   </TableCell>
                   <TableCell className="text-xs">
@@ -154,10 +135,10 @@ export function OutboundRecordsTable({
                       {OUTBOUND_TYPE_LABELS[record.type] || '未知'}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-xs">
                     {record.reason || '-'}
                   </TableCell>
-                  <TableCell className="text-xs text-muted-foreground">
+                  <TableCell className="text-muted-foreground text-xs">
                     <div className="flex items-center gap-1">
                       <User className="h-3 w-3" />
                       {formatDateTimeCN(record.createdAt)}

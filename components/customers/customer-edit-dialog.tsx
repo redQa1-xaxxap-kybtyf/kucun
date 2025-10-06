@@ -7,6 +7,7 @@ import * as React from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -164,20 +165,7 @@ export function CustomerEditDialog({
         </DialogHeader>
 
         {isLoadingCustomer ? (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="bg-muted h-4 w-16 animate-pulse rounded" />
-              <div className="bg-muted h-10 animate-pulse rounded" />
-            </div>
-            <div className="space-y-2">
-              <div className="bg-muted h-4 w-16 animate-pulse rounded" />
-              <div className="bg-muted h-10 animate-pulse rounded" />
-            </div>
-            <div className="space-y-2">
-              <div className="bg-muted h-4 w-16 animate-pulse rounded" />
-              <div className="bg-muted h-20 animate-pulse rounded" />
-            </div>
-          </div>
+          <ContentLoading text="加载客户信息..." />
         ) : (
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">

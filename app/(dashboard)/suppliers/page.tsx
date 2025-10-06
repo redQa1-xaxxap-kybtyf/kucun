@@ -1,7 +1,5 @@
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
 
-import { SupplierListSkeleton } from '@/components/suppliers/supplier-list-skeleton';
 import { SuppliersPageClient } from '@/components/suppliers/suppliers-page-client';
 import { getSuppliers } from '@/lib/services/supplier-service';
 import { paginationConfig } from '@/lib/env';
@@ -44,12 +42,10 @@ export default async function SuppliersPage({
   return (
     <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
       <div className="space-y-4">
-        <Suspense fallback={<SupplierListSkeleton />}>
-          <SuppliersPageClient
-            initialData={initialData}
-            initialParams={{ page, limit, search, status, sortBy, sortOrder }}
-          />
-        </Suspense>
+        <SuppliersPageClient
+          initialData={initialData}
+          initialParams={{ page, limit, search, status, sortBy, sortOrder }}
+        />
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useState } from 'react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -349,37 +350,11 @@ export function ERPReturnOrderList({
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              Array.from({ length: 5 }).map((_, index) => (
-                <TableRow key={index}>
-                  <TableCell className="h-8 px-2">
-                    <div className="bg-muted h-3 w-20 animate-pulse rounded" />
-                  </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <div className="bg-muted h-3 w-16 animate-pulse rounded" />
-                  </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <div className="bg-muted h-3 w-24 animate-pulse rounded" />
-                  </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <div className="bg-muted h-3 w-16 animate-pulse rounded" />
-                  </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <div className="bg-muted h-3 w-12 animate-pulse rounded" />
-                  </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <div className="bg-muted h-3 w-16 animate-pulse rounded" />
-                  </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <div className="bg-muted h-3 w-12 animate-pulse rounded" />
-                  </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <div className="bg-muted h-3 w-20 animate-pulse rounded" />
-                  </TableCell>
-                  <TableCell className="h-8 px-2">
-                    <div className="bg-muted h-3 w-8 animate-pulse rounded" />
-                  </TableCell>
-                </TableRow>
-              ))
+              <TableRow>
+                <TableCell colSpan={9}>
+                  <ContentLoading text="加载退货订单数据..." />
+                </TableCell>
+              </TableRow>
             ) : displayData?.data.returnOrders.length === 0 ? (
               <TableRow>
                 <TableCell

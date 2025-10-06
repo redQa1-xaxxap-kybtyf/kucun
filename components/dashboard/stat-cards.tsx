@@ -20,7 +20,7 @@ import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { Skeleton } from '@/components/ui/skeleton';
+import { ContentLoading } from '@/components/common/loading';
 import { dashboardUtils } from '@/lib/api/dashboard';
 import type { BusinessOverview, StatCard } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
@@ -112,14 +112,7 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
       return (
         <Card className={cn('', className)} ref={ref} {...props}>
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <Skeleton className="h-4 w-20" />
-                <Skeleton className="h-8 w-24" />
-                <Skeleton className="h-3 w-16" />
-              </div>
-              <Skeleton className="h-12 w-12 rounded-lg" />
-            </div>
+            <ContentLoading text="加载中..." />
           </CardContent>
         </Card>
       );

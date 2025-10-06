@@ -1,12 +1,11 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
+import { Package } from 'lucide-react';
 import * as React from 'react';
-import { toast } from 'sonner';
 
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
+import { Card, CardContent } from '@/components/ui/card';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
-import { useInventoryUpdates } from '@/hooks/use-websocket';
 import type { FormattedInventory } from '@/lib/api/inventory-formatter';
 import type { CategoryOption } from '@/lib/types/category';
 import type {
@@ -39,7 +38,6 @@ export function InventoryPageClient({
   initialParams,
   categoryOptions,
 }: InventoryPageClientProps) {
-  const queryClient = useQueryClient();
   const [queryParams, setQueryParams] =
     React.useState<InventoryQueryParams>(initialParams);
 
@@ -87,26 +85,8 @@ export function InventoryPageClient({
     initialData: convertedInitialData,
   });
 
-  // 订阅库存实时更新
-  useInventoryUpdates(
-    React.useCallback(
-      event => {
-        // 刷新库存列表
-        queryClient.invalidateQueries({ queryKey: ['inventory'] });
-
-        // 显示变更提示
-        const changeType = event.changeAmount > 0 ? '增加' : '减少';
-        const amount = Math.abs(event.changeAmount);
-        toast.info(
-          `库存变更: ${event.productName || '产品'} ${changeType} ${amount}`,
-          {
-            description: event.reason || event.action,
-          }
-        );
-      },
-      [queryClient]
-    )
-  );
+  // 注意：库存更新现在通过TanStack Query的自动后台刷新机制处理
+  // 移除了WebSocket实时更新，改用更简单可靠的轮询机制
 
   // 规范化列表数据结构，适配不同返回字段命名
   const normalizedData = React.useMemo(() => {
@@ -180,37 +160,23 @@ export function InventoryPageClient({
   return (
     <>
       {/* 页面标题卡片 */}
-      <div className="overflow-hidden rounded-lg bg-gradient-to-r from-blue-50 to-indigo-50 p-6 shadow-lg shadow-gray-200/50">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width="24"
-              height="24"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-6 w-6 text-white"
-            >
-              <path d="M16.5 9.4 7.55 4.24" />
-              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" />
-              <polyline points="3.29 7 12 12 20.71 7" />
-              <line x1="12" x2="12" y1="22" y2="12" />
-            </svg>
+      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+        <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+              <Package className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                库存管理
+              </h1>
+              <p className="text-sm text-gray-600">
+                实时监控产品库存，管理入库、出库和库存调整
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-              库存管理
-            </h1>
-            <p className="text-sm text-gray-600">
-              实时监控产品库存，管理入库、出库和库存调整
-            </p>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
       {/* 库存列表 */}
       <ERPInventoryList

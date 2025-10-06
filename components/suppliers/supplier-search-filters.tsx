@@ -8,6 +8,7 @@
 
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Card, CardContent } from '@/components/ui/card';
+import { SEARCH_CONFIG } from '@/lib/config/search';
 
 interface SupplierSearchFiltersProps {
   searchValue: string;
@@ -37,7 +38,7 @@ export function SupplierSearchFilters({
           searchValue={searchValue}
           onSearchChange={onSearchChange}
           searchPlaceholder="搜索供应商名称、联系人或电话..."
-          debounceDelay={400}
+          debounceDelay={SEARCH_CONFIG.DEBOUNCE_DELAY.DEFAULT}
           // 筛选器配置
           filters={[
             {

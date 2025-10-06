@@ -1,7 +1,5 @@
 import { notFound } from 'next/navigation';
-import { Suspense } from 'react';
 
-import { SupplierDetailSkeleton } from '@/components/suppliers/supplier-detail-skeleton';
 import { prisma } from '@/lib/db';
 import { SupplierDetailPageClient } from './page-client';
 
@@ -91,9 +89,5 @@ export default async function SupplierDetailPage({
     })),
   };
 
-  return (
-    <Suspense fallback={<SupplierDetailSkeleton />}>
-      <SupplierDetailPageClient supplier={serializedSupplier} />
-    </Suspense>
-  );
+  return <SupplierDetailPageClient supplier={serializedSupplier} />;
 }
