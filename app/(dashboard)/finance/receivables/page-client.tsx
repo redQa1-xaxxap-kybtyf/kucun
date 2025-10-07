@@ -1,38 +1,43 @@
 'use client';
 
-import { Download, Package, Plus } from 'lucide-react';
+import { Download, Plus, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { ERPReturnOrderList } from '@/components/return-orders/erp-return-order-list';
+import { ReceivablesClient } from '@/components/finance/receivables-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { ReturnOrder, ReturnOrderStatus } from '@/lib/types/return-order';
+import type {
+  PaymentStatus,
+  ReceivablesResult,
+} from '@/lib/services/receivables-service';
 
-interface ReturnOrderQueryParams {
+interface ReceivablesQueryParams {
   page?: number;
   limit?: number;
   search?: string;
-  status?: ReturnOrderStatus;
+  status?: PaymentStatus;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
 
-interface ReturnOrdersPageClientProps {
-  initialParams: ReturnOrderQueryParams;
+interface ReceivablesPageClientProps {
+  initialData: ReceivablesResult;
+  initialParams: ReceivablesQueryParams;
 }
 
 /**
- * 退货订单页面客户端组件
+ * 应收款页面客户端组件
  * 负责用户交互和状态管理
  * 严格遵循前端架构规范：Client Component 层
  */
-export function ReturnOrdersPageClient({
+export function ReceivablesPageClient({
+  initialData,
   initialParams,
-}: ReturnOrdersPageClientProps) {
+}: ReceivablesPageClientProps) {
   const router = useRouter();
   const [_isPending, startTransition] = React.useTransition();
 
@@ -40,7 +45,7 @@ export function ReturnOrdersPageClient({
   const [search, setSearch] = React.useState(initialParams.search || '');
   const [status, setStatus] = React.useState(initialParams.status);
   const [sortBy, setSortBy] = React.useState(
-    initialParams.sortBy || 'createdAt'
+    initialParams.sortBy || 'orderDate'
   );
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
@@ -48,7 +53,7 @@ export function ReturnOrdersPageClient({
 
   // 防抖更新URL - 避免每次输入都触发导航
   const debouncedUpdateURL = useDebouncedCallback(
-    (searchValue: string, filters: ReturnOrderQueryParams) => {
+    (searchValue: string, filters: ReceivablesQueryParams) => {
       startTransition(() => {
         const params = new URLSearchParams();
         if (searchValue) {
@@ -70,7 +75,7 @@ export function ReturnOrdersPageClient({
           params.set('limit', filters.limit.toString());
         }
 
-        router.push(`/return-orders?${params.toString()}`);
+        router.push(`/finance/receivables?${params.toString()}`);
       });
     },
     300
@@ -98,9 +103,9 @@ export function ReturnOrdersPageClient({
       const newFilters = { ...initialParams, [key]: value, page: 1 };
 
       if (key === 'status') {
-        setStatus(value as ReturnOrderStatus | undefined);
+        setStatus(value as PaymentStatus | undefined);
       } else if (key === 'sortBy') {
-        setSortBy(value || 'createdAt');
+        setSortBy(value || 'orderDate');
       } else if (key === 'sortOrder') {
         setSortOrder((value as 'asc' | 'desc') || 'desc');
       }
@@ -123,7 +128,7 @@ export function ReturnOrdersPageClient({
           params.set('limit', newFilters.limit.toString());
         }
 
-        router.push(`/return-orders?${params.toString()}`);
+        router.push(`/finance/receivables?${params.toString()}`);
       });
     },
     [router, search, initialParams]
@@ -153,24 +158,11 @@ export function ReturnOrdersPageClient({
           params.set('limit', initialParams.limit.toString());
         }
 
-        router.push(`/return-orders?${params.toString()}`);
+        router.push(`/finance/receivables?${params.toString()}`);
       });
     },
     [router, search, status, sortBy, sortOrder, initialParams.limit]
   );
-
-  // 操作处理函数
-  const handleViewDetail = (_returnOrder: ReturnOrder) => {
-    // TODO: 实现详情对话框
-  };
-
-  const handleEdit = (_returnOrder: ReturnOrder) => {
-    // TODO: 实现编辑对话框
-  };
-
-  const handleDelete = (_returnOrder: ReturnOrder) => {
-    // TODO: 实现删除确认对话框
-  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
@@ -180,15 +172,15 @@ export function ReturnOrdersPageClient({
           <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-600 shadow-lg shadow-orange-600/30">
-                  <Package className="h-6 w-6 text-white" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <TrendingUp className="h-6 w-6 text-white" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    退货订单管理
+                    应收货款管理
                   </h1>
                   <p className="text-sm text-gray-600">
-                    管理客户退货订单，跟踪退货处理状态和退款情况
+                    管理销售订单产生的应收账款，跟踪收款状态和逾期情况
                   </p>
                 </div>
               </div>
@@ -199,7 +191,7 @@ export function ReturnOrdersPageClient({
                   asChild
                   className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
                 >
-                  <Link href="/return-orders/export">
+                  <Link href="/finance/receivables/export">
                     <Download className="mr-2 h-4 w-4" />
                     导出
                   </Link>
@@ -209,9 +201,9 @@ export function ReturnOrdersPageClient({
                   asChild
                   className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
                 >
-                  <Link href="/return-orders/create">
+                  <Link href="/sales-orders/create">
                     <Plus className="mr-2 h-4 w-4" />
-                    新建退货单
+                    新建销售订单
                   </Link>
                 </Button>
               </div>
@@ -219,7 +211,7 @@ export function ReturnOrdersPageClient({
           </CardContent>
         </Card>
 
-        {/* 退货订单列表 */}
+        {/* 客户端交互组件 */}
         <Suspense
           fallback={
             <div className="flex items-center justify-center py-12">
@@ -227,14 +219,12 @@ export function ReturnOrdersPageClient({
             </div>
           }
         >
-          <ERPReturnOrderList
+          <ReceivablesClient
+            initialData={initialData}
             initialParams={initialParams}
             onSearch={handleSearch}
             onFilter={handleFilter}
             onPageChange={handlePageChange}
-            onViewDetail={handleViewDetail}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
           />
         </Suspense>
       </div>

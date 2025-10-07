@@ -1,30 +1,34 @@
 'use client';
 
 import type { Session } from 'next-auth';
-import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { useMediaQuery } from '@/hooks/use-media-query';
-import type { LayoutConfig, SidebarState } from '@/lib/types/layout';
-import type { UserRole } from '@/lib/types/user';
+import type {
+  LayoutConfig,
+  NavigationItem,
+  SidebarState,
+} from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
-import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
 import { Breadcrumb } from './Breadcrumb';
-import { GlobalSearch } from './GlobalSearch/index';
 import { Header } from './Header';
 import { MobileNav } from './MobileNav';
-import { SidebarClient } from './SidebarClient';
 import {
   bottomNavigationItems,
   navigationItems,
 } from './sidebar-navigation-config';
+import { SidebarClient } from './SidebarClient';
 
 interface DashboardLayoutClientProps {
   /** 子组件 */
   children: React.ReactNode;
   /** 服务端传递的 session 数据 */
   session: Session;
+  /** 服务端过滤后的可访问导航项 ID */
+  accessibleNavItemIds: string[];
+  /** 服务端过滤后的可访问底部导航项 ID */
+  accessibleBottomNavItemIds: string[];
   /** 自定义样式类名 */
   className?: string;
   /** 是否显示侧边栏 */
@@ -33,104 +37,150 @@ interface DashboardLayoutClientProps {
   showHeader?: boolean;
   /** 是否显示面包屑 */
   showBreadcrumb?: boolean;
-  /** 是否启用全局搜索 */
-  enableGlobalSearch?: boolean;
+}
+
+/**
+ * 根据 ID 列表从完整导航配置中筛选导航项
+ */
+function getNavItemsByIds(
+  ids: string[],
+  allItems: NavigationItem[]
+): NavigationItem[] {
+  const result: NavigationItem[] = [];
+
+  for (const item of allItems) {
+    if (ids.includes(item.id)) {
+      result.push(item);
+    }
+    // 递归处理子菜单
+    if (item.children && item.children.length > 0) {
+      const childItems = getNavItemsByIds(ids, item.children);
+      if (childItems.length > 0) {
+        result.push({
+          ...item,
+          children: childItems,
+        });
+      }
+    }
+  }
+
+  return result;
 }
 
 /**
  * 仪表盘客户端布局组件
- * 接收服务端传递的 session 数据，避免客户端重复请求
- * 严格遵循 Next.js 15 App Router 最佳实践
+ * 优化版本：权限过滤在服务端完成，客户端只负责交互和响应式
+ *
+ * 性能优化点:
+ * 1. 权限过滤逻辑移至服务端，避免客户端重复计算
+ * 2. 批量状态更新，避免多次渲染
+ * 3. 使用 useCallback 优化回调函数
+ * 4. 减少不必要的 useMemo 依赖
+ * 5. ✅ 修复: 只传递导航项 ID,在客户端重新组装,避免传递 React 组件
  */
 export function DashboardLayoutClient({
   children,
   session,
+  accessibleNavItemIds,
+  accessibleBottomNavItemIds,
   className,
   showSidebar = true,
   showHeader = true,
   showBreadcrumb = true,
-  enableGlobalSearch = true,
 }: DashboardLayoutClientProps) {
-  const router = useRouter();
   const isMobile = useMediaQuery('(max-width: 768px)');
   const isTablet = useMediaQuery('(min-width: 769px) and (max-width: 1024px)');
 
-  // 全局搜索状态
-  const [globalSearchOpen, setGlobalSearchOpen] = React.useState(false);
-
-  // 根据用户角色过滤导航项（使用服务端传递的 session）
-  const userRole = session?.user?.role as UserRole | undefined;
+  // ✅ 在客户端根据 ID 重新组装导航项(包含 icon)
   const accessibleNavItems = React.useMemo(
-    () =>
-      userRole
-        ? getAccessibleNavItems(
-            navigationItems as Array<{ requiredRoles?: UserRole[] }>,
-            userRole
-          )
-        : [],
-    [userRole]
+    () => getNavItemsByIds(accessibleNavItemIds, navigationItems),
+    [accessibleNavItemIds]
   );
 
   const accessibleBottomNavItems = React.useMemo(
-    () =>
-      userRole
-        ? getAccessibleNavItems(
-            bottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
-            userRole
-          )
-        : [],
-    [userRole]
+    () => getNavItemsByIds(accessibleBottomNavItemIds, bottomNavigationItems),
+    [accessibleBottomNavItemIds]
   );
 
-  // 侧边栏状态管理（优化：避免状态更新循环）
-  const [isOpen, setIsOpen] = React.useState<boolean>(() => !isMobile);
-  const [isCollapsed, setIsCollapsed] = React.useState<boolean>(() => isTablet);
+  // 侧边栏状态管理（优化：批量更新状态，避免多次渲染）
+  const [sidebarSettings, setSidebarSettings] = React.useState(() => ({
+    isOpen: !isMobile,
+    isCollapsed: isTablet,
+    mobileNavOpen: false,
+  }));
 
   // 使用 useCallback 优化状态更新函数，避免每次渲染都创建新函数
   const toggle = React.useCallback(() => {
-    setIsCollapsed(prev => !prev);
+    setSidebarSettings(prev => ({
+      ...prev,
+      isCollapsed: !prev.isCollapsed,
+    }));
   }, []);
 
-  const setOpenCallback = React.useCallback((open: boolean) => {
-    setIsOpen(open);
+  const setOpen = React.useCallback((open: boolean) => {
+    setSidebarSettings(prev => ({
+      ...prev,
+      isOpen: open,
+    }));
   }, []);
 
-  const setCollapsedCallback = React.useCallback((collapsed: boolean) => {
-    setIsCollapsed(collapsed);
+  const setCollapsed = React.useCallback((collapsed: boolean) => {
+    setSidebarSettings(prev => ({
+      ...prev,
+      isCollapsed: collapsed,
+    }));
+  }, []);
+
+  const setMobileNavOpen = React.useCallback((open: boolean) => {
+    setSidebarSettings(prev => ({
+      ...prev,
+      mobileNavOpen: open,
+    }));
   }, []);
 
   // 组合 sidebarState 对象（使用 useMemo 避免每次渲染都创建新对象）
   const sidebarState = React.useMemo<SidebarState>(
     () => ({
-      isOpen,
-      isCollapsed,
+      isOpen: sidebarSettings.isOpen,
+      isCollapsed: sidebarSettings.isCollapsed,
       toggle,
-      setOpen: setOpenCallback,
-      setCollapsed: setCollapsedCallback,
+      setOpen,
+      setCollapsed,
     }),
-    [isOpen, isCollapsed, toggle, setOpenCallback, setCollapsedCallback]
+    [
+      sidebarSettings.isOpen,
+      sidebarSettings.isCollapsed,
+      toggle,
+      setOpen,
+      setCollapsed,
+    ]
   );
-
-  // 移动端导航状态
-  const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
 
   // 触摸手势状态
   const [touchStart, setTouchStart] = React.useState<number | null>(null);
   const [touchEnd, setTouchEnd] = React.useState<number | null>(null);
 
-  // 响应式布局调整（优化：避免依赖循环，使用单次状态更新）
+  // 响应式布局调整（优化：批量更新状态，避免多次渲染）
   React.useEffect(() => {
-    if (isMobile) {
-      setIsOpen(false);
-      setIsCollapsed(false);
-      setMobileNavOpen(false);
-    } else if (isTablet) {
-      setIsOpen(true);
-      setIsCollapsed(true);
-    } else {
-      setIsOpen(true);
-      setIsCollapsed(false);
-    }
+    setSidebarSettings(prev => {
+      // 计算新状态
+      const newState = isMobile
+        ? { isOpen: false, isCollapsed: false, mobileNavOpen: false }
+        : isTablet
+          ? { isOpen: true, isCollapsed: true, mobileNavOpen: false }
+          : { isOpen: true, isCollapsed: false, mobileNavOpen: false };
+
+      // 只有状态真正变化时才更新
+      if (
+        prev.isOpen === newState.isOpen &&
+        prev.isCollapsed === newState.isCollapsed &&
+        prev.mobileNavOpen === newState.mobileNavOpen
+      ) {
+        return prev;
+      }
+
+      return newState;
+    });
   }, [isMobile, isTablet]); // ✅ 只依赖媒体查询结果
 
   // 手势处理（使用 useCallback 优化）
@@ -156,48 +206,32 @@ export function DashboardLayoutClient({
 
     if (isMobile) {
       // 右滑打开菜单，左滑关闭菜单
-      if (isRightSwipe && !mobileNavOpen) {
+      if (isRightSwipe && !sidebarSettings.mobileNavOpen) {
         setMobileNavOpen(true);
-      } else if (isLeftSwipe && mobileNavOpen) {
+      } else if (isLeftSwipe && sidebarSettings.mobileNavOpen) {
         setMobileNavOpen(false);
       }
     }
-  }, [touchStart, touchEnd, isMobile, mobileNavOpen]);
-
-  // 全局键盘快捷键
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl/Cmd + K 打开全局搜索
-      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-        event.preventDefault();
-        if (enableGlobalSearch) {
-          setGlobalSearchOpen(true);
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [enableGlobalSearch]);
-
-  // 处理搜索（使用 useCallback 避免不必要的重新创建）
-  const handleSearch = React.useCallback((query: string) => {
-    console.log('搜索:', query);
-    // 这里可以添加搜索逻辑或导航到搜索结果页面
-  }, []);
+  }, [
+    touchStart,
+    touchEnd,
+    isMobile,
+    sidebarSettings.mobileNavOpen,
+    setMobileNavOpen,
+  ]);
 
   const _layoutConfig: LayoutConfig = {
     showSidebar,
     showHeader,
-    sidebarCollapsed: isCollapsed,
+    sidebarCollapsed: sidebarSettings.isCollapsed,
     isMobile,
     theme: 'light', // 后续可以从用户设置中获取
   };
 
   return (
     <>
-      <div className={cn('bg-background min-h-screen', className)}>
-        {/* 顶部导航栏 */}
+      <div className={cn('bg-background flex h-screen flex-col', className)}>
+        {/* 顶部导航栏 - 固定高度 */}
         {showHeader && (
           <Header
             showMobileMenuButton={isMobile}
@@ -206,9 +240,9 @@ export function DashboardLayoutClient({
           />
         )}
 
-        <div className="flex flex-1">
-          {/* 桌面端侧边栏 */}
-          {showSidebar && !isMobile && isOpen && (
+        <div className="flex flex-1 overflow-hidden">
+          {/* 桌面端侧边栏 - 固定位置，独立滚动 */}
+          {showSidebar && !isMobile && sidebarSettings.isOpen && (
             <SidebarClient
               state={sidebarState}
               accessibleNavItems={accessibleNavItems}
@@ -218,48 +252,38 @@ export function DashboardLayoutClient({
 
           {/* 移动端抽屉导航 */}
           {isMobile && (
-            <MobileNav open={mobileNavOpen} onOpenChange={setMobileNavOpen} />
+            <MobileNav
+              open={sidebarSettings.mobileNavOpen}
+              onOpenChange={setMobileNavOpen}
+            />
           )}
 
-          {/* 主内容区域 */}
+          {/* 主内容区域 - 使用 flex 布局，不滚动 */}
           <main
-            className={cn(
-              'flex-1 overflow-auto',
-              // 根据侧边栏状态调整内容区域
-              showSidebar &&
-                !isMobile &&
-                isOpen &&
-                (isCollapsed ? 'ml-0' : 'ml-0'),
-              // 内边距调整
-              isMobile ? 'p-4' : 'p-6',
-              // 顶部间距调整（如果有header）
-              showHeader && 'pt-6'
-            )}
+            className={cn('flex flex-1 flex-col overflow-hidden')}
             onTouchStart={isMobile ? onTouchStart : undefined}
             onTouchMove={isMobile ? onTouchMove : undefined}
             onTouchEnd={isMobile ? onTouchEnd : undefined}
           >
-            {/* 页面标题和面包屑 */}
+            {/* 固定的顶部区域：面包屑和页面标题 */}
             {showBreadcrumb && (
-              <div className="mb-6 space-y-4">
+              <div
+                className={cn(
+                  'bg-background flex-shrink-0 space-y-4 border-b',
+                  isMobile ? 'p-4 pb-4' : 'px-6 pt-6 pb-4'
+                )}
+              >
                 <Breadcrumb />
               </div>
             )}
 
-            {/* 主要内容 */}
-            {children}
+            {/* 主要内容区域 - 传递高度给子组件，让子组件控制滚动 */}
+            <div className="flex flex-1 flex-col overflow-hidden">
+              {children}
+            </div>
           </main>
         </div>
       </div>
-
-      {/* 全局搜索对话框 */}
-      {enableGlobalSearch && (
-        <GlobalSearch
-          open={globalSearchOpen}
-          onOpenChange={setGlobalSearchOpen}
-          onSearch={handleSearch}
-        />
-      )}
     </>
   );
 }

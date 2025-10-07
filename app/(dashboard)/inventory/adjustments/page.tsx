@@ -1,127 +1,109 @@
-'use client';
-
-import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-
-import { InventoryOperationForm } from '@/components/inventory/inventory-operation-form';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
 
-import { AdjustmentDetailDialog } from './components/AdjustmentDetailDialog';
-import { AdjustmentRecordsFilters } from './components/AdjustmentRecordsFilters';
-import { AdjustmentRecordsTable } from './components/AdjustmentRecordsTable';
-import { AdjustmentRecordsToolbar } from './components/AdjustmentRecordsToolbar';
-import { useAdjustmentRecords } from './hooks/useAdjustmentRecords';
+import {
+  adjustmentQueryKeys,
+  getAdjustmentQueryOptions,
+} from '@/lib/api/adjustments';
+import { getAdjustmentsServer } from '@/lib/api/adjustments-server';
+
+import { AdjustmentRecordsPageClient } from './page-client';
 
 /**
- * 库存调整记录页面
- * 使用ERP风格的紧凑布局，符合中国用户习惯
+ * 库存调整记录页面 - Server Component
+ *
+ * ✅ Next.js 15.4 最佳实践：
+ * 1. Route Segment Config - 明确缓存策略
+ * 2. Server Component 预取数据
+ * 3. HydrationBoundary 数据传递
+ * 4. Streaming Queries 支持
  */
-export default function AdjustmentRecordsPage() {
-  const router = useRouter();
-  const [showAdjustDialog, setShowAdjustDialog] = useState(false);
 
-  const {
-    adjustments,
-    isLoading,
-    error,
-    queryParams,
-    selectedAdjustment,
-    showDetailDialog,
-    updateQueryParams,
-    resetFilters,
-    viewDetail,
-    closeDetailDialog,
-    refetch,
-  } = useAdjustmentRecords();
+// ✅ Route Segment Config
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 
-  const handleGoBack = () => {
-    router.push('/inventory');
-  };
+export default async function AdjustmentRecordsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const params = await searchParams;
+  const urlSearchParams = new URLSearchParams();
 
-  const handleOpenAdjust = () => {
-    setShowAdjustDialog(true);
-  };
+  // 构建 URLSearchParams
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) {
+      if (Array.isArray(value)) {
+        value.forEach(v => urlSearchParams.append(key, v));
+      } else {
+        urlSearchParams.append(key, value);
+      }
+    }
+  });
 
-  const handleCloseAdjust = () => {
-    setShowAdjustDialog(false);
-  };
-
-  const handleAdjustSuccess = () => {
-    setShowAdjustDialog(false);
-    refetch();
-  };
-
-  if (error) {
-    return (
-      <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-        <div className="space-y-4">
-          <AdjustmentRecordsToolbar
-            onGoBack={handleGoBack}
-            onAdjust={handleOpenAdjust}
-          />
-          <div className="bg-card rounded-lg border p-6 text-center shadow-md shadow-gray-200/50">
-            <div className="text-destructive text-sm">
-              加载调整记录失败，请稍后重试
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+  // 默认查询参数
+  if (!urlSearchParams.has('page')) {
+    urlSearchParams.set('page', '1');
+  }
+  if (!urlSearchParams.has('limit')) {
+    urlSearchParams.set('limit', '20');
+  }
+  if (!urlSearchParams.has('sortBy')) {
+    urlSearchParams.set('sortBy', 'createdAt');
+  }
+  if (!urlSearchParams.has('sortOrder')) {
+    urlSearchParams.set('sortOrder', 'desc');
   }
 
+  // ✅ 创建 QueryClient（启用 Streaming Queries）
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydratePendingQuery: true,
+      },
+    },
+  });
+
+  // 服务端预取数据
+  const adjustmentData = await getAdjustmentsServer(urlSearchParams);
+
+  // 构建查询参数对象
+  const queryParams = {
+    page: Number(urlSearchParams.get('page')),
+    limit: Number(urlSearchParams.get('limit')),
+    search: urlSearchParams.get('search') || undefined,
+    productId: urlSearchParams.get('productId') || undefined,
+    variantId: urlSearchParams.get('variantId') || undefined,
+    batchNumber: urlSearchParams.get('batchNumber') || undefined,
+    reason: urlSearchParams.get('reason') || undefined,
+    status: urlSearchParams.get('status') || undefined,
+    operatorId: urlSearchParams.get('operatorId') || undefined,
+    startDate: urlSearchParams.get('startDate') || undefined,
+    endDate: urlSearchParams.get('endDate') || undefined,
+    sortBy:
+      (urlSearchParams.get('sortBy') as
+        | 'createdAt'
+        | 'adjustmentNumber'
+        | 'quantity'
+        | 'reason') || 'createdAt',
+    sortOrder: (urlSearchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
+  };
+
+  // 设置查询缓存
+  queryClient.setQueryData(adjustmentQueryKeys.list(queryParams), {
+    adjustments: adjustmentData.adjustments,
+    pagination: adjustmentData.pagination,
+  });
+
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-        {/* 页面标题卡片 */}
-        <AdjustmentRecordsToolbar
-          onGoBack={handleGoBack}
-          onAdjust={handleOpenAdjust}
-        />
-
-        {/* 筛选条件 */}
-        <AdjustmentRecordsFilters
-          filters={queryParams}
-          onFiltersChange={updateQueryParams}
-          onReset={resetFilters}
-        />
-
-        {/* 调整记录表格 */}
-        <AdjustmentRecordsTable
-          adjustments={adjustments}
-          isLoading={isLoading}
-          onViewDetail={viewDetail}
-        />
-
-        {/* 调整对话框 */}
-        <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>
-          <DialogContent className="max-w-2xl">
-            <DialogHeader>
-              <DialogTitle>库存调整</DialogTitle>
-            </DialogHeader>
-            <InventoryOperationForm
-              mode="adjust"
-              onSuccess={handleAdjustSuccess}
-              onCancel={handleCloseAdjust}
-            />
-          </DialogContent>
-        </Dialog>
-
-        {/* 详情对话框 */}
-        <AdjustmentDetailDialog
-          adjustment={selectedAdjustment}
-          open={showDetailDialog}
-          onOpenChange={open => {
-            if (!open) {
-              closeDetailDialog();
-            }
-          }}
-        />
-      </div>
-    </div>
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <AdjustmentRecordsPageClient />
+    </HydrationBoundary>
   );
 }

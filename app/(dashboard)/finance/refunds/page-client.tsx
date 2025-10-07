@@ -1,38 +1,83 @@
 'use client';
 
-import { Download, Package, Plus } from 'lucide-react';
+import { Download, Plus, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { ERPReturnOrderList } from '@/components/return-orders/erp-return-order-list';
+import { RefundsClient } from '@/components/finance/refunds-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { ReturnOrder, ReturnOrderStatus } from '@/lib/types/return-order';
+import type {
+  RefundMethod,
+  RefundStatus,
+  RefundType,
+} from '@/lib/types/refund';
 
-interface ReturnOrderQueryParams {
-  page?: number;
-  limit?: number;
+interface RefundRecord {
+  id: string;
+  refundNumber: string;
+  returnOrderId: string | null;
+  salesOrderId: string;
+  customerId: string;
+  userId: string;
+  refundType: RefundType;
+  refundMethod: RefundMethod;
+  refundAmount: number;
+  processedAmount: number;
+  remainingAmount: number;
+  refundDate: Date;
+  processedDate: Date | null;
+  status: RefundStatus;
+  reason: string;
+  remarks: string | null;
+  bankInfo: string | null;
+  receiptNumber: string | null;
+  returnOrderNumber: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface RefundsQueryParams {
+  page: number;
+  limit: number;
   search?: string;
-  status?: ReturnOrderStatus;
+  status?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
 
-interface ReturnOrdersPageClientProps {
-  initialParams: ReturnOrderQueryParams;
+interface RefundsPageClientProps {
+  initialData: {
+    refunds: RefundRecord[];
+    statistics: {
+      totalRefundable: number;
+      totalProcessed: number;
+      totalRemaining: number;
+      pendingCount: number;
+      processingCount: number;
+      completedCount: number;
+    };
+    pagination: {
+      page: number;
+      limit: number;
+      total: number;
+      totalPages: number;
+    };
+  };
+  initialParams: RefundsQueryParams;
 }
 
 /**
- * 退货订单页面客户端组件
+ * 退款记录页面客户端组件
  * 负责用户交互和状态管理
- * 严格遵循前端架构规范：Client Component 层
  */
-export function ReturnOrdersPageClient({
+export function RefundsPageClient({
+  initialData,
   initialParams,
-}: ReturnOrdersPageClientProps) {
+}: RefundsPageClientProps) {
   const router = useRouter();
   const [_isPending, startTransition] = React.useTransition();
 
@@ -40,7 +85,7 @@ export function ReturnOrdersPageClient({
   const [search, setSearch] = React.useState(initialParams.search || '');
   const [status, setStatus] = React.useState(initialParams.status);
   const [sortBy, setSortBy] = React.useState(
-    initialParams.sortBy || 'createdAt'
+    initialParams.sortBy || 'refundDate'
   );
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
@@ -48,7 +93,7 @@ export function ReturnOrdersPageClient({
 
   // 防抖更新URL - 避免每次输入都触发导航
   const debouncedUpdateURL = useDebouncedCallback(
-    (searchValue: string, filters: ReturnOrderQueryParams) => {
+    (searchValue: string, filters: RefundsQueryParams) => {
       startTransition(() => {
         const params = new URLSearchParams();
         if (searchValue) {
@@ -70,7 +115,7 @@ export function ReturnOrdersPageClient({
           params.set('limit', filters.limit.toString());
         }
 
-        router.push(`/return-orders?${params.toString()}`);
+        router.push(`/finance/refunds?${params.toString()}`);
       });
     },
     300
@@ -98,9 +143,9 @@ export function ReturnOrdersPageClient({
       const newFilters = { ...initialParams, [key]: value, page: 1 };
 
       if (key === 'status') {
-        setStatus(value as ReturnOrderStatus | undefined);
+        setStatus(value);
       } else if (key === 'sortBy') {
-        setSortBy(value || 'createdAt');
+        setSortBy(value || 'refundDate');
       } else if (key === 'sortOrder') {
         setSortOrder((value as 'asc' | 'desc') || 'desc');
       }
@@ -123,7 +168,7 @@ export function ReturnOrdersPageClient({
           params.set('limit', newFilters.limit.toString());
         }
 
-        router.push(`/return-orders?${params.toString()}`);
+        router.push(`/finance/refunds?${params.toString()}`);
       });
     },
     [router, search, initialParams]
@@ -153,24 +198,11 @@ export function ReturnOrdersPageClient({
           params.set('limit', initialParams.limit.toString());
         }
 
-        router.push(`/return-orders?${params.toString()}`);
+        router.push(`/finance/refunds?${params.toString()}`);
       });
     },
     [router, search, status, sortBy, sortOrder, initialParams.limit]
   );
-
-  // 操作处理函数
-  const handleViewDetail = (_returnOrder: ReturnOrder) => {
-    // TODO: 实现详情对话框
-  };
-
-  const handleEdit = (_returnOrder: ReturnOrder) => {
-    // TODO: 实现编辑对话框
-  };
-
-  const handleDelete = (_returnOrder: ReturnOrder) => {
-    // TODO: 实现删除确认对话框
-  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
@@ -180,15 +212,15 @@ export function ReturnOrdersPageClient({
           <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-600 shadow-lg shadow-orange-600/30">
-                  <Package className="h-6 w-6 text-white" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <TrendingDown className="h-6 w-6 text-white" />
                 </div>
                 <div>
                   <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    退货订单管理
+                    应退货款管理
                   </h1>
                   <p className="text-sm text-gray-600">
-                    管理客户退货订单，跟踪退货处理状态和退款情况
+                    管理退货订单产生的应退账款，跟踪退款处理状态
                   </p>
                 </div>
               </div>
@@ -199,7 +231,7 @@ export function ReturnOrdersPageClient({
                   asChild
                   className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
                 >
-                  <Link href="/return-orders/export">
+                  <Link href="/finance/refunds/export">
                     <Download className="mr-2 h-4 w-4" />
                     导出
                   </Link>
@@ -211,7 +243,7 @@ export function ReturnOrdersPageClient({
                 >
                   <Link href="/return-orders/create">
                     <Plus className="mr-2 h-4 w-4" />
-                    新建退货单
+                    新建退货订单
                   </Link>
                 </Button>
               </div>
@@ -219,7 +251,7 @@ export function ReturnOrdersPageClient({
           </CardContent>
         </Card>
 
-        {/* 退货订单列表 */}
+        {/* 客户端交互组件 */}
         <Suspense
           fallback={
             <div className="flex items-center justify-center py-12">
@@ -227,14 +259,12 @@ export function ReturnOrdersPageClient({
             </div>
           }
         >
-          <ERPReturnOrderList
+          <RefundsClient
+            initialData={initialData}
             initialParams={initialParams}
             onSearch={handleSearch}
             onFilter={handleFilter}
             onPageChange={handlePageChange}
-            onViewDetail={handleViewDetail}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
           />
         </Suspense>
       </div>
