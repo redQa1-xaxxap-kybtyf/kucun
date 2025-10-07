@@ -84,9 +84,6 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
               categoryOptions={categoryOptions}
               onSearch={onSearch}
               onFilter={onFilter}
-              onInbound={handleInbound}
-              onOutbound={handleOutbound}
-              onAdjust={() => handleAdjust()}
             />
           </div>
         }

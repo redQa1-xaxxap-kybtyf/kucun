@@ -7,7 +7,7 @@
 
 'use client';
 
-import { AlertTriangle, Edit, Filter, Package, Plus } from 'lucide-react';
+import { AlertTriangle, Filter, Package } from 'lucide-react';
 import * as React from 'react';
 
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
@@ -22,10 +22,6 @@ interface InventorySearchToolbarProps {
     key: keyof InventoryQueryParams,
     value: string | number | boolean | undefined
   ) => void;
-  onInbound: () => void;
-  onOutbound: () => void;
-  onAdjust: () => void;
-  selectedCount?: number;
 }
 
 /**
@@ -34,15 +30,7 @@ interface InventorySearchToolbarProps {
  * 符合产品模块UI风格规范
  */
 export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
-  ({
-    queryParams,
-    categoryOptions,
-    onSearch,
-    onFilter,
-    onInbound,
-    onOutbound,
-    onAdjust,
-  }) => {
+  ({ queryParams, categoryOptions, onSearch, onFilter }) => {
     // 统一处理筛选器变更
     const handleFilterChange = React.useCallback(
       (key: string, value: string | undefined) => {
@@ -89,26 +77,19 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
             searchPlaceholder="搜索产品名称、编码..."
             debounceDelay={400}
             compact={true}
-            // 操作按钮
-            actionButtons={[
-              {
-                label: '入库',
-                icon: <Plus className="mr-1 h-3 w-3" />,
-                onClick: onInbound,
-              },
-              {
-                label: '出库',
-                icon: <Package className="mr-1 h-3 w-3" />,
-                onClick: onOutbound,
-                variant: 'outline',
-              },
-              {
-                label: '调整',
-                icon: <Edit className="mr-1 h-3 w-3" />,
-                onClick: onAdjust,
-                variant: 'outline',
-              },
-            ]}
+            // 操作按钮 - 清空筛选按钮（仅在有筛选时显示）
+            actionButtons={
+              hasActiveFilters
+                ? [
+                    {
+                      label: '清空筛选',
+                      icon: <Filter className="mr-1.5 h-3.5 w-3.5" />,
+                      onClick: handleClearFilters,
+                      variant: 'outline',
+                    },
+                  ]
+                : undefined
+            }
             // 切换按钮
             toggleButtons={[
               {
@@ -153,21 +134,6 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
             }}
             onFilterChange={handleFilterChange}
           />
-
-          {/* 清空筛选按钮 */}
-          {hasActiveFilters && (
-            <div className="mt-3 flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleClearFilters}
-                className="h-9 transition-all hover:border-blue-300 hover:bg-blue-50"
-              >
-                <Filter className="mr-2 h-4 w-4" />
-                清空筛选
-              </Button>
-            </div>
-          )}
         </div>
       </div>
     );
