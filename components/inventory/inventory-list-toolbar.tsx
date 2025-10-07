@@ -113,6 +113,15 @@ export function InventoryListToolbar({
               库存调整
             </Button>
             <Button
+              onClick={() => router.push('/inventory/outbound')}
+              variant="outline"
+              size="lg"
+              className="h-11 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md"
+            >
+              <FileUp className="h-5 w-5" />
+              产品出库
+            </Button>
+            <Button
               onClick={() => router.push('/inventory/inbound/create')}
               size="lg"
               className="h-11 gap-2 bg-blue-600 shadow-md shadow-blue-600/30 transition-all hover:scale-105 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/40"
