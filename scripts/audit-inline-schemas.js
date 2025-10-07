@@ -2,12 +2,12 @@
 
 /**
  * 审计内联 Zod Schema 定义
- * 
+ *
  * 功能:
  * 1. 扫描 app/api 目录下的所有 TypeScript 文件
  * 2. 查找内联定义的 Zod Schema
  * 3. 生成审计报告
- * 
+ *
  * 使用方法:
  * node scripts/audit-inline-schemas.js
  */
@@ -67,7 +67,7 @@ function scanDirectory(dir, fileList = []) {
 function analyzeFile(filePath) {
   const content = fs.readFileSync(filePath, 'utf-8');
   const relativePath = path.relative(process.cwd(), filePath);
-  
+
   const results = {
     file: relativePath,
     hasInlineSchema: false,
@@ -76,8 +76,9 @@ function analyzeFile(filePath) {
   };
 
   // 检查是否导入了 zod
-  const hasZodImport = content.includes("from 'zod'") || content.includes('from "zod"');
-  
+  const hasZodImport =
+    content.includes("from 'zod'") || content.includes('from "zod"');
+
   if (!hasZodImport) {
     return null; // 不使用 zod 的文件跳过
   }
@@ -91,10 +92,12 @@ function analyzeFile(filePath) {
     const schemaMatch = line.match(/const\s+(\w+Schema)\s*=\s*z\.object/);
     if (schemaMatch) {
       const schemaName = schemaMatch[1];
-      
+
       // 检查是否从 lib/validations 导入
-      const isImported = content.includes(`import.*${schemaName}.*from.*@/lib/validations`);
-      
+      const isImported = content.includes(
+        `import.*${schemaName}.*from.*@/lib/validations`
+      );
+
       if (!isImported) {
         results.hasInlineSchema = true;
         results.schemas.push({
@@ -108,10 +111,10 @@ function analyzeFile(filePath) {
 
   // 检查是否有验证逻辑但没有使用统一的验证中间件
   if (results.hasInlineSchema) {
-    const hasValidationMiddleware = 
-      content.includes('withBodyValidation') || 
+    const hasValidationMiddleware =
+      content.includes('withBodyValidation') ||
       content.includes('withQueryValidation');
-    
+
     if (!hasValidationMiddleware) {
       results.issues.push({
         type: 'no-validation-middleware',
@@ -147,7 +150,7 @@ function generateReport(results) {
 
   results.forEach((result, index) => {
     log(`${index + 1}. ${result.file}`, 'yellow');
-    
+
     result.schemas.forEach(schema => {
       log(`   - ${schema.name} (第 ${schema.line} 行)`, 'reset');
       log(`     ${schema.code}`, 'cyan');
@@ -167,7 +170,10 @@ function generateReport(results) {
   log('========================================\n', 'cyan');
 
   log('1. 将内联 Schema 迁移到 lib/validations/ 目录', 'reset');
-  log('2. 使用统一的验证中间件 (withBodyValidation/withQueryValidation)', 'reset');
+  log(
+    '2. 使用统一的验证中间件 (withBodyValidation/withQueryValidation)',
+    'reset'
+  );
   log('3. 参考文档: docs/VALIDATION_ARCHITECTURE_OPTIMIZATION.md\n', 'reset');
 
   // 保存 JSON 报告
@@ -202,7 +208,6 @@ function main() {
 
     // 生成报告
     generateReport(results);
-
   } catch (error) {
     log(`\n❌ 错误: ${error.message}`, 'red');
     console.error(error);
@@ -212,4 +217,3 @@ function main() {
 
 // 运行
 main();
-

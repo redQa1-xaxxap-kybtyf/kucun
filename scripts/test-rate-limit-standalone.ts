@@ -82,7 +82,9 @@ class SimpleMemoryStorage {
     const entry = this.cache.get(key);
     if (!entry) return;
 
-    const validRequests = entry.requests.filter(timestamp => timestamp >= before);
+    const validRequests = entry.requests.filter(
+      timestamp => timestamp >= before
+    );
     if (validRequests.length === 0) {
       this.cache.delete(key);
     } else {
@@ -134,7 +136,11 @@ class SimpleRateLimiter {
 
     await this.storage.cleanup(key, windowStart);
 
-    const requests = await this.storage.getRequestsInWindow(key, windowStart, now);
+    const requests = await this.storage.getRequestsInWindow(
+      key,
+      windowStart,
+      now
+    );
     const currentCount = requests.length;
     const allowed = currentCount < this.config.maxRequests;
 
@@ -167,7 +173,11 @@ class SimpleRateLimiter {
     const windowStart = now - this.config.windowMs;
     const key = `${this.config.keyPrefix}:${identifier}`;
 
-    const requests = await this.storage.getRequestsInWindow(key, windowStart, now);
+    const requests = await this.storage.getRequestsInWindow(
+      key,
+      windowStart,
+      now
+    );
     const currentCount = requests.length;
     const allowed = currentCount < this.config.maxRequests;
     const remaining = Math.max(0, this.config.maxRequests - currentCount);
@@ -204,7 +214,9 @@ async function testBasicRateLimit() {
   for (let i = 1; i <= config.maxRequests; i++) {
     const result = await limiter.checkLimit(identifier);
     if (result.allowed) {
-      logSuccess(`请求 ${i}/${config.maxRequests} - 允许 (剩余: ${result.remaining})`);
+      logSuccess(
+        `请求 ${i}/${config.maxRequests} - 允许 (剩余: ${result.remaining})`
+      );
     } else {
       logError(`请求 ${i}/${config.maxRequests} - 应该允许但被拒绝`);
       return false;
@@ -392,9 +404,13 @@ async function testGetStatus() {
   const status2 = await limiter.getStatus(identifier);
 
   if (status1.current === 3 && status2.current === 3) {
-    logSuccess(`状态查询正确 - 当前: ${status1.current}, 剩余: ${status1.remaining}`);
+    logSuccess(
+      `状态查询正确 - 当前: ${status1.current}, 剩余: ${status1.remaining}`
+    );
   } else {
-    logError(`状态查询不正确 - 期望3，得到: ${status1.current}, ${status2.current}`);
+    logError(
+      `状态查询不正确 - 期望3，得到: ${status1.current}, ${status2.current}`
+    );
     return false;
   }
 

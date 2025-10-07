@@ -49,7 +49,11 @@ function encrypt(text) {
 function decrypt(encryptedText) {
   if (encryptedText.includes(':')) {
     const parts = encryptedText.split(':');
-    if (parts.length === 2 && /^[0-9a-f]+$/i.test(parts[0]) && /^[0-9a-f]+$/i.test(parts[1])) {
+    if (
+      parts.length === 2 &&
+      /^[0-9a-f]+$/i.test(parts[0]) &&
+      /^[0-9a-f]+$/i.test(parts[1])
+    ) {
       const iv = Buffer.from(parts[0], 'hex');
       const encrypted = parts[1];
       const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
@@ -76,7 +80,9 @@ const decryptedSecretKey = decrypt(encryptedSecretKey);
 
 console.log(`解密后 AccessKey: ${decryptedAccessKey}`);
 console.log(`解密后 AccessKey 长度: ${decryptedAccessKey.length}`);
-console.log(`解密是否成功: ${decryptedAccessKey === testAccessKey ? '✅ 是' : '❌ 否'}\n`);
+console.log(
+  `解密是否成功: ${decryptedAccessKey === testAccessKey ? '✅ 是' : '❌ 否'}\n`
+);
 
 console.log('=== 步骤3: 测试数据库中的实际密钥 ===\n');
 
@@ -97,13 +103,15 @@ async function testDatabaseKeys() {
       console.log(`\n配置项: ${setting.key}`);
       console.log(`加密值: ${setting.value.substring(0, 50)}...`);
       console.log(`加密值长度: ${setting.value.length}`);
-      
+
       try {
         const decrypted = decrypt(setting.value);
         console.log(`解密后长度: ${decrypted.length}`);
         console.log(`解密后前10个字符: ${decrypted.substring(0, 10)}...`);
-        console.log(`解密是否成功: ${decrypted.length !== setting.value.length ? '✅ 是' : '❌ 否'}`);
-        
+        console.log(
+          `解密是否成功: ${decrypted.length !== setting.value.length ? '✅ 是' : '❌ 否'}`
+        );
+
         if (decrypted.length === setting.value.length) {
           console.log('\n⚠️ 解密失败!可能的原因:');
           console.log('1. 数据是用不同的 NEXTAUTH_SECRET 加密的');
@@ -114,11 +122,10 @@ async function testDatabaseKeys() {
         console.error(`解密失败: ${error.message}`);
       }
     }
-    
+
     console.log('\n=== 建议 ===');
     console.log('如果解密失败,请在系统设置页面重新保存七牛云配置');
     console.log('这样会用当前的 NEXTAUTH_SECRET 重新加密密钥');
-    
   } catch (error) {
     console.error('测试失败:', error);
   } finally {
@@ -127,4 +134,3 @@ async function testDatabaseKeys() {
 }
 
 testDatabaseKeys();
-

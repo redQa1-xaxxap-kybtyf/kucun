@@ -23,7 +23,7 @@ const filesToFix = [
 // 修复单个文件
 function fixFile(filePath) {
   const fullPath = path.join(process.cwd(), filePath);
-  
+
   if (!fs.existsSync(fullPath)) {
     console.log(`✗ 文件不存在: ${filePath}`);
     return false;
@@ -46,20 +46,21 @@ function fixFile(filePath) {
   }
 
   // 替换身份验证代码
-  const authPattern = /(\s+)(\/\/ 身份验证\n\s+const session = await getServerSession\(authOptions\);\n\s+if \(!session)/g;
-  
+  const authPattern =
+    /(\s+)(\/\/ 身份验证\n\s+const session = await getServerSession\(authOptions\);\n\s+if \(!session)/g;
+
   if (authPattern.test(content)) {
     content = content.replace(
       authPattern,
       "$1// 身份验证 (开发模式下绕过)\n$1if (env.NODE_ENV !== 'development') {\n$1  const session = await getServerSession(authOptions);\n$1  if (!session"
     );
-    
+
     // 添加闭合括号
     content = content.replace(
       /(if \(!session\) \{\n\s+return NextResponse\.json\(\n\s+\{ success: false, error: '未授权访问' \},\n\s+\{ status: 401 \}\n\s+\);\n\s+\})/g,
-      "$1\n    }"
+      '$1\n    }'
     );
-    
+
     modified = true;
   }
 
@@ -76,7 +77,7 @@ function fixFile(filePath) {
 // 主函数
 function main() {
   console.log('开始批量添加开发模式绕过...\n');
-  
+
   let fixedCount = 0;
   let skippedCount = 0;
   let errorCount = 0;
@@ -102,4 +103,3 @@ function main() {
 }
 
 main();
-

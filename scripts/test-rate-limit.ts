@@ -63,7 +63,9 @@ async function testBasicRateLimit() {
   for (let i = 1; i <= config.maxRequests; i++) {
     const result = await limiter.checkLimit(identifier);
     if (result.allowed) {
-      logSuccess(`请求 ${i}/${config.maxRequests} - 允许 (剩余: ${result.remaining})`);
+      logSuccess(
+        `请求 ${i}/${config.maxRequests} - 允许 (剩余: ${result.remaining})`
+      );
     } else {
       logError(`请求 ${i}/${config.maxRequests} - 应该允许但被拒绝`);
       return false;
@@ -245,7 +247,9 @@ async function testGetStatus() {
   const status2 = await limiter.getStatus(identifier);
 
   if (status1.current === 3 && status2.current === 3) {
-    logSuccess(`状态查询正确 - 当前: ${status1.current}, 剩余: ${status1.remaining}`);
+    logSuccess(
+      `状态查询正确 - 当前: ${status1.current}, 剩余: ${status1.remaining}`
+    );
   } else {
     logError('状态查询不正确或增加了计数');
     return false;

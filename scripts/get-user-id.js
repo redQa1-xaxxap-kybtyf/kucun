@@ -18,4 +18,3 @@ async function getUserId() {
 }
 
 getUserId();
-

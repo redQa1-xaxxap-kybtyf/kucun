@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>菜单切换网络请求诊断工具</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #f5f5f5;
+        padding: 20px;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 0 auto;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        padding: 30px;
+      }
+
+      h1 {
+        color: #333;
+        margin-bottom: 10px;
+      }
+
+      .subtitle {
+        color: #666;
+        margin-bottom: 30px;
+      }
+
+      .section {
+        margin-bottom: 30px;
+      }
+
+      .section-title {
+        font-size: 18px;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 15px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid #e0e0e0;
+      }
+
+      .instructions {
+        background: #f8f9fa;
+        padding: 20px;
+        border-radius: 6px;
+        margin-bottom: 20px;
+      }
+
+      .instructions ol {
+        margin-left: 20px;
+      }
+
+      .instructions li {
+        margin-bottom: 10px;
+        line-height: 1.6;
+      }
+
+      .button-group {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+      }
+
+      button {
+        padding: 12px 24px;
+        border: none;
+        border-radius: 6px;
+        font-size: 14px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .btn-primary {
+        background: #2563eb;
+        color: white;
+      }
+
+      .btn-primary:hover {
+        background: #1d4ed8;
+      }
+
+      .btn-secondary {
+        background: #6b7280;
+        color: white;
+      }
+
+      .btn-secondary:hover {
+        background: #4b5563;
+      }
+
+      .btn-success {
+        background: #10b981;
+        color: white;
+      }
+
+      .btn-success:hover {
+        background: #059669;
+      }
+
+      .btn-danger {
+        background: #ef4444;
+        color: white;
+      }
+
+      .btn-danger:hover {
+        background: #dc2626;
+      }
+
+      .status {
+        padding: 10px 15px;
+        border-radius: 6px;
+        margin-bottom: 15px;
+        font-weight: 500;
+      }
+
+      .status.info {
+        background: #dbeafe;
+        color: #1e40af;
+      }
+
+      .status.success {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
+      .status.warning {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .status.error {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .results {
+        background: #f9fafb;
+        padding: 20px;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+        max-height: 400px;
+        overflow-y: auto;
+      }
+
+      .results pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 15px;
+      }
+
+      th,
+      td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+      }
+
+      th {
+        background: #f3f4f6;
+        font-weight: 600;
+        color: #374151;
+      }
+
+      tr:hover {
+        background: #f9fafb;
+      }
+
+      .badge {
+        display: inline-block;
+        padding: 4px 8px;
+        border-radius: 4px;
+        font-size: 12px;
+        font-weight: 500;
+      }
+
+      .badge.success {
+        background: #d1fae5;
+        color: #065f46;
+      }
+
+      .badge.warning {
+        background: #fef3c7;
+        color: #92400e;
+      }
+
+      .badge.error {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+
+      .code {
+        background: #f3f4f6;
+        padding: 2px 6px;
+        border-radius: 3px;
+        font-family: 'Courier New', monospace;
+        font-size: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>🔍 菜单切换网络请求诊断工具</h1>
+      <p class="subtitle">自动检测重复请求、缓存失效和性能瓶颈</p>
+
+      <!-- 使用说明 -->
+      <div class="section">
+        <div class="section-title">📖 使用说明</div>
+        <div class="instructions">
+          <ol>
+            <li>打开浏览器开发者工具 (F12)</li>
+            <li>切换到 <strong>Console</strong> 面板</li>
+            <li>点击下方的 <strong>"开始监控"</strong> 按钮</li>
+            <li>在应用中切换菜单 (仪表盘 → 库存管理 → 调整记录等)</li>
+            <li>点击 <strong>"停止监控"</strong> 按钮</li>
+            <li>查看诊断结果和建议</li>
+          </ol>
+        </div>
+      </div>
+
+      <!-- 控制按钮 -->
+      <div class="section">
+        <div class="section-title">🎮 控制面板</div>
+        <div class="button-group">
+          <button class="btn-primary" onclick="startMonitoring()">
+            ▶️ 开始监控
+          </button>
+          <button class="btn-danger" onclick="stopMonitoring()">
+            ⏹️ 停止监控
+          </button>
+          <button class="btn-secondary" onclick="clearResults()">
+            🗑️ 清空结果
+          </button>
+          <button class="btn-success" onclick="exportResults()">
+            📥 导出报告
+          </button>
+        </div>
+        <div id="status" class="status info">
+          ℹ️ 就绪 - 点击"开始监控"开始诊断
+        </div>
+      </div>
+
+      <!-- 诊断结果 -->
+      <div class="section">
+        <div class="section-title">📊 诊断结果</div>
+        <div id="results" class="results">
+          <pre>等待开始监控...</pre>
+        </div>
+      </div>
+
+      <!-- 详细数据 -->
+      <div class="section">
+        <div class="section-title">📋 网络请求详情</div>
+        <div id="requests-table"></div>
+      </div>
+    </div>
+
+    <script>
+      let monitoring = false;
+      let requests = [];
+      let startTime = 0;
+      let originalFetch = null;
+
+      // 开始监控
+      function startMonitoring() {
+        if (monitoring) {
+          alert('监控已在进行中');
+          return;
+        }
+
+        monitoring = true;
+        requests = [];
+        startTime = Date.now();
+
+        // 拦截 fetch 请求
+        originalFetch = window.fetch;
+        window.fetch = function (...args) {
+          const url = args[0];
+          const options = args[1] || {};
+          const requestTime = Date.now();
+
+          console.log('🔍 [诊断工具] 拦截到请求:', url);
+
+          return originalFetch.apply(this, args).then(response => {
+            const responseTime = Date.now();
+            const duration = responseTime - requestTime;
+
+            // 记录请求
+            requests.push({
+              url: url,
+              method: options.method || 'GET',
+              status: response.status,
+              duration: duration,
+              timestamp: requestTime - startTime,
+              size: response.headers.get('content-length') || 'unknown',
+            });
+
+            updateResults();
+            return response;
+          });
+        };
+
+        updateStatus('success', '✅ 监控中 - 请在应用中切换菜单');
+        updateResults();
+      }
+
+      // 停止监控
+      function stopMonitoring() {
+        if (!monitoring) {
+          alert('监控未开始');
+          return;
+        }
+
+        monitoring = false;
+
+        // 恢复原始 fetch
+        if (originalFetch) {
+          window.fetch = originalFetch;
+        }
+
+        updateStatus('info', 'ℹ️ 监控已停止 - 查看诊断结果');
+        analyzeRequests();
+      }
+
+      // 更新状态
+      function updateStatus(type, message) {
+        const statusEl = document.getElementById('status');
+        statusEl.className = `status ${type}`;
+        statusEl.textContent = message;
+      }
+
+      // 更新结果
+      function updateResults() {
+        const resultsEl = document.getElementById('results');
+
+        if (requests.length === 0) {
+          resultsEl.innerHTML = '<pre>等待网络请求...</pre>';
+          return;
+        }
+
+        let output = `📊 监控统计\n`;
+        output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        output += `总请求数: ${requests.length}\n`;
+        output += `监控时长: ${((Date.now() - startTime) / 1000).toFixed(2)}秒\n`;
+        output += `平均耗时: ${(requests.reduce((sum, r) => sum + r.duration, 0) / requests.length).toFixed(0)}ms\n\n`;
+
+        output += `📋 最近的请求:\n`;
+        output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+        requests.slice(-5).forEach((req, index) => {
+          output += `${index + 1}. ${req.method} ${req.url}\n`;
+          output += `   状态: ${req.status} | 耗时: ${req.duration}ms | 时间: +${req.timestamp}ms\n\n`;
+        });
+
+        resultsEl.innerHTML = `<pre>${output}</pre>`;
+        updateRequestsTable();
+      }
+
+      // 更新请求表格
+      function updateRequestsTable() {
+        const tableEl = document.getElementById('requests-table');
+
+        if (requests.length === 0) {
+          tableEl.innerHTML = '<p style="color: #6b7280;">暂无请求数据</p>';
+          return;
+        }
+
+        let html = '<table>';
+        html += '<thead><tr>';
+        html += '<th>#</th>';
+        html += '<th>URL</th>';
+        html += '<th>方法</th>';
+        html += '<th>状态</th>';
+        html += '<th>耗时</th>';
+        html += '<th>时间</th>';
+        html += '</tr></thead>';
+        html += '<tbody>';
+
+        requests.forEach((req, index) => {
+          const statusBadge =
+            req.status === 200
+              ? 'success'
+              : req.status >= 400
+                ? 'error'
+                : 'warning';
+
+          html += '<tr>';
+          html += `<td>${index + 1}</td>`;
+          html += `<td><span class="code">${req.url}</span></td>`;
+          html += `<td>${req.method}</td>`;
+          html += `<td><span class="badge ${statusBadge}">${req.status}</span></td>`;
+          html += `<td>${req.duration}ms</td>`;
+          html += `<td>+${req.timestamp}ms</td>`;
+          html += '</tr>';
+        });
+
+        html += '</tbody></table>';
+        tableEl.innerHTML = html;
+      }
+
+      // 分析请求
+      function analyzeRequests() {
+        const resultsEl = document.getElementById('results');
+
+        // 检测重复请求
+        const urlCounts = {};
+        requests.forEach(req => {
+          const url = req.url;
+          urlCounts[url] = (urlCounts[url] || 0) + 1;
+        });
+
+        const duplicates = Object.entries(urlCounts).filter(
+          ([_, count]) => count > 1
+        );
+
+        let output = `🔍 诊断分析报告\n`;
+        output += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+        // 重复请求检测
+        output += `⚠️ 重复请求检测:\n`;
+        if (duplicates.length > 0) {
+          output += `❌ 发现 ${duplicates.length} 个重复请求!\n\n`;
+          duplicates.forEach(([url, count]) => {
+            output += `  • ${url}\n`;
+            output += `    重复次数: ${count} 次\n\n`;
+          });
+        } else {
+          output += `✅ 未发现重复请求\n\n`;
+        }
+
+        // 性能分析
+        output += `⚡ 性能分析:\n`;
+        const avgDuration =
+          requests.reduce((sum, r) => sum + r.duration, 0) / requests.length;
+        const maxDuration = Math.max(...requests.map(r => r.duration));
+        const minDuration = Math.min(...requests.map(r => r.duration));
+
+        output += `  平均耗时: ${avgDuration.toFixed(0)}ms\n`;
+        output += `  最长耗时: ${maxDuration}ms\n`;
+        output += `  最短耗时: ${minDuration}ms\n\n`;
+
+        if (avgDuration > 200) {
+          output += `  ⚠️ 警告: 平均耗时超过 200ms,建议优化\n\n`;
+        } else {
+          output += `  ✅ 性能良好\n\n`;
+        }
+
+        // 建议
+        output += `💡 优化建议:\n`;
+        if (duplicates.length > 0) {
+          output += `  1. 检查 TanStack Query 的 queryKey 是否一致\n`;
+          output += `  2. 确认 HydrationBoundary 配置正确\n`;
+          output += `  3. 检查 staleTime 配置\n`;
+        }
+        if (avgDuration > 200) {
+          output += `  4. 优化数据库查询性能\n`;
+          output += `  5. 考虑添加缓存层\n`;
+          output += `  6. 减少返回的数据量\n`;
+        }
+
+        resultsEl.innerHTML = `<pre>${output}</pre>`;
+      }
+
+      // 清空结果
+      function clearResults() {
+        requests = [];
+        updateResults();
+        updateStatus('info', 'ℹ️ 结果已清空');
+      }
+
+      // 导出报告
+      function exportResults() {
+        if (requests.length === 0) {
+          alert('没有数据可导出');
+          return;
+        }
+
+        const report = {
+          timestamp: new Date().toISOString(),
+          duration: (Date.now() - startTime) / 1000,
+          totalRequests: requests.length,
+          requests: requests,
+        };
+
+        const blob = new Blob([JSON.stringify(report, null, 2)], {
+          type: 'application/json',
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `network-diagnosis-${Date.now()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+
+        updateStatus('success', '✅ 报告已导出');
+      }
+    </script>
+  </body>
+</html>

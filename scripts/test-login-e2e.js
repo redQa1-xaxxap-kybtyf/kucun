@@ -36,7 +36,7 @@ function addTestResult(name, passed, message, screenshot = null) {
 }
 
 // 等待函数
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const wait = ms => new Promise(resolve => setTimeout(resolve, ms));
 
 // 主测试函数
 async function runE2ETests() {
@@ -118,7 +118,9 @@ async function runE2ETests() {
       });
 
       // 检查错误提示
-      const errorText = await page.textContent('.text-red-500, .text-destructive');
+      const errorText = await page.textContent(
+        '.text-red-500, .text-destructive'
+      );
       if (errorText && errorText.includes('用户名或密码错误')) {
         addTestResult('用户名不存在', true, '错误提示正确');
       } else {
@@ -149,7 +151,9 @@ async function runE2ETests() {
         path: 'test-screenshots/04-after-wrong-password.png',
       });
 
-      const errorText = await page.textContent('.text-red-500, .text-destructive');
+      const errorText = await page.textContent(
+        '.text-red-500, .text-destructive'
+      );
       if (errorText && errorText.includes('用户名或密码错误')) {
         addTestResult('密码错误', true, '错误提示正确');
       } else {
@@ -180,7 +184,9 @@ async function runE2ETests() {
         path: 'test-screenshots/05-after-wrong-captcha.png',
       });
 
-      const errorText = await page.textContent('.text-red-500, .text-destructive');
+      const errorText = await page.textContent(
+        '.text-red-500, .text-destructive'
+      );
       if (errorText && errorText.includes('验证码')) {
         addTestResult('验证码错误', true, '错误提示正确');
       } else {
@@ -272,4 +278,3 @@ async function runE2ETests() {
 
 // 运行测试
 runE2ETests().catch(console.error);
-

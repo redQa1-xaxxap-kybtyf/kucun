@@ -61,7 +61,10 @@ async function testConcurrentRequests() {
     console.log(`  - 所有结果相同: ${allSame ? '✅' : '❌'}`);
 
     if (!allSame) {
-      console.log(`  结果详情:`, results.map((r, i) => `请求${i + 1}: ${r.id}`));
+      console.log(
+        `  结果详情:`,
+        results.map((r, i) => `请求${i + 1}: ${r.id}`)
+      );
     }
 
     // 验证数据库中只有一条记录
@@ -265,9 +268,15 @@ async function runTests() {
 
     console.log('\n\n📊 测试结果汇总：');
     console.log('='.repeat(50));
-    console.log(`  并发请求测试:     ${results.concurrent ? '✅ 通过' : '❌ 失败'}`);
-    console.log(`  失败重试测试:     ${results.failureRetry ? '✅ 通过' : '❌ 失败'}`);
-    console.log(`  竞态压力测试:     ${results.raceCondition ? '✅ 通过' : '❌ 失败'}`);
+    console.log(
+      `  并发请求测试:     ${results.concurrent ? '✅ 通过' : '❌ 失败'}`
+    );
+    console.log(
+      `  失败重试测试:     ${results.failureRetry ? '✅ 通过' : '❌ 失败'}`
+    );
+    console.log(
+      `  竞态压力测试:     ${results.raceCondition ? '✅ 通过' : '❌ 失败'}`
+    );
     // console.log(`  超时保护测试:     ${results.timeout ? '✅ 通过' : '❌ 失败'}`);
 
     const allPassed = Object.values(results).every(r => r);

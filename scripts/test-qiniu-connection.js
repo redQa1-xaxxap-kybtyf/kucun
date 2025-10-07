@@ -32,7 +32,11 @@ function decrypt(encryptedText) {
   try {
     if (encryptedText.includes(':')) {
       const parts = encryptedText.split(':');
-      if (parts.length === 2 && /^[0-9a-f]+$/i.test(parts[0]) && /^[0-9a-f]+$/i.test(parts[1])) {
+      if (
+        parts.length === 2 &&
+        /^[0-9a-f]+$/i.test(parts[0]) &&
+        /^[0-9a-f]+$/i.test(parts[1])
+      ) {
         const iv = Buffer.from(parts[0], 'hex');
         const encrypted = parts[1];
         const decipher = crypto.createDecipheriv(ALGORITHM, ENCRYPTION_KEY, iv);
@@ -65,7 +69,12 @@ async function testConnection() {
     const settings = await prisma.systemSetting.findMany({
       where: {
         key: {
-          in: ['qiniu_access_key', 'qiniu_secret_key', 'qiniu_bucket', 'qiniu_region'],
+          in: [
+            'qiniu_access_key',
+            'qiniu_secret_key',
+            'qiniu_bucket',
+            'qiniu_region',
+          ],
         },
       },
     });
@@ -95,8 +104,12 @@ async function testConnection() {
     });
 
     console.log('配置信息:');
-    console.log(`- AccessKey: ${config.accessKey.substring(0, 10)}... (长度: ${config.accessKey.length})`);
-    console.log(`- SecretKey: ${config.secretKey.substring(0, 10)}... (长度: ${config.secretKey.length})`);
+    console.log(
+      `- AccessKey: ${config.accessKey.substring(0, 10)}... (长度: ${config.accessKey.length})`
+    );
+    console.log(
+      `- SecretKey: ${config.secretKey.substring(0, 10)}... (长度: ${config.secretKey.length})`
+    );
     console.log(`- Bucket: ${config.bucket}`);
     console.log(`- Region: ${config.region}\n`);
 
@@ -144,4 +157,3 @@ async function testConnection() {
 }
 
 testConnection();
-
