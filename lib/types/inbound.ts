@@ -127,6 +127,13 @@ export interface InboundStats {
   recentRecords: InboundRecord[];
 }
 
+// 批次规格信息
+export interface BatchSpecInfo {
+  batchNumber: string;
+  piecesPerUnit: number; // 每件片数
+  quantity: number; // 该规格的库存数量（片）
+}
+
 // 产品选择器选项
 export interface ProductOption {
   value: string;
@@ -136,6 +143,7 @@ export interface ProductOption {
   unit: string;
   piecesPerUnit: number;
   currentStock?: number;
+  batchSpecs?: BatchSpecInfo[]; // 批次规格列表（批次号+每件片数组合）
 }
 
 // 入库单位类型
