@@ -304,46 +304,50 @@ export default function UsersSettingsPage() {
   // 检查权限
   if (session?.user?.role !== 'admin') {
     return (
-      <div className="mx-auto max-w-none space-y-6 px-4 py-4 sm:px-6 lg:px-8">
-        {/* 页面头部 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                  <Users className="h-6 w-6 text-white" />
+      <div className="flex h-full flex-col overflow-hidden p-6">
+        <div className="space-y-6">
+          {/* 页面头部 */}
+          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+            <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
+                    <Users className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                      用户管理
+                    </h1>
+                    <p className="text-sm text-gray-600">
+                      管理系统用户账户和权限
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    用户管理
-                  </h1>
-                  <p className="text-sm text-gray-600">管理系统用户账户和权限</p>
-                </div>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => router.push('/settings')}
+                  className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  返回设置
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => router.push('/settings')}
-                className="h-11 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                返回设置
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
-          <CardHeader>
-            <CardTitle className="flex items-center text-amber-800">
-              <Users className="mr-2 h-5 w-5" />
-              权限不足
-            </CardTitle>
-            <CardDescription className="text-amber-700">
-              只有管理员可以访问用户管理功能。
-            </CardDescription>
-          </CardHeader>
-        </Card>
+          <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
+            <CardHeader>
+              <CardTitle className="flex items-center text-amber-800">
+                <Users className="mr-2 h-5 w-5" />
+                权限不足
+              </CardTitle>
+              <CardDescription className="text-amber-700">
+                只有管理员可以访问用户管理功能。
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -356,148 +360,152 @@ export default function UsersSettingsPage() {
     resetPasswordMutation.isPending;
 
   return (
-    <div className="mx-auto max-w-none space-y-6 px-4 py-4 sm:px-6 lg:px-8">
-      {/* 页面头部 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                <Users className="h-6 w-6 text-white" />
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 页面头部 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
+                  <Users className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    用户管理
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    管理系统用户账户和权限
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                  用户管理
-                </h1>
-                <p className="text-sm text-gray-600">
-                  管理系统用户账户和权限
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => router.push('/settings')}
-              className="h-11 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              返回设置
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 用户管理卡片 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-          <CardTitle className="flex items-center text-gray-900">
-            <Users className="mr-2 h-5 w-5 text-blue-600" />
-            用户账户管理
-          </CardTitle>
-          <CardDescription>
-            创建、编辑和管理系统用户账户，控制用户权限和状态
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6 p-6">
-          {/* 操作栏 */}
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-1 items-center space-x-2">
-              <div className="relative max-w-sm flex-1">
-                <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
-                <Input
-                  placeholder="搜索用户名、邮箱或姓名..."
-                  value={searchTerm}
-                  onChange={e => handleSearch(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-              <Select value={roleFilter} onValueChange={handleRoleFilter}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="角色" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部角色</SelectItem>
-                  <SelectItem value="admin">管理员</SelectItem>
-                  <SelectItem value="sales">销售员</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={statusFilter} onValueChange={handleStatusFilter}>
-                <SelectTrigger className="w-[120px]">
-                  <SelectValue placeholder="状态" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部状态</SelectItem>
-                  <SelectItem value="active">启用</SelectItem>
-                  <SelectItem value="inactive">禁用</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            <Button
-              onClick={handleCreateUser}
-              disabled={isLoading || isAnyMutationLoading}
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              新增用户
-            </Button>
-          </div>
-
-          {/* 用户列表 */}
-          {isLoading ? (
-            <div className="flex h-32 items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="ml-2">加载中...</span>
-            </div>
-          ) : error ? (
-            <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
-              <p>加载用户列表失败</p>
               <Button
                 variant="outline"
-                onClick={() => refetch()}
-                className="mt-2"
+                size="lg"
+                onClick={() => router.push('/settings')}
+                className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
               >
-                重试
+                <ArrowLeft className="h-4 w-4" />
+                返回设置
               </Button>
             </div>
-          ) : (
-            <UserManagementTable
-              users={userListData?.users || []}
-              currentUserId={session?.user?.id || ''}
-              onEdit={handleEditUser}
-              onDelete={handleDeleteUser}
-              onToggleStatus={handleToggleStatus}
-              onResetPassword={handleResetPassword}
-              isLoading={isAnyMutationLoading}
-            />
-          )}
+          </CardContent>
+        </Card>
 
-          {/* 分页信息 */}
-          {userListData && userListData.total > 0 && (
-            <div className="text-muted-foreground flex items-center justify-between text-sm">
-              <div>
-                显示第 {(userListData.page - 1) * userListData.limit + 1} 到{' '}
-                {Math.min(
-                  userListData.page * userListData.limit,
-                  userListData.total
-                )}{' '}
-                条， 共 {userListData.total} 条记录
+        {/* 用户管理卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+            <CardTitle className="flex items-center text-gray-900">
+              <Users className="mr-2 h-5 w-5 text-gray-600" />
+              用户账户管理
+            </CardTitle>
+            <CardDescription>
+              创建、编辑和管理系统用户账户，控制用户权限和状态
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 p-6">
+            {/* 操作栏 */}
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-1 items-center space-x-2">
+                <div className="relative max-w-sm flex-1">
+                  <Search className="text-muted-foreground absolute top-2.5 left-2 h-4 w-4" />
+                  <Input
+                    placeholder="搜索用户名、邮箱或姓名..."
+                    value={searchTerm}
+                    onChange={e => handleSearch(e.target.value)}
+                    className="pl-8"
+                  />
+                </div>
+                <Select value={roleFilter} onValueChange={handleRoleFilter}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="角色" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部角色</SelectItem>
+                    <SelectItem value="admin">管理员</SelectItem>
+                    <SelectItem value="sales">销售员</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select value={statusFilter} onValueChange={handleStatusFilter}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="状态" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">全部状态</SelectItem>
+                    <SelectItem value="active">启用</SelectItem>
+                    <SelectItem value="inactive">禁用</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <div>
-                第 {userListData.page} 页，共 {userListData.totalPages} 页
-              </div>
+              <Button
+                onClick={handleCreateUser}
+                disabled={isLoading || isAnyMutationLoading}
+              >
+                <Plus className="mr-2 h-4 w-4" />
+                新增用户
+              </Button>
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* 用户表单对话框 */}
-      <UserForm
-        open={userFormOpen}
-        onOpenChange={setUserFormOpen}
-        mode={formMode}
-        user={selectedUser}
-        onSubmit={handleFormSubmit}
-        isLoading={createUserMutation.isPending || updateUserMutation.isPending}
-      />
+            {/* 用户列表 */}
+            {isLoading ? (
+              <div className="flex h-32 items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                <span className="ml-2">加载中...</span>
+              </div>
+            ) : error ? (
+              <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
+                <p>加载用户列表失败</p>
+                <Button
+                  variant="outline"
+                  onClick={() => refetch()}
+                  className="mt-2"
+                >
+                  重试
+                </Button>
+              </div>
+            ) : (
+              <UserManagementTable
+                users={userListData?.users || []}
+                currentUserId={session?.user?.id || ''}
+                onEdit={handleEditUser}
+                onDelete={handleDeleteUser}
+                onToggleStatus={handleToggleStatus}
+                onResetPassword={handleResetPassword}
+                isLoading={isAnyMutationLoading}
+              />
+            )}
+
+            {/* 分页信息 */}
+            {userListData && userListData.total > 0 && (
+              <div className="text-muted-foreground flex items-center justify-between text-sm">
+                <div>
+                  显示第 {(userListData.page - 1) * userListData.limit + 1} 到{' '}
+                  {Math.min(
+                    userListData.page * userListData.limit,
+                    userListData.total
+                  )}{' '}
+                  条， 共 {userListData.total} 条记录
+                </div>
+                <div>
+                  第 {userListData.page} 页，共 {userListData.totalPages} 页
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 用户表单对话框 */}
+        <UserForm
+          open={userFormOpen}
+          onOpenChange={setUserFormOpen}
+          mode={formMode}
+          user={selectedUser}
+          onSubmit={handleFormSubmit}
+          isLoading={
+            createUserMutation.isPending || updateUserMutation.isPending
+          }
+        />
+      </div>
     </div>
   );
 }

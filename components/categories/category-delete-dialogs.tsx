@@ -46,7 +46,9 @@ interface CategoryDeleteDialogsProps {
   isDeleting: boolean;
   isBatchDeleting: boolean;
   onDeleteDialogChange: React.Dispatch<React.SetStateAction<DeleteDialogState>>;
-  onBatchDeleteDialogChange: React.Dispatch<React.SetStateAction<BatchDeleteDialogState>>;
+  onBatchDeleteDialogChange: React.Dispatch<
+    React.SetStateAction<BatchDeleteDialogState>
+  >;
   onConfirmDelete: () => void;
   onConfirmBatchDelete: () => void;
 }
@@ -132,7 +134,7 @@ export function CategoryDeleteDialogs({
                 >
                   <div>
                     <div className="font-medium">{category.name}</div>
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-muted-foreground text-sm">
                       产品数量: {category.productCount || 0}
                     </div>
                   </div>

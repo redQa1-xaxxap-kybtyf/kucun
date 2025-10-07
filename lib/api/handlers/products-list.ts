@@ -69,11 +69,13 @@ export function buildProductWhereClause(params: {
 }): Prisma.ProductWhereInput {
   const where: Prisma.ProductWhereInput = {};
 
-  // 搜索条件 - 优化为使用索引的查询
+  // 搜索条件 - 使用模糊匹配提升用户体验
+  // 支持在产品编码、名称、规格的任意位置搜索
   if (params.search) {
     where.OR = [
-      { code: { startsWith: params.search } }, // 可以使用索引的前缀匹配
-      { name: { contains: params.search } }, // name字段有索引
+      { code: { contains: params.search } }, // 编码模糊匹配
+      { name: { contains: params.search } }, // 名称模糊匹配
+      { specification: { contains: params.search } }, // 规格模糊匹配
     ];
   }
 
@@ -265,4 +267,3 @@ export function buildPagination(params: {
     totalPages,
   };
 }
-

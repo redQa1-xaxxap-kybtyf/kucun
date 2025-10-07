@@ -17,7 +17,7 @@ export function SalesOrderPageHeader() {
 
   return (
     <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-      <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+      <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">

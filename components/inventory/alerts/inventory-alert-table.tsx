@@ -35,7 +35,7 @@ export function InventoryAlertTable({
 
   if (alerts.length === 0) {
     return (
-      <div className="py-8 text-center text-muted-foreground">
+      <div className="text-muted-foreground py-8 text-center">
         <BellOff className="mx-auto mb-2 h-8 w-8" />
         <p className="text-sm">暂无库存预警</p>
       </div>

@@ -3,9 +3,23 @@ import { getCategoriesServer } from '@/lib/api/categories-server';
 
 /**
  * 分类管理页面
- * 严格遵循全栈项目统一约定规范
- * 服务端组件 - 优先使用 App Router SSR，统一使用直接数据获取模式
+ *
+ * ✅ Next.js 15 最佳实践：
+ * - Server Component 架构
+ * - Route Segment Config 缓存控制
+ * - 直接服务端数据获取
+ * - 类型安全的 searchParams
  */
+
+// ============================================
+// Route Segment Config
+// ============================================
+
+// ✅ Next.js 15 Route Segment Config
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 export default async function CategoriesPage({
   searchParams,
 }: {
@@ -37,13 +51,9 @@ export default async function CategoriesPage({
   });
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-        <CategoryPageWrapper
-          initialData={initialData}
-          initialParams={{ page, limit, search, status, sortBy, sortOrder }}
-        />
-      </div>
-    </div>
+    <CategoryPageWrapper
+      initialData={initialData}
+      initialParams={{ page, limit, search, status, sortBy, sortOrder }}
+    />
   );
 }

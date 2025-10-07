@@ -230,9 +230,7 @@ export default function HelpPage() {
                 <BookOpen className="mr-2 h-5 w-5 text-blue-600" />
                 使用指南
               </CardTitle>
-              <CardDescription>
-                系统功能详细说明和操作指导
-              </CardDescription>
+              <CardDescription>系统功能详细说明和操作指导</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-6">

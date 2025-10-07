@@ -94,7 +94,7 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
               <Input
                 type="number"
                 readOnly
-                className="h-9 bg-muted"
+                className="bg-muted h-9"
                 {...field}
               />
             </FormControl>

@@ -159,48 +159,87 @@ export default function SalesOrderDetailPage() {
     );
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-        {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2">
-            <span className="text-muted-foreground">
-              订单号：{order.orderNumber}
-            </span>
-            <Badge variant={getStatusBadgeVariant(order.status)}>
-              {order.status}
-            </Badge>
-            {getOrderTypeBadge(order.orderType)}
-          </div>
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
-              <Printer className="mr-2 h-4 w-4" />
-              打印
-            </Button>
-            <Button variant="outline" size="sm">
-              <Download className="mr-2 h-4 w-4" />
-              导出
-            </Button>
-            <Button variant="outline" size="sm">
-              <Edit className="mr-2 h-4 w-4" />
-              编辑
-            </Button>
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <MoreHorizontal className="h-4 w-4" />
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <ShoppingCart className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    销售订单详情
+                  </h1>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <span>订单号：{order.orderNumber}</span>
+                    <Badge variant={getStatusBadgeVariant(order.status)}>
+                      {SALES_ORDER_STATUS_LABELS[
+                        order.status as keyof typeof SALES_ORDER_STATUS_LABELS
+                      ] || order.status}
+                    </Badge>
+                    {getOrderTypeBadge(order.orderType)}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => router.back()}
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  返回
                 </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem>复制订单</DropdownMenuItem>
-                <DropdownMenuItem>发送邮件</DropdownMenuItem>
-                <DropdownMenuItem className="text-destructive">
-                  删除订单
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Printer className="mr-2 h-4 w-4" />
+                  打印
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  导出
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  编辑
+                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>复制订单</DropdownMenuItem>
+                    <DropdownMenuItem>发送邮件</DropdownMenuItem>
+                    <DropdownMenuItem className="text-destructive">
+                      删除订单
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* 基本信息 */}

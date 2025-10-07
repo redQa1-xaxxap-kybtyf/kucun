@@ -1,3 +1,9 @@
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
+
 import { getCategoriesServer } from '@/lib/api/categories-server';
 import { formatPaginatedResponse } from '@/lib/api/inventory-formatter';
 import {
@@ -6,13 +12,27 @@ import {
 } from '@/lib/api/inventory-query-builder';
 import { paginationConfig } from '@/lib/env';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
+import { inventoryQueryKeys } from '@/hooks/use-optimized-inventory-query';
 import { InventoryPageClient } from './page-client';
 
 /**
  * 库存管理页面 - Server Component
- * 负责数据获取和 SEO 优化
- * 严格遵循前端架构规范：三级组件架构
+ *
+ * ✅ Next.js 15.4 最佳实践：
+ * 1. Route Segment Config - 明确缓存策略
+ * 2. Server Components - 服务端数据获取
+ * 3. HydrationBoundary - SSR 数据传递
+ * 4. Streaming - 支持渐进式渲染
+ *
+ * @see https://nextjs.org/docs/app/api-reference/file-conventions/route-segment-config
  */
+
+// ✅ Route Segment Config - Next.js 15 最佳实践
+export const dynamic = 'force-dynamic'; // 强制动态渲染（库存数据实时性要求高）
+export const fetchCache = 'force-no-store'; // 禁用 fetch 缓存
+export const runtime = 'nodejs'; // 使用 Node.js 运行时（需要数据库连接）
+export const revalidate = 0; // 禁用 ISR
+
 export default async function InventoryPage({
   searchParams,
 }: {
@@ -41,7 +61,18 @@ export default async function InventoryPage({
     sortOrder,
   };
 
-  // 并行获取初始数据
+  // ✅ TanStack Query v5 最佳实践：在组件内创建 QueryClient，避免数据泄漏
+  // 启用 Streaming Queries (v5.40+)
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        // ✅ 允许 pending queries 序列化，支持 Streaming SSR
+        shouldDehydratePendingQuery: true,
+      },
+    },
+  });
+
+  // 并行获取初始数据并预取到 QueryClient
   const [inventoryRecords, total, categoriesResult] = await Promise.all([
     getOptimizedInventoryList(queryParams),
     getInventoryCount(queryParams),
@@ -64,21 +95,23 @@ export default async function InventoryPage({
     sortOrder: cat.sortOrder,
   }));
 
-  // 格式化响应数据
-  const initialData = formatPaginatedResponse(
+  // ✅ 格式化响应数据（统一格式）
+  const inventoryData = formatPaginatedResponse(
     inventoryRecords,
     total,
     queryParams.page || 1,
     queryParams.limit || 20
   );
 
+  // ✅ 将服务端数据预设到 QueryClient（使用统一格式，无需额外映射）
+  queryClient.setQueryData(inventoryQueryKeys.list(queryParams), inventoryData);
+
   return (
-    <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
+    <HydrationBoundary state={dehydrate(queryClient)}>
       <InventoryPageClient
-        initialData={initialData}
         initialParams={queryParams}
         categoryOptions={categoryOptions}
       />
-    </div>
+    </HydrationBoundary>
   );
 }

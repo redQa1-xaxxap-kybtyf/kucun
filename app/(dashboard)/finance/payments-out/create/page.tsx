@@ -90,14 +90,14 @@ function PayableInfoSidebar({
   payableRecord: PayableRecord;
 }) {
   return (
-    <Card>
-      <CardHeader>
+    <Card className="shadow-md shadow-gray-200/50">
+      <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
         <CardTitle className="flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
           应付款信息
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 pt-6">
         <div>
           <p className="text-muted-foreground text-sm">应付款单号</p>
           <p className="font-medium">{payableRecord.payableNumber}</p>
@@ -481,51 +481,71 @@ export default function CreatePaymentOutPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-4xl px-4 py-6">
-      {/* 页面标题 */}
-      <div className="mb-6 flex items-center gap-4">
-        <Button variant="ghost" size="sm" asChild>
-          <Link href="/finance/payments-out">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回列表
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold">创建付款记录</h1>
-          <p className="text-muted-foreground text-sm">填写付款信息并提交</p>
-        </div>
-      </div>
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <DollarSign className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    创建付款记录
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    填写付款信息并提交，记录对供应商的付款
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+              >
+                <Link href="/finance/payments-out">
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  返回
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* 主表单区域 */}
-        <div className="lg:col-span-2">
-          <Card>
-            <CardHeader>
-              <CardTitle>付款信息</CardTitle>
-              <CardDescription>请填写完整的付款信息</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <PaymentOutFormFields
-                form={form}
-                availablePayables={availablePayables}
-                payablesLoading={payablesLoading}
-                payableRecord={payableRecord}
-                watchedPaymentMethod={watchedPaymentMethod}
-                handlePayableSelect={handlePayableSelect}
-                onSubmit={onSubmit}
-                router={router}
-                isPending={createMutation.isPending}
-              />
-            </CardContent>
-          </Card>
-        </div>
-
-        {/* 侧边栏 - 应付款信息 */}
-        {payableRecord && (
-          <div className="lg:col-span-1">
-            <PayableInfoSidebar payableRecord={payableRecord} />
+        <div className="grid gap-6 lg:grid-cols-3">
+          {/* 主表单区域 */}
+          <div className="lg:col-span-2">
+            <Card className="shadow-md shadow-gray-200/50">
+              <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+                <CardTitle>付款信息</CardTitle>
+                <CardDescription>请填写完整的付款信息</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <PaymentOutFormFields
+                  form={form}
+                  availablePayables={availablePayables}
+                  payablesLoading={payablesLoading}
+                  payableRecord={payableRecord}
+                  watchedPaymentMethod={watchedPaymentMethod}
+                  handlePayableSelect={handlePayableSelect}
+                  onSubmit={onSubmit}
+                  router={router}
+                  isPending={createMutation.isPending}
+                />
+              </CardContent>
+            </Card>
           </div>
-        )}
+
+          {/* 侧边栏 - 应付款信息 */}
+          {payableRecord && (
+            <div className="lg:col-span-1">
+              <PayableInfoSidebar payableRecord={payableRecord} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -1,20 +1,9 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import {
-  Edit,
-  Eye,
-  MoreHorizontal,
-  Plus,
-  RotateCcw,
-  Trash2,
-  Users,
-} from 'lucide-react';
+import { Edit, Eye, MoreHorizontal, Plus, Trash2, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 
-import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,12 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
-import { paginationConfig } from '@/lib/env';
-import type { Customer, CustomerQueryParams } from '@/lib/types/customer';
+import type { Customer } from '@/lib/types/customer';
 
 interface ERPCustomerListProps {
-  initialData?: {
+  initialData: {
     data: Customer[];
     pagination: {
       page: number;
@@ -46,7 +33,6 @@ interface ERPCustomerListProps {
       totalPages: number;
     };
   };
-  initialParams?: CustomerQueryParams;
   onCreateNew?: () => void;
   onViewDetail?: (customer: Customer) => void;
   onEdit?: (customer: Customer) => void;
@@ -56,10 +42,10 @@ interface ERPCustomerListProps {
 /**
  * ERP风格的客户管理列表组件
  * 采用紧凑布局，符合中国ERP系统用户习惯
+ * 简化版本：移除客户端状态管理，依赖服务器端数据
  */
 export function ERPCustomerList({
   initialData,
-  initialParams,
   onCreateNew,
   onViewDetail,
   onEdit,
@@ -67,55 +53,8 @@ export function ERPCustomerList({
 }: ERPCustomerListProps) {
   const router = useRouter();
 
-  // 查询参数状态
-  const [queryParams, setQueryParams] = useState<CustomerQueryParams>(
-    initialParams || {
-      page: 1,
-      limit: paginationConfig.defaultPageSize,
-      search: '',
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    }
-  );
-
-  // 获取客户列表数据
-  const { data, isLoading } = useQuery({
-    queryKey: customerQueryKeys.list(queryParams),
-    queryFn: () => getCustomers(queryParams),
-    initialData: initialData
-      ? {
-          data: initialData.data,
-          pagination: initialData.pagination,
-        }
-      : undefined,
-  });
-
-  const customers = data?.data || [];
-
-  // 搜索处理
-  const handleSearch = (value: string) => {
-    setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
-  };
-
-  // 排序处理
-  const handleSort = (sortBy: string) => {
-    setQueryParams(prev => ({
-      ...prev,
-      sortBy: sortBy as CustomerQueryParams['sortBy'],
-      page: 1,
-    }));
-  };
-
-  // 重置筛选
-  const resetFilters = () => {
-    setQueryParams({
-      page: 1,
-      limit: 50,
-      search: '',
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    });
-  };
+  // 使用服务器传递的数据
+  const customers = initialData.data || [];
 
   // 处理创建新客户
   const handleCreateNew = () => {
@@ -187,50 +126,6 @@ export function ERPCustomerList({
         </CardContent>
       </Card>
 
-      {/* 搜索和筛选 */}
-      <Card className="shadow-md shadow-gray-200/50">
-        <CardContent className="pt-6">
-          <UnifiedSearchBar
-            searchValue={queryParams.search || ''}
-            onSearchChange={handleSearch}
-            searchPlaceholder="搜索客户名称、手机号..."
-            debounceDelay={400}
-            compact={true}
-            filters={[
-              {
-                key: 'sortBy',
-                label: '排序',
-                options: [
-                  { label: '创建时间', value: 'createdAt' },
-                  { label: '客户名称', value: 'name' },
-                  { label: '更新时间', value: 'updatedAt' },
-                  { label: '交易次数', value: 'transactionCount' },
-                  { label: '合作天数', value: 'cooperationDays' },
-                  { label: '退货次数', value: 'returnOrderCount' },
-                ],
-                width: 'w-32',
-              },
-            ]}
-            filterValues={{
-              sortBy: queryParams.sortBy || 'createdAt',
-            }}
-            onFilterChange={(key, value) => {
-              if (key === 'sortBy' && value) {
-                handleSort(value);
-              }
-            }}
-            actionButtons={[
-              {
-                label: '重置',
-                icon: <RotateCcw className="mr-1 h-3 w-3" />,
-                onClick: resetFilters,
-                variant: 'outline',
-              },
-            ]}
-          />
-        </CardContent>
-      </Card>
-
       {/* 表格区域 */}
       <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
         <Table>
@@ -247,16 +142,7 @@ export function ERPCustomerList({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell
-                  colSpan={8}
-                  className="text-muted-foreground h-10 text-center text-xs"
-                >
-                  加载中...
-                </TableCell>
-              </TableRow>
-            ) : customers.length === 0 ? (
+            {customers.length === 0 ? (
               <TableRow>
                 <TableCell
                   colSpan={8}

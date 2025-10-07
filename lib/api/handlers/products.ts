@@ -288,13 +288,11 @@ function formatProduct(product: {
   status: string;
   createdAt: Date;
   updatedAt: Date;
-  category?:
-    | {
-        id: string;
-        name: string;
-        code: string;
-      }
-    | null;
+  category?: {
+    id: string;
+    name: string;
+    code: string;
+  } | null;
   variants?: ProductVariantWithRelations[];
   _count?: {
     variants: number;

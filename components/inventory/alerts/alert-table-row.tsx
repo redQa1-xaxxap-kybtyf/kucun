@@ -29,8 +29,12 @@ function formatAlertValue(alert: InventoryAlert): string {
 }
 
 function getAlertSeverity(alert: InventoryAlert): 'high' | 'medium' | 'low' {
-  if (alert.alertType === 'out_of_stock') {return 'high';}
-  if (alert.alertType === 'low_stock') {return 'medium';}
+  if (alert.alertType === 'out_of_stock') {
+    return 'high';
+  }
+  if (alert.alertType === 'low_stock') {
+    return 'medium';
+  }
   return 'low';
 }
 
@@ -56,7 +60,7 @@ export function AlertTableRow({ alert, onViewProduct }: AlertTableRowProps) {
       <TableCell>
         <div>
           <div className="font-medium">{alert.productName}</div>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-sm">
             {alert.productCode}
           </div>
         </div>

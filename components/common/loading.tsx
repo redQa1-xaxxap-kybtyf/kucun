@@ -1,12 +1,12 @@
 /**
  * 统一的加载状态组件
- * 
+ *
  * 提供统一的加载状态显示，包括：
  * - 页面加载
  * - 内容加载
  * - 按钮加载
  * - 卡片加载
- * 
+ *
  * @see docs/LOADING_STATE_GUIDE.md
  */
 
@@ -36,18 +36,18 @@ export interface LoadingProps {
    * @default 'content'
    */
   variant?: LoadingVariant;
-  
+
   /**
    * 加载状态大小
    * @default 'md'
    */
   size?: LoadingSize;
-  
+
   /**
    * 加载文本
    */
   text?: string;
-  
+
   /**
    * 自定义类名
    */
@@ -70,15 +70,15 @@ function getIconSize(size: LoadingSize): string {
 
 /**
  * 加载状态组件
- * 
+ *
  * @example
  * ```tsx
  * // 页面加载
  * <Loading variant="page" text="加载中..." />
- * 
+ *
  * // 内容加载
  * <Loading variant="content" />
- * 
+ *
  * // 行内加载
  * <Loading variant="inline" size="sm" />
  * ```
@@ -94,10 +94,14 @@ export function Loading({
   // 页面加载
   if (variant === 'page') {
     return (
-      <div className={`flex min-h-screen items-center justify-center ${className}`}>
+      <div
+        className={`flex min-h-screen items-center justify-center ${className}`}
+      >
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className={`${iconSize} animate-spin text-muted-foreground`} />
-          {text && <p className="text-sm text-muted-foreground">{text}</p>}
+          <Loader2
+            className={`${iconSize} text-muted-foreground animate-spin`}
+          />
+          {text && <p className="text-muted-foreground text-sm">{text}</p>}
         </div>
       </div>
     );
@@ -106,10 +110,14 @@ export function Loading({
   // 内容加载
   if (variant === 'content') {
     return (
-      <div className={`flex min-h-[400px] items-center justify-center ${className}`}>
+      <div
+        className={`flex min-h-[400px] items-center justify-center ${className}`}
+      >
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className={`${iconSize} animate-spin text-muted-foreground`} />
-          {text && <p className="text-sm text-muted-foreground">{text}</p>}
+          <Loader2
+            className={`${iconSize} text-muted-foreground animate-spin`}
+          />
+          {text && <p className="text-muted-foreground text-sm">{text}</p>}
         </div>
       </div>
     );
@@ -119,8 +127,8 @@ export function Loading({
   if (variant === 'inline') {
     return (
       <div className={`flex items-center gap-2 ${className}`}>
-        <Loader2 className={`${iconSize} animate-spin text-muted-foreground`} />
-        {text && <span className="text-sm text-muted-foreground">{text}</span>}
+        <Loader2 className={`${iconSize} text-muted-foreground animate-spin`} />
+        {text && <span className="text-muted-foreground text-sm">{text}</span>}
       </div>
     );
   }
@@ -131,8 +139,10 @@ export function Loading({
       <div className={`rounded-lg border p-6 ${className}`}>
         <div className="flex items-center justify-center">
           <div className="flex flex-col items-center gap-4">
-            <Loader2 className={`${iconSize} animate-spin text-muted-foreground`} />
-            {text && <p className="text-sm text-muted-foreground">{text}</p>}
+            <Loader2
+              className={`${iconSize} text-muted-foreground animate-spin`}
+            />
+            {text && <p className="text-muted-foreground text-sm">{text}</p>}
           </div>
         </div>
       </div>
@@ -144,7 +154,7 @@ export function Loading({
 
 /**
  * 页面加载组件
- * 
+ *
  * @example
  * ```tsx
  * if (isLoading) {
@@ -158,7 +168,7 @@ export function PageLoading({ text }: { text?: string }) {
 
 /**
  * 内容加载组件
- * 
+ *
  * @example
  * ```tsx
  * if (isLoading) {
@@ -172,7 +182,7 @@ export function ContentLoading({ text }: { text?: string }) {
 
 /**
  * 行内加载组件
- * 
+ *
  * @example
  * ```tsx
  * <Button disabled={isLoading}>
@@ -180,13 +190,19 @@ export function ContentLoading({ text }: { text?: string }) {
  * </Button>
  * ```
  */
-export function InlineLoading({ text, size = 'sm' }: { text?: string; size?: LoadingSize }) {
+export function InlineLoading({
+  text,
+  size = 'sm',
+}: {
+  text?: string;
+  size?: LoadingSize;
+}) {
   return <Loading variant="inline" size={size} text={text} />;
 }
 
 /**
  * 卡片加载组件
- * 
+ *
  * @example
  * ```tsx
  * if (isLoading) {
@@ -200,7 +216,7 @@ export function CardLoading({ text }: { text?: string }) {
 
 /**
  * 卡片骨架屏组件
- * 
+ *
  * @example
  * ```tsx
  * if (isLoading) {
@@ -222,7 +238,7 @@ export function CardSkeleton() {
 
 /**
  * 表格骨架屏组件
- * 
+ *
  * @example
  * ```tsx
  * if (isLoading) {
@@ -230,7 +246,13 @@ export function CardSkeleton() {
  * }
  * ```
  */
-export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; columns?: number }) {
+export function TableSkeleton({
+  rows = 5,
+  columns = 4,
+}: {
+  rows?: number;
+  columns?: number;
+}) {
   return (
     <div className="space-y-4">
       {Array.from({ length: rows }).map((_, rowIndex) => (
@@ -246,7 +268,7 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number; column
 
 /**
  * 列表骨架屏组件
- * 
+ *
  * @example
  * ```tsx
  * if (isLoading) {
@@ -269,4 +291,3 @@ export function ListSkeleton({ items = 5 }: { items?: number }) {
     </div>
   );
 }
-

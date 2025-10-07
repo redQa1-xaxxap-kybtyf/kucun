@@ -13,8 +13,17 @@ import React, { use } from 'react';
 import { useForm } from 'react-hook-form';
 import type { z } from 'zod';
 
+import { FolderTree, Save, X } from 'lucide-react';
+
+import { ContentLoading } from '@/components/common/loading';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -32,7 +41,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ContentLoading } from '@/components/common/loading';
 import { useToast } from '@/components/ui/use-toast';
 // API and Types
 import {
@@ -206,140 +214,167 @@ export default function CategoryEditPage({ params }: CategoryEditPageProps) {
   }
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题 */}
-      <div className="flex items-center gap-4">
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => router.back()}
-        >
-          <ArrowLeft className="h-4 w-4" />
-        </Button>
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">编辑分类</h1>
-          <p className="text-muted-foreground">修改分类信息</p>
-        </div>
-      </div>
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                  <FolderTree className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    编辑分类
+                  </h1>
+                  <p className="text-sm text-gray-600">修改分类信息</p>
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => router.back()}
+                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                返回
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
 
-      {/* 表单 */}
-      <Card>
-        <CardHeader>
-          <CardTitle>分类信息</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                {/* 分类名称 */}
-                <FormField
-                  control={form.control}
-                  name="name"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>分类名称 *</FormLabel>
-                      <FormControl>
-                        <Input placeholder="请输入分类名称" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        分类的显示名称，最多50个字符
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                {/* 父级分类 */}
-                <FormField
-                  control={form.control}
-                  name="parentId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>父级分类</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        value={field.value || 'none'}
-                        disabled={isCategoriesLoading}
-                      >
+        {/* 表单 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+            <CardTitle className="flex items-center text-gray-900">
+              <FolderTree className="mr-2 h-5 w-5 text-blue-600" />
+              分类信息
+            </CardTitle>
+            <CardDescription>
+              修改分类的基本信息，包括名称、父级分类和排序顺序
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  {/* 分类名称 */}
+                  <FormField
+                    control={form.control}
+                    name="name"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>分类名称 *</FormLabel>
                         <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="请选择父级分类" />
-                          </SelectTrigger>
+                          <Input placeholder="请输入分类名称" {...field} />
                         </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">无（顶级分类）</SelectItem>
-                          {parentCategories.map(category => (
-                            <SelectItem key={category.id} value={category.id}>
-                              {category.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        选择父级分类以创建层级结构
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                        <FormDescription>
+                          分类的显示名称，最多50个字符
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-                {/* 排序顺序 */}
-                <FormField
-                  control={form.control}
-                  name="sortOrder"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>排序顺序</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="0"
-                          {...field}
-                          onChange={e =>
-                            field.onChange(parseInt(e.target.value) || 0)
-                          }
-                        />
-                      </FormControl>
-                      <FormDescription>数字越小排序越靠前</FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+                  {/* 父级分类 */}
+                  <FormField
+                    control={form.control}
+                    name="parentId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>父级分类</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          value={field.value || 'none'}
+                          disabled={isCategoriesLoading}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="请选择父级分类" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">无（顶级分类）</SelectItem>
+                            {parentCategories.map(category => (
+                              <SelectItem key={category.id} value={category.id}>
+                                {category.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          选择父级分类以创建层级结构
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
 
-              {/* 提交按钮 */}
-              <div className="flex justify-end gap-4">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => router.back()}
-                >
-                  取消
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={updateMutation.isPending}
-                  className={
-                    updateMutation.isPending ? 'cursor-not-allowed' : ''
-                  }
-                >
-                  {updateMutation.isPending ? (
-                    <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      正在保存修改...
-                    </>
-                  ) : (
-                    <>
-                      <span>保存修改</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-            </form>
-          </Form>
-        </CardContent>
-      </Card>
+                  {/* 排序顺序 */}
+                  <FormField
+                    control={form.control}
+                    name="sortOrder"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>排序顺序</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            placeholder="0"
+                            {...field}
+                            onChange={e =>
+                              field.onChange(parseInt(e.target.value) || 0)
+                            }
+                          />
+                        </FormControl>
+                        <FormDescription>数字越小排序越靠前</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                {/* 提交按钮 */}
+                <div className="flex justify-end gap-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="lg"
+                    onClick={() => router.back()}
+                    className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                  >
+                    <X className="mr-2 h-4 w-4" />
+                    取消
+                  </Button>
+                  <Button
+                    type="submit"
+                    size="lg"
+                    disabled={updateMutation.isPending}
+                    className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                  >
+                    {updateMutation.isPending ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                        正在保存修改...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        保存修改
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

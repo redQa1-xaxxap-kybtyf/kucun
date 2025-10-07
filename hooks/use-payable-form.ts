@@ -62,36 +62,37 @@ export function usePayableForm({
     resolver: zodResolver(
       isEdit ? updatePayableRecordSchema : createPayableRecordSchema
     ),
-    defaultValues: isEdit && actualPayableData
-      ? {
-          id: actualPayableData.id,
-          payableAmount: actualPayableData.payableAmount,
-          dueDate: actualPayableData.dueDate
-            ? new Date(actualPayableData.dueDate).toISOString().split('T')[0]
-            : undefined,
-          status: actualPayableData.status,
-          paymentTerms: actualPayableData.paymentTerms || '',
-          description: actualPayableData.description || '',
-          remarks: actualPayableData.remarks || '',
-        }
-      : {
-          supplierId: '',
-          sourceType: 'other' as const,
-          sourceId: undefined,
-          sourceNumber: undefined,
-          payableAmount: 0,
-          dueDate: undefined,
-          paymentTerms: '',
-          description: '',
-          remarks: '',
-        },
+    defaultValues:
+      isEdit && actualPayableData
+        ? {
+            id: actualPayableData.id,
+            payableAmount: actualPayableData.payableAmount,
+            dueDate: actualPayableData.dueDate
+              ? new Date(actualPayableData.dueDate).toISOString().split('T')[0]
+              : undefined,
+            status: actualPayableData.status,
+            paymentTerms: actualPayableData.paymentTerms || '',
+            description: actualPayableData.description || '',
+            remarks: actualPayableData.remarks || '',
+          }
+        : {
+            supplierId: '',
+            sourceType: 'other' as const,
+            sourceId: undefined,
+            sourceNumber: undefined,
+            payableAmount: 0,
+            dueDate: undefined,
+            paymentTerms: '',
+            description: '',
+            remarks: '',
+          },
   });
 
   // 创建应付款
   const createMutation = useMutation({
     mutationFn: (data: CreatePayableRecordData) =>
       payablesApi.createPayableRecord(data),
-    onSuccess: async (data) => {
+    onSuccess: async data => {
       showSuccess('创建成功', `应付款单号 "${data.payableNumber}" 创建成功！`);
 
       // 失效应付款列表缓存
@@ -115,14 +116,9 @@ export function usePayableForm({
 
   // 更新应付款
   const updateMutation = useMutation({
-    mutationFn: ({
-      id,
-      data,
-    }: {
-      id: string;
-      data: UpdatePayableRecordData;
-    }) => payablesApi.updatePayableRecord(id, data),
-    onSuccess: async (data) => {
+    mutationFn: ({ id, data }: { id: string; data: UpdatePayableRecordData }) =>
+      payablesApi.updatePayableRecord(id, data),
+    onSuccess: async data => {
       showSuccess('更新成功', `应付款单号 "${data.payableNumber}" 更新成功！`);
 
       // 失效相关缓存
@@ -188,4 +184,3 @@ export function usePayableForm({
     payableData: actualPayableData,
   };
 }
-

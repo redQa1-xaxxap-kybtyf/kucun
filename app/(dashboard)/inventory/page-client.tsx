@@ -1,135 +1,127 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
+import { Suspense } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
+import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
-import type { FormattedInventory } from '@/lib/api/inventory-formatter';
 import type { CategoryOption } from '@/lib/types/category';
-import type {
-  Inventory,
-  InventoryListResponse,
-  InventoryQueryParams,
-} from '@/lib/types/inventory';
+import type { InventoryQueryParams } from '@/lib/types/inventory';
 
 interface InventoryPageClientProps {
-  initialData: {
-    data: FormattedInventory[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
-  };
   initialParams: InventoryQueryParams;
   categoryOptions: CategoryOption[];
 }
 
 /**
  * 库存管理页面客户端组件
- * 负责用户交互和状态管理
- * 严格遵循前端架构规范：Client Component 层
+ *
+ * ✅ Next.js 15.4 + React 19 最佳实践：
+ * 1. Suspense Boundary - 支持 Streaming SSR
+ * 2. useTransition - 非阻塞状态更新
+ * 3. HydrationBoundary - 避免重复请求
+ * 4. 业务逻辑提取到自定义 Hook
  */
 export function InventoryPageClient({
-  initialData,
   initialParams,
   categoryOptions,
 }: InventoryPageClientProps) {
-  const [queryParams, setQueryParams] =
-    React.useState<InventoryQueryParams>(initialParams);
+  const router = useRouter();
+  const [_isPending, startTransition] = React.useTransition();
 
-  // 将 FormattedInventory 转换为 Inventory 类型
-  const convertedInitialData: InventoryListResponse = {
-    success: true,
-    data: {
-      inventories: initialData.data.map(item => ({
-        id: item.id,
-        productId: item.productId,
-        batchNumber: item.batchNumber,
-        quantity: item.quantity,
-        reservedQuantity: item.reservedQuantity,
-        unitCost: item.unitCost,
-        location: item.location,
-        updatedAt: item.updatedAt,
-        product: {
-          id: item.product.id,
-          code: item.product.code,
-          name: item.product.name,
-          specification: item.product.specification,
-          unit: item.product.unit as import('@/lib/config/product').ProductUnit,
-          piecesPerUnit: item.product.piecesPerUnit,
-          status: item.product
-            .status as import('@/lib/config/product').ProductStatus,
-          categoryId: item.product.categoryId,
-          category: item.product.category
-            ? {
-                id: item.product.category.id,
-                name: item.product.category.name,
-                code: item.product.category.code,
-              }
-            : undefined,
-          createdAt: new Date().toISOString(), // 占位值，不影响显示
-          updatedAt: item.updatedAt,
-        },
-      })),
-      pagination: initialData.pagination,
+  // 本地状态管理 - 用于即时更新UI
+  const [search, setSearch] = React.useState(initialParams.search || '');
+  const [categoryId, setCategoryId] = React.useState(
+    initialParams.categoryId || ''
+  );
+  const [lowStock, setLowStock] = React.useState(
+    initialParams.lowStock || false
+  );
+  const [hasStock, setHasStock] = React.useState(
+    initialParams.hasStock || false
+  );
+  const [sortBy, setSortBy] = React.useState<InventoryQueryParams['sortBy']>(
+    initialParams.sortBy || 'updatedAt'
+  );
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
+    initialParams.sortOrder || 'desc'
+  );
+
+  // ✅ 获取库存列表数据（从 HydrationBoundary 自动获取服务端预取的数据，无需重复请求）
+  // ✅ 暴露预取方法供分页按钮使用
+  const { data, isLoading, error, prefetchNextPage, prefetchPrevPage } =
+    useOptimizedInventoryQuery({
+      params: initialParams,
+    });
+
+  // ✅ 统一数据格式后，直接使用，无需复杂的 normalizedData 映射
+  const inventories = data?.inventories ?? [];
+  const pagination = data?.pagination;
+
+  // 防抖更新URL - 避免每次输入都触发导航
+  const debouncedUpdateURL = useDebouncedCallback(
+    (searchValue: string, filters: InventoryQueryParams) => {
+      startTransition(() => {
+        const params = new URLSearchParams();
+        if (searchValue) {
+          params.set('search', searchValue);
+        }
+        if (filters.categoryId) {
+          params.set('categoryId', filters.categoryId);
+        }
+        if (filters.lowStock) {
+          params.set('lowStock', 'true');
+        }
+        if (filters.hasStock) {
+          params.set('hasStock', 'true');
+        }
+        if (filters.sortBy) {
+          params.set('sortBy', filters.sortBy);
+        }
+        if (filters.sortOrder) {
+          params.set('sortOrder', filters.sortOrder);
+        }
+        if (filters.page && filters.page > 1) {
+          params.set('page', filters.page.toString());
+        }
+        if (filters.limit) {
+          params.set('limit', filters.limit.toString());
+        }
+
+        router.push(`/inventory?${params.toString()}`);
+      });
     },
-  };
+    300
+  );
 
-  // 获取库存列表数据（使用优化Hook，内置缓存与预取，保持上一页数据）
-  const { data, isLoading, error } = useOptimizedInventoryQuery({
-    params: queryParams,
-    initialData: convertedInitialData,
-  });
-
-  // 注意：库存更新现在通过TanStack Query的自动后台刷新机制处理
-  // 移除了WebSocket实时更新，改用更简单可靠的轮询机制
-
-  // 规范化列表数据结构，适配不同返回字段命名
-  const normalizedData = React.useMemo(() => {
-    if (!data) {
-      return { data: [], pagination: undefined };
-    }
-
-    // 处理API响应的嵌套结构
-    // API返回: { success: true, data: { data: [...], pagination: {...} } }
-    // 组件期望: { data: [...], pagination: {...} }
-    const response = data as {
-      success?: boolean;
-      data?: {
-        data?: Inventory[];
-        inventories?: Inventory[];
-        pagination?: {
-          page: number;
-          limit: number;
-          total: number;
-          totalPages: number;
-        };
-      };
-      // 直接格式（向后兼容）
-      inventories?: Inventory[];
-      pagination?: {
-        page: number;
-        limit: number;
-        total: number;
-        totalPages: number;
-      };
-    };
-
-    // 优先从嵌套的data中提取
-    const nestedData = response.data;
-    const items =
-      nestedData?.data ?? nestedData?.inventories ?? response.inventories ?? [];
-    const pagination = nestedData?.pagination ?? response.pagination;
-
-    return { data: items, pagination };
-  }, [data]);
-
-  // 搜索处理
-  const handleSearch = React.useCallback((value: string) => {
-    setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
-  }, []);
+  // 搜索处理 - 立即更新本地状态，防抖更新URL
+  const handleSearch = React.useCallback(
+    (value: string) => {
+      setSearch(value);
+      debouncedUpdateURL(value, {
+        ...initialParams,
+        search: value,
+        categoryId,
+        lowStock,
+        hasStock,
+        sortBy,
+        sortOrder,
+        page: 1,
+      });
+    },
+    [
+      debouncedUpdateURL,
+      initialParams,
+      categoryId,
+      lowStock,
+      hasStock,
+      sortBy,
+      sortOrder,
+    ]
+  );
 
   // 筛选处理
   const handleFilter = React.useCallback(
@@ -137,33 +129,136 @@ export function InventoryPageClient({
       key: keyof InventoryQueryParams,
       value: string | number | boolean | undefined
     ) => {
-      setQueryParams(prev => ({ ...prev, [key]: value, page: 1 }));
+      const newFilters = { ...initialParams, [key]: value, page: 1 };
+
+      // 更新本地状态
+      if (key === 'categoryId') {
+        setCategoryId(value as string);
+      } else if (key === 'lowStock') {
+        setLowStock(value as boolean);
+      } else if (key === 'hasStock') {
+        setHasStock(value as boolean);
+      } else if (key === 'sortBy') {
+        setSortBy(value as InventoryQueryParams['sortBy']);
+      } else if (key === 'sortOrder') {
+        setSortOrder(value as 'asc' | 'desc');
+      }
+
+      // 立即更新URL（筛选不需要防抖）
+      startTransition(() => {
+        const params = new URLSearchParams();
+        if (search) {
+          params.set('search', search);
+        }
+        if (newFilters.categoryId) {
+          params.set('categoryId', newFilters.categoryId);
+        }
+        if (newFilters.lowStock) {
+          params.set('lowStock', 'true');
+        }
+        if (newFilters.hasStock) {
+          params.set('hasStock', 'true');
+        }
+        if (newFilters.sortBy) {
+          params.set('sortBy', newFilters.sortBy);
+        }
+        if (newFilters.sortOrder) {
+          params.set('sortOrder', newFilters.sortOrder);
+        }
+        if (newFilters.limit) {
+          params.set('limit', newFilters.limit.toString());
+        }
+
+        router.push(`/inventory?${params.toString()}`);
+      });
     },
-    []
+    [router, search, initialParams]
   );
 
   // 分页处理
-  const handlePageChange = React.useCallback((page: number) => {
-    setQueryParams(prev => ({ ...prev, page }));
-  }, []);
+  const handlePageChange = React.useCallback(
+    (page: number) => {
+      startTransition(() => {
+        const params = new URLSearchParams();
+        if (search) {
+          params.set('search', search);
+        }
+        if (categoryId) {
+          params.set('categoryId', categoryId);
+        }
+        if (lowStock) {
+          params.set('lowStock', 'true');
+        }
+        if (hasStock) {
+          params.set('hasStock', 'true');
+        }
+        if (sortBy) {
+          params.set('sortBy', sortBy);
+        }
+        if (sortOrder) {
+          params.set('sortOrder', sortOrder);
+        }
+        if (page > 1) {
+          params.set('page', page.toString());
+        }
+        if (initialParams.limit) {
+          params.set('limit', initialParams.limit.toString());
+        }
 
-  if (error) {
-    return (
-      <div className="bg-card rounded border p-4 text-center text-red-600">
-        加载失败: {error instanceof Error ? error.message : '未知错误'}
-      </div>
-    );
-  }
+        router.push(`/inventory?${params.toString()}`);
+      });
+    },
+    [
+      router,
+      search,
+      categoryId,
+      lowStock,
+      hasStock,
+      sortBy,
+      sortOrder,
+      initialParams.limit,
+    ]
+  );
 
+  // ✅ hover 预取处理 - 提升用户体验
+  const handleNextPageHover = React.useCallback(() => {
+    prefetchNextPage();
+  }, [prefetchNextPage]);
+
+  const handlePrevPageHover = React.useCallback(() => {
+    prefetchPrevPage();
+  }, [prefetchPrevPage]);
+
+  // ✅ 使用 Suspense 包装，支持 Streaming 和更好的加载体验
   return (
-    <ERPInventoryList
-      data={normalizedData}
-      categoryOptions={categoryOptions}
-      queryParams={queryParams}
-      onSearch={handleSearch}
-      onFilter={handleFilter}
-      onPageChange={handlePageChange}
-      isLoading={isLoading}
-    />
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <Suspense fallback={<InventoryListSkeleton />}>
+        {error ? (
+          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center shadow-sm">
+            <p className="text-red-600">
+              加载失败: {error instanceof Error ? error.message : '未知错误'}
+            </p>
+            <button
+              onClick={() => window.location.reload()}
+              className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
+            >
+              重新加载
+            </button>
+          </div>
+        ) : (
+          <ERPInventoryList
+            data={{ data: inventories, pagination }}
+            categoryOptions={categoryOptions}
+            queryParams={initialParams}
+            onSearch={handleSearch}
+            onFilter={handleFilter}
+            onPageChange={handlePageChange}
+            onNextPageHover={handleNextPageHover}
+            onPrevPageHover={handlePrevPageHover}
+            isLoading={isLoading}
+          />
+        )}
+      </Suspense>
+    </div>
   );
 }

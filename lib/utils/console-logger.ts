@@ -47,7 +47,9 @@ class ConsoleLogger {
    * 判断是否应该输出日志
    */
   private shouldLog(level: LogLevel): boolean {
-    if (!this.config.enabled) {return false;}
+    if (!this.config.enabled) {
+      return false;
+    }
 
     const levels: LogLevel[] = ['debug', 'info', 'warn', 'error'];
     const currentLevelIndex = levels.indexOf(this.config.level);
@@ -64,7 +66,9 @@ class ConsoleLogger {
     module: string,
     ...args: unknown[]
   ): void {
-    if (!this.shouldLog(level)) {return;}
+    if (!this.shouldLog(level)) {
+      return;
+    }
 
     const timestamp = this.config.showTimestamp
       ? `[${new Date().toLocaleTimeString()}]`
@@ -84,11 +88,9 @@ class ConsoleLogger {
         console.info(prefix, ...args);
         break;
       case 'warn':
-         
         console.warn(prefix, ...args);
         break;
       case 'error':
-         
         console.error(prefix, ...args);
         break;
     }

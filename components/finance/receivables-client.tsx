@@ -17,29 +17,50 @@ import type {
   ReceivablesResult,
 } from '@/lib/services/receivables-service';
 
+interface ReceivablesQueryParams {
+  page: number;
+  limit: number;
+  search: string;
+  status?: string;
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
+}
+
 interface ReceivablesClientProps {
   initialData: ReceivablesResult;
+  initialParams?: ReceivablesQueryParams;
+  onSearch?: (value: string) => void;
+  onFilter?: (key: string, value: string | undefined) => void;
+  onPageChange?: (page: number) => void;
 }
 
 /**
  * 应收账款客户端交互组件
  * 处理搜索、筛选、分页等客户端交互
  */
-export function ReceivablesClient({ initialData }: ReceivablesClientProps) {
+export function ReceivablesClient({
+  initialData,
+  initialParams,
+  onSearch: externalOnSearch,
+  onFilter: externalOnFilter,
+  onPageChange: externalOnPageChange,
+}: ReceivablesClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [queryParams, setQueryParams] = React.useState({
-    page: parseInt(searchParams.get('page') || '1', 10),
-    limit: parseInt(
-      searchParams.get('limit') || `${paginationConfig.defaultPageSize}`,
-      10
-    ),
-    search: searchParams.get('search') || '',
-    status: searchParams.get('status') || undefined,
-    sortBy: searchParams.get('sortBy') || 'orderDate',
-    sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
-  });
+  const [queryParams, setQueryParams] = React.useState<ReceivablesQueryParams>(
+    initialParams || {
+      page: parseInt(searchParams.get('page') || '1', 10),
+      limit: parseInt(
+        searchParams.get('limit') || `${paginationConfig.defaultPageSize}`,
+        10
+      ),
+      search: searchParams.get('search') || '',
+      status: searchParams.get('status') || undefined,
+      sortBy: searchParams.get('sortBy') || 'orderDate',
+      sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
+    }
+  );
 
   // 获取应收账款数据
   const { data, isLoading, error } = useQuery({
@@ -92,40 +113,58 @@ export function ReceivablesClient({ initialData }: ReceivablesClientProps) {
     );
   };
 
-  const handleSearch = React.useCallback((value: string) => {
-    setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
-  }, []);
+  const handleSearch = React.useCallback(
+    (value: string) => {
+      if (externalOnSearch) {
+        externalOnSearch(value);
+      } else {
+        setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
+      }
+    },
+    [externalOnSearch]
+  );
 
   // 统一处理筛选器变更
   const handleFilterChange = React.useCallback(
     (key: string, value: string | undefined) => {
-      if (key === 'status') {
-        setQueryParams(prev => ({
-          ...prev,
-          status: value === 'all' || !value ? undefined : value,
-          page: 1,
-        }));
-      } else if (key === 'sortBy') {
-        setQueryParams(prev => ({
-          ...prev,
-          sortBy: value || 'orderDate',
-          page: 1,
-        }));
-      } else if (key === 'sortOrder') {
-        setQueryParams(prev => ({
-          ...prev,
-          sortOrder: (value as 'asc' | 'desc') || 'desc',
-          page: 1,
-        }));
+      if (externalOnFilter) {
+        externalOnFilter(key, value);
+      } else {
+        if (key === 'status') {
+          setQueryParams(prev => ({
+            ...prev,
+            status: value === 'all' || !value ? undefined : value,
+            page: 1,
+          }));
+        } else if (key === 'sortBy') {
+          setQueryParams(prev => ({
+            ...prev,
+            sortBy: value || 'orderDate',
+            page: 1,
+          }));
+        } else if (key === 'sortOrder') {
+          setQueryParams(prev => ({
+            ...prev,
+            sortOrder: (value as 'asc' | 'desc') || 'desc',
+            page: 1,
+          }));
+        }
       }
     },
-    []
+    [externalOnFilter]
   );
 
-  const handlePageChange = (newPage: number) => {
-    setQueryParams(prev => ({ ...prev, page: newPage }));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const handlePageChange = React.useCallback(
+    (newPage: number) => {
+      if (externalOnPageChange) {
+        externalOnPageChange(newPage);
+      } else {
+        setQueryParams(prev => ({ ...prev, page: newPage }));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    },
+    [externalOnPageChange]
+  );
 
   const currentData = data?.data || initialData;
 

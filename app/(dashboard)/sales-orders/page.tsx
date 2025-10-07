@@ -1,12 +1,23 @@
-import { ERPSalesOrderList } from '@/components/sales-orders/erp-sales-order-list';
-import { SalesOrderPageHeader } from '@/components/sales-orders/sales-order-page-header';
 import { getSalesOrders } from '@/lib/api/handlers/sales-orders';
 import { paginationConfig } from '@/lib/env';
+
+import { SalesOrdersPageClient } from './page-client';
 
 /**
  * 销售订单页面 - 使用服务器组件优化首屏加载
  * 采用中国ERP系统标准布局，严格遵循全栈项目统一约定规范
+ *
+ * ✅ Next.js 15 最佳实践：
+ * - Route Segment Config 配置
+ * - Server Component 数据获取
+ * - Suspense 渐进式渲染
  */
+
+// ✅ Next.js 15 Route Segment Config
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 export default async function SalesOrdersPage({
   searchParams,
 }: {
@@ -34,8 +45,7 @@ export default async function SalesOrdersPage({
       | 'status') || 'createdAt';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
 
-  // 服务器端获取初始数据
-  const initialData = await getSalesOrders({
+  const queryParams = {
     page,
     limit,
     search,
@@ -43,28 +53,18 @@ export default async function SalesOrdersPage({
     customerId,
     sortBy,
     sortOrder,
-  });
+  };
+
+  // 服务器端获取初始数据
+  const initialData = await getSalesOrders(queryParams);
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-        <SalesOrderPageHeader />
-        <ERPSalesOrderList
-          _initialData={{
-            data: initialData.data,
-            pagination: initialData.pagination,
-          }}
-          initialParams={{
-            page,
-            limit,
-            search,
-            status,
-            customerId,
-            sortBy,
-            sortOrder,
-          }}
-        />
-      </div>
-    </div>
+    <SalesOrdersPageClient
+      initialData={{
+        data: initialData.data,
+        pagination: initialData.pagination,
+      }}
+      initialParams={queryParams}
+    />
   );
 }

@@ -6,7 +6,6 @@ import {
   getInventoryCount,
   getOptimizedInventoryList,
 } from '@/lib/api/inventory-query-builder';
-import { buildCacheKey, getOrSetJSON, CACHE_STRATEGY } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/utils/console-logger';
 import {
@@ -15,6 +14,10 @@ import {
 } from '@/lib/validations/inventory';
 
 // 获取库存列表
+// ✅ 性能优化：移除 Redis 缓存层
+// - Server Component 已通过 HydrationBoundary 预取数据（不经过此API）
+// - Client Component 通过 TanStack Query 缓存（staleTime=Infinity）
+// - Redis 低命中率场景下反而增加 20-50ms 延迟
 export const GET = withAuth(
   async (request: NextRequest, { user }) => {
     const { searchParams } = request.nextUrl;
@@ -53,35 +56,21 @@ export const GET = withAuth(
 
     const queryParams = validationResult.data;
 
-    // Redis 缓存键
-    const cacheKey = buildCacheKey('inventory:list', queryParams);
+    // ✅ 直接查询数据库，移除 Redis 缓存层以减少延迟
+    const [inventoryRecords, total] = await Promise.all([
+      getOptimizedInventoryList(queryParams),
+      getInventoryCount(queryParams),
+    ]);
 
-    // 使用优化的查询构建器，解决N+1问题
-    const cached = await getOrSetJSON(
-      cacheKey,
-      async () => {
-        // 并行查询库存记录和总数
-        const [inventoryRecords, total] = await Promise.all([
-          getOptimizedInventoryList(queryParams),
-          getInventoryCount(queryParams),
-        ]);
-
-        // 格式化响应数据
-        return formatPaginatedResponse(
-          inventoryRecords,
-          total,
-          queryParams.page,
-          queryParams.limit
-        );
-      },
-      CACHE_STRATEGY.volatileData.redisTTL, // 库存数据变动频繁，使用较短缓存 (2分钟)
-      {
-        enableRandomTTL: true, // 防止缓存雪崩
-        enableNullCache: true, // 防止缓存穿透
-      }
+    // 格式化响应数据
+    const response = formatPaginatedResponse(
+      inventoryRecords,
+      total,
+      queryParams.page,
+      queryParams.limit
     );
 
-    return NextResponse.json({ success: true, data: cached });
+    return NextResponse.json({ success: true, data: response });
   },
   { permissions: ['inventory:view'] }
 );

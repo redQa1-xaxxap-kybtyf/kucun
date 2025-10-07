@@ -126,22 +126,32 @@ const InventoryStatusIndicator = React.forwardRef<
 
     // 计算库存百分比
     const stockPercentage = React.useMemo(() => {
-      if (!currentStock || !maxStock) {return 0;}
+      if (!currentStock || !maxStock) {
+        return 0;
+      }
       return Math.min((currentStock / maxStock) * 100, 100);
     }, [currentStock, maxStock]);
 
     // 自动计算预警级别
     const _calculatedAlertLevel = React.useMemo((): AlertLevel => {
-      if (alertLevel) {return alertLevel;}
+      if (alertLevel) {
+        return alertLevel;
+      }
 
       if (!currentStock || !safetyStock) {
         return status === 'out_of_stock' ? 'critical' : 'safe';
       }
 
       const ratio = currentStock / safetyStock;
-      if (ratio <= 0) {return 'critical';}
-      if (ratio <= 0.5) {return 'danger';}
-      if (ratio <= 1) {return 'warning';}
+      if (ratio <= 0) {
+        return 'critical';
+      }
+      if (ratio <= 0.5) {
+        return 'danger';
+      }
+      if (ratio <= 1) {
+        return 'warning';
+      }
       return 'safe';
     }, [alertLevel, currentStock, safetyStock, status]);
 
@@ -159,7 +169,7 @@ const InventoryStatusIndicator = React.forwardRef<
         {/* 库存进度条 */}
         {showProgress && maxStock && currentStock !== undefined && (
           <div className="space-y-1">
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className="text-muted-foreground flex justify-between text-xs">
               <span>库存量</span>
               <span>
                 {currentStock} / {maxStock}
@@ -183,7 +193,7 @@ const InventoryStatusIndicator = React.forwardRef<
               }
             />
             {safetyStock && (
-              <div className="text-xs text-muted-foreground">
+              <div className="text-muted-foreground text-xs">
                 安全库存: {safetyStock}
               </div>
             )}
@@ -302,7 +312,7 @@ const InventoryHealth = React.forwardRef<HTMLDivElement, InventoryHealthProps>(
 
         {/* 健康度进度条 */}
         <div className="space-y-2">
-          <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="text-muted-foreground flex justify-between text-xs">
             <span>整体健康度</span>
             <span>{healthStats.healthScore}%</span>
           </div>
@@ -350,10 +360,10 @@ const QuickStatusToggle = React.forwardRef<
             className={cn(
               'inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-xs font-medium transition-colors',
               'hover:bg-accent hover:text-accent-foreground',
-              'focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2',
+              'focus:ring-ring focus:ring-2 focus:ring-offset-2 focus:outline-hidden',
               isActive
                 ? inventoryStatusVariants({ status })
-                : 'border border-border bg-background'
+                : 'border-border bg-background border'
             )}
           >
             <StatusIcon className="h-3 w-3" />

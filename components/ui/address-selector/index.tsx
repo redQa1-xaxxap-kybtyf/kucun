@@ -168,7 +168,7 @@ export const AddressSelector = React.forwardRef<
     const content = (
       <div className={cn('space-y-4', className)} ref={ref}>
         {loading ? (
-          <div className="text-sm text-muted-foreground">
+          <div className="text-muted-foreground text-sm">
             正在加载地址数据...
           </div>
         ) : (
@@ -194,7 +194,7 @@ export const AddressSelector = React.forwardRef<
       <FormItem>
         <FormLabel>
           {label}
-          {required && <span className="ml-1 text-destructive">*</span>}
+          {required && <span className="text-destructive ml-1">*</span>}
         </FormLabel>
         <FormControl>{content}</FormControl>
         {description && <FormDescription>{description}</FormDescription>}

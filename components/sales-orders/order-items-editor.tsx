@@ -43,7 +43,9 @@ type SalesOrderItemUpdateFormData = SalesOrderItemData & {
 };
 
 // 订单明细编辑器属性
-interface OrderItemsEditorProps<TFieldValues extends Record<string, unknown> = Record<string, unknown>> {
+interface OrderItemsEditorProps<
+  TFieldValues extends Record<string, unknown> = Record<string, unknown>,
+> {
   control: Control<TFieldValues>;
   name: string;
   disabled?: boolean;
@@ -51,7 +53,9 @@ interface OrderItemsEditorProps<TFieldValues extends Record<string, unknown> = R
 }
 
 // 订单明细编辑器组件
-export function OrderItemsEditor<TFieldValues extends Record<string, unknown> = Record<string, unknown>>({
+export function OrderItemsEditor<
+  TFieldValues extends Record<string, unknown> = Record<string, unknown>,
+>({
   control,
   name,
   disabled = false,

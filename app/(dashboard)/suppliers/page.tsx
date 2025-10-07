@@ -1,8 +1,8 @@
 import type { Metadata } from 'next';
 
 import { SuppliersPageClient } from '@/components/suppliers/suppliers-page-client';
-import { getSuppliers } from '@/lib/services/supplier-service';
 import { paginationConfig } from '@/lib/env';
+import { getSuppliers } from '@/lib/services/supplier-service';
 
 export const metadata: Metadata = {
   title: '供应商管理',
@@ -10,10 +10,24 @@ export const metadata: Metadata = {
 };
 
 /**
- * 供应商管理页面 - Server Component
- * 负责数据获取和 SEO 优化
- * 严格遵循前端架构规范：三级组件架构
+ * 供应商管理页面
+ *
+ * ✅ Next.js 15 最佳实践：
+ * - Server Component 架构
+ * - Route Segment Config 缓存控制
+ * - 直接服务端数据获取
+ * - 类型安全的 searchParams
  */
+
+// ============================================
+// Route Segment Config
+// ============================================
+
+// ✅ Next.js 15 Route Segment Config
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 export default async function SuppliersPage({
   searchParams,
 }: {
@@ -40,13 +54,9 @@ export default async function SuppliersPage({
   });
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-        <SuppliersPageClient
-          initialData={initialData}
-          initialParams={{ page, limit, search, status, sortBy, sortOrder }}
-        />
-      </div>
-    </div>
+    <SuppliersPageClient
+      initialData={initialData}
+      initialParams={{ page, limit, search, status, sortBy, sortOrder }}
+    />
   );
 }

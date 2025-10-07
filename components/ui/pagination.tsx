@@ -29,6 +29,10 @@ export interface PaginationProps {
   pagination: PaginationInfo;
   /** 页码变化回调函数 */
   onPageChange: (page: number) => void;
+  /** ✅ hover 预取下一页回调 - 提升用户体验 */
+  onNextPageHover?: () => void;
+  /** ✅ hover 预取上一页回调 - 提升用户体验 */
+  onPrevPageHover?: () => void;
   /** 是否显示记录范围（如：显示第 1-20 条，共 100 条） */
   showRange?: boolean;
   /** 是否显示总记录数 */
@@ -43,13 +47,13 @@ export interface PaginationProps {
 
 /**
  * 统一分页组件
- * 
+ *
  * 遵循项目统一约定规范：
  * - 使用 shadcn/ui Button 组件保持风格一致
  * - 支持响应式设计，移动端友好
  * - 完全类型安全，无 any 类型
  * - 符合 ESLint 规范
- * 
+ *
  * @example
  * ```tsx
  * <Pagination
@@ -63,6 +67,8 @@ export interface PaginationProps {
 export function Pagination({
   pagination,
   onPageChange,
+  onNextPageHover,
+  onPrevPageHover,
   showRange = true,
   showTotal = true,
   disabled = false,
@@ -102,11 +108,10 @@ export function Pagination({
       )}
     >
       {/* 左侧：记录信息 */}
-      <div className="text-sm text-muted-foreground">
+      <div className="text-muted-foreground text-sm">
         {showRange && (
           <span className="hidden sm:inline">
-            显示第 {startRecord} - {endRecord} 条
-            {showTotal && <span>，</span>}
+            显示第 {startRecord} - {endRecord} 条{showTotal && <span>，</span>}
           </span>
         )}
         {showTotal && <span>共 {total} 条记录</span>}
@@ -119,6 +124,7 @@ export function Pagination({
           variant="outline"
           size="sm"
           onClick={handlePrevPage}
+          onMouseEnter={page > 1 && !disabled ? onPrevPageHover : undefined}
           disabled={page <= 1 || disabled}
           aria-label="上一页"
           className="h-8"
@@ -128,7 +134,7 @@ export function Pagination({
         </Button>
 
         {/* 页码信息 */}
-        <div className="text-sm text-muted-foreground">
+        <div className="text-muted-foreground text-sm">
           第 {page} / {totalPages} 页
         </div>
 
@@ -137,6 +143,9 @@ export function Pagination({
           variant="outline"
           size="sm"
           onClick={handleNextPage}
+          onMouseEnter={
+            page < totalPages && !disabled ? onNextPageHover : undefined
+          }
           disabled={page >= totalPages || disabled}
           aria-label="下一页"
           className="h-8"
@@ -178,7 +187,7 @@ export function SimplePagination({
         <ChevronLeft className="h-4 w-4" />
       </Button>
 
-      <span className="text-sm text-muted-foreground">
+      <span className="text-muted-foreground text-sm">
         {page} / {totalPages}
       </span>
 
@@ -197,12 +206,12 @@ export function SimplePagination({
 
 /**
  * 计算分页信息的辅助函数
- * 
+ *
  * @param page - 当前页码
  * @param limit - 每页数量
  * @param total - 总记录数
  * @returns 完整的分页信息对象
- * 
+ *
  * @example
  * ```ts
  * const pagination = calculatePagination(1, 20, 100);
@@ -221,4 +230,3 @@ export function calculatePagination(
     totalPages: Math.ceil(total / limit),
   };
 }
-

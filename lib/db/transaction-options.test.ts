@@ -42,7 +42,8 @@ describe('数据库事务选项工具', () => {
     });
 
     it('应该正确检测 PostgreSQL', () => {
-      process.env.DATABASE_URL = 'postgresql://user:password@localhost:5432/mydb';
+      process.env.DATABASE_URL =
+        'postgresql://user:password@localhost:5432/mydb';
       expect(detectDatabaseType()).toBe('postgresql');
 
       process.env.DATABASE_URL = 'postgres://user@localhost/test';
@@ -81,7 +82,8 @@ describe('数据库事务选项工具', () => {
     });
 
     it('PostgreSQL 应返回 isolationLevel 和 timeout', () => {
-      process.env.DATABASE_URL = 'postgresql://user:password@localhost:5432/mydb';
+      process.env.DATABASE_URL =
+        'postgresql://user:password@localhost:5432/mydb';
       const options = getTransactionOptions(20000);
 
       expect(options).toEqual({

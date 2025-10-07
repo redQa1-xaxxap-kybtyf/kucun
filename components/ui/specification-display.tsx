@@ -262,28 +262,28 @@ const SpecificationDisplay = React.forwardRef<
         {showAll && (
           <div className="grid grid-cols-2 gap-2 text-xs md:grid-cols-3">
             {waterAbsorption !== undefined && (
-              <div className="flex items-center gap-1 text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-1">
                 <span>吸水率:</span>
                 <span className="font-medium">{waterAbsorption}%</span>
               </div>
             )}
 
             {slipResistance && (
-              <div className="flex items-center gap-1 text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-1">
                 <span>防滑等级:</span>
                 <span className="font-medium">{slipResistance}</span>
               </div>
             )}
 
             {wearResistance && (
-              <div className="flex items-center gap-1 text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-1">
                 <span>耐磨等级:</span>
                 <span className="font-medium">{wearResistance}</span>
               </div>
             )}
 
             {frostResistance !== undefined && (
-              <div className="flex items-center gap-1 text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-1">
                 <span>抗冻:</span>
                 <span className="font-medium">
                   {frostResistance ? '是' : '否'}
@@ -292,21 +292,21 @@ const SpecificationDisplay = React.forwardRef<
             )}
 
             {weight && (
-              <div className="flex items-center gap-1 text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-1">
                 <span>重量:</span>
                 <span className="font-medium">{weight}kg/m²</span>
               </div>
             )}
 
             {packingQuantity && (
-              <div className="flex items-center gap-1 text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-1">
                 <span>包装:</span>
                 <span className="font-medium">{packingQuantity}片/箱</span>
               </div>
             )}
 
             {coverageArea && (
-              <div className="flex items-center gap-1 text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-1">
                 <span>覆盖面积:</span>
                 <span className="font-medium">{coverageArea}m²/箱</span>
               </div>
@@ -370,7 +370,9 @@ const SpecificationCompare = React.forwardRef<
   HTMLDivElement,
   SpecificationCompareProps
 >(({ specifications, className, ...props }, ref) => {
-  if (specifications.length === 0) {return null;}
+  if (specifications.length === 0) {
+    return null;
+  }
 
   return (
     <div className={cn('overflow-x-auto', className)} ref={ref} {...props}>
@@ -387,7 +389,7 @@ const SpecificationCompare = React.forwardRef<
         </thead>
         <tbody>
           <tr className="border-b">
-            <td className="p-2 text-muted-foreground">尺寸</td>
+            <td className="text-muted-foreground p-2">尺寸</td>
             {specifications.map(spec => (
               <td key={spec.id} className="p-2">
                 {spec.specification.length && spec.specification.width
@@ -397,7 +399,7 @@ const SpecificationCompare = React.forwardRef<
             ))}
           </tr>
           <tr className="border-b">
-            <td className="p-2 text-muted-foreground">厚度</td>
+            <td className="text-muted-foreground p-2">厚度</td>
             {specifications.map(spec => (
               <td key={spec.id} className="p-2">
                 {spec.specification.thickness
@@ -407,7 +409,7 @@ const SpecificationCompare = React.forwardRef<
             ))}
           </tr>
           <tr className="border-b">
-            <td className="p-2 text-muted-foreground">表面处理</td>
+            <td className="text-muted-foreground p-2">表面处理</td>
             {specifications.map(spec => (
               <td key={spec.id} className="p-2">
                 {spec.specification.surface
@@ -417,7 +419,7 @@ const SpecificationCompare = React.forwardRef<
             ))}
           </tr>
           <tr className="border-b">
-            <td className="p-2 text-muted-foreground">等级</td>
+            <td className="text-muted-foreground p-2">等级</td>
             {specifications.map(spec => (
               <td key={spec.id} className="p-2">
                 {spec.specification.grade
@@ -427,7 +429,7 @@ const SpecificationCompare = React.forwardRef<
             ))}
           </tr>
           <tr className="border-b">
-            <td className="p-2 text-muted-foreground">吸水率</td>
+            <td className="text-muted-foreground p-2">吸水率</td>
             {specifications.map(spec => (
               <td key={spec.id} className="p-2">
                 {spec.specification.waterAbsorption !== undefined

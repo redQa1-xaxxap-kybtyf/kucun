@@ -109,8 +109,8 @@ export default function FinancePage() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
-          <span className="text-sm text-muted-foreground">
+          <Calendar className="text-muted-foreground h-4 w-4" />
+          <span className="text-muted-foreground text-sm">
             {new Date().toLocaleDateString('zh-CN')}
           </span>
         </div>
@@ -127,7 +127,7 @@ export default function FinancePage() {
             <div className="text-2xl font-bold text-green-600">
               {formatCurrency(mockStats.totalReceivable)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {mockStats.receivableCount} 个待收款订单
             </p>
           </CardContent>
@@ -142,7 +142,7 @@ export default function FinancePage() {
             <div className="text-2xl font-bold text-orange-600">
               {formatCurrency(mockStats.totalRefundable)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {mockStats.refundCount} 个待退款订单
             </p>
           </CardContent>
@@ -157,7 +157,7 @@ export default function FinancePage() {
             <div className="text-2xl font-bold text-red-600">
               {formatCurrency(mockStats.overdueAmount)}
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-muted-foreground text-xs">
               {mockStats.overdueCount} 个逾期订单
             </p>
           </CardContent>
@@ -172,7 +172,7 @@ export default function FinancePage() {
             <div className="text-2xl font-bold text-blue-600">
               {formatCurrency(mockStats.monthlyReceived)}
             </div>
-            <p className="text-xs text-muted-foreground">较上月增长 12%</p>
+            <p className="text-muted-foreground text-xs">较上月增长 12%</p>
           </CardContent>
         </Card>
       </div>
@@ -191,7 +191,7 @@ export default function FinancePage() {
                   <Badge variant="secondary">{module.stats.count}</Badge>
                 </div>
                 <CardTitle className="text-lg">{module.title}</CardTitle>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   {module.description}
                 </p>
               </CardHeader>
@@ -201,7 +201,7 @@ export default function FinancePage() {
                     <div className={`text-2xl font-bold ${module.color}`}>
                       {formatCurrency(module.stats.amount)}
                     </div>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       {module.stats.label}
                     </p>
                   </div>
@@ -225,29 +225,29 @@ export default function FinancePage() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
-            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+            <div className="bg-muted/50 flex items-center gap-3 rounded-lg p-3">
               <Users className="h-5 w-5 text-blue-600" />
               <div>
                 <p className="font-medium">客户账务</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   查看客户应收应付明细
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+            <div className="bg-muted/50 flex items-center gap-3 rounded-lg p-3">
               <Receipt className="h-5 w-5 text-green-600" />
               <div>
                 <p className="font-medium">对账单</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   生成客户对账单据
                 </p>
               </div>
             </div>
-            <div className="flex items-center gap-3 rounded-lg bg-muted/50 p-3">
+            <div className="bg-muted/50 flex items-center gap-3 rounded-lg p-3">
               <AlertCircle className="h-5 w-5 text-orange-600" />
               <div>
                 <p className="font-medium">逾期提醒</p>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-sm">
                   处理逾期应收账款
                 </p>
               </div>

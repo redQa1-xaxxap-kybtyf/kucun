@@ -166,7 +166,35 @@ function formatAdjustmentData(adjustment: AdjustmentWithRelations) {
  * GET /api/inventory/adjustments
  */
 export const GET = withErrorHandling(async (request: NextRequest) => {
-  // 验证用户权限 - 使用中间件透传的用户信息
+  // 解析查询参数
+  const { searchParams } = new URL(request.url);
+
+  const rawParams = {
+    page: searchParams.get('page'),
+    limit: searchParams.get('limit'),
+    search: searchParams.get('search'),
+    productId: searchParams.get('productId'),
+    variantId: searchParams.get('variantId'),
+    batchNumber: searchParams.get('batchNumber'),
+    reason: searchParams.get('reason'),
+    status: searchParams.get('status'),
+    operatorId: searchParams.get('operatorId'),
+    startDate: searchParams.get('startDate'),
+    endDate: searchParams.get('endDate'),
+    sortBy: searchParams.get('sortBy'),
+    sortOrder: searchParams.get('sortOrder'),
+  };
+
+  const validationResult = inventoryAdjustmentsQuerySchema.safeParse(rawParams);
+
+  if (!validationResult.success) {
+    throw new ApiError(
+      400,
+      '查询参数格式不正确',
+      validationResult.error.errors
+    );
+  }
+
   const {
     page = 1,
     limit = 20,

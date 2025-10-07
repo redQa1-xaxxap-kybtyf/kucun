@@ -19,4 +19,3 @@ export function PayableCreateClient() {
 
   return <PayableForm mode="create" onSuccess={handleSuccess} />;
 }
-

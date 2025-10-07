@@ -82,7 +82,7 @@ export function SupplierSelector({
     }
   }, [open, searchValue]);
 
-  const selectedSupplier = suppliers.find((s) => s.id === value);
+  const selectedSupplier = suppliers.find(s => s.id === value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -116,12 +116,14 @@ export function SupplierSelector({
               <>
                 <CommandEmpty>未找到相关供应商</CommandEmpty>
                 <CommandGroup>
-                  {suppliers.map((supplier) => (
+                  {suppliers.map(supplier => (
                     <CommandItem
                       key={supplier.id}
                       value={supplier.id}
-                      onSelect={(currentValue) => {
-                        onValueChange(currentValue === value ? '' : currentValue);
+                      onSelect={currentValue => {
+                        onValueChange(
+                          currentValue === value ? '' : currentValue
+                        );
                         setOpen(false);
                       }}
                     >
@@ -135,7 +137,8 @@ export function SupplierSelector({
                         <span className="font-medium">{supplier.name}</span>
                         {(supplier.contactPerson || supplier.phone) && (
                           <span className="text-muted-foreground text-xs">
-                            {supplier.contactPerson && `联系人：${supplier.contactPerson}`}
+                            {supplier.contactPerson &&
+                              `联系人：${supplier.contactPerson}`}
                             {supplier.contactPerson && supplier.phone && ' | '}
                             {supplier.phone && `电话：${supplier.phone}`}
                           </span>
@@ -152,4 +155,3 @@ export function SupplierSelector({
     </Popover>
   );
 }
-

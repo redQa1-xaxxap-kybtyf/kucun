@@ -162,19 +162,17 @@ export function ERPDashboard({
   });
 
   // 🚀 使用 TanStack Query 获取仪表盘数据
-  // 配置 initialData 和 staleTime 避免重复请求
+  // ✅ Next.js 15.4 + TanStack Query v5 最佳实践：配置 staleTime=Infinity 避免重复请求
   const {
     data: dashboardApiData,
     isLoading: isApiLoading,
     refetch,
   } = useBusinessOverview(mapPeriodToTimeRange(selectedPeriod), {
-    // 使用 RSC 预取的数据作为初始值
-    initialData: initialData?.overview || undefined,
-    // 数据在 5 分钟内保持新鲜，不会重新请求
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    // ✅ 服务端预取的数据永不过期（除非手动刷新或切换时间范围）
+    staleTime: Infinity,
     // 仅在组件挂载时获取一次，后续切换标签页不会重新请求
     refetchOnWindowFocus: false,
-    // 用户主动刷新时才重新请求
+    // ✅ 防止客户端重复请求服务端已预取的数据
     refetchOnMount: false,
   });
 
@@ -279,169 +277,174 @@ export function ERPDashboard({
   }
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题和操作栏 */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h2 className="text-2xl font-bold tracking-tight">业务概览</h2>
-          <p className="text-muted-foreground text-sm">
-            欢迎回来，{session?.user?.name || '用户'}
-          </p>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2">
-            <Calendar className="text-muted-foreground h-4 w-4" />
-            <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
-              <SelectTrigger className="h-9 w-[120px]">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1d">今天</SelectItem>
-                <SelectItem value="7d">最近7天</SelectItem>
-                <SelectItem value="30d">最近30天</SelectItem>
-                <SelectItem value="90d">最近90天</SelectItem>
-              </SelectContent>
-            </Select>
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 页面标题和操作栏 */}
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">业务概览</h2>
+            <p className="text-muted-foreground text-sm">
+              欢迎回来，{session?.user?.name || '用户'}
+            </p>
           </div>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={refreshData}
-            disabled={isRefreshing}
-          >
-            <RefreshCw
-              className={cn('mr-2 h-4 w-4', isRefreshing && 'animate-spin')}
-            />
-            刷新
-          </Button>
-        </div>
-      </div>
-
-      {/* 核心指标卡片 */}
-      {dashboardApiData && (
-        <StatCardsGrid overview={dashboardApiData} loading={false} />
-      )}
-
-      {/* 快速操作和需要关注 - 紧凑布局 */}
-      <div className="grid gap-4 lg:grid-cols-2">
-        {/* 快速操作 - 紧凑版 */}
-        <div className="bg-card overflow-hidden rounded-lg border shadow-sm">
-          <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-4 py-3">
-            <h3 className="font-semibold text-gray-900">快速操作</h3>
-          </div>
-          <div className="p-4">
-            <div className="grid grid-cols-2 gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-16 flex-col gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
-                onClick={() => router.push('/products/create')}
-              >
-                <Package className="h-4 w-4 text-blue-600" />
-                <span className="text-xs font-medium">新建产品</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-16 flex-col gap-1.5 transition-all hover:border-green-300 hover:bg-green-50"
-                onClick={() => router.push('/sales-orders/create')}
-              >
-                <ShoppingCart className="h-4 w-4 text-green-600" />
-                <span className="text-xs font-medium">新建订单</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-16 flex-col gap-1.5 transition-all hover:border-purple-300 hover:bg-purple-50"
-                onClick={() => router.push('/customers/create')}
-              >
-                <Users className="h-4 w-4 text-purple-600" />
-                <span className="text-xs font-medium">新建客户</span>
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-16 flex-col gap-1.5 transition-all hover:border-yellow-300 hover:bg-yellow-50"
-                onClick={() => router.push('/inventory')}
-              >
-                <Zap className="h-4 w-4 text-yellow-600" />
-                <span className="text-xs font-medium">库存管理</span>
-              </Button>
-            </div>
-          </div>
-        </div>
-
-        {/* 需要关注 - 紧凑版 */}
-        <div className="bg-card overflow-hidden rounded-lg border shadow-sm">
-          <div className="border-b bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3">
+          <div className="flex items-center gap-3">
             <div className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-amber-600" />
-              <h3 className="font-semibold text-gray-900">需要关注</h3>
+              <Calendar className="text-muted-foreground h-4 w-4" />
+              <Select value={selectedPeriod} onValueChange={setSelectedPeriod}>
+                <SelectTrigger className="h-9 w-[120px]">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1d">今天</SelectItem>
+                  <SelectItem value="7d">最近7天</SelectItem>
+                  <SelectItem value="30d">最近30天</SelectItem>
+                  <SelectItem value="90d">最近90天</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={refreshData}
+              disabled={isRefreshing}
+            >
+              <RefreshCw
+                className={cn('mr-2 h-4 w-4', isRefreshing && 'animate-spin')}
+              />
+              刷新
+            </Button>
           </div>
-          <div className="p-4">
-            <div className="space-y-2">
-              <div className="flex items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50 p-3 transition-all hover:shadow-sm">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100">
-                    <Package className="h-4 w-4 text-yellow-600" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-yellow-900">
-                      库存不足
-                    </div>
-                    <div className="text-xs text-yellow-700">
-                      {dashboardData.lowStockItems} 个产品
-                    </div>
-                  </div>
-                </div>
+        </div>
+
+        {/* 核心指标卡片 */}
+        {dashboardApiData && (
+          <StatCardsGrid overview={dashboardApiData} loading={false} />
+        )}
+
+        {/* 快速操作和需要关注 - 紧凑布局 */}
+        <div className="grid gap-4 lg:grid-cols-2">
+          {/* 快速操作 - 紧凑版 */}
+          <div className="bg-card overflow-hidden rounded-lg border shadow-sm">
+            <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-4 py-3">
+              <h3 className="font-semibold text-gray-900">快速操作</h3>
+            </div>
+            <div className="p-4">
+              <div className="grid grid-cols-2 gap-2">
                 <Button
+                  variant="outline"
                   size="sm"
-                  variant="ghost"
-                  className="h-7 text-yellow-700 hover:bg-yellow-100"
+                  className="h-16 flex-col gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
+                  onClick={() => router.push('/products/create')}
+                >
+                  <Package className="h-4 w-4 text-blue-600" />
+                  <span className="text-xs font-medium">新建产品</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-16 flex-col gap-1.5 transition-all hover:border-green-300 hover:bg-green-50"
+                  onClick={() => router.push('/sales-orders/create')}
+                >
+                  <ShoppingCart className="h-4 w-4 text-green-600" />
+                  <span className="text-xs font-medium">新建订单</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-16 flex-col gap-1.5 transition-all hover:border-purple-300 hover:bg-purple-50"
+                  onClick={() => router.push('/customers/create')}
+                >
+                  <Users className="h-4 w-4 text-purple-600" />
+                  <span className="text-xs font-medium">新建客户</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-16 flex-col gap-1.5 transition-all hover:border-yellow-300 hover:bg-yellow-50"
                   onClick={() => router.push('/inventory')}
                 >
-                  <Eye className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-              <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-3 transition-all hover:shadow-sm">
-                <div className="flex items-center gap-2">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                    <ShoppingCart className="h-4 w-4 text-blue-600" />
-                  </div>
-                  <div>
-                    <div className="text-sm font-medium text-blue-900">
-                      待处理订单
-                    </div>
-                    <div className="text-xs text-blue-700">
-                      {pendingOrders.length} 个订单
-                    </div>
-                  </div>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-7 text-blue-700 hover:bg-blue-100"
-                  onClick={() => router.push('/sales-orders')}
-                >
-                  <Eye className="h-3.5 w-3.5" />
+                  <Zap className="h-4 w-4 text-yellow-600" />
+                  <span className="text-xs font-medium">库存管理</span>
                 </Button>
               </div>
             </div>
           </div>
+
+          {/* 需要关注 - 紧凑版 */}
+          <div className="bg-card overflow-hidden rounded-lg border shadow-sm">
+            <div className="border-b bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-amber-600" />
+                <h3 className="font-semibold text-gray-900">需要关注</h3>
+              </div>
+            </div>
+            <div className="p-4">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50 p-3 transition-all hover:shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100">
+                      <Package className="h-4 w-4 text-yellow-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-yellow-900">
+                        库存不足
+                      </div>
+                      <div className="text-xs text-yellow-700">
+                        {dashboardData.lowStockItems} 个产品
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-yellow-700 hover:bg-yellow-100"
+                    onClick={() => router.push('/inventory')}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-3 transition-all hover:shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
+                      <ShoppingCart className="h-4 w-4 text-blue-600" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-medium text-blue-900">
+                        待处理订单
+                      </div>
+                      <div className="text-xs text-blue-700">
+                        {pendingOrders.length} 个订单
+                      </div>
+                    </div>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="h-7 text-blue-700 hover:bg-blue-100"
+                    onClick={() => router.push('/sales-orders')}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* 订单动态区域 - 主要内容区 */}
-      <div className="grid gap-6 xl:grid-cols-2">
-        {/* 实时订单动态 */}
-        <RecentOrders
-          orders={recentOrders.slice(0, 8)}
-          loading={isLoadingOrders}
-        />
+        {/* 订单动态区域 - 主要内容区 */}
+        <div className="grid gap-6 xl:grid-cols-2">
+          {/* 实时订单动态 */}
+          <RecentOrders
+            orders={recentOrders.slice(0, 8)}
+            loading={isLoadingOrders}
+          />
 
-        {/* 厂家发货订单列表 */}
-        <FactoryShipments orders={factoryShipments} loading={isLoadingOrders} />
+          {/* 厂家发货订单列表 */}
+          <FactoryShipments
+            orders={factoryShipments}
+            loading={isLoadingOrders}
+          />
+        </div>
       </div>
     </div>
   );

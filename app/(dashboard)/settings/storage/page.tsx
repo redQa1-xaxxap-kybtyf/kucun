@@ -143,46 +143,48 @@ export default function StorageSettingsPage() {
   // 检查权限
   if (session?.user?.role !== 'admin') {
     return (
-      <div className="mx-auto max-w-none space-y-6 px-4 py-4 sm:px-6 lg:px-8">
-        {/* 页面头部 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                  <Cloud className="h-6 w-6 text-white" />
+      <div className="flex h-full flex-col overflow-hidden p-6">
+        <div className="space-y-6">
+          {/* 页面头部 */}
+          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+            <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
+                    <Cloud className="h-6 w-6 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                      七牛云存储
+                    </h1>
+                    <p className="text-sm text-gray-600">文件上传和存储配置</p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    七牛云存储
-                  </h1>
-                  <p className="text-sm text-gray-600">文件上传和存储配置</p>
-                </div>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => router.push('/settings')}
+                  className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  返回设置
+                </Button>
               </div>
-              <Button
-                variant="outline"
-                size="lg"
-                onClick={() => router.push('/settings')}
-                className="h-11 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md"
-              >
-                <ArrowLeft className="h-4 w-4" />
-                返回设置
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
-          <CardHeader>
-            <CardTitle className="flex items-center text-amber-800">
-              <Cloud className="mr-2 h-5 w-5" />
-              权限不足
-            </CardTitle>
-            <CardDescription className="text-amber-700">
-              只有管理员可以访问七牛云存储配置。
-            </CardDescription>
-          </CardHeader>
-        </Card>
+          <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
+            <CardHeader>
+              <CardTitle className="flex items-center text-amber-800">
+                <Cloud className="mr-2 h-5 w-5" />
+                权限不足
+              </CardTitle>
+              <CardDescription className="text-amber-700">
+                只有管理员可以访问七牛云存储配置。
+              </CardDescription>
+            </CardHeader>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -202,83 +204,85 @@ export default function StorageSettingsPage() {
   };
 
   return (
-    <div className="mx-auto max-w-none space-y-6 px-4 py-4 sm:px-6 lg:px-8">
-      {/* 页面头部 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                <Cloud className="h-6 w-6 text-white" />
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 页面头部 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
+                  <Cloud className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    七牛云存储
+                  </h1>
+                  <p className="text-sm text-gray-600">
+                    配置文件上传和存储服务
+                  </p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                  七牛云存储
-                </h1>
-                <p className="text-sm text-gray-600">
-                  配置文件上传和存储服务
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => router.push('/settings')}
-              className="h-11 gap-2 shadow-sm transition-all hover:scale-105 hover:shadow-md"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              返回设置
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* 配置表单 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-          <CardTitle className="flex items-center text-gray-900">
-            <Cloud className="mr-2 h-5 w-5 text-blue-600" />
-            七牛云存储配置
-          </CardTitle>
-          <CardDescription>
-            配置七牛云对象存储服务，用于文件上传和管理
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-6">
-          {configError ? (
-            <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
-              <p>加载配置失败</p>
               <Button
                 variant="outline"
-                onClick={() =>
-                  queryClient.invalidateQueries({
-                    queryKey: queryKeys.settings.storage(),
-                  })
-                }
-                className="mt-2"
+                size="lg"
+                onClick={() => router.push('/settings')}
+                className="h-11 gap-2 shadow-md transition-all hover:scale-105 hover:shadow-lg"
               >
-                重试
+                <ArrowLeft className="h-4 w-4" />
+                返回设置
               </Button>
             </div>
-          ) : (
-            <QiniuStorageForm
-              initialData={storageConfig}
-              onSubmit={handleSaveConfig}
-              onTestConnection={handleTestConnection}
-              isSaving={saveConfigMutation.isPending}
-              isTesting={testConnectionMutation.isPending}
-            />
-          )}
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
 
-      {/* 连接测试结果 */}
-      <StorageTestConnection
-        testResult={testResult}
-        isTesting={testConnectionMutation.isPending}
-        testError={testError}
-        onRetry={handleRetryTest}
-      />
+        {/* 配置表单 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+            <CardTitle className="flex items-center text-gray-900">
+              <Cloud className="mr-2 h-5 w-5 text-gray-600" />
+              七牛云存储配置
+            </CardTitle>
+            <CardDescription>
+              配置七牛云对象存储服务，用于文件上传和管理
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="p-6">
+            {configError ? (
+              <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">
+                <p>加载配置失败</p>
+                <Button
+                  variant="outline"
+                  onClick={() =>
+                    queryClient.invalidateQueries({
+                      queryKey: queryKeys.settings.storage(),
+                    })
+                  }
+                  className="mt-2"
+                >
+                  重试
+                </Button>
+              </div>
+            ) : (
+              <QiniuStorageForm
+                initialData={storageConfig}
+                onSubmit={handleSaveConfig}
+                onTestConnection={handleTestConnection}
+                isSaving={saveConfigMutation.isPending}
+                isTesting={testConnectionMutation.isPending}
+              />
+            )}
+          </CardContent>
+        </Card>
+
+        {/* 连接测试结果 */}
+        <StorageTestConnection
+          testResult={testResult}
+          isTesting={testConnectionMutation.isPending}
+          testError={testError}
+          onRetry={handleRetryTest}
+        />
+      </div>
     </div>
   );
 }

@@ -336,12 +336,12 @@ export async function getCustomerList(params: CustomerQueryParams) {
   // 构建查询条件
   const where: Record<string, unknown> = {};
 
-  // 搜索条件
+  // 搜索条件 (MySQL 默认不区分大小写，无需 mode 参数)
   if (search) {
     where.OR = [
-      { name: { contains: search, mode: 'insensitive' } },
-      { phone: { contains: search, mode: 'insensitive' } },
-      { address: { contains: search, mode: 'insensitive' } },
+      { name: { contains: search } },
+      { phone: { contains: search } },
+      { address: { contains: search } },
     ];
   }
 

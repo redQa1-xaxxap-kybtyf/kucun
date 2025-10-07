@@ -70,7 +70,7 @@ export function useOutboundRecords() {
         pagination: result.pagination,
       };
     },
-    staleTime: 5 * 60 * 1000, // 5分钟
+    staleTime: Infinity, // ✅ 防止客户端重复请求服务端已预取的数据
   });
 
   const outboundRecords = data?.data || [];

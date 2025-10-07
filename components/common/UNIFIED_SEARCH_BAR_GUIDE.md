@@ -102,7 +102,6 @@ function InventoryPage() {
       onSearchChange={setSearch}
       searchPlaceholder="搜索产品名称、编码..."
       debounceDelay={400}
-
       // 操作按钮
       actionButtons={[
         {
@@ -123,7 +122,6 @@ function InventoryPage() {
           variant: 'outline',
         },
       ]}
-
       // 切换按钮
       toggleButtons={[
         {
@@ -141,7 +139,6 @@ function InventoryPage() {
           onClick: () => setHasStock(!hasStock),
         },
       ]}
-
       // 筛选器
       filters={[
         {
@@ -161,7 +158,9 @@ function InventoryPage() {
         },
       ]}
       filterValues={filters}
-      onFilterChange={(key, value) => setFilters(prev => ({ ...prev, [key]: value }))}
+      onFilterChange={(key, value) =>
+        setFilters(prev => ({ ...prev, [key]: value }))
+      }
     />
   );
 }
@@ -175,71 +174,71 @@ function InventoryPage() {
 
 #### 搜索相关
 
-| 属性 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `searchValue` | `string` | 否 | `''` | 搜索值 |
-| `onSearchChange` | `(value: string) => void` | 是 | - | 搜索值变更回调 |
-| `searchPlaceholder` | `string` | 否 | `'搜索...'` | 搜索框占位符 |
-| `debounceDelay` | `number` | 否 | `400` | 防抖延迟(毫秒) |
-| `showClearButton` | `boolean` | 否 | `true` | 是否显示清空按钮 |
+| 属性                | 类型                      | 必填 | 默认值      | 说明             |
+| ------------------- | ------------------------- | ---- | ----------- | ---------------- |
+| `searchValue`       | `string`                  | 否   | `''`        | 搜索值           |
+| `onSearchChange`    | `(value: string) => void` | 是   | -           | 搜索值变更回调   |
+| `searchPlaceholder` | `string`                  | 否   | `'搜索...'` | 搜索框占位符     |
+| `debounceDelay`     | `number`                  | 否   | `400`       | 防抖延迟(毫秒)   |
+| `showClearButton`   | `boolean`                 | 否   | `true`      | 是否显示清空按钮 |
 
 #### 筛选器
 
-| 属性 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `filters` | `FilterConfig[]` | 否 | `[]` | 筛选器配置数组 |
-| `filterValues` | `Record<string, string \| undefined>` | 否 | `{}` | 筛选器当前值 |
-| `onFilterChange` | `(key: string, value: string \| undefined) => void` | 否 | - | 筛选器变更回调 |
+| 属性             | 类型                                                | 必填 | 默认值 | 说明           |
+| ---------------- | --------------------------------------------------- | ---- | ------ | -------------- |
+| `filters`        | `FilterConfig[]`                                    | 否   | `[]`   | 筛选器配置数组 |
+| `filterValues`   | `Record<string, string \| undefined>`               | 否   | `{}`   | 筛选器当前值   |
+| `onFilterChange` | `(key: string, value: string \| undefined) => void` | 否   | -      | 筛选器变更回调 |
 
 #### 切换按钮
 
-| 属性 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `toggleButtons` | `ToggleButton[]` | 否 | `[]` | 切换按钮配置数组 |
+| 属性            | 类型             | 必填 | 默认值 | 说明             |
+| --------------- | ---------------- | ---- | ------ | ---------------- |
+| `toggleButtons` | `ToggleButton[]` | 否   | `[]`   | 切换按钮配置数组 |
 
 #### 操作按钮
 
-| 属性 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `actionButtons` | `ActionButton[]` | 否 | `[]` | 操作按钮配置数组 |
+| 属性            | 类型             | 必填 | 默认值 | 说明             |
+| --------------- | ---------------- | ---- | ------ | ---------------- |
+| `actionButtons` | `ActionButton[]` | 否   | `[]`   | 操作按钮配置数组 |
 
 #### 样式
 
-| 属性 | 类型 | 必填 | 默认值 | 说明 |
-|------|------|------|--------|------|
-| `className` | `string` | 否 | - | 自定义CSS类名 |
-| `compact` | `boolean` | 否 | `false` | 紧凑模式,适配移动端 |
+| 属性        | 类型      | 必填 | 默认值  | 说明                |
+| ----------- | --------- | ---- | ------- | ------------------- |
+| `className` | `string`  | 否   | -       | 自定义CSS类名       |
+| `compact`   | `boolean` | 否   | `false` | 紧凑模式,适配移动端 |
 
 ### 类型定义
 
 ```typescript
 interface FilterConfig {
-  key: string;           // 筛选器唯一标识
-  label: string;         // 筛选器标签
+  key: string; // 筛选器唯一标识
+  label: string; // 筛选器标签
   options: FilterOption[]; // 选项列表
-  placeholder?: string;  // 占位符(可选)
-  width?: string;        // 宽度(Tailwind类名)
+  placeholder?: string; // 占位符(可选)
+  width?: string; // 宽度(Tailwind类名)
 }
 
 interface FilterOption {
-  label: string;  // 显示文本
-  value: string;  // 值
+  label: string; // 显示文本
+  value: string; // 值
 }
 
 interface ActionButton {
-  label: string;                                                // 按钮文本
-  icon?: React.ReactNode;                                       // 图标(可选)
-  onClick: () => void;                                          // 点击回调
-  variant?: 'default' | 'outline' | 'ghost' | 'destructive';   // 样式变体
-  className?: string;                                           // 自定义类名
+  label: string; // 按钮文本
+  icon?: React.ReactNode; // 图标(可选)
+  onClick: () => void; // 点击回调
+  variant?: 'default' | 'outline' | 'ghost' | 'destructive'; // 样式变体
+  className?: string; // 自定义类名
 }
 
 interface ToggleButton {
-  key: string;            // 唯一标识
-  label: string;          // 按钮文本
+  key: string; // 唯一标识
+  label: string; // 按钮文本
   icon?: React.ReactNode; // 图标(可选)
-  active: boolean;        // 是否激活
-  onClick: () => void;    // 点击回调
+  active: boolean; // 是否激活
+  onClick: () => void; // 点击回调
 }
 ```
 
@@ -250,6 +249,7 @@ interface ToggleButton {
 ### 从 InventorySearchToolbar 迁移
 
 **之前:**
+
 ```tsx
 <InventorySearchToolbar
   queryParams={queryParams}
@@ -263,35 +263,47 @@ interface ToggleButton {
 ```
 
 **之后:**
+
 ```tsx
 <UnifiedSearchBar
   searchValue={queryParams.search}
   onSearchChange={value => handleFilter('search', value)}
   searchPlaceholder="搜索产品名称、编码..."
-
   actionButtons={[
-    { label: '入库', icon: <Plus className="mr-1 h-4 w-4" />, onClick: onInbound },
-    { label: '出库', icon: <Package className="mr-1 h-4 w-4" />, onClick: onOutbound, variant: 'outline' },
-    { label: '调整', icon: <Edit className="mr-1 h-4 w-4" />, onClick: onAdjust, variant: 'outline' },
+    {
+      label: '入库',
+      icon: <Plus className="mr-1 h-4 w-4" />,
+      onClick: onInbound,
+    },
+    {
+      label: '出库',
+      icon: <Package className="mr-1 h-4 w-4" />,
+      onClick: onOutbound,
+      variant: 'outline',
+    },
+    {
+      label: '调整',
+      icon: <Edit className="mr-1 h-4 w-4" />,
+      onClick: onAdjust,
+      variant: 'outline',
+    },
   ]}
-
   toggleButtons={[
     {
       key: 'lowStock',
       label: '库存偏低',
       icon: <AlertTriangle className="mr-1 h-4 w-4" />,
       active: !!queryParams.lowStock,
-      onClick: () => handleFilter('lowStock', !queryParams.lowStock)
+      onClick: () => handleFilter('lowStock', !queryParams.lowStock),
     },
     {
       key: 'hasStock',
       label: '有库存',
       icon: <Package className="mr-1 h-4 w-4" />,
       active: !!queryParams.hasStock,
-      onClick: () => handleFilter('hasStock', !queryParams.hasStock)
+      onClick: () => handleFilter('hasStock', !queryParams.hasStock),
     },
   ]}
-
   filters={[
     {
       key: 'categoryId',
@@ -320,6 +332,7 @@ interface ToggleButton {
 ### 从 ProductSearchFilters 迁移
 
 **之前:**
+
 ```tsx
 <ProductSearchFilters
   searchValue={search}
@@ -334,12 +347,12 @@ interface ToggleButton {
 ```
 
 **之后:**
+
 ```tsx
 <UnifiedSearchBar
   searchValue={search}
   onSearchChange={setSearch}
   searchPlaceholder="搜索产品编码、名称或规格..."
-
   filters={[
     {
       key: 'status',
@@ -373,7 +386,7 @@ interface ToggleButton {
 
 ```tsx
 <UnifiedSearchBar
-  debounceDelay={200}  // 更快的响应
+  debounceDelay={200} // 更快的响应
   {...otherProps}
 />
 ```
@@ -382,7 +395,7 @@ interface ToggleButton {
 
 ```tsx
 <UnifiedSearchBar
-  compact={true}  // 更小的尺寸,适配移动端
+  compact={true} // 更小的尺寸,适配移动端
   {...otherProps}
 />
 ```
@@ -392,15 +405,16 @@ interface ToggleButton {
 ```tsx
 <UnifiedSearchBar
   // 左侧:操作按钮
-  actionButtons={[
-    { label: '新增', icon: <Plus />, onClick: onCreate },
-  ]}
-
+  actionButtons={[{ label: '新增', icon: <Plus />, onClick: onCreate }]}
   // 右侧:切换按钮
   toggleButtons={[
-    { key: 'active', label: '仅显示启用', active: showActive, onClick: toggleActive },
+    {
+      key: 'active',
+      label: '仅显示启用',
+      active: showActive,
+      onClick: toggleActive,
+    },
   ]}
-
   {...otherProps}
 />
 ```
@@ -432,13 +446,14 @@ filters={[
 **原因**: 没有正确处理 `onSearchChange` 回调
 
 **解决**:
+
 ```tsx
 const [search, setSearch] = useState('');
 
 <UnifiedSearchBar
   searchValue={search}
-  onSearchChange={setSearch}  // 确保正确更新状态
-/>
+  onSearchChange={setSearch} // 确保正确更新状态
+/>;
 ```
 
 ### 问题: 筛选器值不更新
@@ -446,15 +461,16 @@ const [search, setSearch] = useState('');
 **原因**: `filterValues` 没有正确传递
 
 **解决**:
+
 ```tsx
 const [filters, setFilters] = useState({ status: undefined });
 
 <UnifiedSearchBar
-  filterValues={filters}  // 确保传递当前值
+  filterValues={filters} // 确保传递当前值
   onFilterChange={(key, value) => {
     setFilters(prev => ({ ...prev, [key]: value }));
   }}
-/>
+/>;
 ```
 
 ---

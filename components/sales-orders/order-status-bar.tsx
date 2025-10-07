@@ -79,9 +79,9 @@ export function OrderStatusBar({
       <div className="flex flex-wrap items-center gap-4 md:gap-6">
         {/* 订单号 */}
         <div className="flex items-center gap-2">
-          <Hash className="h-4 w-4 text-muted-foreground" />
+          <Hash className="text-muted-foreground h-4 w-4" />
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">订单号</div>
+            <div className="text-muted-foreground text-xs">订单号</div>
             <div className="font-medium">{orderNumber || '待生成'}</div>
           </div>
         </div>
@@ -90,12 +90,12 @@ export function OrderStatusBar({
 
         {/* 客户信息 */}
         <div className="flex items-center gap-2">
-          <User className="h-4 w-4 text-muted-foreground" />
+          <User className="text-muted-foreground h-4 w-4" />
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">客户</div>
+            <div className="text-muted-foreground text-xs">客户</div>
             <div className="font-medium">{customer?.name || '未选择客户'}</div>
             {customer?.phone && (
-              <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-1 text-xs">
                 <Phone className="h-3 w-3" />
                 {customer.phone}
               </div>
@@ -108,9 +108,9 @@ export function OrderStatusBar({
           <>
             <Separator orientation="vertical" className="hidden h-8 lg:block" />
             <div className="hidden items-center gap-2 lg:flex">
-              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <MapPin className="text-muted-foreground h-4 w-4" />
               <div className="space-y-1">
-                <div className="text-xs text-muted-foreground">地址</div>
+                <div className="text-muted-foreground text-xs">地址</div>
                 <div className="max-w-[200px] truncate font-medium">
                   {customer.address}
                 </div>
@@ -124,7 +124,7 @@ export function OrderStatusBar({
         {/* 订单状态 */}
         <div className="flex items-center gap-2">
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">状态</div>
+            <div className="text-muted-foreground text-xs">状态</div>
             <Badge variant={statusConfig.variant}>{statusConfig.label}</Badge>
           </div>
         </div>
@@ -133,9 +133,9 @@ export function OrderStatusBar({
 
         {/* 产品数量 */}
         <div className="flex items-center gap-2">
-          <ShoppingCart className="h-4 w-4 text-muted-foreground" />
+          <ShoppingCart className="text-muted-foreground h-4 w-4" />
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">产品数量</div>
+            <div className="text-muted-foreground text-xs">产品数量</div>
             <div className="font-medium">{itemCount} 项</div>
           </div>
         </div>
@@ -144,9 +144,9 @@ export function OrderStatusBar({
 
         {/* 订单总金额 */}
         <div className="flex items-center gap-2">
-          <DollarSign className="h-4 w-4 text-muted-foreground" />
+          <DollarSign className="text-muted-foreground h-4 w-4" />
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">订单金额</div>
+            <div className="text-muted-foreground text-xs">订单金额</div>
             <div className="text-lg font-medium">
               {formatAmount(totalAmount)}
             </div>
@@ -155,9 +155,9 @@ export function OrderStatusBar({
 
         {/* 创建时间（桌面端显示） */}
         <div className="ml-auto hidden items-center gap-2 xl:flex">
-          <Calendar className="h-4 w-4 text-muted-foreground" />
+          <Calendar className="text-muted-foreground h-4 w-4" />
           <div className="space-y-1">
-            <div className="text-xs text-muted-foreground">创建时间</div>
+            <div className="text-muted-foreground text-xs">创建时间</div>
             <div className="font-medium">
               {new Date().toLocaleDateString('zh-CN')}
             </div>

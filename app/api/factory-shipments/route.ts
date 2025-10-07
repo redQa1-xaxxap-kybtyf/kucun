@@ -148,13 +148,10 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     ]);
 
     return NextResponse.json({
-      orders,
-      pagination: {
-        page,
-        limit,
-        totalCount,
-        totalPages: Math.ceil(totalCount / limit),
-      },
+      data: orders,
+      total: totalCount,
+      page,
+      limit,
     });
   } catch (error) {
     console.error('获取厂家发货订单列表失败:', error);

@@ -290,7 +290,9 @@ export const invalidationMetrics = {
 /**
  * 记录失效指标
  */
-export function recordInvalidation(type: 'immediate' | 'deferred' | 'optional'): void {
+export function recordInvalidation(
+  type: 'immediate' | 'deferred' | 'optional'
+): void {
   invalidationMetrics[type]++;
   invalidationMetrics.total++;
 }

@@ -79,7 +79,9 @@ export function detectDatabaseType(): DatabaseType {
  * // 返回: { isolationLevel: 'Serializable', timeout: 15000 }
  * ```
  */
-export function getTransactionOptions(timeout: number = 10000): TransactionOptions {
+export function getTransactionOptions(
+  timeout: number = 10000
+): TransactionOptions {
   const dbType = detectDatabaseType();
 
   // SQLite: 仅设置超时，不配置isolationLevel

@@ -101,9 +101,7 @@ export function PayableForm({
                           placeholder="选择供应商..."
                         />
                       </FormControl>
-                      <FormDescription>
-                        选择应付款对应的供应商
-                      </FormDescription>
+                      <FormDescription>选择应付款对应的供应商</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -136,9 +134,7 @@ export function PayableForm({
                           )}
                         </SelectContent>
                       </Select>
-                      <FormDescription>
-                        应付款的来源类型
-                      </FormDescription>
+                      <FormDescription>应付款的来源类型</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -158,14 +154,12 @@ export function PayableForm({
                           placeholder="0.00"
                           disabled={isLoading}
                           {...field}
-                          onChange={(e) =>
+                          onChange={e =>
                             field.onChange(parseFloat(e.target.value) || 0)
                           }
                         />
                       </FormControl>
-                      <FormDescription>
-                        应付款的总金额（元）
-                      </FormDescription>
+                      <FormDescription>应付款的总金额（元）</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -186,9 +180,7 @@ export function PayableForm({
                           value={field.value || ''}
                         />
                       </FormControl>
-                      <FormDescription>
-                        应付款的到期日期
-                      </FormDescription>
+                      <FormDescription>应付款的到期日期</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -234,9 +226,7 @@ export function PayableForm({
                           value={field.value || ''}
                         />
                       </FormControl>
-                      <FormDescription>
-                        约定的付款条件或账期
-                      </FormDescription>
+                      <FormDescription>约定的付款条件或账期</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -270,9 +260,7 @@ export function PayableForm({
                             )}
                           </SelectContent>
                         </Select>
-                        <FormDescription>
-                          应付款的当前状态
-                        </FormDescription>
+                        <FormDescription>应付款的当前状态</FormDescription>
                         <FormMessage />
                       </FormItem>
                     )}
@@ -289,9 +277,7 @@ export function PayableForm({
                 <FileText className="mr-2 h-5 w-5 text-blue-600" />
                 详细信息
               </CardTitle>
-              <CardDescription>
-                填写应付款的描述和备注信息
-              </CardDescription>
+              <CardDescription>填写应付款的描述和备注信息</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-6">
@@ -366,11 +352,7 @@ export function PayableForm({
                   className="min-w-[120px]"
                 >
                   <CreditCard className="mr-2 h-4 w-4" />
-                  {isLoading
-                    ? '提交中...'
-                    : isEdit
-                      ? '保存修改'
-                      : '创建应付款'}
+                  {isLoading ? '提交中...' : isEdit ? '保存修改' : '创建应付款'}
                 </Button>
               </div>
             </CardContent>
@@ -380,4 +362,3 @@ export function PayableForm({
     </div>
   );
 }
-

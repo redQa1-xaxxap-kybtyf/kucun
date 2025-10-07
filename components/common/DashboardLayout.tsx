@@ -139,7 +139,9 @@ export function DashboardLayout({
   }, []);
 
   const onTouchEnd = React.useCallback(() => {
-    if (!touchStart || !touchEnd) {return;}
+    if (!touchStart || !touchEnd) {
+      return;
+    }
 
     const distance = touchStart - touchEnd;
     const isLeftSwipe = distance > minSwipeDistance;
@@ -166,7 +168,7 @@ export function DashboardLayout({
   if (status === 'loading') {
     return (
       <div className="flex h-screen items-center justify-center">
-        <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary"></div>
+        <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
       </div>
     );
   }
@@ -185,7 +187,7 @@ export function DashboardLayout({
   };
 
   return (
-    <div className={cn('min-h-screen bg-background', className)}>
+    <div className={cn('bg-background min-h-screen', className)}>
       {/* 顶部导航栏 */}
       {showHeader && (
         <Header

@@ -189,9 +189,9 @@ export function ERPCustomerForm({
   };
 
   return (
-    <div className="rounded border bg-card">
+    <div className="bg-card rounded border">
       {/* ERP标准工具栏 */}
-      <div className="border-b bg-muted/30 px-3 py-2">
+      <div className="bg-muted/30 border-b px-3 py-2">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">
             {mode === 'create' ? '新建客户' : '编辑客户'}
@@ -216,7 +216,7 @@ export function ERPCustomerForm({
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             {/* 基本信息区域 */}
             <div className="space-y-3">
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 基本信息
               </div>
               <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
@@ -287,7 +287,7 @@ export function ERPCustomerForm({
 
             {/* 扩展信息区域 */}
             <div className="space-y-3">
-              <div className="text-xs font-medium text-muted-foreground">
+              <div className="text-muted-foreground text-xs font-medium">
                 扩展信息（可选）
               </div>
               <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
@@ -319,7 +319,7 @@ export function ERPCustomerForm({
             </div>
 
             {/* 操作按钮区域 */}
-            <div className="-mx-3 -mb-2 border-t bg-muted/10 px-3 py-2">
+            <div className="bg-muted/10 -mx-3 -mb-2 border-t px-3 py-2">
               <div className="flex items-center justify-end gap-2">
                 <Button
                   type="button"

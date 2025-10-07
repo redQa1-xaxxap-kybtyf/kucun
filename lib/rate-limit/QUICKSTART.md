@@ -38,24 +38,22 @@ export const GET = withAuth(
 ```typescript
 import { withRateLimit, RateLimitType } from '@/lib/rate-limit';
 
-export const POST = withRateLimit(RateLimitType.CAPTCHA)(
-  async (request) => {
-    // 你的业务逻辑
-    return successResponse(data);
-  }
-);
+export const POST = withRateLimit(RateLimitType.CAPTCHA)(async request => {
+  // 你的业务逻辑
+  return successResponse(data);
+});
 ```
 
 ## 速率限制类型速查
 
-| 导入名称 | 限制值 | 使用场景 |
-|---------|--------|----------|
-| `RateLimitType.GLOBAL` | 100/分钟 | 默认全局限制 |
-| `RateLimitType.AUTH` | 5/分钟 | 认证相关 API |
-| `RateLimitType.READ` | 60/分钟 | GET 请求 |
-| `RateLimitType.WRITE` | 30/分钟 | POST/PUT/DELETE |
-| `RateLimitType.LOGIN` | 5/分钟 | 登录接口 |
-| `RateLimitType.CAPTCHA` | 10/分钟 | 验证码接口 |
+| 导入名称                | 限制值   | 使用场景        |
+| ----------------------- | -------- | --------------- |
+| `RateLimitType.GLOBAL`  | 100/分钟 | 默认全局限制    |
+| `RateLimitType.AUTH`    | 5/分钟   | 认证相关 API    |
+| `RateLimitType.READ`    | 60/分钟  | GET 请求        |
+| `RateLimitType.WRITE`   | 30/分钟  | POST/PUT/DELETE |
+| `RateLimitType.LOGIN`   | 5/分钟   | 登录接口        |
+| `RateLimitType.CAPTCHA` | 10/分钟  | 验证码接口      |
 
 ## 常见场景示例
 
@@ -65,12 +63,10 @@ export const POST = withRateLimit(RateLimitType.CAPTCHA)(
 // app/api/auth/signin/route.ts
 import { withRateLimit, RateLimitType } from '@/lib/rate-limit';
 
-export const POST = withRateLimit(RateLimitType.LOGIN)(
-  async (request) => {
-    const { username, password } = await request.json();
-    // ... 登录逻辑
-  }
-);
+export const POST = withRateLimit(RateLimitType.LOGIN)(async request => {
+  const { username, password } = await request.json();
+  // ... 登录逻辑
+});
 ```
 
 ### 场景2: 保护产品列表
@@ -135,8 +131,8 @@ async function fetchData() {
 
 ```typescript
 axios.interceptors.response.use(
-  (response) => response,
-  (error) => {
+  response => response,
+  error => {
     if (error.response?.status === 429) {
       const retryAfter = error.response.headers['retry-after'];
       toast.error(`请求过于频繁，请 ${retryAfter} 秒后重试`);
@@ -168,6 +164,7 @@ RATE_LIMIT_ENABLED=false
 **现象**: 日志显示 "Redis 不可用，使用内存存储"
 
 **解决**:
+
 - 检查 `REDIS_URL` 配置是否正确
 - 确认 Redis 服务是否运行
 - 开发环境可忽略，会自动降级到内存存储
@@ -202,13 +199,11 @@ RATE_LIMIT_AUTH=3
 在 API 代码中添加日志：
 
 ```typescript
-export const POST = withRateLimit(RateLimitType.LOGIN)(
-  async (request) => {
-    // 如果走到这里，说明通过了速率限制
-    console.log('请求通过速率限制检查');
-    // ...
-  }
-);
+export const POST = withRateLimit(RateLimitType.LOGIN)(async request => {
+  // 如果走到这里，说明通过了速率限制
+  console.log('请求通过速率限制检查');
+  // ...
+});
 ```
 
 被限制的请求会直接返回 429，不会进入处理函数。
@@ -228,6 +223,7 @@ console.log(`剩余: ${status.remaining}/${status.limit}`);
 ## 完整文档
 
 详细文档请参考：
+
 - **使用指南**: `lib/rate-limit/README.md`
 - **实现总结**: `RATE_LIMIT_IMPLEMENTATION.md`
 

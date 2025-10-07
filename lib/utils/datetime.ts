@@ -35,7 +35,9 @@ export type DateInput = Date | string | number | null | undefined;
  * 统一处理各种时间输入格式
  */
 export function parseDate(input: DateInput): Date | null {
-  if (!input) {return null;}
+  if (!input) {
+    return null;
+  }
 
   try {
     if (input instanceof Date) {
@@ -45,7 +47,9 @@ export function parseDate(input: DateInput): Date | null {
     if (typeof input === 'string') {
       // 尝试解析ISO字符串
       const parsed = parseISO(input);
-      if (isValid(parsed)) {return parsed;}
+      if (isValid(parsed)) {
+        return parsed;
+      }
 
       // 尝试直接创建Date对象
       const date = new Date(input);
@@ -80,7 +84,9 @@ export function formatDate(
   formatStr: string = DATE_FORMATS.DATE
 ): string {
   const date = parseDate(input);
-  if (!date) {return '';}
+  if (!date) {
+    return '';
+  }
 
   try {
     return format(date, formatStr, { locale: zhCN });
@@ -97,7 +103,9 @@ export function formatDateTime(
   formatStr: string = DATE_FORMATS.DATETIME
 ): string {
   const date = parseDate(input);
-  if (!date) {return '';}
+  if (!date) {
+    return '';
+  }
 
   try {
     return format(date, formatStr, { locale: zhCN });
@@ -126,7 +134,9 @@ export function formatDateTimeCN(input: DateInput): string {
  */
 export function formatTimeAgo(input: DateInput): string {
   const date = parseDate(input);
-  if (!date) {return '';}
+  if (!date) {
+    return '';
+  }
 
   try {
     return formatDistanceToNow(date, {
@@ -157,13 +167,19 @@ export function compareDates(
   const d1 = parseDate(date1);
   const d2 = parseDate(date2);
 
-  if (!d1 || !d2) {return null;}
+  if (!d1 || !d2) {
+    return null;
+  }
 
   const time1 = d1.getTime();
   const time2 = d2.getTime();
 
-  if (time1 < time2) {return -1;}
-  if (time1 > time2) {return 1;}
+  if (time1 < time2) {
+    return -1;
+  }
+  if (time1 > time2) {
+    return 1;
+  }
   return 0;
 }
 
@@ -179,7 +195,9 @@ export function isDateInRange(
   const start = parseDate(startDate);
   const end = parseDate(endDate);
 
-  if (!d || !start || !end) {return false;}
+  if (!d || !start || !end) {
+    return false;
+  }
 
   const time = d.getTime();
   return time >= start.getTime() && time <= end.getTime();
@@ -190,7 +208,9 @@ export function isDateInRange(
  */
 export function getStartOfDay(input: DateInput): Date | null {
   const date = parseDate(input);
-  if (!date) {return null;}
+  if (!date) {
+    return null;
+  }
 
   const result = new Date(date);
   result.setHours(0, 0, 0, 0);
@@ -202,7 +222,9 @@ export function getStartOfDay(input: DateInput): Date | null {
  */
 export function getEndOfDay(input: DateInput): Date | null {
   const date = parseDate(input);
-  if (!date) {return null;}
+  if (!date) {
+    return null;
+  }
 
   const result = new Date(date);
   result.setHours(23, 59, 59, 999);
@@ -228,7 +250,9 @@ export class DateTimeTransformer {
     obj: T,
     timeFields: (keyof T)[] = ['createdAt', 'updatedAt']
   ): T {
-    if (!obj || typeof obj !== 'object') {return obj;}
+    if (!obj || typeof obj !== 'object') {
+      return obj;
+    }
 
     const transformed = { ...obj };
 
@@ -251,7 +275,9 @@ export class DateTimeTransformer {
     array: T[],
     timeFields: (keyof T)[] = ['createdAt', 'updatedAt']
   ): T[] {
-    if (!Array.isArray(array)) {return array;}
+    if (!Array.isArray(array)) {
+      return array;
+    }
 
     return array.map(item => this.transformObject(item, timeFields));
   }
@@ -263,7 +289,9 @@ export class DateTimeTransformer {
     obj: T,
     timeFields: string[] = ['createdAt', 'updatedAt']
   ): T {
-    if (!obj || typeof obj !== 'object') {return obj;}
+    if (!obj || typeof obj !== 'object') {
+      return obj;
+    }
 
     if (Array.isArray(obj)) {
       return obj.map(item => this.transformNested(item, timeFields)) as T;

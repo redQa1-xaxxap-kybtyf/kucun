@@ -68,14 +68,14 @@ export function ERPCustomerEditDialog({
         )}
 
         {customerId && !customer && (
-          <div className="rounded border bg-card">
-            <div className="border-b bg-muted/30 px-3 py-2">
+          <div className="bg-card rounded border">
+            <div className="bg-muted/30 border-b px-3 py-2">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm font-medium">编辑客户</h3>
               </div>
             </div>
             <div className="px-3 py-8">
-              <div className="text-center text-xs text-muted-foreground">
+              <div className="text-muted-foreground text-center text-xs">
                 加载客户信息中...
               </div>
             </div>

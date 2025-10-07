@@ -1,8 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Edit, Eye, MoreHorizontal, Plus, TrendingDown } from 'lucide-react';
-import Link from 'next/link';
+import { Edit, Eye, MoreHorizontal, TrendingDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useState } from 'react';
@@ -37,7 +36,11 @@ import {
 } from '@/lib/types/return-order';
 
 interface ERPReturnOrderListProps {
+  initialParams?: ReturnOrderQueryParams;
   onCreateNew?: () => void;
+  onSearch?: (value: string) => void;
+  onFilter?: (key: string, value: string | undefined) => void;
+  onPageChange?: (page: number) => void;
   onViewDetail?: (returnOrder: ReturnOrder) => void;
   onEdit?: (returnOrder: ReturnOrder) => void;
   onDelete?: (returnOrder: ReturnOrder) => void;
@@ -48,7 +51,11 @@ interface ERPReturnOrderListProps {
  * 采用紧凑布局，符合中国ERP系统用户习惯
  */
 export function ERPReturnOrderList({
+  initialParams,
   onCreateNew,
+  onSearch,
+  onFilter,
+  onPageChange,
   onViewDetail,
   onEdit,
   onDelete,
@@ -56,12 +63,14 @@ export function ERPReturnOrderList({
   const router = useRouter();
 
   // 查询参数状态
-  const [queryParams, setQueryParams] = useState<ReturnOrderQueryParams>({
-    page: 1,
-    limit: paginationConfig.defaultPageSize,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
-  });
+  const [queryParams, setQueryParams] = useState<ReturnOrderQueryParams>(
+    initialParams || {
+      page: 1,
+      limit: paginationConfig.defaultPageSize,
+      sortBy: 'createdAt',
+      sortOrder: 'desc',
+    }
+  );
 
   // 获取退货订单数据
   const {
@@ -107,32 +116,43 @@ export function ERPReturnOrderList({
   const displayData = error ? mockData : queryData;
 
   // 处理搜索
-  const handleSearch = React.useCallback((search: string) => {
-    setQueryParams(prev => ({
-      ...prev,
-      search: search || undefined,
-      page: 1,
-    }));
-  }, []);
-
-  // 统一处理筛选器变更
-  const handleFilterChange = React.useCallback(
-    (key: string, value: string | undefined) => {
-      if (key === 'status') {
+  const handleSearch = React.useCallback(
+    (search: string) => {
+      if (onSearch) {
+        onSearch(search);
+      } else {
         setQueryParams(prev => ({
           ...prev,
-          status: value === 'all' || !value ? undefined : value,
-          page: 1,
-        }));
-      } else if (key === 'sortBy') {
-        setQueryParams(prev => ({
-          ...prev,
-          sortBy: value || 'createdAt',
+          search: search || undefined,
           page: 1,
         }));
       }
     },
-    []
+    [onSearch]
+  );
+
+  // 统一处理筛选器变更
+  const handleFilterChange = React.useCallback(
+    (key: string, value: string | undefined) => {
+      if (onFilter) {
+        onFilter(key, value);
+      } else {
+        if (key === 'status') {
+          setQueryParams(prev => ({
+            ...prev,
+            status: value === 'all' || !value ? undefined : value,
+            page: 1,
+          }));
+        } else if (key === 'sortBy') {
+          setQueryParams(prev => ({
+            ...prev,
+            sortBy: value || 'createdAt',
+            page: 1,
+          }));
+        }
+      }
+    },
+    [onFilter]
   );
 
   // 处理新建
@@ -210,80 +230,18 @@ export function ERPReturnOrderList({
   // 如果有真实数据错误且没有模拟数据，显示错误
   if (error && !displayData) {
     return (
-      <div className="space-y-4">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                  <TrendingDown className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    退货订单管理
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    管理客户退货订单，处理退货申请和退款流程
-                  </p>
-                </div>
-              </div>
-              <Link href="/return-orders/create">
-                <Button
-                  size="lg"
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  新建退货
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg shadow-gray-200/50">
-          <CardContent className="pt-6">
-            <div className="text-center text-red-600">
-              加载退货订单失败: {error.message}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="shadow-lg shadow-gray-200/50">
+        <CardContent className="pt-6">
+          <div className="text-center text-red-600">
+            加载退货订单失败: {error.message}
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* 页面标题卡片 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                <TrendingDown className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                  退货订单管理
-                </h1>
-                <p className="text-sm text-gray-600">
-                  管理客户退货订单，处理退货申请和退款流程
-                </p>
-              </div>
-            </div>
-            <Link href="/return-orders/create">
-              <Button
-                size="lg"
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                新建退货
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* 搜索和筛选 */}
       <Card className="shadow-md shadow-gray-200/50">
         <CardContent className="pt-6">

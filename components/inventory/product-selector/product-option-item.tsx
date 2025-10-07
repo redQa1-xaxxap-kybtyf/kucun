@@ -20,7 +20,7 @@ export function ProductOptionItem({
   return (
     <div className="flex w-full items-center justify-between">
       <div className="flex min-w-0 items-center gap-2">
-        <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
+        <Package className="text-muted-foreground h-4 w-4 shrink-0" />
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="truncate font-medium">{product.label}</span>
@@ -28,7 +28,7 @@ export function ProductOptionItem({
               {product.code}
             </Badge>
           </div>
-          <div className="text-xs text-muted-foreground">
+          <div className="text-muted-foreground text-xs">
             库存: {product.currentStock}{' '}
             {PRODUCT_UNIT_LABELS[product.unit] || product.unit}
           </div>

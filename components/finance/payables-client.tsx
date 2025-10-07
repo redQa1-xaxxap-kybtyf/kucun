@@ -39,31 +39,43 @@ interface PayablesClientProps {
       totalPages: number;
     };
   };
+  initialParams?: PayableRecordQuery;
+  onSearch?: (value: string) => void;
+  onFilter?: (key: string, value: string | undefined) => void;
+  onPageChange?: (page: number) => void;
 }
 
 /**
  * 应付款客户端交互组件
  * 处理搜索、筛选、分页等客户端交互
  */
-export function PayablesClient({ initialData }: PayablesClientProps) {
+export function PayablesClient({
+  initialData,
+  initialParams,
+  onSearch: externalOnSearch,
+  onFilter: externalOnFilter,
+  onPageChange: externalOnPageChange,
+}: PayablesClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [query, setQuery] = React.useState<PayableRecordQuery>({
-    page: parseInt(searchParams.get('page') || '1', 10),
-    limit: parseInt(searchParams.get('limit') || '20', 10),
-    search: searchParams.get('search') || undefined,
-    status: (searchParams.get('status') as PayableStatus) || undefined,
-    sourceType:
-      (searchParams.get('sourceType') as PayableSourceType) || undefined,
-    sortBy:
-      (searchParams.get('sortBy') as
-        | 'createdAt'
-        | 'payableAmount'
-        | 'dueDate'
-        | 'remainingAmount') || 'createdAt',
-    sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
-  });
+  const [query, setQuery] = React.useState<PayableRecordQuery>(
+    initialParams || {
+      page: parseInt(searchParams.get('page') || '1', 10),
+      limit: parseInt(searchParams.get('limit') || '20', 10),
+      search: searchParams.get('search') || undefined,
+      status: (searchParams.get('status') as PayableStatus) || undefined,
+      sourceType:
+        (searchParams.get('sourceType') as PayableSourceType) || undefined,
+      sortBy:
+        (searchParams.get('sortBy') as
+          | 'createdAt'
+          | 'payableAmount'
+          | 'dueDate'
+          | 'remainingAmount') || 'createdAt',
+      sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
+    }
+  );
 
   // 获取应付款记录列表
   const { data: payablesData, isLoading: payablesLoading } = usePayableRecords(
@@ -83,49 +95,67 @@ export function PayablesClient({ initialData }: PayablesClientProps) {
   };
 
   // 处理搜索
-  const handleSearch = React.useCallback((search: string) => {
-    setQuery(prev => ({ ...prev, search: search || undefined, page: 1 }));
-  }, []);
+  const handleSearch = React.useCallback(
+    (search: string) => {
+      if (externalOnSearch) {
+        externalOnSearch(search);
+      } else {
+        setQuery(prev => ({ ...prev, search: search || undefined, page: 1 }));
+      }
+    },
+    [externalOnSearch]
+  );
 
   // 统一处理筛选器变更
   const handleFilterChange = React.useCallback(
     (key: string, value: string | undefined) => {
-      if (key === 'status') {
-        setQuery(prev => ({
-          ...prev,
-          status:
-            value === 'all' || !value ? undefined : (value as PayableStatus),
-          page: 1,
-        }));
-      } else if (key === 'sourceType') {
-        setQuery(prev => ({
-          ...prev,
-          sourceType:
-            value === 'all' || !value
-              ? undefined
-              : (value as PayableSourceType),
-          page: 1,
-        }));
-      } else if (key === 'sortBy') {
-        setQuery(prev => ({
-          ...prev,
-          sortBy:
-            (value as
-              | 'createdAt'
-              | 'payableAmount'
-              | 'dueDate'
-              | 'remainingAmount') || 'createdAt',
-          page: 1,
-        }));
+      if (externalOnFilter) {
+        externalOnFilter(key, value);
+      } else {
+        if (key === 'status') {
+          setQuery(prev => ({
+            ...prev,
+            status:
+              value === 'all' || !value ? undefined : (value as PayableStatus),
+            page: 1,
+          }));
+        } else if (key === 'sourceType') {
+          setQuery(prev => ({
+            ...prev,
+            sourceType:
+              value === 'all' || !value
+                ? undefined
+                : (value as PayableSourceType),
+            page: 1,
+          }));
+        } else if (key === 'sortBy') {
+          setQuery(prev => ({
+            ...prev,
+            sortBy:
+              (value as
+                | 'createdAt'
+                | 'payableAmount'
+                | 'dueDate'
+                | 'remainingAmount') || 'createdAt',
+            page: 1,
+          }));
+        }
       }
     },
-    []
+    [externalOnFilter]
   );
 
-  const handlePageChange = (newPage: number) => {
-    setQuery(prev => ({ ...prev, page: newPage }));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+  const handlePageChange = React.useCallback(
+    (newPage: number) => {
+      if (externalOnPageChange) {
+        externalOnPageChange(newPage);
+      } else {
+        setQuery(prev => ({ ...prev, page: newPage }));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    },
+    [externalOnPageChange]
+  );
 
   const statistics = initialData.statistics;
 

@@ -1,17 +1,19 @@
-import { CreditCard, Download, Plus } from 'lucide-react';
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { Suspense } from 'react';
 
-import { PayablesClient } from '@/components/finance/payables-client';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import { prisma } from '@/lib/db';
+
+import { PayablesPageClient } from './page-client';
 
 export const metadata: Metadata = {
   title: '应付款管理 - 财务管理',
   description: '管理供应商应付款和付款记录，跟踪付款状态和逾期情况',
 };
+
+// ✅ Next.js 15 Route Segment Config
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 
 /**
  * 服务器端获取应付款数据
@@ -149,7 +151,7 @@ async function getPayablesData(searchParams: {
 export default async function PayablesPage({
   searchParams,
 }: {
-  searchParams: {
+  searchParams: Promise<{
     page?: string;
     limit?: string;
     search?: string;
@@ -157,68 +159,22 @@ export default async function PayablesPage({
     sourceType?: string;
     sortBy?: string;
     sortOrder?: string;
-  };
+  }>;
 }) {
-  const initialData = await getPayablesData(searchParams);
+  const params = await searchParams;
+  const initialData = await getPayablesData(params);
+
+  const queryParams = {
+    page: parseInt(params.page || '1', 10),
+    limit: parseInt(params.limit || '20', 10),
+    search: params.search,
+    status: params.status,
+    sourceType: params.sourceType,
+    sortBy: params.sortBy || 'createdAt',
+    sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
+  };
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                  <CreditCard className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    应付款管理
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    管理供应商应付款和付款记录，跟踪付款状态和逾期情况
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  asChild
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <Link href="/finance/payables/export">
-                    <Download className="mr-2 h-4 w-4" />
-                    导出
-                  </Link>
-                </Button>
-                <Button
-                  size="lg"
-                  asChild
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <Link href="/finance/payables/create">
-                    <Plus className="mr-2 h-4 w-4" />
-                    新建应付款
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* 客户端交互组件 */}
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">加载中...</div>
-            </div>
-          }
-        >
-          <PayablesClient initialData={initialData} />
-        </Suspense>
-      </div>
-    </div>
+    <PayablesPageClient initialData={initialData} initialParams={queryParams} />
   );
 }

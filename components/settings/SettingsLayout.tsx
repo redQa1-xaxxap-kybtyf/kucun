@@ -101,7 +101,7 @@ export function SettingsLayout({
       </div>
 
       {showSidebar ? (
-        <div className="flex flex-col space-y-8 lg:flex-row lg:space-x-12 lg:space-y-0">
+        <div className="flex flex-col space-y-8 lg:flex-row lg:space-y-0 lg:space-x-12">
           {/* 侧边导航 */}
           <aside className="lg:w-1/5">
             <Card>
@@ -126,7 +126,7 @@ export function SettingsLayout({
                             isActive
                               ? 'bg-primary text-primary-foreground'
                               : isDisabled
-                                ? 'cursor-not-allowed text-muted-foreground opacity-60'
+                                ? 'text-muted-foreground cursor-not-allowed opacity-60'
                                 : 'text-foreground hover:bg-accent hover:text-accent-foreground'
                           )}
                           onClick={e => {
@@ -138,12 +138,12 @@ export function SettingsLayout({
                           <IconComponent className="h-4 w-4" />
                           <div className="flex-1">
                             <div className="font-medium">{item.title}</div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-muted-foreground text-xs">
                               {item.description}
                             </div>
                           </div>
                           {!item.available && (
-                            <span className="rounded bg-muted px-1.5 py-0.5 text-xs text-muted-foreground">
+                            <span className="bg-muted text-muted-foreground rounded px-1.5 py-0.5 text-xs">
                               开发中
                             </span>
                           )}
@@ -231,7 +231,7 @@ export function SettingsSection({
       <div>
         <h3 className="text-lg font-medium">{title}</h3>
         {description && (
-          <p className="text-sm text-muted-foreground">{description}</p>
+          <p className="text-muted-foreground text-sm">{description}</p>
         )}
       </div>
       <Separator />

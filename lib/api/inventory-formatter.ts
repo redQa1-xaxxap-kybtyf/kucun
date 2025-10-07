@@ -83,10 +83,11 @@ export function formatInventoryRecords(
 }
 
 /**
- * 格式化分页响应
+ * ✅ 统一的库存列表响应格式
+ * 符合 TanStack Query 和 Next.js App Router 最佳实践
  */
-export interface PaginatedInventoryResponse {
-  data: FormattedInventory[];
+export interface InventoryListResponse {
+  inventories: FormattedInventory[];
   pagination: {
     page: number;
     limit: number;
@@ -95,17 +96,20 @@ export interface PaginatedInventoryResponse {
   };
 }
 
+/**
+ * 格式化分页响应（统一返回格式）
+ */
 export function formatPaginatedResponse(
   records: InventoryQueryResult[],
   total: number,
   page: number,
   limit: number
-): PaginatedInventoryResponse {
+): InventoryListResponse {
   const formattedRecords = formatInventoryRecords(records);
   const totalPages = Math.ceil(total / limit);
 
   return {
-    data: formattedRecords,
+    inventories: formattedRecords, // ✅ 统一字段名
     pagination: {
       page,
       limit,
@@ -114,3 +118,8 @@ export function formatPaginatedResponse(
     },
   };
 }
+
+/**
+ * @deprecated 使用 InventoryListResponse 代替
+ */
+export type PaginatedInventoryResponse = InventoryListResponse;

@@ -30,29 +30,27 @@ interface UseOptimizedInventoryQueryOptions {
   params: InventoryQueryParams;
   /** 是否启用查询 */
   enabled?: boolean;
-  /** 预取下一页 */
-  prefetchNext?: boolean;
-  /** 预取上一页 */
-  prefetchPrev?: boolean;
-  /** 缓存时间（毫秒） */
+  /** 缓存时间（毫秒）- 数据被视为新鲜的时间，在此期间不会重新请求 */
   staleTime?: number;
-  /** 垃圾回收时间（毫秒） */
+  /** 垃圾回收时间（毫秒）- 未使用的缓存被清理的时间 */
   cacheTime?: number;
-  /** 初始数据 */
-  initialData?: InventoryListResponse;
 }
 
 /**
  * 优化的库存列表查询Hook
+ *
+ * ✅ Next.js 15.4 + TanStack Query v5 最佳实践：
+ * - 服务端通过 HydrationBoundary 预取数据
+ * - 客户端使用相同的 queryKey 获取缓存数据
+ * - 配置 staleTime=Infinity 防止首次渲染时重新请求
+ * - 后续交互（翻页、筛选）会自动触发新请求
+ * - 预取策略改为按需触发，避免不必要的请求
  */
 export function useOptimizedInventoryQuery({
   params,
   enabled = true,
-  prefetchNext = true,
-  prefetchPrev = false,
-  staleTime = 5 * 60 * 1000, // 5分钟
+  staleTime = Infinity, // 防止客户端重复请求服务端已预取的数据
   cacheTime = 10 * 60 * 1000, // 10分钟
-  initialData,
 }: UseOptimizedInventoryQueryOptions) {
   const queryClient = useQueryClient();
 
@@ -77,10 +75,9 @@ export function useOptimizedInventoryQuery({
       return response.json();
     },
     enabled,
-    staleTime,
-    gcTime: cacheTime,
-    initialData,
-    placeholderData: previousData => previousData,
+    staleTime, // 数据新鲜度时间 - Infinity 表示永不过期（除非手动 invalidate）
+    gcTime: cacheTime, // 垃圾回收时间
+    placeholderData: previousData => previousData, // 保持上一页数据，避免闪烁
     // 错误重试配置
     retry: (failureCount, error) => {
       // 4xx错误不重试
@@ -92,7 +89,7 @@ export function useOptimizedInventoryQuery({
     retryDelay: attemptIndex => Math.min(1000 * 2 ** attemptIndex, 30000),
   });
 
-  // 预取策略
+  // ✅ 按需预取策略 - 由组件层基于用户交互触发
   const prefetchPage = useCallback(
     async (pageParams: InventoryQueryParams) => {
       await queryClient.prefetchQuery({
@@ -115,39 +112,32 @@ export function useOptimizedInventoryQuery({
 
           return response.json();
         },
-        staleTime: staleTime / 2, // 预取数据的缓存时间稍短
+        staleTime: 5 * 60 * 1000, // 预取数据缓存5分钟
       });
     },
-    [queryClient, staleTime]
+    [queryClient]
   );
 
-  // 自动预取相邻页面
-  React.useEffect(() => {
-    if (!query.data?.pagination || !enabled) {
-      return;
-    }
+  // ✅ 提供便捷的预取方法，供组件使用
+  const prefetchNextPage = useCallback(() => {
+    const pagination = query.data?.pagination;
+    if (!pagination) return;
 
-    const { page, totalPages } = query.data.pagination;
-
-    // 预取下一页
-    if (prefetchNext && page < totalPages) {
-      const nextParams = { ...params, page: page + 1 };
-      prefetchPage(nextParams);
+    const { page, totalPages } = pagination;
+    if (page < totalPages) {
+      prefetchPage({ ...params, page: page + 1 });
     }
+  }, [query.data?.pagination, params, prefetchPage]);
 
-    // 预取上一页
-    if (prefetchPrev && page > 1) {
-      const prevParams = { ...params, page: page - 1 };
-      prefetchPage(prevParams);
+  const prefetchPrevPage = useCallback(() => {
+    const pagination = query.data?.pagination;
+    if (!pagination) return;
+
+    const { page } = pagination;
+    if (page > 1) {
+      prefetchPage({ ...params, page: page - 1 });
     }
-  }, [
-    query.data?.pagination,
-    params,
-    prefetchNext,
-    prefetchPrev,
-    prefetchPage,
-    enabled,
-  ]);
+  }, [query.data?.pagination, params, prefetchPage]);
 
   // 缓存优化工具
   const cacheUtils = useMemo(
@@ -196,6 +186,10 @@ export function useOptimizedInventoryQuery({
   return {
     ...query,
     cache: cacheUtils,
+    // ✅ 暴露预取方法供组件使用（基于用户交互触发）
+    prefetchNextPage,
+    prefetchPrevPage,
+    prefetchPage,
   };
 }
 

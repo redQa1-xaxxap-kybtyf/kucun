@@ -176,7 +176,9 @@ export async function findAvailableInventoryBatch(
     productionDate?: string | null;
   }>,
   tx?: Prisma.TransactionClient
-): Promise<Map<string, NonNullable<Awaited<ReturnType<typeof findAvailableInventory>>>>> {
+): Promise<
+  Map<string, NonNullable<Awaited<ReturnType<typeof findAvailableInventory>>>>
+> {
   const inventoryMap = new Map();
 
   for (const item of items) {
@@ -234,7 +236,9 @@ export function getAvailableQuantity(inventory: {
  */
 export function isValidInventory(
   inventory: unknown
-): inventory is NonNullable<Awaited<ReturnType<typeof findAvailableInventory>>> {
+): inventory is NonNullable<
+  Awaited<ReturnType<typeof findAvailableInventory>>
+> {
   return (
     inventory !== null &&
     typeof inventory === 'object' &&

@@ -2,6 +2,7 @@
 
 import * as React from 'react';
 
+import { ScrollableTableContainer } from '@/components/common/ScrollableTableContainer';
 import { InventoryListToolbar } from '@/components/inventory/inventory-list-toolbar';
 import { InventoryTable } from '@/components/inventory/erp/inventory-table';
 import { InventorySearchToolbar } from '@/components/inventory/InventorySearchToolbar';
@@ -27,6 +28,10 @@ interface ERPInventoryListProps {
     value: string | number | boolean | undefined
   ) => void;
   onPageChange: (page: number) => void;
+  /** ✅ hover 预取下一页 */
+  onNextPageHover?: () => void;
+  /** ✅ hover 预取上一页 */
+  onPrevPageHover?: () => void;
   isLoading?: boolean;
 }
 
@@ -44,6 +49,8 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     onSearch,
     onFilter,
     onPageChange,
+    onNextPageHover,
+    onPrevPageHover,
     isLoading: _isLoading = false,
   }) => {
     const {
@@ -61,27 +68,46 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     } = useERPInventoryList(data, onPageChange);
 
     return (
-      <div className="space-y-6">
-        {/* 工具栏 */}
-        <InventoryListToolbar
-          selectedCount={selectedInventoryIds.length}
-          onBatchInbound={handleInbound}
-          onBatchOutbound={handleOutbound}
-        />
+      <ScrollableTableContainer
+        header={
+          <div className="space-y-4">
+            {/* 固定的工具栏 */}
+            <InventoryListToolbar
+              selectedCount={selectedInventoryIds.length}
+              onBatchInbound={handleInbound}
+              onBatchOutbound={handleOutbound}
+            />
 
-        {/* 搜索和筛选 */}
-        <InventorySearchToolbar
-          queryParams={queryParams}
-          categoryOptions={categoryOptions}
-          onSearch={onSearch}
-          onFilter={onFilter}
-          onInbound={handleInbound}
-          onOutbound={handleOutbound}
-          onAdjust={() => handleAdjust()}
-        />
-
-        {/* 库存表格 */}
-        <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+            {/* 固定的搜索和筛选区域 */}
+            <InventorySearchToolbar
+              queryParams={queryParams}
+              categoryOptions={categoryOptions}
+              onSearch={onSearch}
+              onFilter={onFilter}
+              onInbound={handleInbound}
+              onOutbound={handleOutbound}
+              onAdjust={() => handleAdjust()}
+            />
+          </div>
+        }
+        footer={
+          /* 固定的分页器 */
+          data.pagination && (
+            <div className="bg-gray-50/50 px-4 py-3">
+              <Pagination
+                pagination={data.pagination}
+                onPageChange={onPageChange}
+                onNextPageHover={onNextPageHover}
+                onPrevPageHover={onPrevPageHover}
+                showRange
+                showTotal
+              />
+            </div>
+          )
+        }
+      >
+        {/* 可滚动的表格内容 */}
+        <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50 [&>div]:!overflow-visible">
           <InventoryTable
             data={data.data}
             selectedIds={selectedInventoryIds}
@@ -92,20 +118,8 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
             onAdjust={handleAdjust}
             useVirtualization={data.data.length > 50}
           />
-
-          {/* 分页组件 */}
-          {data.pagination && (
-            <div className="border-t bg-gray-50/50 px-4 py-3">
-              <Pagination
-                pagination={data.pagination}
-                onPageChange={onPageChange}
-                showRange
-                showTotal
-              />
-            </div>
-          )}
         </div>
-      </div>
+      </ScrollableTableContainer>
     );
   }
 );

@@ -39,7 +39,10 @@ export interface RateLimitConfig {
  * 默认速率限制配置
  * 可通过环境变量覆盖
  */
-export const DEFAULT_RATE_LIMIT_CONFIGS: Record<RateLimitType, RateLimitConfig> = {
+export const DEFAULT_RATE_LIMIT_CONFIGS: Record<
+  RateLimitType,
+  RateLimitConfig
+> = {
   [RateLimitType.GLOBAL]: {
     maxRequests: parseInt(process.env.RATE_LIMIT_GLOBAL || '100', 10),
     windowMs: 60 * 1000, // 1分钟

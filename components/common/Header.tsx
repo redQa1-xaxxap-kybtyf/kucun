@@ -10,7 +10,6 @@ import {
   Moon,
   Plus,
   RefreshCw,
-  Search,
   Sun,
   User,
 } from 'lucide-react';
@@ -31,7 +30,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Input } from '@/components/ui/input';
 import { usePollingNotifications } from '@/hooks/use-polling-notifications';
 import type { NotificationItem } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
@@ -43,10 +41,6 @@ interface HeaderProps {
   onMobileMenuClick?: () => void;
   /** 自定义样式类名 */
   className?: string;
-  /** 是否显示搜索框 */
-  showSearch?: boolean;
-  /** 搜索回调 */
-  onSearch?: (query: string) => void;
   /** 用户信息（从服务端传递，避免客户端重复请求） */
   user?: {
     id: string;
@@ -62,14 +56,11 @@ interface HeaderProps {
 /**
  * 顶部导航栏组件
  * 包含用户信息、通知、设置等功能，支持移动端适配
- * 集成搜索、主题切换、快捷操作等功能
  */
 function HeaderComponent({
   showMobileMenuButton = false,
   onMobileMenuClick,
   className,
-  showSearch = true,
-  onSearch,
   user,
 }: HeaderProps) {
   const router = useRouter();
@@ -87,10 +78,6 @@ function HeaderComponent({
     markAsRead,
     markAllAsRead,
   } = usePollingNotifications();
-
-  // 搜索状态
-  const [searchQuery, setSearchQuery] = React.useState('');
-  const [isSearchFocused, setIsSearchFocused] = React.useState(false);
 
   // 主题状态
   const [theme, setTheme] = React.useState<'light' | 'dark' | 'system'>(
@@ -163,15 +150,6 @@ function HeaderComponent({
     }
   };
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      onSearch?.(searchQuery.trim());
-      // 可以导航到搜索结果页面
-      router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
   const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
     setTheme(newTheme);
     // 实际项目中应该保存到localStorage或用户设置
@@ -207,38 +185,6 @@ function HeaderComponent({
             >
               <Menu className="h-5 w-5" />
             </Button>
-          )}
-
-          {/* 搜索框（桌面端） */}
-          {showSearch && (
-            <div className="hidden items-center space-x-2 md:flex">
-              <form onSubmit={handleSearch} className="relative">
-                <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
-                <Input
-                  type="search"
-                  placeholder="搜索产品、订单... (Ctrl+K)"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  onFocus={() => setIsSearchFocused(true)}
-                  onBlur={() => setIsSearchFocused(false)}
-                  className={cn(
-                    'h-9 w-64 pr-3 pl-10 transition-all duration-200',
-                    isSearchFocused && 'w-80'
-                  )}
-                />
-                {searchQuery && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="sm"
-                    className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 p-0"
-                    onClick={() => setSearchQuery('')}
-                  >
-                    ×
-                  </Button>
-                )}
-              </form>
-            </div>
           )}
         </div>
 

@@ -69,7 +69,9 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
             <Button
               variant="outline"
               size="lg"
-              onClick={() => router.push(`/finance/payables/${payable.id}/edit`)}
+              onClick={() =>
+                router.push(`/finance/payables/${payable.id}/edit`)
+              }
               className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
             >
               <Edit className="mr-2 h-4 w-4" />
@@ -133,7 +135,9 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                 </div>
 
                 <div>
-                  <div className="text-xs font-medium text-gray-500">供应商</div>
+                  <div className="text-xs font-medium text-gray-500">
+                    供应商
+                  </div>
                   <div className="mt-2 flex items-center gap-2">
                     <Building2 className="h-4 w-4 text-gray-400" />
                     <span className="font-medium text-blue-600">
@@ -181,7 +185,9 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                 )}
 
                 <div>
-                  <div className="text-xs font-medium text-gray-500">创建人</div>
+                  <div className="text-xs font-medium text-gray-500">
+                    创建人
+                  </div>
                   <div className="mt-2 flex items-center gap-2">
                     <User className="h-4 w-4 text-gray-400" />
                     <span className="text-sm text-gray-700">
@@ -213,7 +219,9 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                 <>
                   <Separator className="my-6" />
                   <div>
-                    <div className="text-xs font-medium text-gray-500">描述</div>
+                    <div className="text-xs font-medium text-gray-500">
+                      描述
+                    </div>
                     <div className="mt-2 text-sm text-gray-700">
                       {payable.description}
                     </div>
@@ -225,7 +233,9 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                 <>
                   <Separator className="my-6" />
                   <div>
-                    <div className="text-xs font-medium text-gray-500">备注</div>
+                    <div className="text-xs font-medium text-gray-500">
+                      备注
+                    </div>
                     <div className="mt-2 text-sm text-gray-700">
                       {payable.remarks}
                     </div>
@@ -244,7 +254,8 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
               </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
-              {payable.paymentOutRecords && payable.paymentOutRecords.length > 0 ? (
+              {payable.paymentOutRecords &&
+              payable.paymentOutRecords.length > 0 ? (
                 <div className="space-y-4">
                   {payable.paymentOutRecords.map((payment, index) => (
                     <div key={payment.id}>
@@ -378,4 +389,3 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
     </div>
   );
 }
-

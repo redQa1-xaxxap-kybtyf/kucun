@@ -38,31 +38,35 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
 
   if (error) {
     return (
-      <>
-        <InboundRecordsToolbar onCreateNew={handleCreateNew} />
-        <div className="bg-card rounded-lg border p-6 text-center shadow-md shadow-gray-200/50">
-          <div className="text-destructive text-sm">
-            加载入库记录失败，请稍后重试
+      <div className="flex h-full flex-col overflow-hidden p-6">
+        <div className="space-y-6">
+          <InboundRecordsToolbar onCreateNew={handleCreateNew} />
+          <div className="bg-card rounded-lg border p-6 text-center shadow-md shadow-gray-200/50">
+            <div className="text-destructive text-sm">
+              加载入库记录失败，请稍后重试
+            </div>
           </div>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
-    <div className="space-y-4">
-      {/* 页面标题卡片 */}
-      <InboundRecordsToolbar onCreateNew={handleCreateNew} />
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 页面标题卡片 */}
+        <InboundRecordsToolbar onCreateNew={handleCreateNew} />
 
-      {/* 筛选条件 */}
-      <InboundRecordsFilters
-        queryParams={queryParams}
-        onFilter={handleFilter}
-        onReset={handleResetFilters}
-      />
+        {/* 筛选条件 */}
+        <InboundRecordsFilters
+          queryParams={queryParams}
+          onFilter={handleFilter}
+          onReset={handleResetFilters}
+        />
 
-      {/* 入库记录表格 */}
-      <InboundRecordsTable records={inboundRecords} isLoading={isLoading} />
+        {/* 入库记录表格 */}
+        <InboundRecordsTable records={inboundRecords} isLoading={isLoading} />
+      </div>
     </div>
   );
 }

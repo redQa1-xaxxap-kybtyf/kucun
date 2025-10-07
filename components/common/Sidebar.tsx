@@ -1,326 +1,74 @@
 'use client';
 
-import {
-  ArrowUpRight,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  CreditCard,
-  DollarSign,
-  Edit,
-  FolderTree,
-  HelpCircle,
-  LayoutDashboard,
-  Package,
-  Plus,
-  Receipt,
-  RotateCcw,
-  Settings,
-  ShoppingCart,
-  TrendingDown,
-  TrendingUp,
-  Truck,
-  Users,
-  Warehouse,
-} from 'lucide-react';
-import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
+import { ChevronLeft, ChevronRight, Package } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 import * as React from 'react';
 
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import type { NavigationItem, SidebarState } from '@/lib/types/layout';
-import type { UserRole } from '@/lib/types/user';
 import { cn } from '@/lib/utils';
-import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
-/**
- * 主要功能模块导航配置
- * 严格按照项目要求包含所有功能模块
- */
-const navigationItems: NavigationItem[] = [
-  {
-    id: 'dashboard',
-    title: '仪表盘',
-    href: '/dashboard',
-    icon: LayoutDashboard,
-  },
-  {
-    id: 'inventory',
-    title: '库存管理',
-    href: '/inventory',
-    icon: Warehouse,
-    children: [
-      {
-        id: 'inventory-overview',
-        title: '库存总览',
-        href: '/inventory',
-        icon: Warehouse,
-      },
-      {
-        id: 'inventory-inbound-create',
-        title: '产品入库',
-        href: '/inventory/inbound/create',
-        icon: Plus,
-      },
-      {
-        id: 'inventory-inbound',
-        title: '入库记录',
-        href: '/inventory/inbound',
-        icon: TrendingUp,
-      },
-      {
-        id: 'inventory-outbound',
-        title: '出库记录',
-        href: '/inventory/outbound',
-        icon: TrendingDown,
-      },
-      {
-        id: 'inventory-adjustments',
-        title: '调整记录',
-        href: '/inventory/adjustments',
-        icon: Edit,
-      },
-    ],
-  },
-  {
-    id: 'products',
-    title: '产品管理',
-    href: '/products',
-    icon: Package,
-  },
-  {
-    id: 'categories',
-    title: '分类管理',
-    href: '/categories',
-    icon: FolderTree,
-  },
-  {
-    id: 'sales-orders',
-    title: '销售订单',
-    href: '/sales-orders',
-    icon: ShoppingCart,
-  },
-  {
-    id: 'factory-shipments',
-    title: '厂家发货',
-    href: '/factory-shipments',
-    icon: Truck,
-  },
-  {
-    id: 'return-orders',
-    title: '退货订单',
-    href: '/return-orders',
-    icon: RotateCcw,
-  },
-  {
-    id: 'customers',
-    title: '客户管理',
-    href: '/customers',
-    icon: Users,
-  },
-  {
-    id: 'suppliers',
-    title: '供应商管理',
-    href: '/suppliers',
-    icon: Truck,
-  },
-  {
-    id: 'finance',
-    title: '财务管理',
-    href: '/finance',
-    icon: DollarSign,
-    children: [
-      {
-        id: 'finance-receivables',
-        title: '应收货款',
-        href: '/finance/receivables',
-        icon: TrendingUp,
-      },
-      {
-        id: 'finance-payables',
-        title: '应付货款',
-        href: '/finance/payables',
-        icon: TrendingDown,
-      },
-      {
-        id: 'finance-refunds',
-        title: '应退货款',
-        href: '/finance/refunds',
-        icon: RotateCcw,
-      },
-      {
-        id: 'finance-payments',
-        title: '收款记录',
-        href: '/finance/payments',
-        icon: CreditCard,
-      },
-      {
-        id: 'finance-payments-out',
-        title: '付款记录',
-        href: '/finance/payments-out',
-        icon: ArrowUpRight,
-      },
-      {
-        id: 'finance-statements',
-        title: '往来账单',
-        href: '/finance/statements',
-        icon: Receipt,
-      },
-    ],
-  },
-  {
-    id: 'settings',
-    title: '系统设置',
-    href: '/settings',
-    icon: Settings,
-    requiredRoles: ['admin'],
-    children: [
-      {
-        id: 'settings-basic',
-        title: '基本设置',
-        href: '/settings/basic',
-        icon: Settings,
-        requiredRoles: ['admin'],
-      },
-      {
-        id: 'settings-users',
-        title: '用户管理',
-        href: '/settings/users',
-        icon: Users,
-        requiredRoles: ['admin'],
-      },
-      {
-        id: 'settings-storage',
-        title: '七牛云存储',
-        href: '/settings/storage',
-        icon: Package,
-        requiredRoles: ['admin'],
-      },
-      {
-        id: 'settings-logs',
-        title: '系统日志',
-        href: '/settings/logs',
-        icon: Receipt,
-        requiredRoles: ['admin'],
-      },
-    ],
-  },
-];
-
-/**
- * 底部辅助功能导航
- */
-const bottomNavigationItems: NavigationItem[] = [
-  {
-    id: 'help',
-    title: '帮助中心',
-    href: '/help',
-    icon: HelpCircle,
-  },
-];
+import { SidebarNavItem } from './SidebarNavItem';
+import {
+  bottomNavigationItems,
+  navigationItems,
+} from './sidebar-navigation-config';
+import { useSidebarKeyboard } from './useSidebarKeyboard';
 
 interface SidebarProps {
   /** 侧边栏状态 */
   state: SidebarState;
   /** 自定义样式类名 */
   className?: string;
+  /** 可访问的导航项(服务器端过滤) */
+  accessibleNavItems?: NavigationItem[];
+  /** 可访问的底部导航项(服务器端过滤) */
+  accessibleBottomNavItems?: NavigationItem[];
 }
 
 /**
  * 侧边栏组件
- * 包含主要功能模块导航、当前页面高亮、折叠展开功能
- * 集成权限控制、徽章显示、键盘导航等功能
+ * 优化版本：减少重复代码，统一配置，优化性能
+ *
+ * 性能优化点:
+ * 1. 使用 React.memo 避免不必要的重渲染
+ * 2. 路由订阅只在父组件进行一次，通过 props 传递
+ * 3. 使用 useMemo 缓存计算结果
+ * 4. 键盘导航逻辑抽离到独立 hook
  */
-function SidebarComponent({ state, className }: SidebarProps) {
+function SidebarComponent({
+  state,
+  className,
+  accessibleNavItems = navigationItems,
+  accessibleBottomNavItems = bottomNavigationItems,
+}: SidebarProps) {
   const pathname = usePathname();
-  const { data: session } = useSession();
-
-  // 键盘导航状态
-  const [focusedIndex, setFocusedIndex] = React.useState(-1);
   const navItemsRef = React.useRef<(HTMLAnchorElement | null)[]>([]);
 
-  // 提取用户角色，避免依赖整个 session 对象
-  const userRole = session?.user?.role as UserRole | undefined;
+  // 键盘导航逻辑 (独立 Hook)
+  const { focusedIndex } = useSidebarKeyboard({
+    isOpen: state.isOpen,
+    totalItems: accessibleNavItems.length + accessibleBottomNavItems.length,
+    navItemsRef,
+  });
 
-  // 根据用户权限过滤导航项
-  const accessibleNavItems = React.useMemo(() => {
-    if (!userRole) {
-      return [];
-    }
-
-    return getAccessibleNavItems(
-      navigationItems as Array<{ requiredRoles?: UserRole[] }>,
-      userRole
-    ) as NavigationItem[];
-  }, [userRole]);
-
-  const accessibleBottomNavItems = React.useMemo(() => {
-    if (!userRole) {
-      return [];
-    }
-
-    return getAccessibleNavItems(
-      bottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
-      userRole
-    ) as NavigationItem[];
-  }, [userRole]);
-
-  // 键盘导航处理
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (!state.isOpen) {return;}
-
-      const totalItems =
-        accessibleNavItems.length + accessibleBottomNavItems.length;
-
-      switch (event.key) {
-        case 'ArrowDown':
-          event.preventDefault();
-          setFocusedIndex(prev => (prev + 1) % totalItems);
-          break;
-        case 'ArrowUp':
-          event.preventDefault();
-          setFocusedIndex(prev => (prev - 1 + totalItems) % totalItems);
-          break;
-        case 'Enter':
-        case ' ':
-          event.preventDefault();
-          setFocusedIndex(current => {
-            if (current >= 0 && navItemsRef.current[current]) {
-              navItemsRef.current[current]?.click();
-            }
-            return current;
-          });
-          break;
-        case 'Escape':
-          setFocusedIndex(-1);
-          break;
+  // 检查路径是否匹配 (使用 useCallback 优化)
+  const isPathActive = React.useCallback(
+    (href: string) => {
+      if (href === '/dashboard') {
+        return pathname === '/dashboard';
       }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [
-    state.isOpen,
-    accessibleNavItems.length,
-    accessibleBottomNavItems.length,
-  ]);
-
-  // 检查路径是否匹配（支持子路由）
-  const isPathActive = (href: string) => {
-    if (href === '/dashboard') {
-      return pathname === '/dashboard';
-    }
-    return pathname.startsWith(href);
-  };
+      return pathname.startsWith(href);
+    },
+    [pathname]
+  );
 
   return (
     <div
       className={cn(
-        'flex h-full flex-col border-r bg-background transition-all duration-300',
+        'bg-background flex h-full flex-col border-r transition-all duration-300',
         state.isCollapsed ? 'w-16' : 'w-64',
         className
       )}
@@ -329,8 +77,8 @@ function SidebarComponent({ state, className }: SidebarProps) {
       <div className="flex h-16 items-center justify-between border-b px-4">
         {!state.isCollapsed && (
           <div className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
-              <Package className="h-4 w-4 text-primary-foreground" />
+            <div className="bg-primary flex h-8 w-8 items-center justify-center rounded">
+              <Package className="text-primary-foreground h-4 w-4" />
             </div>
             <span className="text-lg font-semibold">库存管理</span>
           </div>
@@ -341,6 +89,7 @@ function SidebarComponent({ state, className }: SidebarProps) {
           size="sm"
           onClick={state.toggle}
           className="h-8 w-8 p-0"
+          aria-label={state.isCollapsed ? '展开侧边栏' : '收起侧边栏'}
         >
           {state.isCollapsed ? (
             <ChevronRight className="h-4 w-4" />
@@ -357,6 +106,7 @@ function SidebarComponent({ state, className }: SidebarProps) {
             <SidebarNavItem
               key={item.id}
               item={item}
+              pathname={pathname}
               isActive={isPathActive(item.href)}
               isCollapsed={state.isCollapsed}
               isFocused={focusedIndex === index}
@@ -380,6 +130,7 @@ function SidebarComponent({ state, className }: SidebarProps) {
                   <SidebarNavItem
                     key={item.id}
                     item={item}
+                    pathname={pathname}
                     isActive={isPathActive(item.href)}
                     isCollapsed={state.isCollapsed}
                     isFocused={focusedIndex === globalIndex}
@@ -398,176 +149,8 @@ function SidebarComponent({ state, className }: SidebarProps) {
   );
 }
 
-interface SidebarNavItemProps {
-  item: NavigationItem;
-  isActive: boolean;
-  isCollapsed: boolean;
-  isFocused?: boolean;
-  tabIndex?: number;
-}
-
-/**
- * 侧边栏导航项组件
- * 支持键盘导航、hover效果、徽章显示、子菜单展开等功能
- * 使用 React.memo 优化渲染性能
- */
-const SidebarNavItem = React.memo(
-  React.forwardRef<HTMLAnchorElement, SidebarNavItemProps>(
-    ({ item, isActive, isCollapsed, isFocused = false, tabIndex }, ref) => {
-    const Icon = item.icon;
-    const [isHovered, setIsHovered] = React.useState(false);
-    const [isExpanded, setIsExpanded] = React.useState(false);
-    const pathname = usePathname();
-    const router = useRouter();
-
-    // 检查是否有子菜单项处于激活状态
-    const hasActiveChild = item.children?.some(
-      child => pathname.startsWith(child.href) && child.href !== item.href
-    );
-
-    // 如果有激活的子菜单项，自动展开
-    React.useEffect(() => {
-      if (hasActiveChild && !isCollapsed) {
-        setIsExpanded(true);
-      }
-    }, [hasActiveChild, isCollapsed]);
-
-    // 如果没有子菜单，渲染普通导航项
-    if (!item.children || item.children.length === 0) {
-      return (
-        <Link
-          href={item.href}
-          ref={ref}
-          tabIndex={tabIndex}
-          prefetch={false} // 禁用预取，菜单切换更快
-          className={cn(
-            'block rounded-md transition-all duration-200',
-            isFocused && 'ring-2 ring-ring ring-offset-2'
-          )}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          aria-label={item.title}
-          title={isCollapsed ? item.title : undefined}
-        >
-          <Button
-            variant={isActive ? 'secondary' : 'ghost'}
-            className={cn(
-              'h-10 w-full justify-start transition-all duration-200',
-              isCollapsed ? 'px-2' : 'px-3',
-              isActive && 'bg-secondary font-medium shadow-xs',
-              isHovered && !isActive && 'bg-accent/50',
-              isFocused && 'ring-0'
-            )}
-            disabled={item.disabled}
-            asChild
-          >
-            <div>
-              <Icon
-                className={cn(
-                  'h-4 w-4 transition-transform duration-200',
-                  !isCollapsed && 'mr-3',
-                  isHovered && 'scale-110'
-                )}
-              />
-              {!isCollapsed && <span className="flex-1 text-left">{item.title}</span>}
-            </div>
-          </Button>
-        </Link>
-      );
-    }
-
-    // 渲染带子菜单的导航项
-    return (
-      <div className="space-y-1">
-        <Button
-          variant={isActive || hasActiveChild ? 'secondary' : 'ghost'}
-          className={cn(
-            'h-10 w-full justify-start transition-all duration-200',
-            isCollapsed ? 'px-2' : 'px-3',
-            (isActive || hasActiveChild) &&
-              'bg-secondary font-medium shadow-xs',
-            isHovered && !isActive && !hasActiveChild && 'bg-accent/50',
-            isFocused && 'ring-2 ring-ring ring-offset-2'
-          )}
-          disabled={item.disabled}
-          onClick={() => {
-            if (isCollapsed) {
-              // 折叠状态下直接跳转到主页面
-              router.push(item.href);
-            } else {
-              // 展开状态下切换子菜单
-              setIsExpanded(!isExpanded);
-            }
-          }}
-          onMouseEnter={() => setIsHovered(true)}
-          onMouseLeave={() => setIsHovered(false)}
-          aria-label={item.title}
-          title={isCollapsed ? item.title : undefined}
-          tabIndex={tabIndex}
-        >
-          <Icon
-            className={cn(
-              'h-4 w-4 transition-transform duration-200',
-              !isCollapsed && 'mr-3',
-              isHovered && 'scale-110'
-            )}
-          />
-          {!isCollapsed && (
-            <>
-              <span className="flex-1 text-left">{item.title}</span>
-              <ChevronDown
-                className={cn(
-                  'h-4 w-4 transition-transform duration-200',
-                  isExpanded && 'rotate-180'
-                )}
-              />
-            </>
-          )}
-        </Button>
-
-        {/* 子菜单 */}
-        {!isCollapsed && isExpanded && (
-          <div className="ml-4 space-y-1 border-l border-border pl-4">
-            {item.children.map(child => {
-              const ChildIcon = child.icon;
-              const isChildActive = pathname.startsWith(child.href);
-
-              return (
-                <Link
-                  key={child.id}
-                  href={child.href}
-                  prefetch={false} // 子菜单也禁用预取
-                  className={cn('block rounded-md transition-all duration-200')}
-                >
-                  <Button
-                    variant={isChildActive ? 'secondary' : 'ghost'}
-                    className={cn(
-                      'h-9 w-full justify-start text-sm transition-all duration-200',
-                      'px-3',
-                      isChildActive && 'bg-secondary font-medium shadow-xs'
-                    )}
-                    disabled={child.disabled}
-                    asChild
-                  >
-                    <div>
-                      <ChildIcon className="mr-3 h-3.5 w-3.5" />
-                      <span className="flex-1 text-left">{child.title}</span>
-                    </div>
-                  </Button>
-                </Link>
-              );
-            })}
-          </div>
-        )}
-      </div>
-    );
-  })
-);
-
-SidebarNavItem.displayName = 'SidebarNavItem';
-
 /**
  * 使用 React.memo 优化 Sidebar 组件
- * 仅当 state 或 className 发生变化时才重新渲染
+ * 仅当 state, className, accessibleNavItems, accessibleBottomNavItems 发生变化时才重新渲染
  */
 export const Sidebar = React.memo(SidebarComponent);

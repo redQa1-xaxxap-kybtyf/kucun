@@ -62,7 +62,9 @@ export function CustomerSelector({
 
   // 过滤客户列表
   const filteredCustomers = React.useMemo(() => {
-    if (!searchValue) {return customers;}
+    if (!searchValue) {
+      return customers;
+    }
 
     const search = searchValue.toLowerCase();
     return customers.filter(
@@ -115,20 +117,20 @@ export function CustomerSelector({
           >
             {selectedCustomer ? (
               <div className="flex items-center gap-2 truncate">
-                <User className="h-4 w-4 shrink-0 text-muted-foreground" />
+                <User className="text-muted-foreground h-4 w-4 shrink-0" />
                 <div className="flex flex-col items-start truncate">
                   <span className="truncate font-medium">
                     {selectedCustomer.name}
                   </span>
                   {selectedCustomer.phone && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-muted-foreground text-xs">
                       {selectedCustomer.phone}
                     </span>
                   )}
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="text-muted-foreground flex items-center gap-2">
                 <Search className="h-4 w-4" />
                 {isLoading ? '加载中...' : placeholder}
               </div>
@@ -149,7 +151,7 @@ export function CustomerSelector({
                   '加载中...'
                 ) : (
                   <div className="py-6 text-center">
-                    <div className="mb-3 text-sm text-muted-foreground">
+                    <div className="text-muted-foreground mb-3 text-sm">
                       未找到相关客户
                     </div>
                     <Button
@@ -188,14 +190,14 @@ export function CustomerSelector({
 
                         {/* 客户电话 */}
                         {customer.phone && (
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-muted-foreground text-xs">
                             {customer.phone}
                           </div>
                         )}
 
                         {/* 客户地址 */}
                         {customer.address && (
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-muted-foreground text-xs">
                             {customer.address}
                           </div>
                         )}

@@ -6,7 +6,12 @@
  * 参考：components/categories/category-page-header.tsx
  */
 
-import { ArrowDownToLine, ArrowUpFromLine, Package, Settings } from 'lucide-react';
+import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
+  Package,
+  Settings,
+} from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';

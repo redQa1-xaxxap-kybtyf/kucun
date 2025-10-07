@@ -69,7 +69,9 @@ export async function getCachedProduct(
         },
       });
 
-      if (!product) {return null;}
+      if (!product) {
+        return null;
+      }
 
       return {
         ...product,

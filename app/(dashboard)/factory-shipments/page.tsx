@@ -4,39 +4,64 @@ import {
   dehydrate,
 } from '@tanstack/react-query';
 
-import { FactoryShipmentOrderListWrapper } from '@/components/factory-shipments/factory-shipment-order-list-wrapper';
 import { factoryShipmentQueryKeys } from '@/lib/api/factory-shipments';
 import { getFactoryShipmentOrdersServer } from '@/lib/api/factory-shipments-server';
+import { paginationConfig } from '@/lib/env';
+import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
+
+import { FactoryShipmentsPageClient } from './page-client';
 
 /**
  * 厂家发货订单页面
  * 采用中国ERP系统标准布局，严格遵循全栈项目统一约定规范
  * 服务端组件 - 优先使用 App Router SSR，在服务端预取数据
+ *
+ * ✅ Next.js 15 最佳实践：
+ * - Route Segment Config 配置
+ * - Server Component 数据预取
+ * - TanStack Query HydrationBoundary
  */
-export default async function FactoryShipmentsPage() {
+
+// ✅ Next.js 15 Route Segment Config
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
+export const revalidate = 0;
+export default async function FactoryShipmentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  // 等待并解析查询参数
+  const params = await searchParams;
+  const page = Number(params.page) || 1;
+  const limit = Number(params.limit) || paginationConfig.defaultPageSize;
+  const search = (params.search as string) || '';
+  const status = params.status as FactoryShipmentStatus | undefined;
+  const sortBy = (params.sortBy as string) || 'createdAt';
+  const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
+
+  const queryParams = {
+    page,
+    limit,
+    containerNumber: search, // 将 search 映射到 containerNumber
+    status,
+    sortBy,
+    sortOrder,
+  };
+
   // 创建 QueryClient 用于服务端预取
   const queryClient = new QueryClient();
 
-  // 预取第一页数据
+  // 预取数据
   await queryClient.prefetchQuery({
-    queryKey: factoryShipmentQueryKeys.list({
-      page: 1,
-      limit: 20,
-    }),
-    queryFn: () =>
-      getFactoryShipmentOrdersServer({
-        page: 1,
-        limit: 20,
-      }),
+    queryKey: factoryShipmentQueryKeys.list(queryParams),
+    queryFn: () => getFactoryShipmentOrdersServer(queryParams),
   });
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-        <div className="space-y-4">
-          <FactoryShipmentOrderListWrapper />
-        </div>
-      </div>
+      <FactoryShipmentsPageClient initialParams={queryParams} />
     </HydrationBoundary>
   );
 }

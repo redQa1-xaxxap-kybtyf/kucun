@@ -85,17 +85,17 @@ export function CustomerDeleteDialog({
         </AlertDialogHeader>
 
         {customer && (
-          <div className="my-4 rounded-lg bg-muted/50 p-4">
+          <div className="bg-muted/50 my-4 rounded-lg p-4">
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">
+                <span className="text-muted-foreground text-sm">
                   客户名称：
                 </span>
                 <span className="font-medium">{customer.name}</span>
               </div>
               {customer.phone && (
                 <div className="flex justify-between">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     联系电话：
                   </span>
                   <span>{customer.phone}</span>
@@ -104,7 +104,7 @@ export function CustomerDeleteDialog({
               {customer.transactionCount !== undefined &&
                 customer.transactionCount > 0 && (
                   <div className="flex justify-between">
-                    <span className="text-sm text-muted-foreground">
+                    <span className="text-muted-foreground text-sm">
                       交易次数：
                     </span>
                     <span className="font-medium text-orange-600">

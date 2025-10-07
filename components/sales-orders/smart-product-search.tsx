@@ -75,7 +75,9 @@ export function SmartProductSearch({
 
   // 过滤产品列表
   const filteredProducts = React.useMemo(() => {
-    if (!searchValue) {return products;}
+    if (!searchValue) {
+      return products;
+    }
 
     const searchLower = searchValue.toLowerCase();
     return products.filter(
@@ -134,7 +136,7 @@ export function SmartProductSearch({
                   <span className="flex items-center gap-2">
                     <span className="font-medium">{selectedProduct.name}</span>
                     {selectedProduct.specification && (
-                      <span className="text-sm text-muted-foreground">
+                      <span className="text-muted-foreground text-sm">
                         {selectedProduct.specification}
                       </span>
                     )}
@@ -171,7 +173,7 @@ export function SmartProductSearch({
                             value === product.id ? 'opacity-100' : 'opacity-0'
                           )}
                         />
-                        <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
+                        <Package className="text-muted-foreground h-4 w-4 shrink-0" />
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2">
                             <span className="truncate font-medium">
@@ -182,7 +184,7 @@ export function SmartProductSearch({
                             </Badge>
                           </div>
                           {product.specification && (
-                            <div className="truncate text-sm text-muted-foreground">
+                            <div className="text-muted-foreground truncate text-sm">
                               {product.specification}
                             </div>
                           )}
@@ -193,7 +195,7 @@ export function SmartProductSearch({
                           <div className="text-sm font-medium">
                             库存: {product.inventory.availableInventory}
                           </div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-muted-foreground text-xs">
                             {product.unit}
                           </div>
                         </div>

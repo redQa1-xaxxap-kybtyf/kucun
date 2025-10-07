@@ -8,9 +8,5 @@ import { ERPInboundForm } from '@/components/inventory/erp-inbound-form';
  * ✅ 符合产品模块UI风格规范
  */
 export default function CreateInboundPage() {
-  return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <ERPInboundForm />
-    </div>
-  );
+  return <ERPInboundForm />;
 }

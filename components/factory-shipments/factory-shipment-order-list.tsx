@@ -3,8 +3,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
-import { Eye, Package, Plus, Truck } from 'lucide-react';
+import { Edit, Eye, MoreHorizontal, Package, Trash2 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useState } from 'react';
 
@@ -13,6 +14,12 @@ import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
@@ -25,6 +32,7 @@ import {
 import {
   factoryShipmentQueryKeys,
   getFactoryShipmentOrders,
+  useDeleteFactoryShipmentOrder,
 } from '@/lib/api/factory-shipments';
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
@@ -32,8 +40,21 @@ import {
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
 
+interface FactoryShipmentQueryParams {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: FactoryShipmentStatus;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+}
+
 interface FactoryShipmentOrderListProps {
   onOrderSelect?: (order: FactoryShipmentOrder) => void;
+  initialParams?: FactoryShipmentQueryParams;
+  onSearch?: (value: string) => void;
+  onFilter?: (key: string, value: string | undefined) => void;
+  onPageChange?: (page: number) => void;
 }
 // 获取状态徽章样式 - 符合中国ERP系统的颜色规范
 const getStatusBadgeVariant = (
@@ -73,27 +94,40 @@ const formatDate = (date: Date | string): string => {
 
 export function FactoryShipmentOrderList({
   onOrderSelect,
+  initialParams,
+  onSearch: externalOnSearch,
+  onFilter: externalOnFilter,
+  onPageChange: externalOnPageChange,
 }: FactoryShipmentOrderListProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+  const router = useRouter();
+  const [searchTerm, setSearchTerm] = useState(initialParams?.search || '');
   const [statusFilter, setStatusFilter] = useState<
     FactoryShipmentStatus | 'all'
-  >('all');
-  const [currentPage, setCurrentPage] = useState(1);
+  >(initialParams?.status || 'all');
+  const [currentPage, setCurrentPage] = useState(initialParams?.page || 1);
+  const pageSize = initialParams?.limit || 20;
+
+  // 删除订单的 mutation
+  const deleteOrderMutation = useDeleteFactoryShipmentOrder();
 
   // 查询厂家发货订单列表 - 使用真实API
   const { data, isLoading, error } = useQuery({
     queryKey: factoryShipmentQueryKeys.list({
-      page: currentPage,
-      limit: 20,
-      status: statusFilter === 'all' ? undefined : statusFilter,
-      containerNumber: searchTerm || undefined,
+      page: initialParams?.page || currentPage,
+      limit: pageSize,
+      status:
+        initialParams?.status ||
+        (statusFilter === 'all' ? undefined : statusFilter),
+      containerNumber: initialParams?.search || searchTerm || undefined,
     }),
     queryFn: () =>
       getFactoryShipmentOrders({
-        page: currentPage,
-        limit: 20,
-        status: statusFilter === 'all' ? undefined : statusFilter,
-        containerNumber: searchTerm || undefined,
+        page: initialParams?.page || currentPage,
+        limit: pageSize,
+        status:
+          initialParams?.status ||
+          (statusFilter === 'all' ? undefined : statusFilter),
+        containerNumber: initialParams?.search || searchTerm || undefined,
       }),
   });
 
@@ -107,31 +141,68 @@ export function FactoryShipmentOrderList({
       }
     : undefined;
 
-  // 处理搜索 - 重置到第一页
-  const handleSearch = React.useCallback((value: string) => {
-    setSearchTerm(value);
-    setCurrentPage(1);
-  }, []);
-
-  // 统一处理筛选器变更
-  const handleFilterChange = React.useCallback(
-    (key: string, value: string | undefined) => {
-      if (key === 'status') {
-        setStatusFilter(
-          (value === 'all' || !value ? 'all' : value) as
-            | FactoryShipmentStatus
-            | 'all'
-        );
+  // 处理搜索 - 优先使用外部传入的处理函数
+  const handleSearch = React.useCallback(
+    (value: string) => {
+      if (externalOnSearch) {
+        externalOnSearch(value);
+      } else {
+        setSearchTerm(value);
         setCurrentPage(1);
       }
     },
-    []
+    [externalOnSearch]
   );
 
-  // 处理页码变化
-  const handlePageChange = (page: number) => {
-    setCurrentPage(page);
-  };
+  // 统一处理筛选器变更 - 优先使用外部传入的处理函数
+  const handleFilterChange = React.useCallback(
+    (key: string, value: string | undefined) => {
+      if (externalOnFilter) {
+        externalOnFilter(key, value);
+      } else {
+        if (key === 'status') {
+          setStatusFilter(
+            (value === 'all' || !value ? 'all' : value) as
+              | FactoryShipmentStatus
+              | 'all'
+          );
+          setCurrentPage(1);
+        }
+      }
+    },
+    [externalOnFilter]
+  );
+
+  // 处理页码变化 - 优先使用外部传入的处理函数
+  const handlePageChange = React.useCallback(
+    (page: number) => {
+      if (externalOnPageChange) {
+        externalOnPageChange(page);
+      } else {
+        setCurrentPage(page);
+      }
+    },
+    [externalOnPageChange]
+  );
+
+  // 处理删除订单
+  const handleDelete = React.useCallback(
+    async (orderId: string, orderNumber: string) => {
+      if (!confirm(`确定要删除订单 ${orderNumber} 吗？此操作不可恢复。`)) {
+        return;
+      }
+
+      try {
+        await deleteOrderMutation.mutateAsync(orderId);
+        // 删除成功后会自动刷新列表（因为 mutation 配置了 invalidateQueries）
+      } catch (error) {
+        alert(
+          error instanceof Error ? error.message : '删除订单失败，请稍后重试'
+        );
+      }
+    },
+    [deleteOrderMutation]
+  );
 
   // 加载状态
   if (isLoading) {
@@ -140,80 +211,18 @@ export function FactoryShipmentOrderList({
 
   if (error) {
     return (
-      <div className="space-y-4">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                  <Truck className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    厂家发货管理
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    管理厂家直发订单，支持多供应商和临时商品
-                  </p>
-                </div>
-              </div>
-              <Link href="/factory-shipments/create">
-                <Button
-                  size="lg"
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  创建发货订单
-                </Button>
-              </Link>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="shadow-lg shadow-gray-200/50">
-          <CardContent className="pt-6">
-            <div className="text-center text-red-600">
-              加载厂家发货订单失败，请稍后重试
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="shadow-lg shadow-gray-200/50">
+        <CardContent className="pt-6">
+          <div className="text-center text-red-600">
+            加载厂家发货订单失败，请稍后重试
+          </div>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* 页面标题卡片 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                <Truck className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                  厂家发货管理
-                </h1>
-                <p className="text-sm text-gray-600">
-                  管理厂家直发订单，支持多供应商和临时商品
-                </p>
-              </div>
-            </div>
-            <Link href="/factory-shipments/create">
-              <Button
-                size="lg"
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                创建发货订单
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
       {/* 搜索和筛选 */}
       <Card className="shadow-md shadow-gray-200/50">
         <CardContent className="pt-6">
@@ -253,20 +262,6 @@ export function FactoryShipmentOrderList({
             <h3 className="mt-2 text-sm font-medium text-gray-900">
               暂无厂家发货订单
             </h3>
-            <p className="mt-1 text-sm text-gray-500">
-              开始创建您的第一个厂家发货订单
-            </p>
-            <div className="mt-6">
-              <Link href="/factory-shipments/create">
-                <Button
-                  size="lg"
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  创建发货订单
-                </Button>
-              </Link>
-            </div>
           </div>
         ) : (
           <Table>
@@ -286,15 +281,13 @@ export function FactoryShipmentOrderList({
               {orders.map(order => (
                 <TableRow
                   key={order.id}
-                  className="cursor-pointer transition-colors hover:bg-blue-50/50"
-                  onClick={() => onOrderSelect?.(order)}
+                  className="transition-colors hover:bg-blue-50/50"
                 >
                   <TableCell className="font-mono font-medium text-blue-600">
                     <Link
                       href={`/factory-shipments/${order.id}`}
                       prefetch={false}
                       className="hover:underline"
-                      onClick={e => e.stopPropagation()}
                     >
                       {order.orderNumber}
                     </Link>
@@ -326,42 +319,73 @@ export function FactoryShipmentOrderList({
                     {formatDate(order.createdAt)}
                   </TableCell>
                   <TableCell>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={e => {
-                        e.stopPropagation();
-                        onOrderSelect?.(order);
-                      }}
-                      title="查看详情"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-32">
+                        <DropdownMenuItem
+                          onClick={e => {
+                            e.stopPropagation();
+                            router.push(`/factory-shipments/${order.id}`);
+                          }}
+                        >
+                          <Eye className="mr-2 h-4 w-4" />
+                          查看
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={e => {
+                            e.stopPropagation();
+                            router.push(`/factory-shipments/${order.id}/edit`);
+                          }}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          编辑
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={e => {
+                            e.stopPropagation();
+                            handleDelete(order.id, order.orderNumber);
+                          }}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          删除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
               ))}
             </TableBody>
           </Table>
         )}
-      </div>
 
-      {/* 分页 */}
-      {pagination && (
-        <div className="mt-4">
-          <Pagination
-            pagination={{
-              page: pagination.page,
-              limit: pagination.limit,
-              total: pagination.totalCount,
-              totalPages: pagination.totalPages,
-            }}
-            onPageChange={handlePageChange}
-            showRange
-            showTotal
-            disabled={isLoading}
-          />
-        </div>
-      )}
+        {/* 分页组件 */}
+        {pagination && (
+          <div className="border-t bg-gray-50/50 px-4 py-3">
+            <Pagination
+              pagination={{
+                page: pagination.page,
+                limit: pagination.limit,
+                total: pagination.totalCount,
+                totalPages: pagination.totalPages,
+              }}
+              onPageChange={handlePageChange}
+              showRange
+              showTotal
+              disabled={isLoading}
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

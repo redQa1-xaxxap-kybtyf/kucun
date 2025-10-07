@@ -1,9 +1,15 @@
-import { redirect } from 'next/navigation';
 import { getServerSession } from 'next-auth';
+import { redirect } from 'next/navigation';
 import * as React from 'react';
 
 import { DashboardLayoutClient } from '@/components/common/DashboardLayoutClient';
+import {
+  bottomNavigationItems,
+  navigationItems,
+} from '@/components/common/sidebar-navigation-config';
 import { authOptions } from '@/lib/auth';
+import type { UserRole } from '@/lib/types/user';
+import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -11,8 +17,12 @@ interface DashboardLayoutProps {
 
 /**
  * 仪表盘路由组布局 - 服务端组件
- * 在服务端进行认证检查，提供最佳性能
- * 严格遵循 Next.js 15 App Router 最佳实践
+ * 优化版本：在服务端完成认证检查和权限过滤
+ *
+ * 性能优化点:
+ * 1. 服务端统一进行权限过滤，避免客户端重复计算
+ * 2. 减少客户端 JavaScript 包大小
+ * 3. 提升首屏渲染速度
  */
 export default async function DashboardLayout({
   children,
@@ -25,9 +35,37 @@ export default async function DashboardLayout({
     redirect('/auth/signin');
   }
 
-  // 传递 session 数据到客户端组件
+  // 在服务端根据用户角色过滤导航项
+  const userRole = session?.user?.role as UserRole | undefined;
+  const accessibleNavItems = userRole
+    ? getAccessibleNavItems(
+        navigationItems as Array<{ requiredRoles?: UserRole[] }>,
+        userRole
+      )
+    : [];
+
+  const accessibleBottomNavItems = userRole
+    ? getAccessibleNavItems(
+        bottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
+        userRole
+      )
+    : [];
+
+  // ✅ 只传递导航项的 ID,避免传递 React 组件(icon)
+  const accessibleNavItemIds = accessibleNavItems.map(item => item.id);
+  const accessibleBottomNavItemIds = accessibleBottomNavItems.map(
+    item => item.id
+  );
+
+  // 传递 session 和过滤后的导航项 ID 到客户端组件
   return (
-    <DashboardLayoutClient session={session}>{children}</DashboardLayoutClient>
+    <DashboardLayoutClient
+      session={session}
+      accessibleNavItemIds={accessibleNavItemIds}
+      accessibleBottomNavItemIds={accessibleBottomNavItemIds}
+    >
+      {children}
+    </DashboardLayoutClient>
   );
 }
 

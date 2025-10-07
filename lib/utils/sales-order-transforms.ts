@@ -194,11 +194,11 @@ export function calculateItemSubtotal(
  * @param items 订单明细项列表
  * @returns 总金额（保留两位小数）
  */
-export function calculateOrderTotal(
-  items: SalesOrderFormItem[]
-): number {
+export function calculateOrderTotal(items: SalesOrderFormItem[]): number {
   const total = items.reduce((sum, item) => {
-    const subtotal = item.subtotal || calculateItemSubtotal(item.quantity, item.unitPrice || 0);
+    const subtotal =
+      item.subtotal ||
+      calculateItemSubtotal(item.quantity, item.unitPrice || 0);
     return sum + subtotal;
   }, 0);
 
@@ -210,9 +210,10 @@ export function calculateOrderTotal(
  * @param formData 表单数据
  * @returns 验证结果
  */
-export function validateFormData(
-  formData: SalesOrderFormData
-): { valid: boolean; errors: string[] } {
+export function validateFormData(formData: SalesOrderFormData): {
+  valid: boolean;
+  errors: string[];
+} {
   const errors: string[] = [];
 
   // 验证客户ID

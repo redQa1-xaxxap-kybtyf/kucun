@@ -66,7 +66,7 @@ export function InboundProductSection({
 
       {/* 选中产品信息展示 */}
       {selectedProduct && (
-        <div className="rounded border bg-muted/30 p-4">
+        <div className="bg-muted/30 rounded border p-4">
           <h4 className="mb-2 text-sm font-medium">已选择产品</h4>
           <div className="grid grid-cols-2 gap-4 text-sm">
             <div>

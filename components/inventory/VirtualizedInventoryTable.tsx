@@ -41,17 +41,19 @@ const TableHeaderComponent = React.memo<{
   isIndeterminate: boolean;
   onSelectAll: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }>(({ isAllSelected, isIndeterminate, onSelectAll }) => (
-  <TableHeader className="sticky top-0 z-10 bg-muted/30">
+  <TableHeader className="bg-muted/30 sticky top-0 z-10">
     <TableRow>
       <TableHead className="w-12 text-xs">
         <input
           type="checkbox"
           checked={isAllSelected}
           ref={input => {
-            if (input) {input.indeterminate = isIndeterminate;}
+            if (input) {
+              input.indeterminate = isIndeterminate;
+            }
           }}
           onChange={onSelectAll}
-          className="rounded border border-input"
+          className="border-input rounded border"
         />
       </TableHead>
       <TableHead className="text-xs">产品编码</TableHead>
@@ -74,7 +76,7 @@ TableHeaderComponent.displayName = 'TableHeaderComponent';
  * 空状态组件
  */
 const EmptyState = React.memo(() => (
-  <div className="rounded border bg-card">
+  <div className="bg-card rounded border">
     <Table>
       <TableHeaderComponent
         isAllSelected={false}
@@ -85,7 +87,7 @@ const EmptyState = React.memo(() => (
         <TableRow>
           <TableCell
             colSpan={11}
-            className="h-24 text-center text-muted-foreground"
+            className="text-muted-foreground h-24 text-center"
           >
             <div className="flex flex-col items-center gap-2">
               <Package className="h-8 w-8" />
@@ -152,7 +154,7 @@ export const VirtualizedInventoryTable =
       }
 
       return (
-        <div className="rounded border bg-card">
+        <div className="bg-card rounded border">
           {/* 滚动容器 */}
           <div
             ref={parentRef}

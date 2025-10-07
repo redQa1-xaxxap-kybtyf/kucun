@@ -9,7 +9,6 @@ import { canAccessPath } from '@/lib/utils/permissions';
 
 import { Breadcrumb } from './Breadcrumb';
 import { DashboardLayout } from './DashboardLayout';
-import { GlobalSearch } from './GlobalSearch/index';
 
 interface AuthLayoutProps {
   /** 子组件 */
@@ -22,8 +21,6 @@ interface AuthLayoutProps {
   requiredRoles?: string[];
   /** 是否显示面包屑 */
   showBreadcrumb?: boolean;
-  /** 是否显示全局搜索 */
-  enableGlobalSearch?: boolean;
   /** 页面标题 */
   title?: string;
   /** 页面描述 */
@@ -41,16 +38,12 @@ export function AuthLayout({
   requireAuth = true,
   requiredRoles = [],
   showBreadcrumb = true,
-  enableGlobalSearch = true,
   title,
   description,
 }: AuthLayoutProps) {
   const { data: session, status } = useSession();
   const router = useRouter();
   const pathname = usePathname();
-
-  // 全局搜索状态
-  const [globalSearchOpen, setGlobalSearchOpen] = React.useState(false);
 
   // 缓存权限检查结果，避免重复计算
   const authState = React.useMemo(() => {
@@ -116,28 +109,6 @@ export function AuthLayout({
     }
   }, [authState.shouldRedirect, authState.redirectUrl, router]);
 
-  // 全局键盘快捷键
-  React.useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      // Ctrl/Cmd + K 打开全局搜索
-      if ((event.ctrlKey || event.metaKey) && event.key === 'k') {
-        event.preventDefault();
-        if (enableGlobalSearch) {
-          setGlobalSearchOpen(true);
-        }
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [enableGlobalSearch]);
-
-  // 处理搜索（使用 useCallback 避免不必要的重新创建）
-  const handleSearch = React.useCallback((query: string) => {
-    console.log('搜索:', query);
-    // 这里可以添加搜索逻辑或导航到搜索结果页面
-  }, []);
-
   // 加载状态
   if (status === 'loading') {
     return <AuthLoadingScreen />;
@@ -177,15 +148,6 @@ export function AuthLayout({
         {/* 主要内容 */}
         {children}
       </DashboardLayout>
-
-      {/* 全局搜索对话框 */}
-      {enableGlobalSearch && (
-        <GlobalSearch
-          open={globalSearchOpen}
-          onOpenChange={setGlobalSearchOpen}
-          onSearch={handleSearch}
-        />
-      )}
     </>
   );
 }

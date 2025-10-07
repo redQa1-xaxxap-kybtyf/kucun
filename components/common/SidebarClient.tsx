@@ -45,18 +45,21 @@ export function SidebarClient({
     navItemsRef,
   });
 
-  // 检查路径是否匹配(支持子路由)
-  const isPathActive = (href: string) => {
-    if (href === '/dashboard') {
-      return pathname === '/dashboard';
-    }
-    return pathname.startsWith(href);
-  };
+  // 检查路径是否匹配 (使用 useCallback 优化)
+  const isPathActive = React.useCallback(
+    (href: string) => {
+      if (href === '/dashboard') {
+        return pathname === '/dashboard';
+      }
+      return pathname.startsWith(href);
+    },
+    [pathname]
+  );
 
   return (
     <div
       className={cn(
-        'flex h-full flex-col border-r bg-background transition-all duration-300',
+        'bg-background flex h-full flex-col border-r transition-all duration-300',
         state.isCollapsed ? 'w-16' : 'w-64',
         className
       )}
@@ -65,8 +68,8 @@ export function SidebarClient({
       <div className="flex h-16 items-center justify-between border-b px-4">
         {!state.isCollapsed && (
           <div className="flex items-center space-x-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded bg-primary">
-              <Package className="h-4 w-4 text-primary-foreground" />
+            <div className="bg-primary flex h-8 w-8 items-center justify-center rounded">
+              <Package className="text-primary-foreground h-4 w-4" />
             </div>
             <span className="text-lg font-semibold">库存管理</span>
           </div>
@@ -93,6 +96,7 @@ export function SidebarClient({
             <SidebarNavItem
               key={item.id}
               item={item}
+              pathname={pathname}
               isActive={isPathActive(item.href)}
               isCollapsed={state.isCollapsed}
               isFocused={focusedIndex === index}
@@ -116,6 +120,7 @@ export function SidebarClient({
                   <SidebarNavItem
                     key={item.id}
                     item={item}
+                    pathname={pathname}
                     isActive={isPathActive(item.href)}
                     isCollapsed={state.isCollapsed}
                     isFocused={focusedIndex === globalIndex}

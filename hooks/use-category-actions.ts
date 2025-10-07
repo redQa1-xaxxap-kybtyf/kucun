@@ -34,12 +34,18 @@ type UpdateStatusVariables = {
 };
 
 type NormalizedCategoryQueryParams = Required<
-  Pick<CategoryQueryParams, 'page' | 'limit' | 'search' | 'sortBy' | 'sortOrder'>
+  Pick<
+    CategoryQueryParams,
+    'page' | 'limit' | 'search' | 'sortBy' | 'sortOrder'
+  >
 > &
   Pick<CategoryQueryParams, 'status' | 'parentId'>;
 
 const DEFAULT_QUERY_PARAMS: Required<
-  Pick<CategoryQueryParams, 'page' | 'limit' | 'search' | 'sortBy' | 'sortOrder'>
+  Pick<
+    CategoryQueryParams,
+    'page' | 'limit' | 'search' | 'sortBy' | 'sortOrder'
+  >
 > = {
   page: 1,
   limit: 10,
@@ -77,9 +83,9 @@ function parseSortBy(value: string | null): CategoryQueryParams['sortBy'] {
   return DEFAULT_QUERY_PARAMS.sortBy;
 }
 
-function parseSortOrder(value: string | null): Required<
-  Pick<CategoryQueryParams, 'sortOrder'>
->['sortOrder'] {
+function parseSortOrder(
+  value: string | null
+): Required<Pick<CategoryQueryParams, 'sortOrder'>>['sortOrder'] {
   return value === 'asc' ? 'asc' : 'desc';
 }
 
@@ -136,7 +142,9 @@ interface UseCategoryActionsProps {
   setSelectedCategoryIds: React.Dispatch<React.SetStateAction<string[]>>;
   deleteDialog: DeleteDialogState;
   setDeleteDialog: React.Dispatch<React.SetStateAction<DeleteDialogState>>;
-  setBatchDeleteDialog: React.Dispatch<React.SetStateAction<BatchDeleteDialogState>>;
+  setBatchDeleteDialog: React.Dispatch<
+    React.SetStateAction<BatchDeleteDialogState>
+  >;
   setUpdatingStatusId: React.Dispatch<React.SetStateAction<string | null>>;
   statusMutation: UseMutationResult<
     ApiResponse<Category>,
@@ -198,11 +206,17 @@ export function useCategoryActions({
 
       const params = new URLSearchParams();
 
-      if (mergedParams.page && mergedParams.page !== DEFAULT_QUERY_PARAMS.page) {
+      if (
+        mergedParams.page &&
+        mergedParams.page !== DEFAULT_QUERY_PARAMS.page
+      ) {
         params.set('page', String(mergedParams.page));
       }
 
-      if (mergedParams.limit && mergedParams.limit !== DEFAULT_QUERY_PARAMS.limit) {
+      if (
+        mergedParams.limit &&
+        mergedParams.limit !== DEFAULT_QUERY_PARAMS.limit
+      ) {
         params.set('limit', String(mergedParams.limit));
       }
 
@@ -279,7 +293,9 @@ export function useCategoryActions({
   const handleSelectCategory = React.useCallback(
     (categoryId: string, checked: boolean) => {
       setSelectedCategoryIds(prevIds =>
-        checked ? [...prevIds, categoryId] : prevIds.filter(id => id !== categoryId)
+        checked
+          ? [...prevIds, categoryId]
+          : prevIds.filter(id => id !== categoryId)
       );
     },
     [setSelectedCategoryIds]

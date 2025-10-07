@@ -238,15 +238,20 @@ export async function withIdempotency<T>(
         return result;
       } catch (error) {
         // 操作失败，标记为失败状态
-        const errorMessage = error instanceof Error ? error.message : '操作失败';
+        const errorMessage =
+          error instanceof Error ? error.message : '操作失败';
         await failIdempotencyRecord(idempotencyKey, errorMessage);
         throw error;
       }
-
     } catch (error: unknown) {
       // 策略2：处理唯一约束冲突 - 说明已有其他请求在处理
       // Prisma唯一约束错误码: P2002
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'P2002') {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'code' in error &&
+        error.code === 'P2002'
+      ) {
         // 查询现有记录的状态
         const existing = await checkIdempotency(idempotencyKey);
 
@@ -287,6 +292,6 @@ export async function withIdempotency<T>(
   // 超过最大重试次数，说明操作持续时间过长或系统负载过高
   throw new Error(
     `操作超时：请求处理时间过长（超过${maxRetries}次重试），请稍后重试。` +
-    `这可能是由于系统繁忙或操作耗时过长导致的。`
+      `这可能是由于系统繁忙或操作耗时过长导致的。`
   );
 }

@@ -11,4 +11,3 @@ export type { Product } from './product';
 
 // 从 supplier.ts 导出
 export type { Supplier } from './supplier';
-

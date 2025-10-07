@@ -12,7 +12,9 @@ import type { Product } from '@/lib/types/product';
 
 import { SmartProductSearch } from './smart-product-search';
 
-interface IntelligentProductInputProps<TFieldValues extends Record<string, unknown> = Record<string, unknown>> {
+interface IntelligentProductInputProps<
+  TFieldValues extends Record<string, unknown> = Record<string, unknown>,
+> {
   form: UseFormReturn<TFieldValues>;
   index: number;
   products: Product[];
@@ -23,7 +25,9 @@ interface IntelligentProductInputProps<TFieldValues extends Record<string, unkno
  * 智能产品输入组件
  * 集成智能搜索和临时产品添加功能
  */
-export function IntelligentProductInput<TFieldValues extends Record<string, unknown> = Record<string, unknown>>({
+export function IntelligentProductInput<
+  TFieldValues extends Record<string, unknown> = Record<string, unknown>,
+>({
   form,
   index,
   products,

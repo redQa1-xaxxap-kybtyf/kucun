@@ -209,172 +209,178 @@ export function SuppliersPageClient({
     selectedSuppliers.length === suppliers.length && suppliers.length > 0;
 
   return (
-    <div className="space-y-4">
-      {/* 页面标题 */}
-      <SupplierPageHeader
-        selectedSupplierIds={selectedSuppliers}
-        onBatchDelete={handleBatchDelete}
-        isBatchDeleting={batchDeleteMutation.isPending}
-      />
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 页面标题 */}
+        <SupplierPageHeader
+          selectedSupplierIds={selectedSuppliers}
+          onBatchDelete={handleBatchDelete}
+          isBatchDeleting={batchDeleteMutation.isPending}
+        />
 
-      {/* 搜索和筛选 */}
-      <SupplierSearchFilters
-        searchValue={search}
-        statusFilter={status}
-        onSearchChange={handleSearch}
-        onStatusChange={handleStatusChange}
-      />
+        {/* 搜索和筛选 */}
+        <SupplierSearchFilters
+          searchValue={search}
+          statusFilter={status}
+          onSearchChange={handleSearch}
+          onStatusChange={handleStatusChange}
+        />
 
-      {/* 供应商列表表格 */}
-      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead className="w-12">
-                <Checkbox
-                  checked={isAllSelected}
-                  onCheckedChange={handleSelectAll}
-                  aria-label="全选"
-                />
-              </TableHead>
-              <TableHead>供应商名称</TableHead>
-              <TableHead>联系电话</TableHead>
-              <TableHead>地址</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead>创建时间</TableHead>
-              <TableHead className="w-20">操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {suppliers.length === 0 ? (
+        {/* 供应商列表表格 */}
+        <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+          <Table>
+            <TableHeader>
               <TableRow>
-                <TableCell
-                  colSpan={7}
-                  className="py-8 text-center text-gray-500"
-                >
-                  暂无供应商数据
-                </TableCell>
+                <TableHead className="w-12">
+                  <Checkbox
+                    checked={isAllSelected}
+                    onCheckedChange={handleSelectAll}
+                    aria-label="全选"
+                  />
+                </TableHead>
+                <TableHead>供应商名称</TableHead>
+                <TableHead>联系电话</TableHead>
+                <TableHead>地址</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>创建时间</TableHead>
+                <TableHead className="w-20">操作</TableHead>
               </TableRow>
-            ) : (
-              suppliers.map(supplier => (
-                <TableRow key={supplier.id} className="hover:bg-blue-50/50">
-                  <TableCell>
-                    <Checkbox
-                      checked={selectedSuppliers.includes(supplier.id)}
-                      onCheckedChange={checked =>
-                        handleSelectSupplier(supplier.id, checked as boolean)
-                      }
-                      aria-label={`选择 ${supplier.name}`}
-                    />
-                  </TableCell>
-                  <TableCell className="font-medium">{supplier.name}</TableCell>
-                  <TableCell>{supplier.phone || '-'}</TableCell>
-                  <TableCell>{supplier.address || '-'}</TableCell>
-                  <TableCell>
-                    <Badge
-                      variant={
-                        supplier.status === 'active' ? 'default' : 'secondary'
-                      }
-                    >
-                      {formatSupplierStatus(supplier.status)}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(supplier.createdAt).toLocaleDateString('zh-CN')}
-                  </TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="sm">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem asChild>
-                          <Link href={`/suppliers/${supplier.id}/edit`}>
-                            <Edit className="mr-2 h-4 w-4" />
-                            编辑
-                          </Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDelete(supplier)}
-                          className="text-red-600"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          删除
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
+            </TableHeader>
+            <TableBody>
+              {suppliers.length === 0 ? (
+                <TableRow>
+                  <TableCell
+                    colSpan={7}
+                    className="py-8 text-center text-gray-500"
+                  >
+                    暂无供应商数据
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+              ) : (
+                suppliers.map(supplier => (
+                  <TableRow key={supplier.id} className="hover:bg-blue-50/50">
+                    <TableCell>
+                      <Checkbox
+                        checked={selectedSuppliers.includes(supplier.id)}
+                        onCheckedChange={checked =>
+                          handleSelectSupplier(supplier.id, checked as boolean)
+                        }
+                        aria-label={`选择 ${supplier.name}`}
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {supplier.name}
+                    </TableCell>
+                    <TableCell>{supplier.phone || '-'}</TableCell>
+                    <TableCell>{supplier.address || '-'}</TableCell>
+                    <TableCell>
+                      <Badge
+                        variant={
+                          supplier.status === 'active' ? 'default' : 'secondary'
+                        }
+                      >
+                        {formatSupplierStatus(supplier.status)}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {new Date(supplier.createdAt).toLocaleDateString('zh-CN')}
+                    </TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/suppliers/${supplier.id}/edit`}>
+                              <Edit className="mr-2 h-4 w-4" />
+                              编辑
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDelete(supplier)}
+                            className="text-red-600"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            删除
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
 
-        {/* 分页组件 */}
-        <div className="border-t bg-gray-50/50 px-4 py-3">
-          <Pagination
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            showRange
-            showTotal
-          />
+          {/* 分页组件 */}
+          <div className="border-t bg-gray-50/50 px-4 py-3">
+            <Pagination
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              showRange
+              showTotal
+            />
+          </div>
         </div>
+
+        {/* 删除确认对话框 */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认删除</AlertDialogTitle>
+              <AlertDialogDescription>
+                确定要删除供应商 &quot;{supplierToDelete?.name}&quot;
+                吗？此操作无法撤销。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  if (supplierToDelete) {
+                    deleteMutation.mutate(supplierToDelete.id);
+                  }
+                }}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? '删除中...' : '确认删除'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* 批量删除确认对话框 */}
+        <AlertDialog
+          open={batchDeleteDialogOpen}
+          onOpenChange={setBatchDeleteDialogOpen}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>确认批量删除</AlertDialogTitle>
+              <AlertDialogDescription>
+                确定要删除选中的 {selectedSuppliers.length}{' '}
+                个供应商吗？此操作无法撤销。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>取消</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={() => {
+                  batchDeleteMutation.mutate({
+                    supplierIds: selectedSuppliers,
+                  });
+                }}
+                disabled={batchDeleteMutation.isPending}
+              >
+                {batchDeleteMutation.isPending ? '删除中...' : '确认删除'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
-
-      {/* 删除确认对话框 */}
-      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要删除供应商 &quot;{supplierToDelete?.name}&quot;
-              吗？此操作无法撤销。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (supplierToDelete) {
-                  deleteMutation.mutate(supplierToDelete.id);
-                }
-              }}
-              disabled={deleteMutation.isPending}
-            >
-              {deleteMutation.isPending ? '删除中...' : '确认删除'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* 批量删除确认对话框 */}
-      <AlertDialog
-        open={batchDeleteDialogOpen}
-        onOpenChange={setBatchDeleteDialogOpen}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认批量删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要删除选中的 {selectedSuppliers.length}{' '}
-              个供应商吗？此操作无法撤销。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                batchDeleteMutation.mutate({ supplierIds: selectedSuppliers });
-              }}
-              disabled={batchDeleteMutation.isPending}
-            >
-              {batchDeleteMutation.isPending ? '删除中...' : '确认删除'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

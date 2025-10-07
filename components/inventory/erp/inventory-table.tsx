@@ -29,7 +29,7 @@ function EmptyState() {
   return (
     <TableRow>
       <TableCell colSpan={10} className="h-32 text-center">
-        <div className="flex flex-col items-center gap-2 text-muted-foreground">
+        <div className="text-muted-foreground flex flex-col items-center gap-2">
           <Package className="h-8 w-8" />
           <span className="text-sm">暂无库存数据</span>
         </div>
@@ -62,26 +62,26 @@ export function InventoryTable({
 
   return (
     <Table>
-      <TableHeader>
+      <TableHeader className="sticky top-0 z-10">
         <TableRow className="bg-muted/50">
-          <TableHead className="w-12">
+          <TableHead className="bg-muted/50 w-12">
             <input
               type="checkbox"
               checked={isAllSelected && canSelectAll}
               onChange={e => onSelectAll(e.target.checked)}
-              className="rounded border border-input"
+              className="border-input rounded border"
             />
           </TableHead>
-          <TableHead>产品编码</TableHead>
-          <TableHead>产品名称</TableHead>
-          <TableHead>规格</TableHead>
-          <TableHead>批次号</TableHead>
-          <TableHead>库存数量</TableHead>
-          <TableHead>预留数量</TableHead>
-          <TableHead>可用数量</TableHead>
-          <TableHead>库存状态</TableHead>
-          <TableHead>最后更新</TableHead>
-          <TableHead>操作</TableHead>
+          <TableHead className="bg-muted/50">产品编码</TableHead>
+          <TableHead className="bg-muted/50">产品名称</TableHead>
+          <TableHead className="bg-muted/50">规格</TableHead>
+          <TableHead className="bg-muted/50">批次号</TableHead>
+          <TableHead className="bg-muted/50">库存数量</TableHead>
+          <TableHead className="bg-muted/50">预留数量</TableHead>
+          <TableHead className="bg-muted/50">可用数量</TableHead>
+          <TableHead className="bg-muted/50">库存状态</TableHead>
+          <TableHead className="bg-muted/50">最后更新</TableHead>
+          <TableHead className="bg-muted/50">操作</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>

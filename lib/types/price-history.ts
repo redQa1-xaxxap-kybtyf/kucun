@@ -54,4 +54,3 @@ export interface SupplierPriceHistoryData {
   success: boolean;
   data: SupplierProductPrice[];
 }
-

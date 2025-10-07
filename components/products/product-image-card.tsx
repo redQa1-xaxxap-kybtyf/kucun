@@ -47,7 +47,7 @@ export function ProductImageCard({
           {/* 图片类型标签 */}
           <Badge
             variant={image.type === 'main' ? 'default' : 'secondary'}
-            className="absolute left-2 top-2"
+            className="absolute top-2 left-2"
           >
             {image.type === 'main' ? '主图' : '效果图'}
           </Badge>
@@ -58,7 +58,7 @@ export function ProductImageCard({
               type="button"
               variant="destructive"
               size="sm"
-              className="absolute right-2 top-2 h-8 w-8 p-0"
+              className="absolute top-2 right-2 h-8 w-8 p-0"
               onClick={() => onRemove(index, image.type)}
             >
               <X className="h-4 w-4" />
@@ -70,7 +70,7 @@ export function ProductImageCard({
         <div className="p-3">
           <Label
             htmlFor={`alt-${index}`}
-            className="text-xs text-muted-foreground"
+            className="text-muted-foreground text-xs"
           >
             图片描述
           </Label>

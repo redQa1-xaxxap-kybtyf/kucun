@@ -58,28 +58,28 @@ export function InventoryOverviewCard({
       <CardContent>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="text-center">
-            <div className="text-2xl font-bold text-primary">
+            <div className="text-primary text-2xl font-bold">
               {inventory.totalQuantity}
             </div>
-            <div className="text-sm text-muted-foreground">总库存</div>
+            <div className="text-muted-foreground text-sm">总库存</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">
               {inventory.availableQuantity}
             </div>
-            <div className="text-sm text-muted-foreground">可用库存</div>
+            <div className="text-muted-foreground text-sm">可用库存</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-orange-600">
               {inventory.reservedQuantity}
             </div>
-            <div className="text-sm text-muted-foreground">预留库存</div>
+            <div className="text-muted-foreground text-sm">预留库存</div>
           </div>
           <div className="text-center">
             <div className="text-2xl font-bold text-blue-600">
               ¥{inventory.averageUnitCost?.toFixed(2) || '0.00'}
             </div>
-            <div className="text-sm text-muted-foreground">平均成本</div>
+            <div className="text-muted-foreground text-sm">平均成本</div>
           </div>
         </div>
 
@@ -94,7 +94,7 @@ export function InventoryOverviewCard({
             </Badge>
           </div>
           <Progress value={stockPercentage} className="h-2" />
-          <div className="flex justify-between text-xs text-muted-foreground">
+          <div className="text-muted-foreground flex justify-between text-xs">
             <span>可用: {inventory.availableQuantity}</span>
             <span>总计: {inventory.totalQuantity}</span>
           </div>

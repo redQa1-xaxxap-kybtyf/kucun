@@ -43,14 +43,14 @@ RATE_LIMIT_CAPTCHA=10
 
 ### 速率限制类型说明
 
-| 类型 | 默认限制 | 适用场景 |
-|------|----------|----------|
-| `GLOBAL` | 100/分钟 | 所有 API 请求 |
-| `AUTH` | 5/分钟 | 登录、注册、验证码 |
-| `READ` | 60/分钟 | GET 请求 |
-| `WRITE` | 30/分钟 | POST/PUT/DELETE |
-| `LOGIN` | 5/分钟 | 登录接口（防暴力破解） |
-| `CAPTCHA` | 10/分钟 | 验证码接口 |
+| 类型      | 默认限制 | 适用场景               |
+| --------- | -------- | ---------------------- |
+| `GLOBAL`  | 100/分钟 | 所有 API 请求          |
+| `AUTH`    | 5/分钟   | 登录、注册、验证码     |
+| `READ`    | 60/分钟  | GET 请求               |
+| `WRITE`   | 30/分钟  | POST/PUT/DELETE        |
+| `LOGIN`   | 5/分钟   | 登录接口（防暴力破解） |
+| `CAPTCHA` | 10/分钟  | 验证码接口             |
 
 ## 使用方法
 
@@ -95,13 +95,11 @@ import { withRateLimit, RateLimitType } from '@/lib/rate-limit';
 import { successResponse } from '@/lib/api/response';
 
 // 示例：验证码 API（无需认证，但需要限制）
-export const POST = withRateLimit(RateLimitType.CAPTCHA)(
-  async (request) => {
-    const { phone } = await request.json();
-    const captcha = await generateCaptcha(phone);
-    return successResponse({ captcha });
-  }
-);
+export const POST = withRateLimit(RateLimitType.CAPTCHA)(async request => {
+  const { phone } = await request.json();
+  const captcha = await generateCaptcha(phone);
+  return successResponse({ captcha });
+});
 ```
 
 ### 方式3: 手动检查速率限制
@@ -175,20 +173,18 @@ Content-Type: application/json
 // app/api/auth/signin/route.ts
 import { withRateLimit, RateLimitType } from '@/lib/rate-limit';
 
-export const POST = withRateLimit(RateLimitType.LOGIN)(
-  async (request) => {
-    const { username, password } = await request.json();
+export const POST = withRateLimit(RateLimitType.LOGIN)(async request => {
+  const { username, password } = await request.json();
 
-    // 验证登录凭证
-    const user = await authenticateUser(username, password);
+  // 验证登录凭证
+  const user = await authenticateUser(username, password);
 
-    if (!user) {
-      return errorResponse('用户名或密码错误');
-    }
-
-    return successResponse({ user });
+  if (!user) {
+    return errorResponse('用户名或密码错误');
   }
-);
+
+  return successResponse({ user });
+});
 ```
 
 ### 2. 验证码 API 防滥用
@@ -197,16 +193,14 @@ export const POST = withRateLimit(RateLimitType.LOGIN)(
 // app/api/captcha/route.ts
 import { withRateLimit, RateLimitType } from '@/lib/rate-limit';
 
-export const POST = withRateLimit(RateLimitType.CAPTCHA)(
-  async (request) => {
-    const { phone } = await request.json();
+export const POST = withRateLimit(RateLimitType.CAPTCHA)(async request => {
+  const { phone } = await request.json();
 
-    // 生成并发送验证码
-    const code = await generateAndSendCaptcha(phone);
+  // 生成并发送验证码
+  const code = await generateAndSendCaptcha(phone);
 
-    return successResponse({ message: '验证码已发送' });
-  }
-);
+  return successResponse({ message: '验证码已发送' });
+});
 ```
 
 ### 3. 公开 API 限制（基于 IP）
@@ -216,13 +210,11 @@ export const POST = withRateLimit(RateLimitType.CAPTCHA)(
 import { withRateLimit, RateLimitType } from '@/lib/rate-limit';
 
 // 未认证用户基于 IP 限制
-export const GET = withRateLimit(RateLimitType.READ)(
-  async (request) => {
-    const { q } = await request.json();
-    const results = await searchPublicData(q);
-    return successResponse(results);
-  }
-);
+export const GET = withRateLimit(RateLimitType.READ)(async request => {
+  const { q } = await request.json();
+  const results = await searchPublicData(q);
+  return successResponse(results);
+});
 ```
 
 ### 4. 管理员 API（已认证用户）
@@ -341,6 +333,7 @@ npx tsx scripts/test-rate-limit-standalone.ts
 ```
 
 测试覆盖场景：
+
 - 基本速率限制功能
 - 多标识符独立性
 - 滑动窗口算法

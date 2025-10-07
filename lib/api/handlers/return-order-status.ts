@@ -206,4 +206,3 @@ export async function getReturnOrderCurrentStatus(
     ? { status: order.status, processType: order.processType }
     : null;
 }
-

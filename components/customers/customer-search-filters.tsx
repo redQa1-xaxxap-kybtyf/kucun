@@ -50,7 +50,6 @@ export function CustomerSearchFilters({
           searchValue={searchValue}
           onSearchChange={onSearchChange}
           searchPlaceholder="搜索客户名称、电话或地址..."
-          debounceDelay={400}
           // 筛选器配置
           filters={[
             {

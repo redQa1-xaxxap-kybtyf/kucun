@@ -38,6 +38,7 @@ export async function withIdempotency<T>(...) {
 ```
 
 **结果**:
+
 - 请求B抛出数据库错误
 - 用户收到500错误而非正确的幂等性处理
 - 在高并发场景下，大量重复请求会被错误拒绝
@@ -115,6 +116,7 @@ export async function withIdempotency<T>(...) {
 ```
 
 **结果**:
+
 - 请求A执行操作，请求B等待结果
 - 两个请求都成功返回相同结果
 - 避免了重复执行，保证了幂等性
@@ -130,6 +132,7 @@ export async function withIdempotency<T>(...) {
 ```
 
 **优势**:
+
 - 只有1个请求执行实际操作
 - 其他9个请求等待后获取结果
 - 数据库负载可控（轮询间隔100-500ms）
@@ -140,9 +143,9 @@ export async function withIdempotency<T>(...) {
 ### 重试配置
 
 ```typescript
-const maxRetries = 20;        // 最大重试次数
-const retryDelayMs = 100;     // 初始延迟100ms
-const maxRetryDelayMs = 500;  // 最大延迟500ms
+const maxRetries = 20; // 最大重试次数
+const retryDelayMs = 100; // 初始延迟100ms
+const maxRetryDelayMs = 500; // 最大延迟500ms
 ```
 
 ### 退避策略
@@ -157,16 +160,16 @@ const maxRetryDelayMs = 500;  // 最大延迟500ms
 重试5-20: 500ms (达到上限)
 ```
 
-**总超时时间**: 约 100 + 150 + 225 + 337 + 16*500 = 8812ms ≈ 8.8秒
+**总超时时间**: 约 100 + 150 + 225 + 337 + 16\*500 = 8812ms ≈ 8.8秒
 
 ### 性能对比
 
-| 场景 | 旧版本 | 新版本 |
-|------|--------|--------|
-| 单请求 | 2次DB查询 + 1次操作 | 1次DB写入 + 1次操作 ✅ |
-| 并发2请求 | 1成功 + 1拒绝❌ | 2个都成功 ✅ |
-| 并发10请求 | 1成功 + 9拒绝❌ | 10个都成功 ✅ |
-| 数据库负载 | 低 | 中等（轮询开销）⚠️ |
+| 场景       | 旧版本              | 新版本                 |
+| ---------- | ------------------- | ---------------------- |
+| 单请求     | 2次DB查询 + 1次操作 | 1次DB写入 + 1次操作 ✅ |
+| 并发2请求  | 1成功 + 1拒绝❌     | 2个都成功 ✅           |
+| 并发10请求 | 1成功 + 9拒绝❌     | 10个都成功 ✅          |
+| 数据库负载 | 低                  | 中等（轮询开销）⚠️     |
 
 ## 边界情况处理
 
@@ -194,12 +197,14 @@ if (attempt >= maxRetries) {
 ```
 
 **触发条件**:
+
 - 操作耗时超过8秒
 - 或者系统负载极高导致长时间处于processing状态
 
 ### 3. 网络抖动
 
 如果在轮询期间数据库暂时不可用：
+
 - 会抛出数据库连接错误
 - 不会被捕获为P2002，直接向上传播
 - 客户端收到500错误，可以整体重试
@@ -217,7 +222,7 @@ export async function withIdempotency<T>(
   operatorId: string,
   requestData: Record<string, unknown>,
   operation: () => Promise<T>
-): Promise<T>
+): Promise<T>;
 ```
 
 ### 调用方式不变
@@ -290,6 +295,7 @@ ab -n 100 -c 100 -p request.json \
 ```
 
 **预期结果**:
+
 - 所有100个请求都成功返回（HTTP 200）
 - 只创建1条库存记录
 - 数据库中只有1条InventoryOperation记录
@@ -302,6 +308,7 @@ ab -n 100 -c 100 -p request.json \
 **问题**: 在极端并发下，大量请求轮询可能增加数据库负载
 
 **缓解措施**:
+
 - 使用指数退避减少轮询频率
 - 设置最大延迟上限（500ms）
 - 限制最大重试次数（20次）
@@ -311,6 +318,7 @@ ab -n 100 -c 100 -p request.json \
 **问题**: 如果实际操作耗时>8秒，等待的请求会超时
 
 **缓解措施**:
+
 - 监控实际操作的平均耗时
 - 如需要可调整maxRetries参数
 - 考虑将耗时操作改为异步处理
@@ -320,6 +328,7 @@ ab -n 100 -c 100 -p request.json \
 **问题**: 操作执行中服务崩溃，状态停留在processing
 
 **缓解措施**:
+
 - 已有的expiresAt机制（24小时清理）
 - 可添加定时任务检测长时间processing的记录
 - 建议添加健康检查清理僵尸记录
@@ -337,7 +346,7 @@ metrics.histogram('idempotency.wait_time_ms', waitTime);
 
 // 3. 冲突率
 metrics.counter('idempotency.conflict_rate', {
-  type: error.code === 'P2002' ? 'conflict' : 'other'
+  type: error.code === 'P2002' ? 'conflict' : 'other',
 });
 
 // 4. 超时率

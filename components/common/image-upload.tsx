@@ -77,7 +77,9 @@ export function ImageUpload({
       validFiles.push(file);
     }
 
-    if (validFiles.length === 0) {return;}
+    if (validFiles.length === 0) {
+      return;
+    }
 
     setUploading(true);
     setUploadStatus('uploading');
@@ -127,7 +129,9 @@ export function ImageUpload({
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
-    if (disabled || uploading) {return;}
+    if (disabled || uploading) {
+      return;
+    }
 
     const files = e.dataTransfer.files;
     if (files.length > 0) {
@@ -184,7 +188,7 @@ export function ImageUpload({
                     type="button"
                     variant="destructive"
                     size="sm"
-                    className="absolute right-1 top-1 h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100"
+                    className="absolute top-1 right-1 h-6 w-6 p-0 opacity-0 transition-opacity group-hover:opacity-100"
                     onClick={() => removeImage(index)}
                     disabled={disabled || uploading}
                   >
@@ -202,8 +206,8 @@ export function ImageUpload({
         <Card
           className={`border-2 border-dashed transition-colors ${
             disabled || uploading
-              ? 'cursor-not-allowed border-muted bg-muted/50'
-              : 'cursor-pointer border-muted-foreground/25 hover:border-muted-foreground/50'
+              ? 'border-muted bg-muted/50 cursor-not-allowed'
+              : 'border-muted-foreground/25 hover:border-muted-foreground/50 cursor-pointer'
           }`}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -212,13 +216,13 @@ export function ImageUpload({
           <CardContent className="flex flex-col items-center justify-center py-8 text-center">
             <div className="mb-4">
               {uploadStatus === 'uploading' ? (
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <Loader2 className="text-primary h-8 w-8 animate-spin" />
               ) : uploadStatus === 'success' ? (
                 <CheckCircle className="h-8 w-8 text-green-500" />
               ) : uploadStatus === 'error' ? (
                 <AlertCircle className="h-8 w-8 text-red-500" />
               ) : (
-                <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                <ImageIcon className="text-muted-foreground h-8 w-8" />
               )}
             </div>
 
@@ -236,16 +240,16 @@ export function ImageUpload({
               {uploadStatus === 'uploading' && (
                 <div className="w-full max-w-xs">
                   <Progress value={uploadProgress} className="h-2" />
-                  <p className="mt-1 text-xs text-muted-foreground">
+                  <p className="text-muted-foreground mt-1 text-xs">
                     {Math.round(uploadProgress)}% 完成
                   </p>
                 </div>
               )}
 
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 支持 JPG、PNG、GIF 格式，单个文件不超过 {maxSize}MB
               </p>
-              <p className="text-xs text-muted-foreground">
+              <p className="text-muted-foreground text-xs">
                 最多可上传 {maxFiles} 张图片 ({value.length}/{maxFiles})
               </p>
               <p className="text-xs text-green-600">

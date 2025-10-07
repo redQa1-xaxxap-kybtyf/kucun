@@ -5,11 +5,11 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { ContentLoading } from '@/components/common/loading';
 import { CategoryDeleteDialogs } from '@/components/categories/category-delete-dialogs';
 import { CategoryList } from '@/components/categories/category-list';
 import { CategoryPageHeader } from '@/components/categories/category-page-header';
 import { CategorySearchFilters } from '@/components/categories/category-search-filters';
+import { ContentLoading } from '@/components/common/loading';
 import { Card, CardContent } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import { type Category, type CategoryQueryParams } from '@/lib/api/categories';
@@ -117,49 +117,51 @@ export function CategoryPageContent({
   }
 
   return (
-    <div className="space-y-6">
-      <CategoryPageHeader
-        selectedCategoryIds={selectedCategoryIds}
-        onBatchDelete={handleBatchDelete}
-        isBatchDeleting={batchDeleteMutation.isPending}
-      />
-
-      <CategorySearchFilters
-        queryParams={queryParams}
-        onSearch={handleSearch}
-        onFilter={handleFilter}
-      />
-
-      <CategoryList
-        categories={categories}
-        selectedCategoryIds={selectedCategoryIds}
-        updatingStatusId={updatingStatusId}
-        onSelectCategory={handleSelectCategory}
-        onSelectAll={handleSelectAll}
-        onToggleStatus={toggleCategoryStatus}
-        onDeleteCategory={handleDeleteCategory}
-        totalCount={categories.length}
-      />
-
-      {pagination && (
-        <Pagination
-          pagination={pagination}
-          onPageChange={handlePageChange}
-          showRange
-          showTotal
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        <CategoryPageHeader
+          selectedCategoryIds={selectedCategoryIds}
+          onBatchDelete={handleBatchDelete}
+          isBatchDeleting={batchDeleteMutation.isPending}
         />
-      )}
 
-      <CategoryDeleteDialogs
-        deleteDialog={deleteDialog}
-        batchDeleteDialog={batchDeleteDialog}
-        isDeleting={deleteMutation.isPending}
-        isBatchDeleting={batchDeleteMutation.isPending}
-        onDeleteDialogChange={setDeleteDialog}
-        onBatchDeleteDialogChange={setBatchDeleteDialog}
-        onConfirmDelete={confirmDelete}
-        onConfirmBatchDelete={confirmBatchDelete}
-      />
+        <CategorySearchFilters
+          queryParams={queryParams}
+          onSearch={handleSearch}
+          onFilter={handleFilter}
+        />
+
+        <CategoryList
+          categories={categories}
+          selectedCategoryIds={selectedCategoryIds}
+          updatingStatusId={updatingStatusId}
+          onSelectCategory={handleSelectCategory}
+          onSelectAll={handleSelectAll}
+          onToggleStatus={toggleCategoryStatus}
+          onDeleteCategory={handleDeleteCategory}
+          totalCount={categories.length}
+        />
+
+        {pagination && (
+          <Pagination
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            showRange
+            showTotal
+          />
+        )}
+
+        <CategoryDeleteDialogs
+          deleteDialog={deleteDialog}
+          batchDeleteDialog={batchDeleteDialog}
+          isDeleting={deleteMutation.isPending}
+          isBatchDeleting={batchDeleteMutation.isPending}
+          onDeleteDialogChange={setDeleteDialog}
+          onBatchDeleteDialogChange={setBatchDeleteDialog}
+          onConfirmDelete={confirmDelete}
+          onConfirmBatchDelete={confirmBatchDelete}
+        />
+      </div>
     </div>
   );
 }

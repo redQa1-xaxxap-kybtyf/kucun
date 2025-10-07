@@ -41,29 +41,29 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">本月交易额</span>
+          <span className="text-muted-foreground text-sm">本月交易额</span>
           <span className="font-medium">
             {formatCurrency(summary.currentMonthAmount)}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">上月交易额</span>
+          <span className="text-muted-foreground text-sm">上月交易额</span>
           <span className="font-medium">
             {formatCurrency(summary.lastMonthAmount)}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">月均交易额</span>
+          <span className="text-muted-foreground text-sm">月均交易额</span>
           <span className="font-medium">
             {formatCurrency(summary.averageMonthlyAmount)}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">付款率</span>
+          <span className="text-muted-foreground text-sm">付款率</span>
           <span className="font-medium">{summary.paymentRate}%</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">平均付款天数</span>
+          <span className="text-muted-foreground text-sm">平均付款天数</span>
           <span className="font-medium">{summary.averagePaymentDays} 天</span>
         </div>
       </CardContent>

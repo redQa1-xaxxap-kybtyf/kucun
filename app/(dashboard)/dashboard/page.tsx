@@ -2,7 +2,14 @@
 // 基于shadcn/ui组件库的完整仪表盘实现
 // 严格遵循全栈开发执行手册和项目统一约定规范
 
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
+
 import { ERPDashboard } from '@/components/dashboard/erp-dashboard';
+import { dashboardQueryKeys } from '@/lib/api/dashboard';
 import { getDashboardData } from '@/lib/api/handlers/dashboard';
 import { prisma } from '@/lib/db';
 
@@ -10,11 +17,18 @@ import { prisma } from '@/lib/db';
  * 仪表盘主页面组件 - 使用服务器组件优化首屏加载
  * 使用ERP风格的紧凑布局设计
  *
- * 优化策略：
+ * ✅ Next.js 15.4 + TanStack Query v5 最佳实践：
  * 1. RSC 预取所有首屏数据（仪表盘统计 + 订单列表 + 厂家发货）
- * 2. 客户端组件仅负责 UI 交互和状态管理
- * 3. TanStack Query 仅用于用户主动刷新/筛选时的数据获取
+ * 2. HydrationBoundary 水合数据到客户端，避免重复请求
+ * 3. staleTime=Infinity 防止客户端首次渲染时重新请求
+ * 4. 客户端组件仅负责 UI 交互和用户主动刷新
  */
+
+// ✅ Route Segment Config
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 export default async function DashboardPage({
   searchParams,
 }: {
@@ -23,6 +37,15 @@ export default async function DashboardPage({
   // 解析查询参数 (Next.js 15 需要 await searchParams)
   const params = await searchParams;
   const timeRange = (params.timeRange as string) || '7d';
+
+  // ✅ 创建 QueryClient（启用 Streaming Queries）
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydratePendingQuery: true,
+      },
+    },
+  });
 
   // 🚀 并行获取所有首屏数据 - 避免瀑布式请求
   const [dashboardData, recentOrders, pendingOrders, factoryShipments] =
@@ -80,8 +103,14 @@ export default async function DashboardPage({
       }),
     ]);
 
+  // ✅ 将服务端数据预设到 QueryClient（避免客户端重复请求）
+  queryClient.setQueryData(
+    dashboardQueryKeys.overview(),
+    dashboardData.overview
+  );
+
   return (
-    <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
+    <HydrationBoundary state={dehydrate(queryClient)}>
       <ERPDashboard
         initialData={dashboardData}
         initialTimeRange={timeRange}
@@ -91,6 +120,6 @@ export default async function DashboardPage({
           shipments: factoryShipments,
         }}
       />
-    </div>
+    </HydrationBoundary>
   );
 }

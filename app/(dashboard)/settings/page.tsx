@@ -11,6 +11,7 @@ import * as React from 'react';
 
 import {
   Card,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -19,19 +20,34 @@ import { usePermissions } from '@/lib/utils/permissions';
 
 // 未登录状态组件
 const LoginRequiredView = () => (
-  <div className="space-y-6">
-    <div className="flex items-center justify-between">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
-        <p className="text-muted-foreground">系统配置和管理功能</p>
-      </div>
+  <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="space-y-6">
+      {/* 页面标题卡片 */}
+      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+        <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
+              <Settings className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                系统设置
+              </h1>
+              <p className="text-sm text-gray-600">系统配置和管理功能</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
+        <CardHeader>
+          <CardTitle className="text-amber-800">需要登录</CardTitle>
+          <CardDescription className="text-amber-700">
+            请先登录以访问系统设置。
+          </CardDescription>
+        </CardHeader>
+      </Card>
     </div>
-    <Card className="border-amber-200">
-      <CardHeader>
-        <CardTitle className="text-amber-800">需要登录</CardTitle>
-        <CardDescription>请先登录以访问系统设置。</CardDescription>
-      </CardHeader>
-    </Card>
   </div>
 );
 
@@ -54,35 +70,60 @@ const SettingsPage = () => {
   // 检查管理员权限
   if (!permissions.isAdmin()) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
-            <p className="text-muted-foreground">系统配置和管理功能</p>
-          </div>
+      <div className="flex h-full flex-col overflow-hidden p-6">
+        <div className="space-y-6">
+          {/* 页面标题卡片 */}
+          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+            <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
+                  <Settings className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                    系统设置
+                  </h1>
+                  <p className="text-sm text-gray-600">系统配置和管理功能</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-amber-200 bg-amber-50 shadow-lg shadow-amber-200/50">
+            <CardHeader>
+              <CardTitle className="flex items-center text-amber-800">
+                <Settings className="mr-2 h-5 w-5" />
+                权限不足
+              </CardTitle>
+              <CardDescription className="text-amber-700">
+                只有管理员可以访问系统设置功能。
+              </CardDescription>
+            </CardHeader>
+          </Card>
         </div>
-        <Card className="border-amber-200 bg-amber-50">
-          <CardHeader>
-            <CardTitle className="flex items-center text-amber-800">
-              <Settings className="mr-2 h-5 w-5" />
-              权限不足
-            </CardTitle>
-            <CardDescription className="text-amber-700">
-              只有管理员可以访问系统设置功能。
-            </CardDescription>
-          </CardHeader>
-        </Card>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">系统设置</h1>
-          <p className="text-muted-foreground">正在跳转到基本设置...</p>
-        </div>
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 页面标题卡片 */}
+        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gray-600 shadow-lg shadow-gray-600/30">
+                <Settings className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  系统设置
+                </h1>
+                <p className="text-sm text-gray-600">正在跳转到基本设置...</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

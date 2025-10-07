@@ -114,7 +114,7 @@ export async function processRefundWithLock(
 
   try {
     // 尝试获取锁
-    if (!await lock.acquire()) {
+    if (!(await lock.acquire())) {
       return {
         success: false,
         refundId,

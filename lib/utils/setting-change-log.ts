@@ -149,4 +149,3 @@ export async function getAllSettingChangeHistory(
     totalPages: Math.ceil(total / limit),
   };
 }
-

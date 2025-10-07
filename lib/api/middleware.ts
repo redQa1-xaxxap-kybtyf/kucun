@@ -2,14 +2,14 @@ import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
 
 import {
-    ApiErrorType,
-    extractErrorInfo,
-    generateErrorId,
-    handlePrismaError,
-    handleZodError,
-    isApiError,
-    isPrismaError,
-    isZodError,
+  ApiErrorType,
+  extractErrorInfo,
+  generateErrorId,
+  handlePrismaError,
+  handleZodError,
+  isApiError,
+  isPrismaError,
+  isZodError,
 } from '@/lib/api/errors';
 import { authOptions } from '@/lib/auth';
 import { env } from '@/lib/env';
@@ -73,7 +73,10 @@ export function withAuth<
     try {
       // 1. 速率限制检查（如果配置）
       if (options?.rateLimit) {
-        const rateLimitResult = await checkRateLimit(request, options.rateLimit);
+        const rateLimitResult = await checkRateLimit(
+          request,
+          options.rateLimit
+        );
 
         if (rateLimitResult.limited && rateLimitResult.response) {
           return rateLimitResult.response;

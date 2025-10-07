@@ -28,10 +28,12 @@ export function FactoryShipmentOrderDetailWrapper({
   };
 
   return (
-    <FactoryShipmentOrderDetail
-      orderId={orderId}
-      onEdit={handleEdit}
-      onBack={handleBack}
-    />
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <FactoryShipmentOrderDetail
+        orderId={orderId}
+        onEdit={handleEdit}
+        onBack={handleBack}
+      />
+    </div>
   );
 }

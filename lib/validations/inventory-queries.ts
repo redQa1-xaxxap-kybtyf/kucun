@@ -39,30 +39,58 @@ export const inventoryAlertsQuerySchema = z.object({
 // 库存调整查询验证规则
 export const inventoryAdjustmentsQuerySchema = z
   .object({
-    page: z.number().int().positive().optional().default(1),
+    page: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => (val ? parseInt(val) : 1))
+      .refine(val => val > 0, '页码必须大于0'),
 
     limit: z
-      .number()
-      .int()
-      .positive()
-      .max(paginationConfig.maxPageSize)
+      .string()
+      .nullable()
       .optional()
-      .default(20),
+      .transform(val => (val ? parseInt(val) : 20))
+      .refine(
+        val => val > 0 && val <= paginationConfig.maxPageSize,
+        `每页数量必须在1-${paginationConfig.maxPageSize}之间`
+      ),
 
-    search: z.string().optional(),
+    search: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined),
 
     sortBy: z
       .enum(['createdAt', 'adjustmentNumber', 'quantity', 'reason'])
+      .nullable()
       .optional()
-      .default('createdAt'),
+      .transform(val => val || 'createdAt'),
 
-    sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+    sortOrder: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => (val === 'asc' ? 'asc' : 'desc')),
 
-    productId: z.string().uuid().optional(),
+    productId: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined),
 
-    variantId: z.string().uuid().optional(),
+    variantId: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined),
 
-    batchNumber: z.string().optional(),
+    batchNumber: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined),
 
     reason: z
       .enum([
@@ -74,21 +102,35 @@ export const inventoryAdjustmentsQuerySchema = z
         'expired',
         'other',
       ])
-      .optional(),
+      .nullable()
+      .optional()
+      .transform(val => val || undefined),
 
-    status: z.enum(['pending', 'approved', 'rejected', 'completed']).optional(),
+    status: z
+      .enum(['pending', 'approved', 'rejected', 'completed'])
+      .nullable()
+      .optional()
+      .transform(val => val || undefined),
 
-    operatorId: z.string().uuid().optional(),
+    operatorId: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined),
 
     startDate: z
       .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式不正确')
-      .optional(),
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined)
+      .refine(val => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), '日期格式不正确'),
 
     endDate: z
       .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/, '日期格式不正确')
-      .optional(),
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined)
+      .refine(val => !val || /^\d{4}-\d{2}-\d{2}$/.test(val), '日期格式不正确'),
   })
   .refine(
     data => {

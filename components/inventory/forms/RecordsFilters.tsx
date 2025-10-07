@@ -73,13 +73,15 @@ function SearchField({
   value: string | undefined;
   onChange: (value: string | undefined) => void;
 }) {
-  if (!config?.enabled) {return null;}
+  if (!config?.enabled) {
+    return null;
+  }
 
   return (
     <div>
-      <label className="mb-1 block text-xs text-muted-foreground">搜索</label>
+      <label className="text-muted-foreground mb-1 block text-xs">搜索</label>
       <div className="relative">
-        <Search className="absolute left-2 top-2 h-3 w-3 text-muted-foreground" />
+        <Search className="text-muted-foreground absolute top-2 left-2 h-3 w-3" />
         <Input
           placeholder={config.placeholder || '搜索...'}
           value={value || ''}
@@ -103,11 +105,13 @@ function TypeFilterField({
   value: string | undefined;
   onChange: (value: string | undefined) => void;
 }) {
-  if (!config?.enabled) {return null;}
+  if (!config?.enabled) {
+    return null;
+  }
 
   return (
     <div>
-      <label className="mb-1 block text-xs text-muted-foreground">
+      <label className="text-muted-foreground mb-1 block text-xs">
         {config.label}
       </label>
       <Select
@@ -146,12 +150,14 @@ function DateRangeFields({
   onStartChange: (value: string | undefined) => void;
   onEndChange: (value: string | undefined) => void;
 }) {
-  if (!config?.enabled) {return null;}
+  if (!config?.enabled) {
+    return null;
+  }
 
   return (
     <>
       <div>
-        <label className="mb-1 block text-xs text-muted-foreground">
+        <label className="text-muted-foreground mb-1 block text-xs">
           {config.startLabel || '开始日期'}
         </label>
         <div className="relative">
@@ -161,11 +167,11 @@ function DateRangeFields({
             onChange={e => onStartChange(e.target.value || undefined)}
             className="h-8 text-xs"
           />
-          <Calendar className="pointer-events-none absolute right-2 top-2 h-3 w-3 text-muted-foreground" />
+          <Calendar className="text-muted-foreground pointer-events-none absolute top-2 right-2 h-3 w-3" />
         </div>
       </div>
       <div>
-        <label className="mb-1 block text-xs text-muted-foreground">
+        <label className="text-muted-foreground mb-1 block text-xs">
           {config.endLabel || '结束日期'}
         </label>
         <div className="relative">
@@ -175,7 +181,7 @@ function DateRangeFields({
             onChange={e => onEndChange(e.target.value || undefined)}
             className="h-8 text-xs"
           />
-          <Calendar className="pointer-events-none absolute right-2 top-2 h-3 w-3 text-muted-foreground" />
+          <Calendar className="text-muted-foreground pointer-events-none absolute top-2 right-2 h-3 w-3" />
         </div>
       </div>
     </>
@@ -205,7 +211,7 @@ export function RecordsFilters({
         : 'md:grid-cols-2';
 
   return (
-    <div className="rounded border bg-card p-3">
+    <div className="bg-card rounded border p-3">
       <div className="mb-3 flex items-center gap-2">
         <Filter className="h-4 w-4" />
         <span className="text-sm font-medium">筛选条件</span>

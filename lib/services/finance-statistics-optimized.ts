@@ -91,8 +91,7 @@ export async function generateCustomerStatementsOptimized(
     );
 
     const refundAmount = orders.reduce(
-      (sum, o) =>
-        sum + o.refunds.reduce((rSum, r) => rSum + r.refundAmount, 0),
+      (sum, o) => sum + o.refunds.reduce((rSum, r) => rSum + r.refundAmount, 0),
       0
     );
 
@@ -195,7 +194,10 @@ async function batchCalculateOverdue(
 
     for (const payable of overduePayables) {
       const currentOverdue = overdueMap.get(payable.supplierId) || 0;
-      overdueMap.set(payable.supplierId, currentOverdue + payable.remainingAmount);
+      overdueMap.set(
+        payable.supplierId,
+        currentOverdue + payable.remainingAmount
+      );
     }
   }
 
@@ -286,8 +288,7 @@ export async function generateSupplierStatementsOptimized(
     );
 
     // 合计
-    const totalOrders =
-      transferOrders.length + uniqueFactoryOrders.size;
+    const totalOrders = transferOrders.length + uniqueFactoryOrders.size;
     const totalAmount = transferAmount + factoryTotalAmount;
     const paidAmount = transferPaid + factoryPaidAmount;
     const pendingAmount = Math.max(0, totalAmount - paidAmount);

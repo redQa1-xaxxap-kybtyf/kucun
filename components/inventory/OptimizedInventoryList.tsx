@@ -66,7 +66,7 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
         <div className="flex h-64 items-center justify-center">
           <div className="text-center">
             <p className="text-destructive">加载库存数据失败</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               {error?.message || '请稍后重试'}
             </p>
           </div>
@@ -98,7 +98,7 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
 
           {/* 缓存状态指示器（开发环境） */}
           {process.env.NODE_ENV === 'development' && cache && (
-            <div className="text-xs text-muted-foreground">缓存可用</div>
+            <div className="text-muted-foreground text-xs">缓存可用</div>
           )}
         </div>
 

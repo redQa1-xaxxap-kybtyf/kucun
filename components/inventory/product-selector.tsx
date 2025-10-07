@@ -81,7 +81,7 @@ export function ProductSelector({
         <Button
           variant="ghost"
           size="sm"
-          className="absolute right-8 top-1/2 h-6 w-6 -translate-y-1/2 p-0 hover:bg-muted"
+          className="hover:bg-muted absolute top-1/2 right-8 h-6 w-6 -translate-y-1/2 p-0"
           onClick={handleClear}
         >
           <X className="h-3 w-3" />

@@ -93,7 +93,9 @@ export async function getCachedProductInventorySummary(
 export async function getBatchCachedInventorySummary(
   productIds: string[]
 ): Promise<Map<string, InventorySummary>> {
-  if (productIds.length === 0) {return new Map();}
+  if (productIds.length === 0) {
+    return new Map();
+  }
 
   const inventoryMap = new Map<string, InventorySummary>();
   const uncachedIds: string[] = [];
@@ -149,7 +151,11 @@ export async function getBatchCachedInventorySummary(
 
       // 同步设置缓存
       const cacheKey = `inventory:summary:${item.productId}`;
-      await getOrSetJSON(cacheKey, async () => summary, cacheConfig.inventoryTtl);
+      await getOrSetJSON(
+        cacheKey,
+        async () => summary,
+        cacheConfig.inventoryTtl
+      );
     });
 
     await Promise.all(setCachePromises);

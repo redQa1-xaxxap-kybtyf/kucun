@@ -88,7 +88,8 @@ export async function lockAccount(params: {
   durationMinutes?: number;
 }): Promise<void> {
   try {
-    const duration = params.durationMinutes || LOGIN_SECURITY_CONFIG.lockoutDuration;
+    const duration =
+      params.durationMinutes || LOGIN_SECURITY_CONFIG.lockoutDuration;
     const lockedUntil = new Date();
     lockedUntil.setMinutes(lockedUntil.getMinutes() + duration);
 
@@ -142,10 +143,14 @@ export async function unlockAccount(params: {
 /**
  * 获取最近的失败登录次数
  */
-export async function getRecentFailedAttempts(username: string): Promise<number> {
+export async function getRecentFailedAttempts(
+  username: string
+): Promise<number> {
   try {
     const windowStart = new Date();
-    windowStart.setMinutes(windowStart.getMinutes() - LOGIN_SECURITY_CONFIG.attemptWindow);
+    windowStart.setMinutes(
+      windowStart.getMinutes() - LOGIN_SECURITY_CONFIG.attemptWindow
+    );
 
     const count = await prisma.loginAttempt.count({
       where: {
@@ -189,7 +194,10 @@ export async function handleLoginFailure(params: {
 
     // 获取最近的失败次数
     const failedCount = await getRecentFailedAttempts(params.username);
-    const remainingAttempts = Math.max(0, LOGIN_SECURITY_CONFIG.maxFailedAttempts - failedCount);
+    const remainingAttempts = Math.max(
+      0,
+      LOGIN_SECURITY_CONFIG.maxFailedAttempts - failedCount
+    );
 
     // 检查是否需要锁定
     if (failedCount >= LOGIN_SECURITY_CONFIG.maxFailedAttempts) {
@@ -254,7 +262,9 @@ export async function handleLoginSuccess(params: {
 export async function cleanupOldLoginAttempts(): Promise<number> {
   try {
     const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - LOGIN_SECURITY_CONFIG.cleanupAfterDays);
+    cutoffDate.setDate(
+      cutoffDate.getDate() - LOGIN_SECURITY_CONFIG.cleanupAfterDays
+    );
 
     const result = await prisma.loginAttempt.deleteMany({
       where: {
@@ -291,9 +301,10 @@ export async function getLoginSecurityStats(): Promise<{
       }),
     ]);
 
-    const successRate = totalAttempts > 0
-      ? ((totalAttempts - failedAttempts) / totalAttempts) * 100
-      : 100;
+    const successRate =
+      totalAttempts > 0
+        ? ((totalAttempts - failedAttempts) / totalAttempts) * 100
+        : 100;
 
     return {
       totalAttempts,
@@ -311,4 +322,3 @@ export async function getLoginSecurityStats(): Promise<{
     };
   }
 }
-

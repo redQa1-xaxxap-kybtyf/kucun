@@ -1,11 +1,24 @@
-import { ERPProductList } from '@/components/products/erp-product-list';
+import { getCategoriesServer } from '@/lib/api/categories-server';
 import { getProductsForServer } from '@/lib/api/products-server';
 import { paginationConfig, productConfig } from '@/lib/env';
+import { ProductsPageClient } from './page-client';
 
 /**
  * 产品管理页面 - 使用服务器组件优化首屏加载
  * 严格遵循全栈项目统一约定规范
+ * 参考客户管理页面架构，使用URL参数驱动数据获取
+ *
+ * ✅ Next.js 15 最佳实践：
+ * - Route Segment Config 配置
+ * - Server Component 数据获取
+ * - 并行数据预取
  */
+
+// ✅ Next.js 15 Route Segment Config
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 export default async function ProductsPage({
   searchParams,
 }: {
@@ -17,7 +30,7 @@ export default async function ProductsPage({
   const limit = Number(params.limit) || paginationConfig.defaultPageSize;
   const search = (params.search as string) || '';
   const categoryId = (params.categoryId as string) || '';
-  const status = (params.status as 'active' | 'inactive') || 'active';
+  const status = (params.status as 'active' | 'inactive') || undefined;
   const sortBy = (params.sortBy as string) || 'createdAt';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
   const includeInventory =
@@ -26,35 +39,35 @@ export default async function ProductsPage({
     params.includeStatistics === 'true' ||
     productConfig.defaultIncludeStatistics;
 
-  // 服务器端直接获取初始数据，避免 HTTP 跳转
-  const initialData = await getProductsForServer({
-    page,
-    limit,
-    search,
-    categoryId,
-    status,
-    sortBy,
-    sortOrder,
-    includeInventory,
-    includeStatistics,
-  });
+  // 并行获取产品数据和分类数据
+  const [initialData, categoriesData] = await Promise.all([
+    getProductsForServer({
+      page,
+      limit,
+      search,
+      categoryId,
+      status,
+      sortBy,
+      sortOrder,
+      includeInventory,
+      includeStatistics,
+    }),
+    getCategoriesServer({ status: 'active' }), // 只获取激活的分类
+  ]);
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-        <ERPProductList
-          _initialData={initialData}
-          initialParams={{
-            page,
-            limit,
-            search,
-            categoryId,
-            status,
-            sortBy,
-            sortOrder,
-          }}
-        />
-      </div>
-    </div>
+    <ProductsPageClient
+      initialData={initialData}
+      initialParams={{
+        page,
+        limit,
+        search,
+        categoryId,
+        status,
+        sortBy,
+        sortOrder,
+      }}
+      categories={categoriesData.data}
+    />
   );
 }

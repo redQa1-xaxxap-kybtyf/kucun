@@ -49,8 +49,8 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
   if (isLoading) {
     return (
       <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="rounded border bg-card">
-          <div className="border-b bg-muted/30 px-3 py-2">
+        <div className="bg-card rounded border">
+          <div className="bg-muted/30 border-b px-3 py-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium">编辑客户</h3>
             </div>
@@ -58,7 +58,7 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
           <div className="px-3 py-8">
             <div className="flex items-center justify-center">
               <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="ml-2 text-sm text-muted-foreground">
+              <span className="text-muted-foreground ml-2 text-sm">
                 加载客户信息中...
               </span>
             </div>
@@ -72,8 +72,8 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
   if (error) {
     return (
       <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="rounded border bg-card">
-          <div className="border-b bg-muted/30 px-3 py-2">
+        <div className="bg-card rounded border">
+          <div className="bg-muted/30 border-b px-3 py-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium">编辑客户</h3>
               <Button
@@ -112,8 +112,8 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
   if (!customer) {
     return (
       <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="rounded border bg-card">
-          <div className="border-b bg-muted/30 px-3 py-2">
+        <div className="bg-card rounded border">
+          <div className="bg-muted/30 border-b px-3 py-2">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium">编辑客户</h3>
               <Button
@@ -129,7 +129,7 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
           </div>
           <div className="px-3 py-8">
             <div className="text-center">
-              <p className="text-sm text-muted-foreground">客户不存在</p>
+              <p className="text-muted-foreground text-sm">客户不存在</p>
               <Button
                 variant="outline"
                 size="sm"

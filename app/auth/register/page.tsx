@@ -98,7 +98,7 @@ export default function RegisterPage() {
             <div className="flex items-center gap-2">
               <Link
                 href="/auth/signin"
-                className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground"
+                className="text-muted-foreground hover:text-foreground inline-flex items-center text-sm"
               >
                 <ArrowLeft className="mr-1 h-4 w-4" />
                 返回登录
@@ -262,7 +262,7 @@ export default function RegisterPage() {
                 已有账户？{' '}
                 <Link
                   href="/auth/signin"
-                  className="font-medium text-primary hover:text-primary/80"
+                  className="text-primary hover:text-primary/80 font-medium"
                 >
                   立即登录
                 </Link>

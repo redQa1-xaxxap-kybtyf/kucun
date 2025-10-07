@@ -32,7 +32,7 @@ export function AddressDisplay({
     return (
       <div
         className={cn(
-          'flex items-center gap-2 text-muted-foreground',
+          'text-muted-foreground flex items-center gap-2',
           className
         )}
       >
@@ -46,7 +46,7 @@ export function AddressDisplay({
   if (address.length <= 20) {
     return (
       <div className={cn('flex items-center gap-2', className)}>
-        {showIcon && <MapPin className="h-4 w-4 text-muted-foreground" />}
+        {showIcon && <MapPin className="text-muted-foreground h-4 w-4" />}
         <span>{address}</span>
       </div>
     );
@@ -58,7 +58,7 @@ export function AddressDisplay({
       <Tooltip>
         <TooltipTrigger asChild>
           <div className={cn('flex cursor-help items-center gap-2', className)}>
-            {showIcon && <MapPin className="h-4 w-4 text-muted-foreground" />}
+            {showIcon && <MapPin className="text-muted-foreground h-4 w-4" />}
             <span className={cn(maxWidth, 'truncate')}>{address}</span>
           </div>
         </TooltipTrigger>

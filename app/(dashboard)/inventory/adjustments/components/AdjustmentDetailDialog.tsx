@@ -30,7 +30,9 @@ export function AdjustmentDetailDialog({
   open,
   onOpenChange,
 }: AdjustmentDetailDialogProps) {
-  if (!adjustment) {return null;}
+  if (!adjustment) {
+    return null;
+  }
 
   // 格式化调整数量显示
   const formatAdjustQuantity = (quantity: number) => {
@@ -72,7 +74,7 @@ export function AdjustmentDetailDialog({
             <h3 className="text-lg font-medium">基本信息</h3>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">
+                <Label className="text-muted-foreground text-sm font-medium">
                   调整单号
                 </Label>
                 <p className="mt-1 font-mono text-sm">
@@ -80,7 +82,7 @@ export function AdjustmentDetailDialog({
                 </p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">
+                <Label className="text-muted-foreground text-sm font-medium">
                   调整时间
                 </Label>
                 <p className="mt-1 text-sm">
@@ -97,7 +99,7 @@ export function AdjustmentDetailDialog({
             <h3 className="text-lg font-medium">产品信息</h3>
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">
+                <Label className="text-muted-foreground text-sm font-medium">
                   产品名称
                 </Label>
                 <p className="mt-1 font-medium">
@@ -106,7 +108,7 @@ export function AdjustmentDetailDialog({
               </div>
               {adjustment.product?.code && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
+                  <Label className="text-muted-foreground text-sm font-medium">
                     产品编码
                   </Label>
                   <p className="mt-1 font-mono text-sm">
@@ -116,7 +118,7 @@ export function AdjustmentDetailDialog({
               )}
               {adjustment.product?.specification && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
+                  <Label className="text-muted-foreground text-sm font-medium">
                     产品规格
                   </Label>
                   <p className="mt-1 text-sm">
@@ -145,7 +147,7 @@ export function AdjustmentDetailDialog({
               )}
               {adjustment.variant?.sku && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
+                  <Label className="text-muted-foreground text-sm font-medium">
                     产品SKU
                   </Label>
                   <p className="mt-1 font-mono text-sm">
@@ -155,7 +157,7 @@ export function AdjustmentDetailDialog({
               )}
               {adjustment.batchNumber && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
+                  <Label className="text-muted-foreground text-sm font-medium">
                     批次号
                   </Label>
                   <p className="mt-1 font-mono text-sm">
@@ -173,7 +175,7 @@ export function AdjustmentDetailDialog({
             <h3 className="text-lg font-medium">调整信息</h3>
             <div className="grid grid-cols-3 gap-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">
+                <Label className="text-muted-foreground text-sm font-medium">
                   调整前数量
                 </Label>
                 <p className="mt-1 text-lg font-medium">
@@ -181,7 +183,7 @@ export function AdjustmentDetailDialog({
                 </p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">
+                <Label className="text-muted-foreground text-sm font-medium">
                   调整数量
                 </Label>
                 <p className="mt-1">
@@ -189,7 +191,7 @@ export function AdjustmentDetailDialog({
                 </p>
               </div>
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">
+                <Label className="text-muted-foreground text-sm font-medium">
                   调整后数量
                 </Label>
                 <p className="mt-1 text-lg font-medium">
@@ -198,7 +200,7 @@ export function AdjustmentDetailDialog({
               </div>
             </div>
             <div>
-              <Label className="text-sm font-medium text-muted-foreground">
+              <Label className="text-muted-foreground text-sm font-medium">
                 调整原因
               </Label>
               <p className="mt-1">
@@ -211,10 +213,10 @@ export function AdjustmentDetailDialog({
             </div>
             {adjustment.notes && (
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">
+                <Label className="text-muted-foreground text-sm font-medium">
                   备注信息
                 </Label>
-                <p className="mt-1 rounded-md bg-muted p-3 text-sm">
+                <p className="bg-muted mt-1 rounded-md p-3 text-sm">
                   {adjustment.notes}
                 </p>
               </div>
@@ -228,13 +230,13 @@ export function AdjustmentDetailDialog({
             <h3 className="text-lg font-medium">操作信息</h3>
             <div className="grid grid-cols-1 gap-4">
               <div>
-                <Label className="text-sm font-medium text-muted-foreground">
+                <Label className="text-muted-foreground text-sm font-medium">
                   操作人员
                 </Label>
                 <p className="mt-1">
                   {adjustment.operator?.name || '未知操作员'}
                   {adjustment.operator?.email && (
-                    <span className="ml-2 text-sm text-muted-foreground">
+                    <span className="text-muted-foreground ml-2 text-sm">
                       ({adjustment.operator.email})
                     </span>
                   )}
@@ -242,13 +244,13 @@ export function AdjustmentDetailDialog({
               </div>
               {adjustment.approver && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
+                  <Label className="text-muted-foreground text-sm font-medium">
                     审批人员
                   </Label>
                   <p className="mt-1">
                     {adjustment.approver.name}
                     {adjustment.approver.email && (
-                      <span className="ml-2 text-sm text-muted-foreground">
+                      <span className="text-muted-foreground ml-2 text-sm">
                         ({adjustment.approver.email})
                       </span>
                     )}
@@ -257,7 +259,7 @@ export function AdjustmentDetailDialog({
               )}
               {adjustment.approvedAt && (
                 <div>
-                  <Label className="text-sm font-medium text-muted-foreground">
+                  <Label className="text-muted-foreground text-sm font-medium">
                     审批时间
                   </Label>
                   <p className="mt-1 text-sm">

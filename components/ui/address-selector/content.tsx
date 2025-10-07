@@ -122,9 +122,9 @@ export const AddressSelectorContent = ({
       currentAddress.city ||
       currentAddress.district ||
       currentAddress.detail) && (
-      <div className="rounded-md bg-muted p-3">
+      <div className="bg-muted rounded-md p-3">
         <div className="flex items-center gap-2 text-sm">
-          <MapPin className="h-4 w-4 text-muted-foreground" />
+          <MapPin className="text-muted-foreground h-4 w-4" />
           <span className="font-medium">完整地址：</span>
           <span>{formatAddressString(currentAddress)}</span>
         </div>

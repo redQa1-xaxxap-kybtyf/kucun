@@ -125,16 +125,16 @@ export function ProductCombobox({
           shouldFilter={false}
           className="overflow-visible bg-transparent"
         >
-          <div className="group rounded-md border border-input px-3 py-2 text-sm ring-offset-background focus-within:ring-2 focus-within:ring-ring focus-within:ring-offset-2">
+          <div className="group border-input ring-offset-background focus-within:ring-ring rounded-md border px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-offset-2">
             <div className="flex flex-wrap gap-1">
               {selectedProduct && (
-                <div className="flex items-center gap-1 rounded-sm bg-secondary px-2 py-0.5">
+                <div className="bg-secondary flex items-center gap-1 rounded-sm px-2 py-0.5">
                   <span className="text-xs">{selectedProduct.label}</span>
                   {!disabled && (
                     <button
                       type="button"
                       onClick={handleClear}
-                      className="ml-1 rounded-sm hover:bg-secondary-foreground/20"
+                      className="hover:bg-secondary-foreground/20 ml-1 rounded-sm"
                     >
                       <X className="h-3 w-3" />
                     </button>
@@ -146,13 +146,13 @@ export function ProductCombobox({
                 onValueChange={handleSearchChange}
                 onFocus={() => setOpen(true)}
                 disabled={disabled}
-                className="ml-2 flex-1 bg-transparent outline-hidden placeholder:text-muted-foreground"
+                className="placeholder:text-muted-foreground ml-2 flex-1 bg-transparent outline-hidden"
               />
             </div>
           </div>
           <div className="relative mt-2">
             {open && (
-              <div className="absolute top-0 z-10 w-full rounded-md border bg-popover text-popover-foreground shadow-md outline-hidden animate-in">
+              <div className="bg-popover text-popover-foreground animate-in absolute top-0 z-10 w-full rounded-md border shadow-md outline-hidden">
                 <CommandList>
                   <CommandEmpty>
                     {isLoading ? '搜索中...' : '未找到相关产品'}
@@ -175,17 +175,17 @@ export function ProductCombobox({
                         <div className="flex min-w-0 flex-1 flex-col">
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{product.label}</span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-muted-foreground text-xs">
                               {product.code}
                             </span>
                           </div>
                           {product.specification && (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-muted-foreground text-xs">
                               {product.specification}
                             </span>
                           )}
                           {product.currentStock !== undefined && (
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-muted-foreground text-xs">
                               库存: {product.currentStock}片
                             </span>
                           )}

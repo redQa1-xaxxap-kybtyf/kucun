@@ -1,6 +1,6 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import {
   Calendar,
   CheckCircle,
@@ -9,8 +9,6 @@ import {
   Search,
   TrendingDown,
 } from 'lucide-react';
-import { useRouter, useSearchParams } from 'next/navigation';
-import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,8 +21,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { paginationConfig } from '@/lib/env';
-import { queryKeys } from '@/lib/queryKeys';
 import type {
   RefundMethod,
   RefundStatus,
@@ -76,54 +72,32 @@ interface RefundsClientProps {
       totalPages: number;
     };
   };
+  initialParams?: {
+    page: number;
+    limit: number;
+    search?: string;
+    status?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  };
+  onSearch?: (value: string) => void;
+  onFilter?: (key: string, value: string | undefined) => void;
+  onPageChange?: (page: number) => void;
 }
 
 /**
  * 退款客户端交互组件
  * 处理搜索、筛选、分页等客户端交互
  */
-export function RefundsClient({ initialData }: RefundsClientProps) {
+export function RefundsClient({
+  initialData,
+  initialParams,
+  onSearch,
+  onFilter,
+  onPageChange,
+}: RefundsClientProps) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  const [queryParams, setQueryParams] = React.useState({
-    page: parseInt(searchParams.get('page') || '1', 10),
-    limit: parseInt(
-      searchParams.get('limit') || `${paginationConfig.defaultPageSize}`,
-      10
-    ),
-    search: searchParams.get('search') || '',
-    status: searchParams.get('status') || undefined,
-    sortBy: searchParams.get('sortBy') || 'refundDate',
-    sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
-  });
-
-  // 获取退款记录数据
-  const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.finance.refundsList(queryParams),
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      params.set('page', queryParams.page.toString());
-      params.set('pageSize', queryParams.limit.toString());
-      if (queryParams.search) {
-        params.set('search', queryParams.search);
-      }
-      if (queryParams.status) {
-        params.set('status', queryParams.status);
-      }
-      params.set('sortBy', queryParams.sortBy);
-      params.set('sortOrder', queryParams.sortOrder);
-
-      const response = await fetch(`/api/finance/refunds?${params}`);
-      if (!response.ok) {
-        throw new Error('获取退款记录失败');
-      }
-      return response.json();
-    },
-    initialData: { data: initialData },
-    staleTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: false,
-  });
+  const { refunds, statistics, pagination } = initialData;
 
   const formatCurrency = (amount: number) =>
     new Intl.NumberFormat('zh-CN', {
@@ -158,26 +132,6 @@ export function RefundsClient({ initialData }: RefundsClientProps) {
     };
     return typeConfig[type as keyof typeof typeConfig] || '其他类型';
   };
-
-  const handleSearch = (value: string) => {
-    setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
-  };
-
-  const handleStatusFilter = (value: string) => {
-    setQueryParams(prev => ({
-      ...prev,
-      status: value === 'all' ? undefined : value,
-      page: 1,
-    }));
-  };
-
-  const handlePageChange = (newPage: number) => {
-    setQueryParams(prev => ({ ...prev, page: newPage }));
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
-
-  const currentData = data?.data || initialData;
-  const statistics = initialData.statistics;
 
   return (
     <div className="space-y-6">
@@ -256,15 +210,17 @@ export function RefundsClient({ initialData }: RefundsClientProps) {
               <div className="relative max-w-sm flex-1">
                 <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
-                  placeholder="搜索退货单号或客户名称..."
-                  value={queryParams.search}
-                  onChange={e => handleSearch(e.target.value)}
+                  placeholder="搜索退款单号、退货单号..."
+                  defaultValue={initialParams?.search}
+                  onChange={e => onSearch?.(e.target.value)}
                   className="pl-9"
                 />
               </div>
               <Select
-                value={queryParams.status || 'all'}
-                onValueChange={handleStatusFilter}
+                value={initialParams?.status || 'all'}
+                onValueChange={value =>
+                  onFilter?.('status', value === 'all' ? undefined : value)
+                }
               >
                 <SelectTrigger className="w-[140px]">
                   <Filter className="mr-2 h-4 w-4" />
@@ -283,22 +239,12 @@ export function RefundsClient({ initialData }: RefundsClientProps) {
 
           {/* 退款申请列表 */}
           <div className="mt-6 space-y-4">
-            {isLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-muted-foreground">加载中...</div>
-              </div>
-            ) : error ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-red-600">
-                  加载失败: {(error as Error).message}
-                </div>
-              </div>
-            ) : currentData.refunds.length === 0 ? (
+            {refunds.length === 0 ? (
               <div className="py-8 text-center">
                 <p className="text-muted-foreground">暂无退款记录</p>
               </div>
             ) : (
-              currentData.refunds.map((refund: RefundRecord) => (
+              refunds.map(refund => (
                 <Card
                   key={refund.id}
                   className="transition-shadow hover:shadow-md"
@@ -386,36 +332,34 @@ export function RefundsClient({ initialData }: RefundsClientProps) {
           </div>
 
           {/* 分页 */}
-          <div className="mt-6 flex items-center justify-between">
-            <p className="text-muted-foreground text-sm">
-              共 {currentData.pagination?.total || 0} 条记录
-            </p>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={queryParams.page <= 1 || isLoading}
-                onClick={() => handlePageChange(queryParams.page - 1)}
-              >
-                上一页
-              </Button>
-              <span className="text-muted-foreground text-sm">
-                第 {queryParams.page} /{' '}
-                {currentData.pagination?.totalPages || 1} 页
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={
-                  queryParams.page >=
-                    (currentData.pagination?.totalPages || 1) || isLoading
-                }
-                onClick={() => handlePageChange(queryParams.page + 1)}
-              >
-                下一页
-              </Button>
+          {pagination.totalPages > 1 && (
+            <div className="mt-6 flex items-center justify-between">
+              <p className="text-muted-foreground text-sm">
+                共 {pagination.total} 条记录
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page <= 1}
+                  onClick={() => onPageChange?.(pagination.page - 1)}
+                >
+                  上一页
+                </Button>
+                <span className="text-muted-foreground text-sm">
+                  第 {pagination.page} / {pagination.totalPages} 页
+                </span>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={pagination.page >= pagination.totalPages}
+                  onClick={() => onPageChange?.(pagination.page + 1)}
+                >
+                  下一页
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </CardContent>
       </Card>
     </div>

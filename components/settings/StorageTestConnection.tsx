@@ -77,7 +77,7 @@ export const StorageTestConnection = ({
     return (
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center text-destructive">
+          <CardTitle className="text-destructive flex items-center">
             <XCircle className="mr-2 h-5 w-5" />
             连接测试失败
           </CardTitle>
@@ -94,7 +94,7 @@ export const StorageTestConnection = ({
 
           <div className="space-y-2">
             <h4 className="text-sm font-medium">请检查以下配置：</h4>
-            <ul className="space-y-1 text-sm text-muted-foreground">
+            <ul className="text-muted-foreground space-y-1 text-sm">
               <li>• Access Key 和 Secret Key 是否正确</li>
               <li>• 存储空间名称是否存在</li>
               <li>• 存储区域是否匹配</li>
@@ -144,7 +144,7 @@ export const StorageTestConnection = ({
               <h4 className="text-sm font-medium">存储空间信息</h4>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     空间名称
                   </span>
                   <Badge variant="secondary">
@@ -152,7 +152,7 @@ export const StorageTestConnection = ({
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     存储区域
                   </span>
                   <Badge variant="secondary">
@@ -160,7 +160,7 @@ export const StorageTestConnection = ({
                   </Badge>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border p-3">
-                  <span className="text-sm text-muted-foreground">
+                  <span className="text-muted-foreground text-sm">
                     访问权限
                   </span>
                   <Badge
@@ -177,7 +177,7 @@ export const StorageTestConnection = ({
 
           <div className="rounded-lg bg-blue-50 p-3">
             <div className="flex items-start">
-              <Info className="mr-2 mt-0.5 h-4 w-4 text-blue-600" />
+              <Info className="mt-0.5 mr-2 h-4 w-4 text-blue-600" />
               <div className="text-sm">
                 <p className="font-medium text-blue-800">配置提示</p>
                 <p className="mt-1 text-blue-700">

@@ -193,14 +193,14 @@ export default function CreatePaymentPage() {
   };
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
         {/* 页面标题卡片 */}
         <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
+          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-600 shadow-lg shadow-green-600/30">
                   <Receipt className="h-6 w-6 text-white" />
                 </div>
                 <div>
@@ -220,14 +220,14 @@ export default function CreatePaymentPage() {
               >
                 <Link href="/finance/payments">
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  返回列表
+                  返回
                 </Link>
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* 主要表单 */}
           <div className="lg:col-span-2">
             <Card className="shadow-md shadow-gray-200/50">

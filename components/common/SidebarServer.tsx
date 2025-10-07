@@ -24,10 +24,7 @@ interface SidebarServerProps {
  * 在服务器端获取 session 和过滤导航项
  * 避免客户端等待 NextAuth Session Ready
  */
-export async function SidebarServer({
-  state,
-  className,
-}: SidebarServerProps) {
+export async function SidebarServer({ state, className }: SidebarServerProps) {
   // 在服务器端获取 session
   const session = await getServerSession(authOptions);
   const userRole = session?.user?.role as UserRole | undefined;

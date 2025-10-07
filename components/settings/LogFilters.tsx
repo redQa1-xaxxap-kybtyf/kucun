@@ -138,7 +138,7 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
           <div className="space-y-2">
             <Label htmlFor="search">关键词搜索</Label>
             <div className="relative">
-              <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+              <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
               <Input
                 id="search"
                 placeholder="搜索描述、操作等..."

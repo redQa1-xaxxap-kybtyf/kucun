@@ -67,59 +67,64 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   }, [watchedInputQuantity, watchedInputUnit, watchedPiecesPerUnit, form]);
 
   return (
-    <div className="space-y-6">
-      {/* 页面标题卡片 */}
-      <InboundFormToolbar
-        isSubmitting={isSubmitting}
-        onReset={handleReset}
-        onSubmit={form.handleSubmit(onSubmit)}
-      />
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 页面标题卡片 */}
+        <InboundFormToolbar
+          isSubmitting={isSubmitting}
+          onReset={handleReset}
+          onSubmit={form.handleSubmit(onSubmit)}
+        />
 
-      {/* 表单内容区域 */}
-      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
-        <div className="p-6">
-          <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              {/* 产品选择区域 */}
-              <InboundProductSection
-                form={form}
-                selectedProduct={selectedProduct}
-                onProductSelect={handleProductSelect}
-              />
+        {/* 表单内容区域 */}
+        <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+          <div className="p-6">
+            <Form {...form}>
+              <form
+                onSubmit={form.handleSubmit(onSubmit)}
+                className="space-y-6"
+              >
+                {/* 产品选择区域 */}
+                <InboundProductSection
+                  form={form}
+                  selectedProduct={selectedProduct}
+                  onProductSelect={handleProductSelect}
+                />
 
-              {/* 入库数量信息 */}
-              <div className="space-y-4">
-                <h3 className="text-base font-medium text-gray-900">
-                  入库数量
-                </h3>
-                <InboundQuantityFields form={form} />
-              </div>
+                {/* 入库数量信息 */}
+                <div className="space-y-4">
+                  <h3 className="text-base font-medium text-gray-900">
+                    入库数量
+                  </h3>
+                  <InboundQuantityFields form={form} />
+                </div>
 
-              {/* 产品规格信息 */}
-              <div className="space-y-4">
-                <h3 className="text-base font-medium text-gray-900">
-                  产品规格
-                </h3>
-                <InboundSpecificationFields form={form} />
-              </div>
+                {/* 产品规格信息 */}
+                <div className="space-y-4">
+                  <h3 className="text-base font-medium text-gray-900">
+                    产品规格
+                  </h3>
+                  <InboundSpecificationFields form={form} />
+                </div>
 
-              {/* 入库原因 */}
-              <div className="space-y-4">
-                <h3 className="text-base font-medium text-gray-900">
-                  入库原因
-                </h3>
-                <InboundReasonField form={form} />
-              </div>
+                {/* 入库原因 */}
+                <div className="space-y-4">
+                  <h3 className="text-base font-medium text-gray-900">
+                    入库原因
+                  </h3>
+                  <InboundReasonField form={form} />
+                </div>
 
-              {/* 可选信息 */}
-              <div className="space-y-4">
-                <h3 className="text-base font-medium text-gray-900">
-                  可选信息
-                </h3>
-                <InboundOptionalFields form={form} />
-              </div>
-            </form>
-          </Form>
+                {/* 可选信息 */}
+                <div className="space-y-4">
+                  <h3 className="text-base font-medium text-gray-900">
+                    可选信息
+                  </h3>
+                  <InboundOptionalFields form={form} />
+                </div>
+              </form>
+            </Form>
+          </div>
         </div>
       </div>
     </div>

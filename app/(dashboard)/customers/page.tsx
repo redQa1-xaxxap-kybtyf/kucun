@@ -39,11 +39,9 @@ export default async function CustomersPage({
   });
 
   return (
-    <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      <CustomersPageClient
-        initialData={initialData}
-        initialParams={{ page, limit, search, sortBy, sortOrder }}
-      />
-    </div>
+    <CustomersPageClient
+      initialData={initialData}
+      initialParams={{ page, limit, search, sortBy, sortOrder }}
+    />
   );
 }

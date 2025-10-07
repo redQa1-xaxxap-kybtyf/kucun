@@ -7,10 +7,16 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
-// 创建 Prisma 客户端实例
-export const prisma =
-  globalForPrisma.prisma ??
-  new PrismaClient({
+// 防止在客户端环境中初始化 Prisma
+function createPrismaClient() {
+  // 客户端环境检测
+  if (typeof window !== 'undefined') {
+    throw new Error(
+      'PrismaClient is not available in browser environment. Please use API routes to access database.'
+    );
+  }
+
+  return new PrismaClient({
     log:
       env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
     datasources: {
@@ -21,37 +27,46 @@ export const prisma =
     // 性能监控（可选）
     errorFormat: 'minimal',
   });
+}
+
+// 创建 Prisma 客户端实例（仅在服务端）
+export const prisma =
+  typeof window !== 'undefined'
+    ? (null as unknown as PrismaClient) // 客户端返回 null
+    : (globalForPrisma.prisma ?? createPrismaClient());
 
 // 在开发环境中保存实例到全局变量，避免热重载时重复创建
-if (env.NODE_ENV !== 'production') {
+if (typeof window === 'undefined' && env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;
 }
 
-// 慢查询监控（所有环境）
-// 优化：降低阈值到100ms，增加详细日志，开发环境也启用
-prisma.$use(async (params, next) => {
-  const before = Date.now();
-  const result = await next(params);
-  const after = Date.now();
-  const duration = after - before;
+// 慢查询监控（仅在服务端环境）
+if (typeof window === 'undefined' && prisma) {
+  // 优化：降低阈值到100ms，增加详细日志，开发环境也启用
+  prisma.$use(async (params, next) => {
+    const before = Date.now();
+    const result = await next(params);
+    const after = Date.now();
+    const duration = after - before;
 
-  // 记录超过100ms的查询（优化前：1000ms）
-  if (duration > 100) {
-    console.warn(
-      `[Prisma] Slow query detected: ${params.model}.${params.action} took ${duration}ms`,
-      {
-        model: params.model,
-        action: params.action,
-        args: params.args
-          ? JSON.stringify(params.args).substring(0, 200)
-          : 'N/A', // 限制日志长度
-        duration: `${duration}ms`,
-      }
-    );
-  }
+    // 记录超过100ms的查询（优化前：1000ms）
+    if (duration > 100) {
+      console.warn(
+        `[Prisma] Slow query detected: ${params.model}.${params.action} took ${duration}ms`,
+        {
+          model: params.model,
+          action: params.action,
+          args: params.args
+            ? JSON.stringify(params.args).substring(0, 200)
+            : 'N/A', // 限制日志长度
+          duration: `${duration}ms`,
+        }
+      );
+    }
 
-  return result;
-});
+    return result;
+  });
+}
 
 // 数据库连接测试函数
 export async function testDatabaseConnection() {

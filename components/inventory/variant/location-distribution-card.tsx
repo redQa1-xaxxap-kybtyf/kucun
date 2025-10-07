@@ -35,12 +35,12 @@ export function LocationDistributionCard({
           {locations.map((location, index: number) => (
             <div key={index} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-primary" />
+                <div className="bg-primary h-2 w-2 rounded-full" />
                 <span className="font-medium">{location.location}</span>
               </div>
               <div className="text-right">
                 <div className="font-medium">{location.quantity}</div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-muted-foreground text-xs">
                   {location.batches} 批次
                 </div>
               </div>

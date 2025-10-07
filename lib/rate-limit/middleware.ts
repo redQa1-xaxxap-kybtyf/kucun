@@ -105,9 +105,7 @@ function createRateLimitResponse(
   type: RateLimitType
 ): Response {
   // 计算重试等待时间（秒）
-  const retryAfter = Math.ceil(
-    (result.resetAt.getTime() - Date.now()) / 1000
-  );
+  const retryAfter = Math.ceil((result.resetAt.getTime() - Date.now()) / 1000);
 
   // 错误消息映射
   const messages: Record<RateLimitType, string> = {
@@ -165,7 +163,9 @@ function createRateLimitResponse(
  * });
  */
 export function withRateLimit(type: RateLimitType = RateLimitType.GLOBAL) {
-  return function <TParams extends Record<string, string> = Record<string, string>>(
+  return function <
+    TParams extends Record<string, string> = Record<string, string>,
+  >(
     handler: (
       request: NextRequest,
       context: { params?: Promise<TParams> | TParams }

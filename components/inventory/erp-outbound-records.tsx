@@ -14,19 +14,21 @@ export function ERPOutboundRecords() {
     useOutboundRecords();
 
   return (
-    <div className="space-y-4">
-      {/* 页面标题卡片 */}
-      <OutboundRecordsToolbar />
+    <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="space-y-6">
+        {/* 页面标题卡片 */}
+        <OutboundRecordsToolbar />
 
-      {/* 筛选条件 */}
-      <OutboundRecordsFilters
-        filters={filters}
-        onUpdateFilter={updateFilter}
-        onReset={resetFilters}
-      />
+        {/* 筛选条件 */}
+        <OutboundRecordsFilters
+          filters={filters}
+          onUpdateFilter={updateFilter}
+          onReset={resetFilters}
+        />
 
-      {/* 出库记录表格 */}
-      <OutboundRecordsTable records={outboundRecords} isLoading={isLoading} />
+        {/* 出库记录表格 */}
+        <OutboundRecordsTable records={outboundRecords} isLoading={isLoading} />
+      </div>
     </div>
   );
 }

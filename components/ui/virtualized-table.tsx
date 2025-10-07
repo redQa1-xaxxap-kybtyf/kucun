@@ -102,9 +102,9 @@ export function VirtualizedTable<T>({
   // 加载状态
   if (isLoading) {
     return (
-      <div className="rounded border bg-card">
+      <div className="bg-card rounded border">
         {loadingState || (
-          <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex h-64 items-center justify-center text-sm">
             加载中...
           </div>
         )}
@@ -115,9 +115,9 @@ export function VirtualizedTable<T>({
   // 空状态
   if (data.length === 0) {
     return (
-      <div className="rounded border bg-card">
+      <div className="bg-card rounded border">
         {emptyState || (
-          <div className="flex h-64 items-center justify-center text-sm text-muted-foreground">
+          <div className="text-muted-foreground flex h-64 items-center justify-center text-sm">
             暂无数据
           </div>
         )}
@@ -126,7 +126,7 @@ export function VirtualizedTable<T>({
   }
 
   return (
-    <div className="rounded border bg-card">
+    <div className="bg-card rounded border">
       <div
         ref={parentRef}
         className="overflow-auto"
@@ -142,7 +142,7 @@ export function VirtualizedTable<T>({
         >
           <Table>
             {/* 表头 */}
-            <TableHeader className="sticky top-0 z-10 bg-muted/30">
+            <TableHeader className="bg-muted/30 sticky top-0 z-10">
               <TableRow>
                 {columns.map(column => (
                   <TableHead
@@ -176,7 +176,7 @@ export function VirtualizedTable<T>({
                     key={rowKey}
                     data-index={virtualRow.index}
                     className={cn(
-                      'cursor-pointer hover:bg-muted/50',
+                      'hover:bg-muted/50 cursor-pointer',
                       className
                     )}
                     style={{

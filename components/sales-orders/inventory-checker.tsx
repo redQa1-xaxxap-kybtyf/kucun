@@ -163,8 +163,12 @@ function _InventoryCheckItem({ result }: InventoryCheckItemProps) {
   };
 
   const _getProgressColor = () => {
-    if (result.availableQuantity === 0) {return 'bg-red-500';}
-    if (result.availableQuantity <= 10) {return 'bg-orange-500';}
+    if (result.availableQuantity === 0) {
+      return 'bg-red-500';
+    }
+    if (result.availableQuantity <= 10) {
+      return 'bg-orange-500';
+    }
     return 'bg-green-500';
   };
 
@@ -198,7 +202,7 @@ function _InventoryCheckItem({ result }: InventoryCheckItemProps) {
           </Badge>
         </div>
 
-        <div className="text-xs text-muted-foreground">
+        <div className="text-muted-foreground text-xs">
           需要: {result.requestedQuantity}
           {result.product?.unit} | 可用: {result.availableQuantity}
           {result.product?.unit}

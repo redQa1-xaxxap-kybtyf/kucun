@@ -18,7 +18,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { cn } from '@/lib/utils';
 
 // ============================================================================
@@ -112,35 +111,30 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
     className,
     compact = false,
   }) => {
-    // 使用防抖搜索Hook
-    const { inputValue, debouncedValue, isDebouncing, setInputValue } =
-      useDebouncedSearch({
-        delay: debounceDelay,
-        minLength: 0,
-        initialValue: searchValue,
-      });
+    // 使用受控输入 - 直接使用外部传入的searchValue
+    // 不再使用内部状态，避免状态同步问题
+    const [localValue, setLocalValue] = React.useState(searchValue);
 
-    // 监听防抖后的值变化，触发搜索
+    // 同步外部值到本地状态（用于显示）
     React.useEffect(() => {
-      if (debouncedValue !== searchValue) {
-        onSearchChange(debouncedValue);
-      }
-    }, [debouncedValue, onSearchChange, searchValue]);
+      setLocalValue(searchValue);
+    }, [searchValue]);
 
-    // 同步外部搜索值到内部状态
-    const prevSearchRef = React.useRef(searchValue);
-    React.useEffect(() => {
-      if (searchValue !== prevSearchRef.current && searchValue !== inputValue) {
-        setInputValue(searchValue);
-        prevSearchRef.current = searchValue;
-      }
-    }, [searchValue, inputValue, setInputValue]);
+    // 处理输入变化 - 立即更新本地显示，调用父组件回调
+    const handleInputChange = React.useCallback(
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newValue = e.target.value;
+        setLocalValue(newValue); // 立即更新本地显示
+        onSearchChange(newValue); // 调用父组件回调（父组件负责防抖）
+      },
+      [onSearchChange]
+    );
 
     // 清空搜索
     const handleClearSearch = React.useCallback(() => {
-      setInputValue('');
+      setLocalValue('');
       onSearchChange('');
-    }, [setInputValue, onSearchChange]);
+    }, [onSearchChange]);
 
     // 筛选器变更处理
     const handleFilterChange = React.useCallback(
@@ -189,33 +183,22 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
             />
             <Input
               placeholder={searchPlaceholder}
-              value={inputValue}
-              onChange={e => setInputValue(e.target.value)}
+              value={localValue}
+              onChange={handleInputChange}
               className={cn(
                 'pl-10',
-                showClearButton && inputValue && 'pr-10',
+                showClearButton && localValue && 'pr-10',
                 inputSize
               )}
             />
-            {/* 加载指示器 */}
-            {isDebouncing && (
-              <div
-                className={cn(
-                  'absolute top-1/2 right-3 -translate-y-1/2',
-                  compact ? 'h-3.5 w-3.5' : 'h-4 w-4'
-                )}
-              >
-                <div className="border-primary h-full w-full animate-spin rounded-full border-2 border-t-transparent" />
-              </div>
-            )}
             {/* 清空按钮 */}
-            {showClearButton && inputValue && !isDebouncing && (
+            {showClearButton && localValue && (
               <Button
                 type="button"
                 variant="ghost"
                 size="sm"
                 onClick={handleClearSearch}
-                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 p-0 hover:bg-transparent"
+                className="absolute top-1/2 right-1 h-7 w-7 -translate-y-1/2 p-0 hover:bg-transparent"
                 aria-label="清空搜索"
               >
                 <X
@@ -258,7 +241,9 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
                     compact && 'text-xs'
                   )}
                 >
-                  <SelectValue placeholder={filter.placeholder || filter.label} />
+                  <SelectValue
+                    placeholder={filter.placeholder || filter.label}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">全部{filter.label}</SelectItem>

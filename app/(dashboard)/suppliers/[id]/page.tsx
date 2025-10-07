@@ -4,10 +4,24 @@ import { prisma } from '@/lib/db';
 import { SupplierDetailPageClient } from './page-client';
 
 /**
- * 供应商详情页面 - Server Component
- * 负责数据获取和 SEO 优化
- * 严格遵循前端架构规范：三级组件架构
+ * 供应商详情页面
+ *
+ * ✅ Next.js 15 最佳实践：
+ * - Server Component 架构
+ * - Route Segment Config 缓存控制
+ * - 直接 Prisma 数据获取
+ * - 数据序列化处理
  */
+
+// ============================================
+// Route Segment Config
+// ============================================
+
+// ✅ Next.js 15 Route Segment Config
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const runtime = 'nodejs';
+export const revalidate = 0;
 export default async function SupplierDetailPage({
   params,
 }: {

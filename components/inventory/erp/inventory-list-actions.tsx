@@ -21,7 +21,7 @@ export function InventoryListActions({
   return (
     <div className="flex items-center gap-2">
       {selectedCount > 0 && (
-        <div className="mr-4 text-sm text-muted-foreground">
+        <div className="text-muted-foreground mr-4 text-sm">
           已选择 {selectedCount} 项
         </div>
       )}

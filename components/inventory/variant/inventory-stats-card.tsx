@@ -27,19 +27,19 @@ export function InventoryStatsCard({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-lg bg-muted/50 p-3 text-center">
+          <div className="bg-muted/50 rounded-lg p-3 text-center">
             <div className="text-lg font-bold">{breakdown.totalBatches}</div>
-            <div className="text-sm text-muted-foreground">总批次数</div>
+            <div className="text-muted-foreground text-sm">总批次数</div>
           </div>
-          <div className="rounded-lg bg-muted/50 p-3 text-center">
+          <div className="bg-muted/50 rounded-lg p-3 text-center">
             <div className="text-lg font-bold">{breakdown.totalLocations}</div>
-            <div className="text-sm text-muted-foreground">存储位置</div>
+            <div className="text-muted-foreground text-sm">存储位置</div>
           </div>
         </div>
 
         {lastUpdated && (
           <div className="mt-4 border-t pt-4">
-            <div className="text-center text-sm text-muted-foreground">
+            <div className="text-muted-foreground text-center text-sm">
               最后更新: {new Date(lastUpdated).toLocaleString('zh-CN')}
             </div>
           </div>

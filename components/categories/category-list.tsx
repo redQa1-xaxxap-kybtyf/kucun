@@ -72,7 +72,7 @@ export function CategoryList({
     <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/50 hover:bg-muted/50">
+          <TableRow className="border-b bg-gradient-to-r from-slate-50 to-gray-50 hover:bg-gradient-to-r hover:from-slate-50 hover:to-gray-50">
             <TableHead className="w-12">
               <Checkbox
                 checked={

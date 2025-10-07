@@ -41,29 +41,29 @@ export function StatementBasicInfo({
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">联系电话</span>
+          <span className="text-muted-foreground text-sm">联系电话</span>
           <span className="font-medium">{contact.phone || '-'}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">地址</span>
+          <span className="text-muted-foreground text-sm">地址</span>
           <span className="text-right text-sm font-medium">
             {contact.address || '-'}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">信用额度</span>
+          <span className="text-muted-foreground text-sm">信用额度</span>
           <span className="font-medium">{formatCurrency(creditLimit)}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">账期</span>
+          <span className="text-muted-foreground text-sm">账期</span>
           <span className="font-medium">{paymentTerms}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">最后交易</span>
+          <span className="text-muted-foreground text-sm">最后交易</span>
           <span className="font-medium">{lastTransactionDate || '-'}</span>
         </div>
         <div className="flex justify-between">
-          <span className="text-sm text-muted-foreground">最后付款</span>
+          <span className="text-muted-foreground text-sm">最后付款</span>
           <span className="font-medium">{lastPaymentDate || '-'}</span>
         </div>
       </CardContent>

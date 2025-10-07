@@ -18,7 +18,14 @@ import type {
 const API_BASE = '/api/inventory/inbound';
 const PRODUCTS_API = '/api/products/search';
 
-// 获取入库记录列表
+/**
+ * 获取入库记录列表
+ *
+ * ✅ Next.js 15.4 最佳实践：
+ * - 服务端通过 HydrationBoundary 预取数据
+ * - 客户端使用相同的 queryKey 获取缓存数据
+ * - 配置 staleTime=Infinity 防止首次渲染时重新请求
+ */
 export function useInboundRecords(params: InboundQueryParams = {}) {
   return useQuery({
     queryKey: queryKeys.inventory.inboundsList(params),
@@ -55,7 +62,9 @@ export function useInboundRecords(params: InboundQueryParams = {}) {
         pagination: result.pagination,
       };
     },
-    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
+    staleTime: Infinity, // 防止客户端重复请求服务端已预取的数据
+    gcTime: 10 * 60 * 1000, // 10分钟
+    placeholderData: previousData => previousData, // 保持上一页数据
   });
 }
 

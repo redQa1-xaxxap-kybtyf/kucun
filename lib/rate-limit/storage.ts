@@ -64,7 +64,10 @@ export class RedisRateLimitStorage implements RateLimitStorage {
       return Array(count).fill(0);
     } catch (error) {
       if (env.NODE_ENV === 'development') {
-        console.error('[RedisRateLimitStorage] getRequestsInWindow 错误:', error);
+        console.error(
+          '[RedisRateLimitStorage] getRequestsInWindow 错误:',
+          error
+        );
       }
       throw error;
     }
@@ -193,7 +196,9 @@ export class MemoryRateLimitStorage implements RateLimitStorage {
     }
 
     // 过滤掉过期的时间戳
-    const validRequests = entry.requests.filter(timestamp => timestamp >= before);
+    const validRequests = entry.requests.filter(
+      timestamp => timestamp >= before
+    );
 
     if (validRequests.length === 0) {
       this.cache.delete(key);
@@ -248,9 +253,7 @@ export class MemoryRateLimitStorage implements RateLimitStorage {
  * @param redisClient Redis 客户端（可选）
  * @returns 存储适配器实例
  */
-export function createRateLimitStorage(
-  redisClient?: Redis
-): RateLimitStorage {
+export function createRateLimitStorage(redisClient?: Redis): RateLimitStorage {
   if (redisClient) {
     try {
       return new RedisRateLimitStorage(redisClient);

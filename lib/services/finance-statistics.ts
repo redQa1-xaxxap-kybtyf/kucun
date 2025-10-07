@@ -242,7 +242,7 @@ export async function calculateSupplierStatements(
 
     // 修复重复计算bug：使用Map去重factoryShipmentOrder，避免同一订单的paidAmount被重复累加
     const uniqueFactoryOrders = new Map<string, number>();
-    supplier.factoryShipmentOrderItems.forEach((item) => {
+    supplier.factoryShipmentOrderItems.forEach(item => {
       const orderId = item.factoryShipmentOrder.id;
       const paidAmount = item.factoryShipmentOrder.paidAmount || 0;
       // 只记录每个订单一次

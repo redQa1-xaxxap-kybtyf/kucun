@@ -40,7 +40,9 @@ export function OrderNumberGenerator({
 
   // 生成新订单号
   const generateOrderNumber = async () => {
-    if (disabled) {return;}
+    if (disabled) {
+      return;
+    }
 
     setIsGenerating(true);
     try {
@@ -118,7 +120,9 @@ export function OrderNumberGenerator({
 
   // 复制订单号
   const copyOrderNumber = async () => {
-    if (!value) {return;}
+    if (!value) {
+      return;
+    }
 
     try {
       await navigator.clipboard.writeText(value);
@@ -152,7 +156,7 @@ export function OrderNumberGenerator({
   // 获取状态指示器
   const getStatusIndicator = () => {
     if (isValidating) {
-      return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
+      return <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />;
     }
 
     if (!validationResult) {
@@ -160,7 +164,7 @@ export function OrderNumberGenerator({
     }
 
     if (!validationResult.valid) {
-      return <AlertCircle className="h-4 w-4 text-destructive" />;
+      return <AlertCircle className="text-destructive h-4 w-4" />;
     }
 
     if (!validationResult.available) {
@@ -197,7 +201,7 @@ export function OrderNumberGenerator({
                   'border-green-500'
               )}
             />
-            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+            <div className="absolute top-1/2 right-3 -translate-y-1/2">
               {getStatusIndicator()}
             </div>
           </div>
@@ -264,7 +268,7 @@ export function OrderNumberGenerator({
       )}
 
       {/* 订单号格式说明 */}
-      <div className="text-xs text-muted-foreground">
+      <div className="text-muted-foreground text-xs">
         <div className="mb-1 font-medium">订单号格式说明：</div>
         <div>• 格式：SO + 8位日期 + 4位序号</div>
         <div>• 示例：SO202501190001</div>

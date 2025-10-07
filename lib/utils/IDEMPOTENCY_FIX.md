@@ -43,6 +43,7 @@ T4: 请求B -> createIdempotencyRecord(key) -> ❌ 唯一约束冲突（P2002错
 ```
 
 **影响**：
+
 - 并发请求时，除第一个请求外，其他请求全部失败
 - 用户看到 500 错误而非正确的幂等性返回
 - 违背幂等性设计的初衷
@@ -107,9 +108,9 @@ export async function withIdempotency<T>(...) {
 ### 重试配置
 
 ```typescript
-const maxRetries = 20;        // 最大20次重试
-const retryDelayMs = 100;     // 初始延迟100ms
-const maxRetryDelayMs = 500;  // 最大延迟500ms
+const maxRetries = 20; // 最大20次重试
+const retryDelayMs = 100; // 初始延迟100ms
+const maxRetryDelayMs = 500; // 最大延迟500ms
 ```
 
 ### 指数退避公式
@@ -134,12 +135,14 @@ delay = min(100 * 1.5^attempt, 500)
 ### 场景：10个并发请求同一幂等性键
 
 **旧版本**：
+
 ```
 请求1: ✅ 成功执行
 请求2-10: ❌ 全部失败（"操作正在处理中"）
 ```
 
 **新版本**：
+
 ```
 请求1: ✅ 成功执行
 请求2-10:
@@ -230,12 +233,13 @@ export async function withIdempotency<T>(
   operatorId: string,
   requestData: Record<string, unknown>,
   operation: () => Promise<T>
-): Promise<T>
+): Promise<T>;
 ```
 
 ### 调用方式未变
 
 所有现有的 API 路由无需修改，包括：
+
 - `app/api/inventory/inbound/route.ts`
 - `app/api/inventory/outbound/route.ts`
 - `app/api/inventory/adjust/route.ts`
@@ -271,6 +275,7 @@ if (attempt >= maxRetries) {
 ```
 
 触发条件：
+
 - 操作耗时 > 8 秒
 - 系统极度繁忙
 

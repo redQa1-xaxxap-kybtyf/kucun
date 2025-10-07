@@ -79,11 +79,11 @@ export function OutboundRecordsTable({
   }
 
   return (
-    <div className="bg-card rounded border">
-      <div className="bg-muted/30 border-b px-3 py-2">
+    <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+      <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-4 py-3">
         <div className="flex items-center gap-2">
-          <Package className="h-4 w-4" />
-          <span className="text-sm font-medium">
+          <Package className="h-4 w-4 text-blue-600" />
+          <span className="text-sm font-medium text-gray-900">
             出库记录 ({records.length} 条)
           </span>
         </div>

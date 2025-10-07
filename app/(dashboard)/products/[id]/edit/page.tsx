@@ -23,11 +23,5 @@ export default async function ProductEditPage({
     notFound();
   }
 
-  return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-        <ProductEditClient productId={id} initialData={product} />
-      </div>
-    </div>
-  );
+  return <ProductEditClient productId={id} initialData={product} />;
 }
