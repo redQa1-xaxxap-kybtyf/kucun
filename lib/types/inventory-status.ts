@@ -94,7 +94,7 @@ export const getInventoryStatus = (
     return {
       status: 'out_of_stock',
       label: INVENTORY_STATUS_LABELS.out_of_stock,
-      color: 'text-red-600',
+      color: 'text-red-700 bg-red-50',
       variant: 'destructive',
     };
   }
@@ -104,8 +104,8 @@ export const getInventoryStatus = (
     return {
       status: 'low_stock',
       label: INVENTORY_STATUS_LABELS.low_stock,
-      color: 'text-red-600',
-      variant: 'destructive',
+      color: 'text-orange-700 bg-orange-50',
+      variant: 'outline',
     };
   }
 
@@ -114,7 +114,7 @@ export const getInventoryStatus = (
     return {
       status: 'low_stock',
       label: INVENTORY_STATUS_LABELS.low_stock,
-      color: 'text-yellow-600',
+      color: 'text-yellow-700 bg-yellow-50',
       variant: 'outline',
     };
   }
@@ -124,7 +124,7 @@ export const getInventoryStatus = (
     return {
       status: 'overstock',
       label: INVENTORY_STATUS_LABELS.overstock,
-      color: 'text-blue-600',
+      color: 'text-purple-700 bg-purple-50',
       variant: 'secondary',
     };
   }
@@ -133,7 +133,7 @@ export const getInventoryStatus = (
   return {
     status: 'in_stock',
     label: INVENTORY_STATUS_LABELS.in_stock,
-    color: 'text-green-600',
+    color: 'text-green-700 bg-green-50',
     variant: 'default',
   };
 };
