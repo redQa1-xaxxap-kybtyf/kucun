@@ -1,12 +1,22 @@
 'use client';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
+import { AlertCircle, Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { ScrollableTableContainer } from '@/components/common/ScrollableTableContainer';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -37,96 +47,85 @@ import {
 
 interface ERPSalesOrderListProps {
   onOrderSelect?: (order: SalesOrder) => void;
-  _initialData?: PaginatedResponse<SalesOrder>;
   initialParams?: SalesOrderQueryParams;
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
   onPageChange?: (page: number) => void;
+  searchValue?: string;
 }
 
 /**
  * ERP风格销售订单列表组件
  * 符合中国ERP系统的标准布局和用户体验
+ *
+ * ✅ 修复：使用 HydrationBoundary 而不是 initialData prop
  */
 export function ERPSalesOrderList({
   onOrderSelect,
-  _initialData,
   initialParams,
   onSearch: externalOnSearch,
   onFilter: externalOnFilter,
   onPageChange: externalOnPageChange,
+  searchValue,
 }: ERPSalesOrderListProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const [queryParams, setQueryParams] = React.useState<SalesOrderQueryParams>(
-    initialParams || {
-      page: 1,
-      limit: paginationConfig.defaultPageSize, // 使用统一的分页配置
-      search: '',
-      status: undefined,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    }
+  const [showEditWarning, setShowEditWarning] = React.useState(false);
+  const [selectedOrder, setSelectedOrder] = React.useState<SalesOrder | null>(
+    null
   );
 
-  // 获取销售订单列表数据 - 使用服务器端提供的初始数据
-  const { data, isLoading, error } = useQuery({
-    queryKey: salesOrderQueryKeys.list(initialParams || queryParams),
-    queryFn: () => getSalesOrders(initialParams || queryParams),
-    initialData: _initialData, // 使用服务端预取的数据优化首屏加载
-    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
-    refetchInterval: 60 * 1000, // 每60秒轮询更新（替代 WebSocket）
-    refetchOnWindowFocus: true, // 窗口聚焦时重新获取
-    placeholderData: previousData => previousData, // 切换查询参数时保持上一次数据
+  // ✅ 移除内部 queryParams 状态，完全依赖外部传入的 initialParams
+  // ✅ 单一数据源原则：状态统一在父组件管理
+
+  // ✅ 默认查询参数（确保类型正确）
+  const queryParams: SalesOrderQueryParams = {
+    page: initialParams?.page || 1,
+    limit: initialParams?.limit || 20,
+    search: initialParams?.search,
+    status: initialParams?.status,
+    customerId: initialParams?.customerId,
+    sortBy: initialParams?.sortBy || 'createdAt',
+    sortOrder: initialParams?.sortOrder || 'desc',
+  };
+
+  // ✅ 获取销售订单列表数据 - 从 HydrationBoundary 自动获取服务端预取的数据
+  const { data, isLoading, error, isFetching } = useQuery({
+    queryKey: salesOrderQueryKeys.list(queryParams),
+    queryFn: () => getSalesOrders(queryParams),
+    // ✅ 移除 initialData - 数据已在 QueryClient 中（通过 HydrationBoundary）
+    staleTime: 30 * 1000, // ✅ 30秒内数据视为新鲜，避免频繁请求导致数据闪烁
+    refetchOnWindowFocus: false, // 避免窗口聚焦时不必要的刷新
+    placeholderData: (previousData) => previousData, // ✅ 保持上一次数据，避免数据清空
     refetchOnMount: false, // 避免挂载时重新获取
+    gcTime: 10 * 60 * 1000, // ✅ 缓存时间10分钟，提升后退/前进体验
   });
 
-  // 搜索处理 - 优先使用外部传入的处理函数
+  // 搜索处理 - 直接使用外部传入的处理函数
   const handleSearch = React.useCallback(
     (value: string) => {
       if (externalOnSearch) {
         externalOnSearch(value);
-      } else {
-        setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
       }
     },
     [externalOnSearch]
   );
 
-  // 筛选处理 - 统一处理筛选器变更
+  // 筛选处理 - 直接使用外部传入的处理函数
   const handleFilterChange = React.useCallback(
     (key: string, value: string | undefined) => {
       if (externalOnFilter) {
         externalOnFilter(key, value);
-      } else {
-        if (key === 'status') {
-          setQueryParams(prev => ({
-            ...prev,
-            status:
-              value === 'all' || !value
-                ? undefined
-                : (value as SalesOrderStatus),
-            page: 1,
-          }));
-        } else if (key === 'sortBy') {
-          setQueryParams(prev => ({
-            ...prev,
-            sortBy: value as SalesOrderQueryParams['sortBy'],
-            page: 1,
-          }));
-        }
       }
     },
     [externalOnFilter]
   );
 
-  // 分页处理 - 优先使用外部传入的处理函数
+  // 分页处理 - 直接使用外部传入的处理函数
   const handlePageChange = React.useCallback(
     (page: number) => {
       if (externalOnPageChange) {
         externalOnPageChange(page);
-      } else {
-        setQueryParams(prev => ({ ...prev, page }));
       }
     },
     [externalOnPageChange]
@@ -177,9 +176,16 @@ export function ERPSalesOrderList({
           /* 固定的搜索筛选卡片 */
           <Card className="mb-4 shadow-md shadow-gray-200/50">
             <CardContent className="pt-6">
+              {/* ✅ 加载指示器：提升用户体验 */}
+              {isFetching && (
+                <div className="mb-2 flex items-center gap-2 text-xs text-blue-600">
+                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
+                  <span>搜索中...</span>
+                </div>
+              )}
               <UnifiedSearchBar
                 // 搜索配置
-                searchValue={queryParams.search || ''}
+                searchValue={searchValue ?? initialParams?.search ?? ''}
                 onSearchChange={handleSearch}
                 searchPlaceholder="搜索订单号或客户名称..."
                 debounceDelay={400}
@@ -211,8 +217,8 @@ export function ERPSalesOrderList({
                   },
                 ]}
                 filterValues={{
-                  status: queryParams.status || 'all',
-                  sortBy: queryParams.sortBy || 'createdAt',
+                  status: initialParams?.status || 'all',
+                  sortBy: initialParams?.sortBy || 'createdAt',
                 }}
                 onFilterChange={handleFilterChange}
               />
@@ -260,7 +266,7 @@ export function ERPSalesOrderList({
         }
       >
         {/* 可滚动的数据表格 */}
-        <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+        <div className="relative overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
           <Table>
             <TableHeader>
               <TableRow className="border-b bg-gradient-to-r from-slate-50 to-gray-50 hover:bg-gradient-to-r hover:from-slate-50 hover:to-gray-50">
@@ -309,8 +315,8 @@ export function ERPSalesOrderList({
                     onClick={() => onOrderSelect?.(order)}
                   >
                     <TableCell className="text-muted-foreground h-8 text-xs">
-                      {((queryParams.page || 1) - 1) *
-                        (queryParams.limit || 10) +
+                      {((initialParams?.page || 1) - 1) *
+                        (initialParams?.limit || 10) +
                         index +
                         1}
                     </TableCell>
@@ -358,7 +364,12 @@ export function ERPSalesOrderList({
                           <DropdownMenuItem
                             onClick={e => {
                               e.stopPropagation();
-                              router.push(`/sales-orders/${order.id}/edit`);
+                              if (order.status === 'draft') {
+                                router.push(`/sales-orders/${order.id}/edit`);
+                              } else {
+                                setSelectedOrder(order);
+                                setShowEditWarning(true);
+                              }
                             }}
                             className="text-xs"
                           >
@@ -391,6 +402,54 @@ export function ERPSalesOrderList({
           </Table>
         </div>
       </ScrollableTableContainer>
+
+      {/* 编辑警告模态框 */}
+      <AlertDialog open={showEditWarning} onOpenChange={setShowEditWarning}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100">
+                <AlertCircle className="h-5 w-5 text-orange-600" />
+              </div>
+              <AlertDialogTitle>无法编辑订单</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-4">
+              订单号 <strong>{selectedOrder?.orderNumber}</strong> 的状态为"
+              <strong>
+                {selectedOrder?.status === 'confirmed'
+                  ? '已确认'
+                  : selectedOrder?.status === 'shipped'
+                    ? '已发货'
+                    : selectedOrder?.status === 'completed'
+                      ? '已完成'
+                      : selectedOrder?.status === 'cancelled'
+                        ? '已取消'
+                        : selectedOrder?.status}
+              </strong>
+              "，只有<strong>草稿状态</strong>的订单才能编辑。
+              <br />
+              <br />
+              如需修改订单信息，请联系管理员或创建退货单。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>知道了</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (selectedOrder) {
+                  router.push(`/sales-orders/${selectedOrder.id}`);
+                }
+              }}
+            >
+              查看详情
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
+
+
+
+

@@ -1,16 +1,25 @@
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
+
 import { getSalesOrders } from '@/lib/api/handlers/sales-orders';
+import { salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { paginationConfig } from '@/lib/env';
 
 import { SalesOrdersPageClient } from './page-client';
 
 /**
- * 销售订单页面 - 使用服务器组件优化首屏加载
- * 采用中国ERP系统标准布局，严格遵循全栈项目统一约定规范
+ * 销售订单页面 - Server Component
  *
- * ✅ Next.js 15 最佳实践：
- * - Route Segment Config 配置
- * - Server Component 数据获取
- * - Suspense 渐进式渲染
+ * ✅ Next.js 15 + React Query 最佳实践：
+ * 1. Route Segment Config - 明确缓存策略
+ * 2. Server Components - 服务端数据获取
+ * 3. HydrationBoundary - SSR 数据传递（关键！）
+ * 4. QueryClient.setQueryData - 预填充缓存
+ *
+ * @see https://tanstack.com/query/latest/docs/framework/react/guides/advanced-ssr
  */
 
 // ✅ Next.js 15 Route Segment Config
@@ -18,6 +27,7 @@ export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 export const revalidate = 0;
+
 export default async function SalesOrdersPage({
   searchParams,
 }: {
@@ -55,16 +65,22 @@ export default async function SalesOrdersPage({
     sortOrder,
   };
 
+  // ✅ TanStack Query v5 最佳实践：在组件内创建 QueryClient
+  const queryClient = new QueryClient();
+
   // 服务器端获取初始数据
   const initialData = await getSalesOrders(queryParams);
 
+  // ✅ 关键修复：将数据预设到 QueryClient（而不是通过 props）
+  queryClient.setQueryData(salesOrderQueryKeys.list(queryParams), {
+    data: initialData.data,
+    pagination: initialData.pagination,
+  });
+
   return (
-    <SalesOrdersPageClient
-      initialData={{
-        data: initialData.data,
-        pagination: initialData.pagination,
-      }}
-      initialParams={queryParams}
-    />
+    // ✅ 使用 HydrationBoundary 传递 QueryClient 状态
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <SalesOrdersPageClient initialParams={queryParams} />
+    </HydrationBoundary>
   );
 }
