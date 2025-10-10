@@ -76,3 +76,20 @@ pm2.log
 **/test/
 **/*-test/
 **/examples/
+__tests__/
+tests/
+test-results/
+playwright.config.mjs
+*.test.js
+*.test.ts
+*.spec.ts
+*.spec.js
+
+# 临时测试脚本
+test-*.js
+test-*.sh
+check-*.js
+verify-*.js
+quick-check.js
+kill-all-node.bat
+start-clean.bat
