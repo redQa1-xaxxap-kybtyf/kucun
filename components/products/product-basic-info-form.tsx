@@ -185,7 +185,11 @@ function ProductSpecificationInput({
             <span className="text-destructive">*</span>
           </FormLabel>
           <FormControl>
-            <Input placeholder="如：600x600mm（必填）" disabled={disabled} {...field} />
+            <Input
+              placeholder="如：600x600mm（必填）"
+              disabled={disabled}
+              {...field}
+            />
           </FormControl>
           <FormDescription>产品的规格描述</FormDescription>
           <FormMessage />
@@ -282,9 +286,9 @@ export function ProductBasicInfoForm({
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       <ProductCodeInput control={control} disabled={isLoading} />
-      <ProductNameInput control={control} disabled={isLoading} />
-      <ProductCategorySelect control={control} disabled={isLoading} />
       <ProductSpecificationInput control={control} disabled={isLoading} />
+      <ProductCategorySelect control={control} disabled={isLoading} />
+      <ProductNameInput control={control} disabled={isLoading} />
       <ProductThicknessInput control={control} disabled={isLoading} />
       <ProductStatusSelect control={control} disabled={isLoading} />
     </div>
