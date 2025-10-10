@@ -5,6 +5,7 @@ import { clearCacheAfterPayment } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { publishFinanceEvent } from '@/lib/events';
+import { logger } from '@/lib/logger';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
   createPaymentRecordSchema,
@@ -15,7 +16,7 @@ import {
  * GET /api/payments - 获取收款记录列表
  * 支持分页、搜索、筛选等查询参数
  */
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
     // 解析查询参数
     const searchParams = new URL(request.url).searchParams;
@@ -138,7 +139,10 @@ export const GET = withAuth(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('获取收款记录失败:', error);
+    logger.error('payments', '获取收款记录失败', error, {
+      userId: user.id,
+      url: request.url,
+    });
     return NextResponse.json(
       { success: false, error: '获取收款记录失败' },
       { status: 500 }
@@ -303,7 +307,10 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       message: '收款记录创建成功',
     });
   } catch (error) {
-    console.error('创建收款记录失败:', error);
+    logger.error('payments', '创建收款记录失败', error, {
+      userId,
+      salesOrderId: data?.salesOrderId,
+    });
     return NextResponse.json(
       { success: false, error: '创建收款记录失败' },
       { status: 500 }

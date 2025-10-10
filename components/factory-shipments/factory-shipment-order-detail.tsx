@@ -38,6 +38,7 @@ import {
   type FactoryShipmentOrder,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
+import { getFactoryShipmentStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
 interface FactoryShipmentOrderDetailProps {
   orderId: string;

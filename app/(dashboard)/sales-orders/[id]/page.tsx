@@ -27,6 +27,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/utils/error-handler';
+import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
 interface SalesOrderDetail {
   id: string;
@@ -207,21 +208,6 @@ export default function SalesOrderDetailPage() {
     );
   }
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'confirmed':
-        return 'default';
-      case 'shipped':
-        return 'secondary';
-      case 'delivered':
-        return 'success';
-      case 'cancelled':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
   const getOrderTypeBadge = (orderType: string) =>
     orderType === 'TRANSFER' ? (
       <Badge variant="secondary">调货销售</Badge>
@@ -255,7 +241,7 @@ export default function SalesOrderDetailPage() {
                   </h1>
                   <div className="flex items-center gap-2 text-sm text-gray-600">
                     <span>订单号：{order.orderNumber}</span>
-                    <Badge variant={getStatusBadgeVariant(order.status)}>
+                    <Badge variant={getSalesOrderStatusBadgeVariant(order.status)}>
                       {SALES_ORDER_STATUS_LABELS[
                         order.status as keyof typeof SALES_ORDER_STATUS_LABELS
                       ] || order.status}
@@ -346,7 +332,7 @@ export default function SalesOrderDetailPage() {
                       订单状态
                     </div>
                     <div className="mt-2">
-                      <Badge variant={getStatusBadgeVariant(order.status)} className="text-xs">
+                      <Badge variant={getSalesOrderStatusBadgeVariant(order.status)} className="text-xs">
                         {SALES_ORDER_STATUS_LABELS[
                           order.status as keyof typeof SALES_ORDER_STATUS_LABELS
                         ] || order.status}
@@ -438,7 +424,6 @@ export default function SalesOrderDetailPage() {
                   <table className="w-full text-sm">
                     <thead className="border-b bg-gray-50/80">
                       <tr className="text-xs text-gray-600">
-                        <th className="px-4 py-3 text-left font-medium">序号</th>
                         <th className="px-4 py-3 text-left font-medium">产品信息</th>
                         <th className="px-4 py-3 text-left font-medium">产品编码</th>
                         <th className="px-4 py-3 text-center font-medium">每件片数</th>
@@ -492,7 +477,6 @@ export default function SalesOrderDetailPage() {
 
                         return (
                           <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                            <td className="px-4 py-3 text-gray-500">{index + 1}</td>
                             <td className="px-4 py-3">
                               <div className="font-medium text-gray-900">
                                 {item.isManualProduct

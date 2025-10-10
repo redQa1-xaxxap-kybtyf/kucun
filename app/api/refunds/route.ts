@@ -4,6 +4,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig, returnRefundConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import {
   createRefundRecordSchema,
   refundQuerySchema,
@@ -149,7 +150,9 @@ export const GET = withAuth(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('获取退款记录失败:', error);
+    logger.error('refunds', '获取退款记录失败', error, {
+      url: request.url,
+    });
     return NextResponse.json(
       { success: false, error: '获取退款记录失败' },
       { status: 500 }
@@ -246,7 +249,9 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       message: '退款记录创建成功',
     });
   } catch (error) {
-    console.error('创建退款记录失败:', error);
+    logger.error('refunds', '创建退款记录失败', error, {
+      userId: user.id,
+    });
     return NextResponse.json(
       { success: false, error: '创建退款记录失败' },
       { status: 500 }

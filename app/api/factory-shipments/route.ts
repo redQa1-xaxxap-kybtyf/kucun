@@ -7,6 +7,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 import {
   createFactoryShipmentOrderSchema,
@@ -154,7 +155,10 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       limit,
     });
   } catch (error) {
-    console.error('获取厂家发货订单列表失败:', error);
+    logger.error('factory-shipments', '获取厂家发货订单列表失败', error, {
+      userId: user.id,
+      url: request.url,
+    });
     return NextResponse.json({ error: '获取订单列表失败' }, { status: 500 });
   }
 });
@@ -368,7 +372,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
 
     return NextResponse.json(order, { status: 201 });
   } catch (error) {
-    console.error('创建厂家发货订单失败:', error);
+    logger.error('factory-shipments', '创建厂家发货订单失败', error);
 
     if (error instanceof Error && error.message.includes('Unique constraint')) {
       return NextResponse.json({ error: '集装箱号码已存在' }, { status: 400 });

@@ -39,6 +39,7 @@ import {
   type FactoryShipmentOrder,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
+import { getFactoryShipmentStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
 interface FactoryShipmentQueryParams {
   page?: number;
@@ -56,35 +57,6 @@ interface FactoryShipmentOrderListProps {
   onFilter?: (key: string, value: string | undefined) => void;
   onPageChange?: (page: number) => void;
 }
-// 获取状态徽章样式 - 符合中国ERP系统的颜色规范
-const getStatusBadgeVariant = (
-  status: FactoryShipmentStatus
-):
-  | 'default'
-  | 'secondary'
-  | 'destructive'
-  | 'outline'
-  | 'success'
-  | 'warning'
-  | 'info' => {
-  switch (status) {
-    case 'draft':
-      return 'secondary';
-    case 'planning':
-    case 'factory_shipped':
-    case 'in_transit':
-      return 'info';
-    case 'waiting_deposit':
-      return 'warning';
-    case 'deposit_paid':
-    case 'arrived':
-    case 'delivered':
-    case 'completed':
-      return 'success';
-    default:
-      return 'secondary';
-  }
-};
 
 // 格式化金额 - 使用人民币符号和千分位分隔符
 const formatAmount = (amount: number): string =>
@@ -339,7 +311,7 @@ export function FactoryShipmentOrderList({
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={getStatusBadgeVariant(order.status)}
+                      variant={getFactoryShipmentStatusBadgeVariant(order.status)}
                       className="text-xs font-medium"
                     >
                       {

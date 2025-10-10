@@ -2,6 +2,8 @@
 
 import React from 'react';
 
+import { logger } from '@/lib/utils/console-logger';
+
 interface PerformanceMonitorProps {
   componentName: string;
   enabled?: boolean;
@@ -36,17 +38,23 @@ export function PerformanceMonitor({
       renderTimes.current.reduce((a, b) => a + b, 0) /
       renderTimes.current.length;
 
-    console.log(
-      `[性能监控] ${componentName}:`,
-      `\n  渲染次数: ${renderCount.current}`,
-      `\n  距上次渲染: ${timeSinceLastRender}ms`,
-      `\n  平均间隔: ${avgRenderTime.toFixed(2)}ms`
-    );
+    logger.debug('PerformanceMonitor', `${componentName} render metrics`, undefined, {
+      componentName,
+      renderCount: renderCount.current,
+      intervalSinceLastRender: timeSinceLastRender,
+      averageInterval: Number(avgRenderTime.toFixed(2)),
+    });
 
     // 警告：渲染过于频繁
     if (timeSinceLastRender < 50 && renderCount.current > 5) {
-      console.warn(
-        `⚠️ ${componentName} 渲染过于频繁！间隔仅 ${timeSinceLastRender}ms`
+      logger.warn(
+        'PerformanceMonitor',
+        `${componentName} 渲染过于频繁`,
+        undefined,
+        {
+          componentName,
+          interval: timeSinceLastRender,
+        }
       );
     }
   });
@@ -80,15 +88,21 @@ export function useInputPerformance(componentName: string) {
       inputDelays.current.reduce((a, b) => a + b, 0) /
       inputDelays.current.length;
 
-    console.log(
-      `[输入性能] ${componentName}:`,
-      `\n  本次延迟: ${delay.toFixed(2)}ms`,
-      `\n  平均延迟: ${avgDelay.toFixed(2)}ms`
-    );
+    logger.debug('PerformanceMonitor', `${componentName} input latency`, undefined, {
+      componentName,
+      delay: Number(delay.toFixed(2)),
+      averageDelay: Number(avgDelay.toFixed(2)),
+    });
 
     if (delay > 50) {
-      console.warn(
-        `⚠️ ${componentName} 输入延迟过高: ${delay.toFixed(2)}ms (建议 < 50ms)`
+      logger.warn(
+        'PerformanceMonitor',
+        `${componentName} 输入延迟过高`,
+        undefined,
+        {
+          componentName,
+          delay: Number(delay.toFixed(2)),
+        }
       );
     }
 
@@ -123,7 +137,12 @@ export function useWhyDidYouUpdate(
       });
 
       if (Object.keys(changedProps).length > 0) {
-        console.log(`[重渲染原因] ${componentName}:`, changedProps);
+        logger.debug(
+          'PerformanceMonitor',
+          `${componentName} props changed`,
+          undefined,
+          { componentName, changedProps }
+        );
       }
     }
 

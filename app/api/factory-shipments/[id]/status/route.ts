@@ -4,6 +4,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { updateFactoryShipmentStatus } from '@/lib/api/handlers/factory-shipment-status';
+import { logger } from '@/lib/logger';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateFactoryShipmentOrderStatusSchema } from '@/lib/validations/factory-shipment';
 
@@ -25,9 +26,8 @@ interface RouteParams {
  * - 自动创建应收账款记录（确认发货时）
  */
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  const { id } = params;
   try {
-    const { id } = params;
-
     // 解析请求体
     const body = await request.json();
 
@@ -116,7 +116,9 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       receivableCreated: result.receivableCreated,
     });
   } catch (error) {
-    console.error('更新厂家发货订单状态失败:', error);
+    logger.error('factory-shipments', '更新厂家发货订单状态失败', error, {
+      orderId: id,
+    });
 
     // 处理验证错误
     if (error instanceof Error) {

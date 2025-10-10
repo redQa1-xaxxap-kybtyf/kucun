@@ -393,9 +393,6 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                   <TableHeader>
                     <TableRow className="bg-muted/50 hover:bg-muted/50">
                       <TableHead className="h-8 border-r text-xs font-medium">
-                        序号
-                      </TableHead>
-                      <TableHead className="h-8 border-r text-xs font-medium">
                         产品编码
                       </TableHead>
                       <TableHead className="h-8 border-r text-xs font-medium">
@@ -422,7 +419,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                     {fields.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={8}
+                          colSpan={7}
                           className="text-muted-foreground h-32 text-center"
                         >
                           <div className="flex flex-col items-center gap-2">
@@ -441,11 +438,6 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
 
                         return (
                           <TableRow key={item.id} className="h-12">
-                            {/* 序号 */}
-                            <TableCell className="border-r text-center text-sm">
-                              {index + 1}
-                            </TableCell>
-
                             {/* 产品编码 */}
                             <TableCell className="border-r">
                               <div className="font-mono text-sm">

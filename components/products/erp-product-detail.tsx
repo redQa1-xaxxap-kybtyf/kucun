@@ -21,6 +21,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { deleteProduct, productQueryKeys } from '@/lib/api/products';
 import { PRODUCT_STATUS_LABELS, type Product } from '@/lib/types/product';
+import { getCommonStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
 interface ERPProductDetailProps {
   product: Product;
@@ -101,9 +102,8 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
 
   // 状态标签渲染
   const getStatusBadge = (status: string) => {
-    const variant = status === 'active' ? 'success' : 'secondary';
     return (
-      <Badge variant={variant} className="text-xs">
+      <Badge variant={getCommonStatusBadgeVariant(status)} className="text-xs">
         {PRODUCT_STATUS_LABELS[status as keyof typeof PRODUCT_STATUS_LABELS] ||
           status}
       </Badge>

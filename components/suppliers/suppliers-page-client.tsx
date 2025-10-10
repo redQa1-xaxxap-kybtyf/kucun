@@ -26,7 +26,6 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,16 +42,13 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import {
-  batchDeleteSuppliers,
-  deleteSupplier,
-  supplierQueryKeys,
-} from '@/lib/api/suppliers';
+import { deleteSupplier, supplierQueryKeys } from '@/lib/api/suppliers';
 import type {
   SupplierItem,
   SupplierListResult,
 } from '@/lib/services/supplier-service';
 import { formatSupplierStatus } from '@/lib/utils/supplier-utils';
+import { getCommonStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
 interface SuppliersPageClientProps {
   initialData: SupplierListResult;
@@ -80,12 +76,10 @@ export function SuppliersPageClient({
   const [status, setStatus] = useState<'active' | 'inactive' | undefined>(
     initialParams.status
   );
-  const [selectedSuppliers, setSelectedSuppliers] = useState<string[]>([]);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [supplierToDelete, setSupplierToDelete] = useState<SupplierItem | null>(
     null
   );
-  const [batchDeleteDialogOpen, setBatchDeleteDialogOpen] = useState(false);
 
   // 使用服务器传递的初始数据
   const { suppliers, pagination } = initialData;
@@ -102,36 +96,12 @@ export function SuppliersPageClient({
       queryClient.invalidateQueries({ queryKey: supplierQueryKeys.lists() });
       setDeleteDialogOpen(false);
       setSupplierToDelete(null);
-      setSelectedSuppliers([]);
       router.refresh();
     },
     onError: error => {
       toast({
         title: '删除失败',
         description: error.message || '删除供应商失败',
-        variant: 'destructive',
-      });
-    },
-  });
-
-  // 批量删除供应商
-  const batchDeleteMutation = useMutation({
-    mutationFn: batchDeleteSuppliers,
-    onSuccess: result => {
-      toast({
-        title: '批量删除成功',
-        description: result.message,
-        variant: 'success',
-      });
-      queryClient.invalidateQueries({ queryKey: supplierQueryKeys.lists() });
-      setBatchDeleteDialogOpen(false);
-      setSelectedSuppliers([]);
-      router.refresh();
-    },
-    onError: error => {
-      toast({
-        title: '批量删除失败',
-        description: error.message || '批量删除失败',
         variant: 'destructive',
       });
     },
@@ -182,41 +152,17 @@ export function SuppliersPageClient({
     });
   };
 
-  // 处理全选
-  const handleSelectAll = (checked: boolean) => {
-    setSelectedSuppliers(checked ? suppliers.map(s => s.id) : []);
-  };
-
-  // 处理单选
-  const handleSelectSupplier = (supplierId: string, checked: boolean) => {
-    setSelectedSuppliers(prev =>
-      checked ? [...prev, supplierId] : prev.filter(id => id !== supplierId)
-    );
-  };
-
   // 处理删除
   const handleDelete = (supplier: SupplierItem) => {
     setSupplierToDelete(supplier);
     setDeleteDialogOpen(true);
   };
 
-  // 处理批量删除
-  const handleBatchDelete = () => {
-    setBatchDeleteDialogOpen(true);
-  };
-
-  const isAllSelected =
-    selectedSuppliers.length === suppliers.length && suppliers.length > 0;
-
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题 */}
-        <SupplierPageHeader
-          selectedSupplierIds={selectedSuppliers}
-          onBatchDelete={handleBatchDelete}
-          isBatchDeleting={batchDeleteMutation.isPending}
-        />
+        <SupplierPageHeader />
 
         {/* 搜索和筛选 */}
         <SupplierSearchFilters
@@ -231,13 +177,6 @@ export function SuppliersPageClient({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-12">
-                  <Checkbox
-                    checked={isAllSelected}
-                    onCheckedChange={handleSelectAll}
-                    aria-label="全选"
-                  />
-                </TableHead>
                 <TableHead>供应商名称</TableHead>
                 <TableHead>联系电话</TableHead>
                 <TableHead>地址</TableHead>
@@ -250,7 +189,7 @@ export function SuppliersPageClient({
               {suppliers.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={6}
                     className="py-8 text-center text-muted-foreground"
                   >
                     暂无供应商数据
@@ -263,15 +202,6 @@ export function SuppliersPageClient({
                     className="cursor-pointer transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                     onClick={() => router.push(`/suppliers/${supplier.id}`)}
                   >
-                    <TableCell onClick={e => e.stopPropagation()}>
-                      <Checkbox
-                        checked={selectedSuppliers.includes(supplier.id)}
-                        onCheckedChange={checked =>
-                          handleSelectSupplier(supplier.id, checked as boolean)
-                        }
-                        aria-label={`选择 ${supplier.name}`}
-                      />
-                    </TableCell>
                     <TableCell className="font-medium text-[hsl(var(--color-text-primary))]">
                       {supplier.name}
                     </TableCell>
@@ -282,11 +212,7 @@ export function SuppliersPageClient({
                       {supplier.address || '-'}
                     </TableCell>
                     <TableCell>
-                      <Badge
-                        variant={
-                          supplier.status === 'active' ? 'default' : 'secondary'
-                        }
-                      >
+                      <Badge variant={getCommonStatusBadgeVariant(supplier.status)}>
                         {formatSupplierStatus(supplier.status)}
                       </Badge>
                     </TableCell>
@@ -357,36 +283,6 @@ export function SuppliersPageClient({
               className="bg-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error-hover))] focus-visible:ring-[hsl(var(--color-error))]"
             >
               {deleteMutation.isPending ? '删除中...' : '确认删除'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* 批量删除确认对话框 */}
-      <AlertDialog
-        open={batchDeleteDialogOpen}
-        onOpenChange={setBatchDeleteDialogOpen}
-      >
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>确认批量删除</AlertDialogTitle>
-            <AlertDialogDescription>
-              确定要删除选中的 {selectedSuppliers.length}{' '}
-              个供应商吗？此操作无法撤销。
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>取消</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                batchDeleteMutation.mutate({
-                  supplierIds: selectedSuppliers,
-                });
-              }}
-              disabled={batchDeleteMutation.isPending}
-              className="bg-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error-hover))] focus-visible:ring-[hsl(var(--color-error))]"
-            >
-              {batchDeleteMutation.isPending ? '删除中...' : '确认删除'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

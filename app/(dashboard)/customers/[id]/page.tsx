@@ -22,6 +22,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/utils/error-handler';
+import {
+  getCommonStatusBadgeVariant,
+  getReturnOrderStatusBadgeVariant,
+  getSalesOrderStatusBadgeVariant,
+} from '@/lib/utils/badge-helpers';
 
 interface CustomerDetail {
   id: string;
@@ -112,19 +117,6 @@ export default function CustomerDetailPage() {
     );
   }
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'default';
-      case 'inactive':
-        return 'secondary';
-      case 'blacklisted':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'active':
@@ -138,18 +130,20 @@ export default function CustomerDetailPage() {
     }
   };
 
-  const getOrderStatusBadge = (status: string) => {
+  const getOrderStatusLabel = (status: string) => {
     switch (status) {
       case 'confirmed':
-        return <Badge variant="default">已确认</Badge>;
+        return '已确认';
       case 'shipped':
-        return <Badge variant="secondary">已发货</Badge>;
+        return '已发货';
       case 'delivered':
-        return <Badge variant="success">已交付</Badge>;
+        return '已交付';
+      case 'completed':
+        return '已完成';
       case 'cancelled':
-        return <Badge variant="destructive">已取消</Badge>;
+        return '已取消';
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return status;
     }
   };
 
@@ -203,7 +197,7 @@ export default function CustomerDetailPage() {
                     客户状态
                   </label>
                   <div className="mt-1">
-                    <Badge variant={getStatusBadgeVariant(customer.status)}>
+                    <Badge variant={getCommonStatusBadgeVariant(customer.status)}>
                       {getStatusLabel(customer.status)}
                     </Badge>
                   </div>
@@ -388,7 +382,9 @@ export default function CustomerDetailPage() {
                         <p className="font-medium">
                           {formatCurrency(order.totalAmount)}
                         </p>
-                        {getOrderStatusBadge(order.status)}
+                        <Badge variant={getSalesOrderStatusBadgeVariant(order.status)}>
+                          {getOrderStatusLabel(order.status)}
+                        </Badge>
                       </div>
                     </div>
                   ))}
@@ -419,7 +415,9 @@ export default function CustomerDetailPage() {
                         <p className="font-medium text-[hsl(var(--color-error))]">
                           -{formatCurrency(order.totalAmount)}
                         </p>
-                        {getOrderStatusBadge(order.status)}
+                        <Badge variant={getReturnOrderStatusBadgeVariant(order.status)}>
+                          {getOrderStatusLabel(order.status)}
+                        </Badge>
                       </div>
                     </div>
                   ))}

@@ -1,20 +1,12 @@
 'use client';
 
-import { Package, Plus, Trash2 } from 'lucide-react';
+import { Package, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-interface ProductListToolbarProps {
-  selectedCount: number;
-  onBatchDelete: () => void;
-}
-
-export function ProductListToolbar({
-  selectedCount,
-  onBatchDelete,
-}: ProductListToolbarProps) {
+export function ProductListToolbar() {
   const router = useRouter();
 
   return (
@@ -33,22 +25,6 @@ export function ProductListToolbar({
                 管理产品信息、库存和分类
               </p>
             </div>
-            {selectedCount > 0 && (
-              <div className="ml-4 flex items-center gap-2 rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-primary-light))] px-3 py-2">
-                <span className="text-sm font-medium text-[hsl(var(--color-primary))]">
-                  已选择 {selectedCount} 个产品
-                </span>
-                <Button
-                  variant="destructive"
-                  size="sm"
-                  onClick={onBatchDelete}
-                  className="h-8"
-                >
-                  <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                  批量删除
-                </Button>
-              </div>
-            )}
           </div>
           <Button
             onClick={() => router.push('/products/create')}

@@ -197,8 +197,6 @@ export function OrderItemRow({
 
   return (
     <TableRow className="h-10">
-      <TableCell className="text-xs">{index + 1}</TableCell>
-
       {/* 商品名称 */}
       <TableCell className="min-w-[200px]">
         <IntelligentProductInput

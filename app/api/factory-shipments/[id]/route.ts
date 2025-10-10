@@ -4,6 +4,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateFactoryShipmentOrderSchema } from '@/lib/validations/factory-shipment';
 
@@ -15,9 +16,8 @@ interface RouteParams {
 
 // 获取单个厂家发货订单详情
 export async function GET(request: NextRequest, { params }: RouteParams) {
+  const { id } = params;
   try {
-    const { id } = params;
-
     // 查询订单详情
     const order = await prisma.factoryShipmentOrder.findUnique({
       where: { id },
@@ -54,16 +54,17 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(order);
   } catch (error) {
-    console.error('获取厂家发货订单详情失败:', error);
+    logger.error('factory-shipments', '获取厂家发货订单详情失败', error, {
+      orderId: id,
+    });
     return NextResponse.json({ error: '获取订单详情失败' }, { status: 500 });
   }
 }
 
 // 更新厂家发货订单
 export async function PUT(request: NextRequest, { params }: RouteParams) {
+  const { id } = params;
   try {
-    const { id } = params;
-
     // 检查订单是否存在
     const existingOrder = await prisma.factoryShipmentOrder.findUnique({
       where: { id },
@@ -295,7 +296,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json(updatedOrder);
   } catch (error) {
-    console.error('更新厂家发货订单失败:', error);
+    logger.error('factory-shipments', '更新厂家发货订单失败', error, {
+      orderId: id,
+    });
 
     if (error instanceof Error && error.message.includes('Unique constraint')) {
       return NextResponse.json({ error: '集装箱号码已存在' }, { status: 400 });
@@ -307,9 +310,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
 
 // 删除厂家发货订单
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
+  const { id } = params;
   try {
-    const { id } = params;
-
     // 检查订单是否存在
     const existingOrder = await prisma.factoryShipmentOrder.findUnique({
       where: { id },
@@ -326,7 +328,9 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
     return NextResponse.json({ message: '订单删除成功' });
   } catch (error) {
-    console.error('删除厂家发货订单失败:', error);
+    logger.error('factory-shipments', '删除厂家发货订单失败', error, {
+      orderId: id,
+    });
     return NextResponse.json({ error: '删除订单失败' }, { status: 500 });
   }
 }

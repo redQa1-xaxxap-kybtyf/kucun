@@ -12,6 +12,7 @@ import crypto from 'crypto';
 
 import { getRandomTTL } from '@/lib/cache/cache';
 import { redis } from '@/lib/redis/redis-client';
+import { logger } from '@/lib/logger';
 
 // 验证码配置
 export const CAPTCHA_CONFIG = {
@@ -217,30 +218,37 @@ export async function verifyCaptcha(
   success: boolean;
   error?: string;
 }> {
-  console.log(
-    `[验证码验证] 开始验证 - SessionID: ${sessionId}, 输入: ${captcha}, IP: ${clientIp}`
-  );
+  logger.debug('captcha-service', '开始验证验证码', undefined, {
+    sessionId,
+    input: captcha,
+    clientIp,
+  });
 
   // 获取会话
   const session = await getCaptchaSession(sessionId);
 
   if (!session) {
-    console.log(`[验证码验证] 失败 - 会话不存在: ${sessionId}`);
+    logger.warn('captcha-service', '验证码会话不存在或已过期', undefined, {
+      sessionId,
+    });
     return {
       success: false,
       error: '验证码会话不存在或已过期',
     };
   }
 
-  console.log(
-    `[验证码验证] 会话信息 - 正确验证码: ${session.captchaText}, 尝试次数: ${session.attempts}, 过期时间: ${session.expiresAt}`
-  );
+  logger.debug('captcha-service', '验证码会话信息', undefined, {
+    sessionId,
+    expected: session.captchaText,
+    attempts: session.attempts,
+    expiresAt: session.expiresAt,
+  });
 
   // 检查是否过期
   const expiresAt = new Date(session.expiresAt);
   if (new Date() > expiresAt) {
     await deleteCaptchaSession(sessionId);
-    console.log(`[验证码验证] 失败 - 验证码已过期`);
+    logger.warn('captcha-service', '验证码已过期', undefined, { sessionId });
     return {
       success: false,
       error: '验证码已过期',
@@ -250,7 +258,10 @@ export async function verifyCaptcha(
   // 检查尝试次数
   if (session.attempts >= CAPTCHA_CONFIG.maxAttempts) {
     await deleteCaptchaSession(sessionId);
-    console.log(`[验证码验证] 失败 - 尝试次数过多: ${session.attempts}`);
+    logger.warn('captcha-service', '验证码尝试次数过多', undefined, {
+      sessionId,
+      attempts: session.attempts,
+    });
     return {
       success: false,
       error: '验证码尝试次数过多',
@@ -259,24 +270,33 @@ export async function verifyCaptcha(
 
   // 记录 IP 变化(不阻止登录)
   if (session.clientIp !== clientIp) {
-    console.warn(
-      `[安全审计] 验证码 IP 变化: 会话 IP=${session.clientIp}, 请求 IP=${clientIp}, SessionID=${sessionId}`
-    );
+    logger.warn('captcha-service', '验证码请求 IP 变化', undefined, {
+      sessionId,
+      sessionIp: session.clientIp,
+      requestIp: clientIp,
+    });
   }
 
   // 验证验证码
   const isValid = captcha.toUpperCase() === session.captchaText;
-  console.log(
-    `[验证码验证] 比较结果 - 输入(大写): ${captcha.toUpperCase()}, 正确: ${session.captchaText}, 匹配: ${isValid}`
-  );
+  logger.debug('captcha-service', '验证码比较结果', undefined, {
+    sessionId,
+    input: captcha.toUpperCase(),
+    expected: session.captchaText,
+    matched: isValid,
+  });
 
   if (isValid) {
     // 验证成功
     if (deleteAfterVerify) {
       await deleteCaptchaSession(sessionId);
-      console.log(`[验证码验证] 成功 - 会话已删除: ${sessionId}`);
+      logger.info('captcha-service', '验证码验证成功，已删除会话', undefined, {
+        sessionId,
+      });
     } else {
-      console.log(`[验证码验证] 成功 - 会话保留: ${sessionId}`);
+      logger.info('captcha-service', '验证码验证成功，会话保留', undefined, {
+        sessionId,
+      });
     }
 
     return {
@@ -286,9 +306,10 @@ export async function verifyCaptcha(
     // 验证失败,增加尝试次数
     session.attempts += 1;
     await updateCaptchaSession(session);
-    console.log(
-      `[验证码验证] 失败 - 验证码错误, 尝试次数增加到: ${session.attempts}`
-    );
+    logger.warn('captcha-service', '验证码输入错误', undefined, {
+      sessionId,
+      attempts: session.attempts,
+    });
 
     return {
       success: false,

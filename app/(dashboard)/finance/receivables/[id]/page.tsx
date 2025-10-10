@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Separator } from '@/components/ui/separator';
+import { getReceivableStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/utils/error-handler';
@@ -127,20 +128,6 @@ export default function ReceivableDetailPage() {
     );
   }
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'received':
-        return 'success';
-      case 'partial':
-        return 'secondary';
-      case 'overdue':
-        return 'destructive';
-      case 'cancelled':
-        return 'outline';
-      default:
-        return 'default';
-    }
-  };
 
   const isOverdue =
     new Date(receivable.dueDate) < new Date() &&
@@ -188,7 +175,7 @@ export default function ReceivableDetailPage() {
                       收款状态
                     </label>
                     <div className="mt-1 flex items-center space-x-2">
-                      <Badge variant={getStatusBadgeVariant(receivable.status)}>
+                      <Badge variant={getReceivableStatusBadgeVariant(receivable.status)}>
                         {RECEIVABLE_STATUS_LABELS[
                           receivable.status as keyof typeof RECEIVABLE_STATUS_LABELS
                         ] || receivable.status}

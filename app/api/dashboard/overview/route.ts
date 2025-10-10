@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { buildCacheKey, CACHE_STRATEGY, getOrSetWithLock } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { dashboardOverviewQuerySchema } from '@/lib/validations/dashboard';
 
 // 获取业务概览数据
@@ -290,7 +291,10 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       _cacheKey: cacheKey,
     });
   } catch (error) {
-    console.error('获取业务概览失败:', error);
+    logger.error('dashboard', '获取业务概览失败', error, {
+      userId: user.id,
+      url: request.url,
+    });
 
     return NextResponse.json(
       {

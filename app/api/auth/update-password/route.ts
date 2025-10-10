@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { updatePassword } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { baseValidations } from '@/lib/validations/base';
 
 // 更新密码验证规则
@@ -72,7 +73,9 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       message: '密码更新成功',
     });
   } catch (error) {
-    console.error('密码更新错误:', error);
+    logger.error('auth-update-password', '密码更新失败', error, {
+      userId: user.id,
+    });
 
     return NextResponse.json(
       {

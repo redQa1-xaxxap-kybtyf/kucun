@@ -23,6 +23,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Separator } from '@/components/ui/separator';
+import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import { RETURN_ORDER_STATUS_LABELS } from '@/lib/types/return-order';
 import { formatCurrency, formatDate } from '@/lib/utils';
@@ -131,20 +132,6 @@ export function ReturnOrderDetailPageClient({
     );
   }
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'approved':
-        return 'default';
-      case 'completed':
-        return 'success';
-      case 'rejected':
-        return 'destructive';
-      case 'cancelled':
-        return 'secondary';
-      default:
-        return 'outline';
-    }
-  };
 
   const getStatusIcon = (status: string) => {
     switch (status) {

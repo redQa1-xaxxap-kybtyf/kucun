@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { customerPriceHistoryQuerySchema } from '@/lib/validations/price-history';
 
 /**
@@ -118,7 +119,9 @@ export const GET = withAuth(async (request: NextRequest) => {
       data: latestPrices,
     });
   } catch (error) {
-    console.error('获取客户价格历史失败:', error);
+    logger.error('price-history', '获取客户价格历史失败', error, {
+      url: request.url,
+    });
     return NextResponse.json(
       {
         error: '获取价格历史失败',
@@ -196,7 +199,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       data: priceHistory,
     });
   } catch (error) {
-    console.error('记录客户价格历史失败:', error);
+    logger.error('price-history', '记录客户价格历史失败', error);
     return NextResponse.json(
       {
         error: '记录价格历史失败',

@@ -3,10 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 
 import { ContentLoading } from '@/components/common/loading';
-import {
-  ProductBatchDeleteDialog,
-  ProductDeleteDialog,
-} from '@/components/products/product-delete-dialogs';
+import { ProductDeleteDialog } from '@/components/products/product-delete-dialogs';
 import { ProductListToolbar } from '@/components/products/product-list-toolbar';
 import { ProductSearchFilters } from '@/components/products/product-search-filters';
 import { ProductTable } from '@/components/products/product-table';
@@ -37,34 +34,18 @@ export function ERPProductList({
   const {
     queryParams,
     deleteDialog,
-    selectedProductIds,
-    batchDeleteDialog,
     setDeleteDialog,
-    setBatchDeleteDialog,
     handleSearch,
     handleFilter,
     handleSortChange,
     handlePageChange,
     handleDeleteProduct,
-    handleSelectProduct,
-    handleSelectAll,
-    handleBatchDelete,
-    clearSelection,
   } = useProductListState(initialParams);
 
   // 删除操作
-  const {
-    confirmDeleteProduct,
-    confirmBatchDelete,
-    isDeleting,
-    isBatchDeleting,
-  } = useProductDelete({
+  const { confirmDeleteProduct, isDeleting } = useProductDelete({
     onDeleteSuccess: () => {
       setDeleteDialog({ open: false, productId: null, productName: '' });
-    },
-    onBatchDeleteSuccess: () => {
-      setBatchDeleteDialog({ open: false, products: [] });
-      clearSelection();
     },
   });
 
@@ -102,11 +83,6 @@ export function ERPProductList({
     }
   };
 
-  // 处理批量删除确认
-  const handleConfirmBatchDelete = () => {
-    confirmBatchDelete(selectedProductIds);
-  };
-
   if (isLoading) {
     return <ContentLoading text="加载产品列表中..." />;
   }
@@ -125,10 +101,7 @@ export function ERPProductList({
   return (
     <div className="space-y-6">
       {/* 工具栏 */}
-      <ProductListToolbar
-        selectedCount={selectedProductIds.length}
-        onBatchDelete={() => handleBatchDelete(products)}
-      />
+      <ProductListToolbar />
 
       {/* 搜索和筛选 */}
       <ProductSearchFilters
@@ -145,31 +118,23 @@ export function ERPProductList({
       />
 
       {/* 产品表格 */}
-      <div
-        className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
-        style={{ boxShadow: 'var(--shadow-medium)' }}
-      >
-        <ProductTable
-          products={products}
-          selectedProductIds={selectedProductIds}
-          onProductSelect={onProductSelect}
-          onSelectProduct={handleSelectProduct}
-          onSelectAll={checked => handleSelectAll(checked, products)}
-          onDeleteProduct={handleDeleteProduct}
-        />
+      <ProductTable
+        products={products}
+        onProductSelect={onProductSelect}
+        onDeleteProduct={handleDeleteProduct}
+      />
 
-        {/* 分页组件 */}
-        {pagination && (
-          <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-            <Pagination
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              showRange
-              showTotal
-            />
-          </div>
-        )}
-      </div>
+      {/* 分页组件 */}
+      {pagination && (
+        <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3" style={{ boxShadow: 'var(--shadow-medium)' }}>
+          <Pagination
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            showRange
+            showTotal
+          />
+        </div>
+      )}
 
       {/* 删除确认对话框 */}
       <ProductDeleteDialog
@@ -189,21 +154,6 @@ export function ERPProductList({
           }))
         }
         onConfirm={handleConfirmDelete}
-      />
-
-      {/* 批量删除确认对话框 */}
-      <ProductBatchDeleteDialog
-        open={batchDeleteDialog.open}
-        products={batchDeleteDialog.products}
-        isBatchDeleting={isBatchDeleting}
-        onOpenChange={open =>
-          setBatchDeleteDialog(prev => ({
-            ...prev,
-            open,
-            ...(open ? {} : { products: [] }),
-          }))
-        }
-        onConfirm={handleConfirmBatchDelete}
       />
     </div>
   );

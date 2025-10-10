@@ -395,7 +395,6 @@ export function ERPSalesOrderList({
         <Table>
           <TableHeader>
             <TableRow className="bg-gradient-to-r from-[hsl(var(--color-bg-table-header))] to-[hsl(var(--color-bg-secondary))] hover:bg-[hsl(var(--color-bg-table-header))]">
-              <TableHead className="h-8 text-xs font-medium">序号</TableHead>
               <TableHead className="h-8 text-xs font-medium">订单号</TableHead>
               <TableHead className="h-8 text-xs font-medium">
                 客户名称
@@ -420,7 +419,6 @@ export function ERPSalesOrderList({
               // 加载状态
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i}>
-                  <TableCell className="h-8 text-xs">-</TableCell>
                   <TableCell className="h-8 text-xs">加载中...</TableCell>
                   <TableCell className="h-8 text-xs">-</TableCell>
                   <TableCell className="h-8 text-xs">-</TableCell>
@@ -437,12 +435,6 @@ export function ERPSalesOrderList({
                   className="cursor-pointer"
                   onClick={() => onOrderSelect?.(order)}
                 >
-                  <TableCell className="h-8 text-xs text-[hsl(var(--color-text-tertiary))]">
-                    {((initialParams?.page || 1) - 1) *
-                      (initialParams?.limit || 10) +
-                      index +
-                      1}
-                  </TableCell>
                   <TableCell className="h-8 font-mono text-xs font-semibold text-[hsl(var(--color-primary))] transition-colors hover:text-[hsl(var(--color-primary-hover))]">
                     {order.orderNumber}
                   </TableCell>

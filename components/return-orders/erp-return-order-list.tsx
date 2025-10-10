@@ -34,6 +34,7 @@ import {
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
+import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
 interface ERPReturnOrderListProps {
   initialParams?: ReturnOrderQueryParams;
@@ -205,26 +206,9 @@ export function ERPReturnOrderList({
       day: '2-digit',
     });
 
-  // 获取状态颜色
+  // 获取状态颜色（使用统一的 badge-helpers）
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'draft':
-        return 'secondary';
-      case 'submitted':
-        return 'default';
-      case 'approved':
-        return 'default';
-      case 'rejected':
-        return 'destructive';
-      case 'processing':
-        return 'default';
-      case 'completed':
-        return 'default';
-      case 'cancelled':
-        return 'secondary';
-      default:
-        return 'secondary';
-    }
+    return getReturnOrderStatusBadgeVariant(status);
   };
 
   // 如果有真实数据错误且没有模拟数据，显示错误

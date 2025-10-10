@@ -17,6 +17,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import {
+  getCommonStatusBadgeVariant,
+  getPayableStatusBadgeVariant,
+} from '@/lib/utils/badge-helpers';
 
 interface SupplierDetail {
   id: string;
@@ -62,19 +66,6 @@ export function SupplierDetailPageClient({
 }: SupplierDetailPageClientProps) {
   const router = useRouter();
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'active':
-        return 'default';
-      case 'inactive':
-        return 'secondary';
-      case 'suspended':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'active':
@@ -88,18 +79,18 @@ export function SupplierDetailPageClient({
     }
   };
 
-  const getPayableStatusBadge = (status: string) => {
+  const getPayableStatusLabel = (status: string) => {
     switch (status) {
       case 'pending':
-        return <Badge variant="outline">待付款</Badge>;
+        return '待付款';
       case 'partial':
-        return <Badge variant="secondary">部分付款</Badge>;
+        return '部分付款';
       case 'paid':
-        return <Badge variant="success">已付款</Badge>;
+        return '已付款';
       case 'overdue':
-        return <Badge variant="destructive">逾期</Badge>;
+        return '逾期';
       default:
-        return <Badge variant="outline">{status}</Badge>;
+        return status;
     }
   };
 
@@ -159,7 +150,7 @@ export function SupplierDetailPageClient({
                       供应商状态
                     </label>
                     <div className="mt-1">
-                      <Badge variant={getStatusBadgeVariant(supplier.status)}>
+                      <Badge variant={getCommonStatusBadgeVariant(supplier.status)}>
                         {getStatusLabel(supplier.status)}
                       </Badge>
                     </div>
@@ -343,7 +334,9 @@ export function SupplierDetailPageClient({
                           <p className="text-muted-foreground text-xs">
                             / {formatCurrency(record.payableAmount)}
                           </p>
-                          {getPayableStatusBadge(record.status)}
+                          <Badge variant={getPayableStatusBadgeVariant(record.status)}>
+                            {getPayableStatusLabel(record.status)}
+                          </Badge>
                         </div>
                       </div>
                     ))}

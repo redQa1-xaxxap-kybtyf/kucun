@@ -107,12 +107,9 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       data: formattedAdjustment,
     });
   } catch (error) {
-    logger.error(
-      'inventory-adjustments',
-      '获取库存调整记录详情失败',
-      error,
-      { id: params.id }
-    );
+    logger.error('inventory-adjustments', '获取库存调整记录详情失败', error, {
+      id: params.id,
+    });
     return NextResponse.json(
       {
         success: false,

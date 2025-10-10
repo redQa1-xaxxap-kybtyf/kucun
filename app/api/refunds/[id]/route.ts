@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { errorResponse, requireAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { processRefundSchema } from '@/lib/validations/refund';
 
 interface RouteContext {
@@ -56,7 +57,7 @@ export async function GET(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: refund });
   } catch (error) {
-    console.error('获取退款详情失败:', error);
+    logger.error('refunds', '获取退款详情失败', error);
     return errorResponse('获取退款详情失败', 500);
   }
 }
@@ -142,7 +143,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     return NextResponse.json({ success: true, data: updatedRefund });
   } catch (error) {
-    console.error('处理退款失败:', error);
+    logger.error('refunds', '处理退款失败', error);
     if (error instanceof Error && 'issues' in error) {
       return errorResponse('数据验证失败', 400);
     }

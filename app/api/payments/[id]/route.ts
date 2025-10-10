@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { updatePaymentRecordSchema } from '@/lib/validations/payment';
 
 /**
@@ -55,7 +56,7 @@ export const GET = withAuth(
         data: payment,
       });
     } catch (error) {
-      console.error('获取收款记录详情失败:', error);
+      logger.error('payments', '获取收款记录详情失败', error, { paymentId: params.id });
       return NextResponse.json(
         { success: false, error: '获取收款记录详情失败' },
         { status: 500 }
@@ -145,7 +146,7 @@ export const PUT = withAuth(
         message: '收款记录更新成功',
       });
     } catch (error) {
-      console.error('更新收款记录失败:', error);
+      logger.error('payments', '更新收款记录失败', error, { paymentId: params.id });
       return NextResponse.json(
         { success: false, error: '更新收款记录失败' },
         { status: 500 }
@@ -193,7 +194,7 @@ export const DELETE = withAuth(
         message: '收款记录删除成功',
       });
     } catch (error) {
-      console.error('删除收款记录失败:', error);
+      logger.error('payments', '删除收款记录失败', error, { paymentId: params.id });
       return NextResponse.json(
         { success: false, error: '删除收款记录失败' },
         { status: 500 }

@@ -277,7 +277,7 @@ export function ERPDashboard({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题和操作栏 */}
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

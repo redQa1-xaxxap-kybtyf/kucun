@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { createUser } from '@/lib/auth';
+import { logger } from '@/lib/logger';
 import { userRegisterSchema } from '@/lib/validations/user';
 
 export async function POST(request: NextRequest) {
@@ -46,7 +47,7 @@ export async function POST(request: NextRequest) {
       message: '用户注册成功',
     });
   } catch (error) {
-    console.error('用户注册错误:', error);
+    logger.error('auth-register', '用户注册失败', error);
 
     return NextResponse.json(
       {
