@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { cacheConfig, inventoryConfig } from '@/lib/env';
 import { inventoryAlertsQuerySchema } from '@/lib/validations/inventory-queries';
 
@@ -284,7 +285,9 @@ export const GET = withAuth(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('获取库存预警失败:', error);
+    logger.error('inventory-alerts', '获取库存预警失败', error, {
+      search: request.nextUrl.search,
+    });
     return NextResponse.json(
       {
         success: false,

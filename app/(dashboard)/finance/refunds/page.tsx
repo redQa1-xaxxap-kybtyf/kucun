@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { paginationConfig } from '@/lib/env';
 import type {
   RefundMethod,
@@ -72,9 +73,14 @@ async function getRefundsData(searchParams: {
   const parsedParams = validationResult.success ? validationResult.data : {};
 
   if (!validationResult.success && process.env.NODE_ENV !== 'production') {
-    console.warn(
-      '[RefundsPage] Query params validation failed:',
-      validationResult.error.issues
+    logger.warn(
+      'finance-refunds',
+      '[RefundsPage] Query params validation failed',
+      undefined,
+      {
+        issues: validationResult.error.issues,
+        params: sanitizedParams,
+      }
     );
   }
 
@@ -236,9 +242,14 @@ export default async function RefundsPage({
   const validatedParams = validationResult.success ? validationResult.data : {};
 
   if (!validationResult.success && process.env.NODE_ENV !== 'production') {
-    console.warn(
-      '[RefundsPage] Query params validation failed (initialParams):',
-      validationResult.error.issues
+    logger.warn(
+      'finance-refunds',
+      '[RefundsPage] Query params validation failed (initialParams)',
+      undefined,
+      {
+        issues: validationResult.error.issues,
+        params: sanitizedParams,
+      }
     );
   }
 

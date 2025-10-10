@@ -4,6 +4,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   cleanRemarks,
   formatQuantity,
@@ -69,7 +70,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('获取入库记录失败:', error);
+    logger.error('inventory-inbound', '获取入库记录失败', error, { id });
     return NextResponse.json(
       { success: false, error: '获取入库记录失败' },
       { status: 500 }
@@ -199,7 +200,7 @@ export async function PUT(
       message: '更新成功',
     });
   } catch (error) {
-    console.error('更新入库记录失败:', error);
+    logger.error('inventory-inbound', '更新入库记录失败', error, { id });
     return NextResponse.json(
       { success: false, error: '更新入库记录失败' },
       { status: 500 }
@@ -256,7 +257,7 @@ export async function DELETE(
       message: '删除成功',
     });
   } catch (error) {
-    console.error('删除入库记录失败:', error);
+    logger.error('inventory-inbound', '删除入库记录失败', error, { id });
     return NextResponse.json(
       { success: false, error: '删除入库记录失败' },
       { status: 500 }

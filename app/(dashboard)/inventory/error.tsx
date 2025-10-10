@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 /**
  * 库存模块错误边界
@@ -19,7 +20,9 @@ export default function InventoryError({
 }) {
   useEffect(() => {
     // 记录错误到错误监控服务
-    console.error('库存模块错误:', error);
+    logger.error('inventory', '库存模块错误', error, {
+      digest: error.digest,
+    });
   }, [error]);
 
   return (
