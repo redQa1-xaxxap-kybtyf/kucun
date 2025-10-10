@@ -26,19 +26,19 @@ const baseValidations = {
     .max(50, '产品编码不能超过50个字符')
     .regex(/^[A-Za-z0-9-_]+$/, '产品编码只能包含字母、数字、短横线和下划线'),
 
-  /** 产品名称验证：必填，最多100字符，不允许HTML标签 */
+  /** 产品名称验证：选填，最多100字符，不允许HTML标签 */
   name: z
     .string()
-    .min(1, '产品名称不能为空')
     .max(100, '产品名称不能超过100个字符')
-    .refine(val => !/<[^>]*>/g.test(val), '产品名称不能包含HTML标签'),
-
-  /** 规格描述验证：可选，最多200字符 */
-  specification: z
-    .string()
-    .max(200, '规格描述不能超过200个字符')
+    .refine(val => !/<[^>]*>/g.test(val), '产品名称不能包含HTML标签')
     .optional()
     .or(z.literal('')),
+
+  /** 规格描述验证：必填，最多200字符 */
+  specification: z
+    .string()
+    .min(1, '产品规格不能为空')
+    .max(200, '规格描述不能超过200个字符'),
 
   /** 产品描述验证：可选，最多1000字符 */
   description: z
@@ -107,13 +107,13 @@ const baseValidations = {
 
 // 产品创建表单验证 - 移除重量、每单位片数和计量单位字段
 export const productCreateSchema = z.object({
-  code: baseValidations.code,
-  name: baseValidations.name,
-  specification: baseValidations.specification,
-  description: baseValidations.description,
-  thickness: baseValidations.thickness,
+  code: baseValidations.code, // 必填
+  name: baseValidations.name, // 选填
+  specification: baseValidations.specification, // 必填
+  description: baseValidations.description, // 选填
+  thickness: baseValidations.thickness, // 选填
   status: baseValidations.status.default('active'),
-  categoryId: z.string().optional(),
+  categoryId: z.string().min(1, '请选择产品分类'), // 必选
   // 产品图片
   thumbnailUrl: baseValidations.thumbnailUrl,
   images: baseValidations.images,

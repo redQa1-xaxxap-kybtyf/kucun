@@ -49,10 +49,13 @@ function ProductCodeInput({
       name="code"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>产品编码</FormLabel>
+          <FormLabel className="flex items-center gap-1">
+            产品编码
+            <span className="text-destructive">*</span>
+          </FormLabel>
           <FormControl>
             <Input
-              placeholder="请输入产品编码"
+              placeholder="请输入产品编码（必填）"
               disabled={disabled}
               maxLength={50}
               {...field}
@@ -79,10 +82,10 @@ function ProductNameInput({
       name="name"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>产品名称</FormLabel>
+          <FormLabel>产品名称（选填）</FormLabel>
           <FormControl>
             <Input
-              placeholder="请输入产品名称"
+              placeholder="请输入产品名称（选填）"
               disabled={disabled}
               maxLength={100}
               {...field}
@@ -118,7 +121,10 @@ function ProductCategorySelect({
       name="categoryId"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>产品分类</FormLabel>
+          <FormLabel className="flex items-center gap-1">
+            产品分类
+            <span className="text-destructive">*</span>
+          </FormLabel>
           <Select
             onValueChange={field.onChange}
             value={
@@ -131,7 +137,7 @@ function ProductCategorySelect({
           >
             <FormControl>
               <SelectTrigger>
-                <SelectValue placeholder="请选择产品分类" />
+                <SelectValue placeholder="请选择产品分类（必选）" />
               </SelectTrigger>
             </FormControl>
             <SelectContent>
@@ -153,7 +159,7 @@ function ProductCategorySelect({
                 : (field.value ?? 'uncategorized')
             }
           />
-          <FormDescription>未选择时默认为“无分类”</FormDescription>
+          <FormDescription>请选择产品所属分类</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -174,9 +180,12 @@ function ProductSpecificationInput({
       name="specification"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>产品规格</FormLabel>
+          <FormLabel className="flex items-center gap-1">
+            产品规格
+            <span className="text-destructive">*</span>
+          </FormLabel>
           <FormControl>
-            <Input placeholder="如：600x600mm" disabled={disabled} {...field} />
+            <Input placeholder="如：600x600mm（必填）" disabled={disabled} {...field} />
           </FormControl>
           <FormDescription>产品的规格描述</FormDescription>
           <FormMessage />
@@ -242,13 +251,13 @@ function ProductThicknessInput({
       name="thickness"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>厚度 (mm)</FormLabel>
+          <FormLabel>厚度 (mm)（选填）</FormLabel>
           <FormControl>
             <Input
               type="number"
               min="0"
               step="0.1"
-              placeholder="0.0"
+              placeholder="0.0（选填）"
               disabled={disabled}
               {...field}
               onChange={e => {
