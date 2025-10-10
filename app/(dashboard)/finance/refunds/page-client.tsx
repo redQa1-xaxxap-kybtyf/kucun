@@ -28,23 +28,23 @@ interface RefundRecord {
   refundAmount: number;
   processedAmount: number;
   remainingAmount: number;
-  refundDate: Date;
-  processedDate: Date | null;
+  refundDate: string;
+  processedDate: string | null;
   status: RefundStatus;
   reason: string;
   remarks: string | null;
   bankInfo: string | null;
   receiptNumber: string | null;
   returnOrderNumber: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface RefundsQueryParams {
   page: number;
   limit: number;
   search?: string;
-  status?: string;
+  status?: RefundStatus;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
 }
@@ -90,6 +90,13 @@ export function RefundsPageClient({
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
   );
+
+  React.useEffect(() => {
+    setSearch(initialParams.search || '');
+    setStatus(initialParams.status);
+    setSortBy(initialParams.sortBy || 'refundDate');
+    setSortOrder(initialParams.sortOrder || 'desc');
+  }, [initialParams]);
 
   // 防抖更新URL - 避免每次输入都触发导航
   const debouncedUpdateURL = useDebouncedCallback(
@@ -205,21 +212,21 @@ export function RefundsPageClient({
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
+          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                  <TrendingDown className="h-6 w-6 text-white" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
+                  <TrendingDown className="h-6 w-6" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
                     应退货款管理
                   </h1>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
                     管理退货订单产生的应退账款，跟踪退款处理状态
                   </p>
                 </div>
@@ -229,7 +236,7 @@ export function RefundsPageClient({
                   variant="outline"
                   size="lg"
                   asChild
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                  className="h-11 shadow-[var(--shadow-light)] transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Link href="/finance/refunds/export">
                     <Download className="mr-2 h-4 w-4" />
@@ -239,7 +246,7 @@ export function RefundsPageClient({
                 <Button
                   size="lg"
                   asChild
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                  className="h-11 shadow-[var(--shadow-light)] transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Link href="/return-orders/create">
                     <Plus className="mr-2 h-4 w-4" />

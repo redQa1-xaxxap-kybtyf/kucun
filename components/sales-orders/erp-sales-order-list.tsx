@@ -1,11 +1,10 @@
 'use client';
 
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { AlertCircle, Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
-import { ScrollableTableContainer } from '@/components/common/ScrollableTableContainer';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import {
   AlertDialog,
@@ -26,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
   TableBody,
@@ -35,11 +35,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import { paginationConfig } from '@/lib/env';
-import { type PaginatedResponse } from '@/lib/types/api';
 import {
   SALES_ORDER_STATUS_LABELS,
-  SALES_ORDER_STATUS_VARIANTS,
   type SalesOrder,
   type SalesOrderQueryParams,
   type SalesOrderStatus,
@@ -69,7 +66,6 @@ export function ERPSalesOrderList({
   searchValue,
 }: ERPSalesOrderListProps) {
   const router = useRouter();
-  const queryClient = useQueryClient();
   const [showEditWarning, setShowEditWarning] = React.useState(false);
   const [selectedOrder, setSelectedOrder] = React.useState<SalesOrder | null>(
     null
@@ -87,6 +83,8 @@ export function ERPSalesOrderList({
     customerId: initialParams?.customerId,
     sortBy: initialParams?.sortBy || 'createdAt',
     sortOrder: initialParams?.sortOrder || 'desc',
+    startDate: initialParams?.startDate,
+    endDate: initialParams?.endDate,
   };
 
   // ✅ 获取销售订单列表数据 - 从 HydrationBoundary 自动获取服务端预取的数据
@@ -96,7 +94,7 @@ export function ERPSalesOrderList({
     // ✅ 移除 initialData - 数据已在 QueryClient 中（通过 HydrationBoundary）
     staleTime: 30 * 1000, // ✅ 30秒内数据视为新鲜，避免频繁请求导致数据闪烁
     refetchOnWindowFocus: false, // 避免窗口聚焦时不必要的刷新
-    placeholderData: (previousData) => previousData, // ✅ 保持上一次数据，避免数据清空
+    placeholderData: previousData => previousData, // ✅ 保持上一次数据，避免数据清空
     refetchOnMount: false, // 避免挂载时重新获取
     gcTime: 10 * 60 * 1000, // ✅ 缓存时间10分钟，提升后退/前进体验
   });
@@ -131,12 +129,119 @@ export function ERPSalesOrderList({
     [externalOnPageChange]
   );
 
-  // 状态标签渲染
+  // 计算当前选中的日期范围类型
+  const getActiveDateRange = React.useCallback(() => {
+    const now = new Date();
+    const today = now.toISOString().split('T')[0];
+
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    const startOfWeek = new Date(now);
+    const day = startOfWeek.getDay();
+    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+    startOfWeek.setDate(diff);
+    const weekStart = startOfWeek.toISOString().split('T')[0];
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthStart = startOfMonth.toISOString().split('T')[0];
+
+    const { startDate, endDate } = initialParams || {};
+
+    if (!startDate && !endDate) {
+      return 'all';
+    }
+    if (startDate === today && endDate === today) {
+      return 'today';
+    }
+    if (startDate === yesterdayStr && endDate === yesterdayStr) {
+      return 'yesterday';
+    }
+    if (startDate === weekStart && endDate === today) {
+      return 'thisWeek';
+    }
+    if (startDate === monthStart && endDate === today) {
+      return 'thisMonth';
+    }
+    return null;
+  }, [initialParams]);
+
+  const activeDateRange = getActiveDateRange();
+
+  // 时间范围筛选处理
+  const handleDateRangeFilter = React.useCallback(
+    (range: 'today' | 'yesterday' | 'thisWeek' | 'thisMonth' | 'all') => {
+      if (!externalOnFilter) {
+        return;
+      }
+
+      const now = new Date();
+      let startDate: string | undefined;
+      let endDate: string | undefined;
+
+      switch (range) {
+        case 'today':
+          startDate = endDate = now.toISOString().split('T')[0];
+          break;
+        case 'yesterday':
+          const yesterday = new Date(now);
+          yesterday.setDate(yesterday.getDate() - 1);
+          startDate = endDate = yesterday.toISOString().split('T')[0];
+          break;
+        case 'thisWeek': {
+          const startOfWeek = new Date(now);
+          const day = startOfWeek.getDay();
+          const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // 周一为第一天
+          startOfWeek.setDate(diff);
+          startDate = startOfWeek.toISOString().split('T')[0];
+          endDate = now.toISOString().split('T')[0];
+          break;
+        }
+        case 'thisMonth':
+          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+          startDate = startOfMonth.toISOString().split('T')[0];
+          endDate = now.toISOString().split('T')[0];
+          break;
+        case 'all':
+          startDate = undefined;
+          endDate = undefined;
+          break;
+      }
+
+      const dateRangeJson = JSON.stringify({ startDate, endDate });
+      externalOnFilter('dateRange', dateRangeJson);
+    },
+    [externalOnFilter]
+  );
+
+  // 状态标签渲染 - 自定义颜色，更符合ERP风格
   const getStatusBadge = (status: string) => {
-    const variant =
-      SALES_ORDER_STATUS_VARIANTS[status as SalesOrderStatus] || 'outline';
+    const statusStyles: Record<SalesOrderStatus, string> = {
+      draft:
+        'border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-secondary))]',
+      pending:
+        'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
+      confirmed:
+        'border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))] text-[hsl(var(--color-primary))]',
+      processing:
+        'border-[hsl(var(--color-purple))] bg-[hsl(var(--color-purple-light))] text-[hsl(var(--color-purple))]',
+      shipped:
+        'border-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
+      delivered:
+        'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
+      completed:
+        'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
+      cancelled:
+        'border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] text-[hsl(var(--color-error))]',
+    };
+
+    const className =
+      statusStyles[status as SalesOrderStatus] ||
+      'border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-secondary))]';
+
     return (
-      <Badge variant={variant} className="text-xs">
+      <Badge variant="outline" className={`text-xs font-medium ${className}`}>
         {SALES_ORDER_STATUS_LABELS[status as SalesOrderStatus] || status}
       </Badge>
     );
@@ -169,20 +274,22 @@ export function ERPSalesOrderList({
   }
 
   return (
-    <div className="flex h-full flex-col space-y-4">
-      {/* 可滚动表格容器 */}
-      <ScrollableTableContainer
-        header={
-          /* 固定的搜索筛选卡片 */
-          <Card className="mb-4 shadow-md shadow-gray-200/50">
-            <CardContent className="pt-6">
-              {/* ✅ 加载指示器：提升用户体验 */}
-              {isFetching && (
-                <div className="mb-2 flex items-center gap-2 text-xs text-blue-600">
-                  <div className="h-3 w-3 animate-spin rounded-full border-2 border-blue-600 border-t-transparent"></div>
-                  <span>搜索中...</span>
-                </div>
-              )}
+    <div className="space-y-6">
+      {/* 搜索筛选卡片 */}
+      <Card className="overflow-hidden">
+        <CardContent className="pt-6">
+          {/* ✅ 加载指示器：提升用户体验 */}
+          {isFetching && (
+            <div className="mb-2 flex items-center gap-2 text-xs text-[hsl(var(--color-primary))]">
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-[hsl(var(--color-primary))] border-t-transparent"></div>
+              <span>搜索中...</span>
+            </div>
+          )}
+
+          {/* 搜索栏和时间筛选按钮的组合布局 */}
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
+            {/* 搜索栏区域 */}
+            <div className="flex-1">
               <UnifiedSearchBar
                 // 搜索配置
                 searchValue={searchValue ?? initialParams?.search ?? ''}
@@ -196,6 +303,7 @@ export function ERPSalesOrderList({
                     key: 'status',
                     label: '状态',
                     options: [
+                      { label: '全部', value: 'all' },
                       { label: '草稿', value: 'draft' },
                       { label: '已确认', value: 'confirmed' },
                       { label: '已发货', value: 'shipped' },
@@ -222,199 +330,230 @@ export function ERPSalesOrderList({
                 }}
                 onFilterChange={handleFilterChange}
               />
-            </CardContent>
-          </Card>
-        }
-        footer={
-          /* 固定的分页器 */
-          data?.pagination &&
-          data.pagination.totalPages > 1 && (
-            <div className="flex items-center justify-between bg-gray-50/50 px-4 py-3 text-xs">
-              <div className="text-muted-foreground">
-                显示 {(data.pagination.page - 1) * data.pagination.limit + 1} -{' '}
-                {Math.min(
-                  data.pagination.page * data.pagination.limit,
-                  data.pagination.total
-                )}{' '}
-                条，共 {data.pagination.total} 条
-              </div>
-              <div className="flex items-center gap-1">
+            </div>
+
+            {/* 时间快捷筛选按钮区域 */}
+            <div className="flex flex-col gap-2 lg:w-auto lg:min-w-fit">
+              <div className="flex flex-wrap gap-2">
                 <Button
-                  variant="outline"
+                  variant={activeDateRange === 'today' ? 'default' : 'outline'}
                   size="sm"
-                  onClick={() => handlePageChange(data.pagination.page - 1)}
-                  disabled={data.pagination.page <= 1}
-                  className="h-7 text-xs"
+                  onClick={() => handleDateRangeFilter('today')}
+                  className="h-8 text-xs"
                 >
-                  上一页
+                  今日
                 </Button>
-                <div className="text-muted-foreground">
-                  {data.pagination.page} / {data.pagination.totalPages}
-                </div>
                 <Button
-                  variant="outline"
+                  variant={
+                    activeDateRange === 'yesterday' ? 'default' : 'outline'
+                  }
                   size="sm"
-                  onClick={() => handlePageChange(data.pagination.page + 1)}
-                  disabled={data.pagination.page >= data.pagination.totalPages}
-                  className="h-7 text-xs"
+                  onClick={() => handleDateRangeFilter('yesterday')}
+                  className="h-8 text-xs"
                 >
-                  下一页
+                  昨日
+                </Button>
+                <Button
+                  variant={
+                    activeDateRange === 'thisWeek' ? 'default' : 'outline'
+                  }
+                  size="sm"
+                  onClick={() => handleDateRangeFilter('thisWeek')}
+                  className="h-8 text-xs"
+                >
+                  本周
+                </Button>
+                <Button
+                  variant={
+                    activeDateRange === 'thisMonth' ? 'default' : 'outline'
+                  }
+                  size="sm"
+                  onClick={() => handleDateRangeFilter('thisMonth')}
+                  className="h-8 text-xs"
+                >
+                  本月
+                </Button>
+                <Button
+                  variant={activeDateRange === 'all' ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => handleDateRangeFilter('all')}
+                  className="h-8 text-xs"
+                >
+                  全部
                 </Button>
               </div>
             </div>
-          )
-        }
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* 数据表格 */}
+      <div
+        className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+        style={{ boxShadow: 'var(--shadow-medium)' }}
       >
-        {/* 可滚动的数据表格 */}
-        <div className="relative overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b bg-gradient-to-r from-slate-50 to-gray-50 hover:bg-gradient-to-r hover:from-slate-50 hover:to-gray-50">
-                <TableHead className="h-8 text-xs font-medium">序号</TableHead>
-                <TableHead className="h-8 text-xs font-medium">
-                  订单号
-                </TableHead>
-                <TableHead className="h-8 text-xs font-medium">
-                  客户名称
-                </TableHead>
-                <TableHead className="h-8 text-xs font-medium">状态</TableHead>
-                <TableHead className="h-8 text-right text-xs font-medium">
-                  订单金额
-                </TableHead>
-                <TableHead className="h-8 text-xs font-medium">
-                  创建日期
-                </TableHead>
-                <TableHead className="h-8 text-xs font-medium">
-                  更新日期
-                </TableHead>
-                <TableHead className="h-8 w-16 text-xs font-medium">
-                  操作
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
-                // 加载状态
-                Array.from({ length: 10 }).map((_, i) => (
-                  <TableRow key={i}>
-                    <TableCell className="h-8 text-xs">-</TableCell>
-                    <TableCell className="h-8 text-xs">加载中...</TableCell>
-                    <TableCell className="h-8 text-xs">-</TableCell>
-                    <TableCell className="h-8 text-xs">-</TableCell>
-                    <TableCell className="h-8 text-xs">-</TableCell>
-                    <TableCell className="h-8 text-xs">-</TableCell>
-                    <TableCell className="h-8 text-xs">-</TableCell>
-                    <TableCell className="h-8 text-xs">-</TableCell>
-                  </TableRow>
-                ))
-              ) : data?.data && data.data.length > 0 ? (
-                data.data.map((order, index) => (
-                  <TableRow
-                    key={order.id}
-                    className="cursor-pointer transition-colors hover:bg-blue-50/50"
-                    onClick={() => onOrderSelect?.(order)}
-                  >
-                    <TableCell className="text-muted-foreground h-8 text-xs">
-                      {((initialParams?.page || 1) - 1) *
-                        (initialParams?.limit || 10) +
-                        index +
-                        1}
-                    </TableCell>
-                    <TableCell className="h-8 font-mono text-xs font-medium text-blue-600">
-                      {order.orderNumber}
-                    </TableCell>
-                    <TableCell className="h-8 text-xs font-medium text-gray-900">
-                      {order.customer?.name || '-'}
-                    </TableCell>
-                    <TableCell className="h-8 text-xs">
-                      {getStatusBadge(order.status)}
-                    </TableCell>
-                    <TableCell className="h-8 text-right text-xs font-medium">
-                      {formatAmount(order.totalAmount)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground h-8 text-xs">
-                      {formatDate(order.createdAt)}
-                    </TableCell>
-                    <TableCell className="text-muted-foreground h-8 text-xs">
-                      {formatDate(order.updatedAt)}
-                    </TableCell>
-                    <TableCell className="h-8 text-xs">
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={e => e.stopPropagation()}
-                          >
-                            <MoreHorizontal className="h-3 w-3" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="w-32">
-                          <DropdownMenuItem
-                            onClick={e => {
-                              e.stopPropagation();
-                              router.push(`/sales-orders/${order.id}`);
-                            }}
-                            className="text-xs"
-                          >
-                            <Eye className="mr-1 h-3 w-3" />
-                            查看
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={e => {
-                              e.stopPropagation();
-                              if (order.status === 'draft') {
-                                router.push(`/sales-orders/${order.id}/edit`);
-                              } else {
-                                setSelectedOrder(order);
-                                setShowEditWarning(true);
-                              }
-                            }}
-                            className="text-xs"
-                          >
-                            <Edit className="mr-1 h-3 w-3" />
-                            编辑
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={e => e.stopPropagation()}
-                            className="text-xs text-red-600"
-                          >
-                            <Trash2 className="mr-1 h-3 w-3" />
-                            删除
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
-                  </TableRow>
-                ))
-              ) : (
-                <TableRow>
-                  <TableCell
-                    colSpan={8}
-                    className="text-muted-foreground h-20 text-center text-xs"
-                  >
-                    暂无数据
+        <Table>
+          <TableHeader>
+            <TableRow className="bg-gradient-to-r from-[hsl(var(--color-bg-table-header))] to-[hsl(var(--color-bg-secondary))] hover:bg-[hsl(var(--color-bg-table-header))]">
+              <TableHead className="h-8 text-xs font-medium">序号</TableHead>
+              <TableHead className="h-8 text-xs font-medium">订单号</TableHead>
+              <TableHead className="h-8 text-xs font-medium">
+                客户名称
+              </TableHead>
+              <TableHead className="h-8 text-xs font-medium">状态</TableHead>
+              <TableHead className="h-8 text-right text-xs font-medium">
+                订单金额
+              </TableHead>
+              <TableHead className="h-8 text-xs font-medium">
+                创建日期
+              </TableHead>
+              <TableHead className="h-8 text-xs font-medium">
+                更新日期
+              </TableHead>
+              <TableHead className="h-8 w-16 text-xs font-medium">
+                操作
+              </TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {isLoading ? (
+              // 加载状态
+              Array.from({ length: 10 }).map((_, i) => (
+                <TableRow key={i}>
+                  <TableCell className="h-8 text-xs">-</TableCell>
+                  <TableCell className="h-8 text-xs">加载中...</TableCell>
+                  <TableCell className="h-8 text-xs">-</TableCell>
+                  <TableCell className="h-8 text-xs">-</TableCell>
+                  <TableCell className="h-8 text-xs">-</TableCell>
+                  <TableCell className="h-8 text-xs">-</TableCell>
+                  <TableCell className="h-8 text-xs">-</TableCell>
+                  <TableCell className="h-8 text-xs">-</TableCell>
+                </TableRow>
+              ))
+            ) : data?.data && data.data.length > 0 ? (
+              data.data.map((order, index) => (
+                <TableRow
+                  key={order.id}
+                  className="cursor-pointer"
+                  onClick={() => onOrderSelect?.(order)}
+                >
+                  <TableCell className="h-8 text-xs text-[hsl(var(--color-text-tertiary))]">
+                    {((initialParams?.page || 1) - 1) *
+                      (initialParams?.limit || 10) +
+                      index +
+                      1}
+                  </TableCell>
+                  <TableCell className="h-8 font-mono text-xs font-semibold text-[hsl(var(--color-primary))] transition-colors hover:text-[hsl(var(--color-primary-hover))]">
+                    {order.orderNumber}
+                  </TableCell>
+                  <TableCell className="h-8 text-xs font-medium text-[hsl(var(--color-text-primary))]">
+                    {order.customer?.name || (
+                      <span className="text-[hsl(var(--color-text-tertiary))]">
+                        -
+                      </span>
+                    )}
+                  </TableCell>
+                  <TableCell className="h-8 text-xs">
+                    {getStatusBadge(order.status)}
+                  </TableCell>
+                  <TableCell className="h-8 text-right text-xs font-semibold text-[hsl(var(--color-success))]">
+                    {formatAmount(order.totalAmount)}
+                  </TableCell>
+                  <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
+                    {formatDate(order.createdAt)}
+                  </TableCell>
+                  <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
+                    {formatDate(order.updatedAt)}
+                  </TableCell>
+                  <TableCell className="h-8 text-xs">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-6 w-6 p-0"
+                          onClick={e => e.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-32">
+                        <DropdownMenuItem
+                          onClick={e => {
+                            e.stopPropagation();
+                            router.push(`/sales-orders/${order.id}`);
+                          }}
+                          className="text-xs"
+                        >
+                          <Eye className="mr-1 h-3 w-3" />
+                          查看
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={e => {
+                            e.stopPropagation();
+                            if (order.status === 'draft') {
+                              router.push(`/sales-orders/${order.id}/edit`);
+                            } else {
+                              setSelectedOrder(order);
+                              setShowEditWarning(true);
+                            }
+                          }}
+                          className="text-xs"
+                        >
+                          <Edit className="mr-1 h-3 w-3" />
+                          编辑
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={e => e.stopPropagation()}
+                          className="text-xs text-[hsl(var(--color-error))]"
+                        >
+                          <Trash2 className="mr-1 h-3 w-3" />
+                          删除
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </TableCell>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </div>
-      </ScrollableTableContainer>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={8}
+                  className="text-muted-foreground h-20 text-center text-xs"
+                >
+                  暂无数据
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+
+        {/* 分页组件 */}
+        {data?.pagination && (
+          <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+            <Pagination
+              pagination={data.pagination}
+              onPageChange={handlePageChange}
+              showRange
+              showTotal
+            />
+          </div>
+        )}
+      </div>
 
       {/* 编辑警告模态框 */}
       <AlertDialog open={showEditWarning} onOpenChange={setShowEditWarning}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-100">
-                <AlertCircle className="h-5 w-5 text-orange-600" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--color-warning-light))]">
+                <AlertCircle className="h-5 w-5 text-[hsl(var(--color-warning))]" />
               </div>
               <AlertDialogTitle>无法编辑订单</AlertDialogTitle>
             </div>
             <AlertDialogDescription className="pt-4">
-              订单号 <strong>{selectedOrder?.orderNumber}</strong> 的状态为"
+              订单号 <strong>{selectedOrder?.orderNumber}</strong> 的状态为
+              &ldquo;
               <strong>
                 {selectedOrder?.status === 'confirmed'
                   ? '已确认'
@@ -426,7 +565,7 @@ export function ERPSalesOrderList({
                         ? '已取消'
                         : selectedOrder?.status}
               </strong>
-              "，只有<strong>草稿状态</strong>的订单才能编辑。
+              &rdquo;，只有<strong>草稿状态</strong>的订单才能编辑。
               <br />
               <br />
               如需修改订单信息，请联系管理员或创建退货单。
@@ -449,7 +588,3 @@ export function ERPSalesOrderList({
     </div>
   );
 }
-
-
-
-

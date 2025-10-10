@@ -28,7 +28,7 @@ import type {
 } from '@/lib/types/refund';
 
 /**
- * 服务器组件传递的退款记录类型（Date 已序列化为 Date 对象）
+ * 服务器组件传递的退款记录类型（日期字段已序列化为 ISO 字符串）
  */
 type RefundRecordFromServer = {
   id: string;
@@ -42,16 +42,16 @@ type RefundRecordFromServer = {
   refundAmount: number;
   processedAmount: number;
   remainingAmount: number;
-  refundDate: Date;
-  processedDate: Date | null;
+  refundDate: string;
+  processedDate: string | null;
   status: RefundStatus;
   reason: string;
   remarks: string | null;
   bankInfo: string | null;
   receiptNumber: string | null;
   returnOrderNumber: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 };
 
 interface RefundsClientProps {
@@ -76,7 +76,7 @@ interface RefundsClientProps {
     page: number;
     limit: number;
     search?: string;
-    status?: string;
+    status?: RefundStatus;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
   };
@@ -105,45 +105,56 @@ export function RefundsClient({
       currency: 'CNY',
     }).format(amount);
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: RefundStatus) => {
     const statusConfig = {
-      pending: { label: '待处理', variant: 'secondary' as const },
-      processing: { label: '处理中', variant: 'default' as const },
-      completed: { label: '已完成', variant: 'default' as const },
+      pending: { label: '待处理', variant: 'warning' as const },
+      processing: { label: '处理中', variant: 'info' as const },
+      completed: { label: '已完成', variant: 'success' as const },
       rejected: { label: '已拒绝', variant: 'destructive' as const },
       cancelled: { label: '已取消', variant: 'secondary' as const },
     };
     const config = statusConfig[status as keyof typeof statusConfig];
     return (
-      <Badge variant={config?.variant || 'secondary'}>
+      <Badge
+        variant={config?.variant || 'secondary'}
+        className="text-xs font-medium"
+      >
         {config?.label || '未知状态'}
       </Badge>
     );
   };
 
-  const getTypeLabel = (type: string) => {
-    const typeConfig = {
-      refund: '退款',
-      exchange: '换货',
-      return: '退货',
-      partial_refund: '部分退款',
+  const getTypeLabel = (type: RefundType) => {
+    const typeConfig: Record<RefundType, string> = {
       full_refund: '全额退款',
+      partial_refund: '部分退款',
       exchange_refund: '换货退款',
     };
-    return typeConfig[type as keyof typeof typeConfig] || '其他类型';
+    return typeConfig[type] || '其他类型';
+  };
+
+  const formatDate = (value?: string | null) => {
+    if (!value) {
+      return '-';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return date.toLocaleDateString();
   };
 
   return (
     <div className="space-y-6">
       {/* 统计卡片 */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
+        <Card className="shadow-[var(--shadow-medium)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">总应退金额</CardTitle>
-            <TrendingDown className="h-4 w-4 text-orange-600" />
+            <TrendingDown className="h-4 w-4 text-[hsl(var(--color-warning))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-warning))]">
               {formatCurrency(statistics.totalRefundable)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -152,13 +163,13 @@ export function RefundsClient({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-[var(--shadow-medium)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">已处理金额</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-[hsl(var(--color-success))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
               {formatCurrency(statistics.totalProcessed)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -167,13 +178,13 @@ export function RefundsClient({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-[var(--shadow-medium)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">处理率</CardTitle>
-            <DollarSign className="h-4 w-4 text-blue-600" />
+            <DollarSign className="h-4 w-4 text-[hsl(var(--color-info))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-info))]">
               {statistics.totalRefundable > 0
                 ? (
                     (statistics.totalProcessed / statistics.totalRefundable) *
@@ -188,13 +199,13 @@ export function RefundsClient({
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="shadow-[var(--shadow-medium)]">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">待处理金额</CardTitle>
-            <Calendar className="h-4 w-4 text-purple-600" />
+            <Calendar className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
               {formatCurrency(statistics.totalRemaining)}
             </div>
             <p className="text-muted-foreground text-xs">需要处理的退款</p>
@@ -203,8 +214,8 @@ export function RefundsClient({
       </div>
 
       {/* 搜索和筛选 */}
-      <Card className="shadow-md shadow-gray-200/50">
-        <CardContent className="pt-6">
+      <Card className="border border-[hsl(var(--color-border-secondary))] shadow-[var(--shadow-light)]">
+        <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 items-center gap-2">
               <div className="relative max-w-sm flex-1">
@@ -247,7 +258,7 @@ export function RefundsClient({
               refunds.map(refund => (
                 <Card
                   key={refund.id}
-                  className="transition-shadow hover:shadow-md"
+                  className="border border-[hsl(var(--color-border-secondary))] shadow-[var(--shadow-light)] transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
                 >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -257,8 +268,11 @@ export function RefundsClient({
                             {refund.refundNumber}
                           </h3>
                           {getStatusBadge(refund.status)}
-                          <Badge variant="outline">
-                            {getTypeLabel(refund.refundType || 'refund')}
+                          <Badge
+                            variant="outline"
+                            className="text-xs font-medium"
+                          >
+                            {getTypeLabel(refund.refundType)}
                           </Badge>
                         </div>
                         <p className="text-muted-foreground text-sm">
@@ -270,9 +284,7 @@ export function RefundsClient({
                         <div className="text-muted-foreground flex items-center gap-4 text-sm">
                           <span>
                             退款日期：
-                            {typeof refund.refundDate === 'string'
-                              ? refund.refundDate
-                              : refund.refundDate.toLocaleDateString()}
+                            {formatDate(refund.refundDate)}
                           </span>
                           <span>退款原因：{refund.reason}</span>
                         </div>
@@ -290,7 +302,7 @@ export function RefundsClient({
                           <p className="text-muted-foreground text-sm">
                             已处理
                           </p>
-                          <p className="font-semibold text-green-600">
+                          <p className="font-semibold text-[hsl(var(--color-success))]">
                             {formatCurrency(refund.processedAmount)}
                           </p>
                         </div>
@@ -298,7 +310,7 @@ export function RefundsClient({
                           <p className="text-muted-foreground text-sm">
                             待处理
                           </p>
-                          <p className="font-semibold text-orange-600">
+                          <p className="font-semibold text-[hsl(var(--color-warning))]">
                             {formatCurrency(refund.remainingAmount)}
                           </p>
                         </div>
@@ -308,8 +320,18 @@ export function RefundsClient({
                       <Button
                         variant="outline"
                         size="sm"
-                        onClick={() =>
-                          router.push(`/return-orders/${refund.returnOrderId}`)
+                        disabled={!refund.returnOrderId}
+                        onClick={() => {
+                          if (refund.returnOrderId) {
+                            router.push(
+                              `/return-orders/${refund.returnOrderId}`
+                            );
+                          }
+                        }}
+                        title={
+                          refund.returnOrderId
+                            ? undefined
+                            : '该退款未关联退货订单'
                         }
                       >
                         查看详情

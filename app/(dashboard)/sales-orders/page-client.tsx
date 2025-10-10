@@ -20,6 +20,8 @@ type LatestQueryState = {
   sortOrder: 'asc' | 'desc';
   page: number;
   limit?: number;
+  startDate?: string;
+  endDate?: string;
 };
 
 /**
@@ -33,10 +35,12 @@ export function SalesOrdersPageClient({
   initialParams,
 }: SalesOrdersPageClientProps) {
   const router = useRouter();
-  const [_isPending, startTransition] = React.useTransition();
+  const [, startTransition] = React.useTransition();
 
   // ✅ 只保留 searchInput 状态用于输入框显示，其他状态直接使用 initialParams
-  const [searchInput, setSearchInput] = React.useState(initialParams.search || '');
+  const [searchInput, setSearchInput] = React.useState(
+    initialParams.search || ''
+  );
 
   // ✅ 使用 ref 存储最新的查询参数，与 initialParams 保持同步
   const latestParamsRef = React.useRef<LatestQueryState>({
@@ -47,6 +51,8 @@ export function SalesOrdersPageClient({
     sortOrder: initialParams.sortOrder || 'desc',
     page: initialParams.page || 1,
     limit: initialParams.limit,
+    startDate: initialParams.startDate,
+    endDate: initialParams.endDate,
   });
 
   // ✅ 同步 initialParams 到 latestParamsRef 和 searchInput
@@ -62,6 +68,8 @@ export function SalesOrdersPageClient({
       sortOrder: initialParams.sortOrder || 'desc',
       page: initialParams.page || 1,
       limit: initialParams.limit,
+      startDate: initialParams.startDate,
+      endDate: initialParams.endDate,
     };
 
     // 同步搜索框显示值
@@ -74,6 +82,8 @@ export function SalesOrdersPageClient({
     initialParams.sortOrder,
     initialParams.page,
     initialParams.limit,
+    initialParams.startDate,
+    initialParams.endDate,
   ]);
 
   const replaceURL = React.useCallback(
@@ -102,13 +112,20 @@ export function SalesOrdersPageClient({
       if (typeof next.limit === 'number') {
         params.set('limit', next.limit.toString());
       }
+      if (next.startDate) {
+        params.set('startDate', next.startDate);
+      }
+      if (next.endDate) {
+        params.set('endDate', next.endDate);
+      }
 
       const queryString = params.toString();
+      const newUrl = queryString
+        ? `/sales-orders?${queryString}`
+        : '/sales-orders';
+
       startTransition(() => {
-        router.replace(
-          queryString ? `/sales-orders?${queryString}` : '/sales-orders',
-          { scroll: false }
-        );
+        router.replace(newUrl, { scroll: false });
       });
     },
     [router, startTransition]
@@ -153,16 +170,34 @@ export function SalesOrdersPageClient({
       const overrides: Partial<LatestQueryState> = { page: 1 };
 
       if (key === 'status') {
-        overrides.status = value as SalesOrderQueryParams['status'];
+        overrides.status =
+          value && value !== 'all'
+            ? (value as SalesOrderQueryParams['status'])
+            : undefined;
       } else if (key === 'customerId') {
         overrides.customerId = value || '';
       } else if (key === 'sortBy') {
-        overrides.sortBy = (value as SalesOrderQueryParams['sortBy']) || 'createdAt';
+        overrides.sortBy =
+          (value as SalesOrderQueryParams['sortBy']) || 'createdAt';
       } else if (key === 'sortOrder') {
         overrides.sortOrder = (value as 'asc' | 'desc') || 'desc';
+      } else if (key === 'startDate') {
+        overrides.startDate = value;
+      } else if (key === 'endDate') {
+        overrides.endDate = value;
+      } else if (key === 'dateRange') {
+        // 处理日期范围批量更新
+        try {
+          const { startDate, endDate } = JSON.parse(value || '{}');
+          overrides.startDate = startDate;
+          overrides.endDate = endDate;
+        } catch (error) {
+          console.error('❌ 解析日期范围失败:', error);
+        }
       }
 
       latestParamsRef.current = { ...latestParamsRef.current, ...overrides };
+
       replaceURL(overrides);
     },
     [replaceURL]
@@ -192,6 +227,8 @@ export function SalesOrdersPageClient({
       sortOrder: initialParams.sortOrder,
       page: initialParams.page,
       limit: initialParams.limit,
+      startDate: initialParams.startDate,
+      endDate: initialParams.endDate,
     }),
     [
       initialParams.search,
@@ -201,15 +238,17 @@ export function SalesOrdersPageClient({
       initialParams.sortOrder,
       initialParams.page,
       initialParams.limit,
+      initialParams.startDate,
+      initialParams.endDate,
     ]
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="mb-6 flex-shrink-0">
         <SalesOrderPageHeader />
       </div>
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1">
         <ERPSalesOrderList
           initialParams={currentQueryParams}
           searchValue={searchInput}

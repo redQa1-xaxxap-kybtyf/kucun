@@ -7,6 +7,7 @@ import type {
   RefundStatus,
   RefundType,
 } from '@/lib/types/refund';
+import { refundQuerySchema } from '@/lib/validations/refund';
 
 import { RefundsPageClient } from './page-client';
 
@@ -31,16 +32,16 @@ type SerializedRefundRecord = {
   refundAmount: number;
   processedAmount: number;
   remainingAmount: number;
-  refundDate: Date;
-  processedDate: Date | null;
+  refundDate: string;
+  processedDate: string | null;
   status: RefundStatus;
   reason: string;
   remarks: string | null;
   bankInfo: string | null;
   receiptNumber: string | null;
   returnOrderNumber: string | null;
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: string;
+  updatedAt: string;
 };
 
 /**
@@ -54,16 +55,39 @@ async function getRefundsData(searchParams: {
   sortBy?: string;
   sortOrder?: string;
 }) {
-  const page = parseInt(searchParams.page || '1', 10);
-  const limit = parseInt(
-    searchParams.limit || `${paginationConfig.defaultPageSize}`,
-    10
-  );
+  const sanitizedParams = {
+    page: searchParams.page
+      ? Number.parseInt(searchParams.page, 10)
+      : undefined,
+    limit: searchParams.limit
+      ? Number.parseInt(searchParams.limit, 10)
+      : undefined,
+    search: searchParams.search?.trim() || undefined,
+    status: searchParams.status || undefined,
+    sortBy: searchParams.sortBy || undefined,
+    sortOrder: searchParams.sortOrder || undefined,
+  };
+
+  const validationResult = refundQuerySchema.safeParse(sanitizedParams);
+  const parsedParams = validationResult.success ? validationResult.data : {};
+
+  if (!validationResult.success && process.env.NODE_ENV !== 'production') {
+    console.warn(
+      '[RefundsPage] Query params validation failed:',
+      validationResult.error.issues
+    );
+  }
+
+  const {
+    page = 1,
+    limit = paginationConfig.defaultPageSize,
+    search = '',
+    status,
+    sortBy = 'refundDate',
+    sortOrder = 'desc',
+  } = parsedParams;
+
   const skip = (page - 1) * limit;
-  const search = searchParams.search || '';
-  const status = searchParams.status;
-  const sortBy = searchParams.sortBy || 'refundDate';
-  const sortOrder = searchParams.sortOrder || 'desc';
 
   // 构建查询条件
   const whereConditions: Record<string, unknown> = {};
@@ -153,6 +177,12 @@ async function getRefundsData(searchParams: {
     refundType: refund.refundType as RefundType,
     refundMethod: refund.refundMethod as RefundMethod,
     status: refund.status as RefundStatus,
+    refundDate: refund.refundDate.toISOString(),
+    processedDate: refund.processedDate
+      ? refund.processedDate.toISOString()
+      : null,
+    createdAt: refund.createdAt.toISOString(),
+    updatedAt: refund.updatedAt.toISOString(),
   }));
 
   return {
@@ -193,13 +223,32 @@ export default async function RefundsPage({
   const params = await searchParams;
   const initialData = await getRefundsData(params);
 
+  const sanitizedParams = {
+    page: params.page ? Number.parseInt(params.page, 10) : undefined,
+    limit: params.limit ? Number.parseInt(params.limit, 10) : undefined,
+    search: params.search?.trim() || undefined,
+    status: params.status || undefined,
+    sortBy: params.sortBy || undefined,
+    sortOrder: params.sortOrder || undefined,
+  };
+
+  const validationResult = refundQuerySchema.safeParse(sanitizedParams);
+  const validatedParams = validationResult.success ? validationResult.data : {};
+
+  if (!validationResult.success && process.env.NODE_ENV !== 'production') {
+    console.warn(
+      '[RefundsPage] Query params validation failed (initialParams):',
+      validationResult.error.issues
+    );
+  }
+
   const queryParams = {
-    page: parseInt(params.page || '1', 10),
-    limit: parseInt(params.limit || `${paginationConfig.defaultPageSize}`, 10),
-    search: params.search,
-    status: params.status,
-    sortBy: params.sortBy || 'refundDate',
-    sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
+    page: validatedParams.page ?? 1,
+    limit: validatedParams.limit ?? paginationConfig.defaultPageSize,
+    search: validatedParams.search,
+    status: validatedParams.status,
+    sortBy: validatedParams.sortBy ?? 'refundDate',
+    sortOrder: (validatedParams.sortOrder as 'asc' | 'desc') ?? 'desc',
   };
 
   return (
