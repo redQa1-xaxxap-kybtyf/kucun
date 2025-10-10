@@ -197,6 +197,7 @@ model ProductVariant {
   inboundRecords       InboundRecord[]
   outboundRecords      OutboundRecord[]
   inventoryAdjustments InventoryAdjustment[]
+  salesOrderItems      SalesOrderItem[]
 
   @@unique([productId, colorCode], map: "uk_product_color")
   @@index([productId])
@@ -217,6 +218,7 @@ model SalesOrder {
   costAmount   Float?   @default(0) @map("cost_amount") // 调货销售的成本金额
   profitAmount Float?   @default(0) @map("profit_amount") // 调货销售的毛利金额
   totalAmount  Float    @default(0) @map("total_amount")
+  paidAmount   Float    @default(0) @map("paid_amount") // 已付金额
   remarks      String?
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -249,6 +251,7 @@ model SalesOrderItem {
   id             String  @id @default(uuid())
   salesOrderId   String  @map("sales_order_id")
   productId      String? @map("product_id") // 手动输入商品时可为空
+  variantId      String? @map("variant_id") // 产品变体ID
   productCode    String? @map("product_code") // 产品编码
   batchNumber    String? @map("batch_number") // 批次号
   colorCode      String? @map("color_code")
@@ -279,10 +282,12 @@ model SalesOrderItem {
   // 关联关系
   salesOrder       SalesOrder        @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
   product          Product?          @relation(fields: [productId], references: [id])
+  variant          ProductVariant?   @relation(fields: [variantId], references: [id])
   returnOrderItems ReturnOrderItem[]
 
   @@index([salesOrderId], map: "idx_sales_order_items_order")
   @@index([productId], map: "idx_sales_order_items_product")
+  @@index([variantId], map: "idx_sales_order_items_variant")
   @@index([productId, colorCode], map: "idx_sales_order_items_product_color")
   @@index([unitCost], map: "idx_sales_order_items_unit_cost")
   @@index([profitAmount], map: "idx_sales_order_items_profit")
