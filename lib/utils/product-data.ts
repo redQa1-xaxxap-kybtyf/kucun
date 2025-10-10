@@ -377,14 +377,14 @@ export class ProductDataDefaults {
    */
   static getCreateDefaults(): Partial<ProductCreateFormData> {
     return {
-      code: '',
-      name: '',
-      specification: '',
+      code: undefined,
+      name: undefined,
+      specification: undefined,
       description: '',
       status: 'active',
       thickness: undefined,
       images: [],
-      categoryId: 'uncategorized',
+      categoryId: undefined,
     };
   }
 
