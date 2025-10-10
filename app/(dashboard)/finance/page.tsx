@@ -6,6 +6,7 @@ import {
   Calendar,
   CreditCard,
   DollarSign,
+  FileText,
   Receipt,
   TrendingDown,
   TrendingUp,
@@ -40,8 +41,8 @@ export default function FinancePage() {
       description: '管理销售订单产生的应收账款',
       href: '/finance/receivables',
       icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
+      color: 'text-[hsl(var(--color-success))]',
+      bgColor: 'bg-[hsl(var(--color-success-light))]',
       stats: {
         amount: mockStats.totalReceivable,
         count: mockStats.receivableCount,
@@ -54,8 +55,8 @@ export default function FinancePage() {
       description: '管理退货订单产生的应退账款',
       href: '/finance/refunds',
       icon: TrendingDown,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
+      color: 'text-[hsl(var(--color-warning))]',
+      bgColor: 'bg-[hsl(var(--color-warning-light))]',
       stats: {
         amount: mockStats.totalRefundable,
         count: mockStats.refundCount,
@@ -68,8 +69,8 @@ export default function FinancePage() {
       description: '管理销售订单的收款记录和确认',
       href: '/finance/payments',
       icon: CreditCard,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
+      color: 'text-[hsl(var(--color-purple))]',
+      bgColor: 'bg-[hsl(var(--color-purple-light))]',
       stats: {
         amount: mockStats.monthlyReceived,
         count: mockStats.receivableCount,
@@ -82,12 +83,26 @@ export default function FinancePage() {
       description: '管理客户和供应商的综合账务往来',
       href: '/finance/statements',
       icon: Receipt,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
+      color: 'text-[hsl(var(--color-primary))]',
+      bgColor: 'bg-[hsl(var(--color-primary-light))]',
       stats: {
         amount: mockStats.totalReceivable + mockStats.totalRefundable,
         count: mockStats.receivableCount + mockStats.refundCount,
         label: '账单总数',
+      },
+    },
+    {
+      id: 'customer-statements',
+      title: '客户对账单',
+      description: '管理与客户之间的完整财务往来记录',
+      href: '/finance/customer-statements',
+      icon: FileText,
+      color: 'text-[hsl(var(--color-primary))]',
+      bgColor: 'bg-[hsl(var(--color-primary-light))]',
+      stats: {
+        amount: mockStats.totalReceivable,
+        count: mockStats.receivableCount,
+        label: '有往来客户',
       },
     },
   ];
@@ -121,10 +136,10 @@ export default function FinancePage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">总应收金额</CardTitle>
-            <TrendingUp className="h-4 w-4 text-green-600" />
+            <TrendingUp className="h-4 w-4 text-[hsl(var(--color-success))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
               {formatCurrency(mockStats.totalReceivable)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -136,10 +151,10 @@ export default function FinancePage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">总应退金额</CardTitle>
-            <TrendingDown className="h-4 w-4 text-orange-600" />
+            <TrendingDown className="h-4 w-4 text-[hsl(var(--color-warning))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-warning))]">
               {formatCurrency(mockStats.totalRefundable)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -151,10 +166,10 @@ export default function FinancePage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">逾期金额</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertCircle className="h-4 w-4 text-[hsl(var(--color-error))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-error))]">
               {formatCurrency(mockStats.overdueAmount)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -166,10 +181,10 @@ export default function FinancePage() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">本月收款</CardTitle>
-            <DollarSign className="h-4 w-4 text-blue-600" />
+            <DollarSign className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
               {formatCurrency(mockStats.monthlyReceived)}
             </div>
             <p className="text-muted-foreground text-xs">较上月增长 12%</p>
@@ -182,7 +197,7 @@ export default function FinancePage() {
         {financeModules.map(module => {
           const IconComponent = module.icon;
           return (
-            <Card key={module.id} className="transition-shadow hover:shadow-md">
+            <Card key={module.id} className="transition-shadow hover:shadow-[var(--shadow-medium)]">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className={`rounded-lg p-2 ${module.bgColor}`}>
@@ -226,7 +241,7 @@ export default function FinancePage() {
         <CardContent>
           <div className="grid gap-4 md:grid-cols-3">
             <div className="bg-muted/50 flex items-center gap-3 rounded-lg p-3">
-              <Users className="h-5 w-5 text-blue-600" />
+              <Users className="h-5 w-5 text-[hsl(var(--color-primary))]" />
               <div>
                 <p className="font-medium">客户账务</p>
                 <p className="text-muted-foreground text-sm">
@@ -235,7 +250,7 @@ export default function FinancePage() {
               </div>
             </div>
             <div className="bg-muted/50 flex items-center gap-3 rounded-lg p-3">
-              <Receipt className="h-5 w-5 text-green-600" />
+              <Receipt className="h-5 w-5 text-[hsl(var(--color-success))]" />
               <div>
                 <p className="font-medium">对账单</p>
                 <p className="text-muted-foreground text-sm">
@@ -244,7 +259,7 @@ export default function FinancePage() {
               </div>
             </div>
             <div className="bg-muted/50 flex items-center gap-3 rounded-lg p-3">
-              <AlertCircle className="h-5 w-5 text-orange-600" />
+              <AlertCircle className="h-5 w-5 text-[hsl(var(--color-warning))]" />
               <div>
                 <p className="font-medium">逾期提醒</p>
                 <p className="text-muted-foreground text-sm">

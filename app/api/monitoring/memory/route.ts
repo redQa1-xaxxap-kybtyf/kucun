@@ -5,6 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import {
   generateMemoryReport,
   getMemoryStats,
@@ -42,7 +43,7 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error) {
-    console.error('[Memory Monitoring API] Error:', error);
+    logger.error('monitoring-memory', '获取内存监控数据失败', error);
     return NextResponse.json(
       {
         success: false,

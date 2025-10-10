@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { productVariantQuerySchema } from '@/lib/validations/product';
@@ -126,7 +127,9 @@ export const GET = withAuth(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('获取产品变体列表错误:', error);
+    logger.error('product-variants', '获取产品变体列表失败', error, {
+      url: request.url,
+    });
 
     return NextResponse.json(
       {
@@ -254,7 +257,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       data: formattedVariant,
     });
   } catch (error) {
-    console.error('创建产品变体错误:', error);
+    logger.error('product-variants', '创建产品变体失败', error);
 
     return NextResponse.json(
       {

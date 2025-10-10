@@ -6,6 +6,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { publishApprovalResult } from '@/lib/events';
+import { logger } from '@/lib/logger';
 import { returnOrderApprovalSchema } from '@/lib/validations/return-order';
 
 /**
@@ -137,9 +138,25 @@ export const POST = withAuth(
           // 1. 通知仓库准备收货
           // 2. 发送客户通知
           // 3. 创建相关任务等
-          console.log(`退货订单 ${returnOrder.returnNumber} 审批通过`);
+          logger.info(
+            'return-order-approve',
+            '退货订单审批通过',
+            undefined,
+            {
+              returnNumber: returnOrder.returnNumber,
+              returnOrderId: returnOrder.id,
+            }
+          );
         } else {
-          console.log(`退货订单 ${returnOrder.returnNumber} 审批拒绝`);
+          logger.info(
+            'return-order-approve',
+            '退货订单审批拒绝',
+            undefined,
+            {
+              returnNumber: returnOrder.returnNumber,
+              returnOrderId: returnOrder.id,
+            }
+          );
         }
 
         return returnOrder;
@@ -166,7 +183,10 @@ export const POST = withAuth(
       });
     } catch (error) {
       // 如果事件发布失败，记录错误但不影响业务流程
-      console.error('Event publish failed:', error);
+      logger.error('return-order-approve', '退货订单审批事件发布失败', error, undefined, {
+        returnOrderId: existingReturnOrder.id,
+        approved,
+      });
 
       // 如果是事务执行失败，抛出错误
       if (!updatedReturnOrder) {

@@ -52,88 +52,89 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
       onFilter('hasStock', !queryParams.hasStock);
     }, [onFilter, queryParams.hasStock]);
 
-    // 清空所有筛选
+    // 清空所有筛选（保留 sortBy 因为它是默认排序，不算筛选）
     const handleClearFilters = React.useCallback(() => {
       onFilter('categoryId', undefined);
-      onFilter('sortBy', undefined);
       onFilter('lowStock', false);
       onFilter('hasStock', false);
     }, [onFilter]);
 
-    // 检查是否有激活的筛选器
+    // 检查是否有激活的筛选器（排除默认值）
     const hasActiveFilters =
-      queryParams.categoryId ||
-      queryParams.sortBy ||
-      queryParams.lowStock ||
-      queryParams.hasStock;
+      !!queryParams.categoryId || // 有选择分类
+      queryParams.lowStock || // 开启了库存偏低
+      queryParams.hasStock; // 开启了有库存
+    // 注意：不包括 sortBy，因为它总是有默认值 'updatedAt'
 
     return (
       <div className="space-y-4">
         <div className="rounded-lg border bg-white p-4 shadow-md shadow-gray-200/50">
-          <UnifiedSearchBar
-            // 搜索配置
-            searchValue={queryParams.search || ''}
-            onSearchChange={onSearch}
-            searchPlaceholder="搜索产品名称、编码..."
-            debounceDelay={400}
-            compact={true}
-            // 操作按钮 - 清空筛选按钮（仅在有筛选时显示）
-            actionButtons={
-              hasActiveFilters
-                ? [
-                    {
-                      label: '清空筛选',
-                      icon: <Filter className="mr-1.5 h-3.5 w-3.5" />,
-                      onClick: handleClearFilters,
-                      variant: 'outline',
-                    },
-                  ]
-                : undefined
-            }
-            // 切换按钮
-            toggleButtons={[
-              {
-                key: 'lowStock',
-                label: '库存偏低',
-                icon: <AlertTriangle className="mr-1 h-3 w-3" />,
-                active: !!queryParams.lowStock,
-                onClick: handleToggleLowStock,
-              },
-              {
-                key: 'hasStock',
-                label: '有库存',
-                icon: <Package className="mr-1 h-3 w-3" />,
-                active: !!queryParams.hasStock,
-                onClick: handleToggleHasStock,
-              },
-            ]}
-            // 筛选器
-            filters={[
-              {
-                key: 'categoryId',
-                label: '分类',
-                options: categoryOptions.map(cat => ({
-                  label: cat.name,
-                  value: cat.id,
-                })),
-                width: 'w-[140px]',
-              },
-              {
-                key: 'sortBy',
-                label: '排序',
-                options: [
-                  { label: '更新时间', value: 'updatedAt' },
-                  { label: '库存数量', value: 'quantity' },
-                ],
-                width: 'w-[140px]',
-              },
-            ]}
-            filterValues={{
-              categoryId: queryParams.categoryId,
-              sortBy: queryParams.sortBy,
-            }}
-            onFilterChange={handleFilterChange}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <UnifiedSearchBar
+              // 搜索配置
+              searchValue={queryParams.search || ''}
+              onSearchChange={onSearch}
+              searchPlaceholder="搜索产品名称、编码..."
+              debounceDelay={400}
+              compact={true}
+              // 切换按钮
+              toggleButtons={[
+                {
+                  key: 'lowStock',
+                  label: '库存偏低',
+                  icon: <AlertTriangle className="mr-1 h-3 w-3" />,
+                  active: !!queryParams.lowStock,
+                  onClick: handleToggleLowStock,
+                },
+                {
+                  key: 'hasStock',
+                  label: '有库存',
+                  icon: <Package className="mr-1 h-3 w-3" />,
+                  active: !!queryParams.hasStock,
+                  onClick: handleToggleHasStock,
+                },
+              ]}
+              // 筛选器
+              filters={[
+                {
+                  key: 'categoryId',
+                  label: '分类',
+                  options: categoryOptions.map(cat => ({
+                    label: cat.name,
+                    value: cat.id,
+                  })),
+                  width: 'w-[140px]',
+                },
+                {
+                  key: 'sortBy',
+                  label: '排序',
+                  options: [
+                    { label: '更新时间', value: 'updatedAt' },
+                    { label: '库存数量', value: 'quantity' },
+                  ],
+                  width: 'w-[140px]',
+                },
+              ]}
+              filterValues={{
+                categoryId: queryParams.categoryId,
+                sortBy: queryParams.sortBy,
+              }}
+              onFilterChange={handleFilterChange}
+            />
+
+            {/* 清空筛选按钮 - 仅在有激活的筛选时显示，显示在筛选器右侧 */}
+            {hasActiveFilters && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleClearFilters}
+                className="h-8 gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
+              >
+                <Filter className="h-3.5 w-3.5" />
+                清空筛选
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );

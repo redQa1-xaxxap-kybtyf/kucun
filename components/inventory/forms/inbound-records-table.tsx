@@ -48,16 +48,14 @@ const getOperationTypeLabel = (reason: string) =>
 
 // 获取操作类型样式
 const getOperationTypeVariant = (reason: string) => {
-  const variants: Record<
-    string,
-    'default' | 'secondary' | 'destructive' | 'outline'
-  > = {
-    purchase: 'default',
-    return: 'secondary',
-    transfer: 'outline',
-    surplus: 'default',
-    other: 'secondary',
-  };
+  const variants: Record<string, 'success' | 'warning' | 'info' | 'secondary'> =
+    {
+      purchase: 'success',
+      return: 'warning',
+      transfer: 'info',
+      surplus: 'success',
+      other: 'secondary',
+    };
   return variants[reason] || 'secondary';
 };
 
@@ -106,11 +104,14 @@ export function InboundRecordsTable({
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
-      <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-4 py-3">
+    <div
+      className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+      style={{ boxShadow: 'var(--shadow-medium)' }}
+    >
+      <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
         <div className="flex items-center gap-2">
-          <Package className="h-4 w-4 text-blue-600" />
-          <span className="text-sm font-medium text-gray-900">
+          <Package className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+          <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
             入库记录 ({records.length} 条)
           </span>
         </div>
@@ -118,16 +119,35 @@ export function InboundRecordsTable({
 
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="h-9 text-xs">产品编码</TableHead>
-              <TableHead className="h-9 text-xs">产品名称</TableHead>
-              <TableHead className="h-9 text-xs">规格</TableHead>
-              <TableHead className="h-9 text-xs">入库数量</TableHead>
-              <TableHead className="h-9 text-xs">操作类型</TableHead>
-              <TableHead className="h-9 text-xs">批次号</TableHead>
-              <TableHead className="h-9 text-xs">操作时间</TableHead>
-              <TableHead className="h-9 text-xs">备注</TableHead>
+          <TableHeader
+            className="bg-[hsl(var(--color-bg-table-header))]"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
+            <TableRow className="bg-[hsl(var(--color-bg-table-header))]">
+              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+                产品编码
+              </TableHead>
+              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+                产品名称
+              </TableHead>
+              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+                规格
+              </TableHead>
+              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+                入库数量
+              </TableHead>
+              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+                操作类型
+              </TableHead>
+              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+                批次号
+              </TableHead>
+              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+                操作时间
+              </TableHead>
+              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+                备注
+              </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -144,38 +164,39 @@ export function InboundRecordsTable({
               records.map(record => (
                 <TableRow
                   key={record.id}
-                  className="h-12 transition-colors hover:bg-blue-50/50"
+                  className="h-12 border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                 >
-                  <TableCell className="text-xs font-medium text-blue-600">
+                  <TableCell className="text-xs font-medium text-[hsl(var(--color-primary))]">
                     {record.product?.code || record.productId}
                   </TableCell>
-                  <TableCell className="text-xs font-medium">
+                  <TableCell className="text-xs font-medium text-[hsl(var(--color-text-primary))]">
                     {record.product?.name || '未知产品'}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
+                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {formatSpecification(record.product?.specification) || '-'}
                   </TableCell>
-                  <TableCell className="text-xs">
-                    <span className="font-medium">{record.quantity}</span> 片
+                  <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
+                    <span className="font-medium">{record.quantity}</span>{' '}
+                    片
                   </TableCell>
-                  <TableCell className="text-xs">
+                  <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
                     <Badge
                       variant={getOperationTypeVariant(record.reason)}
-                      className="text-xs"
+                      className="text-xs font-medium"
                     >
                       {getOperationTypeLabel(record.reason)}
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
+                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {record.batchNumber || '-'}
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
-                    <div className="flex items-center gap-1">
+                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">
                       <User className="h-3 w-3" />
                       {formatDate(record.createdAt)}
                     </div>
                   </TableCell>
-                  <TableCell className="text-muted-foreground text-xs">
+                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {record.remarks || '-'}
                   </TableCell>
                 </TableRow>

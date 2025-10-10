@@ -3,11 +3,13 @@
  * 集成 Redis Pub/Sub 和事务功能，提供实时订单状态更新和通知
  */
 
-import { publish } from '@/lib/redis/redis-pubsub';
-import { redis } from '@/lib/redis/redis-client';
 import { revalidateSalesOrders } from '@/lib/cache/revalidate';
 import { prisma } from '@/lib/db';
-import type { OrderStatus } from '@prisma/client';
+import { redis } from '@/lib/redis/redis-client';
+import { publish } from '@/lib/redis/redis-pubsub';
+import type { SalesOrderStatus } from '@/lib/types/sales-order';
+
+type OrderStatus = SalesOrderStatus;
 
 /**
  * 订单状态变更事件
@@ -367,7 +369,6 @@ export async function getRealtimeOrder(orderId: string) {
         items: {
           include: {
             product: true,
-            variant: true,
           },
         },
       },

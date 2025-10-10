@@ -313,7 +313,7 @@ export default function CustomerDetailPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="text-center">
-                <p className="text-2xl font-bold text-green-600">
+                <p className="text-2xl font-bold text-[hsl(var(--color-success))]">
                   {formatCurrency(totalSalesAmount)}
                 </p>
                 <p className="text-muted-foreground text-sm">累计销售金额</p>
@@ -334,7 +334,7 @@ export default function CustomerDetailPage() {
               </div>
               {totalReturnAmount > 0 && (
                 <div className="text-center">
-                  <p className="text-lg font-semibold text-red-600">
+                  <p className="text-lg font-semibold text-[hsl(var(--color-error))]">
                     {formatCurrency(totalReturnAmount)}
                   </p>
                   <p className="text-muted-foreground text-xs">累计退货金额</p>
@@ -375,7 +375,7 @@ export default function CustomerDetailPage() {
                   {customer.salesOrders.map(order => (
                     <div
                       key={order.id}
-                      className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
+                      className="flex cursor-pointer items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                       onClick={() => router.push(`/sales-orders/${order.id}`)}
                     >
                       <div>
@@ -406,7 +406,7 @@ export default function CustomerDetailPage() {
                   {customer.returnOrders.map(order => (
                     <div
                       key={order.id}
-                      className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
+                      className="flex cursor-pointer items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                       onClick={() => router.push(`/return-orders/${order.id}`)}
                     >
                       <div>
@@ -416,7 +416,7 @@ export default function CustomerDetailPage() {
                         </p>
                       </div>
                       <div className="space-y-1 text-right">
-                        <p className="font-medium text-red-600">
+                        <p className="font-medium text-[hsl(var(--color-error))]">
                           -{formatCurrency(order.totalAmount)}
                         </p>
                         {getOrderStatusBadge(order.status)}

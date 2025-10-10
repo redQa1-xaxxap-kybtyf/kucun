@@ -1,17 +1,18 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Loader2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { ERPCustomerForm } from '@/components/customers/erp-customer-form';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { customerQueryKeys, getCustomer } from '@/lib/api/customers';
 
 /**
- * 客户编辑页面 - ERP风格
- * 符合中国ERP系统的界面标准和用户习惯
+ * 客户编辑页面
+ * ✅ 统一 UI 样式，与产品管理编辑页面保持一致
  */
 
 interface CustomerEditPageProps {
@@ -45,24 +46,56 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
     router.push('/customers');
   };
 
+  const HeaderCard = () => (
+    <Card className="overflow-hidden">
+      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
+              <Users className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+                编辑客户
+              </h1>
+              <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                修改客户信息
+              </p>
+            </div>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={handleBack}
+            className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            返回
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
   // 加载状态
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="bg-card rounded border">
-          <div className="bg-muted/30 border-b px-3 py-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">编辑客户</h3>
-            </div>
-          </div>
-          <div className="px-3 py-8">
-            <div className="flex items-center justify-center">
-              <Loader2 className="h-6 w-6 animate-spin" />
-              <span className="text-muted-foreground ml-2 text-sm">
-                加载客户信息中...
-              </span>
-            </div>
-          </div>
+      <div className="flex h-full flex-col overflow-auto p-6">
+        <div className="space-y-6">
+          <HeaderCard />
+
+          {/* 加载提示 */}
+          <Card className="overflow-hidden">
+            <CardContent className="p-12">
+              <div className="flex items-center justify-center">
+                <Loader2 className="h-8 w-8 animate-spin text-[hsl(var(--color-primary))]" />
+                <span className="ml-3 text-base text-[hsl(var(--color-text-secondary))]">
+                  加载客户信息中...
+                </span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -71,38 +104,29 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
   // 错误状态
   if (error) {
     return (
-      <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="bg-card rounded border">
-          <div className="bg-muted/30 border-b px-3 py-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">编辑客户</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7"
-                onClick={handleBack}
-              >
-                <ArrowLeft className="mr-1 h-3 w-3" />
-                返回
-              </Button>
-            </div>
-          </div>
-          <div className="px-3 py-8">
-            <div className="text-center">
-              <p className="text-sm text-red-600">
-                加载客户信息失败:{' '}
-                {error instanceof Error ? error.message : '未知错误'}
-              </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4 h-7"
-                onClick={handleBack}
-              >
-                返回客户列表
-              </Button>
-            </div>
-          </div>
+      <div className="flex h-full flex-col overflow-auto p-6">
+        <div className="space-y-6">
+          <HeaderCard />
+
+          {/* 错误提示 */}
+          <Card className="overflow-hidden">
+            <CardContent className="p-12">
+              <div className="text-center">
+                <p className="text-base text-[hsl(var(--color-error))]">
+                  加载客户信息失败:{' '}
+                  {error instanceof Error ? error.message : '未知错误'}
+                </p>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="mt-6"
+                  onClick={handleBack}
+                >
+                  返回客户列表
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
@@ -111,48 +135,43 @@ export default function CustomerEditPage({ params }: CustomerEditPageProps) {
   // 客户不存在
   if (!customer) {
     return (
-      <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-        <div className="bg-card rounded border">
-          <div className="bg-muted/30 border-b px-3 py-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium">编辑客户</h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7"
-                onClick={handleBack}
-              >
-                <ArrowLeft className="mr-1 h-3 w-3" />
-                返回
-              </Button>
-            </div>
-          </div>
-          <div className="px-3 py-8">
-            <div className="text-center">
-              <p className="text-muted-foreground text-sm">客户不存在</p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-4 h-7"
-                onClick={handleBack}
-              >
-                返回客户列表
-              </Button>
-            </div>
-          </div>
+      <div className="flex h-full flex-col overflow-auto p-6">
+        <div className="space-y-6">
+          <HeaderCard />
+
+          {/* 不存在提示 */}
+          <Card className="overflow-hidden">
+            <CardContent className="p-12">
+              <div className="text-center">
+                <p className="text-base text-[hsl(var(--color-text-secondary))]">
+                  客户不存在
+                </p>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="mt-6"
+                  onClick={handleBack}
+                >
+                  返回客户列表
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
-      <ERPCustomerForm
-        mode="edit"
-        initialData={customer}
-        onSuccess={handleSuccess}
-        onCancel={handleBack}
-      />
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="space-y-6">
+        <ERPCustomerForm
+          mode="edit"
+          initialData={customer}
+          onSuccess={handleSuccess}
+          onCancel={handleBack}
+        />
+      </div>
     </div>
   );
 }

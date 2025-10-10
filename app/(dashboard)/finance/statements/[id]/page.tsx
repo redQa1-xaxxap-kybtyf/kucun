@@ -2,8 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft } from 'lucide-react';
-import { useRouter } from 'next/navigation';
-import * as React from 'react';
+import { useParams, useRouter } from 'next/navigation';
 
 import { ContentLoading } from '@/components/common/loading';
 import { Button } from '@/components/ui/button';
@@ -14,12 +13,6 @@ import { StatementFinancialSummary } from './components/statement-financial-summ
 import { StatementHeader } from './components/statement-header';
 import { StatementStatistics } from './components/statement-statistics';
 import { StatementTransactions } from './components/statement-transactions';
-
-interface StatementDetailPageProps {
-  params: Promise<{
-    id: string;
-  }>;
-}
 
 // 数据类型定义
 interface StatementDetail {
@@ -64,18 +57,10 @@ interface StatementDetail {
  * 往来账单详情页面
  * 显示客户或供应商的详细账务往来信息
  */
-export default function StatementDetailPage({
-  params,
-}: StatementDetailPageProps) {
+export default function StatementDetailPage() {
   const router = useRouter();
-  const [id, setId] = React.useState<string>('');
-
-  // 解析 params
-  React.useEffect(() => {
-    params.then(resolvedParams => {
-      setId(resolvedParams.id);
-    });
-  }, [params]);
+  const params = useParams();
+  const id = params.id as string;
 
   // API 调用函数
   const fetchStatementDetail = async (): Promise<StatementDetail> => {
@@ -102,99 +87,62 @@ export default function StatementDetailPage({
     queryKey: queryKeys.finance.statement(id),
     queryFn: fetchStatementDetail,
     enabled: !!id,
-    staleTime: 5 * 60 * 1000, // 5分钟
+    staleTime: 5 * 60 * 1000,
   });
 
-  // 加载状态
   if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回
-          </Button>
-        </div>
-        <ContentLoading text="加载账单详情..." />
-      </div>
-    );
+    return <ContentLoading />;
   }
 
-  // 错误状态
-  if (isError) {
+  if (isError || !statement) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={() => router.back()}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回
-          </Button>
-        </div>
-        <div className="py-8 text-center">
-          <p className="text-red-600">
-            加载失败: {error?.message || '未知错误'}
+      <div className="flex min-h-[400px] flex-col items-center justify-center space-y-4 p-6">
+        <div className="text-center">
+          <h2 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">加载失败</h2>
+          <p className="text-muted-foreground mt-2 text-sm">
+            {error instanceof Error ? error.message : '获取账单详情失败'}
           </p>
+        </div>
+        <div className="flex gap-2">
           <Button
             variant="outline"
-            onClick={() => window.location.reload()}
-            className="mt-2"
+            onClick={() => router.push('/finance/statements')}
           >
-            重试
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  // 数据不存在
-  if (!statement) {
-    return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <Button variant="outline" size="sm" onClick={() => router.back()}>
             <ArrowLeft className="mr-2 h-4 w-4" />
-            返回
+            返回列表
           </Button>
-        </div>
-        <div className="py-8 text-center">
-          <p className="text-muted-foreground">账单不存在</p>
+          <Button onClick={() => window.location.reload()}>重试</Button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      {/* 页面头部 - StatementHeader组件已经正确实现，保持不变 */}
-      <StatementHeader
-        name={statement.name}
-        type={statement.type}
-        status={statement.status}
-      />
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="space-y-6">
+        {/* 页面头部 */}
+        <StatementHeader statement={statement} />
 
-      {/* 基本信息和统计 */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        <StatementBasicInfo
-          contact={statement.contact}
-          creditLimit={statement.creditLimit}
-          paymentTerms={statement.paymentTerms}
-          lastTransactionDate={statement.lastTransactionDate}
-          lastPaymentDate={statement.lastPaymentDate}
-        />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          {/* 主要内容区域 */}
+          <div className="space-y-6 lg:col-span-2">
+            {/* 基本信息 */}
+            <StatementBasicInfo statement={statement} />
 
-        <StatementFinancialSummary
-          totalOrders={statement.totalOrders}
-          totalAmount={statement.totalAmount}
-          paidAmount={statement.paidAmount}
-          pendingAmount={statement.pendingAmount}
-          overdueAmount={statement.overdueAmount}
-        />
+            {/* 交易记录 */}
+            <StatementTransactions transactions={statement.transactions} />
+          </div>
 
-        <StatementStatistics summary={statement.summary} />
+          {/* 侧边栏 */}
+          <div className="space-y-6">
+            {/* 财务汇总 */}
+            <StatementFinancialSummary statement={statement} />
+
+            {/* 统计数据 */}
+            <StatementStatistics summary={statement.summary} />
+          </div>
+        </div>
       </div>
-
-      {/* 交易明细 */}
-      <StatementTransactions transactions={statement.transactions} />
     </div>
   );
 }

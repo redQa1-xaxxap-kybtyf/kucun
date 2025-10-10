@@ -211,9 +211,7 @@ export function StatementsClient({
                               {statement.name}
                             </h3>
                             <Badge variant="outline">
-                              {statement.type === 'customer'
-                                ? '客户'
-                                : '供应商'}
+                              {statement.type === 'customer' ? '客户' : '供应商'}
                             </Badge>
                             {statement.overdueAmount > 0 && (
                               <Badge variant="destructive">逾期</Badge>
@@ -282,9 +280,7 @@ export function StatementsClient({
                           )}
                           <div className="mt-4 flex gap-2">
                             <Button variant="outline" size="sm" asChild>
-                              <Link
-                                href={`/finance/statements/${statement.id}`}
-                              >
+                              <Link href={`/finance/statements/${statement.id}`}>
                                 查看详情
                               </Link>
                             </Button>

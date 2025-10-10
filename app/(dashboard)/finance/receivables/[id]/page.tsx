@@ -177,8 +177,8 @@ export default function ReceivableDetailPage() {
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
           {/* 基本信息 */}
           <div className="space-y-4 lg:col-span-2">
-            <Card className="shadow-md shadow-gray-200/50">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+            <Card>
+              <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
                 <CardTitle>基本信息</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
@@ -243,7 +243,7 @@ export default function ReceivableDetailPage() {
                     </label>
                     <div className="mt-1 flex items-center space-x-2">
                       <Calendar className="text-muted-foreground h-4 w-4" />
-                      <span className={isOverdue ? 'text-red-600' : ''}>
+                      <span className={isOverdue ? 'text-[hsl(var(--color-error))]' : ''}>
                         {formatDate(receivable.dueDate)}
                       </span>
                     </div>
@@ -287,8 +287,8 @@ export default function ReceivableDetailPage() {
             </Card>
 
             {/* 收款记录 */}
-            <Card className="shadow-md shadow-gray-200/50">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+            <Card>
+              <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
                 <CardTitle className="flex items-center space-x-2">
                   <FileText className="h-5 w-5" />
                   <span>收款记录</span>
@@ -313,7 +313,7 @@ export default function ReceivableDetailPage() {
                             </div>
                           </div>
                           <div className="text-right">
-                            <p className="font-medium text-green-600">
+                            <p className="font-medium text-[hsl(var(--color-success))]">
                               {formatCurrency(payment.amount)}
                             </p>
                           </div>
@@ -335,8 +335,8 @@ export default function ReceivableDetailPage() {
 
           {/* 金额汇总 */}
           <div className="space-y-4">
-            <Card className="shadow-md shadow-gray-200/50">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+            <Card>
+              <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
                 <CardTitle>金额汇总</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 pt-6">
@@ -348,13 +348,13 @@ export default function ReceivableDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">已收金额</span>
-                  <span className="font-medium text-green-600">
+                  <span className="font-medium text-[hsl(var(--color-success))]">
                     {formatCurrency(receivable.receivedAmount)}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-muted-foreground">剩余金额</span>
-                  <span className="font-medium text-red-600">
+                  <span className="font-medium text-[hsl(var(--color-error))]">
                     {formatCurrency(receivable.remainingAmount)}
                   </span>
                 </div>
@@ -364,9 +364,9 @@ export default function ReceivableDetailPage() {
                     <span>收款进度</span>
                     <span>{paymentProgress.toFixed(1)}%</span>
                   </div>
-                  <div className="h-2 w-full rounded-full bg-gray-200">
+                  <div className="h-2 w-full rounded-full bg-[hsl(var(--color-border-secondary))]">
                     <div
-                      className="h-2 rounded-full bg-green-600 transition-all duration-300"
+                      className="h-2 rounded-full bg-[hsl(var(--color-success))] transition-all duration-300"
                       style={{ width: `${paymentProgress}%` }}
                     ></div>
                   </div>
@@ -383,8 +383,8 @@ export default function ReceivableDetailPage() {
 
             {/* 快速操作 */}
             {receivable.status !== 'received' && (
-              <Card className="shadow-md shadow-gray-200/50">
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+              <Card>
+                <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
                   <CardTitle>快速操作</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2 pt-6">
@@ -401,8 +401,8 @@ export default function ReceivableDetailPage() {
             )}
 
             {/* 客户信息 */}
-            <Card className="shadow-md shadow-gray-200/50">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+            <Card>
+              <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
                 <CardTitle>客户信息</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 pt-6">

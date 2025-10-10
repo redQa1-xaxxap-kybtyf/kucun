@@ -53,6 +53,7 @@ const formatQuantityDisplay = (item: Inventory) => {
       : '件';
     return `${item.quantity} ${unit}`;
   }
+  // 显示 "5件+3片 (总计53片)" 完整格式
   return formatInventoryQuantity(item.quantity, item.product, true);
 };
 

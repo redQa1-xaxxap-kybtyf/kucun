@@ -6,6 +6,7 @@ import {
   validateQueryParams,
   verifyApiAuth,
 } from '@/lib/api-helpers';
+import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/db';
 import {
   calculateDueDate,
@@ -357,7 +358,7 @@ export async function GET(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('获取应收账款失败:', error);
+    logger.error('finance-receivables', '获取应收账款失败', error);
     return NextResponse.json(
       {
         success: false,

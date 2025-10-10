@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 import { provinces } from '@/lib/data/complete-address-data-full';
+import { logger } from '@/lib/logger';
 
 export async function GET() {
   try {
@@ -15,7 +16,7 @@ export async function GET() {
       data: formattedProvinces,
     });
   } catch (error) {
-    console.error('获取省份数据失败:', error);
+    logger.error('address-provinces', '获取省份数据失败', error);
     return NextResponse.json(
       {
         success: false,

@@ -30,18 +30,24 @@ export default function CreateFactoryShipmentPage() {
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+        <Card
+          className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+          style={{ boxShadow: 'var(--shadow-medium)' }}
+        >
+          <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                  <Truck className="h-6 w-6 text-white" />
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]"
+                  style={{ boxShadow: 'var(--shadow-light)' }}
+                >
+                  <Truck className="h-6 w-6" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
                     创建厂家发货订单
                   </h1>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
                     创建新的厂家发货订单，支持多供应商商品和临时商品管理
                   </p>
                 </div>
@@ -50,7 +56,7 @@ export default function CreateFactoryShipmentPage() {
                 variant="outline"
                 size="lg"
                 asChild
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                className="h-11 transition-transform duration-150 hover:scale-[1.02]"
               >
                 <Link href="/factory-shipments">
                   <ArrowLeft className="mr-2 h-4 w-4" />

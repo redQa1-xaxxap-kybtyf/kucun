@@ -148,7 +148,7 @@ export function ConfirmShipmentDialog({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    集装箱号码 <span className="text-red-500">*</span>
+                    集装箱号码 <span className="text-[hsl(var(--color-error))]">*</span>
                   </FormLabel>
                   <FormControl>
                     <Input

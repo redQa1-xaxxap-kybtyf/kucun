@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { paginationConfig } from '@/lib/env';
 import { getStatementsList } from '@/lib/services/finance-statistics';
@@ -36,7 +37,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('获取往来账单失败:', error);
+    logger.error('finance-statements', '获取往来账单失败', error);
     return NextResponse.json(
       {
         success: false,

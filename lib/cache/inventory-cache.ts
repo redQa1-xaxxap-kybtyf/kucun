@@ -47,10 +47,16 @@ export async function setCachedInventory(
 /**
  * 库存汇总类型定义
  */
+export interface InventoryBatch {
+  batchNumber: string;
+  quantity: number;
+}
+
 export interface InventorySummary {
   totalQuantity: number;
   reservedQuantity: number;
   availableQuantity: number;
+  batches?: InventoryBatch[];
 }
 
 /**
@@ -127,6 +133,7 @@ export async function getBatchCachedInventorySummary(
 
   // 对于未缓存的数据，批量查询数据库
   if (uncachedIds.length > 0) {
+    // 查询汇总数据
     const inventorySummary = await prisma.inventory.groupBy({
       by: ['productId'],
       where: {
@@ -138,6 +145,58 @@ export async function getBatchCachedInventorySummary(
       },
     });
 
+    // 查询批次明细
+    const inventoryBatches = await prisma.inventory.findMany({
+      where: {
+        productId: { in: uncachedIds },
+        quantity: { gt: 0 }, // 只查询有库存的批次
+        batchNumber: { not: null }, // 只查询有批次号的记录
+      },
+      select: {
+        productId: true,
+        batchNumber: true,
+        quantity: true,
+      },
+      orderBy: {
+        batchNumber: 'asc',
+      },
+    });
+
+    // 按产品ID和批次号分组并汇总数量（处理同一产品同一批次可能有多条记录的情况）
+    const batchesByProduct = inventoryBatches.reduce(
+      (acc, item) => {
+        if (!item.batchNumber) return acc; // 跳过没有批次号的记录
+
+        if (!acc[item.productId]) {
+          acc[item.productId] = {};
+        }
+
+        // 如果这个批次号已经存在，累加数量；否则创建新记录
+        if (acc[item.productId][item.batchNumber]) {
+          acc[item.productId][item.batchNumber].quantity += item.quantity;
+        } else {
+          acc[item.productId][item.batchNumber] = {
+            batchNumber: item.batchNumber,
+            quantity: item.quantity,
+          };
+        }
+
+        return acc;
+      },
+      {} as Record<string, Record<string, InventoryBatch>>
+    );
+
+    // 转换为数组格式
+    const batchesArrayByProduct = Object.entries(batchesByProduct).reduce(
+      (acc, [productId, batchesMap]) => {
+        acc[productId] = Object.values(batchesMap).sort((a, b) =>
+          a.batchNumber.localeCompare(b.batchNumber)
+        );
+        return acc;
+      },
+      {} as Record<string, InventoryBatch[]>
+    );
+
     // 处理查询结果并设置缓存
     const setCachePromises = inventorySummary.map(async item => {
       const summary: InventorySummary = {
@@ -145,6 +204,7 @@ export async function getBatchCachedInventorySummary(
         reservedQuantity: item._sum.reservedQuantity || 0,
         availableQuantity:
           (item._sum.quantity || 0) - (item._sum.reservedQuantity || 0),
+        batches: batchesArrayByProduct[item.productId] || [],
       };
 
       inventoryMap.set(item.productId, summary);
@@ -168,6 +228,7 @@ export async function getBatchCachedInventorySummary(
           totalQuantity: 0,
           reservedQuantity: 0,
           availableQuantity: 0,
+          batches: [],
         };
         inventoryMap.set(productId, defaultSummary);
 

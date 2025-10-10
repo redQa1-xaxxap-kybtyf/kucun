@@ -13,7 +13,6 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
-  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -31,6 +30,7 @@ interface ProductTableProps {
   onSelectProduct: (productId: string, checked: boolean) => void;
   onSelectAll: (checked: boolean) => void;
   onDeleteProduct: (productId: string, productCode: string) => void;
+  isLoading?: boolean;
 }
 
 export function ProductTable({
@@ -40,12 +40,13 @@ export function ProductTable({
   onSelectProduct,
   onSelectAll,
   onDeleteProduct,
+  isLoading = false,
 }: ProductTableProps) {
   const router = useRouter();
 
   // 状态标签渲染
   const getStatusBadge = (status: string) => {
-    const variant = status === 'active' ? 'default' : 'secondary';
+    const variant = status === 'active' ? 'success' : 'secondary';
     return (
       <Badge variant={variant} className="text-xs">
         {PRODUCT_STATUS_LABELS[status as keyof typeof PRODUCT_STATUS_LABELS] ||
@@ -60,11 +61,13 @@ export function ProductTable({
     products.every(product => selectedProductIds.includes(product.id));
   const isIndeterminate = selectedProductIds.length > 0 && !isAllSelected;
 
+  const selectionDisabled = isLoading;
+
   return (
-    <Table>
-      <TableHeader>
-        <TableRow>
-          <TableHead className="w-12">
+    <table className="w-full caption-bottom text-sm">
+      <TableHeader className="bg-[hsl(var(--color-bg-table-header))]">
+        <TableRow className="bg-[hsl(var(--color-bg-table-header))]">
+          <TableHead className="w-12 bg-[hsl(var(--color-bg-table-header))]">
             <Checkbox
               checked={isAllSelected}
               ref={(input: HTMLButtonElement | null) => {
@@ -73,36 +76,50 @@ export function ProductTable({
                   input.indeterminate = isIndeterminate;
                 }
               }}
+              disabled={selectionDisabled}
               onCheckedChange={checked => onSelectAll(!!checked)}
             />
           </TableHead>
-          <TableHead>产品编码</TableHead>
-          <TableHead>产品名称</TableHead>
-          <TableHead>分类</TableHead>
-          <TableHead>规格</TableHead>
-          <TableHead>状态</TableHead>
-          <TableHead className="text-right">操作</TableHead>
+          <TableHead className="bg-[hsl(var(--color-bg-table-header))]">
+            产品编码
+          </TableHead>
+          <TableHead className="bg-[hsl(var(--color-bg-table-header))]">
+            产品名称
+          </TableHead>
+          <TableHead className="bg-[hsl(var(--color-bg-table-header))]">
+            分类
+          </TableHead>
+          <TableHead className="bg-[hsl(var(--color-bg-table-header))]">
+            规格
+          </TableHead>
+          <TableHead className="bg-[hsl(var(--color-bg-table-header))]">
+            状态
+          </TableHead>
+          <TableHead className="bg-[hsl(var(--color-bg-table-header))] text-right">
+            操作
+          </TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
         {products.map(product => (
           <TableRow
             key={product.id}
-            className="transition-colors hover:bg-blue-50/50"
+            className="transition-colors hover:bg-[hsl(var(--color-primary-light))]"
           >
             <TableCell>
               <Checkbox
                 checked={selectedProductIds.includes(product.id)}
+                disabled={selectionDisabled}
                 onCheckedChange={checked =>
                   onSelectProduct(product.id, !!checked)
                 }
               />
             </TableCell>
-            <TableCell className="font-medium text-blue-600">
+            <TableCell className="font-medium text-[hsl(var(--color-primary))]">
               {product.code}
             </TableCell>
             <TableCell className="font-medium">{product.name}</TableCell>
-            <TableCell className="text-gray-600">
+            <TableCell className="text-[hsl(var(--color-text-secondary))]">
               {product.category?.name || '-'}
             </TableCell>
             <TableCell className="text-muted-foreground">
@@ -114,13 +131,18 @@ export function ProductTable({
             <TableCell className="text-right">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="h-8 w-8 p-0">
+                  <Button
+                    variant="ghost"
+                    className="h-8 w-8 p-0"
+                    disabled={selectionDisabled}
+                  >
                     <span className="sr-only">打开菜单</span>
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
                   <DropdownMenuItem
+                    disabled={selectionDisabled}
                     onClick={() => {
                       if (onProductSelect) {
                         onProductSelect(product);
@@ -133,12 +155,14 @@ export function ProductTable({
                     查看详情
                   </DropdownMenuItem>
                   <DropdownMenuItem
+                    disabled={selectionDisabled}
                     onClick={() => router.push(`/products/${product.id}/edit`)}
                   >
                     <Edit className="mr-2 h-4 w-4" />
                     编辑
                   </DropdownMenuItem>
                   <DropdownMenuItem
+                    disabled={selectionDisabled}
                     onClick={() => onDeleteProduct(product.id, product.code)}
                     className="text-destructive"
                   >
@@ -151,6 +175,6 @@ export function ProductTable({
           </TableRow>
         ))}
       </TableBody>
-    </Table>
+    </table>
   );
 }

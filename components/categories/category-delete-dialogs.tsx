@@ -78,7 +78,7 @@ export function CategoryDeleteDialogs({
               <strong>&quot;{deleteDialog.categoryName}&quot;</strong> 吗？
               <br />
               <span className="font-medium text-red-600">
-                注意：此操作不可撤销，删除后该分类下的所有子分类和产品关联也将被清除。
+                注意：此操作不可撤销。如果该分类下还有子分类或产品，将无法删除。
               </span>
             </DialogDescription>
           </DialogHeader>

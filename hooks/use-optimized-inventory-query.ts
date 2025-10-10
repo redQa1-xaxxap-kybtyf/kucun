@@ -4,7 +4,6 @@
  */
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import * as React from 'react';
 import { useCallback, useMemo } from 'react';
 
 import type {
@@ -77,7 +76,8 @@ export function useOptimizedInventoryQuery({
     enabled,
     staleTime, // 数据新鲜度时间 - Infinity 表示永不过期（除非手动 invalidate）
     gcTime: cacheTime, // 垃圾回收时间
-    placeholderData: previousData => previousData, // 保持上一页数据，避免闪烁
+    // ✅ 修复：移除 placeholderData，避免数据切换时的闪烁
+    // 使用 React 的 useTransition 在父组件中处理加载状态
     // 错误重试配置
     retry: (failureCount, error) => {
       // 4xx错误不重试

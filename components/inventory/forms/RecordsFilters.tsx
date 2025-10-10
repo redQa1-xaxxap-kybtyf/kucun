@@ -211,10 +211,15 @@ export function RecordsFilters({
         : 'md:grid-cols-2';
 
   return (
-    <div className="bg-card rounded border p-3">
-      <div className="mb-3 flex items-center gap-2">
-        <Filter className="h-4 w-4" />
-        <span className="text-sm font-medium">筛选条件</span>
+    <div
+      className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4"
+      style={{ boxShadow: 'var(--shadow-light)' }}
+    >
+      <div className="mb-3 flex items-center gap-2 text-[hsl(var(--color-text-secondary))]">
+        <Filter className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+        <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+          筛选条件
+        </span>
       </div>
 
       <div className={`grid grid-cols-1 gap-3 ${gridClass}`}>

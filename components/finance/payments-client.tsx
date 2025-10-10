@@ -165,10 +165,10 @@ export function PaymentsClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">总收款金额</CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600" />
+            <DollarSign className="h-4 w-4 text-[hsl(var(--color-success))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
               {formatCurrency(statistics.totalAmount)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -180,10 +180,10 @@ export function PaymentsClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">已确认金额</CardTitle>
-            <CheckCircle className="h-4 w-4 text-blue-600" />
+            <CheckCircle className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
               {formatCurrency(statistics.confirmedAmount)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -202,10 +202,10 @@ export function PaymentsClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">待确认金额</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
+            <Clock className="h-4 w-4 text-[hsl(var(--color-warning))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-warning))]">
               {formatCurrency(statistics.pendingAmount)}
             </div>
             <p className="text-muted-foreground text-xs">需要及时确认</p>
@@ -215,10 +215,10 @@ export function PaymentsClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">收款率</CardTitle>
-            <TrendingUp className="h-4 w-4 text-purple-600" />
+            <TrendingUp className="h-4 w-4 text-[hsl(var(--color-purple))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-purple))]">
               {statistics.totalAmount > 0
                 ? (
                     (statistics.confirmedAmount / statistics.totalAmount) *
@@ -295,7 +295,7 @@ export function PaymentsClient({
                           </h3>
                           <StatusBadge status={payment.status} />
                         </div>
-                        <div className="space-y-1 text-sm text-gray-600">
+                        <div className="space-y-1 text-sm text-[hsl(var(--color-text-secondary))]">
                           <p>客户：{payment.customer.name}</p>
                           <p>订单：{payment.salesOrder.orderNumber}</p>
                           <p>
@@ -311,7 +311,7 @@ export function PaymentsClient({
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="mb-2 text-2xl font-bold text-green-600">
+                        <div className="mb-2 text-2xl font-bold text-[hsl(var(--color-success))]">
                           {formatCurrency(payment.paymentAmount)}
                         </div>
                         <Button size="sm" asChild>

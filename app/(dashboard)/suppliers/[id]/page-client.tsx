@@ -119,8 +119,8 @@ export function SupplierDetailPageClient({
   );
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="space-y-6">
         {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -145,11 +145,11 @@ export function SupplierDetailPageClient({
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* 基本信息 */}
           <div className="lg:col-span-2">
-            <Card className="shadow-lg shadow-gray-200/50">
-              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+            <Card>
+              <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-tertiary))]">
                 <CardTitle>基本信息</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -209,14 +209,14 @@ export function SupplierDetailPageClient({
           </div>
 
           {/* 统计信息 */}
-          <div className="space-y-4">
-            <Card className="shadow-lg shadow-gray-200/50">
-              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-tertiary))]">
                 <CardTitle>交易统计</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-blue-600">
+                  <p className="text-2xl font-bold text-[hsl(var(--color-primary))]">
                     {formatCurrency(totalShipmentAmount)}
                   </p>
                   <p className="text-muted-foreground text-sm">累计发货金额</p>
@@ -244,7 +244,7 @@ export function SupplierDetailPageClient({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="text-center">
-                  <p className="text-2xl font-bold text-red-600">
+                  <p className="text-2xl font-bold text-[hsl(var(--color-error))]">
                     {formatCurrency(totalRemainingAmount)}
                   </p>
                   <p className="text-muted-foreground text-sm">待付款金额</p>
@@ -290,7 +290,7 @@ export function SupplierDetailPageClient({
                     {supplier.factoryShipments.map(shipment => (
                       <div
                         key={shipment.id}
-                        className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
+                        className="flex cursor-pointer items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                         onClick={() =>
                           router.push(`/factory-shipments/${shipment.id}`)
                         }
@@ -325,7 +325,7 @@ export function SupplierDetailPageClient({
                     {supplier.payableRecords.map(record => (
                       <div
                         key={record.id}
-                        className="hover:bg-muted/50 flex cursor-pointer items-center justify-between rounded-lg border p-4"
+                        className="flex cursor-pointer items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                         onClick={() =>
                           router.push(`/finance/payables/${record.id}`)
                         }

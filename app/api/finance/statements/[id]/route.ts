@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { ApiError } from '@/lib/api/errors';
 import {
@@ -24,8 +25,10 @@ export const GET = withAuth(
       params?: Promise<{ id: string }> | { id: string };
     }
   ) => {
+    let statementId: string | undefined;
     try {
       const { id } = await resolveParams(context.params);
+      statementId = id;
 
       // 首先尝试作为客户查找
       const customer = await fetchCustomerWithOrders(id);
@@ -333,7 +336,12 @@ export const GET = withAuth(
       // 如果既不是客户也不是供应商
       throw ApiError.notFound('账单');
     } catch (error) {
-      console.error('获取账单详情失败:', error);
+      logger.error(
+        'finance-statements',
+        '获取账单详情失败',
+        error,
+        statementId ? { statementId } : undefined
+      );
       if (error instanceof ApiError) {
         throw error;
       }

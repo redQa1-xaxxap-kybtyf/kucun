@@ -35,7 +35,7 @@ export function LocationDistributionCard({
           {locations.map((location, index: number) => (
             <div key={index} className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="bg-primary h-2 w-2 rounded-full" />
+                <div className="h-2 w-2 rounded-full bg-[hsl(var(--color-primary))]" />
                 <span className="font-medium">{location.location}</span>
               </div>
               <div className="text-right">

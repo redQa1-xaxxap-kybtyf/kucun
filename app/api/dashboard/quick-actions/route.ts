@@ -1,13 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 
 // 获取快速操作数据
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(async (request: NextRequest, { user }) => {
   try {
     // 根据用户角色定义快速操作
-    const isAdmin = auth.role === 'admin';
-    const isSales = auth.role === 'sales';
+    const isAdmin = user.role === 'admin';
+    const isSales = user.role === 'sales';
 
     const quickActions = [];
 
@@ -115,7 +116,9 @@ export const GET = withAuth(async (request: NextRequest) => {
       data: quickActions,
     });
   } catch (error) {
-    console.error('获取快速操作失败:', error);
+    logger.error('dashboard', '获取快速操作失败', error, {
+      userId: user.id,
+    });
 
     return NextResponse.json(
       {

@@ -150,11 +150,9 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
   // 错误状态
   if (error || !refund) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center text-red-600">
-            {error ? '加载退款详情失败' : '退款记录不存在'}
-          </div>
+      <Card className="border border-[hsl(var(--color-error))] shadow-[var(--shadow-light)]">
+        <CardContent className="bg-[hsl(var(--color-error-light))] pt-6 text-center">
+          {error ? '加载退款详情失败' : '退款记录不存在'}
         </CardContent>
       </Card>
     );
@@ -171,14 +169,14 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* 退款信息 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <FileText className="h-5 w-5" />
+        <Card className="shadow-[var(--shadow-medium)]">
+          <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+            <CardTitle className="flex items-center gap-2 text-[hsl(var(--color-text-primary))]">
+              <FileText className="h-5 w-5 text-[hsl(var(--color-primary))]" />
               退款信息
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 bg-[hsl(var(--color-bg-card))]">
             <div className="grid gap-4">
               <div className="flex items-center justify-between">
                 <span className="text-muted-foreground text-sm">退款单号</span>
@@ -224,7 +222,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                   <span className="text-muted-foreground text-sm">
                     退款金额
                   </span>
-                  <span className="text-lg font-bold text-orange-600">
+                  <span className="text-lg font-bold text-[hsl(var(--color-warning))]">
                     {formatCurrency(refund.refundAmount)}
                   </span>
                 </div>
@@ -232,7 +230,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                   <span className="text-muted-foreground text-sm">
                     已处理金额
                   </span>
-                  <span className="font-medium text-green-600">
+                  <span className="font-medium text-[hsl(var(--color-success))]">
                     {formatCurrency(refund.processedAmount)}
                   </span>
                 </div>
@@ -240,7 +238,7 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                   <span className="text-muted-foreground text-sm">
                     待处理金额
                   </span>
-                  <span className="font-medium text-blue-600">
+                  <span className="font-medium text-[hsl(var(--color-primary))]">
                     {formatCurrency(refund.remainingAmount)}
                   </span>
                 </div>
@@ -261,14 +259,14 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
         </Card>
 
         {/* 处理表单 */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
+        <Card className="shadow-[var(--shadow-medium)]">
+          <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+            <CardTitle className="flex items-center gap-2 text-[hsl(var(--color-text-primary))]">
+              <DollarSign className="h-5 w-5 text-[hsl(var(--color-primary))]" />
               退款处理
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="bg-[hsl(var(--color-bg-card))]">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="processedAmount">处理金额 *</Label>
@@ -315,13 +313,13 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                   <SelectContent>
                     <SelectItem value="completed">
                       <div className="flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4 text-green-600" />
+                        <CheckCircle className="h-4 w-4 text-[hsl(var(--color-success))]" />
                         批准退款
                       </div>
                     </SelectItem>
                     <SelectItem value="rejected">
                       <div className="flex items-center gap-2">
-                        <XCircle className="h-4 w-4 text-red-600" />
+                        <XCircle className="h-4 w-4 text-[hsl(var(--color-error))]" />
                         拒绝退款
                       </div>
                     </SelectItem>

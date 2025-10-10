@@ -43,67 +43,101 @@ export function InventoryChecker({
   onInventoryCheck,
   className,
 }: InventoryCheckerProps) {
-  const [checkResults, setCheckResults] = React.useState<
-    InventoryCheckResult[]
-  >([]);
+  const [checkResults, setCheckResults] = React.useState<InventoryCheckResult[]>([]);
+
+  const normalizedItems = React.useMemo(
+    () =>
+      items.filter(
+        item => item.productId?.trim() && (item.quantity ?? 0) > 0
+      ),
+    [items]
+  );
 
   // 执行库存检查
   const performInventoryCheck = React.useCallback(() => {
-    const results: InventoryCheckResult[] = items.map(item => {
-      const product = products.find(p => p.id === item.productId);
+    if (normalizedItems.length === 0) {
+      setCheckResults([]);
+      onInventoryCheck?.([]);
+      return;
+    }
 
-      if (!product) {
+    const results = normalizedItems
+      .map(item => {
+        const requestedQuantity =
+          typeof item.quantity === 'number'
+            ? item.quantity
+            : Number(item.quantity);
+
+        if (!Number.isFinite(requestedQuantity) || requestedQuantity <= 0) {
+          return null;
+        }
+
+        const product = products.find(p => p.id === item.productId);
+
+        if (!product) {
+          return {
+            productId: item.productId,
+            requestedQuantity,
+            availableQuantity: 0,
+            isAvailable: false,
+            isLowStock: false,
+            message: '产品不存在',
+            severity: 'error' as const,
+          };
+        }
+
+        const rawAvailable = product.inventory?.availableQuantity;
+        if (rawAvailable === undefined || rawAvailable === null) {
+          return null;
+        }
+
+        const availableQuantity = Number(rawAvailable);
+        if (!Number.isFinite(availableQuantity)) {
+          return null;
+        }
+
+        const isAvailable = availableQuantity >= requestedQuantity;
+        const isLowStock = availableQuantity > 0 && availableQuantity <= 10;
+
+        let message = '';
+        let severity: 'success' | 'warning' | 'error' = 'success';
+
+        if (!isAvailable) {
+          message = `库存不足！需要 ${requestedQuantity}${product.unit}，可用 ${availableQuantity}${product.unit}`;
+          severity = 'error';
+        } else if (isLowStock) {
+          message = `库存预警！剩余 ${availableQuantity}${product.unit}`;
+          severity = 'warning';
+        } else {
+          message = `库存充足，剩余 ${availableQuantity}${product.unit}`;
+        }
+
         return {
           productId: item.productId,
-          requestedQuantity: item.quantity,
-          availableQuantity: 0,
-          isAvailable: false,
-          isLowStock: false,
-          message: '产品不存在',
-          severity: 'error' as const,
+          product,
+          requestedQuantity,
+          availableQuantity,
+          isAvailable,
+          isLowStock,
+          message,
+          severity,
         };
-      }
-
-      const availableQuantity = product.inventory?.availableQuantity || 0;
-      const isAvailable = availableQuantity >= item.quantity;
-      const isLowStock = availableQuantity > 0 && availableQuantity <= 10;
-
-      let message = '';
-      let severity: 'success' | 'warning' | 'error' = 'success';
-
-      if (!isAvailable) {
-        message = `库存不足！需要 ${item.quantity}${product.unit}，可用 ${availableQuantity}${product.unit}`;
-        severity = 'error';
-      } else if (isLowStock) {
-        message = `库存预警！剩余 ${availableQuantity}${product.unit}`;
-        severity = 'warning';
-      } else {
-        message = `库存充足，剩余 ${availableQuantity}${product.unit}`;
-        severity = 'success';
-      }
-
-      return {
-        productId: item.productId,
-        product,
-        requestedQuantity: item.quantity,
-        availableQuantity,
-        isAvailable,
-        isLowStock,
-        message,
-        severity,
-      };
-    });
+      })
+      .filter((result): result is InventoryCheckResult => result !== null);
 
     setCheckResults(results);
     onInventoryCheck?.(results);
-  }, [items, products, onInventoryCheck]);
+  }, [normalizedItems, products, onInventoryCheck]);
 
   // 当订单项或产品列表变化时重新检查
   React.useEffect(() => {
-    if (items.length > 0 && products.length > 0) {
+    if (normalizedItems.length > 0 && products.length > 0) {
       performInventoryCheck();
+    } else if (normalizedItems.length === 0) {
+      setCheckResults([]);
+      onInventoryCheck?.([]);
     }
-  }, [items, products, performInventoryCheck]);
+  }, [normalizedItems, products, performInventoryCheck, onInventoryCheck]);
 
   // 统计信息
   const stats = React.useMemo(() => {
@@ -115,7 +149,7 @@ export function InventoryChecker({
     return { total, available, warnings, errors };
   }, [checkResults]);
 
-  if (items.length === 0) {
+  if (normalizedItems.length === 0) {
     return null;
   }
 

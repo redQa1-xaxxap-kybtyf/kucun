@@ -59,7 +59,7 @@ export function useInventoryOperationForm({
             quantity: 1,
             reason: 'purchase' as const,
             remarks: '',
-            batchNumber: '',
+            batchNumber: '', // 空字符串,避免受控组件警告
             piecesPerUnit: 1,
             weight: 0.01,
           },

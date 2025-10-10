@@ -43,6 +43,7 @@ export function ERPProductList({
     setBatchDeleteDialog,
     handleSearch,
     handleFilter,
+    handleSortChange,
     handlePageChange,
     handleDeleteProduct,
     handleSelectProduct,
@@ -68,12 +69,10 @@ export function ERPProductList({
   });
 
   // 获取分类列表
-  const { data: categoriesResponse, isLoading: isLoadingCategories } = useQuery(
-    {
-      queryKey: categoryQueryKeys.lists(),
-      queryFn: () => getCategories(),
-    }
-  );
+  const { data: categoriesResponse } = useQuery({
+    queryKey: categoryQueryKeys.lists(),
+    queryFn: () => getCategories(),
+  });
 
   const categories = categoriesResponse?.data || [];
 
@@ -134,18 +133,22 @@ export function ERPProductList({
       {/* 搜索和筛选 */}
       <ProductSearchFilters
         searchValue={queryParams.search || ''}
-        statusFilter={queryParams.status}
-        categoryFilter={queryParams.categoryId}
+        categoryId={queryParams.categoryId}
+        status={queryParams.status}
+        sortBy={queryParams.sortBy || 'createdAt'}
+        sortOrder={queryParams.sortOrder || 'desc'}
         categories={categories}
-        isLoadingCategories={isLoadingCategories}
         onSearchChange={handleSearch}
-        onStatusChange={value => handleFilter({ status: value })}
-        onCategoryChange={value => handleFilter({ categoryId: value })}
+        onFilterChange={handleFilter}
+        onSortChange={handleSortChange}
         onClearFilters={handleClearFilters}
       />
 
       {/* 产品表格 */}
-      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+      <div
+        className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+        style={{ boxShadow: 'var(--shadow-medium)' }}
+      >
         <ProductTable
           products={products}
           selectedProductIds={selectedProductIds}
@@ -157,7 +160,7 @@ export function ERPProductList({
 
         {/* 分页组件 */}
         {pagination && (
-          <div className="border-t bg-gray-50/50 px-4 py-3">
+          <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
             <Pagination
               pagination={pagination}
               onPageChange={handlePageChange}
@@ -173,7 +176,18 @@ export function ERPProductList({
         open={deleteDialog.open}
         productName={deleteDialog.productName}
         isDeleting={isDeleting}
-        onOpenChange={open => setDeleteDialog(prev => ({ ...prev, open }))}
+        onOpenChange={open =>
+          setDeleteDialog(prev => ({
+            ...prev,
+            open,
+            ...(open
+              ? {}
+              : {
+                  productId: null,
+                  productName: '',
+                }),
+          }))
+        }
         onConfirm={handleConfirmDelete}
       />
 
@@ -182,7 +196,13 @@ export function ERPProductList({
         open={batchDeleteDialog.open}
         products={batchDeleteDialog.products}
         isBatchDeleting={isBatchDeleting}
-        onOpenChange={open => setBatchDeleteDialog(prev => ({ ...prev, open }))}
+        onOpenChange={open =>
+          setBatchDeleteDialog(prev => ({
+            ...prev,
+            open,
+            ...(open ? {} : { products: [] }),
+          }))
+        }
         onConfirm={handleConfirmBatchDelete}
       />
     </div>

@@ -2,10 +2,10 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Building2, Save, X } from 'lucide-react';
+import { ArrowLeft, Building2, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { use, useEffect } from 'react';
+import { use, useEffect, type ReactNode } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,39 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   const router = useRouter();
   const { id } = use(params);
   const { toast } = useToast();
+
+  const HeaderCard = ({ subtitle }: { subtitle: ReactNode }) => (
+    <Card className="overflow-hidden">
+      <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
+              <Building2 className="h-6 w-6 text-white" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+                编辑供应商
+              </h1>
+              <div className="text-sm text-[hsl(var(--color-text-secondary))]">
+                {subtitle}
+              </div>
+            </div>
+          </div>
+          <Button
+            variant="outline"
+            size="lg"
+            asChild
+            className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+          >
+            <Link href="/suppliers">
+              <ArrowLeft className="h-4 w-4" />
+              返回
+            </Link>
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
 
   // 获取供应商详情
   const {
@@ -121,28 +154,30 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
 
   const isLoading = updateMutation.isPending;
 
-  // 错误处理
-  if (error) {
+  // 加载中
+  if (isLoadingSupplier) {
     return (
-      <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-        <Card className="shadow-lg shadow-gray-200/50">
-          <CardContent className="py-8 text-center text-red-600">
-            加载供应商信息失败: {error.message}
-          </CardContent>
-        </Card>
+      <div className="flex h-full flex-col overflow-auto p-6">
+        <div className="space-y-6">
+          <HeaderCard subtitle="加载供应商信息中..." />
+        </div>
       </div>
     );
   }
 
-  // 加载中
-  if (isLoadingSupplier) {
+  // 错误处理
+  if (error) {
     return (
-      <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-        <Card className="shadow-lg shadow-gray-200/50">
-          <CardContent className="py-8 text-center text-gray-500">
-            加载中...
-          </CardContent>
-        </Card>
+      <div className="flex h-full flex-col overflow-auto p-6">
+        <div className="space-y-6">
+          <HeaderCard
+            subtitle={
+              <span className="text-[hsl(var(--color-error))]">
+                加载失败: {error.message}
+              </span>
+            }
+          />
+        </div>
       </div>
     );
   }
@@ -150,12 +185,16 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   // 供应商不存在
   if (!supplierData?.data) {
     return (
-      <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-        <Card className="shadow-lg shadow-gray-200/50">
-          <CardContent className="py-8 text-center text-red-600">
-            供应商不存在
-          </CardContent>
-        </Card>
+      <div className="flex h-full flex-col overflow-auto p-6">
+        <div className="space-y-6">
+          <HeaderCard
+            subtitle={
+              <span className="text-[hsl(var(--color-error))]">
+                供应商不存在
+              </span>
+            }
+          />
+        </div>
       </div>
     );
   }
@@ -163,45 +202,18 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
   const supplier = supplierData.data;
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                  <Building2 className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    编辑供应商
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    修改供应商 &ldquo;{supplier.name}&rdquo; 的信息
-                  </p>
-                </div>
-              </div>
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-              >
-                <Link href="/suppliers">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  返回
-                </Link>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+        <HeaderCard
+          subtitle={<>修改供应商 &ldquo;{supplier.name}&rdquo; 的信息</>}
+        />
 
         {/* 表单 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-            <CardTitle className="flex items-center text-gray-900">
-              <Building2 className="mr-2 h-5 w-5 text-blue-600" />
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-tertiary))]">
+            <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
+              <Building2 className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
               基本信息
             </CardTitle>
             <CardDescription>
@@ -308,41 +320,46 @@ export default function EditSupplierPage({ params }: EditSupplierPageProps) {
                     </FormItem>
                   )}
                 />
-
-                {/* 提交按钮 */}
-                <div className="flex justify-end gap-4 pt-4">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="lg"
-                    onClick={() => router.push('/suppliers')}
-                    disabled={isLoading}
-                    className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                  >
-                    <X className="mr-2 h-4 w-4" />
-                    取消
-                  </Button>
-                  <Button
-                    type="submit"
-                    size="lg"
-                    disabled={isLoading}
-                    className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                  >
-                    {isLoading ? (
-                      <>
-                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                        更新中...
-                      </>
-                    ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        更新供应商
-                      </>
-                    )}
-                  </Button>
-                </div>
               </form>
             </Form>
+          </CardContent>
+        </Card>
+
+        {/* 操作按钮 */}
+        <Card className="overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-end gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => router.push('/suppliers')}
+                disabled={isLoading}
+                className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                取消
+              </Button>
+              <Button
+                type="submit"
+                size="lg"
+                disabled={isLoading}
+                onClick={form.handleSubmit(onSubmit)}
+                className="h-11 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    更新中...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    更新供应商
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

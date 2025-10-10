@@ -71,13 +71,13 @@ export function useVariantInventorySummary(variantId: string) {
   const getStockStatusColor = (status: string) => {
     switch (status) {
       case 'in_stock':
-        return 'bg-green-500';
+        return 'success';
       case 'low_stock':
-        return 'bg-yellow-500';
+        return 'warning';
       case 'out_of_stock':
-        return 'bg-red-500';
+        return 'destructive';
       default:
-        return 'bg-gray-500';
+        return 'secondary';
     }
   };
 

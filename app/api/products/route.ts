@@ -1,13 +1,14 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
+import { getProductsForServer } from '@/lib/api/products-server';
+import type { ProductListQueryParams } from '@/lib/api/products';
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
 import { revalidateProducts, publishDataUpdate } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { paginationConfig, productConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { productCreateSchema } from '@/lib/validations/product';
-import { getProductsForServer } from '@/lib/api/products-server';
-import type { ProductListQueryParams } from '@/lib/api/products';
 
 /**
  * 解析 URLSearchParams 为产品查询参数
@@ -65,7 +66,7 @@ export const GET = withAuth(
       // 返回成功响应
       return successResponse(data);
     } catch (error) {
-      console.error('[产品列表] 查询失败:', error);
+      logger.error('products', '产品列表查询失败', error);
       return NextResponse.json(
         {
           success: false,
@@ -195,7 +196,9 @@ export const POST = withAuth(
         );
         parsedImages = Array.isArray(parsed) ? parsed : [];
       } catch (error) {
-        console.error('解析产品图片失败:', error);
+        logger.warn('products', '解析产品图片失败，使用空数组作为兜底', undefined, {
+          productId: product.id,
+        });
         parsedImages = [];
       }
     }

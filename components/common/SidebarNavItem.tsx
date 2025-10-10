@@ -19,31 +19,53 @@ interface ChildMenuListProps {
 const ChildMenuList = React.memo(
   ({ children, pathname }: ChildMenuListProps) => {
     const items = children;
+
+    // 找到最佳匹配的子菜单（最长路径匹配）
+    const bestMatch = React.useMemo(() => {
+      return items
+        .filter(
+          child =>
+            pathname === child.href || pathname.startsWith(child.href + '/')
+        )
+        .sort((a, b) => b.href.length - a.href.length)[0];
+    }, [items, pathname]);
+
     return (
-      <div className="border-border ml-4 space-y-1 border-l pl-4">
+      <div className="ml-3 mt-2 space-y-1 rounded-md border border-[hsl(var(--sidebar-subtle-border))] bg-[hsl(var(--sidebar-subtle-bg))] p-2">
         {items.map(child => {
           const ChildIcon = child.icon;
-          const isChildActive = pathname.startsWith(child.href);
+          // 只激活最佳匹配的子菜单
+          const isChildActive = bestMatch?.id === child.id;
 
           return (
             <Link
               key={child.id}
               href={child.href}
               prefetch={false}
-              className={cn('block rounded-md transition-all duration-150')}
+              className="block rounded-md transition-all duration-150"
             >
               <Button
-                variant={isChildActive ? 'secondary' : 'ghost'}
+                variant="ghost"
                 className={cn(
-                  'h-9 w-full justify-start text-sm transition-all duration-150',
-                  'px-3',
-                  isChildActive && 'bg-secondary font-medium shadow-xs'
+                  'group relative h-9 w-full justify-start rounded-md px-3 text-sm font-medium transition-colors duration-150',
+                  'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
+                  'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
+                  'disabled:opacity-60',
+                  isChildActive &&
+                    'bg-[hsl(var(--sidebar-sub-active))] text-[hsl(var(--sidebar-hover-foreground))] shadow-sm before:absolute before:left-0 before:top-1/2 before:h-5 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
                 )}
                 disabled={child.disabled}
                 asChild
               >
                 <div>
-                  <ChildIcon className="mr-3 h-3.5 w-3.5" />
+                  <ChildIcon
+                    className={cn(
+                      'mr-3 h-3.5 w-3.5 text-[hsl(var(--sidebar-icon-muted))] transition-colors duration-150',
+                      'group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
+                      isChildActive &&
+                        'text-[hsl(var(--sidebar-hover-foreground))]'
+                    )}
+                  />
                   <span className="flex-1 text-left">{child.title}</span>
                 </div>
               </Button>
@@ -90,7 +112,10 @@ export const SidebarNavItem = React.memo(
       const hasActiveChild = React.useMemo(
         () =>
           item.children?.some(
-            child => pathname.startsWith(child.href) && child.href !== item.href
+            child =>
+              (pathname === child.href ||
+                pathname.startsWith(child.href + '/')) &&
+              child.href !== item.href
           ) ?? false,
         [item.children, item.href, pathname]
       );
@@ -117,19 +142,22 @@ export const SidebarNavItem = React.memo(
             prefetch={true}
             className={cn(
               'block rounded-md transition-all duration-150',
-              isFocused && 'ring-ring ring-2 ring-offset-2'
+              isFocused &&
+                'ring-[hsl(var(--sidebar-focus-ring))] ring-2 ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
             )}
             aria-label={item.title}
             title={isCollapsed ? item.title : undefined}
           >
             <Button
-              variant={isActive ? 'secondary' : 'ghost'}
+              variant="ghost"
               className={cn(
-                'h-10 w-full justify-start transition-all duration-150',
+                'group relative inline-flex h-10 w-full items-center justify-start rounded-md text-sm font-medium transition-colors duration-150',
                 isCollapsed ? 'px-2' : 'px-3',
-                isActive && 'bg-secondary font-medium shadow-xs',
-                'hover:bg-accent/50',
-                isFocused && 'ring-0'
+                'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
+                'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
+                'disabled:opacity-60',
+                isActive &&
+                  'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:left-0 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
               )}
               disabled={item.disabled}
               asChild
@@ -137,17 +165,20 @@ export const SidebarNavItem = React.memo(
               <div>
                 <Icon
                   className={cn(
-                    'h-4 w-4 transition-transform duration-150',
-                    !isCollapsed && 'mr-3'
+                    'h-4 w-4 transition-colors duration-150',
+                    !isCollapsed && 'mr-3',
+                    'text-[hsl(var(--sidebar-icon-muted))] group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
+                    isActive &&
+                      'text-[hsl(var(--sidebar-icon-active))]'
                   )}
                 />
-                {!isCollapsed && (
-                  <span className="flex-1 text-left">{item.title}</span>
-                )}
-              </div>
-            </Button>
-          </Link>
-        );
+              {!isCollapsed && (
+                <span className="flex-1 text-left">{item.title}</span>
+              )}
+            </div>
+          </Button>
+        </Link>
+      );
       }
 
       // 渲染带子菜单的导航项
@@ -160,26 +191,35 @@ export const SidebarNavItem = React.memo(
               prefetch={true}
               className={cn(
                 'block rounded-md transition-all duration-150',
-                isFocused && 'ring-ring ring-2 ring-offset-2'
+                isFocused &&
+                  'ring-[hsl(var(--sidebar-focus-ring))] ring-2 ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
               )}
               aria-label={item.title}
               title={item.title}
             >
               <Button
-                variant={isActive || hasActiveChild ? 'secondary' : 'ghost'}
+                variant="ghost"
                 className={cn(
-                  'h-10 w-full justify-start transition-all duration-150',
+                  'group relative inline-flex h-10 w-full items-center justify-start rounded-md text-sm font-medium transition-colors duration-150',
                   'px-2',
+                  'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
+                  'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
+                  'disabled:opacity-60',
                   (isActive || hasActiveChild) &&
-                    'bg-secondary font-medium shadow-xs',
-                  'hover:bg-accent/50',
-                  isFocused && 'ring-0'
+                    'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:left-0 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
                 )}
                 disabled={item.disabled}
                 asChild
               >
                 <div>
-                  <Icon className="h-4 w-4 transition-transform duration-150" />
+                  <Icon
+                    className={cn(
+                      'h-4 w-4 transition-colors duration-150',
+                      'text-[hsl(var(--sidebar-icon-muted))] group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
+                      (isActive || hasActiveChild) &&
+                        'text-[hsl(var(--sidebar-icon-active))]'
+                    )}
+                  />
                 </div>
               </Button>
             </Link>
@@ -187,14 +227,17 @@ export const SidebarNavItem = React.memo(
             /* 展开状态下，父菜单用于切换子菜单显示 */
             <>
               <Button
-                variant={isActive || hasActiveChild ? 'secondary' : 'ghost'}
+                variant="ghost"
                 className={cn(
-                  'group h-10 w-full justify-start transition-all duration-150',
+                  'group relative inline-flex h-10 w-full items-center justify-start rounded-md text-sm font-medium transition-colors duration-150',
                   'px-3',
+                  'text-[hsl(var(--sidebar-text-muted))] hover:bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]',
+                  'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
+                  'disabled:opacity-60',
                   (isActive || hasActiveChild) &&
-                    'bg-secondary font-medium shadow-xs',
-                  'hover:bg-accent/50',
-                  isFocused && 'ring-ring ring-2 ring-offset-2'
+                    'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:left-0 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]',
+                  isFocused &&
+                    'ring-[hsl(var(--sidebar-focus-ring))] ring-2 ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
                 )}
                 disabled={item.disabled}
                 onClick={handleSubMenuToggle}
@@ -202,12 +245,22 @@ export const SidebarNavItem = React.memo(
                 aria-expanded={isExpanded}
                 tabIndex={tabIndex}
               >
-                <Icon className="mr-3 h-4 w-4 transition-transform duration-150" />
+                <Icon
+                  className={cn(
+                    'mr-3 h-4 w-4 transition-colors duration-150',
+                    'text-[hsl(var(--sidebar-icon-muted))] group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
+                    (isActive || hasActiveChild) &&
+                      'text-[hsl(var(--sidebar-icon-active))]'
+                  )}
+                />
                 <span className="flex-1 text-left">{item.title}</span>
                 <ChevronDown
                   className={cn(
-                    'h-4 w-4 transition-transform duration-150',
-                    isExpanded && 'rotate-180'
+                    'h-4 w-4 text-[hsl(var(--sidebar-text-tertiary))] transition-transform duration-150',
+                    (isActive || hasActiveChild) &&
+                      'text-[hsl(var(--sidebar-icon-active))]',
+                    isExpanded &&
+                      'rotate-180 text-[hsl(var(--sidebar-hover-foreground))]'
                   )}
                 />
               </Button>

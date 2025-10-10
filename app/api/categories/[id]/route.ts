@@ -8,6 +8,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { ApiError } from '@/lib/api/errors';
 import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import { prisma } from '@/lib/db';
+import { updateCategory } from '@/lib/services/category-service';
 import { UpdateCategorySchema } from '@/lib/validations/category';
 
 /**
@@ -92,98 +93,26 @@ export const PUT = withErrorHandling(
     // 验证请求数据（Zod 错误会自动处理）
     const validatedData = UpdateCategorySchema.parse({ ...body, id });
 
-    // 检查分类是否存在
-    const existingCategory = await prisma.category.findUnique({
-      where: { id },
-      select: { id: true, name: true },
-    });
-
-    if (!existingCategory) {
-      throw ApiError.notFound('分类');
-    }
-
-    // 注意：分类编码不允许修改，由系统自动生成
-
-    // 检查名称唯一性（如果名称有变化）
-    if (validatedData.name && validatedData.name !== existingCategory.name) {
-      const nameExists = await prisma.category.findFirst({
-        where: {
-          name: validatedData.name,
-          id: { not: id },
-        },
-        select: { id: true },
-      });
-
-      if (nameExists) {
-        throw ApiError.badRequest('分类名称已存在');
-      }
-    }
-
-    // 检查父级分类循环引用
-    if (validatedData.parentId) {
-      // 简单检查：不能将自己设为父级
-      if (validatedData.parentId === id) {
-        throw ApiError.badRequest('不能将自己设为父级分类');
-      }
-
-      // 检查父级分类是否存在
-      const parentExists = await prisma.category.findUnique({
-        where: { id: validatedData.parentId },
-        select: { id: true },
-      });
-
-      if (!parentExists) {
-        throw ApiError.badRequest('父级分类不存在');
-      }
-    }
-
-    // 更新分类
-    const updatedCategory = await prisma.category.update({
-      where: { id },
-      data: {
+    // 调用服务层更新分类（包含层级检查）
+    try {
+      const category = await updateCategory({
+        id: validatedData.id,
         name: validatedData.name,
-        // code 字段不允许修改，保持原值
         parentId: validatedData.parentId,
         sortOrder: validatedData.sortOrder,
-      },
-      select: {
-        id: true,
-        name: true,
-        code: true,
-        parentId: true,
-        sortOrder: true,
-        status: true,
-        createdAt: true,
-        updatedAt: true,
-        parent: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-        children: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-          },
-        },
-        _count: {
-          select: {
-            products: true,
-          },
-        },
-      },
-    });
+      });
 
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...updatedCategory,
-        productCount: updatedCategory._count.products,
-      },
-    });
+      return NextResponse.json({
+        success: true,
+        data: category,
+      });
+    } catch (error) {
+      // 将服务层错误转换为 API 错误
+      if (error instanceof Error) {
+        throw ApiError.badRequest(error.message);
+      }
+      throw error;
+    }
   }
 );
 

@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { uploadConfig } from '@/lib/env';
 import { uploadToQiniu } from '@/lib/services/qiniu-upload';
+import { logger } from '@/lib/logger';
 
 // 声明使用 Node.js 运行时（sharp 和 Buffer 需要 Node.js 环境）
 export const runtime = 'nodejs';
@@ -121,11 +122,13 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         const optimizedBuffer = await sharpInstance.toBuffer();
         buffer = Buffer.from(optimizedBuffer);
 
-        console.log(
-          `图片优化完成: ${file.name}, 原始大小: ${bytes.byteLength}, 优化后大小: ${buffer.length}`
-        );
+        logger.info('upload', '图片优化完成', undefined, {
+          fileName: file.name,
+          originalSize: bytes.byteLength,
+          optimizedSize: buffer.length,
+        });
       } catch (sharpError) {
-        console.error('图片优化失败，使用原始文件:', sharpError);
+        logger.error('upload', '图片优化失败，使用原始文件', sharpError);
         // 如果优化失败，使用原始buffer
       }
     }
@@ -159,7 +162,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       message: '文件上传成功',
     });
   } catch (error) {
-    console.error('文件上传错误:', error);
+    logger.error('upload', '文件上传错误', error);
     return NextResponse.json(
       {
         success: false,
@@ -188,7 +191,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('获取上传信息错误:', error);
+    logger.error('upload', '获取上传信息错误', error);
     return NextResponse.json(
       { success: false, error: '获取上传信息失败' },
       { status: 500 }

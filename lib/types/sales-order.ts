@@ -1,4 +1,4 @@
-// 销售订单管理相关类型定义
+﻿// 销售订单管理相关类型定义
 // 遵循命名约定：数据库 snake_case → API camelCase → 前端 camelCase
 
 import type { Customer } from './customer';
@@ -8,19 +8,21 @@ import type { User } from './user';
 // 销售订单状态枚举
 export type SalesOrderStatus =
   | 'draft'
+  | 'pending'
   | 'confirmed'
+  | 'processing'
   | 'shipped'
+  | 'delivered'
   | 'completed'
   | 'cancelled';
-
-// 销售订单类型枚举
-export type SalesOrderType = 'NORMAL' | 'TRANSFER';
 
 // 销售订单明细类型
 export interface SalesOrderItem {
   id: string;
   salesOrderId: string;
   productId: string;
+  productCode?: string;
+  batchNumber?: string;
   colorCode?: string;
   productionDate?: string; // 生产日期，瓷砖行业特有
   quantity: number;
@@ -38,6 +40,13 @@ export interface SalesOrderItem {
   manualSpecification?: string; // 手动输入的规格
   manualWeight?: number; // 手动输入的重量
   manualUnit?: string; // 手动输入的单位
+
+  // 显示字段（用于界面展示和计算）
+  displayUnit?: string; // 显示单位（片/件）
+  displayQuantity?: number; // 显示数量
+  piecesPerUnit?: number; // 每件片数
+  specification?: string; // 规格
+  remarks?: string; // 备注
 
   // 关联数据（可选，根据查询需要包含）
   product?: Product;
@@ -108,6 +117,7 @@ export interface SalesOrderDetailResponse {
 // 销售订单创建输入类型
 export interface SalesOrderCreateInput {
   customerId: string;
+  status?: SalesOrderStatus;
   orderType?: SalesOrderType;
   supplierId?: string;
   costAmount?: number;
@@ -130,6 +140,8 @@ export interface SalesOrderUpdateInput {
 // 销售订单明细创建输入类型
 export interface SalesOrderItemCreateInput {
   productId: string;
+  productCode?: string;
+  batchNumber?: string;
   colorCode?: string;
   productionDate?: string;
   quantity: number;
@@ -144,12 +156,21 @@ export interface SalesOrderItemCreateInput {
   manualSpecification?: string; // 手动输入的规格
   manualWeight?: number; // 手动输入的重量
   manualUnit?: string; // 手动输入的单位
+
+  // 显示字段（用于界面展示和计算）
+  displayUnit?: string; // 显示单位（片/件）
+  displayQuantity?: number; // 显示数量
+  piecesPerUnit?: number; // 每件片数
+  specification?: string; // 规格
+  remarks?: string; // 备注
 }
 
 // 销售订单明细更新输入类型
 export interface SalesOrderItemUpdateInput {
   id?: string; // 新增明细时为空
   productId: string;
+  productCode?: string;
+  batchNumber?: string;
   colorCode?: string;
   productionDate?: string;
   quantity: number;
@@ -164,6 +185,13 @@ export interface SalesOrderItemUpdateInput {
   manualSpecification?: string; // 手动输入的规格
   manualWeight?: number; // 手动输入的重量
   manualUnit?: string; // 手动输入的单位
+
+  // 显示字段（用于界面展示和计算）
+  displayUnit?: string; // 显示单位（片/件）
+  displayQuantity?: number; // 显示数量
+  piecesPerUnit?: number; // 每件片数
+  specification?: string; // 规格
+  remarks?: string; // 备注
 
   _action?: 'create' | 'update' | 'delete'; // 操作类型
 }
@@ -183,8 +211,11 @@ export interface SalesOrderStats {
 // 显示标签映射
 export const SALES_ORDER_STATUS_LABELS: Record<SalesOrderStatus, string> = {
   draft: '草稿',
+  pending: '待处理',
   confirmed: '已确认',
+  processing: '处理中',
   shipped: '已发货',
+  delivered: '已送达',
   completed: '已完成',
   cancelled: '已取消',
 };
@@ -194,8 +225,11 @@ export const SALES_ORDER_STATUS_VARIANTS: Record<
   'default' | 'secondary' | 'destructive' | 'outline'
 > = {
   draft: 'outline',
+  pending: 'outline',
   confirmed: 'default',
+  processing: 'secondary',
   shipped: 'secondary',
+  delivered: 'default',
   completed: 'default',
   cancelled: 'destructive',
 };
@@ -205,9 +239,12 @@ export const SALES_ORDER_STATUS_TRANSITIONS: Record<
   SalesOrderStatus,
   SalesOrderStatus[]
 > = {
-  draft: ['confirmed', 'cancelled'],
-  confirmed: ['shipped', 'cancelled'],
-  shipped: ['completed', 'cancelled'],
+  draft: ['pending', 'confirmed', 'cancelled'],
+  pending: ['confirmed', 'cancelled'],
+  confirmed: ['processing', 'shipped', 'cancelled'],
+  processing: ['shipped', 'cancelled'],
+  shipped: ['delivered', 'cancelled'],
+  delivered: ['completed', 'cancelled'],
   completed: [], // 已完成不能转换到其他状态
   cancelled: [], // 已取消不能转换到其他状态
 };
@@ -273,11 +310,14 @@ export const canTransitionToStatus = (
 // 订单状态颜色映射
 export const getStatusColor = (status: SalesOrderStatus): string => {
   const colors: Record<SalesOrderStatus, string> = {
-    draft: 'text-gray-600',
-    confirmed: 'text-blue-600',
-    shipped: 'text-orange-600',
-    completed: 'text-green-600',
-    cancelled: 'text-red-600',
+    draft: 'text-[hsl(var(--color-text-secondary))]',
+    pending: 'text-[hsl(var(--color-warning))]',
+    confirmed: 'text-[hsl(var(--color-primary))]',
+    processing: 'text-[hsl(var(--color-purple))]',
+    shipped: 'text-[hsl(var(--color-info))]',
+    delivered: 'text-[hsl(var(--color-success))]',
+    completed: 'text-[hsl(var(--color-success))]',
+    cancelled: 'text-[hsl(var(--color-error))]',
   };
   return colors[status];
 };
@@ -285,11 +325,14 @@ export const getStatusColor = (status: SalesOrderStatus): string => {
 // 订单状态背景色映射
 export const getStatusBgColor = (status: SalesOrderStatus): string => {
   const colors: Record<SalesOrderStatus, string> = {
-    draft: 'bg-gray-100',
-    confirmed: 'bg-blue-100',
-    shipped: 'bg-orange-100',
-    completed: 'bg-green-100',
-    cancelled: 'bg-red-100',
+    draft: 'bg-[hsl(var(--color-bg-tertiary))]',
+    pending: 'bg-[hsl(var(--color-warning-light))]',
+    confirmed: 'bg-[hsl(var(--color-primary-light))]',
+    processing: 'bg-[hsl(var(--color-purple-light))]',
+    shipped: 'bg-[hsl(var(--color-info-light))]',
+    delivered: 'bg-[hsl(var(--color-success-light))]',
+    completed: 'bg-[hsl(var(--color-success-light))]',
+    cancelled: 'bg-[hsl(var(--color-error-light))]',
   };
   return colors[status];
 };
@@ -319,3 +362,5 @@ export const formatProductionDate = (dateString?: string): string => {
 // 注意：分页配置已迁移到环境配置 (lib/env.ts)
 // 请使用 paginationConfig.defaultPageSize 和 paginationConfig.maxPageSize
 // 分页选项可以根据 paginationConfig.maxPageSize 动态生成
+
+

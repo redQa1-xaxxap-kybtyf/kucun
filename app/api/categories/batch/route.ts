@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import type { BatchDeleteResult } from '@/lib/api/categories';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { BatchDeleteCategoriesSchema } from '@/lib/validations/category';
 
 /**
@@ -124,7 +125,7 @@ export const DELETE = withAuth(async (request: NextRequest) => {
       data: result,
     });
   } catch (error) {
-    console.error('批量删除分类失败:', error);
+    logger.error('categories', '批量删除分类失败', error);
     return NextResponse.json(
       {
         success: false,

@@ -6,6 +6,7 @@ import {
 
 import { getOutboundRecordsServer } from '@/lib/api/outbound-server';
 import { queryKeys } from '@/lib/queryKeys';
+import type { OutboundRecordQueryParams } from '@/lib/types/inventory';
 
 import { OutboundRecordsPageClient } from './page-client';
 
@@ -24,29 +25,49 @@ export const revalidate = 0;
 export default async function OutboundRecordsPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const params = await searchParams;
   const urlSearchParams = new URLSearchParams();
 
-  // 构建 URLSearchParams
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined) {
-      if (Array.isArray(value)) {
-        value.forEach(v => urlSearchParams.append(key, v));
-      } else {
-        urlSearchParams.append(key, value);
-      }
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (value === undefined) {
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value
+        .filter(v => v !== undefined && v !== null && String(v).trim() !== '')
+        .forEach(v => urlSearchParams.append(key, String(v)));
+    } else if (String(value).trim() !== '') {
+      urlSearchParams.append(key, value as string);
     }
   });
 
+  const ensureParam = (key: string, fallback: string) => {
+    const current = urlSearchParams.get(key);
+    if (!current || current.trim() === '') {
+      urlSearchParams.set(key, fallback);
+    }
+  };
+
   // 默认查询参数
-  if (!urlSearchParams.has('page')) {
-    urlSearchParams.set('page', '1');
-  }
-  if (!urlSearchParams.has('limit')) {
-    urlSearchParams.set('limit', '50');
-  }
+  ensureParam('page', '1');
+  ensureParam('limit', '50');
+
+  const parsePositiveNumber = (raw: string | null, fallback: number) => {
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  };
+
+  const page = parsePositiveNumber(urlSearchParams.get('page'), 1);
+  const limit = parsePositiveNumber(urlSearchParams.get('limit'), 50);
+  urlSearchParams.set('page', page.toString());
+  urlSearchParams.set('limit', limit.toString());
+
+  const getOptional = (key: string) => {
+    const value = urlSearchParams.get(key);
+    return value && value.trim() !== '' ? value : undefined;
+  };
 
   // ✅ 创建 QueryClient（启用 Streaming Queries）
   const queryClient = new QueryClient({
@@ -60,15 +81,28 @@ export default async function OutboundRecordsPage({
   // 服务端预取数据
   const outboundData = await getOutboundRecordsServer(urlSearchParams);
 
+  const queryParams: OutboundRecordQueryParams = {
+    page,
+    limit,
+    type: getOptional('type') as OutboundRecordQueryParams['type'],
+    startDate: getOptional('startDate'),
+    endDate: getOptional('endDate'),
+    search: getOptional('search'),
+  };
+
   // 设置查询缓存
-  queryClient.setQueryData(queryKeys.inventory.outbounds(), {
-    data: outboundData.data,
-    pagination: outboundData.pagination,
-  });
+  queryClient.setQueryData(
+    queryKeys.inventory.outboundsList(queryParams),
+    {
+      data: outboundData.data,
+      pagination: outboundData.pagination,
+    }
+  );
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <OutboundRecordsPageClient />
+      <OutboundRecordsPageClient initialParams={queryParams} />
     </HydrationBoundary>
   );
 }
+

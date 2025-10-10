@@ -14,7 +14,6 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ContentLoading } from '@/components/common/loading';
 import type { SalesOrder } from '@/lib/types/sales-order';
-import { cn } from '@/lib/utils';
 
 interface RecentOrdersProps {
   orders: SalesOrder[];
@@ -26,27 +25,22 @@ const statusConfig = {
   draft: {
     label: '草稿',
     variant: 'secondary' as const,
-    className: 'bg-gray-100 text-gray-700 border-gray-200',
   },
   confirmed: {
     label: '已确认',
-    variant: 'default' as const,
-    className: 'bg-blue-100 text-blue-700 border-blue-200',
+    variant: 'info' as const,
   },
   shipped: {
     label: '已发货',
-    variant: 'default' as const,
-    className: 'bg-purple-100 text-purple-700 border-purple-200',
+    variant: 'purple' as const,
   },
   completed: {
     label: '已完成',
-    variant: 'default' as const,
-    className: 'bg-green-100 text-green-700 border-green-200',
+    variant: 'success' as const,
   },
   cancelled: {
     label: '已取消',
     variant: 'destructive' as const,
-    className: 'bg-red-100 text-red-700 border-red-200',
   },
 };
 
@@ -89,21 +83,23 @@ const formatTime = (dateString: string) => {
 export function RecentOrders({ orders, loading }: RecentOrdersProps) {
   if (loading) {
     return (
-      <Card className="overflow-hidden border-gray-200 shadow-lg shadow-gray-200/50">
-        <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4">
+      <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-light)]">
+        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-primary-light))] px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                <TrendingUp className="h-5 w-5 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
+                <TrendingUp className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                   实时订单动态
                 </h3>
-                <p className="text-sm text-gray-600">最近创建的销售订单</p>
+                <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                  最近创建的销售订单
+                </p>
               </div>
             </div>
-            <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+            <Badge variant="info" className="text-xs font-medium">
               实时更新
             </Badge>
           </div>
@@ -117,48 +113,54 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
 
   if (!orders || orders.length === 0) {
     return (
-      <Card className="overflow-hidden border-gray-200 shadow-lg shadow-gray-200/50">
-        <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4">
+      <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-light)]">
+        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-primary-light))] px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                <TrendingUp className="h-5 w-5 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
+                <TrendingUp className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                   实时订单动态
                 </h3>
-                <p className="text-sm text-gray-600">最近创建的销售订单</p>
+                <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                  最近创建的销售订单
+                </p>
               </div>
             </div>
           </div>
         </CardHeader>
         <CardContent className="py-12 text-center">
-          <Package className="mx-auto mb-4 h-16 w-16 text-gray-300" />
-          <p className="text-gray-500">暂无订单数据</p>
+          <Package className="mx-auto mb-4 h-16 w-16 text-[hsl(var(--color-border-secondary))]" />
+          <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+            暂无订单数据
+          </p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="overflow-hidden border-gray-200 shadow-lg shadow-gray-200/50 transition-shadow hover:shadow-xl hover:shadow-gray-200/60">
-      <CardHeader className="border-b bg-gradient-to-r from-blue-50 to-indigo-50 px-6 py-4">
+    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-[var(--shadow-light)] transition-shadow hover:shadow-[var(--shadow-medium)]">
+      <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-primary-light))] px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-              <TrendingUp className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
+              <TrendingUp className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                 实时订单动态
               </h3>
-              <p className="text-sm text-gray-600">最近创建的销售订单</p>
+              <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                最近创建的销售订单
+              </p>
             </div>
           </div>
           <Link
             href="/sales-orders"
-            className="group flex items-center gap-1 text-sm font-medium text-blue-600 transition-colors hover:text-blue-700"
+            className="group flex items-center gap-1 text-sm font-medium text-[hsl(var(--color-primary))] transition-colors hover:text-[hsl(var(--color-primary-hover))]"
           >
             查看全部
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -170,45 +172,36 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
           const statusInfo = statusConfig[order.status];
 
           return (
-            <Link
-              key={order.id}
-              href={`/sales-orders/${order.id}`}
-              className="group block"
-            >
-              <div className="flex items-start gap-4 rounded-lg border border-gray-200 bg-gradient-to-br from-white to-gray-50/50 p-4 transition-all hover:border-blue-300 hover:shadow-md hover:shadow-blue-100/50">
-                {/* 订单图标 */}
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30 transition-transform group-hover:scale-110">
-                  <Package className="h-6 w-6 text-white" />
+            <Link key={order.id} href={`/sales-orders/${order.id}`} className="group block">
+              <div className="flex items-start gap-4 rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] p-4 transition-all hover:border-[hsl(var(--color-primary))] hover:shadow-[var(--shadow-light)]">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-medium)] transition-transform group-hover:scale-110">
+                  <Package className="h-6 w-6" />
                 </div>
 
-                {/* 订单信息 */}
                 <div className="min-w-0 flex-1">
                   <div className="mb-2 flex items-start justify-between gap-2">
                     <div>
-                      <p className="font-semibold text-gray-900 transition-colors group-hover:text-blue-600">
+                      <p className="font-semibold text-[hsl(var(--color-text-primary))] transition-colors group-hover:text-[hsl(var(--color-primary))]">
                         {order.orderNumber}
                       </p>
-                      <div className="mt-1 flex items-center gap-2 text-sm text-gray-600">
+                      <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
                         <User className="h-3.5 w-3.5" />
                         <span>{order.customer?.name || '未知客户'}</span>
                       </div>
                     </div>
-                    <Badge
-                      variant={statusInfo.variant}
-                      className={cn('shrink-0', statusInfo.className)}
-                    >
+                    <Badge variant={statusInfo.variant} className="shrink-0 text-xs font-medium">
                       {statusInfo.label}
                     </Badge>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 text-sm">
-                    <div className="flex items-center gap-1.5 text-gray-600">
+                    <div className="flex items-center gap-1.5 text-[hsl(var(--color-text-secondary))]">
                       <DollarSign className="h-3.5 w-3.5" />
-                      <span className="font-medium text-gray-900">
+                      <span className="font-medium text-[hsl(var(--color-text-primary))]">
                         {formatCurrency(order.totalAmount)}
                       </span>
                     </div>
-                    <div className="flex items-center gap-1.5 text-gray-500">
+                    <div className="flex items-center gap-1.5 text-[hsl(var(--color-text-tertiary))]">
                       <Clock className="h-3.5 w-3.5" />
                       <span>{formatTime(order.createdAt)}</span>
                     </div>

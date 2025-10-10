@@ -4,6 +4,7 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 
+import { inventoryQueryKeys } from '@/hooks/use-optimized-inventory-query';
 import { getCategoriesServer } from '@/lib/api/categories-server';
 import { formatPaginatedResponse } from '@/lib/api/inventory-formatter';
 import {
@@ -12,7 +13,6 @@ import {
 } from '@/lib/api/inventory-query-builder';
 import { paginationConfig } from '@/lib/env';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
-import { inventoryQueryKeys } from '@/hooks/use-optimized-inventory-query';
 import { InventoryPageClient } from './page-client';
 
 /**
@@ -36,19 +36,29 @@ export const revalidate = 0; // 禁用 ISR
 export default async function InventoryPage({
   searchParams,
 }: {
-  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+  searchParams: { [key: string]: string | string[] | undefined };
 }) {
-  // 解析查询参数
-  const params = await searchParams;
-  const page = Number(params.page) || 1;
-  const limit = Number(params.limit) || paginationConfig.defaultPageSize;
-  const search = (params.search as string) || '';
-  const categoryId = (params.categoryId as string) || '';
-  const lowStock = params.lowStock === 'true';
-  const hasStock = params.hasStock === 'true';
+  const getParam = (key: string) => {
+    const value = searchParams[key];
+    return Array.isArray(value) ? value[0] : value;
+  };
+
+  const parsePositiveNumber = (value: string | undefined, fallback: number) => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  };
+  const page = parsePositiveNumber(getParam('page'), 1);
+  const limit = parsePositiveNumber(
+    getParam('limit'),
+    paginationConfig.defaultPageSize
+  );
+  const search = getParam('search') ?? '';
+  const categoryId = getParam('categoryId') ?? '';
+  const lowStock = getParam('lowStock') === 'true';
+  const hasStock = getParam('hasStock') === 'true';
   const sortBy =
-    (params.sortBy as InventoryQueryParams['sortBy']) || 'updatedAt';
-  const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
+    (getParam('sortBy') as InventoryQueryParams['sortBy']) || 'updatedAt';
+  const sortOrder = getParam('sortOrder') === 'asc' ? 'asc' : 'desc';
 
   const queryParams: InventoryQueryParams = {
     page,
@@ -96,12 +106,18 @@ export default async function InventoryPage({
   }));
 
   // ✅ 格式化响应数据（统一格式）
-  const inventoryData = formatPaginatedResponse(
+  const formattedData = formatPaginatedResponse(
     inventoryRecords,
     total,
     queryParams.page || 1,
     queryParams.limit || 20
   );
+
+  // ✅ 包装成 API 响应格式，与客户端 Hook 期望的格式一致
+  const inventoryData = {
+    success: true,
+    data: formattedData, // { inventories, pagination }
+  };
 
   // ✅ 将服务端数据预设到 QueryClient（使用统一格式，无需额外映射）
   queryClient.setQueryData(inventoryQueryKeys.list(queryParams), inventoryData);

@@ -27,19 +27,27 @@ export function InventoryStatsCard({
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-2 gap-4">
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
-            <div className="text-lg font-bold">{breakdown.totalBatches}</div>
-            <div className="text-muted-foreground text-sm">总批次数</div>
+          <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-primary-light))] p-3 text-center shadow-[var(--shadow-light)]">
+            <div className="text-lg font-bold text-[hsl(var(--color-primary))]">
+              {breakdown.totalBatches}
+            </div>
+            <div className="text-sm text-[hsl(var(--color-text-secondary))]">
+              总批次数
+            </div>
           </div>
-          <div className="bg-muted/50 rounded-lg p-3 text-center">
-            <div className="text-lg font-bold">{breakdown.totalLocations}</div>
-            <div className="text-muted-foreground text-sm">存储位置</div>
+          <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-primary-light))] p-3 text-center shadow-[var(--shadow-light)]">
+            <div className="text-lg font-bold text-[hsl(var(--color-primary))]">
+              {breakdown.totalLocations}
+            </div>
+            <div className="text-sm text-[hsl(var(--color-text-secondary))]">
+              存储位置
+            </div>
           </div>
         </div>
 
         {lastUpdated && (
-          <div className="mt-4 border-t pt-4">
-            <div className="text-muted-foreground text-center text-sm">
+          <div className="mt-4 border-t border-[hsl(var(--color-divider))] pt-4">
+            <div className="text-center text-sm text-[hsl(var(--color-text-tertiary))]">
               最后更新: {new Date(lastUpdated).toLocaleString('zh-CN')}
             </div>
           </div>

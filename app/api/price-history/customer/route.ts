@@ -82,68 +82,40 @@ export const GET = withAuth(async (request: NextRequest) => {
     }
 
     // 如果没有指定产品ID，返回该客户所有产品的最新价格
-    // 使用分组查询获取每个产品+价格类型组合的最新价格
-    const latestPrices = await prisma.$queryRaw<
-      Array<{
-        id: string;
-        customerId: string;
-        productId: string;
-        priceType: string;
-        unitPrice: number;
-        createdAt: Date;
-      }>
-    >`
-      SELECT cpp.*
-      FROM customer_product_prices cpp
-      INNER JOIN (
-        SELECT product_id, price_type, MAX(created_at) as max_created_at
-        FROM customer_product_prices
-        WHERE customer_id = ${customerId}
-        ${priceType ? `AND price_type = ${priceType}` : ''}
-        GROUP BY product_id, price_type
-      ) latest
-      ON cpp.product_id = latest.product_id
-      AND cpp.price_type = latest.price_type
-      AND cpp.created_at = latest.max_created_at
-      WHERE cpp.customer_id = ${customerId}
-      ORDER BY cpp.created_at DESC
-    `;
-
-    // 获取产品信息
-    const productIds = latestPrices.map(
-      (p: { productId: string }) => p.productId
-    );
-    const products = await prisma.product.findMany({
-      where: {
-        id: {
-          in: productIds,
-        },
+    // 使用 Prisma 查询替代原始 SQL（兼容 SQLite 和 MySQL）
+    const allPrices = await prisma.customerProductPrice.findMany({
+      where,
+      orderBy: {
+        createdAt: 'desc',
       },
-      select: {
-        id: true,
-        code: true,
-        name: true,
-        specification: true,
-        unit: true,
+      include: {
+        product: {
+          select: {
+            id: true,
+            code: true,
+            name: true,
+            specification: true,
+            unit: true,
+          },
+        },
       },
     });
 
-    // 组合数据
-    const result = latestPrices.map(
-      (price: {
-        productId: string;
-        priceType: string;
-        unitPrice: number;
-        createdAt: Date;
-      }) => ({
-        ...price,
-        product: products.find((p: { id: string }) => p.id === price.productId),
-      })
-    );
+    // 在内存中进行分组，获取每个产品+价格类型组合的最新价格
+    const latestPricesMap = new Map<string, typeof allPrices[0]>();
+    for (const price of allPrices) {
+      const key = `${price.productId}-${price.priceType}`;
+      const existing = latestPricesMap.get(key);
+      if (!existing || new Date(price.createdAt) > new Date(existing.createdAt)) {
+        latestPricesMap.set(key, price);
+      }
+    }
+
+    const latestPrices = Array.from(latestPricesMap.values());
 
     return NextResponse.json({
       success: true,
-      data: result,
+      data: latestPrices,
     });
   } catch (error) {
     console.error('获取客户价格历史失败:', error);

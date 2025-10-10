@@ -48,21 +48,28 @@ interface FactoryShipmentOrderDetailProps {
 // 获取状态徽章样式 - 与列表页面保持一致
 const getStatusBadgeVariant = (
   status: FactoryShipmentStatus
-): 'default' | 'secondary' | 'destructive' | 'outline' => {
+):
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info' => {
   switch (status) {
     case 'draft':
       return 'secondary';
     case 'planning':
-      return 'outline';
-    case 'waiting_deposit':
-      return 'destructive';
-    case 'deposit_paid':
     case 'factory_shipped':
     case 'in_transit':
+      return 'info';
+    case 'waiting_deposit':
+      return 'warning';
+    case 'deposit_paid':
     case 'arrived':
     case 'delivered':
     case 'completed':
-      return 'default';
+      return 'success';
     default:
       return 'secondary';
   }
@@ -141,9 +148,12 @@ export function FactoryShipmentOrderDetail({
 
   if (error || !order) {
     return (
-      <Card>
-        <CardContent className="pt-6">
-          <div className="text-center text-red-600">
+      <Card
+        className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+        style={{ boxShadow: 'var(--shadow-light)' }}
+      >
+        <CardContent className="bg-[hsl(var(--color-error-light))] pt-6">
+          <div className="text-center text-[hsl(var(--color-error))]">
             {error ? '加载订单详情失败' : '订单不存在'}
           </div>
         </CardContent>
@@ -161,10 +171,10 @@ export function FactoryShipmentOrderDetail({
             返回列表
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
+            <h1 className="text-2xl font-bold text-[hsl(var(--color-text-primary))]">
               厂家发货订单详情
             </h1>
-            <p className="mt-1 text-sm text-gray-600">
+            <p className="mt-1 text-sm text-[hsl(var(--color-text-secondary))]">
               订单编号：{order.orderNumber}
             </p>
           </div>
@@ -187,56 +197,59 @@ export function FactoryShipmentOrderDetail({
       </div>
 
       {/* 基本信息 */}
-      <Card>
-        <CardHeader>
+      <Card
+        className="border border-[hsl(var(--color-border-primary))]"
+        style={{ boxShadow: 'var(--shadow-medium)' }}
+      >
+        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
           <CardTitle className="flex items-center gap-2">
             <Truck className="h-5 w-5" />
             基本信息
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-[hsl(var(--color-bg-card))]">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             <div>
-              <label className="text-sm font-medium text-gray-500">
+              <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                 订单编号
               </label>
-              <p className="mt-1 text-sm text-gray-900">{order.orderNumber}</p>
+              <p className="mt-1 text-sm text-[hsl(var(--color-text-primary))]">{order.orderNumber}</p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">
+              <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                 集装箱号码
               </label>
-              <p className="mt-1 text-sm text-gray-900">
+              <p className="mt-1 text-sm text-[hsl(var(--color-text-primary))]">
                 {order.containerNumber || (
-                  <span className="text-gray-400">待填写</span>
+                  <span className="text-[hsl(var(--color-text-tertiary))]">待填写</span>
                 )}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">
+              <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                 订单状态
               </label>
               <div className="mt-1">
-                <Badge variant={getStatusBadgeVariant(order.status)}>
+                <Badge variant={getStatusBadgeVariant(order.status)} className="text-xs font-medium">
                   {FACTORY_SHIPMENT_STATUS_LABELS[order.status]}
                 </Badge>
               </div>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">
+              <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                 创建时间
               </label>
-              <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
+              <p className="mt-1 flex items-center gap-1 text-sm text-[hsl(var(--color-text-primary))]">
                 <Calendar className="h-3 w-3" />
                 {formatDate(order.createdAt)}
               </p>
             </div>
             {order.planDate && (
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                   计划发货日期
                 </label>
-                <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
+                <p className="mt-1 flex items-center gap-1 text-sm text-[hsl(var(--color-text-primary))]">
                   <Calendar className="h-3 w-3" />
                   {formatDate(order.planDate)}
                 </p>
@@ -244,10 +257,10 @@ export function FactoryShipmentOrderDetail({
             )}
             {order.shipmentDate && (
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                   实际发货日期
                 </label>
-                <p className="mt-1 flex items-center gap-1 text-sm text-gray-900">
+                <p className="mt-1 flex items-center gap-1 text-sm text-[hsl(var(--color-text-primary))]">
                   <Calendar className="h-3 w-3" />
                   {formatDate(order.shipmentDate)}
                 </p>
@@ -258,36 +271,39 @@ export function FactoryShipmentOrderDetail({
       </Card>
 
       {/* 客户信息 */}
-      <Card>
-        <CardHeader>
+      <Card
+        className="border border-[hsl(var(--color-border-primary))]"
+        style={{ boxShadow: 'var(--shadow-medium)' }}
+      >
+        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
           <CardTitle className="flex items-center gap-2">
             <User className="h-5 w-5" />
             客户信息
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-[hsl(var(--color-bg-card))]">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
             <div>
-              <label className="text-sm font-medium text-gray-500">
+              <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                 客户名称
               </label>
-              <p className="mt-1 text-sm text-gray-900">
+              <p className="mt-1 text-sm text-[hsl(var(--color-text-primary))]">
                 {order.customer?.name || '-'}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">
+              <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                 联系电话
               </label>
-              <p className="mt-1 text-sm text-gray-900">
+              <p className="mt-1 text-sm text-[hsl(var(--color-text-primary))]">
                 {order.customer?.phone || '-'}
               </p>
             </div>
             <div className="sm:col-span-2">
-              <label className="text-sm font-medium text-gray-500">
+              <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                 客户地址
               </label>
-              <p className="mt-1 text-sm text-gray-900">
+              <p className="mt-1 text-sm text-[hsl(var(--color-text-primary))]">
                 {order.customer?.address || '-'}
               </p>
             </div>
@@ -296,36 +312,39 @@ export function FactoryShipmentOrderDetail({
       </Card>
 
       {/* 金额信息 */}
-      <Card>
-        <CardHeader>
+      <Card
+        className="border border-[hsl(var(--color-border-primary))]"
+        style={{ boxShadow: 'var(--shadow-medium)' }}
+      >
+        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
             金额信息
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-[hsl(var(--color-bg-card))]">
           <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
             <div>
-              <label className="text-sm font-medium text-gray-500">
+              <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                 订单总金额
               </label>
-              <p className="mt-1 text-lg font-semibold text-gray-900">
+              <p className="mt-1 text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                 {formatAmount(order.totalAmount)}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">
+              <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                 应收金额
               </label>
-              <p className="mt-1 text-lg font-semibold text-blue-600">
+              <p className="mt-1 text-lg font-semibold text-[hsl(var(--color-primary))]">
                 {formatAmount(order.receivableAmount)}
               </p>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-500">
+              <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                 定金金额
               </label>
-              <p className="mt-1 text-lg font-semibold text-green-600">
+              <p className="mt-1 text-lg font-semibold text-[hsl(var(--color-success))]">
                 {formatAmount(order.depositAmount)}
               </p>
             </div>
@@ -334,10 +353,10 @@ export function FactoryShipmentOrderDetail({
             <>
               <Separator className="my-4" />
               <div>
-                <label className="text-sm font-medium text-gray-500">
+                <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                   备注
                 </label>
-                <p className="mt-1 text-sm text-gray-900">{order.remarks}</p>
+                <p className="mt-1 text-sm text-[hsl(var(--color-text-primary))]">{order.remarks}</p>
               </div>
             </>
           )}
@@ -345,67 +364,76 @@ export function FactoryShipmentOrderDetail({
       </Card>
 
       {/* 商品明细 */}
-      <Card>
-        <CardHeader>
+      <Card
+        className="border border-[hsl(var(--color-border-primary))]"
+        style={{ boxShadow: 'var(--shadow-medium)' }}
+      >
+        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
           <CardTitle className="flex items-center gap-2">
             <Package className="h-5 w-5" />
             商品明细
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="bg-[hsl(var(--color-bg-card))]">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow className="bg-gray-50">
-                  <TableHead className="font-semibold">序号</TableHead>
-                  <TableHead className="font-semibold">商品名称</TableHead>
-                  <TableHead className="font-semibold">供应商</TableHead>
-                  <TableHead className="font-semibold">规格</TableHead>
-                  <TableHead className="text-right font-semibold">
+              <TableHeader
+                className="bg-[hsl(var(--color-bg-table-header))]"
+                style={{ boxShadow: 'var(--shadow-light)' }}
+              >
+                <TableRow className="bg-[hsl(var(--color-bg-table-header))]">
+                  <TableHead className="font-semibold text-[hsl(var(--color-text-secondary))]">序号</TableHead>
+                  <TableHead className="font-semibold text-[hsl(var(--color-text-secondary))]">商品名称</TableHead>
+                  <TableHead className="font-semibold text-[hsl(var(--color-text-secondary))]">供应商</TableHead>
+                  <TableHead className="font-semibold text-[hsl(var(--color-text-secondary))]">规格</TableHead>
+                  <TableHead className="text-right font-semibold text-[hsl(var(--color-text-secondary))]">
                     数量
                   </TableHead>
-                  <TableHead className="font-semibold">单位</TableHead>
-                  <TableHead className="text-right font-semibold">
+                  <TableHead className="font-semibold text-[hsl(var(--color-text-secondary))]">单位</TableHead>
+                  <TableHead className="text-right font-semibold text-[hsl(var(--color-text-secondary))]">
                     单价
                   </TableHead>
-                  <TableHead className="text-right font-semibold">
+                  <TableHead className="text-right font-semibold text-[hsl(var(--color-text-secondary))]">
                     小计
                   </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {order.items?.map((item, index) => (
-                  <TableRow key={index} className="hover:bg-gray-50">
-                    <TableCell className="text-gray-600">{index + 1}</TableCell>
-                    <TableCell className="font-medium text-gray-900">
+                  <TableRow
+                    key={index}
+                    className="border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
+                  >
+                    <TableCell className="text-[hsl(var(--color-text-secondary))]">{index + 1}</TableCell>
+                    <TableCell className="font-medium text-[hsl(var(--color-text-primary))]">
                       {item.displayName}
                     </TableCell>
-                    <TableCell className="text-gray-700">
+                    <TableCell className="text-[hsl(var(--color-text-secondary))]">
                       {item.supplier?.name || '-'}
                     </TableCell>
-                    <TableCell className="text-gray-700">
+                    <TableCell className="text-[hsl(var(--color-text-secondary))]">
                       {item.specification || '-'}
                     </TableCell>
-                    <TableCell className="text-right text-gray-900">
+                    <TableCell className="text-right text-[hsl(var(--color-text-primary))]">
                       {item.quantity}
                     </TableCell>
-                    <TableCell className="text-gray-700">
+                    <TableCell className="text-[hsl(var(--color-text-secondary))]">
                       {formatUnit(item.unit)}
                     </TableCell>
-                    <TableCell className="text-right text-gray-900">
+                    <TableCell className="text-right text-[hsl(var(--color-text-primary))]">
                       {formatAmount(item.unitPrice)}
                     </TableCell>
-                    <TableCell className="text-right font-semibold text-gray-900">
+                    <TableCell className="text-right font-semibold text-[hsl(var(--color-text-primary))]">
                       {formatAmount(item.quantity * item.unitPrice)}
                     </TableCell>
                   </TableRow>
                 ))}
                 {order.items && order.items.length > 0 && (
-                  <TableRow className="border-t-2 bg-gray-50 font-semibold">
-                    <TableCell colSpan={7} className="text-right">
+                  <TableRow className="border-t-2 border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-table-header))] font-semibold">
+                    <TableCell colSpan={7} className="text-right text-[hsl(var(--color-text-primary))]">
                       合计金额：
                     </TableCell>
-                    <TableCell className="text-right text-lg text-blue-600">
+                    <TableCell className="text-right text-lg text-[hsl(var(--color-primary))]">
                       {formatAmount(order.totalAmount)}
                     </TableCell>
                   </TableRow>

@@ -101,7 +101,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
 
   // 状态标签渲染
   const getStatusBadge = (status: string) => {
-    const variant = status === 'active' ? 'default' : 'secondary';
+    const variant = status === 'active' ? 'success' : 'secondary';
     return (
       <Badge variant={variant} className="text-xs">
         {PRODUCT_STATUS_LABELS[status as keyof typeof PRODUCT_STATUS_LABELS] ||
@@ -122,21 +122,26 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+        <Card
+          className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+          style={{ boxShadow: 'var(--shadow-medium)' }}
+        >
+          <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                  <Edit className="h-6 w-6 text-white" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]" style={{ boxShadow: 'var(--shadow-light)' }}>
+                  <Edit className="h-6 w-6" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
                     {product.name}
                   </h1>
-                  <p className="text-sm text-gray-600">编码: {product.code}</p>
+                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                    编码: {product.code}
+                  </p>
                 </div>
                 {getStatusBadge(product.status)}
               </div>
@@ -145,26 +150,27 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
                   variant="outline"
                   size="lg"
                   onClick={() => router.back()}
-                  className="h-11 gap-2 transition-all hover:scale-105 hover:border-gray-400"
+                  className="h-11 gap-2"
                 >
                   <ArrowLeft className="h-4 w-4" />
                   返回
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="lg"
                   onClick={() => router.push(`/products/${product.id}/edit`)}
-                  className="h-11 gap-2 bg-blue-600 text-white shadow-md shadow-blue-600/30 transition-all hover:scale-105 hover:bg-blue-700 hover:shadow-lg hover:shadow-blue-600/40"
+                  className="h-11 gap-2 transition-transform duration-150 hover:scale-[1.02]"
+                  style={{ boxShadow: 'var(--shadow-light)' }}
                 >
                   <Edit className="h-4 w-4" />
                   编辑
                 </Button>
                 <Button
-                  variant="outline"
+                  variant="destructive"
                   size="lg"
                   onClick={handleDelete}
                   disabled={deleteMutation.isPending}
-                  className="h-11 gap-2 border-red-200 text-red-600 transition-all hover:scale-105 hover:border-red-300 hover:bg-red-50"
+                  className="h-11 gap-2"
                 >
                   <Trash2 className="h-4 w-4" />
                   删除
@@ -175,63 +181,70 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
         </Card>
 
         {/* 基本信息区域 */}
-        <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
-          <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-6 py-4">
-            <h4 className="font-semibold text-gray-900">基本信息</h4>
+        <div
+          className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+          style={{ boxShadow: 'var(--shadow-medium)' }}
+        >
+          <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
+            <h4 className="font-semibold text-[hsl(var(--color-text-primary))]">
+              基本信息
+            </h4>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
               <div>
-                <div className="text-xs font-medium text-gray-500">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   产品编码
                 </div>
-                <div className="mt-2 font-medium text-blue-600">
+                <div className="mt-2 font-medium text-[hsl(var(--color-primary))]">
                   {product.code}
                 </div>
               </div>
               <div>
-                <div className="text-xs font-medium text-gray-500">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   产品名称
                 </div>
-                <div className="mt-2 font-medium text-gray-900">
+                <div className="mt-2 font-medium text-[hsl(var(--color-text-primary))]">
                   {product.name}
                 </div>
               </div>
               <div>
-                <div className="text-xs font-medium text-gray-500">规格</div>
-                <div className="mt-2 text-sm text-gray-700">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                  规格
+                </div>
+                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
                   {formatSpecification(product.specification)}
                 </div>
               </div>
               <div>
-                <div className="text-xs font-medium text-gray-500">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   每单位片数
                 </div>
-                <div className="mt-2 text-sm text-gray-700">
+                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
                   {product.piecesPerUnit || '-'}
                 </div>
               </div>
               <div>
-                <div className="text-xs font-medium text-gray-500">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   重量 (kg)
                 </div>
-                <div className="mt-2 text-sm text-gray-700">
+                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
                   {product.weight || '-'}
                 </div>
               </div>
               <div>
-                <div className="text-xs font-medium text-gray-500">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   厚度 (mm)
                 </div>
-                <div className="mt-2 text-sm text-gray-700">
+                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
                   {product.thickness || '-'}
                 </div>
               </div>
               <div>
-                <div className="text-xs font-medium text-gray-500">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   产品分类
                 </div>
-                <div className="mt-2 text-sm text-gray-700">
+                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
                   {product.category ? product.category.name : '未分类'}
                 </div>
               </div>
@@ -240,31 +253,36 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
         </div>
 
         {/* 系统信息区域 */}
-        <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
-          <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-6 py-4">
-            <h4 className="font-semibold text-gray-900">系统信息</h4>
+        <div
+          className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+          style={{ boxShadow: 'var(--shadow-medium)' }}
+        >
+          <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
+            <h4 className="font-semibold text-[hsl(var(--color-text-primary))]">
+              系统信息
+            </h4>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 gap-x-6 gap-y-6 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <div className="text-xs font-medium text-gray-500">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   产品状态
                 </div>
                 <div className="mt-2">{getStatusBadge(product.status)}</div>
               </div>
               <div>
-                <div className="text-xs font-medium text-gray-500">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   创建时间
                 </div>
-                <div className="mt-2 text-sm text-gray-700">
+                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
                   {new Date(product.createdAt).toLocaleString('zh-CN')}
                 </div>
               </div>
               <div>
-                <div className="text-xs font-medium text-gray-500">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   更新时间
                 </div>
-                <div className="mt-2 text-sm text-gray-700">
+                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
                   {new Date(product.updatedAt).toLocaleString('zh-CN')}
                 </div>
               </div>
@@ -273,23 +291,32 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
         </div>
 
         {/* 扩展信息区域 - 预留给未来功能 */}
-        <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
-          <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-6 py-4">
-            <h4 className="font-semibold text-gray-900">扩展信息</h4>
+        <div
+          className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+          style={{ boxShadow: 'var(--shadow-medium)' }}
+        >
+          <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-6 py-4">
+            <h4 className="font-semibold text-[hsl(var(--color-text-primary))]">
+              扩展信息
+            </h4>
           </div>
           <div className="p-6">
             <div className="grid grid-cols-1 gap-6 sm:grid-cols-3">
-              <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50/50 p-6 text-center transition-all hover:border-blue-300 hover:bg-blue-50/50">
-                <div className="text-xs font-medium text-gray-500">
+              <div className="rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] p-6 text-center transition-colors hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   库存信息
                 </div>
-                <div className="mt-2 text-sm text-gray-600">功能开发中</div>
+                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                  功能开发中
+                </div>
               </div>
-              <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50/50 p-6 text-center transition-all hover:border-blue-300 hover:bg-blue-50/50">
-                <div className="text-xs font-medium text-gray-500">
+              <div className="rounded-lg border border-dashed border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] p-6 text-center transition-colors hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                   销售记录
                 </div>
-                <div className="mt-2 text-sm text-gray-600">功能开发中</div>
+                <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                  功能开发中
+                </div>
               </div>
               <div className="border-muted-foreground/25 rounded border border-dashed p-4 text-center">
                 <div className="text-muted-foreground text-xs">操作历史</div>
@@ -309,7 +336,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
               <AlertDialogDescription>
                 确定要删除产品编码 &quot;{product.code}&quot; 吗？
                 <br />
-                <span className="font-medium text-red-600">
+                <span className="font-medium text-[hsl(var(--color-error))]">
                   此操作不可撤销，删除后将无法恢复产品数据。
                 </span>
               </AlertDialogDescription>
@@ -321,7 +348,7 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
               <AlertDialogAction
                 onClick={confirmDelete}
                 disabled={deleteMutation.isPending}
-                className="bg-red-600 hover:bg-red-700"
+                className="bg-[hsl(var(--color-error))] text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-error-hover))]"
               >
                 {deleteMutation.isPending ? '删除中...' : '确认删除'}
               </AlertDialogAction>

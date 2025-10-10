@@ -30,15 +30,16 @@ async function getStatementsData(searchParams: {
   const page = parseInt(searchParams.page || '1', 10);
   const pageSize = parseInt(searchParams.pageSize || '20', 10);
   const customerName = searchParams.customerName || undefined;
-  const balanceType =
-    (searchParams.balanceType as 'receivable' | 'payable' | 'all') || 'all';
-  const sortBy =
-    (searchParams.sortBy as
-      | 'customerName'
-      | 'netBalance'
-      | 'receivableBalance'
-      | 'payableBalance'
-      | 'lastTransactionDate') || 'customerName';
+  const balanceType = (searchParams.balanceType as
+    | 'receivable'
+    | 'payable'
+    | 'all') || 'all';
+  const sortBy = (searchParams.sortBy as
+    | 'customerName'
+    | 'netBalance'
+    | 'receivableBalance'
+    | 'payableBalance'
+    | 'lastTransactionDate') || 'customerName';
   const sortOrder = (searchParams.sortOrder as 'asc' | 'desc') || 'desc';
 
   try {
@@ -100,15 +101,13 @@ export default async function CustomerStatementsPage({
     page: parseInt(params.page || '1', 10),
     pageSize: parseInt(params.pageSize || '20', 10),
     customerName: params.customerName,
-    balanceType:
-      (params.balanceType as 'receivable' | 'payable' | 'all') || 'all',
-    sortBy:
-      (params.sortBy as
-        | 'customerName'
-        | 'netBalance'
-        | 'receivableBalance'
-        | 'payableBalance'
-        | 'lastTransactionDate') || 'customerName',
+    balanceType: (params.balanceType as 'receivable' | 'payable' | 'all') || 'all',
+    sortBy: (params.sortBy as
+      | 'customerName'
+      | 'netBalance'
+      | 'receivableBalance'
+      | 'payableBalance'
+      | 'lastTransactionDate') || 'customerName',
     sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
   };
 
@@ -119,3 +118,4 @@ export default async function CustomerStatementsPage({
     />
   );
 }
+

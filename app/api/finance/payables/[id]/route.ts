@@ -3,6 +3,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/db';
 import type { PayableRecordDetail } from '@/lib/types/payable';
 import { updatePayableRecordSchema } from '@/lib/validations/payable';
@@ -14,8 +15,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let payableId: string | undefined;
   try {
     const { id } = await params;
+    payableId = id;
 
     // 查询应付款记录
     const payable = await prisma.payableRecord.findUnique({
@@ -65,7 +68,12 @@ export async function GET(
       data: payable as PayableRecordDetail,
     });
   } catch (error) {
-    console.error('获取应付款记录详情失败:', error);
+    logger.error(
+      'finance-payables',
+      '获取应付款记录详情失败',
+      error,
+      payableId ? { payableId } : undefined
+    );
     return NextResponse.json(
       { success: false, error: '获取应付款记录详情失败' },
       { status: 500 }
@@ -80,8 +88,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let payableId: string | undefined;
   try {
     const { id } = await params;
+    payableId = id;
 
     // 解析请求体
     const body = await request.json();
@@ -183,7 +193,12 @@ export async function PUT(
       message: '应付款记录更新成功',
     });
   } catch (error) {
-    console.error('更新应付款记录失败:', error);
+    logger.error(
+      'finance-payables',
+      '更新应付款记录失败',
+      error,
+      payableId ? { payableId } : undefined
+    );
     return NextResponse.json(
       { success: false, error: '更新应付款记录失败' },
       { status: 500 }
@@ -198,8 +213,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let payableId: string | undefined;
   try {
     const { id } = await params;
+    payableId = id;
 
     // 检查应付款记录是否存在
     const existingPayable = await prisma.payableRecord.findUnique({
@@ -241,7 +258,12 @@ export async function DELETE(
       message: '应付款记录删除成功',
     });
   } catch (error) {
-    console.error('删除应付款记录失败:', error);
+    logger.error(
+      'finance-payables',
+      '删除应付款记录失败',
+      error,
+      payableId ? { payableId } : undefined
+    );
     return NextResponse.json(
       { success: false, error: '删除应付款记录失败' },
       { status: 500 }

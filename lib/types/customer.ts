@@ -30,6 +30,7 @@ export interface Customer {
 // 客户扩展信息类型
 export interface CustomerExtendedInfo {
   // 联系信息
+  contactPerson?: string;
   email?: string;
   fax?: string;
   website?: string;
@@ -190,6 +191,7 @@ export const CUSTOMER_FIELD_LABELS = {
   name: '客户名称',
   phone: '联系电话',
   address: '客户地址',
+  contactPerson: '联系人',
   email: '邮箱地址',
   fax: '传真号码',
   website: '网站地址',

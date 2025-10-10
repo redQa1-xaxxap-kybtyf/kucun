@@ -62,10 +62,12 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
   if (startDate || endDate) {
     where.createdAt = {};
     if (startDate) {
-      where.createdAt.gte = startDate;
+      // 开始日期：当天的00:00:00
+      where.createdAt.gte = new Date(startDate + 'T00:00:00');
     }
     if (endDate) {
-      where.createdAt.lte = endDate;
+      // 结束日期：当天的23:59:59
+      where.createdAt.lte = new Date(endDate + 'T23:59:59');
     }
   }
 
@@ -126,6 +128,12 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
             id: true,
             salesOrderId: true,
             productId: true,
+            displayUnit: true,
+            displayQuantity: true,
+            piecesPerUnit: true,
+            specification: true,
+            remarks: true,
+            batchNumber: true,
             colorCode: true,
             productionDate: true,
             quantity: true,
@@ -144,6 +152,9 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
                 name: true,
                 code: true,
                 unit: true,
+                specification: true,
+                piecesPerUnit: true,
+                weight: true,
               },
             },
           },
@@ -230,6 +241,12 @@ export async function getSalesOrderById(id: string) {
           id: true,
           salesOrderId: true,
           productId: true,
+          displayUnit: true,
+          displayQuantity: true,
+          piecesPerUnit: true,
+          specification: true,
+          remarks: true,
+          batchNumber: true,
           colorCode: true,
           productionDate: true,
           quantity: true,
@@ -249,6 +266,8 @@ export async function getSalesOrderById(id: string) {
               code: true,
               unit: true,
               specification: true,
+              piecesPerUnit: true,
+              weight: true,
             },
           },
         },
@@ -265,9 +284,31 @@ export async function getSalesOrderById(id: string) {
     return null;
   }
 
+  const { _count, items, createdAt, updatedAt, ...rest } = order;
+
   return {
-    ...order,
-    itemCount: order._count.items,
+    ...rest,
+    createdAt: createdAt.toISOString(),
+    updatedAt: updatedAt.toISOString(),
+    items: items.map(item => ({
+      ...item,
+      batchNumber: item.batchNumber ?? undefined,
+      productionDate: item.productionDate
+        ? item.productionDate.toISOString()
+        : undefined,
+      displayUnit: item.displayUnit || undefined,
+      displayQuantity: item.displayQuantity ?? undefined,
+      piecesPerUnit:
+        item.piecesPerUnit ?? item.product?.piecesPerUnit ?? undefined,
+      specification:
+        item.specification ||
+        (item.isManualProduct
+          ? item.manualSpecification || undefined
+          : item.product?.specification || undefined),
+      remarks: item.remarks ?? undefined,
+      product: item.product ? { ...item.product } : undefined,
+    })),
+    itemCount: _count.items,
   };
 }
 
@@ -428,12 +469,18 @@ export async function createSalesOrder(
           items: {
             create: validatedData.items.map(item => ({
               productId: item.productId,
+              batchNumber: item.batchNumber || null,
               colorCode: item.colorCode,
               productionDate: item.productionDate,
               quantity: item.quantity,
               unitPrice: item.unitPrice || 0,
               subtotal: item.subtotal || 0,
               unitCost: item.unitCost,
+              displayUnit: item.displayUnit || '片',
+              displayQuantity: item.displayQuantity ?? item.quantity,
+              piecesPerUnit: item.piecesPerUnit ?? null,
+              specification: item.specification || null,
+              remarks: item.remarks || null,
               // costSubtotal: item.costSubtotal, // 属性不存在
               // profitAmount: item.profitAmount, // 属性不存在
               isManualProduct: item.isManualProduct,
@@ -482,6 +529,12 @@ export async function createSalesOrder(
               id: true,
               salesOrderId: true,
               productId: true,
+              displayUnit: true,
+              displayQuantity: true,
+              piecesPerUnit: true,
+              specification: true,
+              remarks: true,
+              batchNumber: true,
               colorCode: true,
               productionDate: true,
               quantity: true,
@@ -500,6 +553,9 @@ export async function createSalesOrder(
                   name: true,
                   code: true,
                   unit: true,
+                  specification: true,
+                  piecesPerUnit: true,
+                  weight: true,
                 },
               },
             },
@@ -532,12 +588,18 @@ export async function createSalesOrder(
           orderType: 'SALES_ORDER' as const,
         }));
 
-      // 批量插入所有价格记录（一次性完成）
+      // 批量插入所有价格记录（SQLite 不支持 skipDuplicates，改用逐条插入）
       if (priceRecords.length > 0) {
-        await tx.customerProductPrice.createMany({
-          data: priceRecords,
-          skipDuplicates: true, // 跳过重复记录，避免唯一索引冲突
-        });
+        for (const record of priceRecords) {
+          try {
+            await tx.customerProductPrice.create({
+              data: record,
+            });
+          } catch (error) {
+            // 忽略重复记录错误（唯一索引冲突）
+            console.debug('价格记录已存在，跳过');
+          }
+        }
       }
 
       // 如果是调货销售且状态为confirmed，自动创建应付款记录
@@ -580,9 +642,31 @@ export async function createSalesOrder(
     getLongTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable，15秒超时）
   );
 
+  const { _count, items, createdAt, updatedAt, ...rest } = order;
+
   return {
-    ...order,
-    itemCount: order._count.items,
+    ...rest,
+    createdAt: createdAt.toISOString(),
+    updatedAt: updatedAt.toISOString(),
+    items: items.map(item => ({
+      ...item,
+      batchNumber: item.batchNumber ?? undefined,
+      productionDate: item.productionDate
+        ? item.productionDate.toISOString()
+        : undefined,
+      displayUnit: item.displayUnit || undefined,
+      displayQuantity: item.displayQuantity ?? undefined,
+      piecesPerUnit:
+        item.piecesPerUnit ?? item.product?.piecesPerUnit ?? undefined,
+      specification:
+        item.specification ||
+        (item.isManualProduct
+          ? item.manualSpecification || undefined
+          : item.product?.specification || undefined),
+      remarks: item.remarks ?? undefined,
+      product: item.product ? { ...item.product } : undefined,
+    })),
+    itemCount: _count.items,
   };
 }
 

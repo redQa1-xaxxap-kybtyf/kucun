@@ -173,7 +173,7 @@ export function ReturnOrdersPageClient({
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
         <Card className="overflow-hidden shadow-lg shadow-gray-200/50">

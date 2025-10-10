@@ -175,10 +175,10 @@ export function ReceivablesClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">总应收金额</CardTitle>
-            <AlertCircle className="h-4 w-4 text-green-600" />
+            <AlertCircle className="h-4 w-4 text-[hsl(var(--color-success))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
               {formatCurrency(currentData.summary?.totalReceivable || 0)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -190,10 +190,10 @@ export function ReceivablesClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">逾期金额</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertCircle className="h-4 w-4 text-[hsl(var(--color-error))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-error))]">
               {formatCurrency(currentData.summary?.totalOverdue || 0)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -205,10 +205,10 @@ export function ReceivablesClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">收款率</CardTitle>
-            <Calendar className="h-4 w-4 text-blue-600" />
+            <Calendar className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
               {(currentData.summary?.collectionRate || 0).toFixed(1)}%
             </div>
             <p className="text-muted-foreground text-xs">较上月提升 5%</p>
@@ -218,10 +218,10 @@ export function ReceivablesClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">平均账期</CardTitle>
-            <Calendar className="h-4 w-4 text-purple-600" />
+            <Calendar className="h-4 w-4 text-[hsl(var(--color-purple))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-purple))]">
               {currentData.summary?.averageAccountPeriod || 0}天
             </div>
             <p className="text-muted-foreground text-xs">较上月减少 3天</p>
@@ -230,7 +230,7 @@ export function ReceivablesClient({
       </div>
 
       {/* 搜索和筛选 */}
-      <Card className="shadow-md shadow-gray-200/50">
+      <Card>
         <CardContent className="pt-6">
           <UnifiedSearchBar
             // 搜索配置
@@ -288,7 +288,7 @@ export function ReceivablesClient({
               </div>
             ) : error ? (
               <div className="flex items-center justify-center py-8">
-                <div className="text-red-600">
+                <div className="text-[hsl(var(--color-error))]">
                   加载失败: {(error as Error).message}
                 </div>
               </div>
@@ -300,7 +300,7 @@ export function ReceivablesClient({
               currentData.receivables.map((receivable: ReceivableItem) => (
                 <Card
                   key={receivable.id}
-                  className="transition-shadow hover:shadow-md"
+                  className="transition-shadow hover:shadow-[var(--shadow-medium)]"
                 >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -340,7 +340,7 @@ export function ReceivablesClient({
                           <p className="text-muted-foreground text-sm">
                             已收金额
                           </p>
-                          <p className="font-semibold text-green-600">
+                          <p className="font-semibold text-[hsl(var(--color-success))]">
                             {formatCurrency(receivable.paidAmount)}
                           </p>
                         </div>
@@ -348,7 +348,7 @@ export function ReceivablesClient({
                           <p className="text-muted-foreground text-sm">
                             待收金额
                           </p>
-                          <p className="font-semibold text-orange-600">
+                          <p className="font-semibold text-[hsl(var(--color-warning))]">
                             {formatCurrency(receivable.remainingAmount)}
                           </p>
                         </div>

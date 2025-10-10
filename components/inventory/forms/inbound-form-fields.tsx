@@ -37,7 +37,7 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
         name="inputQuantity"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium">入库数量 *</FormLabel>
+            <FormLabel className="text-sm font-semibold text-gray-900">入库数量 *</FormLabel>
             <FormControl>
               <Input
                 type="number"
@@ -45,10 +45,20 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
                 step="1"
                 placeholder="请输入数量"
                 className="h-9"
-                {...field}
+                name={field.name}
+                ref={field.ref}
+                value={field.value && field.value > 0 ? field.value : ''}
+                onBlur={field.onBlur}
                 onChange={e => {
-                  const value = e.target.value;
-                  field.onChange(value ? parseInt(value) : 0);
+                  const { value } = e.target;
+                  if (value === '') {
+                    field.onChange(undefined);
+                    return;
+                  }
+                  const parsed = Number.parseInt(value, 10);
+                  field.onChange(
+                    Number.isNaN(parsed) || parsed <= 0 ? undefined : parsed
+                  );
                 }}
               />
             </FormControl>
@@ -63,7 +73,7 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
         name="inputUnit"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium">入库单位 *</FormLabel>
+            <FormLabel className="text-sm font-semibold text-gray-900">入库单位 *</FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
               <FormControl>
                 <SelectTrigger className="h-9">
@@ -89,13 +99,15 @@ export function InboundQuantityFields({ form }: InboundFormFieldsProps) {
         name="quantity"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium">最终片数</FormLabel>
+            <FormLabel className="text-sm font-medium text-gray-600">最终片数</FormLabel>
             <FormControl>
               <Input
                 type="number"
                 readOnly
                 className="bg-muted h-9"
-                {...field}
+                name={field.name}
+                ref={field.ref}
+                value={field.value && field.value > 0 ? field.value : ''}
               />
             </FormControl>
             <FormMessage />
@@ -115,7 +127,7 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
         name="piecesPerUnit"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium">每件片数 *</FormLabel>
+            <FormLabel className="text-sm font-semibold text-gray-900">每件片数 *</FormLabel>
             <FormControl>
               <Input
                 type="number"
@@ -123,10 +135,20 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
                 step="1"
                 placeholder="请输入每件片数"
                 className="h-9"
-                {...field}
+                name={field.name}
+                ref={field.ref}
+                value={field.value && field.value > 0 ? field.value : ''}
+                onBlur={field.onBlur}
                 onChange={e => {
-                  const value = e.target.value;
-                  field.onChange(value ? parseInt(value) : 1);
+                  const { value } = e.target;
+                  if (value === '') {
+                    field.onChange(undefined);
+                    return;
+                  }
+                  const parsed = Number.parseInt(value, 10);
+                  field.onChange(
+                    Number.isNaN(parsed) || parsed <= 0 ? undefined : parsed
+                  );
                 }}
               />
             </FormControl>
@@ -141,7 +163,7 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
         name="weight"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium">重量(kg) *</FormLabel>
+            <FormLabel className="text-sm font-semibold text-gray-900">重量(kg) *</FormLabel>
             <FormControl>
               <Input
                 type="number"
@@ -149,10 +171,20 @@ export function InboundSpecificationFields({ form }: InboundFormFieldsProps) {
                 step="0.01"
                 placeholder="请输入重量"
                 className="h-9"
-                {...field}
+                name={field.name}
+                ref={field.ref}
+                value={field.value && field.value > 0 ? field.value : ''}
+                onBlur={field.onBlur}
                 onChange={e => {
-                  const value = e.target.value;
-                  field.onChange(value ? parseFloat(value) : 0);
+                  const { value } = e.target;
+                  if (value === '') {
+                    field.onChange(undefined);
+                    return;
+                  }
+                  const parsed = Number.parseFloat(value);
+                  field.onChange(
+                    Number.isNaN(parsed) || parsed <= 0 ? undefined : parsed
+                  );
                 }}
               />
             </FormControl>
@@ -171,7 +203,7 @@ export function InboundReasonField({ form }: InboundFormFieldsProps) {
       name="reason"
       render={({ field }) => (
         <FormItem>
-          <FormLabel className="text-sm font-medium">入库原因 *</FormLabel>
+          <FormLabel className="text-sm font-semibold text-gray-900">入库原因 *</FormLabel>
           <Select onValueChange={field.onChange} defaultValue={field.value}>
             <FormControl>
               <SelectTrigger className="h-9">
@@ -202,7 +234,7 @@ export function InboundOptionalFields({ form }: InboundFormFieldsProps) {
         name="batchNumber"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium">批次号</FormLabel>
+            <FormLabel className="text-sm font-medium text-gray-600">批次号</FormLabel>
             <FormControl>
               <Input
                 placeholder="请输入批次号（可选）"
@@ -221,7 +253,7 @@ export function InboundOptionalFields({ form }: InboundFormFieldsProps) {
         name="remarks"
         render={({ field }) => (
           <FormItem>
-            <FormLabel className="text-sm font-medium">备注</FormLabel>
+            <FormLabel className="text-sm font-medium text-gray-600">备注</FormLabel>
             <FormControl>
               <Textarea
                 placeholder="请输入备注信息（可选）"

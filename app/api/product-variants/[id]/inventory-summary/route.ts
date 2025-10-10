@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 
@@ -22,9 +23,8 @@ interface LocationSummary {
 // 获取产品变体的库存汇总
 export const GET = withAuth(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
+    const { id } = params;
     try {
-      const { id } = params;
-
       // 验证ID格式
       if (!id || typeof id !== 'string') {
         return NextResponse.json(
@@ -212,7 +212,9 @@ export const GET = withAuth(
         data: summary,
       });
     } catch (error) {
-      console.error('获取变体库存汇总错误:', error);
+      logger.error('product-variants', '获取变体库存汇总失败', error, {
+        variantId: id,
+      });
 
       return NextResponse.json(
         {

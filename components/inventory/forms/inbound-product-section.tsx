@@ -11,11 +11,13 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { type InboundFormData, type ProductOption } from '@/lib/types/inbound';
+import { cn } from '@/lib/utils';
 
 interface InboundProductSectionProps {
   form: UseFormReturn<InboundFormData>;
   selectedProduct: ProductOption | null;
   onProductSelect: (product: ProductOption) => void;
+  showProductPrompt?: boolean;
 }
 
 // 单位映射：英文 -> 中文
@@ -34,14 +36,57 @@ export function InboundProductSection({
   form,
   selectedProduct,
   onProductSelect,
+  showProductPrompt = false,
 }: InboundProductSectionProps) {
+  const selectedBatchNumber = form.watch('batchNumber');
+
+  const handleBatchSelect = (spec: {
+    batchNumber: string;
+    piecesPerUnit: number;
+    quantity: number;
+  }) => {
+    form.setValue('batchNumber', spec.batchNumber, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    form.setValue('piecesPerUnit', spec.piecesPerUnit, {
+      shouldDirty: true,
+      shouldValidate: false,
+    });
+    // 重置数量，避免旧数据与新批次规格不一致
+    form.setValue('inputQuantity', undefined, {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    });
+    form.setValue('quantity', 0, {
+      shouldDirty: false,
+      shouldValidate: false,
+    });
+    form.clearErrors(['batchNumber', 'piecesPerUnit', 'inputQuantity']);
+  };
+
+  const handleClearBatchSelection = () => {
+    form.setValue('batchNumber', '', {
+      shouldDirty: false,
+      shouldTouch: false,
+      shouldValidate: false,
+    });
+    const fallbackPiecesPerUnit = selectedProduct?.piecesPerUnit || undefined;
+    form.setValue('piecesPerUnit', fallbackPiecesPerUnit, {
+      shouldDirty: !!fallbackPiecesPerUnit,
+      shouldValidate: false,
+    });
+    form.clearErrors(['batchNumber', 'piecesPerUnit']);
+  };
+
   return (
     <div className="space-y-3">
       {/* 产品搜索 */}
       <FormField
         control={form.control}
         name="productId"
-        render={({ field }) => (
+        render={({ field, fieldState }) => (
           <FormItem>
             <FormLabel className="text-sm font-semibold text-gray-900">
               选择产品 *
@@ -56,9 +101,12 @@ export function InboundProductSection({
                   }
                 }}
                 placeholder="搜索产品名称、编码..."
+                error={fieldState.invalid || showProductPrompt}
               />
             </FormControl>
-            <FormMessage />
+            <FormMessage>
+              {showProductPrompt ? '请选择产品' : null}
+            </FormMessage>
           </FormItem>
         )}
       />
@@ -103,6 +151,9 @@ export function InboundProductSection({
                   <span className="font-medium text-gray-600">
                     现有批次规格
                   </span>
+                  <p className="text-muted-foreground text-xs">
+                    点击批次可快速切换入库批次，并同步每件片数。
+                  </p>
                   <div className="flex flex-col gap-1.5">
                     {selectedProduct.batchSpecs.map((spec, index) => {
                       // 计算件数和剩余片数
@@ -123,9 +174,16 @@ export function InboundProductSection({
                       }
 
                       return (
-                        <div
+                        <button
+                          type="button"
                           key={index}
-                          className="flex items-center gap-2 rounded border border-blue-200 bg-blue-50 px-3 py-1.5"
+                          onClick={() => handleBatchSelect(spec)}
+                          className={cn(
+                            'flex items-center gap-2 rounded border px-3 py-1.5 text-left transition',
+                            selectedBatchNumber === spec.batchNumber
+                              ? 'border-blue-500 bg-blue-100/80 shadow-sm'
+                              : 'border-blue-200 bg-blue-50 hover:border-blue-300 hover:bg-blue-100'
+                          )}
                         >
                           <span className="font-mono text-xs font-semibold text-blue-800">
                             {spec.batchNumber}
@@ -145,10 +203,21 @@ export function InboundProductSection({
                               {stockDisplay}
                             </span>
                           </span>
-                        </div>
+                        </button>
                       );
                     })}
                   </div>
+                  {selectedBatchNumber && (
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        className="text-xs text-blue-600 hover:text-blue-700"
+                        onClick={handleClearBatchSelection}
+                      >
+                        清除批次选择
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
           </div>
@@ -157,3 +226,4 @@ export function InboundProductSection({
     </div>
   );
 }
+

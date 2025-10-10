@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { productVariantBatchCreateSchema } from '@/lib/validations/product';
@@ -169,7 +170,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       message: `成功创建 ${formattedVariants.length} 个产品变体`,
     });
   } catch (error) {
-    console.error('批量创建产品变体错误:', error);
+    logger.error('product-variants', '批量创建产品变体失败', error);
 
     return NextResponse.json(
       {
@@ -279,7 +280,7 @@ async function handleBatchOperation(body: unknown) {
       message: `成功${operation === 'delete' ? '删除' : operation === 'activate' ? '激活' : '停用'} ${results.length} 个产品变体`,
     });
   } catch (error) {
-    console.error('批量操作产品变体错误:', error);
+    logger.error('product-variants', '批量操作产品变体失败', error);
 
     return NextResponse.json(
       {

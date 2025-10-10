@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import {
   buildCacheKey,
@@ -113,7 +114,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       _cacheKey: cacheKey,
     });
   } catch (error) {
-    console.error('获取库存预警失败:', error);
+    logger.error('dashboard', '获取库存预警失败', error);
 
     return NextResponse.json(
       {

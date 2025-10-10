@@ -40,6 +40,7 @@ import {
   CUSTOMER_TYPE_LABELS,
   CUSTOMER_TYPE_VARIANTS,
 } from '@/lib/types/customer';
+import { cn } from '@/lib/utils';
 
 // 客户层级树节点类型
 interface CustomerTreeNode extends Customer {
@@ -128,9 +129,10 @@ export function CustomerHierarchyTree({
     return (
       <div key={node.id} className="select-none">
         <div
-          className={`hover:bg-muted/50 flex cursor-pointer items-center rounded-md px-3 py-2 transition-colors ${
-            isSelected ? 'border-primary/20 bg-primary/10 border' : ''
-          }`}
+          className={cn(
+            'flex cursor-pointer items-center rounded-md border border-transparent px-3 py-2 transition-colors hover:bg-[hsl(var(--color-primary-light))]',
+            isSelected && 'border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))]'
+          )}
           style={{ paddingLeft: `${12 + node.level * 20}px` }}
           onClick={() => onSelectCustomer?.(node)}
         >
@@ -166,7 +168,10 @@ export function CustomerHierarchyTree({
           <div className="min-w-0 flex-1">
             <div className="flex items-center space-x-2">
               <span
-                className={`truncate font-medium ${isSelected ? 'text-primary' : ''}`}
+                className={cn(
+                  'truncate font-medium',
+                  isSelected && 'text-[hsl(var(--color-primary))]'
+                )}
               >
                 {node.name}
               </span>

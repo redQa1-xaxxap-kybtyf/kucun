@@ -209,7 +209,7 @@ export function SuppliersPageClient({
     selectedSuppliers.length === suppliers.length && suppliers.length > 0;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题 */}
         <SupplierPageHeader
@@ -227,7 +227,7 @@ export function SuppliersPageClient({
         />
 
         {/* 供应商列表表格 */}
-        <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+        <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
           <Table>
             <TableHeader>
               <TableRow>
@@ -251,15 +251,19 @@ export function SuppliersPageClient({
                 <TableRow>
                   <TableCell
                     colSpan={7}
-                    className="py-8 text-center text-gray-500"
+                    className="py-8 text-center text-muted-foreground"
                   >
                     暂无供应商数据
                   </TableCell>
                 </TableRow>
               ) : (
                 suppliers.map(supplier => (
-                  <TableRow key={supplier.id} className="hover:bg-blue-50/50">
-                    <TableCell>
+                  <TableRow
+                    key={supplier.id}
+                    className="cursor-pointer transition-colors hover:bg-[hsl(var(--color-primary-light))]"
+                    onClick={() => router.push(`/suppliers/${supplier.id}`)}
+                  >
+                    <TableCell onClick={e => e.stopPropagation()}>
                       <Checkbox
                         checked={selectedSuppliers.includes(supplier.id)}
                         onCheckedChange={checked =>
@@ -268,11 +272,15 @@ export function SuppliersPageClient({
                         aria-label={`选择 ${supplier.name}`}
                       />
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell className="font-medium text-[hsl(var(--color-text-primary))]">
                       {supplier.name}
                     </TableCell>
-                    <TableCell>{supplier.phone || '-'}</TableCell>
-                    <TableCell>{supplier.address || '-'}</TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {supplier.phone || '-'}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {supplier.address || '-'}
+                    </TableCell>
                     <TableCell>
                       <Badge
                         variant={
@@ -282,10 +290,10 @@ export function SuppliersPageClient({
                         {formatSupplierStatus(supplier.status)}
                       </Badge>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="text-muted-foreground">
                       {new Date(supplier.createdAt).toLocaleDateString('zh-CN')}
                     </TableCell>
-                    <TableCell>
+                    <TableCell onClick={e => e.stopPropagation()}>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" size="sm">
@@ -301,7 +309,7 @@ export function SuppliersPageClient({
                           </DropdownMenuItem>
                           <DropdownMenuItem
                             onClick={() => handleDelete(supplier)}
-                            className="text-red-600"
+                            className="text-[hsl(var(--color-error))]"
                           >
                             <Trash2 className="mr-2 h-4 w-4" />
                             删除
@@ -314,73 +322,75 @@ export function SuppliersPageClient({
               )}
             </TableBody>
           </Table>
-
-          {/* 分页组件 */}
-          <div className="border-t bg-gray-50/50 px-4 py-3">
-            <Pagination
-              pagination={pagination}
-              onPageChange={handlePageChange}
-              showRange
-              showTotal
-            />
-          </div>
         </div>
 
-        {/* 删除确认对话框 */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>确认删除</AlertDialogTitle>
-              <AlertDialogDescription>
-                确定要删除供应商 &quot;{supplierToDelete?.name}&quot;
-                吗？此操作无法撤销。
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>取消</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  if (supplierToDelete) {
-                    deleteMutation.mutate(supplierToDelete.id);
-                  }
-                }}
-                disabled={deleteMutation.isPending}
-              >
-                {deleteMutation.isPending ? '删除中...' : '确认删除'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* 批量删除确认对话框 */}
-        <AlertDialog
-          open={batchDeleteDialogOpen}
-          onOpenChange={setBatchDeleteDialogOpen}
-        >
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>确认批量删除</AlertDialogTitle>
-              <AlertDialogDescription>
-                确定要删除选中的 {selectedSuppliers.length}{' '}
-                个供应商吗？此操作无法撤销。
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>取消</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={() => {
-                  batchDeleteMutation.mutate({
-                    supplierIds: selectedSuppliers,
-                  });
-                }}
-                disabled={batchDeleteMutation.isPending}
-              >
-                {batchDeleteMutation.isPending ? '删除中...' : '确认删除'}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* 分页组件 */}
+        <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
+          <Pagination
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            showRange
+            showTotal
+          />
+        </div>
       </div>
+
+      {/* 删除确认对话框 */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除供应商 &quot;{supplierToDelete?.name}&quot;
+              吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (supplierToDelete) {
+                  deleteMutation.mutate(supplierToDelete.id);
+                }
+              }}
+              disabled={deleteMutation.isPending}
+              className="bg-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error-hover))] focus-visible:ring-[hsl(var(--color-error))]"
+            >
+              {deleteMutation.isPending ? '删除中...' : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 批量删除确认对话框 */}
+      <AlertDialog
+        open={batchDeleteDialogOpen}
+        onOpenChange={setBatchDeleteDialogOpen}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认批量删除</AlertDialogTitle>
+            <AlertDialogDescription>
+              确定要删除选中的 {selectedSuppliers.length}{' '}
+              个供应商吗？此操作无法撤销。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>取消</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                batchDeleteMutation.mutate({
+                  supplierIds: selectedSuppliers,
+                });
+              }}
+              disabled={batchDeleteMutation.isPending}
+              className="bg-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error-hover))] focus-visible:ring-[hsl(var(--color-error))]"
+            >
+              {batchDeleteMutation.isPending ? '删除中...' : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

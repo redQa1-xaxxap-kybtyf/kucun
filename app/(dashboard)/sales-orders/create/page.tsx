@@ -16,7 +16,7 @@ export default function CreateSalesOrderPage() {
   const router = useRouter();
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
         <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
@@ -55,7 +55,7 @@ export default function CreateSalesOrderPage() {
             router.push(`/sales-orders/${order.id}`);
           }}
           onCancel={() => {
-            router.back();
+            router.push('/sales-orders');
           }}
         />
       </div>

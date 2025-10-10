@@ -71,13 +71,12 @@ export function ProductSearchFilters({
 
   // 状态选项
   const statusOptions = [
-    { label: '全部状态', value: 'all' },
     { label: '启用', value: 'active' },
     { label: '停用', value: 'inactive' },
   ];
 
   return (
-    <Card className="shadow-md shadow-gray-200/50">
+    <Card className="overflow-hidden">
       <CardContent className="pt-6">
         <UnifiedSearchBar
           // 搜索配置
@@ -89,13 +88,10 @@ export function ProductSearchFilters({
             {
               key: 'categoryId',
               label: '产品分类',
-              options: [
-                { label: '全部分类', value: 'all' },
-                ...categories.map(cat => ({
-                  label: cat.name,
-                  value: cat.id,
-                })),
-              ],
+              options: categories.map(cat => ({
+                label: cat.name,
+                value: cat.id,
+              })),
               width: 'w-36',
             },
             {
@@ -136,7 +132,7 @@ export function ProductSearchFilters({
               variant="outline"
               size="sm"
               onClick={onClearFilters}
-              className="h-9 transition-all hover:border-blue-300 hover:bg-blue-50"
+              className="h-9 transition-all hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))] hover:text-[hsl(var(--color-primary))]"
             >
               <Filter className="mr-2 h-4 w-4" />
               清空筛选

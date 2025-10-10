@@ -5,6 +5,7 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
+import { Button } from '@/components/ui/button';
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
 import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
@@ -30,7 +31,6 @@ export function InventoryPageClient({
   categoryOptions,
 }: InventoryPageClientProps) {
   const router = useRouter();
-  const [_isPending, startTransition] = React.useTransition();
 
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');
@@ -49,6 +49,45 @@ export function InventoryPageClient({
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
   );
+  const [limit, setLimit] = React.useState<number>(
+    typeof initialParams.limit === 'number' && Number.isFinite(initialParams.limit)
+      ? initialParams.limit
+      : 50
+  );
+
+  React.useEffect(() => {
+    setSearch(initialParams.search || '');
+    setCategoryId(initialParams.categoryId || '');
+    setLowStock(Boolean(initialParams.lowStock));
+    setHasStock(Boolean(initialParams.hasStock));
+    setSortBy(initialParams.sortBy || 'updatedAt');
+    setSortOrder(initialParams.sortOrder === 'asc' ? 'asc' : 'desc');
+    setLimit(current =>
+      typeof initialParams.limit === 'number' && Number.isFinite(initialParams.limit)
+        ? initialParams.limit
+        : current
+    );
+  }, [initialParams]);
+
+  // ✅ 使用 ref 存储最新的筛选状态，避免闭包问题
+  const filtersRef = React.useRef({
+    categoryId,
+    lowStock,
+    hasStock,
+    sortBy,
+    sortOrder,
+  });
+
+  // ✅ 每次状态变化时更新 ref
+  React.useEffect(() => {
+    filtersRef.current = {
+      categoryId,
+      lowStock,
+      hasStock,
+      sortBy,
+      sortOrder,
+    };
+  }, [categoryId, lowStock, hasStock, sortBy, sortOrder]);
 
   // ✅ 获取库存列表数据（从 HydrationBoundary 自动获取服务端预取的数据，无需重复请求）
   // ✅ 暴露预取方法供分页按钮使用
@@ -58,69 +97,60 @@ export function InventoryPageClient({
     });
 
   // ✅ 统一数据格式后，直接使用，无需复杂的 normalizedData 映射
-  const inventories = data?.inventories ?? [];
-  const pagination = data?.pagination;
+  // ✅ 兼容旧结构（data.data）与新结构（data.inventories）
+  const normalizedData = data?.data;
+  const inventories =
+    normalizedData?.inventories ??
+    (Array.isArray(normalizedData?.data) ? normalizedData?.data : []) ??
+    [];
+  const pagination = normalizedData?.pagination;
 
-  // 防抖更新URL - 避免每次输入都触发导航
+  // ✅ 防抖更新URL - 只在用户停止输入后才更新URL和触发数据请求
   const debouncedUpdateURL = useDebouncedCallback(
-    (searchValue: string, filters: InventoryQueryParams) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (searchValue) {
-          params.set('search', searchValue);
-        }
-        if (filters.categoryId) {
-          params.set('categoryId', filters.categoryId);
-        }
-        if (filters.lowStock) {
-          params.set('lowStock', 'true');
-        }
-        if (filters.hasStock) {
-          params.set('hasStock', 'true');
-        }
-        if (filters.sortBy) {
-          params.set('sortBy', filters.sortBy);
-        }
-        if (filters.sortOrder) {
-          params.set('sortOrder', filters.sortOrder);
-        }
-        if (filters.page && filters.page > 1) {
-          params.set('page', filters.page.toString());
-        }
-        if (filters.limit) {
-          params.set('limit', filters.limit.toString());
-        }
+    (searchValue: string) => {
+      const filters = filtersRef.current;
+      const params = new URLSearchParams();
+      const trimmedSearch = searchValue.trim();
 
-        router.push(`/inventory?${params.toString()}`);
-      });
+      if (trimmedSearch) {
+        params.set('search', trimmedSearch);
+      }
+      if (filters.categoryId) {
+        params.set('categoryId', filters.categoryId);
+      }
+      if (filters.lowStock) {
+        params.set('lowStock', 'true');
+      }
+      if (filters.hasStock) {
+        params.set('hasStock', 'true');
+      }
+      if (filters.sortBy) {
+        params.set('sortBy', filters.sortBy);
+      }
+      if (filters.sortOrder) {
+        params.set('sortOrder', filters.sortOrder);
+      }
+
+      params.set('page', '1');
+
+      if (Number.isFinite(limit) && limit > 0) {
+        params.set('limit', limit.toString());
+      }
+
+      router.replace(`/inventory?${params.toString()}`, { scroll: false });
     },
-    300
+    500 // ✅ 增加防抖时间到 500ms，减少不必要的请求
   );
 
-  // 搜索处理 - 立即更新本地状态，防抖更新URL
+  // ✅ 搜索处理 - 立即更新本地状态（不触发重渲染），防抖更新URL
   const handleSearch = React.useCallback(
     (value: string) => {
+      // ✅ 立即更新本地状态，保证输入流畅
       setSearch(value);
-      debouncedUpdateURL(value, {
-        ...initialParams,
-        search: value,
-        categoryId,
-        lowStock,
-        hasStock,
-        sortBy,
-        sortOrder,
-        page: 1,
-      });
+      // ✅ 防抖更新URL，避免频繁请求
+      debouncedUpdateURL(value);
     },
-    [
-      debouncedUpdateURL,
-      initialParams,
-      categoryId,
-      lowStock,
-      hasStock,
-      sortBy,
-      sortOrder,
-    ]
+    [debouncedUpdateURL]
   );
 
   // 筛选处理
@@ -129,84 +159,111 @@ export function InventoryPageClient({
       key: keyof InventoryQueryParams,
       value: string | number | boolean | undefined
     ) => {
-      const newFilters = { ...initialParams, [key]: value, page: 1 };
+      let nextCategoryId = categoryId;
+      let nextLowStock = lowStock;
+      let nextHasStock = hasStock;
+      let nextSortBy = sortBy;
+      let nextSortOrder = sortOrder;
+      let nextLimit = limit;
 
-      // 更新本地状态
+      const stringValue =
+        typeof value === 'string' ? value.trim() : value;
+
       if (key === 'categoryId') {
-        setCategoryId(value as string);
+        nextCategoryId = typeof stringValue === 'string' ? stringValue : '';
+        setCategoryId(nextCategoryId);
       } else if (key === 'lowStock') {
-        setLowStock(value as boolean);
+        nextLowStock = Boolean(stringValue);
+        setLowStock(nextLowStock);
+        if (nextLowStock) {
+          nextHasStock = false;
+          setHasStock(false);
+        }
       } else if (key === 'hasStock') {
-        setHasStock(value as boolean);
+        nextHasStock = Boolean(stringValue);
+        setHasStock(nextHasStock);
+        if (nextHasStock) {
+          nextLowStock = false;
+          setLowStock(false);
+        }
       } else if (key === 'sortBy') {
-        setSortBy(value as InventoryQueryParams['sortBy']);
+        nextSortBy =
+          (stringValue as InventoryQueryParams['sortBy']) || 'updatedAt';
+        setSortBy(nextSortBy);
       } else if (key === 'sortOrder') {
-        setSortOrder(value as 'asc' | 'desc');
+        nextSortOrder = stringValue === 'asc' ? 'asc' : 'desc';
+        setSortOrder(nextSortOrder);
+      } else if (key === 'limit') {
+        const parsed = Number(stringValue);
+        if (Number.isFinite(parsed) && parsed > 0) {
+          nextLimit = parsed;
+        }
+        setLimit(nextLimit);
       }
 
-      // 立即更新URL（筛选不需要防抖）
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (newFilters.categoryId) {
-          params.set('categoryId', newFilters.categoryId);
-        }
-        if (newFilters.lowStock) {
-          params.set('lowStock', 'true');
-        }
-        if (newFilters.hasStock) {
-          params.set('hasStock', 'true');
-        }
-        if (newFilters.sortBy) {
-          params.set('sortBy', newFilters.sortBy);
-        }
-        if (newFilters.sortOrder) {
-          params.set('sortOrder', newFilters.sortOrder);
-        }
-        if (newFilters.limit) {
-          params.set('limit', newFilters.limit.toString());
-        }
+      const params = new URLSearchParams();
 
-        router.push(`/inventory?${params.toString()}`);
-      });
+      if (search.trim()) {
+        params.set('search', search.trim());
+      }
+      if (nextCategoryId) {
+        params.set('categoryId', nextCategoryId);
+      }
+      if (nextLowStock) {
+        params.set('lowStock', 'true');
+      }
+      if (nextHasStock) {
+        params.set('hasStock', 'true');
+      }
+      if (nextSortBy) {
+        params.set('sortBy', nextSortBy);
+      }
+      if (nextSortOrder) {
+        params.set('sortOrder', nextSortOrder);
+      }
+
+      params.set('page', '1');
+
+      if (Number.isFinite(nextLimit) && nextLimit > 0) {
+        params.set('limit', nextLimit.toString());
+      }
+
+      router.replace(`/inventory?${params.toString()}`, { scroll: false });
     },
-    [router, search, initialParams]
+    [categoryId, hasStock, limit, lowStock, router, search, sortBy, sortOrder]
   );
 
   // 分页处理
   const handlePageChange = React.useCallback(
     (page: number) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (categoryId) {
-          params.set('categoryId', categoryId);
-        }
-        if (lowStock) {
-          params.set('lowStock', 'true');
-        }
-        if (hasStock) {
-          params.set('hasStock', 'true');
-        }
-        if (sortBy) {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder) {
-          params.set('sortOrder', sortOrder);
-        }
-        if (page > 1) {
-          params.set('page', page.toString());
-        }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
-        }
+      const params = new URLSearchParams();
+      if (search) {
+        params.set('search', search);
+      }
+      if (categoryId) {
+        params.set('categoryId', categoryId);
+      }
+      if (lowStock) {
+        params.set('lowStock', 'true');
+      }
+      if (hasStock) {
+        params.set('hasStock', 'true');
+      }
+      if (sortBy) {
+        params.set('sortBy', sortBy);
+      }
+      if (sortOrder) {
+        params.set('sortOrder', sortOrder);
+      }
+      if (page > 1) {
+        params.set('page', page.toString());
+      }
+      if (Number.isFinite(limit) && limit > 0) {
+        params.set('limit', limit.toString());
+      }
 
-        router.push(`/inventory?${params.toString()}`);
-      });
+      // ✅ 使用 replace 而不是 push，避免输入框失去焦点
+      router.replace(`/inventory?${params.toString()}`, { scroll: false });
     },
     [
       router,
@@ -216,7 +273,7 @@ export function InventoryPageClient({
       hasStock,
       sortBy,
       sortOrder,
-      initialParams.limit,
+      limit,
     ]
   );
 
@@ -229,36 +286,57 @@ export function InventoryPageClient({
     prefetchPrevPage();
   }, [prefetchPrevPage]);
 
+  // ✅ 构建当前查询参数（包含本地状态）
+  const currentQueryParams: InventoryQueryParams = React.useMemo(
+    () => ({
+      search,
+      categoryId,
+      lowStock,
+      hasStock,
+      sortBy,
+      sortOrder,
+      page: initialParams.page,
+      limit,
+    }),
+    [search, categoryId, lowStock, hasStock, sortBy, sortOrder, limit, initialParams]
+  );
+
   // ✅ 使用 Suspense 包装，支持 Streaming 和更好的加载体验
+  // ✅ 修复：使用固定高度容器，避免内容加载时的布局偏移
+  // ✅ 修复：移除外层 padding，让工具栏从顶部开始 sticky
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto">
       <Suspense fallback={<InventoryListSkeleton />}>
         {error ? (
-          <div className="rounded-lg border border-red-200 bg-red-50 p-6 text-center shadow-sm">
-            <p className="text-red-600">
+          <div className="m-6 rounded-lg border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] p-6 text-center shadow-sm">
+            <p className="text-[hsl(var(--color-error))]">
               加载失败: {error instanceof Error ? error.message : '未知错误'}
             </p>
-            <button
+            <Button
+              variant="destructive"
+              className="mt-4"
               onClick={() => window.location.reload()}
-              className="mt-4 rounded bg-red-600 px-4 py-2 text-white hover:bg-red-700"
             >
               重新加载
-            </button>
+            </Button>
           </div>
         ) : (
-          <ERPInventoryList
-            data={{ data: inventories, pagination }}
-            categoryOptions={categoryOptions}
-            queryParams={initialParams}
-            onSearch={handleSearch}
-            onFilter={handleFilter}
-            onPageChange={handlePageChange}
-            onNextPageHover={handleNextPageHover}
-            onPrevPageHover={handlePrevPageHover}
-            isLoading={isLoading}
-          />
+          <div className="min-h-[600px]">
+            <ERPInventoryList
+              data={{ data: inventories, pagination }}
+              categoryOptions={categoryOptions}
+              queryParams={currentQueryParams}
+              onSearch={handleSearch}
+              onFilter={handleFilter}
+              onPageChange={handlePageChange}
+              onNextPageHover={handleNextPageHover}
+              onPrevPageHover={handlePrevPageHover}
+              isLoading={isLoading}
+            />
+          </div>
         )}
       </Suspense>
     </div>
   );
 }
+

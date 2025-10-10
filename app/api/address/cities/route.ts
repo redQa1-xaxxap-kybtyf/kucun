@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { cities } from '@/lib/data/complete-address-data-full';
+import { logger } from '@/lib/logger';
 
 export async function GET(request: NextRequest) {
   try {
@@ -32,7 +33,7 @@ export async function GET(request: NextRequest) {
       data: filteredCities,
     });
   } catch (error) {
-    console.error('获取城市数据失败:', error);
+    logger.error('address-cities', '获取城市数据失败', error);
     return NextResponse.json(
       {
         success: false,

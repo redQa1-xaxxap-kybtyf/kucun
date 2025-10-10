@@ -127,11 +127,11 @@ export const INBOUND_TYPE_VARIANTS: Record<
 
 export const OUTBOUND_TYPE_VARIANTS: Record<
   OutboundType,
-  'default' | 'secondary' | 'destructive' | 'outline'
+  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
 > = {
-  normal_outbound: 'default',
-  sales_outbound: 'secondary',
-  adjust_outbound: 'outline',
+  normal_outbound: 'info',
+  sales_outbound: 'success',
+  adjust_outbound: 'warning',
 };
 
 // 排序选项

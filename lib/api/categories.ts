@@ -1,9 +1,10 @@
-/**
+﻿/**
  * 分类相关的API客户端函数
  * 严格遵循全栈项目统一约定规范
  */
 
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
+import type { CategoryStatus } from '@/lib/validations/category';
 
 // 简化的分类信息（用于关联数据）
 export interface CategorySummary {
@@ -17,15 +18,15 @@ export interface Category {
   id: string;
   name: string;
   code: string;
-  description?: string;
-  parentId?: string;
+  description?: string | null;
+  parentId?: string | null;
   sortOrder: number;
-  status: 'active' | 'inactive';
+  status: CategoryStatus;
   createdAt: string;
   updatedAt: string;
 
   // 关联数据
-  parent?: CategorySummary;
+  parent?: CategorySummary | null;
   children?: CategorySummary[];
   productCount?: number;
 }
@@ -35,24 +36,24 @@ export interface CategoryQueryParams {
   page?: number;
   limit?: number;
   search?: string;
-  parentId?: string;
-  status?: 'active' | 'inactive';
-  sortBy?: 'name' | 'code' | 'sortOrder' | 'createdAt';
+  parentId?: string | null;
+  status?: CategoryStatus | 'all';
+  sortBy?: 'name' | 'code' | 'sortOrder' | 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
 }
 
 // 创建分类数据
 export interface CreateCategoryData {
   name: string;
-  description?: string;
-  parentId?: string;
+  description?: string | null;
+  parentId?: string | null;
   sortOrder?: number;
 }
 
 // 更新分类数据
 export interface UpdateCategoryData extends Partial<CreateCategoryData> {
   id: string;
-  status?: 'active' | 'inactive';
+  status?: CategoryStatus;
 }
 
 // 批量删除分类输入
@@ -170,8 +171,8 @@ export async function getCategory(id: string): Promise<ApiResponse<Category>> {
 export async function createCategory(data: {
   name: string;
   code?: string;
-  description?: string;
-  parentId?: string;
+  description?: string | null;
+  parentId?: string | null;
   sortOrder?: number;
 }): Promise<ApiResponse<Category>> {
   const baseUrl = getApiBaseUrl();
@@ -200,8 +201,8 @@ export async function updateCategory(data: {
   id: string;
   name?: string;
   code?: string;
-  description?: string;
-  parentId?: string;
+  description?: string | null;
+  parentId?: string | null;
   sortOrder?: number;
 }): Promise<ApiResponse<Category>> {
   const { id, ...updateData } = data;
@@ -295,3 +296,7 @@ export async function batchDeleteCategories(
   const result = await response.json();
   return result.data;
 }
+
+
+
+

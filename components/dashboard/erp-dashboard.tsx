@@ -324,46 +324,48 @@ export function ERPDashboard({
         {/* 快速操作和需要关注 - 紧凑布局 */}
         <div className="grid gap-4 lg:grid-cols-2">
           {/* 快速操作 - 紧凑版 */}
-          <div className="bg-card overflow-hidden rounded-lg border shadow-sm">
-            <div className="border-b bg-gradient-to-r from-slate-50 to-gray-50 px-4 py-3">
-              <h3 className="font-semibold text-gray-900">快速操作</h3>
+          <div className="overflow-hidden rounded-lg border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] shadow-[var(--shadow-light)]">
+            <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-primary-light))] px-4 py-3">
+              <h3 className="font-semibold text-[hsl(var(--color-text-primary))]">
+                快速操作
+              </h3>
             </div>
             <div className="p-4">
               <div className="grid grid-cols-2 gap-2">
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-16 flex-col gap-1.5 transition-all hover:border-blue-300 hover:bg-blue-50"
+                  className="h-16 flex-col gap-1.5 text-[hsl(var(--color-text-primary))] transition-all hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))] hover:text-[hsl(var(--color-primary))]"
                   onClick={() => router.push('/products/create')}
                 >
-                  <Package className="h-4 w-4 text-blue-600" />
+                  <Package className="h-4 w-4 text-[hsl(var(--color-primary))]" />
                   <span className="text-xs font-medium">新建产品</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-16 flex-col gap-1.5 transition-all hover:border-green-300 hover:bg-green-50"
+                  className="h-16 flex-col gap-1.5 text-[hsl(var(--color-text-primary))] transition-all hover:border-[hsl(var(--color-success))] hover:bg-[hsl(var(--color-success-light))] hover:text-[hsl(var(--color-success))]"
                   onClick={() => router.push('/sales-orders/create')}
                 >
-                  <ShoppingCart className="h-4 w-4 text-green-600" />
+                  <ShoppingCart className="h-4 w-4 text-[hsl(var(--color-success))]" />
                   <span className="text-xs font-medium">新建订单</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-16 flex-col gap-1.5 transition-all hover:border-purple-300 hover:bg-purple-50"
+                  className="h-16 flex-col gap-1.5 text-[hsl(var(--color-text-primary))] transition-all hover:border-[hsl(var(--color-purple))] hover:bg-[hsl(var(--color-purple-light))] hover:text-[hsl(var(--color-purple))]"
                   onClick={() => router.push('/customers/create')}
                 >
-                  <Users className="h-4 w-4 text-purple-600" />
+                  <Users className="h-4 w-4 text-[hsl(var(--color-purple))]" />
                   <span className="text-xs font-medium">新建客户</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-16 flex-col gap-1.5 transition-all hover:border-yellow-300 hover:bg-yellow-50"
+                  className="h-16 flex-col gap-1.5 text-[hsl(var(--color-text-primary))] transition-all hover:border-[hsl(var(--color-warning))] hover:bg-[hsl(var(--color-warning-light))] hover:text-[hsl(var(--color-warning))]"
                   onClick={() => router.push('/inventory')}
                 >
-                  <Zap className="h-4 w-4 text-yellow-600" />
+                  <Zap className="h-4 w-4 text-[hsl(var(--color-warning))]" />
                   <span className="text-xs font-medium">库存管理</span>
                 </Button>
               </div>
@@ -371,25 +373,27 @@ export function ERPDashboard({
           </div>
 
           {/* 需要关注 - 紧凑版 */}
-          <div className="bg-card overflow-hidden rounded-lg border shadow-sm">
-            <div className="border-b bg-gradient-to-r from-amber-50 to-orange-50 px-4 py-3">
+          <div className="overflow-hidden rounded-lg border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] shadow-[var(--shadow-light)]">
+            <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-warning-light))] px-4 py-3">
               <div className="flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-amber-600" />
-                <h3 className="font-semibold text-gray-900">需要关注</h3>
+                <AlertCircle className="h-4 w-4 text-[hsl(var(--color-warning))]" />
+                <h3 className="font-semibold text-[hsl(var(--color-text-primary))]">
+                  需要关注
+                </h3>
               </div>
             </div>
             <div className="p-4">
               <div className="space-y-2">
-                <div className="flex items-center justify-between rounded-lg border border-yellow-200 bg-yellow-50 p-3 transition-all hover:shadow-sm">
+                <div className="flex items-center justify-between rounded-lg border border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] p-3 transition-all hover:shadow-[var(--shadow-light)]">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-yellow-100">
-                      <Package className="h-4 w-4 text-yellow-600" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]">
+                      <Package className="h-4 w-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-yellow-900">
+                      <div className="text-sm font-medium text-[hsl(var(--color-warning))]">
                         库存不足
                       </div>
-                      <div className="text-xs text-yellow-700">
+                      <div className="text-xs text-[hsl(var(--color-warning-hover))]">
                         {dashboardData.lowStockItems} 个产品
                       </div>
                     </div>
@@ -397,22 +401,22 @@ export function ERPDashboard({
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 text-yellow-700 hover:bg-yellow-100"
+                    className="h-7 text-[hsl(var(--color-warning))] hover:bg-[hsl(var(--color-warning-light))]"
                     onClick={() => router.push('/inventory')}
                   >
                     <Eye className="h-3.5 w-3.5" />
                   </Button>
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-blue-200 bg-blue-50 p-3 transition-all hover:shadow-sm">
+                <div className="flex items-center justify-between rounded-lg border border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))] p-3 transition-all hover:shadow-[var(--shadow-light)]">
                   <div className="flex items-center gap-2">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-100">
-                      <ShoppingCart className="h-4 w-4 text-blue-600" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(var(--color-primary-light))] text-[hsl(var(--color-primary))]">
+                      <ShoppingCart className="h-4 w-4" />
                     </div>
                     <div>
-                      <div className="text-sm font-medium text-blue-900">
+                      <div className="text-sm font-medium text-[hsl(var(--color-primary))]">
                         待处理订单
                       </div>
-                      <div className="text-xs text-blue-700">
+                      <div className="text-xs text-[hsl(var(--color-text-secondary))]">
                         {pendingOrders.length} 个订单
                       </div>
                     </div>
@@ -420,7 +424,7 @@ export function ERPDashboard({
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="h-7 text-blue-700 hover:bg-blue-100"
+                    className="h-7 text-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))]"
                     onClick={() => router.push('/sales-orders')}
                   >
                     <Eye className="h-3.5 w-3.5" />

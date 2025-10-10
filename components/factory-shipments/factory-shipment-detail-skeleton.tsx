@@ -12,13 +12,13 @@ export function FactoryShipmentDetailSkeleton() {
       {/* 页面头部骨架 */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-2">
-          <div className="h-6 w-48 animate-pulse rounded bg-gray-200" />
-          <div className="h-6 w-20 animate-pulse rounded bg-gray-200" />
+          <div className="h-6 w-48 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
+          <div className="h-6 w-20 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
         </div>
         <div className="flex items-center gap-2">
-          <div className="h-9 w-20 animate-pulse rounded bg-gray-200" />
-          <div className="h-9 w-20 animate-pulse rounded bg-gray-200" />
-          <div className="h-9 w-9 animate-pulse rounded bg-gray-200" />
+          <div className="h-9 w-20 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
+          <div className="h-9 w-20 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
+          <div className="h-9 w-9 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
         </div>
       </div>
 
@@ -27,13 +27,13 @@ export function FactoryShipmentDetailSkeleton() {
         <div className="space-y-6 lg:col-span-2">
           {/* 基本信息卡片骨架 */}
           <div className="bg-card rounded-lg border p-6 shadow-sm">
-            <div className="mb-4 h-6 w-32 animate-pulse rounded bg-gray-300" />
+            <div className="mb-4 h-6 w-32 animate-pulse rounded bg-[hsl(var(--color-border-strong))]" />
             <div className="grid grid-cols-2 gap-4">
               {[1, 2, 3, 4, 5, 6].map(i => (
                 <div key={i} className="space-y-2">
-                  <div className="h-4 w-20 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-20 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
                   <div
-                    className="h-5 w-32 animate-pulse rounded bg-gray-300"
+                    className="h-5 w-32 animate-pulse rounded bg-[hsl(var(--color-border-strong))]"
                     style={{ animationDelay: `${i * 30}ms` }}
                   />
                 </div>
@@ -43,7 +43,7 @@ export function FactoryShipmentDetailSkeleton() {
 
           {/* 商品明细卡片骨架 */}
           <div className="bg-card rounded-lg border p-6 shadow-sm">
-            <div className="mb-4 h-6 w-32 animate-pulse rounded bg-gray-300" />
+            <div className="mb-4 h-6 w-32 animate-pulse rounded bg-[hsl(var(--color-border-strong))]" />
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
                 <div
@@ -52,13 +52,13 @@ export function FactoryShipmentDetailSkeleton() {
                 >
                   <div className="flex items-start justify-between">
                     <div className="flex-1 space-y-2">
-                      <div className="h-5 w-48 animate-pulse rounded bg-gray-300" />
-                      <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
-                      <div className="h-4 w-40 animate-pulse rounded bg-gray-200" />
+                      <div className="h-5 w-48 animate-pulse rounded bg-[hsl(var(--color-border-strong))]" />
+                      <div className="h-4 w-32 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
+                      <div className="h-4 w-40 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
                     </div>
                     <div className="space-y-2 text-right">
-                      <div className="h-5 w-24 animate-pulse rounded bg-gray-300" />
-                      <div className="h-4 w-32 animate-pulse rounded bg-gray-200" />
+                      <div className="h-5 w-24 animate-pulse rounded bg-[hsl(var(--color-border-strong))]" />
+                      <div className="h-4 w-32 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
                     </div>
                   </div>
                 </div>
@@ -68,13 +68,13 @@ export function FactoryShipmentDetailSkeleton() {
 
           {/* 临时商品卡片骨架 */}
           <div className="bg-card rounded-lg border p-6 shadow-sm">
-            <div className="mb-4 h-6 w-40 animate-pulse rounded bg-gray-300" />
+            <div className="mb-4 h-6 w-40 animate-pulse rounded bg-[hsl(var(--color-border-strong))]" />
             <div className="space-y-3">
               {[1, 2].map(i => (
                 <div key={i} className="space-y-2">
-                  <div className="h-4 w-full animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-full animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
                   <div
-                    className="h-4 w-3/4 animate-pulse rounded bg-gray-200"
+                    className="h-4 w-3/4 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]"
                     style={{ animationDelay: `${i * 30}ms` }}
                   />
                 </div>
@@ -87,13 +87,13 @@ export function FactoryShipmentDetailSkeleton() {
         <div className="space-y-6">
           {/* 金额汇总卡片骨架 */}
           <div className="bg-card rounded-lg border p-6 shadow-sm">
-            <div className="mb-4 h-6 w-32 animate-pulse rounded bg-gray-300" />
+            <div className="mb-4 h-6 w-32 animate-pulse rounded bg-[hsl(var(--color-border-strong))]" />
             <div className="space-y-4">
               {[1, 2, 3].map(i => (
                 <div key={i} className="flex justify-between">
-                  <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                  <div className="h-4 w-24 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
                   <div
-                    className="h-4 w-32 animate-pulse rounded bg-gray-300"
+                    className="h-4 w-32 animate-pulse rounded bg-[hsl(var(--color-border-strong))]"
                     style={{ animationDelay: `${i * 30}ms` }}
                   />
                 </div>
@@ -103,15 +103,15 @@ export function FactoryShipmentDetailSkeleton() {
 
           {/* 操作历史卡片骨架 */}
           <div className="bg-card rounded-lg border p-6 shadow-sm">
-            <div className="mb-4 h-6 w-32 animate-pulse rounded bg-gray-300" />
+            <div className="mb-4 h-6 w-32 animate-pulse rounded bg-[hsl(var(--color-border-strong))]" />
             <div className="space-y-3">
               {[1, 2].map(i => (
                 <div key={i} className="flex items-center space-x-3">
-                  <div className="h-2 w-2 animate-pulse rounded-full bg-blue-300" />
+                  <div className="h-2 w-2 animate-pulse rounded-full bg-[hsl(var(--color-primary))]" />
                   <div className="flex-1 space-y-1">
-                    <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
+                    <div className="h-4 w-24 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
                     <div
-                      className="h-3 w-32 animate-pulse rounded bg-gray-200"
+                      className="h-3 w-32 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]"
                       style={{ animationDelay: `${i * 30}ms` }}
                     />
                   </div>

@@ -12,6 +12,7 @@ import {
 } from '@/lib/api/batch-specification-handlers';
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
+import { logger } from '@/lib/logger';
 import {
   batchSpecificationQuerySchema,
   createBatchSpecificationSchema,
@@ -94,7 +95,7 @@ async function processBatchSpecifications(specifications: unknown[]) {
       const result = await upsertBatchSpecification(validatedData);
       results.push(result);
     } catch (error) {
-      console.error(`处理批次规格参数失败:`, error);
+      logger.error('batch-specifications', '处理批次规格参数失败', error);
       // 继续处理其他记录，不中断整个批量操作
     }
   }

@@ -12,6 +12,7 @@ import {
   verifyCaptcha,
 } from '@/lib/services/captcha-service';
 import { verifyCaptchaSchema } from '@/lib/validations/captcha';
+import { logger } from '@/lib/logger';
 
 /**
  * GET - 生成新的验证码
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
       }
     );
   } catch (error) {
-    console.error('生成验证码失败:', error);
+    logger.error('captcha', '生成验证码失败', error);
 
     return NextResponse.json(
       { success: false, error: '生成验证码失败' },
@@ -60,13 +61,13 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     const body = await request.json();
-    console.log('[验证码API] 收到验证请求');
+    logger.info('captcha', '收到验证请求');
 
     // 使用 Zod schema 验证输入
     const validationResult = verifyCaptchaSchema.safeParse(body);
 
     if (!validationResult.success) {
-      console.log('[验证码API] 参数验证失败');
+      logger.warn('captcha', '参数验证失败');
       return NextResponse.json(
         {
           success: false,
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 
     const { sessionId, captcha, deleteAfterVerify } = validationResult.data;
-    console.log('[验证码API] 开始验证会话:', sessionId);
+    logger.debug('captcha', '开始验证会话', undefined, { sessionId });
 
     // 获取客户端IP地址
     const clientIp =
@@ -95,20 +96,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
 
     if (result.success) {
-      console.log('[验证码API] 验证成功');
+      logger.info('captcha', '验证成功', undefined, { sessionId });
       return NextResponse.json({
         success: true,
         message: '验证码验证成功',
       });
     } else {
-      console.log('[验证码API] 验证失败:', result.error);
+      logger.warn('captcha', '验证失败', undefined, {
+        sessionId,
+        reason: result.error,
+      });
       return NextResponse.json(
         { success: false, error: result.error },
         { status: 400 }
       );
     }
   } catch (error) {
-    console.error('[验证码API] 异常:', error);
+    logger.error('captcha', '验证验证码异常', error);
 
     return NextResponse.json(
       { success: false, error: '验证验证码失败' },

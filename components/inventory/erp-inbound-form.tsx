@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   InboundOptionalFields,
@@ -17,6 +17,7 @@ import {
   useProductSelection,
 } from '@/hooks/use-inbound-form';
 import { useInboundFormSubmit } from '@/hooks/use-inbound-form-submit';
+import { type ProductOption } from '@/lib/types/inbound';
 
 interface ERPInboundFormProps {
   onSuccess?: () => void;
@@ -28,11 +29,11 @@ interface ERPInboundFormProps {
  * ✅ 符合产品模块UI风格规范
  */
 export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
+  const [showProductPrompt, setShowProductPrompt] = useState(false);
+
   // 使用自定义Hook管理表单状态
   const {
     form,
-    isSubmitting,
-    setIsSubmitting,
     selectedProduct,
     setSelectedProduct,
     createMutation,
@@ -48,11 +49,48 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
   );
 
   // 表单提交逻辑
-  const { onSubmit } = useInboundFormSubmit({
+  const { handleSubmit: submitInbound, isSubmitting } = useInboundFormSubmit({
     createMutation,
-    setIsSubmitting,
     onSuccess,
   });
+
+  const handleFormSubmit = form.handleSubmit(
+    async data => {
+      setShowProductPrompt(false);
+      await submitInbound(data);
+    },
+    errors => {
+      if (errors.productId) {
+        setShowProductPrompt(true);
+        form.setFocus('productId');
+      } else {
+        setShowProductPrompt(false);
+      }
+    }
+  );
+
+  const handleToolbarSubmit = async () => {
+    if (!form.getValues('productId')) {
+      setShowProductPrompt(true);
+      form.setFocus('productId');
+    }
+
+    try {
+      await handleFormSubmit();
+    } catch (_) {
+      // 表单校验失败时 handleSubmit 会抛出异常，此处吞掉即可
+    }
+  };
+
+  const handleProductSelectWithPrompt = (product: ProductOption) => {
+    setShowProductPrompt(false);
+    handleProductSelect(product);
+  };
+
+  const handleFormReset = () => {
+    setShowProductPrompt(false);
+    handleReset();
+  };
 
   // 实时计算并更新最终片数
   useEffect(() => {
@@ -63,63 +101,50 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         watchedPiecesPerUnit
       );
       form.setValue('quantity', finalQuantity);
+    } else {
+      form.setValue('quantity', 0);
     }
   }, [watchedInputQuantity, watchedInputUnit, watchedPiecesPerUnit, form]);
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
-      <div className="space-y-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="space-y-4">
         {/* 页面标题卡片 */}
         <InboundFormToolbar
           isSubmitting={isSubmitting}
-          onReset={handleReset}
-          onSubmit={form.handleSubmit(onSubmit)}
+          onReset={handleFormReset}
+          onSubmit={handleToolbarSubmit}
         />
 
         {/* 表单内容区域 */}
-        <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+        <div className="overflow-hidden rounded-lg border bg-white shadow-md">
           <div className="p-6">
             <Form {...form}>
               <form
-                onSubmit={form.handleSubmit(onSubmit)}
+                onSubmit={handleFormSubmit}
                 className="space-y-6"
               >
                 {/* 产品选择区域 */}
-                <InboundProductSection
-                  form={form}
-                  selectedProduct={selectedProduct}
-                  onProductSelect={handleProductSelect}
-                />
+                <div className="rounded-md border border-blue-200 bg-blue-50/50 p-4">
+                  <InboundProductSection
+                    form={form}
+                    selectedProduct={selectedProduct}
+                    onProductSelect={handleProductSelectWithPrompt}
+                    showProductPrompt={showProductPrompt}
+                  />
+                </div>
 
                 {/* 入库数量信息 */}
-                <div className="space-y-4">
-                  <h3 className="text-base font-medium text-gray-900">
-                    入库数量
-                  </h3>
-                  <InboundQuantityFields form={form} />
-                </div>
+                <InboundQuantityFields form={form} />
 
                 {/* 产品规格信息 */}
-                <div className="space-y-4">
-                  <h3 className="text-base font-medium text-gray-900">
-                    产品规格
-                  </h3>
-                  <InboundSpecificationFields form={form} />
-                </div>
+                <InboundSpecificationFields form={form} />
 
                 {/* 入库原因 */}
-                <div className="space-y-4">
-                  <h3 className="text-base font-medium text-gray-900">
-                    入库原因
-                  </h3>
-                  <InboundReasonField form={form} />
-                </div>
+                <InboundReasonField form={form} />
 
                 {/* 可选信息 */}
-                <div className="space-y-4">
-                  <h3 className="text-base font-medium text-gray-900">
-                    可选信息
-                  </h3>
+                <div className="border-t pt-4">
                   <InboundOptionalFields form={form} />
                 </div>
               </form>
@@ -130,3 +155,6 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     </div>
   );
 }
+
+
+

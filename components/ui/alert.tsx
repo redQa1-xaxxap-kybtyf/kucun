@@ -4,13 +4,19 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 const alertVariants = cva(
-  'relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground',
+  'relative w-full rounded-[var(--radius-medium)] border p-4 shadow-[var(--shadow-light)] [&>svg~*]:pl-7 [&>svg+div]:translate-y-[-3px] [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4',
   {
     variants: {
       variant: {
-        default: 'bg-background text-foreground',
+        default:
+          'border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] text-[hsl(var(--color-text-primary))] [&>svg]:text-[hsl(var(--color-text-secondary))]',
         destructive:
-          'border-destructive/50 text-destructive dark:border-destructive [&>svg]:text-destructive',
+          'border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] text-[hsl(var(--color-error))] [&>svg]:text-[hsl(var(--color-error))]',
+        success:
+          'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))] [&>svg]:text-[hsl(var(--color-success))]',
+        warning:
+          'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))] [&>svg]:text-[hsl(var(--color-warning))]',
+        info: 'border-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))] [&>svg]:text-[hsl(var(--color-info))]',
       },
     },
     defaultVariants: {

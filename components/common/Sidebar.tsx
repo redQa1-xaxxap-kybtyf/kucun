@@ -57,10 +57,8 @@ function SidebarComponent({
   // 检查路径是否匹配 (使用 useCallback 优化)
   const isPathActive = React.useCallback(
     (href: string) => {
-      if (href === '/dashboard') {
-        return pathname === '/dashboard';
-      }
-      return pathname.startsWith(href);
+      // 精确匹配：pathname 必须完全等于 href，或者以 href/ 开头
+      return pathname === href || pathname.startsWith(href + '/');
     },
     [pathname]
   );
@@ -68,19 +66,21 @@ function SidebarComponent({
   return (
     <div
       className={cn(
-        'bg-background flex h-full flex-col border-r transition-all duration-300',
+        'flex h-full flex-col border-r border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-bg))] text-[hsl(var(--sidebar-text))] shadow-sm transition-all duration-300',
         state.isCollapsed ? 'w-16' : 'w-64',
         className
       )}
     >
       {/* 侧边栏头部 */}
-      <div className="flex h-16 items-center justify-between border-b px-4">
+      <div className="flex h-16 items-center justify-between border-b border-[hsl(var(--sidebar-border))] px-4">
         {!state.isCollapsed && (
           <div className="flex items-center space-x-2">
-            <div className="bg-primary flex h-8 w-8 items-center justify-center rounded">
-              <Package className="text-primary-foreground h-4 w-4" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-md bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-sm">
+              <Package className="h-4 w-4" />
             </div>
-            <span className="text-lg font-semibold">库存管理</span>
+            <span className="text-lg font-semibold text-[hsl(var(--sidebar-text))]">
+              库存管理
+            </span>
           </div>
         )}
 
@@ -88,7 +88,7 @@ function SidebarComponent({
           variant="ghost"
           size="sm"
           onClick={state.toggle}
-          className="h-8 w-8 p-0"
+          className="h-8 w-8 p-0 text-[hsl(var(--sidebar-text-muted))] hover:!bg-[hsl(var(--sidebar-hover))] hover:text-[hsl(var(--sidebar-hover-foreground))]"
           aria-label={state.isCollapsed ? '展开侧边栏' : '收起侧边栏'}
         >
           {state.isCollapsed ? (

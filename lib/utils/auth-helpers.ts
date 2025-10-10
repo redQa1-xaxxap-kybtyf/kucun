@@ -50,14 +50,9 @@ export async function validateUserLogin(params: {
       };
     }
 
-    // 2. 查找用户（支持用户名或邮箱登录）
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { username },
-          { email: username }, // 兼容邮箱登录
-        ],
-      },
+    // 2. 查找用户（仅支持用户名登录）
+    const user = await prisma.user.findUnique({
+      where: { username },
       select: {
         id: true,
         email: true,
@@ -95,7 +90,7 @@ export async function validateUserLogin(params: {
 
       return {
         success: false,
-        error: '用户账户已被禁用',
+        error: '用户名或密码错误',
       };
     }
 
@@ -158,10 +153,13 @@ export function extractRequestInfo(request: Request): {
   ipAddress: string;
   userAgent: string | null;
 } {
-  const ipAddress =
-    request.headers.get('x-forwarded-for') ||
-    request.headers.get('x-real-ip') ||
-    '127.0.0.1';
+  const rawForwarded = request.headers.get('x-forwarded-for');
+  const primaryForwardedIp = rawForwarded
+    ?.split(',')
+    ?.map(value => value.trim())
+    ?.find(Boolean);
+  const fallbackIp = request.headers.get('x-real-ip');
+  const ipAddress = primaryForwardedIp || fallbackIp || '127.0.0.1';
   const userAgent = request.headers.get('user-agent');
 
   return { ipAddress, userAgent };

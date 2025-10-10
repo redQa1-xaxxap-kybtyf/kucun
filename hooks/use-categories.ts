@@ -18,6 +18,7 @@ import {
 } from '@/lib/api/categories';
 import { queryKeys } from '@/lib/queryKeys';
 import type { PaginatedResponse } from '@/lib/types/api';
+import { showError, showSuccess } from '@/lib/utils/toast-helper';
 
 interface DeleteDialogState {
   open: boolean;
@@ -71,8 +72,8 @@ export function useCategories(
     queryKey: queryKeys.categories.list(queryParams),
     queryFn: () => getCategories(queryParams),
     initialData, // 使用服务端预取的数据
-    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
-    refetchOnMount: false, // 避免重复请求
+    staleTime: 0, // 数据立即过期，确保能及时刷新
+    refetchOnMount: true, // 重新挂载时刷新数据
     refetchOnWindowFocus: false,
     placeholderData: previousData => previousData, // 保持上一次数据
   });

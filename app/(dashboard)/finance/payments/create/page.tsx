@@ -196,18 +196,18 @@ export default function CreatePaymentPage() {
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
+          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-600 shadow-lg shadow-green-600/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-success))] shadow-lg shadow-green-600/30">
                   <Receipt className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
                     创建收款记录
                   </h1>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
                     填写收款记录详细信息，记录客户付款
                   </p>
                 </div>
@@ -216,7 +216,7 @@ export default function CreatePaymentPage() {
                 variant="outline"
                 size="lg"
                 asChild
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
               >
                 <Link href="/finance/payments">
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -230,8 +230,8 @@ export default function CreatePaymentPage() {
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* 主要表单 */}
           <div className="lg:col-span-2">
-            <Card className="shadow-md shadow-gray-200/50">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+            <Card>
+              <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
                   收款信息
@@ -269,7 +269,7 @@ export default function CreatePaymentPage() {
                                 <SelectItem key={order.id} value={order.id}>
                                   <div className="flex w-full items-center justify-between">
                                     <span>{order.orderNumber}</span>
-                                    <span className="ml-2 text-sm text-gray-500">
+                                    <span className="ml-2 text-sm text-[hsl(var(--color-text-tertiary))]">
                                       {order.customer.name} - 待收：
                                       {formatCurrency(order.remainingAmount)}
                                     </span>
@@ -425,7 +425,7 @@ export default function CreatePaymentPage() {
                         type="submit"
                         disabled={createMutation.isPending}
                         size="lg"
-                        className="h-11 flex-1 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                        className="h-11 flex-1 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                       >
                         <Save className="mr-2 h-4 w-4" />
                         {createMutation.isPending
@@ -437,7 +437,7 @@ export default function CreatePaymentPage() {
                         variant="outline"
                         size="lg"
                         asChild
-                        className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                        className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                       >
                         <Link href="/finance/payments">取消</Link>
                       </Button>
@@ -452,8 +452,8 @@ export default function CreatePaymentPage() {
           <div className="space-y-4">
             {/* 订单信息 */}
             {salesOrder && (
-              <Card className="shadow-md shadow-gray-200/50">
-                <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+              <Card>
+                <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
                   <CardTitle className="flex items-center gap-2">
                     <Package className="h-5 w-5" />
                     订单信息
@@ -461,7 +461,7 @@ export default function CreatePaymentPage() {
                 </CardHeader>
                 <CardContent className="space-y-4 pt-6">
                   <div>
-                    <label className="text-sm font-medium text-gray-500">
+                    <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                       订单号
                     </label>
                     <p className="text-sm font-medium">
@@ -470,7 +470,7 @@ export default function CreatePaymentPage() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-500">
+                    <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                       订单金额
                     </label>
                     <p className="text-lg font-bold">
@@ -479,19 +479,19 @@ export default function CreatePaymentPage() {
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-500">
+                    <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                       已收金额
                     </label>
-                    <p className="text-sm text-green-600">
+                    <p className="text-sm text-[hsl(var(--color-success))]">
                       {formatCurrency(salesOrder.paidAmount)}
                     </p>
                   </div>
 
                   <div>
-                    <label className="text-sm font-medium text-gray-500">
+                    <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                       待收金额
                     </label>
-                    <p className="text-lg font-bold text-orange-600">
+                    <p className="text-lg font-bold text-[hsl(var(--color-warning))]">
                       {formatCurrency(salesOrder.remainingAmount)}
                     </p>
                   </div>
@@ -499,7 +499,7 @@ export default function CreatePaymentPage() {
                   <Separator />
 
                   <div>
-                    <label className="text-sm font-medium text-gray-500">
+                    <label className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
                       客户信息
                     </label>
                     <div className="mt-1 space-y-1">
@@ -507,12 +507,12 @@ export default function CreatePaymentPage() {
                         {salesOrder.customer.name}
                       </p>
                       {salesOrder.customer.phone && (
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-[hsl(var(--color-text-secondary))]">
                           电话：{salesOrder.customer.phone}
                         </p>
                       )}
                       {salesOrder.customer.email && (
-                        <p className="text-sm text-gray-600">
+                        <p className="text-sm text-[hsl(var(--color-text-secondary))]">
                           邮箱：{salesOrder.customer.email}
                         </p>
                       )}
@@ -523,21 +523,21 @@ export default function CreatePaymentPage() {
             )}
 
             {/* 收款提示 */}
-            <Card className="shadow-md shadow-gray-200/50">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+            <Card>
+              <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
                 <CardTitle>收款提示</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 pt-6 text-sm">
                 <div className="flex items-start gap-2">
-                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary-light))]0" />
                   <p>请确认收款金额与实际到账金额一致</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary-light))]0" />
                   <p>建议保留收款凭证并填写收据号码</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-blue-500" />
+                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary-light))]0" />
                   <p>收款记录创建后可在列表中查看和管理</p>
                 </div>
               </CardContent>

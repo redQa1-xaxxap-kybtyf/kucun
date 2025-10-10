@@ -39,6 +39,7 @@ const protectedPaths = [
   '/api/product-variants',
   '/api/seed-test-data',
   '/api/notifications', // 通知 API
+  '/api/price-history', // 价格历史 API
 ];
 
 // 需要管理员权限的路径

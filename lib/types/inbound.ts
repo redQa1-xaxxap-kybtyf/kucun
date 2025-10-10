@@ -68,8 +68,11 @@ export interface InboundRecord {
 
 // 创建入库记录的请求数据
 export interface CreateInboundRequest {
+  idempotencyKey: string;
   productId: string;
   variantId?: string; // 产品变体ID
+  inputQuantity: number;
+  inputUnit: InboundUnit;
   quantity: number;
   reason: InboundReason;
   remarks?: string;
@@ -82,8 +85,8 @@ export interface CreateInboundRequest {
   location?: string; // 存储位置
 
   // 批次规格参数（入库时确定）
-  piecesPerUnit?: number; // 每单位片数
-  weight?: number; // 产品重量(kg)
+  piecesPerUnit: number; // 每单位片数
+  weight: number; // 产品重量(kg)
   thickness?: number; // 产品厚度(mm)
 }
 
@@ -153,16 +156,16 @@ export type InboundUnit = 'pieces' | 'units';
 export interface InboundFormData {
   productId: string;
   variantId?: string; // 产品变体ID
-  inputQuantity: number; // 用户输入的数量
+  inputQuantity?: number; // 用户输入的数量
   inputUnit: InboundUnit; // 用户选择的单位
-  quantity: number; // 最终存储的片数
+  quantity?: number; // 最终存储的片数
   reason: InboundReason;
   remarks?: string;
 
   // 批次管理字段
   batchNumber?: string; // 批次号
-  piecesPerUnit: number; // 每单位片数（入库时确定）
-  weight: number; // 产品重量（入库时确定）
+  piecesPerUnit?: number; // 每单位片数（入库时确定）
+  weight?: number; // 产品重量（入库时确定）
   unitCost?: number; // 单位成本
   location?: string; // 存储位置
 }

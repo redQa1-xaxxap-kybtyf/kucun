@@ -83,7 +83,6 @@ export function CategoryList({
               />
             </TableHead>
             <TableHead>分类名称</TableHead>
-            <TableHead>分类编码</TableHead>
             <TableHead>产品数量</TableHead>
             <TableHead>状态</TableHead>
             <TableHead>创建时间</TableHead>
@@ -106,10 +105,32 @@ export function CategoryList({
                 />
               </TableCell>
               <TableCell className="font-medium text-gray-900">
-                {category.name}
-              </TableCell>
-              <TableCell className="font-mono text-sm text-blue-600">
-                {category.code}
+                <div className="flex items-center gap-2">
+                  {/* 层级缩进指示器 */}
+                  {category.parent && (
+                    <span className="text-gray-400">
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path d="M9 5l7 7-7 7" />
+                      </svg>
+                    </span>
+                  )}
+                  <div className="flex flex-col">
+                    <span className="font-medium">{category.name}</span>
+                    {category.parent && (
+                      <span className="text-xs text-gray-500">
+                        父级: {category.parent.name}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </TableCell>
               <TableCell className="text-gray-600">
                 {category.productCount || 0}

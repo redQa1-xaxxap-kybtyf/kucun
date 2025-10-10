@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 
-import { prisma } from '@/lib/db';
+import { getStatementsList } from '@/lib/services/finance-statistics';
 
 import { StatementsPageClient } from './page-client';
 
@@ -17,6 +17,7 @@ export const revalidate = 0;
 
 /**
  * 服务器端获取往来账单数据
+ * 修复：使用与API相同的服务函数，确保数据一致性
  */
 async function getStatementsData(searchParams: {
   page?: string;
@@ -26,67 +27,22 @@ async function getStatementsData(searchParams: {
   sortBy?: string;
   sortOrder?: string;
 }) {
-  const page = parseInt(searchParams.page || '1', 10);
-  const limit = parseInt(searchParams.limit || '20', 10);
-  const skip = (page - 1) * limit;
-  const search = searchParams.search || '';
-  const type = searchParams.type || 'customer';
-  const sortBy = searchParams.sortBy || 'totalAmount';
-  const sortOrder = searchParams.sortOrder || 'desc';
-
-  // 构建查询条件
-  const whereConditions: Record<string, unknown> = {
-    entityType: type,
+  const queryParams = {
+    page: parseInt(searchParams.page || '1', 10),
+    limit: parseInt(searchParams.limit || '20', 10),
+    search: searchParams.search || '',
+    type: (searchParams.type as 'customer' | 'supplier') || 'customer',
+    sortBy: searchParams.sortBy || 'totalAmount',
+    sortOrder: (searchParams.sortOrder as 'asc' | 'desc') || 'desc',
   };
 
-  if (search) {
-    whereConditions.entityName = { contains: search };
-  }
-
-  // 查询往来账单
-  const [statements, total] = await Promise.all([
-    prisma.accountStatement.findMany({
-      where: whereConditions,
-      orderBy: {
-        [sortBy]: sortOrder,
-      },
-      skip,
-      take: limit,
-    }),
-    prisma.accountStatement.count({ where: whereConditions }),
-  ]);
-
-  // 计算统计数据
-  const allStatements = await prisma.accountStatement.findMany({
-    where: whereConditions,
-    select: {
-      totalAmount: true,
-      paidAmount: true,
-      pendingAmount: true,
-      overdueAmount: true,
-    },
-  });
-
-  const statistics = {
-    totalReceivable: allStatements
-      .filter((_, i) => type === 'customer')
-      .reduce((sum, s) => sum + Number(s.pendingAmount), 0),
-    totalPayable: allStatements
-      .filter((_, i) => type === 'supplier')
-      .reduce((sum, s) => sum + Number(s.pendingAmount), 0),
-    totalCustomers: type === 'customer' ? total : 0,
-    totalSuppliers: type === 'supplier' ? total : 0,
-  };
+  // 使用与API相同的服务函数
+  const result = await getStatementsList(queryParams);
 
   return {
-    statements,
-    statistics,
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+    statements: result.data,
+    statistics: result.summary,
+    pagination: result.pagination,
   };
 }
 

@@ -4,7 +4,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import React from 'react';
 
 import { getAdjustmentQueryOptions } from '@/lib/api/adjustments';
 import type {
@@ -12,62 +12,117 @@ import type {
   InventoryAdjustment,
 } from '@/lib/types/inventory';
 
-export function useAdjustmentRecords() {
-  // 查询参数状态
-  const [queryParams, setQueryParams] = useState<AdjustmentQueryParams>({
-    page: 1,
-    limit: 20,
-    sortBy: 'createdAt',
-    sortOrder: 'desc',
+const DEFAULT_QUERY_PARAMS: AdjustmentQueryParams = {
+  page: 1,
+  limit: 20,
+  sortBy: 'createdAt',
+  sortOrder: 'desc',
+};
+
+function normalizeQueryParams(
+  params: AdjustmentQueryParams
+): AdjustmentQueryParams {
+  const next: AdjustmentQueryParams = { ...params };
+
+  if (!next.page || next.page < 1) {
+    next.page = DEFAULT_QUERY_PARAMS.page;
+  }
+
+  if (!next.limit || next.limit < 1) {
+    next.limit = DEFAULT_QUERY_PARAMS.limit;
+  }
+
+  if (typeof next.search === 'string' && next.search.trim() === '') {
+    delete next.search;
+  }
+
+  (['productId', 'variantId', 'batchNumber', 'reason', 'status', 'operatorId', 'startDate', 'endDate'] as const).forEach(
+    key => {
+      const value = next[key];
+      if (typeof value === 'string' && value.trim() === '') {
+        delete next[key];
+      }
+    }
+  );
+
+  return next;
+}
+
+function sanitizePartialParams(
+  params: Partial<AdjustmentQueryParams>
+): Partial<AdjustmentQueryParams> {
+  const sanitized: Partial<AdjustmentQueryParams> = {};
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (typeof value === 'string') {
+      const trimmed = value.trim();
+      sanitized[key as keyof AdjustmentQueryParams] =
+        trimmed === '' ? undefined : trimmed;
+    } else {
+      sanitized[key as keyof AdjustmentQueryParams] = value;
+    }
   });
 
-  // 详情对话框状态
-  const [selectedAdjustment, setSelectedAdjustment] =
-    useState<InventoryAdjustment | null>(null);
-  const [showDetailDialog, setShowDetailDialog] = useState(false);
+  return sanitized;
+}
 
-  // 查询调整记录
+export function useAdjustmentRecords(
+  initialParams: AdjustmentQueryParams = DEFAULT_QUERY_PARAMS
+) {
+  const mergedInitial = React.useMemo(
+    () => normalizeQueryParams({ ...DEFAULT_QUERY_PARAMS, ...initialParams }),
+    [initialParams]
+  );
+
+  const defaultParamsRef = React.useRef(mergedInitial);
+
+  const [queryParams, setQueryParams] =
+    React.useState<AdjustmentQueryParams>(mergedInitial);
+  const [selectedAdjustment, setSelectedAdjustment] =
+    React.useState<InventoryAdjustment | null>(null);
+  const [showDetailDialog, setShowDetailDialog] = React.useState(false);
+
+  React.useEffect(() => {
+    const next = normalizeQueryParams({ ...mergedInitial });
+    defaultParamsRef.current = next;
+    setQueryParams(next);
+  }, [mergedInitial]);
+
   const { data, isLoading, error, refetch } = useQuery(
     getAdjustmentQueryOptions(queryParams)
   );
 
   const adjustments = data?.adjustments || [];
   const pagination = data?.pagination || {
-    page: 1,
-    limit: 20,
+    page: queryParams.page ?? DEFAULT_QUERY_PARAMS.page!,
+    limit: queryParams.limit ?? DEFAULT_QUERY_PARAMS.limit!,
     total: 0,
     totalPages: 0,
   };
 
-  // 更新查询参数
   const updateQueryParams = (newParams: Partial<AdjustmentQueryParams>) => {
-    setQueryParams(prev => ({
-      ...prev,
-      ...newParams,
-    }));
+    const sanitized = sanitizePartialParams(newParams);
+
+    setQueryParams(prev =>
+      normalizeQueryParams({
+        ...prev,
+        ...sanitized,
+      })
+    );
   };
 
-  // 重置筛选条件
   const resetFilters = () => {
-    setQueryParams({
-      page: 1,
-      limit: 20,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    });
+    setQueryParams({ ...defaultParamsRef.current });
   };
 
-  // 处理分页变更
   const handlePageChange = (page: number) => {
     updateQueryParams({ page });
   };
 
-  // 处理页面大小变更
   const handlePageSizeChange = (limit: number) => {
     updateQueryParams({ page: 1, limit });
   };
 
-  // 处理排序变更
   const handleSortChange = (
     sortBy: AdjustmentQueryParams['sortBy'],
     sortOrder: 'asc' | 'desc'
@@ -75,31 +130,24 @@ export function useAdjustmentRecords() {
     updateQueryParams({ sortBy, sortOrder, page: 1 });
   };
 
-  // 查看详情
   const viewDetail = (adjustment: InventoryAdjustment) => {
     setSelectedAdjustment(adjustment);
     setShowDetailDialog(true);
   };
 
-  // 关闭详情对话框
   const closeDetailDialog = () => {
     setShowDetailDialog(false);
     setSelectedAdjustment(null);
   };
 
   return {
-    // 数据
     adjustments,
     pagination,
     isLoading,
     error,
     queryParams,
-
-    // 详情对话框
     selectedAdjustment,
     showDetailDialog,
-
-    // 操作
     updateQueryParams,
     resetFilters,
     handlePageChange,
@@ -110,3 +158,4 @@ export function useAdjustmentRecords() {
     refetch,
   };
 }
+

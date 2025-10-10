@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { productVariantGenerateSkuSchema } from '@/lib/validations/product';
@@ -100,7 +101,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('生成SKU错误:', error);
+    logger.error('product-variants', '生成SKU失败', error);
 
     return NextResponse.json(
       {
@@ -227,7 +228,7 @@ export const PUT = withAuth(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('批量生成SKU错误:', error);
+    logger.error('product-variants', '批量生成SKU失败', error);
 
     return NextResponse.json(
       {

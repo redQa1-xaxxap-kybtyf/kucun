@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
@@ -14,8 +14,16 @@ import {
 } from '@/components/ui/address-selector';
 import { Button } from '@/components/ui/button';
 import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
+import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -29,10 +37,17 @@ import {
   customerQueryKeys,
   updateCustomer,
 } from '@/lib/api/customers';
-import type { Customer, CustomerUpdateInput } from '@/lib/types/customer';
+import type {
+  Customer,
+  CustomerExtendedInfo,
+  CustomerUpdateInput,
+} from '@/lib/types/customer';
 import {
   customerCreateSchema as CreateCustomerSchema,
   type CustomerCreateFormData as CreateCustomerData,
+  customerCreateDefaults,
+  parseExtendedInfo,
+  processExtendedInfo,
 } from '@/lib/validations/customer';
 
 interface ERPCustomerFormProps {
@@ -43,8 +58,8 @@ interface ERPCustomerFormProps {
 }
 
 /**
- * ERP风格的客户表单组件
- * 采用紧凑布局，符合中国ERP系统用户习惯
+ * 客户表单组件
+ * ✅ 统一 UI 样式，与产品管理表单保持一致
  */
 export function ERPCustomerForm({
   mode = 'create',
@@ -63,14 +78,16 @@ export function ERPCustomerForm({
   const form = useForm<CreateCustomerData>({
     resolver: zodResolver(CreateCustomerSchema),
     defaultValues: {
+      ...customerCreateDefaults,
       name: initialData?.name || '',
       phone: initialData?.phone || '',
       address: initialData?.address || '',
-      extendedInfo:
-        typeof initialData?.extendedInfo === 'object' &&
-        initialData?.extendedInfo !== null
-          ? initialData.extendedInfo
-          : {},
+      extendedInfo: {
+        ...(customerCreateDefaults.extendedInfo ?? {}),
+        ...(typeof initialData?.extendedInfo === 'string'
+          ? parseExtendedInfo(initialData.extendedInfo)
+          : {}),
+      },
     },
   });
 
@@ -82,6 +99,24 @@ export function ERPCustomerForm({
       }
     };
   }, []);
+
+  const normalizeExtendedInfo = (
+    extendedInfo?: CreateCustomerData['extendedInfo']
+  ): CustomerExtendedInfo | undefined => {
+    if (!extendedInfo) {
+      return undefined;
+    }
+    const processed = processExtendedInfo(extendedInfo);
+    if (!processed) {
+      return undefined;
+    }
+    try {
+      return JSON.parse(processed) as CustomerExtendedInfo;
+    } catch {
+      // JSON.parse 失败时不返回扩展信息，避免中断提交流程
+      return undefined;
+    }
+  };
 
   // 创建客户Mutation
   const createMutation = useMutation({
@@ -147,6 +182,8 @@ export function ERPCustomerForm({
 
   // 表单提交处理
   const onSubmit = (data: CreateCustomerData) => {
+    const extendedInfoPayload = normalizeExtendedInfo(data.extendedInfo);
+
     if (mode === 'edit' && initialData) {
       // 编辑模式：转换为更新数据格式
       const updateData: CustomerUpdateInput = {
@@ -159,7 +196,7 @@ export function ERPCustomerForm({
             : data.address
               ? formatAddressString(data.address as AddressData)
               : '',
-        extendedInfo: data.extendedInfo || {},
+        extendedInfo: extendedInfoPayload,
       };
       updateMutation.mutate(updateData);
     } else {
@@ -173,7 +210,7 @@ export function ERPCustomerForm({
             : data.address
               ? formatAddressString(data.address as AddressData)
               : '',
-        extendedInfo: data.extendedInfo || {},
+        extendedInfo: extendedInfoPayload,
       };
       createMutation.mutate(createData);
     }
@@ -188,52 +225,74 @@ export function ERPCustomerForm({
     }
   };
 
+  const isEdit = mode === 'edit';
+  const isLoading = createMutation.isPending || updateMutation.isPending;
+
   return (
-    <div className="bg-card rounded border">
-      {/* ERP标准工具栏 */}
-      <div className="bg-muted/30 border-b px-3 py-2">
-        <div className="flex items-center justify-between">
-          <h3 className="text-sm font-medium">
-            {mode === 'create' ? '新建客户' : '编辑客户'}
-          </h3>
-          <div className="flex items-center gap-2">
+    <>
+      {/* 页面标题卡片 */}
+      <Card className="overflow-hidden">
+        <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+                  {isEdit ? '编辑客户' : '新建客户'}
+                </h1>
+                <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                  {isEdit ? '修改客户信息' : '创建新的客户记录'}
+                </p>
+              </div>
+            </div>
             <Button
-              variant="ghost"
-              size="sm"
-              className="h-7"
+              type="button"
+              variant="outline"
+              size="lg"
               onClick={handleCancel}
+              className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
             >
-              <ArrowLeft className="mr-1 h-3 w-3" />
+              <ArrowLeft className="h-4 w-4" />
               返回
             </Button>
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
 
-      {/* 表单区域 */}
-      <div className="px-3 py-2">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            {/* 基本信息区域 */}
-            <div className="space-y-3">
-              <div className="text-muted-foreground text-xs font-medium">
-                基本信息
-              </div>
-              <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          {/* 基础信息 */}
+          <Card className="overflow-hidden">
+            <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-tertiary))]">
+              <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
+                <Users className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
+                基础信息
+              </CardTitle>
+              <CardDescription>
+                客户的基本信息，包括名称、联系方式等
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 <FormField
                   control={form.control}
                   name="name"
                   render={({ field }) => (
-                    <FormItem className="space-y-1">
-                      <FormLabel className="text-xs">客户名称 *</FormLabel>
+                    <FormItem>
+                      <FormLabel>客户名称 *</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="请输入客户名称"
-                          className="h-7 text-xs"
+                          disabled={isLoading}
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-xs" />
+                      <FormDescription>
+                        客户的显示名称，最多100个字符
+                      </FormDescription>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -242,16 +301,17 @@ export function ERPCustomerForm({
                   control={form.control}
                   name="phone"
                   render={({ field }) => (
-                    <FormItem className="space-y-1">
-                      <FormLabel className="text-xs">联系电话</FormLabel>
+                    <FormItem>
+                      <FormLabel>联系电话</FormLabel>
                       <FormControl>
                         <Input
                           placeholder="请输入联系电话"
-                          className="h-7 text-xs"
+                          disabled={isLoading}
                           {...field}
                         />
                       </FormControl>
-                      <FormMessage className="text-xs" />
+                      <FormDescription>客户的主要联系电话</FormDescription>
+                      <FormMessage />
                     </FormItem>
                   )}
                 />
@@ -261,103 +321,141 @@ export function ERPCustomerForm({
                 control={form.control}
                 name="address"
                 render={({ field }) => (
-                  <FormItem className="space-y-1">
-                    <FormLabel className="text-xs">地址</FormLabel>
+                  <FormItem>
+                    <FormLabel>地址</FormLabel>
                     <FormControl>
                       <AddressSelector
                         value={field.value}
                         onChange={addressData => {
-                          // 将 AddressData 对象转换为字符串
                           const addressString =
                             formatAddressString(addressData);
                           field.onChange(addressString);
                         }}
-                        className="text-xs"
                         showLabel={false}
-                        disabled={
-                          createMutation.isPending || updateMutation.isPending
-                        }
+                        disabled={isLoading}
                       />
                     </FormControl>
-                    <FormMessage className="text-xs" />
+                    <FormDescription>客户的详细地址信息</FormDescription>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* 扩展信息区域 */}
-            <div className="space-y-3">
-              <div className="text-muted-foreground text-xs font-medium">
-                扩展信息（可选）
-              </div>
-              <div className="grid grid-cols-1 gap-x-4 gap-y-3 md:grid-cols-2">
-                <div className="space-y-1">
-                  <label className="text-xs font-medium">联系人</label>
-                  <Input
-                    placeholder="请输入联系人姓名"
-                    className="h-7 text-xs"
+          {/* 扩展信息 */}
+          <Card className="overflow-hidden">
+            <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-tertiary))]">
+              <CardTitle className="text-[hsl(var(--color-text-primary))]">扩展信息</CardTitle>
+              <CardDescription>客户的其他补充信息（可选）</CardDescription>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="space-y-6">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <FormField
+                    control={form.control}
+                    name="extendedInfo.contactPerson"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>联系人</FormLabel>
+                        <FormControl>
+                          <Input
+                            placeholder="请输入联系人姓名"
+                            disabled={isLoading}
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        </FormControl>
+                        <FormDescription>客户的主要联系人姓名</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="extendedInfo.email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>邮箱</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="email"
+                            placeholder="请输入邮箱地址"
+                            disabled={isLoading}
+                            {...field}
+                            value={field.value ?? ''}
+                          />
+                        </FormControl>
+                        <FormDescription>客户的电子邮箱地址</FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
                   />
                 </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-medium">邮箱</label>
-                  <Input
-                    type="email"
-                    placeholder="请输入邮箱地址"
-                    className="h-7 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="text-xs font-medium">备注</label>
-                <Textarea
-                  placeholder="请输入备注信息"
-                  className="min-h-[60px] text-xs"
+                <FormField
+                  control={form.control}
+                  name="extendedInfo.notes"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>备注</FormLabel>
+                      <FormControl>
+                        <Textarea
+                          placeholder="请输入备注信息"
+                          className="min-h-[100px]"
+                          disabled={isLoading}
+                          {...field}
+                          value={field.value ?? ''}
+                        />
+                      </FormControl>
+                      <FormDescription>其他需要记录的客户信息</FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
                 />
               </div>
-            </div>
+            </CardContent>
+          </Card>
 
-            {/* 操作按钮区域 */}
-            <div className="bg-muted/10 -mx-3 -mb-2 border-t px-3 py-2">
-              <div className="flex items-center justify-end gap-2">
+          {/* 表单操作按钮 */}
+          <Card className="overflow-hidden">
+            <CardContent className="p-6">
+              <div className="flex items-center justify-end gap-4">
                 <Button
                   type="button"
                   variant="outline"
-                  size="sm"
-                  className="h-7"
+                  size="lg"
                   onClick={handleCancel}
-                  disabled={
-                    createMutation.isPending || updateMutation.isPending
-                  }
+                  disabled={isLoading}
+                  className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
                 >
+                  <ArrowLeft className="h-4 w-4" />
                   取消
                 </Button>
                 <Button
                   type="submit"
-                  size="sm"
-                  className="h-7"
-                  disabled={
-                    createMutation.isPending || updateMutation.isPending
-                  }
+                  size="lg"
+                  disabled={isLoading}
+                  className="h-11 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
                 >
-                  {createMutation.isPending || updateMutation.isPending ? (
+                  {isLoading ? (
                     <>
-                      <Loader2 className="mr-1 h-3 w-3 animate-spin" />
+                      <Loader2 className="h-4 w-4 animate-spin" />
                       {mode === 'create' ? '创建中...' : '保存中...'}
                     </>
                   ) : (
                     <>
-                      <Save className="mr-1 h-3 w-3" />
+                      <Save className="h-4 w-4" />
                       {mode === 'create' ? '创建客户' : '保存修改'}
                     </>
                   )}
                 </Button>
               </div>
-            </div>
-          </form>
-        </Form>
-      </div>
-    </div>
+            </CardContent>
+          </Card>
+        </form>
+      </Form>
+    </>
   );
 }

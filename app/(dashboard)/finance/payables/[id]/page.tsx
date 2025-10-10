@@ -1,41 +1,57 @@
-import { CreditCard } from 'lucide-react';
-import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { useParams, useRouter } from 'next/navigation';
+
+import { ContentLoading } from '@/components/common/loading';
 import { PayableDetailClient } from '@/components/finance/payable-detail-client';
-import { Card, CardContent } from '@/components/ui/card';
-import { payablesApi } from '@/lib/api/payables';
-
-export const metadata: Metadata = {
-  title: '应付款详情 - 财务管理',
-  description: '查看应付款详细信息',
-};
-
-interface PayableDetailPageProps {
-  params: Promise<{
-    id: string;
-  }>;
-}
+import { ErrorMessage } from '@/components/ui/error-message';
+import { payablesApi, payableQueryKeys } from '@/lib/api/payables';
+import { getErrorMessage } from '@/lib/utils/error-handler';
 
 /**
  * 应付款详情页面
  * 遵循 Next.js 15.4 App Router 架构和全局约定规范
  */
-export default async function PayableDetailPage({
-  params,
-}: PayableDetailPageProps) {
-  const { id } = await params;
+export default function PayableDetailPage() {
+  const params = useParams();
+  const router = useRouter();
+  const id = params.id as string;
 
-  // 服务器端获取应付款详情
-  let payable;
-  try {
-    payable = await payablesApi.getPayableRecord(id);
-  } catch (error) {
-    notFound();
+  // 使用 React Query 获取应付款详情
+  const {
+    data: payable,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: payableQueryKeys.detail(id),
+    queryFn: () => payablesApi.getPayableRecord(id),
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (isLoading) {
+    return <ContentLoading />;
+  }
+
+  if (error) {
+    return (
+      <ErrorMessage
+        title="加载失败"
+        message={getErrorMessage(error)}
+        onRetry={() => window.location.reload()}
+      />
+    );
   }
 
   if (!payable) {
-    notFound();
+    return (
+      <ErrorMessage
+        title="应付款不存在"
+        message="未找到指定的应付款记录"
+        onRetry={() => router.push('/finance/payables')}
+      />
+    );
   }
 
   return (

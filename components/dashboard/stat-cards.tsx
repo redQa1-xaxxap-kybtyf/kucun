@@ -38,40 +38,34 @@ const ICON_MAP = {
 // 颜色映射
 const COLOR_MAP = {
   blue: {
-    bg: 'bg-blue-50',
-    text: 'text-blue-600',
-    icon: 'text-blue-500',
-    border: 'border-blue-200',
+    bg: 'bg-[hsl(var(--color-primary-light))]',
+    icon: 'text-[hsl(var(--color-primary))]',
+    border: 'border-[hsl(var(--color-primary-lighter))] border-opacity-60',
   },
   green: {
-    bg: 'bg-green-50',
-    text: 'text-green-600',
-    icon: 'text-green-500',
-    border: 'border-green-200',
+    bg: 'bg-[hsl(var(--color-success-light))]',
+    icon: 'text-[hsl(var(--color-success))]',
+    border: 'border-[hsl(var(--color-success-light))] border-opacity-60',
   },
   yellow: {
-    bg: 'bg-yellow-50',
-    text: 'text-yellow-600',
-    icon: 'text-yellow-500',
-    border: 'border-yellow-200',
+    bg: 'bg-[hsl(var(--color-warning-light))]',
+    icon: 'text-[hsl(var(--color-warning))]',
+    border: 'border-[hsl(var(--color-warning-light))] border-opacity-60',
   },
   red: {
-    bg: 'bg-red-50',
-    text: 'text-red-600',
-    icon: 'text-red-500',
-    border: 'border-red-200',
+    bg: 'bg-[hsl(var(--color-error-light))]',
+    icon: 'text-[hsl(var(--color-error))]',
+    border: 'border-[hsl(var(--color-error-light))] border-opacity-60',
   },
   purple: {
-    bg: 'bg-purple-50',
-    text: 'text-purple-600',
-    icon: 'text-purple-500',
-    border: 'border-purple-200',
+    bg: 'bg-[hsl(var(--color-purple-light))]',
+    icon: 'text-[hsl(var(--color-purple))]',
+    border: 'border-[hsl(var(--color-purple-light))] border-opacity-60',
   },
   gray: {
-    bg: 'bg-gray-50',
-    text: 'text-gray-600',
-    icon: 'text-gray-500',
-    border: 'border-gray-200',
+    bg: 'bg-[hsl(var(--color-bg-tertiary))]',
+    icon: 'text-[hsl(var(--color-text-secondary))]',
+    border: 'border-[hsl(var(--color-border-secondary))]',
   },
 } as const;
 
@@ -148,24 +142,26 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
                   {change && (
                     <div className="flex items-center space-x-1">
                       {change.type === 'increase' && (
-                        <TrendingUp className="h-4 w-4 text-green-500" />
+                        <TrendingUp className="h-4 w-4 text-[hsl(var(--color-success))]" />
                       )}
                       {change.type === 'decrease' && (
-                        <TrendingDown className="h-4 w-4 text-red-500" />
+                        <TrendingDown className="h-4 w-4 text-[hsl(var(--color-error))]" />
                       )}
                       {change.type === 'neutral' && (
-                        <Minus className="h-4 w-4 text-gray-500" />
+                        <Minus className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
                       )}
                       <Badge
-                        variant="outline"
+                        variant={
+                          change.type === 'increase'
+                            ? 'success'
+                            : change.type === 'decrease'
+                              ? 'destructive'
+                              : 'outline'
+                        }
                         className={cn(
                           'text-xs font-medium',
-                          change.type === 'increase' &&
-                            'border-green-200 bg-green-50 text-green-700',
-                          change.type === 'decrease' &&
-                            'border-red-200 bg-red-50 text-red-700',
                           change.type === 'neutral' &&
-                            'border-gray-200 bg-gray-50 text-gray-700'
+                            'border-[hsl(var(--color-border-secondary))] text-[hsl(var(--color-text-secondary))]'
                         )}
                       >
                         {dashboardUtils.formatPercentage(change.value)}

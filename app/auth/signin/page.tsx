@@ -95,7 +95,7 @@ export default function SignInPage() {
       MISSING_FIELDS: '请填写完整的登录信息',
       INVALID_FORMAT: '用户名、密码或验证码格式不正确',
       INVALID_CREDENTIALS: '用户名或密码错误，请检查后重试',
-      ACCOUNT_DISABLED: '该账户已被禁用，请联系管理员',
+      ACCOUNT_DISABLED: '用户名或密码错误，请检查后重试',
 
       // 验证码相关错误
       CAPTCHA_SESSION_MISSING: '验证码会话已过期，请刷新验证码',
@@ -521,3 +521,4 @@ export default function SignInPage() {
     </div>
   );
 }
+

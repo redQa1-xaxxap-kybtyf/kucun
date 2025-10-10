@@ -118,8 +118,8 @@ export function StatementTransactions({
                   <span
                     className={
                       transaction.amount >= 0
-                        ? 'text-green-600'
-                        : 'text-red-600'
+                        ? 'text-[hsl(var(--color-success))]'
+                        : 'text-[hsl(var(--color-error))]'
                     }
                   >
                     {formatCurrency(transaction.amount)}

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 权限管理工具函数
  * 提供基于角色的权限检查功能
  */
@@ -308,7 +308,7 @@ export function getAccessibleNavItems(
     }
 
     // 检查用户角色是否在允许的角色列表中
-    const userRole = role || 'user';
+    const userRole = role ?? 'sales';
     return item.requiredRoles.includes(userRole);
   });
 }
@@ -343,3 +343,4 @@ export function hasRole(
 ): boolean {
   return userRole === requiredRole;
 }
+

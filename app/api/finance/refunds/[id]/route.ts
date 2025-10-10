@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { updateRefundRecordSchema } from '@/lib/validations/refund';
@@ -7,7 +8,9 @@ import { updateRefundRecordSchema } from '@/lib/validations/refund';
 // GET /api/finance/refunds/[id] - 获取单个退款记录详情
 export const GET = withAuth(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
+    let refundId: string | undefined;
     try {
+      refundId = params.id;
       const refund = await prisma.refundRecord.findUnique({
         where: { id: params.id },
         include: {
@@ -28,7 +31,12 @@ export const GET = withAuth(
         data: refund,
       });
     } catch (error) {
-      console.error('获取退款记录失败:', error);
+      logger.error(
+        'finance-refunds',
+        '获取退款记录失败',
+        error,
+        refundId ? { refundId } : undefined
+      );
       return NextResponse.json({ error: '获取退款记录失败' }, { status: 500 });
     }
   }
@@ -37,7 +45,9 @@ export const GET = withAuth(
 // PUT /api/finance/refunds/[id] - 更新退款记录
 export const PUT = withAuth(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
+    let refundId: string | undefined;
     try {
+      refundId = params.id;
       const body = await request.json();
       const validatedData = updateRefundRecordSchema.parse(body);
 
@@ -113,7 +123,12 @@ export const PUT = withAuth(
         message: '退款记录更新成功',
       });
     } catch (error) {
-      console.error('更新退款记录失败:', error);
+      logger.error(
+        'finance-refunds',
+        '更新退款记录失败',
+        error,
+        refundId ? { refundId } : undefined
+      );
       return NextResponse.json({ error: '更新退款记录失败' }, { status: 500 });
     }
   }
@@ -122,7 +137,9 @@ export const PUT = withAuth(
 // DELETE /api/finance/refunds/[id] - 删除退款记录
 export const DELETE = withAuth(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
+    let refundId: string | undefined;
     try {
+      refundId = params.id;
       // 检查退款记录是否存在且可以删除
       const refund = await prisma.refundRecord.findUnique({
         where: { id: params.id },
@@ -148,7 +165,12 @@ export const DELETE = withAuth(
         message: '退款记录删除成功',
       });
     } catch (error) {
-      console.error('删除退款记录失败:', error);
+      logger.error(
+        'finance-refunds',
+        '删除退款记录失败',
+        error,
+        refundId ? { refundId } : undefined
+      );
       return NextResponse.json({ error: '删除退款记录失败' }, { status: 500 });
     }
   }

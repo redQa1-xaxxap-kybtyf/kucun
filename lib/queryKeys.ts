@@ -197,6 +197,13 @@ export const inventoryKeys = {
 
   // 出库记录
   outbounds: () => [...inventoryKeys.all, 'outbounds'] as const,
+  outboundsList: (
+    params?: BaseFilters & {
+      type?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ) => [...inventoryKeys.outbounds(), 'list', params] as const,
   outbound: (id: string) => [...inventoryKeys.outbounds(), id] as const,
 
   // 库存可用性检查

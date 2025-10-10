@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 
@@ -145,7 +146,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       data: statistics,
     });
   } catch (error) {
-    console.error('获取退款统计数据失败:', error);
+    logger.error('finance-refunds', '获取退款统计数据失败', error);
     return NextResponse.json({ error: '获取统计数据失败' }, { status: 500 });
   }
 });

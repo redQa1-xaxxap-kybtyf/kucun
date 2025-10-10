@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import {
@@ -14,11 +15,12 @@ export const POST = withAuth(
     { params }: { params: { id: string } },
     { user }: { user: { id: string; email: string; name: string } }
   ) => {
+    let refundId: string | undefined;
     try {
       const body = await request.json();
       const validatedData = processRefundSchema.parse(body);
 
-      const refundId = params.id;
+      refundId = params.id;
 
       // 先验证退款是否可以处理
       const validation = await validateRefundProcessable(refundId);
@@ -70,7 +72,12 @@ export const POST = withAuth(
         message: `退款${validatedData.status === 'completed' ? '批准' : '拒绝'}成功`,
       });
     } catch (error) {
-      console.error('处理退款失败:', error);
+      logger.error(
+        'finance-refunds',
+        '处理退款失败',
+        error,
+        refundId ? { refundId } : undefined
+      );
       return NextResponse.json(
         {
           error: error instanceof Error ? error.message : '处理退款失败',

@@ -4,19 +4,25 @@ import * as React from 'react';
 import { cn } from '@/lib/utils';
 
 const badgeVariants = cva(
-  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus:ring-2 focus:ring-ring focus:ring-offset-2',
+  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors focus:outline-hidden focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-focus))] focus-visible:ring-offset-2 focus-visible:ring-offset-background',
   {
     variants: {
       variant: {
         default:
-          'border-transparent bg-primary text-primary-foreground hover:bg-primary/80',
+          'border-transparent bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-primary-hover))]',
         secondary:
-          'border-transparent bg-secondary text-secondary-foreground hover:bg-secondary/80',
+          'border-transparent bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-primary))] hover:bg-[hsl(var(--color-bg-card-hover))]',
         destructive:
-          'border-transparent bg-destructive text-destructive-foreground hover:bg-destructive/80',
+          'border-transparent bg-[hsl(var(--color-error))] text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-error-hover))]',
         success:
-          'border-transparent bg-green-500 text-white hover:bg-green-600',
-        outline: 'text-foreground',
+          'border-transparent bg-[hsl(var(--color-success))] text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-success-hover))]',
+        warning:
+          'border-transparent bg-[hsl(var(--color-warning))] text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-warning-hover))]',
+        info: 'border-transparent bg-[hsl(var(--color-info))] text-[hsl(var(--color-text-on-primary))] hover:bg-[hsl(var(--color-info-hover))]',
+        purple:
+          'border-transparent bg-[hsl(var(--color-purple-light))] text-[hsl(var(--color-purple))] hover:bg-[hsl(var(--color-purple-hover))]',
+        outline:
+          'border-[hsl(var(--color-border-secondary))] text-[hsl(var(--color-text-secondary))]',
       },
     },
     defaultVariants: {
@@ -36,3 +42,4 @@ function Badge({ className, variant, ...props }: BadgeProps) {
 }
 
 export { Badge, badgeVariants };
+export type { BadgeProps };

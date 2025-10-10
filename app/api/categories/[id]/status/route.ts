@@ -4,6 +4,7 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
+import { z } from 'zod';
 
 import { type Category } from '@/lib/api/categories';
 import { prisma } from '@/lib/db';
@@ -11,9 +12,9 @@ import type { ApiResponse } from '@/lib/types/api';
 import { categoryStatusUpdateSchema } from '@/lib/validations/category';
 
 /**
- * PUT /api/categories/[id]/status - 更新分类状态
+ * PATCH /api/categories/[id]/status - 更新分类状态
  */
-export async function PUT(
+export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {

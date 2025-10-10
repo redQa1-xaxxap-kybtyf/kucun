@@ -166,10 +166,10 @@ export function PayablesClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">总应付金额</CardTitle>
-            <DollarSign className="h-4 w-4 text-red-600" />
+            <DollarSign className="h-4 w-4 text-[hsl(var(--color-error))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-error))]">
               {formatCurrency(statistics.totalPayables)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -184,10 +184,10 @@ export function PayablesClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">已付金额</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-[hsl(var(--color-success))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
               {formatCurrency(statistics.totalPaidAmount)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -206,10 +206,10 @@ export function PayablesClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">剩余应付</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
+            <Clock className="h-4 w-4 text-[hsl(var(--color-warning))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-warning))]">
               {formatCurrency(statistics.totalRemainingAmount)}
             </div>
             <p className="text-muted-foreground text-xs">待付款金额</p>
@@ -219,10 +219,10 @@ export function PayablesClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">逾期金额</CardTitle>
-            <AlertCircle className="h-4 w-4 text-red-600" />
+            <AlertCircle className="h-4 w-4 text-[hsl(var(--color-error))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-error))]">
               {formatCurrency(statistics.overdueAmount)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -233,7 +233,7 @@ export function PayablesClient({
       </div>
 
       {/* 搜索和筛选 */}
-      <Card className="shadow-md shadow-gray-200/50">
+      <Card className="border border-[hsl(var(--color-border-secondary))]">
         <CardContent className="pt-6">
           <UnifiedSearchBar
             // 搜索配置
@@ -302,7 +302,7 @@ export function PayablesClient({
               currentData.data.map((payable: PayableRecordDetail) => (
                 <Card
                   key={payable.id}
-                  className="transition-shadow hover:shadow-md"
+                  className="transition-shadow hover:shadow-[var(--shadow-medium)]"
                 >
                   <CardContent className="p-6">
                     <div className="flex items-center justify-between">
@@ -354,7 +354,7 @@ export function PayablesClient({
                           <p className="text-muted-foreground text-sm">
                             已付金额
                           </p>
-                          <p className="font-semibold text-green-600">
+                          <p className="font-semibold text-[hsl(var(--color-success))]">
                             {formatCurrency(payable.paidAmount)}
                           </p>
                         </div>
@@ -362,7 +362,7 @@ export function PayablesClient({
                           <p className="text-muted-foreground text-sm">
                             待付金额
                           </p>
-                          <p className="font-semibold text-orange-600">
+                          <p className="font-semibold text-[hsl(var(--color-warning))]">
                             {formatCurrency(payable.remainingAmount)}
                           </p>
                         </div>

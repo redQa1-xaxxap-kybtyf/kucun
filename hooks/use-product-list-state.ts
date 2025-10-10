@@ -17,18 +17,21 @@ interface BatchDeleteDialogState {
 }
 
 export function useProductListState(initialParams?: ProductQueryParams) {
+  const defaultParams: ProductQueryParams = {
+    page: 1,
+    limit: paginationConfig.defaultPageSize,
+    search: '',
+    status: undefined,
+    categoryId: undefined,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+  };
+
   // 查询参数状态
-  const [queryParams, setQueryParams] = useState<ProductQueryParams>(
-    initialParams || {
-      page: 1,
-      limit: paginationConfig.defaultPageSize,
-      search: '',
-      status: undefined,
-      categoryId: undefined,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    }
-  );
+  const [queryParams, setQueryParams] = useState<ProductQueryParams>({
+    ...defaultParams,
+    ...initialParams,
+  });
 
   // 删除确认对话框状态
   const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({
@@ -57,6 +60,16 @@ export function useProductListState(initialParams?: ProductQueryParams) {
     filters: Partial<Pick<ProductQueryParams, 'status' | 'categoryId'>>
   ) => {
     setQueryParams(prev => ({ ...prev, ...filters, page: 1 }));
+  };
+
+  // 排序处理
+  const handleSortChange = (sortBy: string, sortOrder: 'asc' | 'desc') => {
+    setQueryParams(prev => ({
+      ...prev,
+      sortBy,
+      sortOrder,
+      page: 1,
+    }));
   };
 
   // 分页处理
@@ -128,6 +141,7 @@ export function useProductListState(initialParams?: ProductQueryParams) {
     // 事件处理函数
     handleSearch,
     handleFilter,
+    handleSortChange,
     handlePageChange,
     handleDeleteProduct,
     handleSelectProduct,

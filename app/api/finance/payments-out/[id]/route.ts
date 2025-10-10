@@ -3,6 +3,7 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/db';
 import type { PaymentOutRecordDetail } from '@/lib/types/payable';
 import { updatePaymentOutRecordSchema } from '@/lib/validations/payable';
@@ -14,8 +15,10 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let paymentId: string | undefined;
   try {
     const { id } = await params;
+    paymentId = id;
 
     // 查询付款记录
     const payment = await prisma.paymentOutRecord.findUnique({
@@ -59,7 +62,12 @@ export async function GET(
       data: payment as PaymentOutRecordDetail,
     });
   } catch (error) {
-    console.error('获取付款记录详情失败:', error);
+    logger.error(
+      'finance-payments-out',
+      '获取付款记录详情失败',
+      error,
+      paymentId ? { paymentId } : undefined
+    );
     return NextResponse.json(
       { success: false, error: '获取付款记录详情失败' },
       { status: 500 }
@@ -74,8 +82,10 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let paymentId: string | undefined;
   try {
     const { id } = await params;
+    paymentId = id;
 
     // 解析请求体
     const body = await request.json();
@@ -223,7 +233,12 @@ export async function PUT(
       message: '付款记录更新成功',
     });
   } catch (error) {
-    console.error('更新付款记录失败:', error);
+    logger.error(
+      'finance-payments-out',
+      '更新付款记录失败',
+      error,
+      paymentId ? { paymentId } : undefined
+    );
     return NextResponse.json(
       { success: false, error: '更新付款记录失败' },
       { status: 500 }
@@ -238,8 +253,10 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  let paymentId: string | undefined;
   try {
     const { id } = await params;
+    paymentId = id;
 
     // 检查付款记录是否存在
     const existingPayment = await prisma.paymentOutRecord.findUnique({
@@ -315,7 +332,12 @@ export async function DELETE(
       message: '付款记录删除成功',
     });
   } catch (error) {
-    console.error('删除付款记录失败:', error);
+    logger.error(
+      'finance-payments-out',
+      '删除付款记录失败',
+      error,
+      paymentId ? { paymentId } : undefined
+    );
     return NextResponse.json(
       { success: false, error: '删除付款记录失败' },
       { status: 500 }

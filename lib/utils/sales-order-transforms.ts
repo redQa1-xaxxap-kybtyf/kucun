@@ -15,6 +15,7 @@ import type {
  */
 export interface SalesOrderFormData {
   customerId: string;
+  status?: 'draft' | 'confirmed' | 'shipped' | 'completed' | 'cancelled';
   orderType?: 'NORMAL' | 'TRANSFER';
   supplierId?: string;
   costAmount?: number;
@@ -31,8 +32,12 @@ export interface SalesOrderFormItem {
 
   // 产品信息
   productId?: string;
+  productCode?: string;
+  batchNumber?: string;
   colorCode?: string;
   productionDate?: string;
+  specification?: string;
+  remarks?: string;
 
   // 数量和价格
   quantity: number;
@@ -42,6 +47,7 @@ export interface SalesOrderFormItem {
   // UI层显示字段（用于件片转换）
   displayUnit?: '片' | '件';
   displayQuantity?: number;
+  piecesPerUnit?: number;
 
   // 调货销售相关
   unitCost?: number;
@@ -73,6 +79,7 @@ export function transformFormDataToCreateInput(
 ): SalesOrderCreateInput {
   return {
     customerId: formData.customerId,
+    status: formData.status || 'draft',
     orderType: formData.orderType || 'NORMAL',
     supplierId: formData.supplierId?.trim() || undefined,
     costAmount: formData.costAmount || undefined,
@@ -93,11 +100,19 @@ export function transformFormItemToCreateInput(
   if (formItem.isManualProduct) {
     return {
       productId: formItem.productId || '', // 手动商品可能没有productId
+      productCode: formItem.productCode?.trim() || undefined,
       quantity: formItem.quantity,
       unitPrice: formItem.unitPrice || 0,
+      batchNumber: formItem.batchNumber?.trim() || undefined,
       colorCode: formItem.colorCode,
       productionDate: formItem.productionDate,
       unitCost: formItem.unitCost,
+      displayUnit: formItem.displayUnit || '片',
+      displayQuantity: formItem.displayQuantity ?? formItem.quantity,
+      piecesPerUnit: formItem.piecesPerUnit,
+      specification:
+        formItem.specification || formItem.manualSpecification || undefined,
+      remarks: formItem.remarks?.trim() || undefined,
       isManualProduct: true,
       manualProductName: formItem.manualProductName,
       manualSpecification: formItem.manualSpecification,
@@ -109,11 +124,19 @@ export function transformFormItemToCreateInput(
   // 普通商品的情况
   return {
     productId: formItem.productId || '',
+    productCode: formItem.productCode?.trim() || undefined,
+    batchNumber: formItem.batchNumber?.trim() || undefined,
     quantity: formItem.quantity,
     unitPrice: formItem.unitPrice || 0,
     colorCode: formItem.colorCode,
     productionDate: formItem.productionDate,
     unitCost: formItem.unitCost,
+    displayUnit: formItem.displayUnit || '片',
+    displayQuantity: formItem.displayQuantity ?? formItem.quantity,
+    piecesPerUnit: formItem.piecesPerUnit,
+    specification:
+      formItem.specification || formItem.product?.specification || undefined,
+    remarks: formItem.remarks?.trim() || undefined,
     isManualProduct: false,
   };
 }
@@ -131,9 +154,10 @@ export function transformFormDataToUpdateInput(
   return {
     id: orderId,
     customerId: formData.customerId,
+    status: formData.status,
     orderType: formData.orderType,
     supplierId: formData.supplierId?.trim() || undefined,
-    costAmount: formData.costAmount || undefined,
+    costAmount: formData.costAmount ?? undefined,
     remarks: formData.remarks?.trim() || undefined,
     items: formData.items.map(transformFormItemToUpdateInput),
   };
@@ -151,15 +175,23 @@ export function transformFormItemToUpdateInput(
   if (formItem.isManualProduct) {
     return {
       productId: formItem.productId || '',
+      productCode: formItem.productCode?.trim() || undefined,
       quantity: formItem.quantity,
       unitPrice: formItem.unitPrice || 0,
+      batchNumber: formItem.batchNumber?.trim() || undefined,
       colorCode: formItem.colorCode,
       productionDate: formItem.productionDate,
-      unitCost: formItem.unitCost,
+      unitCost: formItem.unitCost ?? undefined,
+      displayUnit: formItem.displayUnit || '片',
+      displayQuantity: formItem.displayQuantity ?? formItem.quantity,
+      piecesPerUnit: formItem.piecesPerUnit,
+      specification:
+        formItem.specification || formItem.manualSpecification || undefined,
+      remarks: formItem.remarks?.trim() || undefined,
       isManualProduct: true,
       manualProductName: formItem.manualProductName,
       manualSpecification: formItem.manualSpecification,
-      manualWeight: formItem.manualWeight,
+      manualWeight: formItem.manualWeight ?? undefined,
       manualUnit: formItem.manualUnit,
     };
   }
@@ -167,11 +199,19 @@ export function transformFormItemToUpdateInput(
   // 普通商品的情况
   return {
     productId: formItem.productId || '',
+    productCode: formItem.productCode?.trim() || undefined,
+    batchNumber: formItem.batchNumber?.trim() || undefined,
     quantity: formItem.quantity,
     unitPrice: formItem.unitPrice || 0,
     colorCode: formItem.colorCode,
     productionDate: formItem.productionDate,
-    unitCost: formItem.unitCost,
+    unitCost: formItem.unitCost ?? undefined,
+    displayUnit: formItem.displayUnit || '片',
+    displayQuantity: formItem.displayQuantity ?? formItem.quantity,
+    piecesPerUnit: formItem.piecesPerUnit,
+    specification:
+      formItem.specification || formItem.product?.specification || undefined,
+    remarks: formItem.remarks?.trim() || undefined,
     isManualProduct: false,
   };
 }

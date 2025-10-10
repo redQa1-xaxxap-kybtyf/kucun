@@ -27,15 +27,24 @@ export const INVENTORY_STATUS_LABELS: Record<InventoryStatus, string> = {
   expired: '过期',
 };
 
+type StatusBadgeVariant =
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info';
+
 // 库存状态变体映射（用于UI组件）
 export const INVENTORY_STATUS_VARIANTS: Record<
   InventoryStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
+  StatusBadgeVariant
 > = {
-  in_stock: 'default',
-  low_stock: 'outline',
+  in_stock: 'success',
+  low_stock: 'warning',
   out_of_stock: 'destructive',
-  overstock: 'secondary',
+  overstock: 'info',
   reserved: 'secondary',
   damaged: 'destructive',
   expired: 'destructive',
@@ -51,10 +60,10 @@ export const ALERT_LEVEL_LABELS: Record<AlertLevel, string> = {
 
 // 库存预警级别颜色映射
 export const ALERT_LEVEL_COLORS: Record<AlertLevel, string> = {
-  safe: 'text-green-600',
-  warning: 'text-yellow-600',
-  danger: 'text-orange-600',
-  critical: 'text-red-600',
+  safe: 'text-[hsl(var(--color-success))]',
+  warning: 'text-[hsl(var(--color-warning))]',
+  danger: 'text-[hsl(var(--color-error-hover))]',
+  critical: 'text-[hsl(var(--color-error))]',
 };
 
 // 库存预警阈值配置 - 使用环境配置
@@ -85,7 +94,7 @@ export const getInventoryStatus = (
   status: InventoryStatus;
   label: string;
   color: string;
-  variant: 'default' | 'secondary' | 'destructive' | 'outline';
+  variant: StatusBadgeVariant;
 } => {
   const availableQuantity = quantity - reservedQuantity;
 
@@ -94,7 +103,8 @@ export const getInventoryStatus = (
     return {
       status: 'out_of_stock',
       label: INVENTORY_STATUS_LABELS.out_of_stock,
-      color: 'text-red-700 bg-red-50',
+      color:
+        'text-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))]',
       variant: 'destructive',
     };
   }
@@ -104,8 +114,9 @@ export const getInventoryStatus = (
     return {
       status: 'low_stock',
       label: INVENTORY_STATUS_LABELS.low_stock,
-      color: 'text-orange-700 bg-orange-50',
-      variant: 'outline',
+      color:
+        'text-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))]',
+      variant: 'warning',
     };
   }
 
@@ -114,8 +125,9 @@ export const getInventoryStatus = (
     return {
       status: 'low_stock',
       label: INVENTORY_STATUS_LABELS.low_stock,
-      color: 'text-yellow-700 bg-yellow-50',
-      variant: 'outline',
+      color:
+        'text-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))]',
+      variant: 'warning',
     };
   }
 
@@ -124,8 +136,9 @@ export const getInventoryStatus = (
     return {
       status: 'overstock',
       label: INVENTORY_STATUS_LABELS.overstock,
-      color: 'text-purple-700 bg-purple-50',
-      variant: 'secondary',
+      color:
+        'text-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))]',
+      variant: 'info',
     };
   }
 
@@ -133,8 +146,9 @@ export const getInventoryStatus = (
   return {
     status: 'in_stock',
     label: INVENTORY_STATUS_LABELS.in_stock,
-    color: 'text-green-700 bg-green-50',
-    variant: 'default',
+    color:
+      'text-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))]',
+    variant: 'success',
   };
 };
 

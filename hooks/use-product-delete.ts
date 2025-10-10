@@ -9,7 +9,7 @@ import {
   productQueryKeys,
 } from '@/lib/api/products';
 
-import { showError, showSuccess } from '@/lib/utils/toast-helper';
+import { showError, showSuccess, showWarning } from '@/lib/utils/toast-helper';
 
 interface UseProductDeleteProps {
   onDeleteSuccess?: () => void;

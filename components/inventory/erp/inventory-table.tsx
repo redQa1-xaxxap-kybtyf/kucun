@@ -3,6 +3,7 @@
 import { Package } from 'lucide-react';
 
 import { InventoryTableRow } from '@/components/inventory/InventoryTableRow';
+import { InventoryGroupedTable } from '@/components/inventory/InventoryGroupedTable';
 import { VirtualizedInventoryTable } from '@/components/inventory/VirtualizedInventoryTable';
 import {
   Table,
@@ -48,6 +49,7 @@ export function InventoryTable({
   onAdjust,
   useVirtualization = false,
 }: InventoryTableProps) {
+  // 虚拟化模式（大数据量时使用，不支持合并单元格）
   if (useVirtualization && data.length > 50) {
     return (
       <VirtualizedInventoryTable
@@ -60,45 +62,16 @@ export function InventoryTable({
     );
   }
 
+  // 使用支持合并单元格的分组表格
   return (
-    <Table>
-      <TableHeader className="sticky top-0 z-10">
-        <TableRow className="bg-muted/50">
-          <TableHead className="bg-muted/50 w-12">
-            <input
-              type="checkbox"
-              checked={isAllSelected && canSelectAll}
-              onChange={e => onSelectAll(e.target.checked)}
-              className="border-input rounded border"
-            />
-          </TableHead>
-          <TableHead className="bg-muted/50">产品编码</TableHead>
-          <TableHead className="bg-muted/50">产品名称</TableHead>
-          <TableHead className="bg-muted/50">规格</TableHead>
-          <TableHead className="bg-muted/50">批次号</TableHead>
-          <TableHead className="bg-muted/50">库存数量</TableHead>
-          <TableHead className="bg-muted/50">预留数量</TableHead>
-          <TableHead className="bg-muted/50">可用数量</TableHead>
-          <TableHead className="bg-muted/50">库存状态</TableHead>
-          <TableHead className="bg-muted/50">最后更新</TableHead>
-          <TableHead className="bg-muted/50">操作</TableHead>
-        </TableRow>
-      </TableHeader>
-      <TableBody>
-        {data.length === 0 ? (
-          <EmptyState />
-        ) : (
-          data.map(inventory => (
-            <InventoryTableRow
-              key={inventory.id}
-              item={inventory}
-              isSelected={selectedIds.has(inventory.id)}
-              onSelect={(id, checked) => onSelectRow(id, checked)}
-              onAdjust={id => onAdjust(id)}
-            />
-          ))
-        )}
-      </TableBody>
-    </Table>
+    <InventoryGroupedTable
+      data={data}
+      selectedIds={selectedIds}
+      isAllSelected={isAllSelected}
+      canSelectAll={canSelectAll}
+      onSelectAll={onSelectAll}
+      onSelectRow={onSelectRow}
+      onAdjust={onAdjust}
+    />
   );
 }

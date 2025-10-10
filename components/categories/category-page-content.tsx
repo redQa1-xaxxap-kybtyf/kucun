@@ -117,7 +117,7 @@ export function CategoryPageContent({
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col p-6">
       <div className="space-y-6">
         <CategoryPageHeader
           selectedCategoryIds={selectedCategoryIds}

@@ -16,6 +16,7 @@ import { AdjustmentRecordsFilters } from './components/AdjustmentRecordsFilters'
 import { AdjustmentRecordsTable } from './components/AdjustmentRecordsTable';
 import { AdjustmentRecordsToolbar } from './components/AdjustmentRecordsToolbar';
 import { useAdjustmentRecords } from './hooks/useAdjustmentRecords';
+import type { AdjustmentQueryParams } from '@/lib/types/inventory';
 
 /**
  * 库存调整记录客户端组件
@@ -25,7 +26,13 @@ import { useAdjustmentRecords } from './hooks/useAdjustmentRecords';
  * - Client Component 从缓存读取数据（staleTime=Infinity）
  * - 首屏渲染时间从 800ms 优化到 200ms
  */
-export function AdjustmentRecordsPageClient() {
+interface AdjustmentRecordsPageClientProps {
+  initialParams: AdjustmentQueryParams;
+}
+
+export function AdjustmentRecordsPageClient({
+  initialParams,
+}: AdjustmentRecordsPageClientProps) {
   const router = useRouter();
   const [showAdjustDialog, setShowAdjustDialog] = useState(false);
 
@@ -41,7 +48,7 @@ export function AdjustmentRecordsPageClient() {
     viewDetail,
     closeDetailDialog,
     refetch,
-  } = useAdjustmentRecords();
+  } = useAdjustmentRecords(initialParams);
 
   const handleGoBack = () => {
     router.push('/inventory');
@@ -62,14 +69,17 @@ export function AdjustmentRecordsPageClient() {
 
   if (error) {
     return (
-      <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="flex h-full flex-col overflow-auto p-6">
         <div className="space-y-6">
           <AdjustmentRecordsToolbar
             onGoBack={handleGoBack}
             onAdjust={handleOpenAdjust}
           />
-          <div className="bg-card rounded-lg border p-6 text-center shadow-md shadow-gray-200/50">
-            <div className="text-destructive text-sm">
+          <div
+            className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-error-light))] p-6 text-center"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
+            <div className="text-sm text-[hsl(var(--color-error))]">
               加载调整记录失败，请稍后重试
             </div>
           </div>
@@ -79,7 +89,7 @@ export function AdjustmentRecordsPageClient() {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
         <AdjustmentRecordsToolbar
@@ -131,3 +141,6 @@ export function AdjustmentRecordsPageClient() {
     </div>
   );
 }
+
+
+

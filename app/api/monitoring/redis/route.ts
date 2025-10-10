@@ -7,6 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import { env, monitoringConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 
 /**
@@ -50,7 +51,7 @@ export async function GET(request: NextRequest) {
       }
     );
   } catch (error) {
-    console.error('[Monitoring] Failed to get Redis monitoring data:', error);
+    logger.error('monitoring-redis', '获取 Redis 监控数据失败', error);
 
     return NextResponse.json(
       {
@@ -92,7 +93,7 @@ async function collectRedisMonitoringData() {
       };
     }
   } catch (error) {
-    console.error('[Monitoring] Failed to get Redis server info:', error);
+    logger.error('monitoring-redis', '获取 Redis 服务器信息失败', error);
     serverInfo = null;
   }
 
@@ -105,7 +106,7 @@ async function collectRedisMonitoringData() {
       pingLatency = Date.now() - start;
     }
   } catch (error) {
-    console.error('[Monitoring] Failed to ping Redis:', error);
+    logger.error('monitoring-redis', 'Redis ping 失败', error);
     pingLatency = null;
   }
 

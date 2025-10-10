@@ -1,0 +1,132 @@
+'use client';
+
+import { Check, ChevronsUpDown } from 'lucide-react';
+import * as React from 'react';
+
+import { Button } from '@/components/ui/button';
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+
+interface Batch {
+  batchNumber: string;
+  quantity: number;
+}
+
+interface BatchSelectorProps {
+  batches: Batch[];
+  value?: string;
+  onValueChange?: (batchNumber: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  className?: string;
+}
+
+/**
+ * 批次选择器组件
+ * 用于销售订单中选择产品的具体批次
+ */
+export function BatchSelector({
+  batches,
+  value,
+  onValueChange,
+  placeholder = '选择批次',
+  disabled = false,
+  className,
+}: BatchSelectorProps) {
+  const [open, setOpen] = React.useState(false);
+
+  const selectedBatch = batches.find(b => b.batchNumber === value);
+
+  const handleBatchSelect = (batchNumber: string) => {
+    onValueChange?.(batchNumber);
+    setOpen(false);
+  };
+
+  // 如果只有一个批次，自动选择并显示
+  React.useEffect(() => {
+    if (batches.length === 1 && !value) {
+      onValueChange?.(batches[0].batchNumber);
+    }
+  }, [batches, value, onValueChange]);
+
+  if (batches.length === 0) {
+    return (
+      <div className={cn('text-sm text-gray-500', className)}>
+        暂无可用批次
+      </div>
+    );
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          className={cn(
+            'h-8 w-full justify-between text-xs font-normal',
+            !selectedBatch && 'text-muted-foreground',
+            className
+          )}
+          disabled={disabled || batches.length === 0}
+        >
+          <span className="truncate">
+            {selectedBatch
+              ? `${selectedBatch.batchNumber} (${selectedBatch.quantity} 片)`
+              : placeholder}
+          </span>
+          <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[300px] p-0" align="start">
+        <Command>
+          <CommandList>
+            <CommandEmpty>未找到批次</CommandEmpty>
+            <CommandGroup>
+              {batches.map((batch, idx) => (
+                <CommandItem
+                  key={`${batch.batchNumber}-${idx}`}
+                  value={batch.batchNumber}
+                  onSelect={() => handleBatchSelect(batch.batchNumber)}
+                  className="flex items-center justify-between p-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <Check
+                      className={cn(
+                        'h-4 w-4',
+                        value === batch.batchNumber
+                          ? 'opacity-100'
+                          : 'opacity-0'
+                      )}
+                    />
+                    <span className="font-mono text-sm font-medium text-blue-700">
+                      {batch.batchNumber}
+                    </span>
+                  </div>
+                  <div className="text-sm">
+                    <span className="font-semibold text-green-600">
+                      {batch.quantity}
+                    </span>
+                    <span className="ml-1 text-gray-500">片</span>
+                  </div>
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}

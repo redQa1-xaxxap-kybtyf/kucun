@@ -76,18 +76,18 @@ export function ItemForm({
                 index={index}
                 products={products}
                 onProductChange={product => {
-                  if (product && selectedCustomerId) {
-                    // 自动填充客户历史价格（厂家发货价格）
+                  if (product && selectedCustomerId && product.code) {
+                    // 自动填充客户历史价格（基于产品编码匹配）
                     const customerPrice = getLatestPrice(
                       customerPriceHistoryData?.data,
-                      product.id,
+                      product.code,
                       'FACTORY'
                     );
                     if (customerPrice !== undefined) {
                       form.setValue(`items.${index}.unitPrice`, customerPrice);
                       toast({
                         title: '已自动填充客户历史价格',
-                        description: `产品 "${product.name}" 的上次厂家发货价格：¥${customerPrice.toFixed(2)}`,
+                        description: `产品编码 "${product.code}" 的上次厂家发货价格：¥${customerPrice.toFixed(2)}`,
                         duration: 2000,
                       });
                     }
@@ -120,7 +120,7 @@ export function ItemForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    数量 <span className="text-red-500">*</span>
+                    数量 <span className="text-[hsl(var(--color-error))]">*</span>
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -148,7 +148,7 @@ export function ItemForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    单价（¥） <span className="text-red-500">*</span>
+                    单价（¥） <span className="text-[hsl(var(--color-error))]">*</span>
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -176,7 +176,7 @@ export function ItemForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>
-                    单位 <span className="text-red-500">*</span>
+                    单位 <span className="text-[hsl(var(--color-error))]">*</span>
                   </FormLabel>
                   <FormControl>
                     <Input placeholder="如：件、箱、吨" {...field} />

@@ -77,6 +77,12 @@ const baseValidations = {
 
 // 客户扩展信息验证
 const extendedInfoValidations = {
+  contactPerson: z
+    .string()
+    .max(50, '联系人姓名不能超过50个字符')
+    .optional()
+    .or(z.literal('')),
+
   email: z.string().email('邮箱格式不正确').optional().or(z.literal('')),
 
   fax: z
@@ -208,6 +214,7 @@ export const customerCreateDefaults: Partial<CustomerCreateFormData> = {
   address: '',
   parentCustomerId: '',
   extendedInfo: {
+    contactPerson: '',
     email: '',
     fax: '',
     website: '',
@@ -261,7 +268,7 @@ export const processExtendedInfo = (
 
   // 过滤空值
   const filtered = Object.fromEntries(
-    Object.entries(extendedInfo).filter(([_, value]) => {
+    Object.entries(extendedInfo).filter(([, value]) => {
       if (value === null || value === undefined || value === '') {
         return false;
       }
@@ -287,7 +294,7 @@ export const parseExtendedInfo = (
 
   try {
     return JSON.parse(extendedInfoStr) as CustomerExtendedInfo;
-  } catch (error) {
+  } catch {
     // 解析失败时返回空对象，避免应用崩溃
     return {};
   }

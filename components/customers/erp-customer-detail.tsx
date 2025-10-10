@@ -17,6 +17,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { customerQueryKeys, getCustomer } from '@/lib/api/customers';
 import type { Customer } from '@/lib/types/customer';
+import { CUSTOMER_FIELD_LABELS } from '@/lib/types/customer';
+import { parseExtendedInfo } from '@/lib/validations/customer';
 
 interface ERPCustomerDetailProps {
   customerId: string;
@@ -71,6 +73,22 @@ export function ERPCustomerDetail({
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString('zh-CN');
 
+  const formatExtendedInfoValue = (value: unknown): string => {
+    if (value === null || value === undefined) {
+      return '-';
+    }
+    if (Array.isArray(value)) {
+      return value.length ? value.join('、') : '-';
+    }
+    if (value instanceof Date) {
+      return formatDate(value.toISOString());
+    }
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    return String(value);
+  };
+
   if (isLoading) {
     return (
       <div className="bg-card rounded border">
@@ -97,7 +115,7 @@ export function ERPCustomerDetail({
           </div>
         </div>
         <div className="px-3 py-2">
-          <div className="text-center text-xs text-red-600">
+          <div className="text-center text-xs text-[hsl(var(--color-error))]">
             加载失败: {error instanceof Error ? error.message : '未知错误'}
           </div>
         </div>
@@ -121,6 +139,26 @@ export function ERPCustomerDetail({
       </div>
     );
   }
+
+  const parsedExtendedInfo =
+    typeof customer.extendedInfo === 'string'
+      ? parseExtendedInfo(customer.extendedInfo)
+      : customer.extendedInfo || {};
+
+  const extendedInfoEntries = Object.entries(parsedExtendedInfo).filter(
+    ([, value]) => {
+      if (value === null || value === undefined) {
+        return false;
+      }
+      if (typeof value === 'string') {
+        return value.trim().length > 0;
+      }
+      if (Array.isArray(value)) {
+        return value.length > 0;
+      }
+      return true;
+    }
+  );
 
   return (
     <div className="bg-card rounded border">
@@ -200,10 +238,10 @@ export function ERPCustomerDetail({
           </div>
           <div className="grid grid-cols-3 gap-2">
             {/* 交易次数 */}
-            <div className="bg-muted/10 rounded border px-2 py-2 text-center">
+            <div className="rounded border border-[hsl(var(--color-primary-light))] bg-[hsl(var(--color-primary-light))] px-2 py-2 text-center">
               <div className="flex items-center justify-center gap-1">
-                <TrendingUp className="h-3 w-3 text-blue-600" />
-                <span className="text-sm font-medium text-blue-600">
+                <TrendingUp className="h-3 w-3 text-[hsl(var(--color-primary))]" />
+                <span className="text-sm font-medium text-[hsl(var(--color-primary))]">
                   {customer.transactionCount || 0}
                 </span>
               </div>
@@ -211,10 +249,10 @@ export function ERPCustomerDetail({
             </div>
 
             {/* 合作天数 */}
-            <div className="bg-muted/10 rounded border px-2 py-2 text-center">
+            <div className="rounded border border-[hsl(var(--color-success-light))] bg-[hsl(var(--color-success-light))] px-2 py-2 text-center">
               <div className="flex items-center justify-center gap-1">
-                <Calendar className="h-3 w-3 text-green-600" />
-                <span className="text-sm font-medium text-green-600">
+                <Calendar className="h-3 w-3 text-[hsl(var(--color-success))]" />
+                <span className="text-sm font-medium text-[hsl(var(--color-success))]">
                   {customer.cooperationDays !== undefined
                     ? customer.cooperationDays
                     : '-'}
@@ -226,10 +264,10 @@ export function ERPCustomerDetail({
             </div>
 
             {/* 退货次数 */}
-            <div className="bg-muted/10 rounded border px-2 py-2 text-center">
+            <div className="rounded border border-[hsl(var(--color-error-light))] bg-[hsl(var(--color-error-light))] px-2 py-2 text-center">
               <div className="flex items-center justify-center gap-1">
-                <TrendingDown className="h-3 w-3 text-red-600" />
-                <span className="text-sm font-medium text-red-600">
+                <TrendingDown className="h-3 w-3 text-[hsl(var(--color-error))]" />
+                <span className="text-sm font-medium text-[hsl(var(--color-error))]">
                   {customer.returnOrderCount || 0}
                 </span>
               </div>
@@ -272,19 +310,30 @@ export function ERPCustomerDetail({
         </div>
 
         {/* 扩展信息 */}
-        {customer.extendedInfo &&
-          Object.keys(customer.extendedInfo).length > 0 && (
-            <div className="mt-4 space-y-3">
-              <div className="text-muted-foreground text-xs font-medium">
-                扩展信息
-              </div>
-              <div className="bg-muted/5 rounded border px-2 py-2">
-                <div className="text-muted-foreground text-xs">
-                  {JSON.stringify(customer.extendedInfo, null, 2)}
-                </div>
+        {extendedInfoEntries.length > 0 && (
+          <div className="mt-4 space-y-3">
+            <div className="text-muted-foreground text-xs font-medium">
+              扩展信息
+            </div>
+            <div className="bg-muted/5 rounded border px-2 py-2">
+              <div className="space-y-2">
+                {extendedInfoEntries.map(([key, value]) => (
+                  <div
+                    key={key}
+                    className="flex items-center justify-between gap-2"
+                  >
+                    <span className="text-muted-foreground text-xs">
+                      {CUSTOMER_FIELD_LABELS[key] || key}
+                    </span>
+                    <span className="text-xs">
+                      {formatExtendedInfoValue(value)}
+                    </span>
+                  </div>
+                ))}
               </div>
             </div>
-          )}
+          </div>
+        )}
       </div>
     </div>
   );

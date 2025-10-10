@@ -72,8 +72,8 @@ export function CustomerDeleteDialog({
       <AlertDialogContent>
         <AlertDialogHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-red-100">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--color-error-light))]">
+              <AlertTriangle className="h-5 w-5 text-[hsl(var(--color-error))]" />
             </div>
             <div>
               <AlertDialogTitle>确认删除客户</AlertDialogTitle>
@@ -107,7 +107,7 @@ export function CustomerDeleteDialog({
                     <span className="text-muted-foreground text-sm">
                       交易次数：
                     </span>
-                    <span className="font-medium text-orange-600">
+                    <span className="font-medium text-[hsl(var(--color-warning))]">
                       {customer.transactionCount}次
                     </span>
                   </div>
@@ -116,7 +116,7 @@ export function CustomerDeleteDialog({
 
             {customer.transactionCount !== undefined &&
               customer.transactionCount > 0 && (
-                <div className="mt-3 rounded border border-orange-200 bg-orange-50 p-2 text-sm text-orange-800">
+                <div className="mt-3 rounded border border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] p-2 text-sm text-[hsl(var(--color-warning))]">
                   <AlertTriangle className="mr-1 inline h-4 w-4" />
                   注意：该客户有交易记录，删除后相关数据将无法恢复
                 </div>
@@ -131,7 +131,7 @@ export function CustomerDeleteDialog({
           <AlertDialogAction
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
-            className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            className="bg-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error-hover))] focus:ring-[hsl(var(--color-error))]"
           >
             {deleteMutation.isPending && (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />

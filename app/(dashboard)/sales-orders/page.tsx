@@ -54,6 +54,8 @@ export default async function SalesOrdersPage({
       | 'totalAmount'
       | 'status') || 'createdAt';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
+  const startDate = (params.startDate as string) || undefined;
+  const endDate = (params.endDate as string) || undefined;
 
   const queryParams = {
     page,
@@ -63,6 +65,8 @@ export default async function SalesOrdersPage({
     customerId,
     sortBy,
     sortOrder,
+    startDate,
+    endDate,
   };
 
   // ✅ TanStack Query v5 最佳实践：在组件内创建 QueryClient

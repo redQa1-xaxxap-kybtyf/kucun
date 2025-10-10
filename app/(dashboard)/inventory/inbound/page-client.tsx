@@ -1,6 +1,7 @@
 'use client';
 
 import { ERPInboundRecords } from '@/components/inventory/erp-inbound-records';
+import type { InboundQueryParams } from '@/lib/types/inbound';
 
 /**
  * 入库记录客户端组件
@@ -10,6 +11,12 @@ import { ERPInboundRecords } from '@/components/inventory/erp-inbound-records';
  * - Client Component 从缓存读取数据（staleTime=Infinity）
  * - 首屏渲染时间从 800ms 优化到 200ms
  */
-export function InboundRecordsPageClient() {
-  return <ERPInboundRecords />;
+interface InboundRecordsPageClientProps {
+  initialParams: InboundQueryParams;
+}
+
+export function InboundRecordsPageClient({
+  initialParams,
+}: InboundRecordsPageClientProps) {
+  return <ERPInboundRecords initialParams={initialParams} />;
 }

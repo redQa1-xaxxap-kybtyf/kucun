@@ -59,18 +59,19 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials, req) {
         // 获取客户端 IP 和 User-Agent
+        const rawForwarded = (
+          req as unknown as { headers?: { get?: (key: string) => string | null } }
+        )?.headers?.get?.('x-forwarded-for');
+        const primaryForwardedIp = rawForwarded
+          ?.split(',')
+          ?.map(value => value.trim())
+          ?.find(Boolean);
+        const fallbackIp = (
+          req as unknown as { headers?: { get?: (key: string) => string | null } }
+        )?.headers?.get?.('x-real-ip');
+        const requestIp = (req as unknown as { ip?: string }).ip;
         const clientIp =
-          (
-            req as unknown as {
-              headers?: { get?: (key: string) => string | null };
-            }
-          )?.headers?.get?.('x-forwarded-for') ||
-          (
-            req as unknown as {
-              headers?: { get?: (key: string) => string | null };
-            }
-          )?.headers?.get?.('x-real-ip') ||
-          '127.0.0.1';
+          primaryForwardedIp || fallbackIp || requestIp || '127.0.0.1';
 
         const userAgent =
           (
@@ -141,14 +142,9 @@ export const authOptions: NextAuthOptions = {
             throw new Error('CAPTCHA_INCORRECT');
           }
 
-          // 查找用户（支持用户名或邮箱登录）
-          const user = await prisma.user.findFirst({
-            where: {
-              OR: [
-                { username: credentials.username },
-                { email: credentials.username }, // 兼容邮箱登录
-              ],
-            },
+          // 查找用户（仅支持用户名登录）
+          const user = await prisma.user.findUnique({
+            where: { username: credentials.username },
             select: {
               id: true,
               email: true,
@@ -181,7 +177,7 @@ export const authOptions: NextAuthOptions = {
               'account_disabled',
               userAgent
             );
-            throw new Error('ACCOUNT_DISABLED');
+            throw new Error('INVALID_CREDENTIALS');
           }
 
           // 验证密码
@@ -383,3 +379,5 @@ export async function updateUserStatus(
 
 // 导出 NextAuth 实例（用于 API 路由）
 export default NextAuth(authOptions);
+
+

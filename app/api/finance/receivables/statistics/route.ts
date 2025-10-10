@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 
@@ -239,7 +240,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       data: statistics,
     });
   } catch (error) {
-    console.error('获取应收账款统计失败:', error);
+    logger.error('finance-receivables', '获取应收账款统计失败', error);
     return NextResponse.json(
       {
         success: false,

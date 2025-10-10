@@ -125,18 +125,18 @@ export function ProductCombobox({
           shouldFilter={false}
           className="overflow-visible bg-transparent"
         >
-          <div className="group border-input ring-offset-background focus-within:ring-ring rounded-md border px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-offset-2">
+          <div className="group border-input ring-offset-background focus-within:ring-ring rounded-md border px-3 py-1.5 text-sm focus-within:ring-1 focus-within:ring-offset-0">
             <div className="flex flex-wrap gap-1">
               {selectedProduct && (
-                <div className="bg-secondary flex items-center gap-1 rounded-sm px-2 py-0.5">
-                  <span className="text-xs">{selectedProduct.label}</span>
+                <div className="bg-blue-100 flex items-center gap-1 rounded px-2 py-0.5">
+                  <span className="text-xs font-medium text-blue-900">{selectedProduct.label}</span>
                   {!disabled && (
                     <button
                       type="button"
                       onClick={handleClear}
-                      className="hover:bg-secondary-foreground/20 ml-1 rounded-sm"
+                      className="hover:bg-blue-200 ml-1 rounded"
                     >
-                      <X className="h-3 w-3" />
+                      <X className="h-3 w-3 text-blue-700" />
                     </button>
                   )}
                 </div>
@@ -144,14 +144,18 @@ export function ProductCombobox({
               <CommandInput
                 placeholder={selectedProduct ? '' : placeholder}
                 onValueChange={handleSearchChange}
-                onFocus={() => setOpen(true)}
+                onFocus={() => {
+                  if (searchQuery.length > 0 || products.length > 0) {
+                    setOpen(true);
+                  }
+                }}
                 disabled={disabled}
                 className="placeholder:text-muted-foreground ml-2 flex-1 bg-transparent outline-hidden"
               />
             </div>
           </div>
-          <div className="relative mt-2">
-            {open && (
+          <div className="relative mt-1">
+            {open && (searchQuery.length > 0 || products.length > 0) && (
               <div className="bg-popover text-popover-foreground animate-in absolute top-0 z-10 w-full rounded-md border shadow-md outline-hidden">
                 <CommandList>
                   <CommandEmpty>
@@ -163,32 +167,33 @@ export function ProductCombobox({
                         key={product.value}
                         value={`${product.code}-${product.value}`}
                         onSelect={handleCommandSelect}
+                        className="py-2"
                       >
                         <Check
                           className={cn(
-                            'mr-2 h-4 w-4',
+                            'mr-2 h-3.5 w-3.5 text-blue-600',
                             value === product.value
                               ? 'opacity-100'
                               : 'opacity-0'
                           )}
                         />
-                        <div className="flex min-w-0 flex-1 flex-col">
+                        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{product.label}</span>
-                            <span className="text-muted-foreground text-xs">
+                            <span className="font-semibold text-gray-900 text-sm">{product.label}</span>
+                            <span className="text-blue-600 text-xs font-medium">
                               {product.code}
                             </span>
                           </div>
-                          {product.specification && (
-                            <span className="text-muted-foreground text-xs">
-                              {product.specification}
-                            </span>
-                          )}
-                          {product.currentStock !== undefined && (
-                            <span className="text-muted-foreground text-xs">
-                              库存: {product.currentStock}片
-                            </span>
-                          )}
+                          <div className="flex items-center gap-3 text-xs text-gray-600">
+                            {product.specification && (
+                              <span>规格: {product.specification}</span>
+                            )}
+                            {product.currentStock !== undefined && (
+                              <span className="font-medium text-emerald-600">
+                                库存: {product.currentStock}片
+                              </span>
+                            )}
+                          </div>
                         </div>
                       </CommandItem>
                     ))}

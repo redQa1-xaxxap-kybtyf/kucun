@@ -6,16 +6,21 @@ import { InboundRecordsFilters } from '@/components/inventory/forms/inbound-reco
 import { InboundRecordsTable } from '@/components/inventory/forms/inbound-records-table';
 import { InboundRecordsToolbar } from '@/components/inventory/forms/inbound-records-toolbar';
 import { useInboundRecordsState } from '@/hooks/use-inbound-records';
+import type { InboundQueryParams } from '@/lib/types/inbound';
 
 interface ERPInboundRecordsProps {
   onCreateNew?: () => void;
+  initialParams?: InboundQueryParams;
 }
 
 /**
  * ERP风格入库记录组件
  * 符合中国ERP系统的紧凑布局和操作习惯
  */
-export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
+export function ERPInboundRecords({
+  onCreateNew,
+  initialParams,
+}: ERPInboundRecordsProps) {
   const router = useRouter();
 
   // 使用自定义Hook管理状态
@@ -26,7 +31,7 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
     error,
     handleFilter,
     handleResetFilters,
-  } = useInboundRecordsState();
+  } = useInboundRecordsState(initialParams);
 
   const handleCreateNew = () => {
     if (onCreateNew) {
@@ -38,11 +43,14 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
 
   if (error) {
     return (
-      <div className="flex h-full flex-col overflow-hidden p-6">
+      <div className="flex h-full flex-col overflow-auto p-6">
         <div className="space-y-6">
           <InboundRecordsToolbar onCreateNew={handleCreateNew} />
-          <div className="bg-card rounded-lg border p-6 text-center shadow-md shadow-gray-200/50">
-            <div className="text-destructive text-sm">
+          <div
+            className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-error-light))] p-6 text-center"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
+            <div className="text-sm text-[hsl(var(--color-error))]">
               加载入库记录失败，请稍后重试
             </div>
           </div>
@@ -52,7 +60,7 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
   }
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
         <InboundRecordsToolbar onCreateNew={handleCreateNew} />
@@ -70,3 +78,4 @@ export function ERPInboundRecords({ onCreateNew }: ERPInboundRecordsProps) {
     </div>
   );
 }
+

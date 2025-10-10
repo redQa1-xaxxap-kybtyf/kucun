@@ -156,10 +156,10 @@ export function PaymentsOutClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">总付款金额</CardTitle>
-            <DollarSign className="h-4 w-4 text-blue-600" />
+            <DollarSign className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
               {formatCurrency(statistics.totalAmount)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -171,10 +171,10 @@ export function PaymentsOutClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">已确认金额</CardTitle>
-            <CheckCircle className="h-4 w-4 text-green-600" />
+            <CheckCircle className="h-4 w-4 text-[hsl(var(--color-success))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
               {formatCurrency(statistics.confirmedAmount)}
             </div>
             <p className="text-muted-foreground text-xs">
@@ -191,10 +191,10 @@ export function PaymentsOutClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">待确认金额</CardTitle>
-            <Clock className="h-4 w-4 text-orange-600" />
+            <Clock className="h-4 w-4 text-[hsl(var(--color-warning))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-orange-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-warning))]">
               {formatCurrency(statistics.pendingAmount)}
             </div>
             <p className="text-muted-foreground text-xs">待财务确认</p>
@@ -204,10 +204,10 @@ export function PaymentsOutClient({
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">本月付款</CardTitle>
-            <TrendingUp className="h-4 w-4 text-blue-600" />
+            <TrendingUp className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">
+            <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
               {formatCurrency(statistics.confirmedAmount)}
             </div>
             <p className="text-muted-foreground text-xs">较上月增长 8%</p>
@@ -216,7 +216,7 @@ export function PaymentsOutClient({
       </div>
 
       {/* 搜索和筛选 */}
-      <Card className="shadow-md shadow-gray-200/50">
+      <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 items-center gap-2">
@@ -294,7 +294,7 @@ export function PaymentsOutClient({
               payments.map(payment => (
                 <Card
                   key={payment.id}
-                  className="transition-shadow hover:shadow-md"
+                  className="transition-shadow hover:shadow-[var(--shadow-medium)]"
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -322,7 +322,7 @@ export function PaymentsOutClient({
                             <p>
                               <span className="font-medium">关联应付款：</span>
                               {payment.payableRecord.payableNumber}
-                              <span className="ml-2 text-orange-600">
+                              <span className="ml-2 text-[hsl(var(--color-warning))]">
                                 剩余{' '}
                                 {formatCurrency(
                                   payment.payableRecord.remainingAmount
@@ -368,7 +368,7 @@ export function PaymentsOutClient({
                         <p className="text-muted-foreground mb-1 text-sm">
                           付款金额
                         </p>
-                        <p className="text-2xl font-bold text-blue-600">
+                        <p className="text-2xl font-bold text-[hsl(var(--color-primary))]">
                           {formatCurrency(payment.paymentAmount)}
                         </p>
                         <div className="mt-4 flex gap-2">

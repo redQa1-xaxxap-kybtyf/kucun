@@ -37,5 +37,6 @@
     "verbatimModuleSyntax": false
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules", ".next", "out", "dist", "build", "coverage"]
+  "exclude": ["node_modules", ".next", "out", "dist", "build", "coverage", "__tests__", "tests", "**/*.test.ts", "**/*.test.tsx", "**/*.spec.ts", "**/*.spec.tsx"]
 }
+

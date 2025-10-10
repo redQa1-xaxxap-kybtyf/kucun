@@ -32,9 +32,9 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {monthTrend === 'up' ? (
-            <TrendingUp className="h-5 w-5 text-green-600" />
+            <TrendingUp className="h-5 w-5 text-[hsl(var(--color-success))]" />
           ) : (
-            <TrendingDown className="h-5 w-5 text-red-600" />
+            <TrendingDown className="h-5 w-5 text-[hsl(var(--color-error))]" />
           )}
           统计分析
         </CardTitle>

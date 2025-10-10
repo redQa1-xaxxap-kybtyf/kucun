@@ -15,7 +15,7 @@ import {
 import Link from 'next/link';
 import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
+import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -33,32 +33,47 @@ import { cn } from '@/lib/utils';
 // 使用T11组件库
 
 // 预警级别配置
-const ALERT_LEVEL_CONFIG = {
+const ALERT_LEVEL_CONFIG: Record<
+  InventoryAlert['alertLevel'],
+  {
+    icon: typeof AlertTriangle;
+    container: string;
+    iconColor: string;
+    emphasisText: string;
+    badgeVariant: BadgeProps['variant'];
+  }
+> = {
   warning: {
     icon: AlertTriangle,
-    color: 'text-yellow-600',
-    bg: 'bg-yellow-50',
-    border: 'border-yellow-200',
-    badge: 'bg-yellow-100 text-yellow-800',
-    label: '预警',
+    container:
+      'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))]',
+    iconColor: 'text-[hsl(var(--color-warning))]',
+    emphasisText: 'text-[hsl(var(--color-warning))]',
+    badgeVariant: 'warning',
   },
   danger: {
     icon: AlertTriangle,
-    color: 'text-orange-600',
-    bg: 'bg-orange-50',
-    border: 'border-orange-200',
-    badge: 'bg-orange-100 text-orange-800',
-    label: '危险',
+    container:
+      'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))]',
+    iconColor: 'text-[hsl(var(--color-warning))]',
+    emphasisText: 'text-[hsl(var(--color-warning))]',
+    badgeVariant: 'warning',
   },
   critical: {
     icon: XCircle,
-    color: 'text-red-600',
-    bg: 'bg-red-50',
-    border: 'border-red-200',
-    badge: 'bg-red-100 text-red-800',
-    label: '紧急',
+    container:
+      'border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))]',
+    iconColor: 'text-[hsl(var(--color-error))]',
+    emphasisText: 'text-[hsl(var(--color-error))]',
+    badgeVariant: 'destructive',
   },
-} as const;
+};
+
+const ALERT_LEVEL_LABELS: Record<InventoryAlert['alertLevel'], string> = {
+  warning: '预警',
+  danger: '危险',
+  critical: '紧急',
+};
 
 // 预警类型配置
 const ALERT_TYPE_CONFIG = {
@@ -108,9 +123,8 @@ const InventoryAlertItem = React.forwardRef<
       return (
         <div
           className={cn(
-            'flex items-center justify-between rounded-lg border p-3',
-            levelConfig.bg,
-            levelConfig.border,
+            'flex items-center justify-between rounded-lg border p-3 transition-colors',
+            levelConfig.container,
             className
           )}
           ref={ref}
@@ -118,7 +132,7 @@ const InventoryAlertItem = React.forwardRef<
         >
           <div className="flex min-w-0 flex-1 items-center space-x-3">
             <IconComponent
-              className={cn('h-4 w-4 shrink-0', levelConfig.color)}
+              className={cn('h-4 w-4 shrink-0', levelConfig.iconColor)}
             />
             <div className="min-w-0 flex-1">
               <div className="flex items-center space-x-2">
@@ -133,18 +147,15 @@ const InventoryAlertItem = React.forwardRef<
           </div>
 
           <div className="flex shrink-0 items-center space-x-2">
-            <Badge
-              variant="outline"
-              className={cn('text-xs', levelConfig.badge)}
-            >
-              {levelConfig.label}
+            <Badge variant={levelConfig.badgeVariant} className="text-xs font-medium">
+              {ALERT_LEVEL_LABELS[alert.alertLevel]}
             </Badge>
             {onDismiss && (
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={() => onDismiss(alert.id)}
-                className="h-6 w-6 p-0"
+                className="h-6 w-6 p-0 text-[hsl(var(--color-text-tertiary))] hover:text-[hsl(var(--color-text-primary))]"
               >
                 <X className="h-3 w-3" />
               </Button>
@@ -158,8 +169,7 @@ const InventoryAlertItem = React.forwardRef<
       <div
         className={cn(
           'rounded-lg border p-4 transition-colors',
-          levelConfig.bg,
-          levelConfig.border,
+          levelConfig.container,
           className
         )}
         ref={ref}
@@ -168,14 +178,14 @@ const InventoryAlertItem = React.forwardRef<
         <div className="flex items-start justify-between">
           <div className="flex min-w-0 flex-1 items-start space-x-3">
             <IconComponent
-              className={cn('mt-0.5 h-5 w-5 shrink-0', levelConfig.color)}
+              className={cn('mt-0.5 h-5 w-5 shrink-0', levelConfig.iconColor)}
             />
             <div className="min-w-0 flex-1 space-y-2">
               <div className="flex items-center space-x-2">
                 <h4 className="text-sm font-medium">{alert.productName}</h4>
                 <Badge
-                  variant="outline"
-                  className={cn('text-xs', levelConfig.badge)}
+                  variant={levelConfig.badgeVariant}
+                  className="text-xs font-medium"
                 >
                   {typeConfig.label}
                 </Badge>
@@ -197,7 +207,12 @@ const InventoryAlertItem = React.forwardRef<
               </div>
 
               {alert.daysUntilStockout && (
-                <div className="flex items-center space-x-1 text-xs text-orange-600">
+                <div
+                  className={cn(
+                    'flex items-center space-x-1 text-xs',
+                    levelConfig.emphasisText
+                  )}
+                >
                   <Clock className="h-3 w-3" />
                   <span>预计 {alert.daysUntilStockout} 天后缺货</span>
                 </div>
@@ -219,7 +234,7 @@ const InventoryAlertItem = React.forwardRef<
                 variant="outline"
                 size="sm"
                 onClick={() => onViewProduct(alert.productId)}
-                className="text-xs"
+                className="text-xs text-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))] hover:text-[hsl(var(--color-primary-hover))]"
               >
                 <ExternalLink className="mr-1 h-3 w-3" />
                 查看
@@ -230,7 +245,7 @@ const InventoryAlertItem = React.forwardRef<
                 variant="ghost"
                 size="sm"
                 onClick={() => onDismiss(alert.id)}
-                className="h-8 w-8 p-0"
+                className="h-8 w-8 p-0 text-[hsl(var(--color-text-tertiary))] hover:text-[hsl(var(--color-text-primary))]"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -344,8 +359,14 @@ const InventoryAlerts = React.forwardRef<HTMLDivElement, InventoryAlertsProps>(
                 </CardDescription>
               </div>
               {onRefresh && (
-                <Button variant="outline" size="sm" onClick={onRefresh}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={onRefresh}
+                  className="flex items-center gap-2 text-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-light))] hover:text-[hsl(var(--color-primary-hover))]"
+                >
                   <RefreshCw className="h-4 w-4" />
+                  刷新
                 </Button>
               )}
             </div>

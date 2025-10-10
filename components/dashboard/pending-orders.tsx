@@ -16,7 +16,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ContentLoading } from '@/components/common/loading';
-import { cn } from '@/lib/utils';
 import type { SalesOrder } from '@/lib/types/sales-order';
 
 interface PendingOrdersProps {
@@ -59,21 +58,23 @@ const formatDate = (dateString: string) => {
 export function PendingOrders({ orders, loading }: PendingOrdersProps) {
   if (loading) {
     return (
-      <Card className="overflow-hidden border-gray-200 shadow-lg shadow-gray-200/50">
-        <CardHeader className="border-b bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4">
+      <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] shadow-[var(--shadow-light)]">
+        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-warning-light))] px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-600 shadow-lg shadow-amber-600/30">
-                <AlertCircle className="h-5 w-5 text-white" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-warning))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
+                <AlertCircle className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold text-gray-900">
+                <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                   待处理订单
                 </h3>
-                <p className="text-sm text-gray-600">需要及时处理的订单</p>
+                <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                  需要及时处理的订单
+                </p>
               </div>
             </div>
-            <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+            <Badge variant="warning" className="text-xs font-medium">
               待处理
             </Badge>
           </div>
@@ -87,53 +88,59 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
 
   if (!orders || orders.length === 0) {
     return (
-      <Card className="overflow-hidden border-gray-200 shadow-lg shadow-gray-200/50">
-        <CardHeader className="border-b bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-600 shadow-lg shadow-amber-600/30">
-                <AlertCircle className="h-5 w-5 text-white" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold text-gray-900">
-                  待处理订单
-                </h3>
-                <p className="text-sm text-gray-600">需要及时处理的订单</p>
-              </div>
+      <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] shadow-[var(--shadow-light)]">
+        <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-warning-light))] px-6 py-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-warning))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
+              <AlertCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
+                待处理订单
+              </h3>
+              <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                需要及时处理的订单
+              </p>
             </div>
           </div>
         </CardHeader>
         <CardContent className="py-12 text-center">
-          <Package className="mx-auto mb-4 h-16 w-16 text-gray-300" />
-          <p className="text-gray-500">暂无待处理订单</p>
-          <p className="mt-1 text-sm text-gray-400">所有订单都已处理完成</p>
+          <Package className="mx-auto mb-4 h-16 w-16 text-[hsl(var(--color-border-secondary))]" />
+          <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+            暂无待处理订单
+          </p>
+          <p className="mt-1 text-sm text-[hsl(var(--color-text-tertiary))]">
+            所有订单都已处理完成
+          </p>
         </CardContent>
       </Card>
     );
   }
 
   return (
-    <Card className="overflow-hidden border-gray-200 shadow-lg shadow-gray-200/50 transition-shadow hover:shadow-xl hover:shadow-gray-200/60">
-      <CardHeader className="border-b bg-gradient-to-r from-amber-50 to-orange-50 px-6 py-4">
+    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] shadow-[var(--shadow-light)] transition-shadow hover:shadow-[var(--shadow-medium)]">
+      <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-warning-light))] px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-600 shadow-lg shadow-amber-600/30">
-              <AlertCircle className="h-5 w-5 text-white" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[hsl(var(--color-warning))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)]">
+              <AlertCircle className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-900">
+              <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                 待处理订单
               </h3>
-              <p className="text-sm text-gray-600">需要及时处理的订单</p>
+              <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                需要及时处理的订单
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+            <Badge variant="warning" className="text-xs font-medium">
               {orders.length} 个待处理
             </Badge>
             <Link
               href="/sales-orders?status=draft"
-              className="group flex items-center gap-1 text-sm font-medium text-amber-600 transition-colors hover:text-amber-700"
+              className="group flex items-center gap-1 text-sm font-medium text-[hsl(var(--color-warning))] transition-colors hover:text-[hsl(var(--color-warning-hover))]"
             >
               查看全部
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
@@ -146,26 +153,32 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
           const urgent = isUrgent(order.createdAt);
           const daysOld = getDaysOld(order.createdAt);
 
+          const containerClasses = urgent
+            ? 'group flex items-center gap-4 rounded-lg border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] p-4 transition-all hover:border-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error-light))] hover:shadow-[var(--shadow-light)]'
+            : 'group flex items-center gap-4 rounded-lg border border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] p-4 transition-all hover:border-[hsl(var(--color-warning))] hover:bg-[hsl(var(--color-warning-light))] hover:shadow-[var(--shadow-light)]';
+
+          const iconClasses = urgent
+            ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--color-error))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)] transition-transform group-hover:scale-110'
+            : 'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--color-warning))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)] transition-transform group-hover:scale-110';
+
+          const orderLinkHover =
+            urgent
+              ? 'hover:text-[hsl(var(--color-error))]'
+              : 'hover:text-[hsl(var(--color-warning))]';
+
+          const timeTextClass = urgent
+            ? 'flex items-center gap-1.5 text-[hsl(var(--color-error))]'
+            : 'flex items-center gap-1.5 text-[hsl(var(--color-text-tertiary))]';
+
+          const buttonClasses = urgent
+            ? 'border-[hsl(var(--color-error))] text-[hsl(var(--color-error))] hover:bg-[hsl(var(--color-error-light))]'
+            : 'border-[hsl(var(--color-warning))] text-[hsl(var(--color-warning))] hover:bg-[hsl(var(--color-warning-light))]';
+
           return (
-            <div
-              key={order.id}
-              className={cn(
-                'group flex items-center gap-4 rounded-lg border p-4 transition-all',
-                urgent
-                  ? 'border-red-200 bg-gradient-to-br from-red-50 to-orange-50/50 hover:border-red-300 hover:shadow-md hover:shadow-red-100/50'
-                  : 'border-gray-200 bg-gradient-to-br from-white to-gray-50/50 hover:border-amber-300 hover:shadow-md hover:shadow-amber-100/50'
-              )}
-            >
+            <div key={order.id} className={containerClasses}>
               {/* 订单图标 */}
-              <div
-                className={cn(
-                  'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl shadow-lg transition-transform group-hover:scale-110',
-                  urgent
-                    ? 'bg-gradient-to-br from-red-500 to-red-600 shadow-red-500/30'
-                    : 'bg-gradient-to-br from-amber-500 to-amber-600 shadow-amber-500/30'
-                )}
-              >
-                <Package className="h-6 w-6 text-white" />
+              <div className={iconClasses}>
+                <Package className="h-6 w-6" />
               </div>
 
               {/* 订单信息 */}
@@ -175,21 +188,19 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
                     <div className="flex items-center gap-2">
                       <Link
                         href={`/sales-orders/${order.id}`}
-                        className="font-semibold text-gray-900 transition-colors hover:text-amber-600"
+                        className={`font-semibold text-[hsl(var(--color-text-primary))] transition-colors ${orderLinkHover}`}
                       >
                         {order.orderNumber}
                       </Link>
-                      {urgent && (
-                        <Badge
-                          variant="destructive"
-                          className="border-red-200 bg-red-100 text-red-700"
-                        >
-                          <AlertCircle className="mr-1 h-3 w-3" />
-                          紧急
-                        </Badge>
-                      )}
+                      <Badge
+                        variant={urgent ? 'destructive' : 'warning'}
+                        className="text-xs font-medium"
+                      >
+                        <AlertCircle className="mr-1 h-3 w-3" />
+                        {urgent ? '紧急' : '跟进'}
+                      </Badge>
                     </div>
-                    <div className="mt-1 flex items-center gap-2 text-sm text-gray-600">
+                    <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
                       <User className="h-3.5 w-3.5" />
                       <span>{order.customer?.name || '未知客户'}</span>
                     </div>
@@ -197,18 +208,13 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3 text-sm">
-                  <div className="flex items-center gap-1.5 text-gray-600">
+                  <div className="flex items-center gap-1.5 text-[hsl(var(--color-text-secondary))]">
                     <DollarSign className="h-3.5 w-3.5" />
-                    <span className="font-medium text-gray-900">
+                    <span className="font-medium text-[hsl(var(--color-text-primary))]">
                       {formatCurrency(order.totalAmount)}
                     </span>
                   </div>
-                  <div
-                    className={cn(
-                      'flex items-center gap-1.5',
-                      urgent ? 'text-red-600' : 'text-gray-500'
-                    )}
-                  >
+                  <div className={timeTextClass}>
                     <Clock className="h-3.5 w-3.5" />
                     <span>
                       {formatDate(order.createdAt)}
@@ -223,12 +229,7 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
                 <Button
                   size="sm"
                   variant="outline"
-                  className={cn(
-                    'transition-all',
-                    urgent
-                      ? 'border-red-300 text-red-700 hover:bg-red-50'
-                      : 'border-amber-300 text-amber-700 hover:bg-amber-50'
-                  )}
+                  className={`transition-all ${buttonClasses}`}
                 >
                   <Eye className="mr-1.5 h-4 w-4" />
                   查看

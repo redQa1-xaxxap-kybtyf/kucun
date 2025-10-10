@@ -74,10 +74,10 @@ export function PayableForm({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           {/* 基础信息 */}
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-              <CardTitle className="flex items-center text-gray-900">
-                <Building2 className="mr-2 h-5 w-5 text-blue-600" />
+          <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
+            <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+              <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
+                <Building2 className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                 基础信息
               </CardTitle>
               <CardDescription>
@@ -271,10 +271,10 @@ export function PayableForm({
           </Card>
 
           {/* 详细信息 */}
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-            <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-              <CardTitle className="flex items-center text-gray-900">
-                <FileText className="mr-2 h-5 w-5 text-blue-600" />
+          <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
+            <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
+              <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
+                <FileText className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                 详细信息
               </CardTitle>
               <CardDescription>填写应付款的描述和备注信息</CardDescription>
@@ -333,7 +333,7 @@ export function PayableForm({
           </Card>
 
           {/* 表单操作 */}
-          <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
+          <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
             <CardContent className="p-6">
               <div className="flex items-center justify-end gap-4">
                 <Button

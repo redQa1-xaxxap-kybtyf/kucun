@@ -43,7 +43,7 @@ export function CustomerSearchFilters({
   };
 
   return (
-    <Card className="shadow-md shadow-gray-200/50">
+    <Card className="border border-[hsl(var(--color-border-secondary))]">
       <CardContent className="pt-6">
         <UnifiedSearchBar
           // 搜索配置

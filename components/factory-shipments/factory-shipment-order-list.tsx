@@ -59,21 +59,28 @@ interface FactoryShipmentOrderListProps {
 // 获取状态徽章样式 - 符合中国ERP系统的颜色规范
 const getStatusBadgeVariant = (
   status: FactoryShipmentStatus
-): 'default' | 'secondary' | 'destructive' | 'outline' => {
+):
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info' => {
   switch (status) {
     case 'draft':
-      return 'secondary'; // 草稿 - 灰色
+      return 'secondary';
     case 'planning':
-      return 'outline'; // 计划中 - 轮廓
-    case 'waiting_deposit':
-      return 'destructive'; // 等待定金 - 红色
-    case 'deposit_paid':
     case 'factory_shipped':
     case 'in_transit':
+      return 'info';
+    case 'waiting_deposit':
+      return 'warning';
+    case 'deposit_paid':
     case 'arrived':
     case 'delivered':
     case 'completed':
-      return 'default'; // 其他状态 - 默认蓝色
+      return 'success';
     default:
       return 'secondary';
   }
@@ -211,9 +218,12 @@ export function FactoryShipmentOrderList({
 
   if (error) {
     return (
-      <Card className="shadow-lg shadow-gray-200/50">
-        <CardContent className="pt-6">
-          <div className="text-center text-red-600">
+      <Card
+        className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+        style={{ boxShadow: 'var(--shadow-light)' }}
+      >
+        <CardContent className="bg-[hsl(var(--color-error-light))] pt-6">
+          <div className="text-center text-[hsl(var(--color-error))]">
             加载厂家发货订单失败，请稍后重试
           </div>
         </CardContent>
@@ -224,8 +234,11 @@ export function FactoryShipmentOrderList({
   return (
     <div className="space-y-4">
       {/* 搜索和筛选 */}
-      <Card className="shadow-md shadow-gray-200/50">
-        <CardContent className="pt-6">
+      <Card
+        className="border border-[hsl(var(--color-border-primary))]"
+        style={{ boxShadow: 'var(--shadow-light)' }}
+      >
+        <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
           <UnifiedSearchBar
             // 搜索配置
             searchValue={searchTerm}
@@ -255,35 +268,57 @@ export function FactoryShipmentOrderList({
       </Card>
 
       {/* 订单列表 */}
-      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+      <div
+        className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+        style={{ boxShadow: 'var(--shadow-medium)' }}
+      >
         {orders.length === 0 ? (
           <div className="py-8 text-center">
-            <Package className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-sm font-medium text-gray-900">
+            <Package className="mx-auto h-12 w-12 text-[hsl(var(--color-text-tertiary))]" />
+            <h3 className="mt-2 text-sm font-medium text-[hsl(var(--color-text-primary))]">
               暂无厂家发货订单
             </h3>
           </div>
         ) : (
           <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/50 hover:bg-muted/50">
-                <TableHead>订单编号</TableHead>
-                <TableHead>集装箱号码</TableHead>
-                <TableHead>客户</TableHead>
-                <TableHead>状态</TableHead>
-                <TableHead>订单金额</TableHead>
-                <TableHead>应收金额</TableHead>
-                <TableHead>创建时间</TableHead>
-                <TableHead>操作</TableHead>
+            <TableHeader
+              className="bg-[hsl(var(--color-bg-table-header))]"
+              style={{ boxShadow: 'var(--shadow-light)' }}
+            >
+              <TableRow className="bg-[hsl(var(--color-bg-table-header))]">
+                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+                  订单编号
+                </TableHead>
+                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+                  集装箱号码
+                </TableHead>
+                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+                  客户
+                </TableHead>
+                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+                  状态
+                </TableHead>
+                <TableHead className="text-right text-[hsl(var(--color-text-secondary))]">
+                  订单金额
+                </TableHead>
+                <TableHead className="text-right text-[hsl(var(--color-text-secondary))]">
+                  应收金额
+                </TableHead>
+                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+                  创建时间
+                </TableHead>
+                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+                  操作
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {orders.map(order => (
                 <TableRow
                   key={order.id}
-                  className="transition-colors hover:bg-blue-50/50"
+                  className="border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
                 >
-                  <TableCell className="font-mono font-medium text-blue-600">
+                  <TableCell className="font-mono font-medium text-[hsl(var(--color-primary))]">
                     <Link
                       href={`/factory-shipments/${order.id}`}
                       prefetch={false}
@@ -292,16 +327,21 @@ export function FactoryShipmentOrderList({
                       {order.orderNumber}
                     </Link>
                   </TableCell>
-                  <TableCell>
+                  <TableCell className="text-[hsl(var(--color-text-secondary))]">
                     {order.containerNumber || (
-                      <span className="text-gray-400">未填写</span>
+                      <span className="text-[hsl(var(--color-text-tertiary))]">
+                        未填写
+                      </span>
                     )}
                   </TableCell>
-                  <TableCell className="font-medium text-gray-900">
+                  <TableCell className="font-medium text-[hsl(var(--color-text-primary))]">
                     {order.customer?.name || '-'}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={getStatusBadgeVariant(order.status)}>
+                    <Badge
+                      variant={getStatusBadgeVariant(order.status)}
+                      className="text-xs font-medium"
+                    >
                       {
                         FACTORY_SHIPMENT_STATUS_LABELS[
                           order.status as FactoryShipmentStatus
@@ -309,13 +349,13 @@ export function FactoryShipmentOrderList({
                       }
                     </Badge>
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right text-[hsl(var(--color-text-primary))]">
                     {formatAmount(order.totalAmount)}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="text-right text-[hsl(var(--color-text-primary))]">
                     {formatAmount(order.receivableAmount)}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
+                  <TableCell className="text-[hsl(var(--color-text-secondary))]">
                     {formatDate(order.createdAt)}
                   </TableCell>
                   <TableCell>
@@ -354,7 +394,7 @@ export function FactoryShipmentOrderList({
                             e.stopPropagation();
                             handleDelete(order.id, order.orderNumber);
                           }}
-                          className="text-red-600"
+                          className="text-[hsl(var(--color-error))]"
                         >
                           <Trash2 className="mr-2 h-4 w-4" />
                           删除
@@ -370,7 +410,7 @@ export function FactoryShipmentOrderList({
 
         {/* 分页组件 */}
         {pagination && (
-          <div className="border-t bg-gray-50/50 px-4 py-3">
+          <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
             <Pagination
               pagination={{
                 page: pagination.page,

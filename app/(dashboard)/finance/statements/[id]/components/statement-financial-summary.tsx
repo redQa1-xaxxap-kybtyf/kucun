@@ -47,19 +47,19 @@ export function StatementFinancialSummary({
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground text-sm">已付金额</span>
-          <span className="font-medium text-green-600">
+          <span className="font-medium text-[hsl(var(--color-success))]">
             {formatCurrency(paidAmount)}
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground text-sm">待付金额</span>
-          <span className="font-medium text-orange-600">
+          <span className="font-medium text-[hsl(var(--color-warning))]">
             {formatCurrency(pendingAmount)}
           </span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground text-sm">逾期金额</span>
-          <span className="font-medium text-red-600">
+          <span className="font-medium text-[hsl(var(--color-error))]">
             {formatCurrency(overdueAmount)}
           </span>
         </div>

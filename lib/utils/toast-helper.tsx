@@ -56,16 +56,19 @@ export function showSuccess(
     showIcon = true,
   } = options || {};
 
-  return baseToast({
-    title: (showIcon ? (
-      <div className="flex items-center gap-2">
-        <CheckCircle2 className="h-4 w-4" />
+  const content = showIcon ? (
+    <div className="flex items-start gap-2">
+      <CheckCircle2 className="mt-0.5 h-4 w-4" />
+      <div className="space-y-1">
         <span>{message}</span>
+        {description ? <span className="text-sm text-muted-foreground">{description}</span> : null}
       </div>
-    ) : (
-      message
-    )) as React.ReactNode,
-    description,
+    </div>
+  ) : description;
+
+  return baseToast({
+    title: showIcon ? undefined : message,
+    description: content ?? undefined,
     variant: 'success',
     duration,
   });
@@ -89,16 +92,19 @@ export function showError(
     showIcon = true,
   } = options || {};
 
-  return baseToast({
-    title: showIcon ? (
-      <div className="flex items-center gap-2">
-        <AlertCircle className="h-4 w-4" />
+  const content = showIcon ? (
+    <div className="flex items-start gap-2">
+      <AlertCircle className="mt-0.5 h-4 w-4" />
+      <div className="space-y-1">
         <span>{message}</span>
+        {description ? <span className="text-sm text-muted-foreground">{description}</span> : null}
       </div>
-    ) : (
-      message
-    ),
-    description,
+    </div>
+  ) : description;
+
+  return baseToast({
+    title: showIcon ? undefined : message,
+    description: content ?? undefined,
     variant: 'destructive',
     duration,
   });
@@ -122,16 +128,19 @@ export function showInfo(
     showIcon = true,
   } = options || {};
 
-  return baseToast({
-    title: showIcon ? (
-      <div className="flex items-center gap-2">
-        <Info className="h-4 w-4" />
+  const content = showIcon ? (
+    <div className="flex items-start gap-2">
+      <Info className="mt-0.5 h-4 w-4" />
+      <div className="space-y-1">
         <span>{message}</span>
+        {description ? <span className="text-sm text-muted-foreground">{description}</span> : null}
       </div>
-    ) : (
-      message
-    ),
-    description,
+    </div>
+  ) : description;
+
+  return baseToast({
+    title: showIcon ? undefined : message,
+    description: content ?? undefined,
     variant: 'default',
     duration,
   });
@@ -155,16 +164,19 @@ export function showWarning(
     showIcon = true,
   } = options || {};
 
-  return baseToast({
-    title: showIcon ? (
-      <div className="flex items-center gap-2">
-        <AlertTriangle className="h-4 w-4" />
+  const content = showIcon ? (
+    <div className="flex items-start gap-2">
+      <AlertTriangle className="mt-0.5 h-4 w-4" />
+      <div className="space-y-1">
         <span>{message}</span>
+        {description ? <span className="text-sm text-muted-foreground">{description}</span> : null}
       </div>
-    ) : (
-      message
-    ),
-    description,
+    </div>
+  ) : description;
+
+  return baseToast({
+    title: showIcon ? undefined : message,
+    description: content ?? undefined,
     variant: 'default',
     duration,
     className:

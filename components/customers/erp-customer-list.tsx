@@ -1,12 +1,10 @@
 'use client';
 
-import { Edit, Eye, MoreHorizontal, Plus, Trash2, Users } from 'lucide-react';
-import Link from 'next/link';
+import { Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -95,48 +93,19 @@ export function ERPCustomerList({
     new Date(dateString).toLocaleDateString('zh-CN');
 
   return (
-    <div className="space-y-4">
-      {/* 页面标题卡片 */}
-      <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-        <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
-                <Users className="h-6 w-6 text-white" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                  客户管理
-                </h1>
-                <p className="text-sm text-gray-600">
-                  管理客户信息，维护客户关系
-                </p>
-              </div>
-            </div>
-            <Link href="/customers/create">
-              <Button
-                size="lg"
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-              >
-                <Plus className="mr-2 h-4 w-4" />
-                新建客户
-              </Button>
-            </Link>
-          </div>
-        </CardContent>
-      </Card>
-
+    <div className="flex h-full flex-col overflow-hidden">
       {/* 表格区域 */}
-      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+      <div className="flex-1 overflow-hidden">
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableRow className="even:bg-[hsl(var(--color-bg-table-header))] hover:bg-[hsl(var(--color-bg-table-header))] [&>th]:border-b-2 [&>th]:border-b-[hsl(var(--color-border-secondary))] [&>th]:text-[hsl(var(--color-text-primary))] [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wide">
               <TableHead>客户名称</TableHead>
               <TableHead>联系电话</TableHead>
               <TableHead>地址</TableHead>
               <TableHead>交易次数</TableHead>
               <TableHead>合作天数</TableHead>
               <TableHead>退货次数</TableHead>
+              <TableHead>最近下单</TableHead>
               <TableHead>创建时间</TableHead>
               <TableHead className="text-center">操作</TableHead>
             </TableRow>
@@ -145,7 +114,7 @@ export function ERPCustomerList({
             {customers.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={8}
+                  colSpan={9}
                   className="text-muted-foreground h-10 text-center text-xs"
                 >
                   暂无客户记录
@@ -155,10 +124,10 @@ export function ERPCustomerList({
               customers.map(customer => (
                 <TableRow
                   key={customer.id}
-                  className="cursor-pointer transition-colors hover:bg-blue-50/50"
+                  className="cursor-pointer"
                   onClick={() => handleViewDetail(customer)}
                 >
-                  <TableCell className="font-medium text-gray-900">
+                  <TableCell className="font-medium text-[hsl(var(--color-text-primary))]">
                     {customer.name}
                   </TableCell>
                   <TableCell className="text-muted-foreground">
@@ -202,6 +171,11 @@ export function ERPCustomerList({
                       {customer.returnOrderCount || 0}次
                     </Badge>
                   </TableCell>
+                  <TableCell className="text-muted-foreground text-xs">
+                    {customer.lastOrderDate
+                      ? formatDate(customer.lastOrderDate)
+                      : '-'}
+                  </TableCell>
                   <TableCell className="text-muted-foreground">
                     {formatDate(customer.createdAt)}
                   </TableCell>
@@ -236,7 +210,7 @@ export function ERPCustomerList({
                           编辑
                         </DropdownMenuItem>
                         <DropdownMenuItem
-                          className="text-red-600"
+                          className="text-[hsl(var(--color-error))]"
                           onClick={e => {
                             e.stopPropagation();
                             handleDelete(customer);

@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -124,6 +124,7 @@ model Category {
   // 关联关系
   products Product[]
 
+  @@unique([name, parentId], map: "unique_name_per_parent")
   @@index([name])
   @@index([code])
   @@index([parentId], map: "idx_categories_parent")
@@ -248,6 +249,8 @@ model SalesOrderItem {
   id             String  @id @default(uuid())
   salesOrderId   String  @map("sales_order_id")
   productId      String? @map("product_id") // 手动输入商品时可为空
+  productCode    String? @map("product_code") // 产品编码
+  batchNumber    String? @map("batch_number") // 批次号
   colorCode      String? @map("color_code")
   productionDate String? @map("production_date") // 生产日期，瓷砖行业特有
   quantity       Float
@@ -265,6 +268,13 @@ model SalesOrderItem {
   manualSpecification String?  @map("manual_specification") // 手动输入的规格
   manualWeight        Float?   @map("manual_weight") // 手动输入的重量
   manualUnit          String?  @map("manual_unit") // 手动输入的单位
+
+  // 显示字段（用于界面展示和计算）
+  displayUnit     String? @map("display_unit") // 显示单位（片/件）
+  displayQuantity Float?  @map("display_quantity") // 显示数量
+  piecesPerUnit   Int?    @map("pieces_per_unit") // 每件片数
+  specification   String? @map("specification") // 规格
+  remarks         String? @map("remarks") // 备注
 
   // 关联关系
   salesOrder       SalesOrder        @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)

@@ -25,31 +25,31 @@ export default function CreateSupplierError({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16">
-      <Card className="border-red-200 bg-red-50">
-        <CardContent className="flex flex-col items-center justify-center space-y-6 p-12 text-center">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-red-100">
-            <AlertCircle className="h-12 w-12 text-red-600" />
+      <Card className="border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))]">
+        <CardContent className="flex flex-col items-center justify中心 space-y-6 p-12 text中心">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--color-error-light))]">
+            <AlertCircle className="h-12 w-12 text-[hsl(var(--color-error))]" />
           </div>
 
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-gray-900">
+            <h2 className="text-2xl font-bold text-[hsl(var(--color-text-primary))]">
               创建供应商时出错
             </h2>
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-[hsl(var(--color-text-secondary))]">
               无法加载创建供应商页面，请稍后重试
             </p>
           </div>
 
           {process.env.NODE_ENV === 'development' && (
-            <div className="w-full rounded-lg bg-gray-100 p-4 text-left">
-              <p className="mb-2 text-xs font-semibold text-gray-700">
+            <div className="w-full rounded-lg bg-[hsl(var(--color-bg-tertiary))] p-4 text-left">
+              <p className="mb-2 text-xs font-semibold text-[hsl(var(--color-text-primary))]">
                 错误详情 (仅开发模式显示):
               </p>
-              <pre className="overflow-auto text-xs text-red-600">
+              <pre className="overflow-auto text-xs text-[hsl(var(--color-error))]">
                 {error.message}
               </pre>
               {error.digest && (
-                <p className="mt-2 text-xs text-gray-600">
+                <p className="mt-2 text-xs text-[hsl(var(--color-text-secondary))]">
                   错误 ID: {error.digest}
                 </p>
               )}

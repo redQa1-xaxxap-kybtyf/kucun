@@ -30,10 +30,21 @@ const nextConfig = {
   // 生产优化 - 禁用 source maps
   productionBrowserSourceMaps: false,
 
+  // Webpack 配置 - 优化 Windows 文件系统缓存
+  webpack: (config, { isServer }) => {
+    // 配置缓存压缩，减少文件锁定问题
+    if (config.cache && typeof config.cache === 'object' && config.cache.type === 'filesystem') {
+      config.cache = {
+        type: 'filesystem', // 必须保持 filesystem
+        compression: false, // 禁用压缩，减少文件操作
+        hashAlgorithm: 'xxhash64',
+      };
+    }
+    return config;
+  },
+
   // 实验性功能
   experimental: {
-    // 优化 CSS
-    optimizeCss: true,
     // 优化包导入
     optimizePackageImports: ['lucide-react', '@tanstack/react-query'],
   },

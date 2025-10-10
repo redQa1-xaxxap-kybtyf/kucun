@@ -60,25 +60,21 @@ export const createInboundSchema = z.object({
   // 批次管理字段
   batchNumber: z
     .string()
-    .min(1, '批次号不能为空')
     .max(50, '批次号不能超过50个字符')
-    .optional(),
+    .optional()
+    .transform(val => val?.trim() || undefined), // 空字符串转为 undefined
 
   // 产品参数字段（入库时确定）
   piecesPerUnit: z
     .number({ message: '每单位片数必须是数字' })
     .int({ error: '每单位片数必须是整数' })
     .min(1, { error: '每单位片数至少为1' })
-    .max(10000, { error: '每单位片数不能超过10000' })
-    .optional()
-    .default(1), // 提供默认值，避免字段缺失导致 "Required" 错误
+    .max(10000, { error: '每单位片数不能超过10000' }),
 
   weight: z
     .number({ message: '重量必须是数字' })
     .min(0.01, { error: '重量必须大于0' })
-    .max(10000, { error: '重量不能超过10000kg' })
-    .optional()
-    .default(0.01), // 提供默认值，避免字段缺失导致 "Required" 错误
+    .max(10000, { error: '重量不能超过10000kg' }),
 });
 
 // 更新入库记录验证规则

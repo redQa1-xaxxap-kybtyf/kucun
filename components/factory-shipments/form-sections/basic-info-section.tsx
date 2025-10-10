@@ -61,7 +61,7 @@ export function BasicInfoSection({ form, customers }: BasicInfoSectionProps) {
             render={({ field }) => (
               <FormItem>
                 <FormLabel>
-                  客户 <span className="text-red-500">*</span>
+                  客户 <span className="text-[hsl(var(--color-error))]">*</span>
                 </FormLabel>
                 <FormControl>
                   <CustomerSelector

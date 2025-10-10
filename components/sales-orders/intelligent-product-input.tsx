@@ -19,6 +19,7 @@ interface IntelligentProductInputProps<
   index: number;
   products: Product[];
   onProductChange?: (product: Product | null) => void;
+  onBatchSelect?: (productId: string, batchNumber: string) => void;
 }
 
 /**
@@ -32,6 +33,7 @@ export function IntelligentProductInput<
   index,
   products,
   onProductChange,
+  onBatchSelect,
 }: IntelligentProductInputProps<TFieldValues>) {
   // 处理库存产品选择
   const handleProductSelect = (productId: string) => {
@@ -44,6 +46,8 @@ export function IntelligentProductInput<
       form.setValue(`items.${index}.manualWeight`, undefined);
       form.setValue(`items.${index}.manualUnit`, '');
 
+      form.setValue(`items.${index}.productCode`, product.code || '');
+
       // 自动填充产品信息
       form.setValue(
         `items.${index}.specification`,
@@ -54,6 +58,7 @@ export function IntelligentProductInput<
         `items.${index}.piecesPerUnit`,
         product.piecesPerUnit || undefined
       );
+      form.setValue(`items.${index}.unitCost`, undefined);
 
       onProductChange?.(product);
     }
@@ -78,6 +83,8 @@ export function IntelligentProductInput<
     );
     form.setValue(`items.${index}.manualWeight`, productData.weight);
     form.setValue(`items.${index}.manualUnit`, productData.unit || '');
+    form.setValue(`items.${index}.unitCost`, undefined);
+    form.setValue(`items.${index}.productCode`, '');
 
     // 自动填充到表单的通用字段（用于显示）
     form.setValue(
@@ -102,6 +109,12 @@ export function IntelligentProductInput<
           totalInventory: p.inventory.totalQuantity || 0,
           availableInventory: p.inventory.availableQuantity || 0,
           reservedInventory: p.inventory.reservedQuantity || 0,
+          batches: p.inventory.batches
+            ? p.inventory.batches.map(b => ({
+                batchNumber: b.batchNumber,
+                quantity: b.quantity,
+              }))
+            : undefined,
         }
       : null,
   }));
@@ -119,6 +132,18 @@ export function IntelligentProductInput<
               onValueChange={value => {
                 field.onChange(value);
                 handleProductSelect(value);
+              }}
+              onBatchSelect={(productId, batchNumber) => {
+                // 先设置产品ID
+                field.onChange(productId);
+                handleProductSelect(productId);
+
+                // 使用 setTimeout 确保产品信息已更新后再设置批次号
+                setTimeout(() => {
+                  form.setValue(`items.${index}.batchNumber`, batchNumber);
+                  // 调用外部回调
+                  onBatchSelect?.(productId, batchNumber);
+                }, 0);
               }}
               onTemporaryProductAdd={handleTemporaryProductAdd}
               placeholder="搜索商品或添加临时商品"

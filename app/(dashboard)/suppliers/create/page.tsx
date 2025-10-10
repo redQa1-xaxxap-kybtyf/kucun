@@ -2,13 +2,19 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation } from '@tanstack/react-query';
-import { ArrowLeft, Truck } from 'lucide-react';
+import { ArrowLeft, Building2, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card';
 import {
   Form,
   FormControl,
@@ -72,22 +78,22 @@ export default function CreateSupplierPage() {
   const isLoading = createMutation.isPending;
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+        <Card className="overflow-hidden">
+          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-600 shadow-lg shadow-green-600/30">
-                  <Truck className="h-6 w-6 text-white" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
+                  <Building2 className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    创建供应商
+                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+                    新建供应商
                   </h1>
-                  <p className="text-sm text-gray-600">
-                    添加新供应商信息，建立供应商档案
+                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
+                    创建新的供应商记录
                   </p>
                 </div>
               </div>
@@ -95,10 +101,10 @@ export default function CreateSupplierPage() {
                 variant="outline"
                 size="lg"
                 asChild
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
               >
                 <Link href="/suppliers">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  <ArrowLeft className="h-4 w-4" />
                   返回
                 </Link>
               </Button>
@@ -107,11 +113,17 @@ export default function CreateSupplierPage() {
         </Card>
 
         {/* 表单 */}
-        <Card className="shadow-lg shadow-gray-200/50">
-          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-            <CardTitle>基本信息</CardTitle>
+        <Card className="overflow-hidden">
+          <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-tertiary))]">
+            <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
+              <Building2 className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
+              基本信息
+            </CardTitle>
+            <CardDescription>
+              供应商的基本信息，包括名称、联系方式等
+            </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6">
+          <CardContent className="p-6">
             <Form {...form}>
               <form
                 onSubmit={form.handleSubmit(onSubmit)}
@@ -186,23 +198,46 @@ export default function CreateSupplierPage() {
                     </FormItem>
                   )}
                 />
-
-                {/* 提交按钮 */}
-                <div className="flex gap-4 pt-4">
-                  <Button type="submit" disabled={isLoading} className="flex-1">
-                    {isLoading ? '创建中...' : '创建供应商'}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => router.push('/suppliers')}
-                    disabled={isLoading}
-                  >
-                    取消
-                  </Button>
-                </div>
               </form>
             </Form>
+          </CardContent>
+        </Card>
+
+        {/* 操作按钮 */}
+        <Card className="overflow-hidden">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-end gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={() => router.push('/suppliers')}
+                disabled={isLoading}
+                className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:border-[hsl(var(--color-border-strong))] hover:shadow-[var(--shadow-medium)]"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                取消
+              </Button>
+              <Button
+                type="submit"
+                size="lg"
+                disabled={isLoading}
+                onClick={form.handleSubmit(onSubmit)}
+                className="h-11 gap-2 bg-[hsl(var(--color-primary))] text-white shadow-[var(--shadow-medium)] transition-transform hover:-translate-y-0.5 hover:bg-[hsl(var(--color-primary-hover))] hover:shadow-[var(--shadow-heavy)] focus-visible:ring-[hsl(var(--color-primary))]"
+              >
+                {isLoading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    创建中...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    创建供应商
+                  </>
+                )}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>

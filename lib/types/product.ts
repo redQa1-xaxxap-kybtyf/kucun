@@ -47,6 +47,16 @@ export interface ProductCategory {
 }
 
 /**
+ * 产品库存批次信息
+ */
+export interface ProductInventoryBatch {
+  /** 批次号 */
+  batchNumber: string;
+  /** 批次库存数量 */
+  quantity: number;
+}
+
+/**
  * 产品库存汇总信息
  * 包含产品的总库存、预留库存和可用库存
  */
@@ -57,6 +67,8 @@ export interface ProductInventory {
   reservedQuantity: number;
   /** 可用库存数量（总库存 - 预留库存） */
   availableQuantity: number;
+  /** 批次明细列表 */
+  batches?: ProductInventoryBatch[];
 }
 
 /**

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 分类服务端 API
  * 用于 Server Components 中的数据获取
  * 遵循 Next.js 15 官方最佳实践：使用 React.cache() 避免重复查询
@@ -9,6 +9,7 @@ import { type Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
+import type { CategoryStatus } from '@/lib/validations/category';
 import type { CategoryQueryParams } from '@/lib/validations/category';
 
 export interface CategoryWithCounts {
@@ -18,7 +19,7 @@ export interface CategoryWithCounts {
   description: string | null;
   parentId: string | null;
   sortOrder: number;
-  status: string;
+  status: CategoryStatus;
   createdAt: Date;
   updatedAt: Date;
   productCount: number;
@@ -159,3 +160,4 @@ export const getCategoryServer = cache(
     };
   }
 );
+

@@ -67,7 +67,10 @@ export function useCustomerPriceHistory(params: {
       }
 
       const response = await fetch(
-        `/api/price-history/customer?${searchParams.toString()}`
+        `/api/price-history/customer?${searchParams.toString()}`,
+        {
+          credentials: 'include',
+        }
       );
 
       if (!response.ok) {
@@ -105,7 +108,10 @@ export function useSupplierPriceHistory(params: {
       }
 
       const response = await fetch(
-        `/api/price-history/supplier?${searchParams.toString()}`
+        `/api/price-history/supplier?${searchParams.toString()}`,
+        {
+          credentials: 'include',
+        }
       );
 
       if (!response.ok) {
@@ -142,6 +148,7 @@ export function useRecordCustomerPrice() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
 
@@ -180,6 +187,7 @@ export function useRecordSupplierPrice() {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify(data),
       });
 
@@ -203,22 +211,22 @@ export function useRecordSupplierPrice() {
 /**
  * 获取产品的最新价格（用于自动填充）
  * @param prices 价格历史列表
- * @param productId 产品ID
+ * @param productCode 产品编码
  * @param priceType 价格类型（可选）
  * @returns 最新价格，如果没有则返回 undefined
  */
 export function getLatestPrice(
   prices: CustomerProductPrice[] | undefined,
-  productId: string,
+  productCode: string,
   priceType?: PriceType
 ): number | undefined {
   if (!prices || prices.length === 0) {
     return undefined;
   }
 
-  // 过滤出指定产品和价格类型的价格
+  // 过滤出指定产品编码和价格类型的价格
   const filteredPrices = prices.filter(
-    p => p.productId === productId && (!priceType || p.priceType === priceType)
+    p => p.product?.code === productCode && (!priceType || p.priceType === priceType)
   );
 
   if (filteredPrices.length === 0) {

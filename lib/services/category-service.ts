@@ -66,6 +66,57 @@ export interface CreateCategoryParams {
 // ==================== 辅助函数 ====================
 
 /**
+ * 获取分类的层级深度
+ * @param categoryId - 分类ID
+ * @returns 层级深度（1表示顶级分类，2表示二级分类，以此类推）
+ */
+async function getCategoryDepth(categoryId: string): Promise<number> {
+  let depth = 1;
+  let currentId: string | null = categoryId;
+
+  while (currentId) {
+    const category = await prisma.category.findUnique({
+      where: { id: currentId },
+      select: { parentId: true },
+    });
+
+    if (!category) {
+      break;
+    }
+
+    if (category.parentId) {
+      depth++;
+      currentId = category.parentId;
+    } else {
+      currentId = null;
+    }
+  }
+
+  return depth;
+}
+
+/**
+ * 检查分类层级限制
+ * 最多支持3级分类
+ * @param parentId - 父分类ID
+ * @throws Error 如果超过层级限制
+ */
+async function validateCategoryDepth(parentId?: string): Promise<void> {
+  const MAX_DEPTH = 3;
+
+  if (!parentId) {
+    // 顶级分类，层级为1
+    return;
+  }
+
+  const parentDepth = await getCategoryDepth(parentId);
+
+  if (parentDepth >= MAX_DEPTH) {
+    throw new Error(`分类层级不能超过${MAX_DEPTH}级，当前父分类已是第${parentDepth}级`);
+  }
+}
+
+/**
  * 构建查询条件
  * 优化: 移除 MySQL 不支持的 mode: 'insensitive',简化状态过滤逻辑
  */
@@ -239,7 +290,10 @@ export async function getCategories(
 export async function createCategory(
   params: CreateCategoryParams
 ): Promise<CategoryItem> {
-  // 生成分类编码（如果未提供）
+  // 1. 检查层级限制
+  await validateCategoryDepth(params.parentId);
+
+  // 2. 生成分类编码（如果未提供）
   let code = params.code;
   if (!code) {
     // 使用编码生成器
@@ -264,13 +318,16 @@ export async function createCategory(
     }
   }
 
-  // 检查名称唯一性
+  // 3. 检查名称唯一性（同一父分类下名称唯一）
   const existingName = await prisma.category.findFirst({
-    where: { name: params.name },
+    where: {
+      name: params.name,
+      parentId: params.parentId || null, // null 表示顶级分类
+    },
   });
 
   if (existingName) {
-    throw new Error('分类名称已存在');
+    throw new Error('同一父分类下已存在相同名称的分类');
   }
 
   // 创建分类
@@ -321,4 +378,101 @@ export async function getCategoryById(
   }
 
   return transformCategory(category);
+}
+
+/**
+ * 更新分类
+ */
+export interface UpdateCategoryParams {
+  id: string;
+  name?: string;
+  parentId?: string;
+  sortOrder?: number;
+}
+
+export async function updateCategory(
+  params: UpdateCategoryParams
+): Promise<CategoryItem> {
+  const { id, ...updateData } = params;
+
+  // 1. 检查分类是否存在
+  const existingCategory = await prisma.category.findUnique({
+    where: { id },
+    select: { id: true, name: true, parentId: true },
+  });
+
+  if (!existingCategory) {
+    throw new Error('分类不存在');
+  }
+
+  // 2. 如果要修改父级分类，检查层级限制
+  if (updateData.parentId !== undefined) {
+    // 不能将自己设为父级
+    if (updateData.parentId === id) {
+      throw new Error('不能将自己设为父级分类');
+    }
+
+    // 检查父级分类是否存在
+    if (updateData.parentId) {
+      const parentExists = await prisma.category.findUnique({
+        where: { id: updateData.parentId },
+        select: { id: true },
+      });
+
+      if (!parentExists) {
+        throw new Error('父级分类不存在');
+      }
+
+      // 检查层级限制
+      await validateCategoryDepth(updateData.parentId);
+    }
+  }
+
+  // 3. 检查名称唯一性（同一父分类下名称唯一）
+  // 如果名称或父分类发生变化，需要检查
+  const nameChanged = updateData.name && updateData.name !== existingCategory.name;
+  const parentChanged = updateData.parentId !== undefined && updateData.parentId !== existingCategory.parentId;
+
+  if (nameChanged || parentChanged) {
+    // 确定最终的名称和父分类ID
+    const finalName = updateData.name || existingCategory.name;
+    const finalParentId =
+      updateData.parentId !== undefined
+        ? updateData.parentId
+        : existingCategory.parentId;
+
+    const nameExists = await prisma.category.findFirst({
+      where: {
+        name: finalName,
+        parentId: finalParentId || null,
+        id: { not: id },
+      },
+      select: { id: true },
+    });
+
+    if (nameExists) {
+      throw new Error('同一父分类下已存在相同名称的分类');
+    }
+  }
+
+  // 4. 更新分类
+  const updatedCategory = await prisma.category.update({
+    where: { id },
+    data: {
+      name: updateData.name,
+      parentId: updateData.parentId,
+      sortOrder: updateData.sortOrder,
+    },
+    include: {
+      parent: true,
+      children: true,
+      _count: {
+        select: {
+          products: true,
+        },
+      },
+    },
+  });
+
+  return transformCategory(updatedCategory);
 }

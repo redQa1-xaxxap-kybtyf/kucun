@@ -90,8 +90,8 @@ function PayableInfoSidebar({
   payableRecord: PayableRecord;
 }) {
   return (
-    <Card className="shadow-md shadow-gray-200/50">
-      <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+    <Card>
+      <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
         <CardTitle className="flex items-center gap-2">
           <DollarSign className="h-5 w-5" />
           应付款信息
@@ -121,13 +121,13 @@ function PayableInfoSidebar({
         </div>
         <div>
           <p className="text-muted-foreground text-sm">已付金额</p>
-          <p className="font-medium text-green-600">
+          <p className="font-medium text-[hsl(var(--color-success))]">
             {formatCurrency(payableRecord.paidAmount)}
           </p>
         </div>
         <div>
           <p className="text-muted-foreground text-sm">剩余应付</p>
-          <p className="text-lg font-semibold text-orange-600">
+          <p className="text-lg font-semibold text-[hsl(var(--color-warning))]">
             {formatCurrency(payableRecord.remainingAmount)}
           </p>
         </div>
@@ -484,18 +484,18 @@ export default function CreatePaymentOutPage() {
     <div className="flex h-full flex-col overflow-hidden p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
+          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-[0_10px_24px_rgba(9,88,217,0.22)]">
                   <DollarSign className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
                     创建付款记录
                   </h1>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
                     填写付款信息并提交，记录对供应商的付款
                   </p>
                 </div>
@@ -504,7 +504,7 @@ export default function CreatePaymentOutPage() {
                 variant="outline"
                 size="lg"
                 asChild
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
               >
                 <Link href="/finance/payments-out">
                   <ArrowLeft className="mr-2 h-4 w-4" />
@@ -518,8 +518,8 @@ export default function CreatePaymentOutPage() {
         <div className="grid gap-6 lg:grid-cols-3">
           {/* 主表单区域 */}
           <div className="lg:col-span-2">
-            <Card className="shadow-md shadow-gray-200/50">
-              <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
+            <Card>
+              <CardHeader className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
                 <CardTitle>付款信息</CardTitle>
                 <CardDescription>请填写完整的付款信息</CardDescription>
               </CardHeader>

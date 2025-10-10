@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { productVariantUpdateSchema } from '@/lib/validations/product';
@@ -7,9 +8,8 @@ import { productVariantUpdateSchema } from '@/lib/validations/product';
 // 获取单个产品变体详情
 export const GET = withAuth(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
+    const { id } = params;
     try {
-      const { id } = params;
-
       // 验证ID格式
       if (!id || typeof id !== 'string') {
         return NextResponse.json(
@@ -99,7 +99,7 @@ export const GET = withAuth(
         data: formattedVariant,
       });
     } catch (error) {
-      console.error('获取产品变体详情错误:', error);
+      logger.error('product-variants', '获取产品变体详情失败', error, { variantId: id });
 
       return NextResponse.json(
         {
@@ -116,8 +116,8 @@ export const GET = withAuth(
 // 更新产品变体
 export const PUT = withAuth(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
+    const { id } = params;
     try {
-      const { id } = params;
       const body = await request.json();
 
       // 验证ID格式
@@ -250,7 +250,7 @@ export const PUT = withAuth(
         data: formattedVariant,
       });
     } catch (error) {
-      console.error('更新产品变体错误:', error);
+      logger.error('product-variants', '更新产品变体失败', error, { variantId: id });
 
       return NextResponse.json(
         {
@@ -266,9 +266,8 @@ export const PUT = withAuth(
 // 删除产品变体
 export const DELETE = withAuth(
   async (request: NextRequest, { params }: { params: { id: string } }) => {
+    const { id } = params;
     try {
-      const { id } = params;
-
       // 验证ID格式
       if (!id || typeof id !== 'string') {
         return NextResponse.json(
@@ -323,7 +322,7 @@ export const DELETE = withAuth(
         data: null,
       });
     } catch (error) {
-      console.error('删除产品变体错误:', error);
+      logger.error('product-variants', '删除产品变体失败', error, { variantId: id });
 
       return NextResponse.json(
         {

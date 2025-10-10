@@ -18,8 +18,8 @@ export function FinanceListSkeleton() {
             style={{ animationDelay: `${i * 50}ms` }}
           >
             <div className="space-y-2">
-              <div className="h-4 w-24 animate-pulse rounded bg-gray-200" />
-              <div className="h-8 w-32 animate-pulse rounded bg-gray-200" />
+              <div className="h-4 w-24 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
+              <div className="h-8 w-32 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
             </div>
           </div>
         ))}
@@ -27,9 +27,9 @@ export function FinanceListSkeleton() {
 
       {/* 搜索和筛选骨架 */}
       <div className="flex items-center gap-4">
-        <div className="h-10 flex-1 animate-pulse rounded-md bg-gray-200" />
-        <div className="h-10 w-32 animate-pulse rounded-md bg-gray-200" />
-        <div className="h-10 w-32 animate-pulse rounded-md bg-gray-200" />
+        <div className="h-10 flex-1 animate-pulse rounded-md bg-[hsl(var(--color-border-secondary))]" />
+        <div className="h-10 w-32 animate-pulse rounded-md bg-[hsl(var(--color-border-secondary))]" />
+        <div className="h-10 w-32 animate-pulse rounded-md bg-[hsl(var(--color-border-secondary))]" />
       </div>
 
       {/* 表格骨架 */}
@@ -40,7 +40,7 @@ export function FinanceListSkeleton() {
             {[1, 2, 3, 4, 5, 6].map(i => (
               <div
                 key={i}
-                className="h-4 animate-pulse rounded bg-gray-200"
+                className="h-4 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]"
                 style={{ animationDelay: `${i * 30}ms` }}
               />
             ))}
@@ -54,7 +54,7 @@ export function FinanceListSkeleton() {
               {[1, 2, 3, 4, 5, 6].map(col => (
                 <div
                   key={col}
-                  className="h-4 animate-pulse rounded bg-gray-200"
+                  className="h-4 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]"
                   style={{ animationDelay: `${(row * 6 + col) * 30}ms` }}
                 />
               ))}
@@ -65,12 +65,12 @@ export function FinanceListSkeleton() {
 
       {/* 分页骨架 */}
       <div className="flex items-center justify-between">
-        <div className="h-4 w-48 animate-pulse rounded bg-gray-200" />
+        <div className="h-4 w-48 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]" />
         <div className="flex gap-2">
           {[1, 2, 3, 4].map(i => (
             <div
               key={i}
-              className="h-10 w-10 animate-pulse rounded bg-gray-200"
+              className="h-10 w-10 animate-pulse rounded bg-[hsl(var(--color-border-secondary))]"
             />
           ))}
         </div>

@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { productVariantCheckSkuSchema } from '@/lib/validations/product';
@@ -84,7 +85,9 @@ export const GET = withAuth(async (request: NextRequest) => {
       },
     });
   } catch (error) {
-    console.error('检查SKU可用性错误:', error);
+    logger.error('product-variants', '检查SKU可用性失败', error, {
+      sku: request.nextUrl.searchParams.get('sku') || undefined,
+    });
 
     return NextResponse.json(
       {
@@ -191,7 +194,7 @@ export const POST = withAuth(async (request: NextRequest) => {
       summary,
     });
   } catch (error) {
-    console.error('批量检查SKU可用性错误:', error);
+    logger.error('product-variants', '批量检查SKU可用性失败', error);
 
     return NextResponse.json(
       {
@@ -258,7 +261,9 @@ async function generateSkuSuggestions(baseSku: string): Promise<string[]> {
 
     return suggestions;
   } catch (error) {
-    console.error('生成SKU建议错误:', error);
+    logger.error('product-variants', '生成SKU建议失败', error, {
+      baseSku,
+    });
     return [];
   }
 }

@@ -101,7 +101,7 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
     searchValue = '',
     onSearchChange,
     searchPlaceholder = '搜索...',
-    debounceDelay = 400,
+    debounceDelay: _debounceDelay = 400, // 防抖由父组件处理
     showClearButton = true,
     filters = [],
     filterValues = {},
@@ -111,28 +111,21 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
     className,
     compact = false,
   }) => {
-    // 使用受控输入 - 直接使用外部传入的searchValue
-    // 不再使用内部状态，避免状态同步问题
-    const [localValue, setLocalValue] = React.useState(searchValue);
+    // ✅ 修复：使用受控输入，避免内部状态导致的双重渲染
+    // 直接使用外部传入的 searchValue，不维护本地状态
+    // 这样可以避免状态同步导致的抖动问题
 
-    // 同步外部值到本地状态（用于显示）
-    React.useEffect(() => {
-      setLocalValue(searchValue);
-    }, [searchValue]);
-
-    // 处理输入变化 - 立即更新本地显示，调用父组件回调
+    // 处理输入变化 - 直接调用父组件回调
     const handleInputChange = React.useCallback(
       (e: React.ChangeEvent<HTMLInputElement>) => {
         const newValue = e.target.value;
-        setLocalValue(newValue); // 立即更新本地显示
-        onSearchChange(newValue); // 调用父组件回调（父组件负责防抖）
+        onSearchChange(newValue); // 父组件负责防抖和状态管理
       },
       [onSearchChange]
     );
 
     // 清空搜索
     const handleClearSearch = React.useCallback(() => {
-      setLocalValue('');
       onSearchChange('');
     }, [onSearchChange]);
 
@@ -183,16 +176,16 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
             />
             <Input
               placeholder={searchPlaceholder}
-              value={localValue}
+              value={searchValue}
               onChange={handleInputChange}
               className={cn(
                 'pl-10',
-                showClearButton && localValue && 'pr-10',
+                showClearButton && searchValue && 'pr-10',
                 inputSize
               )}
             />
             {/* 清空按钮 */}
-            {showClearButton && localValue && (
+            {showClearButton && searchValue && (
               <Button
                 type="button"
                 variant="ghost"

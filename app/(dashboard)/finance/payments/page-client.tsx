@@ -232,21 +232,21 @@ export function PaymentsPageClient({
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
+          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-green-600 shadow-lg shadow-green-600/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-success))] shadow-lg shadow-green-600/30">
                   <DollarSign className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
                     收款记录
                   </h1>
-                  <p className="text-sm text-gray-600">
+                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
                     管理销售订单的收款记录，跟踪收款状态和金额
                   </p>
                 </div>
@@ -256,7 +256,7 @@ export function PaymentsPageClient({
                   variant="outline"
                   size="lg"
                   asChild
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Link href="/finance/payments/export">
                     <Download className="mr-2 h-4 w-4" />
@@ -266,7 +266,7 @@ export function PaymentsPageClient({
                 <Button
                   size="lg"
                   asChild
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
                 >
                   <Link href="/finance/payments/create">
                     <Plus className="mr-2 h-4 w-4" />

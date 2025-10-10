@@ -55,50 +55,6 @@ export function InventoryListToolbar({
                 实时监控库存水平和库存变动
               </p>
             </div>
-
-            {/* 选中状态提示 */}
-            {selectedCount > 0 && (
-              <div className="ml-4 flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-2">
-                <span className="text-sm font-medium text-blue-900">
-                  已选择 {selectedCount} 条记录
-                </span>
-                <div className="flex gap-1">
-                  {onBatchInbound && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onBatchInbound}
-                      className="h-8 bg-white"
-                    >
-                      <FileDown className="mr-1.5 h-3.5 w-3.5" />
-                      批量入库
-                    </Button>
-                  )}
-                  {onBatchOutbound && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={onBatchOutbound}
-                      className="h-8 bg-white"
-                    >
-                      <FileUp className="mr-1.5 h-3.5 w-3.5" />
-                      批量出库
-                    </Button>
-                  )}
-                  {onBatchDelete && (
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={onBatchDelete}
-                      className="h-8"
-                    >
-                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                      批量删除
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* 主要操作按钮 */}

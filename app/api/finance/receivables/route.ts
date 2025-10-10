@@ -26,12 +26,15 @@ import { accountsReceivableQuerySchema } from '@/lib/validations/payment';
  * 权限：需要 finance:view 权限
  */
 export const GET = withAuth(
-  async (request: NextRequest, { user }) => {
+  async (request: NextRequest) => {
     // 参数验证
     const searchParams = new URL(request.url).searchParams;
+    const limitParam =
+      searchParams.get('limit') ?? searchParams.get('pageSize') ?? '20';
+
     const validationResult = accountsReceivableQuerySchema.safeParse({
       page: parseInt(searchParams.get('page') || '1'),
-      pageSize: parseInt(searchParams.get('pageSize') || '20'),
+      limit: parseInt(limitParam, 10),
       search: searchParams.get('search') || undefined,
       customerId: searchParams.get('customerId') || undefined,
       paymentStatus: searchParams.get('paymentStatus') || undefined,
@@ -79,13 +82,14 @@ export const GET = withAuth(
  * 权限：需要 finance:export 权限
  */
 export const POST = withAuth(
-  async (request: NextRequest, { user }) => {
+  async (request: NextRequest) => {
     // 参数验证
     const body = await request.json();
+    const { pageSize, ...restBody } = body ?? {};
     const validationResult = accountsReceivableQuerySchema.safeParse({
-      ...body,
+      ...restBody,
       page: 1,
-      pageSize: 999999, // 导出所有数据
+      limit: restBody?.limit ?? pageSize ?? 999999, // 导出所有数据
     });
 
     if (!validationResult.success) {

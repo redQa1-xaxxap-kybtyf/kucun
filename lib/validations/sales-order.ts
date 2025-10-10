@@ -7,6 +7,13 @@ import { z } from 'zod';
 
 import { paginationConfig } from '@/lib/env';
 
+const nullableNumber = (schema: z.ZodNumber) =>
+  z
+    .union([schema, z.null(), z.undefined()])
+    .transform(value =>
+      value === null || value === undefined ? undefined : value
+    );
+
 /**
  * 销售订单状态枚举
  */
@@ -28,6 +35,18 @@ export const salesOrderTypeSchema = z.enum(['NORMAL', 'TRANSFER']);
  */
 export const salesOrderItemSchema = z.object({
   productId: z.string().min(1, '产品ID不能为空').optional(),
+
+  productCode: z
+    .string()
+    .max(50, '产品编码不能超过50个字符')
+    .optional()
+    .or(z.literal('')),
+
+  batchNumber: z
+    .string()
+    .max(50, '批次号不能超过50个字符')
+    .optional()
+    .or(z.literal('')),
 
   colorCode: z
     .string()
@@ -53,23 +72,25 @@ export const salesOrderItemSchema = z.object({
   // 用户界面输入的数量（根据displayUnit）
   displayQuantity: z
     .number()
-    .min(0.01, '数量必须大于0')
+    .min(0, '数量不能为负数')
     .max(999999.99, '数量不能超过999,999.99')
-    .multipleOf(0.01, '数量最多保留2位小数'),
+    .multipleOf(0.01, '数量最多保留2位小数')
+    .optional(),
 
   // 系统内部存储的数量（始终以片为单位）
   quantity: z
     .number()
-    .min(0.01, '数量必须大于0')
+    .min(0, '数量不能为负数')
     .max(999999.99, '数量不能超过999,999.99')
-    .multipleOf(0.01, '数量最多保留2位小数'),
+    .multipleOf(0.01, '数量最多保留2位小数')
+    .optional(),
 
   // 保留原有的unit字段用于兼容性（从产品数据获取）
   unit: z.string().max(20, '单位不能超过20个字符').optional().or(z.literal('')),
 
   unitPrice: z
     .number()
-    .min(0.01, '单价必须大于0')
+    .min(0, '单价不能为负数')
     .max(999999.99, '单价不能超过999,999.99')
     .multipleOf(0.01, '单价最多保留2位小数')
     .optional(),
@@ -89,12 +110,13 @@ export const salesOrderItemSchema = z.object({
   subtotal: z.number().min(0, '小计不能为负数').optional(),
 
   // 调货销售相关字段
-  unitCost: z
-    .number()
-    .min(0.01, '成本价必须大于0')
-    .max(999999.99, '成本价不能超过999,999.99')
-    .multipleOf(0.01, '成本价最多保留2位小数')
-    .optional(),
+  unitCost: nullableNumber(
+    z
+      .number()
+      .min(0, '成本价不能为负数')
+      .max(999999.99, '成本价不能超过999,999.99')
+      .multipleOf(0.01, '成本价最多保留2位小数')
+  ),
 
   // 手动输入商品信息（调货销售时使用）
   isManualProduct: z.boolean().optional(),
@@ -111,12 +133,13 @@ export const salesOrderItemSchema = z.object({
     .optional()
     .or(z.literal('')),
 
-  manualWeight: z
-    .number()
-    .min(0, '重量不能为负数')
-    .max(99999.99, '重量不能超过99,999.99')
-    .multipleOf(0.01, '重量最多保留2位小数')
-    .optional(),
+  manualWeight: nullableNumber(
+    z
+      .number()
+      .min(0, '重量不能为负数')
+      .max(99999.99, '重量不能超过99,999.99')
+      .multipleOf(0.01, '重量最多保留2位小数')
+  ),
 
   manualUnit: z
     .string()
@@ -147,12 +170,13 @@ const baseSalesOrderSchema = z.object({
     .optional()
     .or(z.literal('')),
 
-  costAmount: z
-    .number()
-    .min(0, '成本金额不能为负数')
-    .max(999999999.99, '成本金额不能超过999,999,999.99')
-    .multipleOf(0.01, '成本金额最多保留2位小数')
-    .optional(),
+  costAmount: nullableNumber(
+    z
+      .number()
+      .min(0, '成本金额不能为负数')
+      .max(999999999.99, '成本金额不能超过999,999,999.99')
+      .multipleOf(0.01, '成本金额最多保留2位小数')
+  ),
 
   remarks: z
     .string()
@@ -162,7 +186,7 @@ const baseSalesOrderSchema = z.object({
 
   items: z
     .array(salesOrderItemSchema)
-    .min(1, '至少需要一个订单项')
+    .min(0, '订单明细不能为负')
     .max(100, '订单明细不能超过100条'),
 
   totalAmount: z.number().min(0, '总金额不能为负数').optional(),
@@ -187,12 +211,34 @@ function validateItemCombinations(items: SalesOrderItemFormData[]): boolean {
  * 销售订单创建验证规则
  */
 export const salesOrderCreateSchema = baseSalesOrderSchema
-  .refine(data => validateItemCombinations(data.items), {
+  .refine(data => {
+    // 草稿状态允许空订单项
+    if (data.status === 'draft') {
+      return true;
+    }
+    // 非草稿状态至少需要一个订单项
+    return data.items && data.items.length > 0;
+  }, {
+    message: '至少需要一个订单项',
+    path: ['items'],
+  })
+  .refine(data => {
+    // 草稿状态使用宽松验证
+    if (data.status === 'draft') {
+      return true;
+    }
+    // 非草稿状态验证组合唯一性
+    return validateItemCombinations(data.items);
+  }, {
     message: '订单明细中存在重复的产品规格组合',
     path: ['items'],
   })
   .refine(
     data => {
+      // 草稿状态跳过验证
+      if (data.status === 'draft') {
+        return true;
+      }
       // 调货销售必须填写供应商
       if (data.orderType === 'TRANSFER') {
         return data.supplierId && data.supplierId.trim() !== '';
@@ -206,6 +252,10 @@ export const salesOrderCreateSchema = baseSalesOrderSchema
   )
   .refine(
     data => {
+      // 草稿状态跳过验证
+      if (data.status === 'draft') {
+        return true;
+      }
       // 调货销售必须填写成本金额
       if (data.orderType === 'TRANSFER') {
         return data.costAmount !== undefined && data.costAmount > 0;
@@ -219,6 +269,10 @@ export const salesOrderCreateSchema = baseSalesOrderSchema
   )
   .refine(
     data => {
+      // 草稿状态跳过验证
+      if (data.status === 'draft') {
+        return true;
+      }
       // 验证手动输入商品的必填字段
       for (let i = 0; i < data.items.length; i++) {
         const item = data.items[i];

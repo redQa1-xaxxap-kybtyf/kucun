@@ -33,6 +33,10 @@ interface ProductWithInventory {
     totalInventory: number;
     availableInventory: number;
     reservedInventory: number;
+    batches?: Array<{
+      batchNumber: string;
+      quantity: number;
+    }>;
   } | null;
 }
 
@@ -40,6 +44,7 @@ interface SmartProductSearchProps {
   products: ProductWithInventory[];
   value?: string;
   onValueChange?: (value: string) => void;
+  onBatchSelect?: (productId: string, batchNumber: string) => void;
   onTemporaryProductAdd?: (productData: {
     name: string;
     specification?: string;
@@ -60,6 +65,7 @@ export function SmartProductSearch({
   products,
   value,
   onValueChange,
+  onBatchSelect,
   onTemporaryProductAdd,
   placeholder = '搜索商品',
   disabled = false,
@@ -89,7 +95,19 @@ export function SmartProductSearch({
     );
   }, [products, searchValue]);
 
-  // 处理产品选择
+  // 处理批次选择
+  const handleBatchSelect = (
+    productId: string,
+    batchNumber: string,
+    e: React.MouseEvent
+  ) => {
+    e.stopPropagation(); // 阻止事件冒泡，避免触发产品选择
+    onBatchSelect?.(productId, batchNumber);
+    setOpen(false);
+    setSearchValue('');
+  };
+
+  // 处理产品选择（用于没有批次的产品）
   const handleProductSelect = (productId: string) => {
     onValueChange?.(productId);
     setOpen(false);
@@ -135,10 +153,10 @@ export function SmartProductSearch({
                 {selectedProduct ? (
                   <span className="flex items-center gap-2">
                     <span className="font-medium">{selectedProduct.name}</span>
-                    {selectedProduct.specification && (
-                      <span className="text-muted-foreground text-sm">
-                        {selectedProduct.specification}
-                      </span>
+                    {selectedProduct.code && (
+                      <Badge variant="secondary" className="text-[11px] font-mono">
+                        {selectedProduct.code}
+                      </Badge>
                     )}
                   </span>
                 ) : (
@@ -149,14 +167,15 @@ export function SmartProductSearch({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[400px] p-0" align="start">
+        <PopoverContent className="w-[600px] p-0" align="start">
           <Command>
             <CommandInput
               placeholder="输入商品名称、编码或规格搜索..."
               value={searchValue}
               onValueChange={setSearchValue}
+              className="h-10"
             />
-            <CommandList>
+            <CommandList className="max-h-[400px]">
               {filteredProducts.length > 0 ? (
                 <CommandGroup>
                   {filteredProducts.map(product => (
@@ -164,40 +183,86 @@ export function SmartProductSearch({
                       key={product.id}
                       value={product.id}
                       onSelect={() => handleProductSelect(product.id)}
-                      className="flex items-center justify-between p-3"
+                      className="flex items-start justify-between gap-4 p-4"
                     >
-                      <div className="flex min-w-0 flex-1 items-center gap-3">
+                      <div className="flex min-w-0 flex-1 items-start gap-3">
                         <Check
                           className={cn(
-                            'h-4 w-4',
+                            'h-4 w-4 shrink-0',
                             value === product.id ? 'opacity-100' : 'opacity-0'
                           )}
                         />
-                        <Package className="text-muted-foreground h-4 w-4 shrink-0" />
-                        <div className="min-w-0 flex-1">
+                        <Package className="text-muted-foreground h-5 w-5 shrink-0" />
+                        <div className="min-w-0 flex-1 space-y-1">
+                          {/* 第一行：产品名称和编码 */}
                           <div className="flex items-center gap-2">
-                            <span className="truncate font-medium">
+                            <span className="font-semibold text-gray-900">
                               {product.name}
                             </span>
-                            <Badge variant="outline" className="text-xs">
+                            <Badge variant="secondary" className="text-xs font-mono">
                               {product.code}
                             </Badge>
                           </div>
+
+                          {/* 第二行：规格信息 */}
                           {product.specification && (
-                            <div className="text-muted-foreground truncate text-sm">
-                              {product.specification}
+                            <div className="text-sm text-gray-600">
+                              规格：{product.specification}
                             </div>
                           )}
+
+                          {/* 第三行：批次信息（可点击选择） */}
+                          {product.inventory?.batches &&
+                            product.inventory.batches.length > 0 && (
+                              <div className="space-y-1">
+                                <div className="text-xs font-medium text-gray-600">
+                                  点击批次进行选择：
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {product.inventory.batches.map((batch, idx) => (
+                                    <button
+                                      key={`${product.id}-${batch.batchNumber}-${idx}`}
+                                      type="button"
+                                      onClick={e =>
+                                        handleBatchSelect(
+                                          product.id,
+                                          batch.batchNumber,
+                                          e
+                                        )
+                                      }
+                                      className="flex items-center gap-1.5 rounded-md border-2 border-blue-200 bg-blue-50 px-3 py-1.5 text-xs transition-all hover:border-blue-400 hover:bg-blue-100 hover:shadow-md active:scale-95"
+                                    >
+                                      <span className="font-mono font-semibold text-blue-700">
+                                        {batch.batchNumber}
+                                      </span>
+                                      <span className="text-gray-400">|</span>
+                                      <span className="font-medium text-green-600">
+                                        {batch.quantity} 片
+                                      </span>
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
                         </div>
                       </div>
+
+                      {/* 右侧：库存信息 */}
                       {product.inventory && (
-                        <div className="shrink-0 text-right">
-                          <div className="text-sm font-medium">
-                            库存: {product.inventory.availableInventory}
+                        <div className="shrink-0 space-y-1 text-right">
+                          <div className="rounded-md bg-green-50 px-3 py-1">
+                            <div className="text-xs text-gray-600">可用库存</div>
+                            <div className="text-lg font-bold text-green-600">
+                              {product.inventory.availableInventory}
+                            </div>
+                            <div className="text-xs text-gray-500">片</div>
                           </div>
-                          <div className="text-muted-foreground text-xs">
-                            {product.unit}
-                          </div>
+                          {product.inventory.totalInventory !==
+                            product.inventory.availableInventory && (
+                            <div className="text-xs text-gray-500">
+                              总量 {product.inventory.totalInventory} 片
+                            </div>
+                          )}
                         </div>
                       )}
                     </CommandItem>

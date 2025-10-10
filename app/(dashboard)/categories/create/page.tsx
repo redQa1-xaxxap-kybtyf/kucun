@@ -79,8 +79,9 @@ export default function CreateCategoryPage() {
       // 先显示成功提示
       toast({
         title: '创建成功',
-        description: `分类 "${data.data?.name || '未知分类'}" 创建成功！系统已自动生成编码：${data.data?.code || '未知编码'}`,
+        description: `分类 "${data.data?.name || '未知分类'}" 创建成功！`,
         variant: 'success',
+        duration: 1500,
       });
 
       // 刷新缓存
@@ -154,6 +155,19 @@ export default function CreateCategoryPage() {
               填写分类的基本信息，包括名称、父级分类和排序顺序
             </CardDescription>
           </CardHeader>
+          <div className="border-b bg-blue-50 px-6 py-3">
+            <div className="flex items-start gap-2 text-sm">
+              <span className="text-blue-600">ℹ️</span>
+              <div className="flex-1 text-blue-800">
+                <strong>分类层级规则：</strong>
+                <ul className="mt-1 ml-4 list-disc space-y-1 text-xs">
+                  <li>支持最多3级分类（例如：抛光砖 → 系列A → 款式1）</li>
+                  <li>不同父分类下可以创建相同名称的子分类</li>
+                  <li>每个分类会自动生成唯一的编码</li>
+                </ul>
+              </div>
+            </div>
+          </div>
           <CardContent className="p-6">
             <Form {...form}>
               <form
@@ -197,16 +211,38 @@ export default function CreateCategoryPage() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="none">无（顶级分类）</SelectItem>
+                            <SelectItem value="none">
+                              <div className="flex items-center gap-2">
+                                <span className="text-blue-600">🏠</span>
+                                <span>无（顶级分类）</span>
+                              </div>
+                            </SelectItem>
                             {parentCategories.map(category => (
                               <SelectItem key={category.id} value={category.id}>
-                                {category.name}
+                                <div className="flex items-center gap-2">
+                                  {category.parent ? (
+                                    <span className="ml-4 text-gray-400">↳</span>
+                                  ) : (
+                                    <span className="text-green-600">📁</span>
+                                  )}
+                                  <span>{category.name}</span>
+                                  {category.parent && (
+                                    <span className="text-xs text-gray-400">
+                                      ({category.parent.name})
+                                    </span>
+                                  )}
+                                </div>
                               </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          选择父级分类以创建层级结构
+                          <div className="flex flex-col gap-1">
+                            <span>选择父级分类以创建层级结构（最多支持3级）</span>
+                            <span className="text-xs text-blue-600">
+                              💡 提示：不同父分类下可以有相同名称的子分类
+                            </span>
+                          </div>
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

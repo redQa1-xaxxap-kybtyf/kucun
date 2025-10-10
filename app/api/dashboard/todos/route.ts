@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 
@@ -152,7 +153,9 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       data: todos.slice(0, 10), // 限制返回数量
     });
   } catch (error) {
-    console.error('获取待办事项失败:', error);
+    logger.error('dashboard', '获取待办事项失败', error, {
+      userId: user.id,
+    });
 
     return NextResponse.json(
       {

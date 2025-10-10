@@ -1,10 +1,13 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useState } from 'react';
+import React from 'react';
 
 import { queryKeys } from '@/lib/queryKeys';
-import type { OutboundType } from '@/lib/types/inventory';
+import type {
+  OutboundRecordQueryParams,
+  OutboundType,
+} from '@/lib/types/inventory';
 
 interface OutboundFilters {
   startDate: string;
@@ -27,34 +30,81 @@ interface OutboundRecord {
   updatedAt: string;
 }
 
-export function useOutboundRecords() {
-  // 筛选状态
-  const [filters, setFilters] = useState<OutboundFilters>({
-    startDate: '',
-    endDate: '',
-    type: '',
+const DEFAULT_QUERY_PARAMS: OutboundRecordQueryParams = {
+  page: 1,
+  limit: 50,
+};
+
+function normalizeQueryParams(
+  params: OutboundRecordQueryParams
+): OutboundRecordQueryParams {
+  const next: OutboundRecordQueryParams = { ...params };
+
+  if (!next.page || next.page < 1) {
+    next.page = DEFAULT_QUERY_PARAMS.page;
+  }
+
+  if (!next.limit || next.limit < 1) {
+    next.limit = DEFAULT_QUERY_PARAMS.limit;
+  }
+
+  return next;
+}
+
+function serializeForKey(
+  params: OutboundRecordQueryParams
+): OutboundRecordQueryParams {
+  const serialized: OutboundRecordQueryParams = {};
+
+  Object.entries(params).forEach(([key, value]) => {
+    if (value === undefined || value === null || value === '') {
+      return;
+    }
+
+    serialized[key as keyof OutboundRecordQueryParams] = value;
   });
 
-  // 获取出库记录数据
+  return serialized;
+}
+
+function normalizeFilterValue(value: string): string | undefined {
+  const trimmed = value.trim();
+  return trimmed === '' ? undefined : trimmed;
+}
+
+export function useOutboundRecords(
+  initialParams: OutboundRecordQueryParams = DEFAULT_QUERY_PARAMS
+) {
+  const mergedInitial = React.useMemo(
+    () => normalizeQueryParams({ ...DEFAULT_QUERY_PARAMS, ...initialParams }),
+    [initialParams]
+  );
+
+  const defaultParamsRef = React.useRef(mergedInitial);
+  const [queryParams, setQueryParams] = React.useState<OutboundRecordQueryParams>(
+    mergedInitial
+  );
+
+  React.useEffect(() => {
+    const next = normalizeQueryParams({ ...mergedInitial });
+    defaultParamsRef.current = next;
+    setQueryParams(next);
+  }, [mergedInitial]);
+
+  const keyParams = React.useMemo(
+    () => serializeForKey(queryParams),
+    [queryParams]
+  );
+
   const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.inventory.outbounds(),
+    queryKey: queryKeys.inventory.outboundsList(keyParams),
     queryFn: async () => {
-      // 构建查询参数
       const searchParams = new URLSearchParams();
-      searchParams.append('page', '1');
-      searchParams.append('limit', '50');
 
-      if (filters.type) {
-        searchParams.append('type', filters.type);
-      }
-      if (filters.startDate) {
-        searchParams.append('startDate', filters.startDate);
-      }
-      if (filters.endDate) {
-        searchParams.append('endDate', filters.endDate);
-      }
+      Object.entries(keyParams).forEach(([key, value]) => {
+        searchParams.append(key, String(value));
+      });
 
-      // 调用API
       const response = await fetch(
         `/api/inventory/outbound?${searchParams.toString()}`
       );
@@ -65,30 +115,45 @@ export function useOutboundRecords() {
 
       const result = await response.json();
 
+      if (result.data && result.pagination) {
+        return {
+          data: result.data as OutboundRecord[],
+          pagination: result.pagination,
+        };
+      }
+
+      if (!result.success) {
+        throw new Error(result.error || '获取出库记录失败');
+      }
+
       return {
-        data: result.data as OutboundRecord[],
+        data: (result.data as OutboundRecord[]) ?? [],
         pagination: result.pagination,
       };
     },
-    staleTime: Infinity, // ✅ 防止客户端重复请求服务端已预取的数据
+    staleTime: Infinity,
   });
 
   const outboundRecords = data?.data || [];
 
-  // 重置筛选
-  const resetFilters = () => {
-    setFilters({
-      startDate: '',
-      endDate: '',
-      type: '',
-    });
+  const filters: OutboundFilters = {
+    startDate: (queryParams.startDate as string) || '',
+    endDate: (queryParams.endDate as string) || '',
+    type: (queryParams.type as OutboundType | '') || '',
+    search: queryParams.search || '',
   };
 
-  // 更新筛选条件
+  const resetFilters = () => {
+    setQueryParams({ ...defaultParamsRef.current });
+  };
+
   const updateFilter = (key: keyof OutboundFilters, value: string) => {
-    setFilters(prev => ({
+    const normalized = normalizeFilterValue(value);
+
+    setQueryParams(prev => ({
       ...prev,
-      [key]: value,
+      [key]: normalized as OutboundRecordQueryParams[keyof OutboundRecordQueryParams],
+      page: 1,
     }));
   };
 
@@ -101,3 +166,4 @@ export function useOutboundRecords() {
     updateFilter,
   };
 }
+

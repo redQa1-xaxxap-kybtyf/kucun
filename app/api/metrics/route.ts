@@ -5,6 +5,7 @@
 
 import { NextResponse } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { exportPrometheusMetrics } from '@/lib/logger/metrics';
 
 /**
@@ -22,7 +23,7 @@ export async function GET() {
       },
     });
   } catch (error) {
-    console.error('Failed to export metrics:', error);
+    logger.error('metrics', '导出 Prometheus 指标失败', error);
 
     return new NextResponse('Internal Server Error', {
       status: 500,

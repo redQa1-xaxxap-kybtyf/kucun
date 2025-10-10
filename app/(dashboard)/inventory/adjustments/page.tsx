@@ -5,9 +5,7 @@ import {
 } from '@tanstack/react-query';
 
 import {
-  adjustmentQueryKeys,
-  getAdjustmentQueryOptions,
-} from '@/lib/api/adjustments';
+  adjustmentQueryKeys,} from '@/lib/api/adjustments';
 import { getAdjustmentsServer } from '@/lib/api/adjustments-server';
 
 import { AdjustmentRecordsPageClient } from './page-client';
@@ -31,35 +29,54 @@ export const revalidate = 0;
 export default async function AdjustmentRecordsPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
+  searchParams: Record<string, string | string[] | undefined>;
 }) {
-  const params = await searchParams;
   const urlSearchParams = new URLSearchParams();
 
-  // 构建 URLSearchParams
-  Object.entries(params).forEach(([key, value]) => {
-    if (value !== undefined) {
-      if (Array.isArray(value)) {
-        value.forEach(v => urlSearchParams.append(key, v));
-      } else {
-        urlSearchParams.append(key, value);
-      }
+  Object.entries(searchParams).forEach(([key, value]) => {
+    if (value === undefined) {
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value
+        .filter(v => v !== undefined && v !== null && String(v).trim() !== '')
+        .forEach(v => urlSearchParams.append(key, String(v)));
+    } else if (String(value).trim() !== '') {
+      urlSearchParams.append(key, value as string);
     }
   });
 
+  const ensureParam = (key: string, fallback: string) => {
+    const current = urlSearchParams.get(key);
+    if (!current || current.trim() === '') {
+      urlSearchParams.set(key, fallback);
+    }
+  };
+
   // 默认查询参数
-  if (!urlSearchParams.has('page')) {
-    urlSearchParams.set('page', '1');
-  }
-  if (!urlSearchParams.has('limit')) {
-    urlSearchParams.set('limit', '20');
-  }
-  if (!urlSearchParams.has('sortBy')) {
-    urlSearchParams.set('sortBy', 'createdAt');
-  }
-  if (!urlSearchParams.has('sortOrder')) {
-    urlSearchParams.set('sortOrder', 'desc');
-  }
+  ensureParam('page', '1');
+  ensureParam('limit', '20');
+  ensureParam('sortBy', 'createdAt');
+  ensureParam('sortOrder', 'desc');
+
+  const parsePositiveNumber = (raw: string | null, fallback: number) => {
+    const parsed = Number(raw);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+  };
+
+  const page = parsePositiveNumber(urlSearchParams.get('page'), 1);
+  const limit = parsePositiveNumber(urlSearchParams.get('limit'), 20);
+  urlSearchParams.set('page', page.toString());
+  urlSearchParams.set('limit', limit.toString());
+
+  const getOptional = (key: string) => {
+    const value = urlSearchParams.get(key);
+    return value && value.trim() !== '' ? value : undefined;
+  };
+
+  const sortByValue = urlSearchParams.get('sortBy') || 'createdAt';
+  const sortOrderValue = urlSearchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc';
 
   // ✅ 创建 QueryClient（启用 Streaming Queries）
   const queryClient = new QueryClient({
@@ -75,24 +92,19 @@ export default async function AdjustmentRecordsPage({
 
   // 构建查询参数对象
   const queryParams = {
-    page: Number(urlSearchParams.get('page')),
-    limit: Number(urlSearchParams.get('limit')),
-    search: urlSearchParams.get('search') || undefined,
-    productId: urlSearchParams.get('productId') || undefined,
-    variantId: urlSearchParams.get('variantId') || undefined,
-    batchNumber: urlSearchParams.get('batchNumber') || undefined,
-    reason: urlSearchParams.get('reason') || undefined,
-    status: urlSearchParams.get('status') || undefined,
-    operatorId: urlSearchParams.get('operatorId') || undefined,
-    startDate: urlSearchParams.get('startDate') || undefined,
-    endDate: urlSearchParams.get('endDate') || undefined,
-    sortBy:
-      (urlSearchParams.get('sortBy') as
-        | 'createdAt'
-        | 'adjustmentNumber'
-        | 'quantity'
-        | 'reason') || 'createdAt',
-    sortOrder: (urlSearchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
+    page,
+    limit,
+    search: getOptional('search'),
+    productId: getOptional('productId'),
+    variantId: getOptional('variantId'),
+    batchNumber: getOptional('batchNumber'),
+    reason: getOptional('reason'),
+    status: getOptional('status'),
+    operatorId: getOptional('operatorId'),
+    startDate: getOptional('startDate'),
+    endDate: getOptional('endDate'),
+    sortBy: (sortByValue as 'createdAt' | 'adjustmentNumber' | 'quantity' | 'reason'),
+    sortOrder: sortOrderValue,
   };
 
   // 设置查询缓存
@@ -103,7 +115,8 @@ export default async function AdjustmentRecordsPage({
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <AdjustmentRecordsPageClient />
+      <AdjustmentRecordsPageClient initialParams={queryParams} />
     </HydrationBoundary>
   );
 }
+

@@ -93,8 +93,8 @@ export const FINANCE_ERROR_MESSAGES = {
 
 // 认证相关错误信息
 export const AUTH_ERROR_MESSAGES = {
-  CREDENTIALS_INVALID: '邮箱或密码错误',
-  ACCOUNT_DISABLED: '账户已被禁用',
+  CREDENTIALS_INVALID: '用户名或密码错误',
+  ACCOUNT_DISABLED: '用户名或密码错误',
   ACCESS_DENIED: '访问被拒绝',
   SESSION_EXPIRED: '会话已过期，请重新登录',
   SESSION_REQUIRED: '需要登录才能访问',
@@ -112,3 +112,4 @@ export const UPLOAD_ERROR_MESSAGES = {
   NO_FILE_SELECTED: '请选择要上传的文件',
   MULTIPLE_FILES_NOT_ALLOWED: '不支持多文件上传',
 } as const;
+

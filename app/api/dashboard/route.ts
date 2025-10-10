@@ -1,6 +1,7 @@
 import type { Prisma } from '@prisma/client';
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { dashboardQuerySchema } from '@/lib/validations/dashboard';
@@ -126,7 +127,9 @@ export const GET = withAuth(async (request: NextRequest) => {
       data: dashboardData,
     });
   } catch (error) {
-    console.error('获取仪表盘数据失败:', error);
+    logger.error('dashboard', '获取仪表盘数据失败', error, {
+      url: request.url,
+    });
 
     return NextResponse.json(
       {

@@ -11,57 +11,6 @@ import {
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateOrderStatusSchema } from '@/lib/validations/sales-order';
 
-/**
- * 格式化销售订单数据
- */
-function formatSalesOrder(salesOrder: {
-  id: string;
-  orderNumber: string;
-  customerId: string;
-  userId: string;
-  totalAmount: number;
-  status: string;
-  remarks?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  customer: unknown;
-  user: unknown;
-  items: Array<{
-    id: string;
-    productId: string;
-    colorCode?: string | null;
-    productionDate?: string | null;
-    quantity: number;
-    unitPrice: number;
-    subtotal: number;
-    product?: unknown;
-  }>;
-}) {
-  return {
-    id: salesOrder.id,
-    orderNumber: salesOrder.orderNumber,
-    customerId: salesOrder.customerId,
-    userId: salesOrder.userId,
-    status: salesOrder.status,
-    totalAmount: salesOrder.totalAmount,
-    remarks: salesOrder.remarks,
-    customer: salesOrder.customer,
-    user: salesOrder.user,
-    items: salesOrder.items.map(item => ({
-      id: item.id,
-      productId: item.productId,
-      colorCode: item.colorCode,
-      productionDate: item.productionDate,
-      quantity: item.quantity,
-      unitPrice: item.unitPrice,
-      totalPrice: item.subtotal ?? item.quantity * item.unitPrice,
-      subtotal: item.subtotal ?? item.quantity * item.unitPrice,
-      product: item.product,
-    })),
-    createdAt: salesOrder.createdAt,
-    updatedAt: salesOrder.updatedAt,
-  };
-}
 
 // 获取单个销售订单信息
 export const GET = withAuth(
@@ -110,11 +59,26 @@ export const GET = withAuth(
           select: {
             id: true,
             productId: true,
+            productCode: true,
+            batchNumber: true,
             colorCode: true,
             productionDate: true,
             quantity: true,
             unitPrice: true,
             subtotal: true,
+            unitCost: true,
+            costSubtotal: true,
+            profitAmount: true,
+            isManualProduct: true,
+            manualProductName: true,
+            manualSpecification: true,
+            manualWeight: true,
+            manualUnit: true,
+            displayUnit: true,
+            displayQuantity: true,
+            piecesPerUnit: true,
+            specification: true,
+            remarks: true,
             product: {
               select: {
                 id: true,
@@ -137,12 +101,9 @@ export const GET = withAuth(
       throw ApiError.notFound('销售订单');
     }
 
-    // 转换数据格式
-    const formattedOrder = formatSalesOrder(salesOrder);
-
     return NextResponse.json({
       success: true,
-      data: formattedOrder,
+      data: salesOrder,
     });
   },
   { permissions: ['orders:view'] }
@@ -343,6 +304,210 @@ export const PUT = withAuth(
     return NextResponse.json({
       success: true,
       data: formattedOrder,
+      message: '销售订单更新成功',
+    });
+  },
+  { permissions: ['orders:edit'] }
+);
+
+// 完整更新销售订单（草稿状态）
+export const PATCH = withAuth(
+  async (request: NextRequest, { user, params }) => {
+    const { id } = await (params as Promise<{ id: string }>);
+    const userId = user.id;
+
+    const body = await request.json();
+
+    // 导入更新schema
+    const { salesOrderUpdateSchema } = await import(
+      '@/lib/validations/sales-order'
+    );
+
+    // 验证输入数据
+    const validationResult = salesOrderUpdateSchema.safeParse({
+      id,
+      ...body,
+    });
+
+    if (!validationResult.success) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '输入数据格式不正确',
+          details: validationResult.error.issues,
+        },
+        { status: 400 }
+      );
+    }
+
+    const updateData = validationResult.data;
+
+    // 检查订单是否存在且为草稿状态
+    const existingOrder = await prisma.salesOrder.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        status: true,
+        orderNumber: true,
+      },
+    });
+
+    if (!existingOrder) {
+      return NextResponse.json(
+        { success: false, error: '销售订单不存在' },
+        { status: 404 }
+      );
+    }
+
+    // 只允许更新草稿状态的订单
+    if (existingOrder.status !== 'draft') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '只能更新草稿状态的订单',
+        },
+        { status: 400 }
+      );
+    }
+
+    // 计算订单金额
+    let totalAmount = 0;
+    let costAmount = 0;
+    let profitAmount = 0;
+
+    if (updateData.items && updateData.items.length > 0) {
+      for (const item of updateData.items) {
+        const itemSubtotal = item.quantity * item.unitPrice;
+        const itemCost = (item.unitCost || 0) * item.quantity;
+
+        totalAmount += itemSubtotal;
+        costAmount += itemCost;
+        profitAmount += itemSubtotal - itemCost;
+      }
+    }
+
+    // 使用事务更新订单
+    const updatedOrder = await prisma.$transaction(async tx => {
+      // 删除现有明细项
+      await tx.salesOrderItem.deleteMany({
+        where: { salesOrderId: id },
+      });
+
+      // 更新订单主表
+      return await tx.salesOrder.update({
+        where: { id },
+        data: {
+          customerId: updateData.customerId,
+          status: updateData.status || 'draft',
+          orderType: updateData.orderType,
+          supplierId: updateData.supplierId || null,
+          costAmount: updateData.orderType === 'TRANSFER' ? costAmount : null,
+          profitAmount: updateData.orderType === 'TRANSFER' ? profitAmount : null,
+          totalAmount,
+          remarks: updateData.remarks || null,
+          items: updateData.items
+            ? {
+                create: updateData.items.map(item => ({
+                  productId: item.productId,
+                  productCode: item.productCode,
+                  batchNumber: item.batchNumber,
+                  colorCode: item.colorCode,
+                  productionDate: item.productionDate,
+                  quantity: item.quantity,
+                  unitPrice: item.unitPrice,
+                  subtotal: item.quantity * item.unitPrice,
+                  unitCost: item.unitCost,
+                  isManualProduct: item.isManualProduct,
+                  manualProductName: item.manualProductName,
+                  manualSpecification: item.manualSpecification,
+                  manualWeight: item.manualWeight,
+                  manualUnit: item.manualUnit,
+                  displayUnit: item.displayUnit,
+                  displayQuantity: item.displayQuantity,
+                  piecesPerUnit: item.piecesPerUnit,
+                  specification: item.specification,
+                  remarks: item.remarks,
+                })),
+              }
+            : undefined,
+        },
+        select: {
+          id: true,
+          orderNumber: true,
+          customerId: true,
+          userId: true,
+          status: true,
+          orderType: true,
+          supplierId: true,
+          costAmount: true,
+          profitAmount: true,
+          totalAmount: true,
+          remarks: true,
+          createdAt: true,
+          updatedAt: true,
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+              address: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          supplier: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              productCode: true,
+              batchNumber: true,
+              colorCode: true,
+              productionDate: true,
+              quantity: true,
+              unitPrice: true,
+              subtotal: true,
+              unitCost: true,
+              isManualProduct: true,
+              manualProductName: true,
+              manualSpecification: true,
+              manualWeight: true,
+              displayUnit: true,
+              displayQuantity: true,
+              piecesPerUnit: true,
+              specification: true,
+              remarks: true,
+              manualUnit: true,
+              product: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                  specification: true,
+                  unit: true,
+                  piecesPerUnit: true,
+                },
+              },
+            },
+          },
+        },
+      });
+    });
+
+    return NextResponse.json({
+      success: true,
+      data: updatedOrder,
       message: '销售订单更新成功',
     });
   },
