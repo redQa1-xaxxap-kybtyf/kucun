@@ -64,6 +64,8 @@ export function useProductForm({
   const form = useForm<ProductCreateFormData | ProductUpdateFormData>({
     resolver: zodResolver(schema),
     defaultValues,
+    mode: 'onSubmit', // 只在提交时验证,不在onChange或onBlur时验证
+    reValidateMode: 'onChange', // 提交后再次修改时实时验证
   });
 
   // 创建产品

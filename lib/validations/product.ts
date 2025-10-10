@@ -21,7 +21,7 @@ import { paginationConfig } from '@/lib/env';
 const baseValidations = {
   /** 产品编码验证：必填，最多50字符，只允许字母数字和特殊符号 */
   code: z
-    .string()
+    .string({ required_error: '产品编码不能为空' })
     .min(1, '产品编码不能为空')
     .max(50, '产品编码不能超过50个字符')
     .regex(/^[A-Za-z0-9-_]+$/, '产品编码只能包含字母、数字、短横线和下划线'),
@@ -36,7 +36,7 @@ const baseValidations = {
 
   /** 规格描述验证：必填，最多200字符 */
   specification: z
-    .string()
+    .string({ required_error: '产品规格不能为空' })
     .min(1, '产品规格不能为空')
     .max(200, '规格描述不能超过200个字符'),
 
