@@ -1040,3 +1040,61 @@ model AccountLockout {
   @@map("account_lockouts")
 }
 
+// ==================== 运输查询系统 ====================
+
+// 运输查询站点配置表
+model ShippingSite {
+  id          String   @id @default(uuid())
+  name        String // 站点名称，如"顺丰速运"
+  url         String // 站点URL
+  description String? // 站点描述
+
+  // 选择器配置 (JSON格式存储)
+  searchInputSelector String @map("search_input_selector") // 搜索框选择器
+  searchButtonSelector String @map("search_button_selector") // 搜索按钮选择器
+  resultContainerSelector String @map("result_container_selector") // 结果容器选择器
+
+  // 数据提取选择器配置 (JSON格式)
+  extractSelectors String @map("extract_selectors") // JSON: {status, destination, estimatedArrival, updateTime}
+
+  status    String   @default("active") // active, inactive
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  shippingQueries ShippingQuery[]
+
+  @@index([status])
+  @@map("shipping_sites")
+}
+
+// 运输查询记录表
+model ShippingQuery {
+  id         String   @id @default(uuid())
+  siteId     String   @map("site_id") // 关联站点
+  trackingNumber String @map("tracking_number") // 追踪单号(大写)
+  inputKeyword String @map("input_keyword") // 用户输入的关键词(可能是中文)
+
+  // 查询结果
+  status        String? // 当前状态
+  destination   String? // 目的地
+  estimatedArrival DateTime? @map("estimated_arrival") // 预计到达时间
+  lastUpdateTime DateTime? @map("last_update_time") // 最后更新时间
+
+  // 元数据
+  queryStatus String   @default("pending") @map("query_status") // pending, success, failed
+  errorMessage String?  @map("error_message") // 错误信息
+  queriedAt DateTime @default(now()) @map("queried_at")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  site ShippingSite @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  @@index([siteId])
+  @@index([trackingNumber])
+  @@index([queryStatus])
+  @@index([queriedAt(sort: Desc)])
+  @@map("shipping_queries")
+}
+
