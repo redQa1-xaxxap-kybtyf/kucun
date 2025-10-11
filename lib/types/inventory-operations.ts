@@ -45,6 +45,7 @@ export interface OutboundRecord {
   type: OutboundType;
   productId: string;
   batchNumber?: string;
+  variantId?: string;
   quantity: number;
   unitCost?: number;
   totalCost?: number;
@@ -53,22 +54,39 @@ export interface OutboundRecord {
   userId: string;
   remarks?: string;
   createdAt: string;
+  updatedAt?: string;
+  reason?: string;
+  inventoryId?: string;
+  inventoryBalance?: number;
 
   // 关联数据（可选）
   product?: Product;
   user?: User;
+  variant?: import('./product').ProductVariant;
+  customer?: {
+    id: string;
+    name: string;
+  };
+  salesOrder?: {
+    id: string;
+    orderNumber: string;
+  };
+}
+
+export interface OutboundRecordDetail extends OutboundRecord {
+  customer?: {
+    id: string;
+    name: string;
+  };
+  salesOrder?: {
+    id: string;
+    orderNumber: string;
+  };
 }
 
 // 库存操作输入类型
-export interface InboundCreateInput {
-  type: InboundType;
-  productId: string;
-  batchNumber?: string;
-  quantity: number;
-  unitCost?: number;
-  supplierId?: string;
-  remarks?: string;
-}
+// 使用 Zod schema 推导的类型，确保与 API 验证规则一致
+export type { CreateInboundData as InboundCreateInput } from '@/lib/validations/inbound';
 
 export interface OutboundCreateInput {
   type: OutboundType;
@@ -116,6 +134,16 @@ export const OUTBOUND_TYPE_LABELS: Record<OutboundType, string> = {
   adjust_outbound: '调整出库',
 };
 
+export const OUTBOUND_REASON_LABELS: Record<string, string> = {
+  normal_outbound: '正常出库',
+  manual_outbound: '手动出库',
+  sales_outbound: '销售出库',
+  adjust_outbound: '调整出库',
+  transfer: '调拨出库',
+  damage: '报损出库',
+  other: '其他出库',
+};
+
 export const INBOUND_TYPE_VARIANTS: Record<
   InboundType,
   'default' | 'secondary' | 'destructive' | 'outline'
@@ -127,7 +155,13 @@ export const INBOUND_TYPE_VARIANTS: Record<
 
 export const OUTBOUND_TYPE_VARIANTS: Record<
   OutboundType,
-  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info'
 > = {
   normal_outbound: 'info',
   sales_outbound: 'success',
@@ -194,6 +228,7 @@ export interface InventoryAdjustment {
   approvedAt?: string;
   createdAt: string;
   updatedAt: string;
+  inventoryBalance?: number;
 
   // 关联数据（可选）
   product?: Product;
@@ -262,11 +297,17 @@ export const ADJUSTMENT_STATUS_LABELS: Record<AdjustmentStatus, string> = {
 // 调整状态颜色映射
 export const ADJUSTMENT_STATUS_VARIANTS: Record<
   AdjustmentStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info'
 > = {
   draft: 'outline',
-  pending: 'secondary',
-  approved: 'default',
+  pending: 'warning',
+  approved: 'success',
   rejected: 'destructive',
 };
 

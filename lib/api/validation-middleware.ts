@@ -53,7 +53,7 @@ export interface ValidationErrorResponse {
 export function handleValidationError(
   error: ZodError
 ): NextResponse<ValidationErrorResponse> {
-  const errors: ValidationErrorDetail[] = error.errors.map(err => ({
+  const errors: ValidationErrorDetail[] = error.issues.map(err => ({
     field: err.path.join('.'),
     message: err.message,
     code: err.code,
@@ -291,7 +291,7 @@ export function safeParse<T>(
  * @returns 格式化的错误消息
  */
 export function formatValidationError(error: ZodError): string {
-  const messages = error.errors.map(err => {
+  const messages = error.issues.map(err => {
     const field = err.path.join('.');
     return field ? `${field}: ${err.message}` : err.message;
   });

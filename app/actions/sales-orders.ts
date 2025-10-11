@@ -147,7 +147,7 @@ export async function createSalesOrder(
             await tx.inventory.updateMany({
               where: { productId: item.productId },
               data: {
-                currentQuantity: {
+                quantity: {
                   decrement: item.quantity,
                 },
               },
@@ -170,7 +170,7 @@ export async function createSalesOrder(
   } catch (error) {
     console.error('创建销售订单失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0].message };
     }
     return { success: false, error: '创建销售订单失败' };
   }
@@ -219,7 +219,7 @@ export async function updateSalesOrderStatus(
             await tx.inventory.updateMany({
               where: { productId: item.productId },
               data: {
-                currentQuantity: {
+                quantity: {
                   decrement: item.quantity,
                 },
               },
@@ -235,7 +235,7 @@ export async function updateSalesOrderStatus(
             await tx.inventory.updateMany({
               where: { productId: item.productId },
               data: {
-                currentQuantity: {
+                quantity: {
                   increment: item.quantity,
                 },
               },
@@ -252,7 +252,7 @@ export async function updateSalesOrderStatus(
   } catch (error) {
     console.error('更新订单状态失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0].message };
     }
     return { success: false, error: '更新订单状态失败' };
   }
@@ -402,7 +402,7 @@ export async function updateSalesOrder(
   } catch (error) {
     console.error('更新销售订单失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0].message };
     }
     return {
       success: false,

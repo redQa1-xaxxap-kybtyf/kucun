@@ -149,7 +149,7 @@ export async function createSupplier(
   } catch (error) {
     console.error('创建供应商失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0].message };
     }
     return { success: false, error: '创建供应商失败' };
   }
@@ -201,7 +201,7 @@ export async function updateSupplier(
   } catch (error) {
     console.error('更新供应商失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0].message };
     }
     return { success: false, error: '更新供应商失败' };
   }
@@ -283,7 +283,7 @@ export async function updateSupplierStatus(
   } catch (error) {
     console.error('更新供应商状态失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0].message };
     }
     return { success: false, error: '更新供应商状态失败' };
   }

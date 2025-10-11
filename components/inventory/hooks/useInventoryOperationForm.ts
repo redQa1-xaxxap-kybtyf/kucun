@@ -177,12 +177,37 @@ export function useInventoryOperationForm({
     try {
       setSubmitError('');
       switch (mode) {
-        case 'inbound':
+        case 'inbound': {
+          // 生成幂等性键
+          const idempotencyKey = crypto.randomUUID();
+          const formData = data as InboundFormData;
+
+          // 确保所有必需字段都有值
+          if (
+            !formData.inputQuantity ||
+            !formData.quantity ||
+            !formData.piecesPerUnit ||
+            !formData.weight
+          ) {
+            setSubmitError('请填写完整的入库信息');
+            return;
+          }
+
           await inboundMutation.mutateAsync({
-            ...(data as InboundFormData),
-            type: 'normal_inbound' as const,
+            idempotencyKey,
+            productId: formData.productId,
+            variantId: formData.variantId,
+            inputQuantity: formData.inputQuantity,
+            inputUnit: formData.inputUnit,
+            quantity: formData.quantity,
+            reason: formData.reason,
+            remarks: formData.remarks,
+            batchNumber: formData.batchNumber,
+            piecesPerUnit: formData.piecesPerUnit,
+            weight: formData.weight,
           });
           break;
+        }
         case 'outbound':
           await outboundMutation.mutateAsync(data as OutboundCreateFormData);
           break;

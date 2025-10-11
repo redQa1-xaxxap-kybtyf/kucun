@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { ApiError } from '@/lib/api/errors';
+import { ApiError, ApiErrorType } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
@@ -189,9 +189,9 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
 
   if (!validationResult.success) {
     throw new ApiError(
-      400,
+      ApiErrorType.VALIDATION_ERROR,
       '查询参数格式不正确',
-      validationResult.error.errors
+      validationResult.error.issues
     );
   }
 
