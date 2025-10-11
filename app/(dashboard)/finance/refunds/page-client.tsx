@@ -150,7 +150,7 @@ export function RefundsPageClient({
       const newFilters = { ...initialParams, [key]: value, page: 1 };
 
       if (key === 'status') {
-        setStatus(value);
+        setStatus(value as RefundStatus | undefined);
       } else if (key === 'sortBy') {
         setSortBy(value || 'refundDate');
       } else if (key === 'sortOrder') {

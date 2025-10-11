@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 
 /**
  * 服务器组件传递给客户端的退款记录类型
- * Date 被序列化为 string
+ * Date 被序列化为 string，包含关联数据
  */
 type SerializedRefundRecord = {
   id: string;
@@ -43,6 +43,27 @@ type SerializedRefundRecord = {
   returnOrderNumber: string | null;
   createdAt: string;
   updatedAt: string;
+  // 关联数据
+  customer: {
+    id: string;
+    name: string;
+    phone: string | null;
+  } | null;
+  salesOrder: {
+    id: string;
+    orderNumber: string;
+    totalAmount: number;
+  } | null;
+  returnOrder: {
+    id: string;
+    returnOrderNumber: string;
+    totalAmount: number;
+    status?: string;
+  } | null;
+  user: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 /**
@@ -109,7 +130,7 @@ async function getRefundsData(searchParams: {
     whereConditions.status = status;
   }
 
-  // 查询退款记录
+  // 查询退款记录 - 包含关联数据
   const [refundsData, total] = await Promise.all([
     prisma.refundRecord.findMany({
       where: whereConditions,
@@ -118,28 +139,35 @@ async function getRefundsData(searchParams: {
       },
       skip,
       take: limit,
-      select: {
-        id: true,
-        refundNumber: true,
-        returnOrderId: true,
-        salesOrderId: true,
-        customerId: true,
-        userId: true,
-        refundType: true,
-        refundMethod: true,
-        refundAmount: true,
-        processedAmount: true,
-        remainingAmount: true,
-        refundDate: true,
-        processedDate: true,
-        status: true,
-        reason: true,
-        remarks: true,
-        bankInfo: true,
-        receiptNumber: true,
-        returnOrderNumber: true,
-        createdAt: true,
-        updatedAt: true,
+      include: {
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+          },
+        },
+        salesOrder: {
+          select: {
+            id: true,
+            orderNumber: true,
+            totalAmount: true,
+          },
+        },
+        returnOrder: {
+          select: {
+            id: true,
+            returnNumber: true,
+            totalAmount: true,
+            status: true,
+          },
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
       },
     }),
     prisma.refundRecord.count({ where: whereConditions }),
@@ -177,18 +205,61 @@ async function getRefundsData(searchParams: {
     r => r.status === 'completed'
   ).length;
 
-  // 将 refundType 转换为 RefundType 类型
-  const refunds: SerializedRefundRecord[] = refundsData.map(refund => ({
-    ...refund,
+  // 序列化退款记录，包含关联数据
+  const refunds = refundsData.map(refund => ({
+    id: refund.id,
+    refundNumber: refund.refundNumber,
+    returnOrderId: refund.returnOrderId,
+    salesOrderId: refund.salesOrderId,
+    customerId: refund.customerId,
+    userId: refund.userId,
     refundType: refund.refundType as RefundType,
     refundMethod: refund.refundMethod as RefundMethod,
-    status: refund.status as RefundStatus,
+    refundAmount: Number(refund.refundAmount),
+    processedAmount: Number(refund.processedAmount),
+    remainingAmount: Number(refund.remainingAmount),
     refundDate: refund.refundDate.toISOString(),
     processedDate: refund.processedDate
       ? refund.processedDate.toISOString()
       : null,
+    status: refund.status as RefundStatus,
+    reason: refund.reason,
+    remarks: refund.remarks,
+    bankInfo: refund.bankInfo,
+    receiptNumber: refund.receiptNumber,
+    returnOrderNumber:
+      refund.returnOrder?.returnNumber ?? refund.returnOrderNumber,
     createdAt: refund.createdAt.toISOString(),
     updatedAt: refund.updatedAt.toISOString(),
+    // 关联数据
+    customer: refund.customer
+      ? {
+          id: refund.customer.id,
+          name: refund.customer.name,
+          phone: refund.customer.phone,
+        }
+      : null,
+    salesOrder: refund.salesOrder
+      ? {
+          id: refund.salesOrder.id,
+          orderNumber: refund.salesOrder.orderNumber,
+          totalAmount: Number(refund.salesOrder.totalAmount),
+        }
+      : null,
+    returnOrder: refund.returnOrder
+      ? {
+          id: refund.returnOrder.id,
+          returnOrderNumber: refund.returnOrder.returnNumber,
+          totalAmount: Number(refund.returnOrder.totalAmount ?? 0),
+          status: refund.returnOrder.status ?? undefined,
+        }
+      : null,
+    user: refund.user
+      ? {
+          id: refund.user.id,
+          name: refund.user.name,
+        }
+      : null,
   }));
 
   return {

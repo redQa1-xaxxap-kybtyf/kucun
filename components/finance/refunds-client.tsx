@@ -28,7 +28,7 @@ import type {
 } from '@/lib/types/refund';
 
 /**
- * 服务器组件传递的退款记录类型（日期字段已序列化为 ISO 字符串）
+ * 服务器组件传递的退款记录类型（日期字段已序列化为 ISO 字符串，包含关联数据）
  */
 type RefundRecordFromServer = {
   id: string;
@@ -52,6 +52,26 @@ type RefundRecordFromServer = {
   returnOrderNumber: string | null;
   createdAt: string;
   updatedAt: string;
+  // 关联数据
+  customer: {
+    id: string;
+    name: string;
+    phone: string | null;
+  } | null;
+  salesOrder: {
+    id: string;
+    orderNumber: string;
+    totalAmount: number;
+  } | null;
+  returnOrder: {
+    id: string;
+    returnOrderNumber: string;
+    totalAmount: number;
+  } | null;
+  user: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 interface RefundsClientProps {
@@ -133,6 +153,17 @@ export function RefundsClient({
     return typeConfig[type] || '其他类型';
   };
 
+  const getMethodLabel = (method: RefundMethod) => {
+    const methodConfig: Record<RefundMethod, string> = {
+      cash: '现金',
+      bank_transfer: '银行转账',
+      alipay: '支付宝',
+      wechat: '微信支付',
+      other: '其他',
+    };
+    return methodConfig[method] || '其他';
+  };
+
   const formatDate = (value?: string | null) => {
     if (!value) {
       return '-';
@@ -141,7 +172,18 @@ export function RefundsClient({
     if (Number.isNaN(date.getTime())) {
       return value;
     }
-    return date.toLocaleDateString();
+    return date.toLocaleDateString('zh-CN');
+  };
+
+  const formatDateTime = (value?: string | null) => {
+    if (!value) {
+      return '-';
+    }
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) {
+      return value;
+    }
+    return `${date.toLocaleDateString('zh-CN')} ${date.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' })}`;
   };
 
   return (
@@ -258,94 +300,163 @@ export function RefundsClient({
               refunds.map(refund => (
                 <Card
                   key={refund.id}
-                  className="border border-[hsl(var(--color-border-secondary))] shadow-[var(--shadow-light)] transition-transform duration-150 hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                  className="overflow-hidden transition-shadow hover:shadow-[var(--shadow-medium)]"
                 >
                   <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-semibold">
-                            {refund.refundNumber}
-                          </h3>
-                          {getStatusBadge(refund.status)}
-                          <Badge
-                            variant="outline"
-                            className="text-xs font-medium"
-                          >
-                            {getTypeLabel(refund.refundType)}
-                          </Badge>
-                        </div>
-                        <p className="text-muted-foreground text-sm">
-                          客户ID：{refund.customerId}
-                        </p>
-                        <p className="text-muted-foreground text-sm">
-                          原订单ID：{refund.salesOrderId}
-                        </p>
-                        <div className="text-muted-foreground flex items-center gap-4 text-sm">
-                          <span>
-                            退款日期：
-                            {formatDate(refund.refundDate)}
-                          </span>
-                          <span>退款原因：{refund.reason}</span>
-                        </div>
+                    {/* 第一行：退款单号、状态和金额 */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
+                          {refund.refundNumber}
+                        </h3>
+                        {getStatusBadge(refund.status)}
+                        <Badge variant="outline" className="text-xs">
+                          {getTypeLabel(refund.refundType)}
+                        </Badge>
                       </div>
-                      <div className="space-y-2 text-right">
-                        <div>
-                          <p className="text-muted-foreground text-sm">
-                            退款金额
-                          </p>
-                          <p className="font-semibold">
-                            {formatCurrency(refund.refundAmount)}
-                          </p>
+                      <div className="flex-shrink-0 text-right">
+                        <div className="text-sm text-[hsl(var(--color-text-tertiary))]">
+                          应退金额
                         </div>
-                        <div>
-                          <p className="text-muted-foreground text-sm">
-                            已处理
-                          </p>
-                          <p className="font-semibold text-[hsl(var(--color-success))]">
-                            {formatCurrency(refund.processedAmount)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-sm">
-                            待处理
-                          </p>
-                          <p className="font-semibold text-[hsl(var(--color-warning))]">
-                            {formatCurrency(refund.remainingAmount)}
-                          </p>
+                        <div className="text-2xl font-bold text-[hsl(var(--color-warning))]">
+                          {formatCurrency(refund.refundAmount)}
                         </div>
                       </div>
                     </div>
-                    <div className="mt-4 flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        disabled={!refund.returnOrderId}
-                        onClick={() => {
-                          if (refund.returnOrderId) {
-                            router.push(
-                              `/return-orders/${refund.returnOrderId}`
-                            );
-                          }
-                        }}
-                        title={
-                          refund.returnOrderId
-                            ? undefined
-                            : '该退款未关联退货订单'
-                        }
-                      >
-                        查看详情
-                      </Button>
-                      {refund.status === 'pending' && (
-                        <Button
-                          size="sm"
-                          onClick={() =>
-                            router.push(`/finance/refunds/${refund.id}/process`)
-                          }
-                        >
-                          处理退款
-                        </Button>
+
+                    {/* 第二行：客户和订单信息 */}
+                    <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                      <div>
+                        <span className="text-[hsl(var(--color-text-tertiary))]">
+                          客户：
+                        </span>
+                        <span className="ml-1 font-medium text-[hsl(var(--color-text-primary))]">
+                          {refund.customer?.name || '未知客户'}
+                        </span>
+                        {refund.customer?.phone && (
+                          <span className="ml-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                            {refund.customer.phone}
+                          </span>
+                        )}
+                      </div>
+                      <div>
+                        <span className="text-[hsl(var(--color-text-tertiary))]">
+                          销售订单：
+                        </span>
+                        <span className="ml-1 font-medium text-[hsl(var(--color-text-primary))]">
+                          {refund.salesOrder?.orderNumber || '无'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[hsl(var(--color-text-tertiary))]">
+                          退货单号：
+                        </span>
+                        <span className="ml-1 font-medium text-[hsl(var(--color-text-primary))]">
+                          {refund.returnOrder?.returnOrderNumber ||
+                            refund.returnOrderNumber ||
+                            '无'}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[hsl(var(--color-text-tertiary))]">
+                          退款方式：
+                        </span>
+                        <span className="ml-1 font-medium text-[hsl(var(--color-text-secondary))]">
+                          {getMethodLabel(refund.refundMethod)}
+                        </span>
+                      </div>
+                      <div>
+                        <span className="text-[hsl(var(--color-text-tertiary))]">
+                          退款日期：
+                        </span>
+                        <span className="ml-1 font-medium text-[hsl(var(--color-text-secondary))]">
+                          {formatDate(refund.refundDate)}
+                        </span>
+                      </div>
+                      {refund.processedDate && (
+                        <div>
+                          <span className="text-[hsl(var(--color-text-tertiary))]">
+                            处理时间：
+                          </span>
+                          <span className="ml-1 font-medium text-[hsl(var(--color-text-secondary))]">
+                            {formatDateTime(refund.processedDate)}
+                          </span>
+                        </div>
                       )}
+                    </div>
+
+                    {/* 第三行：退款原因 */}
+                    {refund.reason && (
+                      <div className="mt-3 text-sm">
+                        <span className="text-[hsl(var(--color-text-tertiary))]">
+                          退款原因：
+                        </span>
+                        <span className="ml-1 text-[hsl(var(--color-text-secondary))]">
+                          {refund.reason}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* 第四行：金额信息和操作按钮 */}
+                    <div className="mt-4 flex items-center gap-6 border-t border-[hsl(var(--color-border-secondary))] pt-4">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                          已处理
+                        </span>
+                        <span className="text-lg font-semibold text-[hsl(var(--color-success))]">
+                          {formatCurrency(refund.processedAmount)}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                          待处理
+                        </span>
+                        <span className="text-lg font-semibold text-[hsl(var(--color-warning))]">
+                          {formatCurrency(refund.remainingAmount)}
+                        </span>
+                      </div>
+                      <div className="ml-auto flex gap-2">
+                        {refund.returnOrderId && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              router.push(
+                                `/return-orders/${refund.returnOrderId}`
+                              )
+                            }
+                          >
+                            查看退货单
+                          </Button>
+                        )}
+                        {refund.salesOrder && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() =>
+                              router.push(
+                                `/sales-orders/${refund.salesOrder.id}`
+                              )
+                            }
+                          >
+                            查看订单
+                          </Button>
+                        )}
+                        {(refund.status === 'pending' ||
+                          refund.status === 'processing' ||
+                          refund.remainingAmount > 0) && (
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              router.push(
+                                `/finance/refunds/${refund.id}/process`
+                              )
+                            }
+                          >
+                            处理退款
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
