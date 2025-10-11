@@ -190,7 +190,7 @@ export function SuppliersPageClient({
                 <TableRow>
                   <TableCell
                     colSpan={6}
-                    className="py-8 text-center text-muted-foreground"
+                    className="text-muted-foreground py-8 text-center"
                   >
                     暂无供应商数据
                   </TableCell>
@@ -212,7 +212,9 @@ export function SuppliersPageClient({
                       {supplier.address || '-'}
                     </TableCell>
                     <TableCell>
-                      <Badge variant={getCommonStatusBadgeVariant(supplier.status)}>
+                      <Badge
+                        variant={getCommonStatusBadgeVariant(supplier.status)}
+                      >
                         {formatSupplierStatus(supplier.status)}
                       </Badge>
                     </TableCell>
@@ -248,16 +250,18 @@ export function SuppliersPageClient({
               )}
             </TableBody>
           </Table>
-        </div>
 
-        {/* 分页组件 */}
-        <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
-          <Pagination
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            showRange
-            showTotal
-          />
+          {/* 分页组件 */}
+          {pagination && pagination.total > 0 && (
+            <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+              <Pagination
+                pagination={pagination}
+                onPageChange={handlePageChange}
+                showRange
+                showTotal
+              />
+            </div>
+          )}
         </div>
       </div>
 
