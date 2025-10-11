@@ -3,6 +3,8 @@
  * 防止重复操作,确保操作的幂等性
  */
 
+import { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 
 export type OperationType =
@@ -24,6 +26,8 @@ export interface IdempotencyResult<T> {
     createdAt: Date;
   } | null;
 }
+
+const MAX_PROCESSING_DURATION_MS = 15_000;
 
 /**
  * 检查幂等性键是否已存在
@@ -244,14 +248,12 @@ export async function withIdempotency<T>(
         throw error;
       }
     } catch (error: unknown) {
-      // 策略2：处理唯一约束冲突 - 说明已有其他请求在处理
-      // Prisma唯一约束错误码: P2002
       if (
-        error &&
-        typeof error === 'object' &&
-        'code' in error &&
+        error instanceof Prisma.PrismaClientKnownRequestError &&
         error.code === 'P2002'
       ) {
+        // 策略2：处理唯一约束冲突 - 说明已有其他请求在处理
+        // Prisma唯一约束错误码: P2002
         // 查询现有记录的状态
         const existing = await checkIdempotency(idempotencyKey);
 
@@ -262,6 +264,19 @@ export async function withIdempotency<T>(
 
         // 情况2：操作仍在处理中，等待后重试
         if (!existing.isNew && existing.operation?.status === 'processing') {
+          const createdAt = existing.operation.createdAt;
+          if (
+            createdAt &&
+            Date.now() - createdAt.getTime() > MAX_PROCESSING_DURATION_MS
+          ) {
+            await failIdempotencyRecord(
+              idempotencyKey,
+              'processing timeout, record auto reset'
+            );
+            await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+            continue;
+          }
+
           // 使用指数退避策略，避免过度轮询
           const delay = Math.min(
             retryDelayMs * Math.pow(1.5, attempt),
@@ -281,6 +296,21 @@ export async function withIdempotency<T>(
 
         // 情况4：其他未知状态，等待后重试
         await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+        continue;
+      }
+
+      // SQLite 在高并发下可能返回超时/事务关闭错误 (P2024/P2034) 或未知的超时错误
+      if (
+        (error instanceof Prisma.PrismaClientKnownRequestError &&
+          (error.code === 'P2024' || error.code === 'P2034')) ||
+        (error instanceof Prisma.PrismaClientUnknownRequestError &&
+          /timed out/i.test(error.message))
+      ) {
+        const delay = Math.min(
+          retryDelayMs * Math.pow(1.5, attempt + 1),
+          maxRetryDelayMs
+        );
+        await new Promise(resolve => setTimeout(resolve, delay));
         continue;
       }
 

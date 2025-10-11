@@ -33,10 +33,10 @@ import { formatCurrency, formatDate } from '@/lib/utils';
 interface ReceivablesResponse {
   receivables: ReceivableItem[];
   summary: {
-    totalReceivables: number;
-    totalReceived: number;
-    totalRemaining: number;
-    overdueAmount: number;
+    totalReceivable: number;
+    paidCount: number;
+    receivableCount: number;
+    overdueCount: number;
   };
   pagination: {
     page: number;
@@ -178,10 +178,10 @@ export function ReceivablesClient({ searchParams }: ReceivablesClientProps) {
 
   const receivables = data?.data?.receivables || [];
   const summary = data?.data?.summary || {
-    totalReceivables: 0,
-    totalReceived: 0,
-    totalRemaining: 0,
-    overdueAmount: 0,
+    totalReceivable: 0,
+    paidCount: 0,
+    receivableCount: 0,
+    overdueCount: 0,
   };
   const pagination = data?.data?.pagination || {
     page: 1,

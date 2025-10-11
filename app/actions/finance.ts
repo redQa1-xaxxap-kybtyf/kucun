@@ -1,10 +1,13 @@
 'use server';
 
+import { getServerSession } from 'next-auth';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-import { auth } from '@/lib/auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import type { Prisma } from '@prisma/client';
+// cspell:words payables
 
 /**
  * 财务模块 Server Actions
@@ -49,7 +52,7 @@ export async function createPaymentRecord(
 ): Promise<ActionResult<{ id: string }>> {
   try {
     // 1. 身份认证
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
@@ -92,26 +95,29 @@ export async function createPaymentRecord(
       // 更新销售订单已收款金额
       const salesOrder = await tx.salesOrder.findUnique({
         where: { id: data.salesOrderId },
-        select: { paidAmount: true, totalAmount: true },
       });
 
-      if (salesOrder) {
-        const newPaidAmount = salesOrder.paidAmount + data.paymentAmount;
-        const newPaymentStatus =
-          newPaidAmount >= salesOrder.totalAmount
-            ? 'paid'
-            : newPaidAmount > 0
-              ? 'partial'
-              : 'unpaid';
-
-        await tx.salesOrder.update({
-          where: { id: data.salesOrderId },
-          data: {
-            paidAmount: newPaidAmount,
-            paymentStatus: newPaymentStatus,
-          },
-        });
+      if (!salesOrder) {
+        throw new Error('销售订单不存在');
       }
+
+      const salesOrderFinancial = salesOrder as {
+        paidAmount?: number | null;
+        totalAmount: number;
+      };
+      const currentPaidAmount = salesOrderFinancial.paidAmount ?? 0;
+      const computedPaidAmount = currentPaidAmount + data.paymentAmount;
+      const cappedPaidAmount = Math.min(
+        computedPaidAmount,
+        salesOrderFinancial.totalAmount
+      );
+
+      await tx.salesOrder.update({
+        where: { id: data.salesOrderId },
+        data: {
+          paidAmount: cappedPaidAmount,
+        } as Prisma.SalesOrderUpdateInput,
+      });
 
       return payment;
     });
@@ -125,7 +131,7 @@ export async function createPaymentRecord(
   } catch (error) {
     console.error('创建收款记录失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0]?.message ?? '数据验证失败' };
     }
     return { success: false, error: '创建收款记录失败' };
   }
@@ -138,7 +144,7 @@ export async function confirmPaymentRecord(
   paymentId: string
 ): Promise<ActionResult> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
@@ -178,7 +184,7 @@ export async function createPayableRecord(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
@@ -222,7 +228,7 @@ export async function createPayableRecord(
   } catch (error) {
     console.error('创建应付款记录失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0]?.message ?? '数据验证失败' };
     }
     return { success: false, error: '创建应付款记录失败' };
   }
@@ -233,7 +239,7 @@ export async function createPayableRecord(
 // ============================================
 
 const createPaymentOutSchema = z.object({
-  payableId: z.string().min(1, '应付款 ID 不能为空'),
+  payableRecordId: z.string().min(1, '应付款 ID 不能为空'),
   paymentAmount: z.number().positive('付款金额必须大于 0'),
   paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other']),
   paymentDate: z.date(),
@@ -248,13 +254,13 @@ export async function createPaymentOutRecord(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
 
     const rawData = {
-      payableId: formData.get('payableId') as string,
+      payableRecordId: formData.get('payableRecordId') as string,
       paymentAmount: parseFloat(formData.get('paymentAmount') as string),
       paymentMethod: formData.get('paymentMethod') as string,
       paymentDate: new Date(formData.get('paymentDate') as string),
@@ -268,10 +274,19 @@ export async function createPaymentOutRecord(
       const count = await tx.paymentOutRecord.count();
       const paymentNumber = `PO${new Date().getFullYear()}${String(count + 1).padStart(6, '0')}`;
 
+      const payableRecord = await tx.payableRecord.findUnique({
+        where: { id: data.payableRecordId },
+      });
+
+      if (!payableRecord) {
+        throw new Error('关联的应付记录不存在');
+      }
+
       const payment = await tx.paymentOutRecord.create({
         data: {
           paymentNumber,
-          payableId: data.payableId,
+          payableRecordId: data.payableRecordId,
+          supplierId: payableRecord.supplierId,
           paymentAmount: data.paymentAmount,
           paymentMethod: data.paymentMethod,
           paymentDate: data.paymentDate,
@@ -282,31 +297,25 @@ export async function createPaymentOutRecord(
         },
       });
 
-      // 更新应付款记录
-      const payable = await tx.payableRecord.findUnique({
-        where: { id: data.payableId },
-        select: { paidAmount: true, payableAmount: true },
+      const currentPaidAmount = payableRecord.paidAmount ?? 0;
+      const computedPaidAmount = currentPaidAmount + data.paymentAmount;
+      const updatedPaidAmount = Math.min(computedPaidAmount, payableRecord.payableAmount);
+      const remainingAmount = Math.max(payableRecord.payableAmount - updatedPaidAmount, 0);
+      const updatedStatus =
+        remainingAmount <= 0
+          ? 'paid'
+          : updatedPaidAmount > 0
+            ? 'partial'
+            : 'pending';
+
+      await tx.payableRecord.update({
+        where: { id: data.payableRecordId },
+        data: {
+          paidAmount: updatedPaidAmount,
+          remainingAmount,
+          status: updatedStatus,
+        },
       });
-
-      if (payable) {
-        const newPaidAmount = payable.paidAmount + data.paymentAmount;
-        const newRemainingAmount = payable.payableAmount - newPaidAmount;
-        const newStatus =
-          newRemainingAmount <= 0
-            ? 'paid'
-            : newPaidAmount > 0
-              ? 'partial'
-              : 'pending';
-
-        await tx.payableRecord.update({
-          where: { id: data.payableId },
-          data: {
-            paidAmount: newPaidAmount,
-            remainingAmount: newRemainingAmount,
-            status: newStatus,
-          },
-        });
-      }
 
       return payment;
     });
@@ -318,7 +327,7 @@ export async function createPaymentOutRecord(
   } catch (error) {
     console.error('创建付款记录失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0]?.message ?? '数据验证失败' };
     }
     return { success: false, error: '创建付款记录失败' };
   }
@@ -331,7 +340,7 @@ export async function confirmPaymentOutRecord(
   paymentId: string
 ): Promise<ActionResult> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
@@ -357,11 +366,21 @@ export async function confirmPaymentOutRecord(
 
 const createRefundSchema = z.object({
   returnOrderId: z.string().min(1, '退货订单 ID 不能为空'),
+  salesOrderId: z.string().min(1, '销售订单 ID 不能为空'),
   customerId: z.string().min(1, '客户 ID 不能为空'),
+  refundType: z.enum(['full_refund', 'partial_refund', 'exchange_refund']),
   refundAmount: z.number().positive('退款金额必须大于 0'),
-  refundMethod: z.enum(['cash', 'bank_transfer', 'check', 'other']),
+  refundMethod: z.enum([
+    'cash',
+    'bank_transfer',
+    'check',
+    'original_payment',
+    'other',
+  ]),
   refundDate: z.date(),
-  voucherNumber: z.string().optional(),
+  reason: z.string().min(1, '退款原因不能为空'),
+  receiptNumber: z.string().optional(),
+  bankInfo: z.string().optional(),
   remarks: z.string().optional(),
 });
 
@@ -372,18 +391,22 @@ export async function createRefundRecord(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
 
     const rawData = {
       returnOrderId: formData.get('returnOrderId') as string,
+      salesOrderId: formData.get('salesOrderId') as string,
       customerId: formData.get('customerId') as string,
+      refundType: formData.get('refundType') as string,
       refundAmount: parseFloat(formData.get('refundAmount') as string),
       refundMethod: formData.get('refundMethod') as string,
       refundDate: new Date(formData.get('refundDate') as string),
-      voucherNumber: formData.get('voucherNumber') as string,
+      reason: formData.get('reason') as string,
+      receiptNumber: formData.get('receiptNumber') as string,
+      bankInfo: formData.get('bankInfo') as string,
       remarks: formData.get('remarks') as string,
     };
 
@@ -393,16 +416,41 @@ export async function createRefundRecord(
       const count = await tx.refundRecord.count();
       const refundNumber = `RF${new Date().getFullYear()}${String(count + 1).padStart(6, '0')}`;
 
+      const returnOrder = await tx.returnOrder.findUnique({
+        where: { id: data.returnOrderId },
+        select: { salesOrderId: true },
+      });
+
+      if (!returnOrder) {
+        throw new Error('退货订单不存在');
+      }
+
+      if (returnOrder.salesOrderId !== data.salesOrderId) {
+        throw new Error('退货订单与销售订单不匹配');
+      }
+
+      const receiptNumber = data.receiptNumber?.trim()
+        ? data.receiptNumber
+        : undefined;
+      const bankInfo = data.bankInfo?.trim() ? data.bankInfo : undefined;
+      const remarks = data.remarks?.trim() ? data.remarks : undefined;
+
       const refund = await tx.refundRecord.create({
         data: {
           refundNumber,
           returnOrderId: data.returnOrderId,
+          salesOrderId: data.salesOrderId,
           customerId: data.customerId,
+          refundType: data.refundType,
           refundAmount: data.refundAmount,
           refundMethod: data.refundMethod,
           refundDate: data.refundDate,
-          voucherNumber: data.voucherNumber,
-          remarks: data.remarks,
+          reason: data.reason,
+          remarks,
+          receiptNumber,
+          bankInfo,
+          processedAmount: 0,
+          remainingAmount: data.refundAmount,
           userId: session.user.id,
           status: 'pending',
         },
@@ -411,7 +459,7 @@ export async function createRefundRecord(
       // 更新退货订单状态
       await tx.returnOrder.update({
         where: { id: data.returnOrderId },
-        data: { refundStatus: 'completed' },
+        data: { status: 'processing' },
       });
 
       return refund;
@@ -424,7 +472,7 @@ export async function createRefundRecord(
   } catch (error) {
     console.error('创建退款记录失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0]?.message ?? '数据验证失败' };
     }
     return { success: false, error: '创建退款记录失败' };
   }
@@ -437,7 +485,7 @@ export async function confirmRefundRecord(
   refundId: string
 ): Promise<ActionResult> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }

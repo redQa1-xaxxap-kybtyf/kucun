@@ -11,6 +11,10 @@ import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 
+const AVAILABLE_QUANTITY_SQL = Prisma.raw(
+  '(CASE WHEN i.quantity - i.reserved_quantity < 0 THEN 0 ELSE i.quantity - i.reserved_quantity END)'
+);
+
 /**
  * 库存查询结果 Zod Schema (用于运行时验证)
  */
@@ -79,18 +83,18 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
 
   // 库存状态筛选
   if (params.lowStock && params.hasStock) {
-    // 同时筛选低库存和有库存：0 < 数量 <= 低库存阈值
+    // 同时筛选低库存和有库存：0 < 可用数量 <= 低库存阈值
     conditions.push(
-      Prisma.sql`i.quantity > 0 AND i.quantity <= ${inventoryConfig.lowStockThreshold}`
+      Prisma.sql`${AVAILABLE_QUANTITY_SQL} > 0 AND ${AVAILABLE_QUANTITY_SQL} <= ${inventoryConfig.lowStockThreshold}`
     );
   } else if (params.lowStock) {
-    // 仅筛选低库存：数量 <= 低库存阈值
+    // 仅筛选低库存：可用数量 <= 低库存阈值
     conditions.push(
-      Prisma.sql`i.quantity <= ${inventoryConfig.lowStockThreshold}`
+      Prisma.sql`${AVAILABLE_QUANTITY_SQL} <= ${inventoryConfig.lowStockThreshold}`
     );
   } else if (params.hasStock) {
-    // 仅筛选有库存：数量 > 0
-    conditions.push(Prisma.sql`i.quantity > 0`);
+    // 仅筛选有库存：可用数量 > 0
+    conditions.push(Prisma.sql`${AVAILABLE_QUANTITY_SQL} > 0`);
   }
 
   // 组合所有条件
@@ -262,7 +266,10 @@ export function formatInventoryQueryResult(record: InventoryQueryResult): {
     batchNumber: record.batchNumber,
     quantity: record.quantity,
     reservedQuantity: record.reservedQuantity,
-    availableQuantity: record.quantity - record.reservedQuantity,
+    availableQuantity: Math.max(
+      record.quantity - record.reservedQuantity,
+      0
+    ),
     location: record.location,
     unitCost: record.unitCost,
     updatedAt: record.updatedAt,

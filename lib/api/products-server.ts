@@ -21,8 +21,8 @@ import type { PaginatedResponse } from '@/lib/types/api';
 import type { Product } from '@/lib/types/product';
 
 type ServerProduct = Omit<Product, 'createdAt' | 'updatedAt'> & {
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
 };
 
 /**

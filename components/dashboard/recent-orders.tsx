@@ -13,10 +13,10 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ContentLoading } from '@/components/common/loading';
-import type { SalesOrder } from '@/lib/types/sales-order';
+import type { DashboardSalesOrderSummary } from '@/lib/types/dashboard';
 
 interface RecentOrdersProps {
-  orders: SalesOrder[];
+  orders: DashboardSalesOrderSummary[];
   loading?: boolean;
 }
 
@@ -169,7 +169,12 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
       </CardHeader>
       <CardContent className="space-y-3 p-6">
         {orders.map(order => {
-          const statusInfo = statusConfig[order.status];
+          const statusInfo =
+            statusConfig[order.status] ??
+            ({
+              label: order.status,
+              variant: 'secondary',
+            } as const);
 
           return (
             <Link key={order.id} href={`/sales-orders/${order.id}`} className="group block">

@@ -9,6 +9,7 @@ import {
   useQueryClient,
 } from '@tanstack/react-query';
 
+import { queryKeys } from '@/lib/queryKeys';
 import type { ReturnableItemsResponse } from '@/lib/services/sales-order-service';
 import type {
   ReturnOrderListResponse,
@@ -27,18 +28,8 @@ import type {
 // API 基础路径
 const API_BASE = '/api/return-orders';
 
-// 查询键工厂
-export const returnOrderQueryKeys = {
-  all: ['return-orders'] as const,
-  lists: () => [...returnOrderQueryKeys.all, 'list'] as const,
-  list: (params: ReturnOrderQueryParams) =>
-    [...returnOrderQueryKeys.lists(), params] as const,
-  details: () => [...returnOrderQueryKeys.all, 'detail'] as const,
-  detail: (id: string) => [...returnOrderQueryKeys.details(), id] as const,
-  stats: () => [...returnOrderQueryKeys.all, 'stats'] as const,
-  salesOrderItems: (salesOrderId: string) =>
-    [...returnOrderQueryKeys.all, 'sales-order-items', salesOrderId] as const,
-};
+// 使用全局统一的查询键
+export const returnOrderQueryKeys = queryKeys.returnOrders;
 
 // API 请求函数
 
@@ -94,9 +85,20 @@ export async function createReturnOrder(
 
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.message || `创建退货订单失败: ${response.statusText}`
-    );
+    const errorMessage =
+      errorData.error ||
+      errorData.message ||
+      `创建退货订单失败: ${response.statusText}`;
+
+    // 如果有详细的验证错误，追加到错误消息中
+    if (errorData.details && Array.isArray(errorData.details)) {
+      const detailsMessage = errorData.details
+        .map((d: any) => d.message || d)
+        .join(', ');
+      throw new Error(`${errorMessage}: ${detailsMessage}`);
+    }
+
+    throw new Error(errorMessage);
   }
 
   return response.json();

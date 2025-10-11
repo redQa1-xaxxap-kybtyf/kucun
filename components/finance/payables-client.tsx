@@ -20,6 +20,26 @@ import {
 } from '@/lib/types/payable';
 import { formatCurrency } from '@/lib/utils/format';
 
+const isValidSortField = (
+  value: string | undefined
+): value is PayableRecordQuery['sortBy'] =>
+  value === 'createdAt' ||
+  value === 'payableAmount' ||
+  value === 'dueDate' ||
+  value === 'remainingAmount';
+
+const areQueriesEqual = (
+  a: PayableRecordQuery,
+  b: PayableRecordQuery
+) =>
+  a.page === b.page &&
+  a.limit === b.limit &&
+  a.search === b.search &&
+  a.status === b.status &&
+  a.sourceType === b.sourceType &&
+  a.sortBy === b.sortBy &&
+  a.sortOrder === b.sortOrder;
+
 interface PayablesClientProps {
   initialData: {
     payables: PayableRecordDetail[];
@@ -59,23 +79,69 @@ export function PayablesClient({
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const [query, setQuery] = React.useState<PayableRecordQuery>(
-    initialParams || {
-      page: parseInt(searchParams.get('page') || '1', 10),
-      limit: parseInt(searchParams.get('limit') || '20', 10),
-      search: searchParams.get('search') || undefined,
-      status: (searchParams.get('status') as PayableStatus) || undefined,
-      sourceType:
-        (searchParams.get('sourceType') as PayableSourceType) || undefined,
-      sortBy:
-        (searchParams.get('sortBy') as
-          | 'createdAt'
-          | 'payableAmount'
-          | 'dueDate'
-          | 'remainingAmount') || 'createdAt',
-      sortOrder: (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc',
-    }
-  );
+  const derivedQuery = React.useMemo<PayableRecordQuery>(() => {
+    const rawPage =
+      typeof initialParams?.page === 'number'
+        ? initialParams.page
+        : Number.parseInt(searchParams.get('page') || '1', 10);
+
+    const rawLimit =
+      typeof initialParams?.limit === 'number'
+        ? initialParams.limit
+        : Number.parseInt(searchParams.get('limit') || '20', 10);
+
+    const rawSearch =
+      typeof initialParams?.search === 'string'
+        ? initialParams.search
+        : searchParams.get('search') ?? undefined;
+
+    const rawStatus =
+      initialParams?.status ??
+      ((searchParams.get('status') as PayableStatus) || undefined);
+
+    const rawSourceType =
+      initialParams?.sourceType ??
+      ((searchParams.get('sourceType') as PayableSourceType) || undefined);
+
+    const sortByFromParams = searchParams.get('sortBy') || undefined;
+    const rawSortBy =
+      initialParams?.sortBy ??
+      (isValidSortField(sortByFromParams) ? sortByFromParams : undefined);
+
+    const rawSortOrder =
+      initialParams?.sortOrder ??
+      (searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc');
+
+    const page =
+      Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+    const limit =
+      Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
+
+    const normalizedSearch =
+      typeof rawSearch === 'string' && rawSearch.trim().length > 0
+        ? rawSearch.trim()
+        : undefined;
+
+    const sortBy = rawSortBy ?? 'createdAt';
+    const sortOrder = rawSortOrder === 'asc' ? 'asc' : 'desc';
+
+    return {
+      page,
+      limit,
+      search: normalizedSearch,
+      status: rawStatus,
+      sourceType: rawSourceType,
+      sortBy,
+      sortOrder,
+    };
+  }, [initialParams, searchParams]);
+
+  const [query, setQuery] =
+    React.useState<PayableRecordQuery>(derivedQuery);
+
+  React.useEffect(() => {
+    setQuery(prev => (areQueriesEqual(prev, derivedQuery) ? prev : derivedQuery));
+  }, [derivedQuery]);
 
   // 获取应付款记录列表
   const { data: payablesData, isLoading: payablesLoading } = usePayableRecords(
@@ -97,11 +163,17 @@ export function PayablesClient({
   // 处理搜索
   const handleSearch = React.useCallback(
     (search: string) => {
-      if (externalOnSearch) {
-        externalOnSearch(search);
-      } else {
-        setQuery(prev => ({ ...prev, search: search || undefined, page: 1 }));
-      }
+      const trimmed = search.trim();
+      setQuery(prev => {
+        const next: PayableRecordQuery = {
+          ...prev,
+          search: trimmed ? trimmed : undefined,
+          page: 1,
+        };
+        return areQueriesEqual(prev, next) ? prev : next;
+      });
+
+      externalOnSearch?.(search);
     },
     [externalOnSearch]
   );
@@ -109,48 +181,77 @@ export function PayablesClient({
   // 统一处理筛选器变更
   const handleFilterChange = React.useCallback(
     (key: string, value: string | undefined) => {
-      if (externalOnFilter) {
-        externalOnFilter(key, value);
-      } else {
+      setQuery(prev => {
+        const next: PayableRecordQuery = { ...prev };
+        let changed = false;
+
         if (key === 'status') {
-          setQuery(prev => ({
-            ...prev,
-            status:
-              value === 'all' || !value ? undefined : (value as PayableStatus),
-            page: 1,
-          }));
+          const nextStatus =
+            value === 'all' || !value ? undefined : (value as PayableStatus);
+          if (next.status !== nextStatus) {
+            next.status = nextStatus;
+            next.page = 1;
+            changed = true;
+          }
         } else if (key === 'sourceType') {
-          setQuery(prev => ({
-            ...prev,
-            sourceType:
-              value === 'all' || !value
-                ? undefined
-                : (value as PayableSourceType),
-            page: 1,
-          }));
+          const nextSource =
+            value === 'all' || !value
+              ? undefined
+              : (value as PayableSourceType);
+          if (next.sourceType !== nextSource) {
+            next.sourceType = nextSource;
+            next.page = 1;
+            changed = true;
+          }
         } else if (key === 'sortBy') {
-          setQuery(prev => ({
-            ...prev,
-            sortBy:
-              (value as
-                | 'createdAt'
-                | 'payableAmount'
-                | 'dueDate'
-                | 'remainingAmount') || 'createdAt',
-            page: 1,
-          }));
+          const nextSort = isValidSortField(value) ? value : 'createdAt';
+          if (next.sortBy !== nextSort) {
+            next.sortBy = nextSort;
+            next.page = 1;
+            changed = true;
+          }
+        } else if (key === 'sortOrder') {
+          const nextOrder = value === 'asc' ? 'asc' : 'desc';
+          if (next.sortOrder !== nextOrder) {
+            next.sortOrder = nextOrder;
+            next.page = 1;
+            changed = true;
+          }
+        } else if (key === 'limit') {
+          const parsed = value ? Number.parseInt(value, 10) : NaN;
+          if (Number.isFinite(parsed) && parsed > 0 && next.limit !== parsed) {
+            next.limit = parsed;
+            next.page = 1;
+            changed = true;
+          }
+        } else {
+          return prev;
         }
-      }
+
+        if (!changed) {
+          return prev;
+        }
+
+        return next;
+      });
+
+      externalOnFilter?.(key, value);
     },
     [externalOnFilter]
   );
 
   const handlePageChange = React.useCallback(
     (newPage: number) => {
+      setQuery(prev => {
+        if (prev.page === newPage) {
+          return prev;
+        }
+        return { ...prev, page: newPage };
+      });
+
       if (externalOnPageChange) {
         externalOnPageChange(newPage);
       } else {
-        setQuery(prev => ({ ...prev, page: newPage }));
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     },

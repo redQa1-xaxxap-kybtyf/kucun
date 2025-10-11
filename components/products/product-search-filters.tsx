@@ -76,8 +76,11 @@ export function ProductSearchFilters({
   ];
 
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="pt-6">
+    <Card
+      className="border border-[hsl(var(--color-border-primary))]"
+      style={{ boxShadow: 'var(--shadow-light)' }}
+    >
+      <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
         <UnifiedSearchBar
           // 搜索配置
           searchValue={searchValue}

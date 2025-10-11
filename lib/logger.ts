@@ -6,6 +6,8 @@
 import { prisma } from '@/lib/db';
 import type { SystemLogLevel, SystemLogType } from '@/lib/types/settings';
 
+export { logger } from './logger/index';
+
 interface LogParams {
   type: SystemLogType;
   level: SystemLogLevel;

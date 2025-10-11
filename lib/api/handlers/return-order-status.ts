@@ -77,118 +77,181 @@ export async function updateReturnOrderStatus(
   }
 
   // 执行状态更新
-  return await prisma.$transaction(async tx => {
-    // 准备更新数据
-    const updateData: {
-      status: string;
-      updatedAt: Date;
-      remarks?: string;
-      refundAmount?: number;
-      submittedAt?: Date;
-      approvedAt?: Date;
-      processedAt?: Date;
-      completedAt?: Date;
-    } = {
-      status: newStatus,
-      updatedAt: new Date(),
-    };
+  return await prisma.$transaction(
+    async tx => {
+      // 准备更新数据
+      const updateData: {
+        status: string;
+        updatedAt: Date;
+        remarks?: string;
+        refundAmount?: number;
+        submittedAt?: Date;
+        approvedAt?: Date;
+        processedAt?: Date;
+        completedAt?: Date;
+      } = {
+        status: newStatus,
+        updatedAt: new Date(),
+      };
 
-    if (data.remarks !== undefined) {
-      updateData.remarks = data.remarks;
-    }
+      if (data.remarks !== undefined) {
+        updateData.remarks = data.remarks;
+      }
 
-    if (data.refundAmount !== undefined) {
-      updateData.refundAmount = data.refundAmount;
-    }
+      if (data.refundAmount !== undefined) {
+        updateData.refundAmount = data.refundAmount;
+      }
 
-    // 根据状态设置时间戳
-    switch (newStatus) {
-      case 'submitted':
-        updateData.submittedAt = new Date();
-        break;
-      case 'approved':
-        updateData.approvedAt = new Date();
-        break;
-      case 'processing':
-        updateData.processedAt = data.processedAt
-          ? new Date(data.processedAt)
-          : new Date();
-        break;
-      case 'completed':
-        updateData.completedAt = new Date();
-        break;
-    }
+      // 根据状态设置时间戳
+      switch (newStatus) {
+        case 'submitted':
+          updateData.submittedAt = new Date();
+          break;
+        case 'approved':
+          updateData.approvedAt = new Date();
+          break;
+        case 'processing':
+          updateData.processedAt = data.processedAt
+            ? new Date(data.processedAt)
+            : new Date();
+          break;
+        case 'completed':
+          updateData.completedAt = new Date();
+          break;
+      }
 
-    // 更新订单状态
-    const order = await tx.returnOrder.update({
-      where: { id: orderId },
-      data: updateData,
-      select: {
-        id: true,
-        returnNumber: true,
-        status: true,
-        remarks: true,
-        refundAmount: true,
-        salesOrderId: true,
-        customerId: true,
-        processType: true,
-      },
-    });
-
-    let refundCreated = false;
-
-    // 如果状态变更为completed且处理方式为refund,自动创建退款记录
-    if (newStatus === 'completed' && processType === 'refund') {
-      // 检查是否已经存在退款记录
-      const existingRefund = await tx.refundRecord.findFirst({
-        where: {
-          returnOrderId: orderId,
+      // 更新订单状态
+      let order = await tx.returnOrder.update({
+        where: { id: orderId },
+        data: updateData,
+        select: {
+          id: true,
+          returnNumber: true,
+          status: true,
+          remarks: true,
+          refundAmount: true,
+          totalAmount: true,
+          salesOrderId: true,
+          customerId: true,
+          processType: true,
         },
       });
 
-      // 如果不存在退款记录,则创建
-      if (!existingRefund) {
-        // 生成退款单号
-        const { generateRefundNumber } = await import(
-          '@/lib/services/simple-order-number-generator'
-        );
-        const refundNumber = await generateRefundNumber();
+      let refundCreated = false;
 
-        // 创建退款记录
-        await tx.refundRecord.create({
-          data: {
-            refundNumber,
-            returnOrderId: orderId,
-            returnOrderNumber: order.returnNumber,
-            salesOrderId: order.salesOrderId,
-            customerId: order.customerId,
-            userId,
-            refundType: 'full_refund',
-            refundMethod: 'original_payment',
-            refundAmount: order.refundAmount,
-            processedAmount: 0,
-            remainingAmount: order.refundAmount,
-            status: 'pending',
-            refundDate: new Date(),
-            reason: `退货订单 ${order.returnNumber} 自动生成退款`,
-            remarks: `系统自动创建,关联退货订单：${order.returnNumber}`,
-          },
-        });
+      // 如果状态变更为completed且处理方式为refund,自动创建或纠正退款记录金额
+      if (newStatus === 'completed' && processType === 'refund') {
+        let computedRefundAmount =
+          data.refundAmount ??
+          (typeof order.refundAmount === 'number'
+            ? order.refundAmount
+            : Number(order.refundAmount ?? 0));
 
-        refundCreated = true;
+        if (!Number.isFinite(computedRefundAmount) || computedRefundAmount <= 0) {
+          const aggregated = await tx.returnOrderItem.aggregate({
+            where: { returnOrderId: orderId },
+            _sum: { subtotal: true },
+          });
+          const aggregatedAmount = Number(aggregated._sum.subtotal ?? 0);
+          if (aggregatedAmount > 0) {
+            computedRefundAmount = aggregatedAmount;
+          } else if (typeof order.totalAmount === 'number' && order.totalAmount > 0) {
+            computedRefundAmount = order.totalAmount;
+          }
+        }
+
+        // 同步回退货订单上的退款金额，确保后续查询一致
+        if (
+          computedRefundAmount > 0 &&
+          (typeof order.refundAmount !== 'number' ||
+            Math.abs(order.refundAmount - computedRefundAmount) > 0.0001)
+        ) {
+          await tx.returnOrder.update({
+            where: { id: orderId },
+            data: { refundAmount: computedRefundAmount },
+          });
+          order = {
+            ...order,
+            refundAmount: computedRefundAmount,
+          };
+        }
+
+        if (computedRefundAmount > 0) {
+          // 检查是否已经存在退款记录
+          const existingRefund = await tx.refundRecord.findFirst({
+            where: {
+              returnOrderId: orderId,
+            },
+          });
+
+          if (existingRefund) {
+            const processedAmount = existingRefund.processedAmount ?? 0;
+            const remainingAmount = Math.max(
+              Number((computedRefundAmount - processedAmount).toFixed(6)),
+              0
+            );
+            const resolvedStatus =
+              existingRefund.status === 'rejected' ||
+              existingRefund.status === 'cancelled'
+                ? existingRefund.status
+                : processedAmount >= computedRefundAmount
+                  ? 'completed'
+                  : processedAmount > 0
+                    ? 'processing'
+                    : 'pending';
+
+            await tx.refundRecord.update({
+              where: { id: existingRefund.id },
+              data: {
+                refundAmount: computedRefundAmount,
+                remainingAmount,
+                status: resolvedStatus,
+              },
+            });
+          } else {
+            // 生成退款单号
+            const { generateRefundNumber } = await import(
+              '@/lib/services/simple-order-number-generator'
+            );
+            const refundNumber = await generateRefundNumber();
+
+            await tx.refundRecord.create({
+              data: {
+                refundNumber,
+                returnOrderId: orderId,
+                returnOrderNumber: order.returnNumber,
+                salesOrderId: order.salesOrderId,
+                customerId: order.customerId,
+                userId,
+                refundType: 'full_refund',
+                refundMethod: 'original_payment',
+                refundAmount: computedRefundAmount,
+                processedAmount: 0,
+                remainingAmount: computedRefundAmount,
+                status: 'pending',
+                refundDate: new Date(),
+                reason: `退货订单 ${order.returnNumber} 自动生成退款`,
+                remarks: `系统自动创建,关联退货订单：${order.returnNumber}`,
+              },
+            });
+
+            refundCreated = true;
+          }
+        }
       }
-    }
 
-    return {
-      order: {
-        id: order.id,
-        returnNumber: order.returnNumber,
-        status: order.status,
-        remarks: order.remarks,
-      },
-      refundCreated,
-    };
-  });
+      return {
+        order: {
+          id: order.id,
+          returnNumber: order.returnNumber,
+          status: order.status,
+          remarks: order.remarks,
+        },
+        refundCreated,
+      };
+    },
+    { timeout: 15000 }
+  );
 }
 
 /**

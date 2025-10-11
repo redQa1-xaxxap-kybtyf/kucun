@@ -56,7 +56,13 @@ export const returnOrderItemSchema = z
 // 退货订单创建验证规则
 export const createReturnOrderSchema = z
   .object({
-    salesOrderId: z.string().min(1, '请选择关联的销售订单'),
+    returnMode: z
+      .enum(['single_order', 'multi_order'] as const)
+      .default('single_order'),
+    salesOrderId: z
+      .string()
+      .optional()
+      .transform(val => (val === '' ? undefined : val)), // 空字符串转为 undefined
     customerId: z.string().min(1, '客户ID不能为空'),
     type: z.enum(
       [
@@ -64,6 +70,7 @@ export const createReturnOrderSchema = z
         'wrong_product',
         'customer_change',
         'damage_in_transit',
+        'remaining_return',
         'other',
       ] as const,
       {
@@ -73,10 +80,7 @@ export const createReturnOrderSchema = z
     processType: z.enum(['refund', 'exchange', 'repair', 'credit'] as const, {
       error: '请选择处理方式',
     }),
-    reason: z
-      .string()
-      .min(1, '退货原因不能为空')
-      .max(500, '退货原因不能超过500字符'),
+    reason: z.string().max(500, '退货原因不能超过500字符').optional(),
     remarks: z.string().max(1000, '备注不能超过1000字符').optional(),
     items: z
       .array(returnOrderItemSchema)
@@ -86,6 +90,19 @@ export const createReturnOrderSchema = z
         `退货明细不能超过${returnRefundConfig.returnOrderItemsLimit}项`
       ),
   })
+  .refine(
+    data => {
+      // 单订单模式：salesOrderId 必填
+      if (data.returnMode === 'single_order') {
+        return !!data.salesOrderId;
+      }
+      return true;
+    },
+    {
+      message: '单订单退货模式下，销售订单ID不能为空',
+      path: ['salesOrderId'],
+    }
+  )
   .refine(
     data => {
       // 检查明细项目的唯一性（同一个销售订单明细项不能重复退货）
@@ -110,6 +127,7 @@ export const updateReturnOrderSchema = z.object({
       'wrong_product',
       'customer_change',
       'damage_in_transit',
+      'remaining_return',
       'other',
     ])
     .optional(),
@@ -172,6 +190,7 @@ export const returnOrderQuerySchema = z.object({
       'wrong_product',
       'customer_change',
       'damage_in_transit',
+      'remaining_return',
       'other',
     ])
     .optional(),
@@ -207,6 +226,7 @@ export const returnOrderSearchSchema = z
         'wrong_product',
         'customer_change',
         'damage_in_transit',
+        'remaining_return',
         'other',
       ] as const)
       .optional(),
@@ -304,6 +324,7 @@ export const returnOrderItemDefaults: Partial<ReturnOrderItemFormData> = {
 };
 
 export const createReturnOrderDefaults: Partial<CreateReturnOrderFormData> = {
+  returnMode: 'single_order',
   type: 'quality_issue',
   processType: 'refund',
   items: [],

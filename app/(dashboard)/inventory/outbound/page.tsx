@@ -73,7 +73,7 @@ export default async function OutboundRecordsPage({
   const queryClient = new QueryClient({
     defaultOptions: {
       dehydrate: {
-        shouldDehydratePendingQuery: true,
+        shouldDehydrateQuery: () => true,
       },
     },
   });

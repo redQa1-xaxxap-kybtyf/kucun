@@ -10,6 +10,24 @@ import {
   hasEnoughInventory,
   getAvailableQuantity,
 } from '@/lib/utils/inventory-variant-mapper';
+import {
+  generateUniqueOrderNumber,
+  type OrderNumberConfig,
+} from '@/lib/services/order-number-generator';
+
+/**
+ * 出库单号配置
+ */
+const OUTBOUND_RECORD_CONFIG: OrderNumberConfig = {
+  prefix: 'OB',
+  numberLength: 4,
+  sequenceType: 'outbound_record',
+};
+
+const ORDER_STATUS_TRANSACTION_OPTIONS = {
+  timeout: 20_000,
+  maxWait: 5_000,
+} as const;
 
 /**
  * 扩展的销售订单明细类型(包含库存查询所需字段)
@@ -23,6 +41,7 @@ interface SalesOrderItemWithInventoryFields {
   quantity: number;
   unitPrice: number;
   subtotal: number;
+  unitCost?: number | null;
   product?: {
     id: string;
     name: string;
@@ -44,13 +63,14 @@ export interface OrderStatusUpdateResult {
 }
 
 /**
- * 执行订单状态更新(带库存扣减)
+ * 执行订单状态更新(带库存扣减和出库记录)
  * 使用乐观锁防止并发超卖
  */
 async function executeOrderStatusUpdateWithInventory(
   orderId: string,
   status: string,
-  remarks?: string
+  remarks?: string,
+  operatorId?: string
 ): Promise<OrderStatusUpdateResult> {
   // 先查询订单信息
   const existingOrder = await prisma.salesOrder.findUnique({
@@ -73,6 +93,31 @@ async function executeOrderStatusUpdateWithInventory(
     throw new Error('销售订单不存在');
   }
 
+  // 如果没有提供操作员ID,使用订单创建人ID
+  const finalOperatorId = operatorId || existingOrder.userId;
+
+  // 预先生成所有出库单号（在事务外部，避免嵌套事务）
+  const itemsWithInventory: Array<{
+    item: typeof existingOrder.items[0];
+    outboundRecordNumber: string;
+  }> = [];
+
+  for (const item of existingOrder.items) {
+    if (!item.productId) {
+      continue; // 跳过手动输入的商品
+    }
+
+    // 预先生成出库单号
+    const outboundRecordNumber = await generateUniqueOrderNumber(
+      OUTBOUND_RECORD_CONFIG
+    );
+
+    itemsWithInventory.push({
+      item,
+      outboundRecordNumber,
+    });
+  }
+
   return await withTransaction(async tx => {
     // 更新订单状态
     const order = await tx.salesOrder.update({
@@ -80,6 +125,8 @@ async function executeOrderStatusUpdateWithInventory(
       data: {
         status,
         ...(remarks !== undefined && { remarks }),
+        // 如果状态变更为已发货，记录发货时间
+        ...(status === 'shipped' && { shippedAt: new Date() }),
       },
       select: {
         id: true,
@@ -89,15 +136,12 @@ async function executeOrderStatusUpdateWithInventory(
       },
     });
 
-    // 更新库存(减少可用库存) - 使用乐观锁
-    for (const item of existingOrder.items) {
-      if (!item.productId) {
-        continue;
-      } // 跳过手动输入的商品
-
+    // 更新库存并创建出库记录 - 使用乐观锁
+    // 对于调货销售，部分商品可能没有本地库存，这是正常的，只扣减有库存的商品
+    for (const { item, outboundRecordNumber } of itemsWithInventory) {
       // 使用类型安全的库存查找（支持变体和批次映射）
       const inventory = await findAvailableInventory(
-        item.productId,
+        item.productId!,
         item.quantity,
         {
           colorCode: item.colorCode,
@@ -106,10 +150,9 @@ async function executeOrderStatusUpdateWithInventory(
         }
       );
 
+      // 如果没有找到库存记录，跳过该商品（可能是调货商品）
       if (!inventory) {
-        throw new Error(
-          `产品 ${item.product?.name || '未知产品'} ${item.colorCode ? `(色号: ${item.colorCode})` : ''} 库存记录不存在或数量不足`
-        );
+        continue;
       }
 
       // 检查库存是否足够（考虑预留量）
@@ -140,6 +183,29 @@ async function executeOrderStatusUpdateWithInventory(
           `产品 ${item.product?.name || '未知产品'} 库存不足或已被其他订单占用,请重试`
         );
       }
+
+      // 创建出库记录（使用预先生成的单号）
+      await tx.outboundRecord.create({
+        data: {
+          recordNumber: outboundRecordNumber,
+          productId: item.productId!,
+          variantId: inventory.variantId,
+          batchNumber: item.batchNumber || inventory.batchNumber || undefined,
+          inventoryId: inventory.id,
+          quantity: item.quantity,
+          unitCost: item.unitCost || inventory.unitCost || undefined,
+          totalCost: item.unitCost
+            ? item.unitCost * item.quantity
+            : inventory.unitCost
+              ? inventory.unitCost * item.quantity
+              : undefined,
+          reason: 'sales_outbound',
+          notes: `销售订单发货：${existingOrder.orderNumber}`,
+          customerId: existingOrder.customerId,
+          salesOrderId: existingOrder.id,
+          operatorId: finalOperatorId,
+        },
+      });
     }
 
     return {
@@ -147,7 +213,7 @@ async function executeOrderStatusUpdateWithInventory(
       inventoryUpdated: true,
       reservedInventoryReleased: false,
     };
-  });
+  }, ORDER_STATUS_TRANSACTION_OPTIONS);
 }
 
 /**
@@ -229,7 +295,7 @@ async function executeOrderCancellation(
       inventoryUpdated: false,
       reservedInventoryReleased: true,
     };
-  });
+  }, ORDER_STATUS_TRANSACTION_OPTIONS);
 }
 
 /**
@@ -269,9 +335,11 @@ export async function updateSalesOrderStatus(
   orderId: string,
   newStatus: string,
   currentStatus: string,
-  remarks?: string
+  remarks?: string,
+  operatorId?: string
 ): Promise<OrderStatusUpdateResult> {
-  // 如果状态变更为已发货或已完成,需要更新库存
+  // 如果状态变更为已发货或已完成，尝试更新库存
+  // 库存扣减逻辑已改为"柔性"处理：有库存就扣，没有就跳过（支持调货商品）
   const shouldUpdateInventory =
     ['shipped', 'completed'].includes(newStatus) &&
     currentStatus === 'confirmed';
@@ -284,7 +352,8 @@ export async function updateSalesOrderStatus(
     return await executeOrderStatusUpdateWithInventory(
       orderId,
       newStatus,
-      remarks
+      remarks,
+      operatorId
     );
   } else if (shouldReleaseReservedInventory) {
     return await executeOrderCancellation(orderId, remarks);

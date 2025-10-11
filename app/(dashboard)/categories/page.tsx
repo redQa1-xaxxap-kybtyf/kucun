@@ -50,9 +50,18 @@ export default async function CategoriesPage({
     sortOrder,
   });
 
+  const serializedData = {
+    data: initialData.data.map(category => ({
+      ...category,
+      createdAt: category.createdAt.toISOString(),
+      updatedAt: category.updatedAt.toISOString(),
+    })),
+    pagination: initialData.pagination,
+  };
+
   return (
     <CategoryPageWrapper
-      initialData={initialData}
+      initialData={serializedData}
       initialParams={{ page, limit, search, status, sortBy, sortOrder }}
     />
   );

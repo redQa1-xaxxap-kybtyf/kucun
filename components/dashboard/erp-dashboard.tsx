@@ -29,10 +29,12 @@ import { useBusinessOverview } from '@/lib/api/dashboard';
 import type {
   BusinessOverview,
   DashboardData,
+  DashboardFactoryShipmentSummary,
+  DashboardSalesOrderSummary,
+  DashboardSalesOrderStatus,
   TimeRange,
 } from '@/lib/types/dashboard';
-import type { FactoryShipmentOrder } from '@/lib/types/factory-shipment';
-import type { SalesOrder } from '@/lib/types/sales-order';
+import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
 import { cn } from '@/lib/utils';
 
 /**
@@ -65,6 +67,155 @@ interface SalesTrendData {
   orders: number;
 }
 
+type UnknownRecord = Record<string, unknown>;
+
+const normalizeDate = (value: unknown): string => {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === 'string') {
+    const parsed = new Date(value);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString();
+    }
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return new Date(value).toISOString();
+  }
+  return new Date().toISOString();
+};
+
+const asNumber = (value: unknown): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : 0;
+};
+
+const DASHBOARD_ORDER_STATUSES: readonly DashboardSalesOrderStatus[] = [
+  'draft',
+  'pending',
+  'confirmed',
+  'processing',
+  'shipped',
+  'delivered',
+  'completed',
+  'cancelled',
+] as const;
+
+const toDashboardOrderStatus = (
+  status: unknown
+): DashboardSalesOrderStatus =>
+  DASHBOARD_ORDER_STATUSES.includes(status as DashboardSalesOrderStatus)
+    ? (status as DashboardSalesOrderStatus)
+    : 'draft';
+
+const FACTORY_SHIPMENT_STATUSES = new Set<FactoryShipmentStatus>([
+  'draft',
+  'planning',
+  'waiting_deposit',
+  'deposit_paid',
+  'factory_shipped',
+  'in_transit',
+  'arrived',
+  'delivered',
+  'completed',
+]);
+
+const toFactoryShipmentStatus = (
+  status: unknown
+): FactoryShipmentStatus =>
+  FACTORY_SHIPMENT_STATUSES.has(status as FactoryShipmentStatus)
+    ? (status as FactoryShipmentStatus)
+    : 'draft';
+
+const extractCustomer = (
+  value: unknown
+): DashboardSalesOrderSummary['customer'] => {
+  if (!value || typeof value !== 'object') {
+    return undefined;
+  }
+  const record = value as UnknownRecord;
+  const id = record.id;
+  const name = record.name;
+  return {
+    id: id === undefined ? '' : String(id),
+    name:
+      name === undefined || name === null
+        ? null
+        : typeof name === 'string'
+          ? name
+          : String(name),
+  };
+};
+
+const mapSalesOrderSummaries = (
+  orders: unknown
+): DashboardSalesOrderSummary[] => {
+  if (!Array.isArray(orders)) {
+    return [];
+  }
+
+  return orders.reduce<DashboardSalesOrderSummary[]>((result, item) => {
+    if (!item || typeof item !== 'object') {
+      return result;
+    }
+
+    const record = item as UnknownRecord;
+    const id = record.id;
+    const orderNumber = record.orderNumber;
+
+    if (id === undefined || orderNumber === undefined) {
+      return result;
+    }
+
+    result.push({
+      id: String(id),
+      orderNumber: String(orderNumber),
+      totalAmount: asNumber(record.totalAmount),
+      status: toDashboardOrderStatus(record.status),
+      createdAt: normalizeDate(record.createdAt),
+      customer: extractCustomer(record.customer),
+    });
+
+    return result;
+  }, []);
+};
+
+const mapFactoryShipmentSummaries = (
+  orders: unknown
+): DashboardFactoryShipmentSummary[] => {
+  if (!Array.isArray(orders)) {
+    return [];
+  }
+
+  return orders.reduce<DashboardFactoryShipmentSummary[]>((result, item) => {
+    if (!item || typeof item !== 'object') {
+      return result;
+    }
+
+    const record = item as UnknownRecord;
+    const id = record.id;
+    const orderNumber = record.orderNumber;
+
+    if (id === undefined || orderNumber === undefined) {
+      return result;
+    }
+
+    result.push({
+      id: String(id),
+      orderNumber: String(orderNumber),
+      status: toFactoryShipmentStatus(record.status),
+      totalAmount: asNumber(record.totalAmount),
+      createdAt: normalizeDate(record.createdAt),
+      customer: extractCustomer(record.customer),
+    });
+
+    return result;
+  }, []);
+};
+
 /**
  * ERP风格的仪表盘组件
  * 采用紧凑布局，符合中国ERP系统用户习惯
@@ -78,9 +229,9 @@ interface ERPDashboardProps {
   initialData?: DashboardData | null;
   initialTimeRange?: string;
   initialOrders?: {
-    recent: SalesOrder[];
-    pending: SalesOrder[];
-    shipments: FactoryShipmentOrder[];
+    recent: DashboardSalesOrderSummary[];
+    pending: DashboardSalesOrderSummary[];
+    shipments: DashboardFactoryShipmentSummary[];
   };
 }
 
@@ -117,14 +268,14 @@ export function ERPDashboard({
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   // 订单数据状态 - 使用 RSC 预取的数据作为初始状态
-  const [recentOrders, setRecentOrders] = React.useState<SalesOrder[]>(
+  const [recentOrders, setRecentOrders] = React.useState<DashboardSalesOrderSummary[]>(
     initialOrders?.recent || []
   );
-  const [pendingOrders, setPendingOrders] = React.useState<SalesOrder[]>(
+  const [pendingOrders, setPendingOrders] = React.useState<DashboardSalesOrderSummary[]>(
     initialOrders?.pending || []
   );
   const [factoryShipments, setFactoryShipments] = React.useState<
-    FactoryShipmentOrder[]
+    DashboardFactoryShipmentSummary[]
   >(initialOrders?.shipments || []);
   const [isLoadingOrders, setIsLoadingOrders] = React.useState(!initialOrders);
 
@@ -205,7 +356,7 @@ export function ERPDashboard({
       );
       if (recentResponse.ok) {
         const recentData = await recentResponse.json();
-        setRecentOrders(recentData.data?.salesOrders || []);
+        setRecentOrders(mapSalesOrderSummaries(recentData.data?.salesOrders));
       }
 
       // 获取待处理订单（草稿状态）
@@ -214,7 +365,7 @@ export function ERPDashboard({
       );
       if (pendingResponse.ok) {
         const pendingData = await pendingResponse.json();
-        setPendingOrders(pendingData.data?.salesOrders || []);
+        setPendingOrders(mapSalesOrderSummaries(pendingData.data?.salesOrders));
       }
 
       // 获取厂家发货订单（最新的8条）
@@ -223,7 +374,7 @@ export function ERPDashboard({
       );
       if (shipmentsResponse.ok) {
         const shipmentsData = await shipmentsResponse.json();
-        setFactoryShipments(shipmentsData.data?.factoryShipmentOrders || []);
+        setFactoryShipments(mapFactoryShipmentSummaries(shipmentsData.data?.factoryShipmentOrders));
       }
     } catch (error) {
       console.error('加载订单数据失败:', error);

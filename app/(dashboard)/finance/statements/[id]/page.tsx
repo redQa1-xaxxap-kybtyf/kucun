@@ -121,13 +121,23 @@ export default function StatementDetailPage() {
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面头部 */}
-        <StatementHeader statement={statement} />
+        <StatementHeader
+          name={statement.name}
+          type={statement.type}
+          status={statement.status}
+        />
 
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* 主要内容区域 */}
           <div className="space-y-6 lg:col-span-2">
             {/* 基本信息 */}
-            <StatementBasicInfo statement={statement} />
+            <StatementBasicInfo
+              contact={statement.contact}
+              creditLimit={statement.creditLimit}
+              paymentTerms={statement.paymentTerms}
+              lastTransactionDate={statement.lastTransactionDate}
+              lastPaymentDate={statement.lastPaymentDate}
+            />
 
             {/* 交易记录 */}
             <StatementTransactions transactions={statement.transactions} />
@@ -136,7 +146,13 @@ export default function StatementDetailPage() {
           {/* 侧边栏 */}
           <div className="space-y-6">
             {/* 财务汇总 */}
-            <StatementFinancialSummary statement={statement} />
+            <StatementFinancialSummary
+              totalOrders={statement.totalOrders}
+              totalAmount={statement.totalAmount}
+              paidAmount={statement.paidAmount}
+              pendingAmount={statement.pendingAmount}
+              overdueAmount={statement.overdueAmount}
+            />
 
             {/* 统计数据 */}
             <StatementStatistics summary={statement.summary} />

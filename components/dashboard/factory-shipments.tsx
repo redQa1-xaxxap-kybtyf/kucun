@@ -12,19 +12,17 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ContentLoading } from '@/components/common/loading';
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
-  type FactoryShipmentOrder,
+  type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
+import type { DashboardFactoryShipmentSummary } from '@/lib/types/dashboard';
 
 interface FactoryShipmentsProps {
-  orders: FactoryShipmentOrder[];
+  orders: DashboardFactoryShipmentSummary[];
   loading?: boolean;
 }
 
 // 状态配置
-const STATUS_VARIANT_MAP: Record<
-  FactoryShipmentOrder['status'],
-  BadgeProps['variant']
-> = {
+const STATUS_VARIANT_MAP: Record<FactoryShipmentStatus, BadgeProps['variant']> = {
   draft: 'secondary',
   planning: 'info',
   waiting_deposit: 'warning',
@@ -196,7 +194,7 @@ export function FactoryShipments({ orders, loading }: FactoryShipmentsProps) {
                     {/* 时间 */}
                     <div className="flex items-center gap-1 text-xs text-[hsl(var(--color-text-tertiary))]">
                       <Clock className="h-3 w-3" />
-                      <span>{formatTime(order.createdAt.toString())}</span>
+                      <span>{formatTime(order.createdAt)}</span>
                     </div>
                   </div>
 

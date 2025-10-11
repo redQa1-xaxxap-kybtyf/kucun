@@ -29,6 +29,9 @@ interface PaymentRecord {
     id: string;
     orderNumber: string;
     totalAmount: number;
+    paidAmount: number;
+    pendingAmount: number;
+    remainingAmount: number;
   };
   user: {
     id: string;

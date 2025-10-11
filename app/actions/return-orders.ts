@@ -171,7 +171,7 @@ export async function createReturnOrder(
           type: data.type,
           processType: data.processType,
           status: 'draft',
-          returnReason: data.reason,
+          reason: data.reason,
           remarks: data.remarks,
           totalAmount,
           refundAmount: 0, // 初始退款金额为0，审核通过后设置
@@ -180,9 +180,10 @@ export async function createReturnOrder(
               salesOrderItemId: item.salesOrderItemId,
               productId: item.productId,
               returnQuantity: item.returnQuantity,
+              originalQuantity: item.originalQuantity,
               unitPrice: item.unitPrice,
               subtotal: item.subtotal,
-              returnReason: item.reason,
+              reason: item.reason,
               condition: item.condition,
             })),
           },
@@ -205,7 +206,7 @@ export async function createReturnOrder(
   } catch (error) {
     console.error('创建退货订单失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0]?.message ?? '输入数据格式不正确' };
     }
     return { success: false, error: '创建退货订单失败' };
   }
@@ -290,7 +291,7 @@ export async function updateReturnOrderStatus(
             await tx.inventory.updateMany({
               where: { productId: item.productId },
               data: {
-                currentQuantity: {
+                quantity: {
                   increment: item.returnQuantity,
                 },
               },
@@ -307,7 +308,10 @@ export async function updateReturnOrderStatus(
   } catch (error) {
     console.error('更新退货订单状态失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? '输入数据格式不正确',
+      };
     }
     return { success: false, error: '更新退货订单状态失败' };
   }
@@ -379,7 +383,10 @@ export async function approveReturnOrder(
   } catch (error) {
     console.error('审核退货订单失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? '输入数据格式不正确',
+      };
     }
     return { success: false, error: '审核退货订单失败' };
   }

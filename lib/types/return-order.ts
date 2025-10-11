@@ -22,6 +22,7 @@ export type ReturnOrderType =
   | 'wrong_product' // 产品错误
   | 'customer_change' // 客户变更
   | 'damage_in_transit' // 运输损坏
+  | 'remaining_return' // 剩余退货
   | 'other'; // 其他原因
 
 // 退货处理方式枚举
@@ -31,11 +32,17 @@ export type ReturnProcessType =
   | 'repair' // 维修
   | 'credit'; // 积分补偿
 
+// 退货模式枚举
+export type ReturnOrderMode =
+  | 'single_order' // 单订单退货
+  | 'multi_order'; // 多订单退货
+
 // 退货订单接口
 export interface ReturnOrder {
   id: string;
   returnNumber: string;
-  salesOrderId: string;
+  returnMode: ReturnOrderMode; // 退货模式
+  salesOrderId?: string; // 单订单模式使用，多订单模式为null
   customerId: string;
   userId: string;
   type: ReturnOrderType;
@@ -44,6 +51,8 @@ export interface ReturnOrder {
   reason: string;
   totalAmount: number;
   refundAmount: number;
+  processedAmount?: number;
+  remainingAmount?: number;
   remarks?: string;
   submittedAt?: string;
   approvedAt?: string;
@@ -157,6 +166,7 @@ export const RETURN_ORDER_TYPE_LABELS: Record<ReturnOrderType, string> = {
   wrong_product: '产品错误',
   customer_change: '客户变更',
   damage_in_transit: '运输损坏',
+  remaining_return: '剩余退货',
   other: '其他原因',
 };
 
@@ -168,17 +178,23 @@ export const RETURN_PROCESS_TYPE_LABELS: Record<ReturnProcessType, string> = {
   credit: '积分补偿',
 };
 
+// 退货模式标签映射
+export const RETURN_ORDER_MODE_LABELS: Record<ReturnOrderMode, string> = {
+  single_order: '单订单退货',
+  multi_order: '多订单退货',
+};
+
 // 退货状态变体映射（用于Badge组件）
 export const RETURN_ORDER_STATUS_VARIANTS: Record<
   ReturnOrderStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
+  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
 > = {
   draft: 'outline',
-  submitted: 'secondary',
+  submitted: 'warning',
   approved: 'default',
   rejected: 'destructive',
-  processing: 'secondary',
-  completed: 'default',
+  processing: 'info',
+  completed: 'success',
   cancelled: 'destructive',
 };
 
@@ -254,7 +270,9 @@ export function formatReturnDate(dateString: string): string {
 /**
  * 计算退货明细总金额
  */
-export function calculateReturnItemsTotal(items: ReturnOrderItem[]): number {
+export function calculateReturnItemsTotal(
+  items: Array<{ subtotal: number }>
+): number {
   return items.reduce((total, item) => total + item.subtotal, 0);
 }
 

@@ -54,6 +54,7 @@ const PATH_TITLES: Record<string, string> = {
   '/sales-orders/create': '新建订单',
   '/return-orders': '退货订单',
   '/return-orders/create': '新建退货',
+  '/return-orders/edit': '编辑退货订单',
   '/customers': '客户管理',
   '/customers/create': '新建客户',
   '/suppliers': '供应商管理',
@@ -91,6 +92,7 @@ const PATH_TITLES: Record<string, string> = {
   '/finance/payables/create': '新建应付款',
   '/finance/payments-out': '付款记录',
   '/finance/payments-out/create': '新建付款',
+  '/finance/customer-statements': '客户对账单',
   // 财务管理子路由
   receivables: '应收货款',
   refunds: '应退货款',
@@ -98,6 +100,7 @@ const PATH_TITLES: Record<string, string> = {
   payments: '收款记录',
   payables: '应付款',
   'payments-out': '付款记录',
+  'customer-statements': '客户对账单',
 
   // 设置模块路径映射
   '/settings/logs': '系统日志',
@@ -111,6 +114,7 @@ const PATH_TITLES: Record<string, string> = {
   basic: '基本设置',
   storage: '存储',
   users: '用户',
+  history: '变动历史',
 };
 
 /**
@@ -159,8 +163,17 @@ export function Breadcrumb({
       currentPath += `/${segment}`;
       const isLast = index === segments.length - 1;
 
-      // 获取标题
-      let title = PATH_TITLES[currentPath] || segment;
+      // 获取标题 - 先查找完整路径，再查找单个segment
+      const fullPathTitle = PATH_TITLES[currentPath];
+      const segmentTitle = PATH_TITLES[segment];
+      const mappedTitle = fullPathTitle || segmentTitle;
+
+      // 如果路径没有定义且不是最后一个段，跳过
+      if (!mappedTitle && !isLast) {
+        return; // 跳过没有映射的中间路径
+      }
+
+      let title = mappedTitle || segment;
 
       // 如果是ID（纯数字或UUID格式），根据上级路径生成更友好的名称
       if (/^[0-9a-f-]{36}$|^\d+$/.test(segment)) {
@@ -178,10 +191,28 @@ export function Breadcrumb({
           title = isEditPage ? '分类详情' : '分类详情';
         } else if (parentTitle === '客户管理') {
           title = isEditPage ? '客户详情' : '客户详情';
+        } else if (parentTitle === '供应商管理') {
+          title = isEditPage ? '供应商详情' : '供应商详情';
         } else if (parentTitle === '销售订单') {
           title = isEditPage ? '订单详情' : '订单详情';
         } else if (parentTitle === '退货订单') {
           title = isEditPage ? '退货详情' : '退货详情';
+        } else if (parentTitle === '厂家发货') {
+          title = isEditPage ? '发货详情' : '发货详情';
+        } else if (parentTitle === '客户对账单') {
+          title = '对账单详情';
+        } else if (parentTitle === '应收货款') {
+          title = '应收详情';
+        } else if (parentTitle === '应退货款') {
+          title = '退款详情';
+        } else if (parentTitle === '往来账单') {
+          title = '账单详情';
+        } else if (parentTitle === '收款记录') {
+          title = '收款详情';
+        } else if (parentTitle === '应付款') {
+          title = isEditPage ? '应付款详情' : '应付款详情';
+        } else if (parentTitle === '付款记录') {
+          title = '付款详情';
         } else {
           title = `详情 #${segment.slice(0, 8)}`;
         }
@@ -198,6 +229,14 @@ export function Breadcrumb({
           title = '编辑分类';
         } else if (grandParentTitle === '客户管理') {
           title = '编辑客户';
+        } else if (grandParentTitle === '供应商管理') {
+          title = '编辑供应商';
+        } else if (grandParentTitle === '销售订单') {
+          title = '编辑订单';
+        } else if (grandParentTitle === '厂家发货') {
+          title = '编辑发货';
+        } else if (grandParentTitle === '应付款') {
+          title = '编辑应付款';
         } else {
           title = '编辑';
         }

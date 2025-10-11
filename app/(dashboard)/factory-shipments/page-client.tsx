@@ -7,9 +7,9 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
+import { PageHeader } from '@/components/common/page-header';
 import { FactoryShipmentOrderList } from '@/components/factory-shipments/factory-shipment-order-list';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
 
 interface FactoryShipmentQueryParams {
@@ -164,55 +164,38 @@ export function FactoryShipmentsPageClient({
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
-        {/* 页面标题卡片 */}
-        <Card
-          className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-          style={{ boxShadow: 'var(--shadow-medium)' }}
-        >
-          <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div
-                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]"
-                  style={{ boxShadow: 'var(--shadow-light)' }}
-                >
-                  <Package className="h-6 w-6" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    厂家发货管理
-                  </h1>
-                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    管理厂家发货订单，跟踪货物运输状态和到货情况
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  asChild
-                  className="h-11 transition-transform duration-150 hover:scale-[1.02]"
-                >
-                  <Link href="/factory-shipments/export">
-                    <Download className="mr-2 h-4 w-4" />
-                    导出
-                  </Link>
-                </Button>
-                <Button
-                  size="lg"
-                  asChild
-                  className="h-11 transition-transform duration-150 hover:scale-[1.02]"
-                >
-                  <Link href="/factory-shipments/create">
-                    <Plus className="mr-2 h-4 w-4" />
-                    新建发货单
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* 页面标题 */}
+        <PageHeader
+          title="厂家发货管理"
+          description="管理厂家发货订单，跟踪货物运输状态和到货情况"
+          icon={<Package className="h-6 w-6 text-white" />}
+          variant="solid"
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/factory-shipments/export">
+                  <Download className="mr-2 h-4 w-4" />
+                  导出
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/factory-shipments/create">
+                  <Plus className="mr-2 h-4 w-4" />
+                  新建发货单
+                </Link>
+              </Button>
+            </>
+          }
+        />
 
         {/* 厂家发货列表 */}
         <Suspense

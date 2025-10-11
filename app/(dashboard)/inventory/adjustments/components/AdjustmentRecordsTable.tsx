@@ -116,33 +116,30 @@ export function AdjustmentRecordsTable({
 
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader
-            className="bg-[hsl(var(--color-bg-table-header))]"
-            style={{ boxShadow: 'var(--shadow-light)' }}
-          >
-            <TableRow className="bg-[hsl(var(--color-bg-table-header))]">
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+          <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+            <TableRow>
+              <TableHead>
                 产品编码
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 产品名称
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 规格
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 批次号
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 调整数量
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 调整原因
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 操作时间
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 操作
               </TableHead>
             </TableRow>

@@ -1,0 +1,80 @@
+        : undefined,
+      remarks: item.remarks?.trim() ?? undefined,
+      displayName: trimmedDisplayName,
+      specification: trimmedSpecification,
+      unit: trimmedUnit,
+      weight: itemWeight,
+    };
+  });
+}
+
+function parseJsonPayload<T>(formData: FormData, key: string): T {
+  const payload = formData.get(key);
+  if (typeof payload !== 'string' || !payload) {
+    throw new Error('提交数据格式不正确');
+  }
+  return JSON.parse(payload) as T;
+}
+
+// ============================================
+// Server Actions
+// ============================================
+
+/**
+ * 创建厂家发货订单
+ */
+export async function createFactoryShipment(
+  formData: FormData
+): Promise<ActionResult<{ id: string; containerNumber: string }>> {
+  try {
+    // 1. 身份认证
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return { success: false, error: '未授权操作' };
+    }
+
+    // 2. 解析和验证数据
+    const rawData = parseJsonPayload<unknown>(formData, 'data');
+    const data = createFactoryShipmentSchema.parse(rawData);
+
+    // 3. 计算总金额
+    const totalAmount = data.items.reduce(
+      (sum, item) => sum + item.totalPrice,
+      0
+    );
+    const grandTotal = totalAmount;
+
+    // 4. 数据库事务
+    const result = await prisma.$transaction(async tx => {
+      const itemsPayload = await resolveShipmentItems(tx, data.items);
+
+      // 创建厂家发货订单
+      const shipment = await tx.factoryShipmentOrder.create({
+        data: {
+          containerNumber: data.containerNumber,
+          status: data.status,
+          totalAmount: grandTotal,
+          shipmentDate: data.shipmentDate
+            ? new Date(data.shipmentDate)
+            : undefined,
+          arrivalDate: data.arrivalDate
+            ? new Date(data.arrivalDate)
+            : undefined,
+          remarks: data.remarks,
+          userId: session.user.id,
+          items: {
+            create: itemsPayload,
+          },
+        },
+      });
+
+      // 如果订单状态为已到货，增加库存
+      if (data.status === 'arrived' || data.status === 'completed') {
+        for (const item of itemsPayload) {
+          if (item.productId && !item.isManualProduct) {
+            const quantityDelta = Math.round(item.quantity);
+            // 查找或创建库存记录
+            const existingInventory = await tx.inventory.findFirst({
+              where: { productId: item.productId },
+            });
+

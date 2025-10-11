@@ -253,33 +253,30 @@ export function FactoryShipmentOrderList({
           </div>
         ) : (
           <Table>
-            <TableHeader
-              className="bg-[hsl(var(--color-bg-table-header))]"
-              style={{ boxShadow: 'var(--shadow-light)' }}
-            >
-              <TableRow className="bg-[hsl(var(--color-bg-table-header))]">
-                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+            <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+              <TableRow>
+                <TableHead>
                   订单编号
                 </TableHead>
-                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+                <TableHead>
                   集装箱号码
                 </TableHead>
-                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+                <TableHead>
                   客户
                 </TableHead>
-                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+                <TableHead>
                   状态
                 </TableHead>
-                <TableHead className="text-right text-[hsl(var(--color-text-secondary))]">
+                <TableHead className="text-right">
                   订单金额
                 </TableHead>
-                <TableHead className="text-right text-[hsl(var(--color-text-secondary))]">
+                <TableHead className="text-right">
                   应收金额
                 </TableHead>
-                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+                <TableHead>
                   创建时间
                 </TableHead>
-                <TableHead className="text-[hsl(var(--color-text-secondary))]">
+                <TableHead>
                   操作
                 </TableHead>
               </TableRow>

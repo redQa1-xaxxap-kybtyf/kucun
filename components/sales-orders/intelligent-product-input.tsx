@@ -1,6 +1,6 @@
 'use client';
 
-import type { UseFormReturn } from 'react-hook-form';
+import type { Path, PathValue, UseFormReturn } from 'react-hook-form';
 
 import {
   FormControl,
@@ -40,25 +40,25 @@ export function IntelligentProductInput<
     const product = products.find(p => p.id === productId);
     if (product) {
       // 清空临时产品字段
-      form.setValue(`items.${index}.isManualProduct`, false);
-      form.setValue(`items.${index}.manualProductName`, '');
-      form.setValue(`items.${index}.manualSpecification`, '');
-      form.setValue(`items.${index}.manualWeight`, undefined);
-      form.setValue(`items.${index}.manualUnit`, '');
+      form.setValue(`items.${index}.isManualProduct` as unknown as Path<TFieldValues>, false as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
+      form.setValue(`items.${index}.manualProductName` as unknown as Path<TFieldValues>, '' as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
+      form.setValue(`items.${index}.manualSpecification` as unknown as Path<TFieldValues>, '' as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
+      form.setValue(`items.${index}.manualWeight` as unknown as Path<TFieldValues>, undefined as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
+      form.setValue(`items.${index}.manualUnit` as unknown as Path<TFieldValues>, '' as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
 
-      form.setValue(`items.${index}.productCode`, product.code || '');
+      form.setValue(`items.${index}.productCode` as unknown as Path<TFieldValues>, (product.code || '') as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
 
       // 自动填充产品信息
       form.setValue(
-        `items.${index}.specification`,
-        product.specification || ''
+        `items.${index}.specification` as unknown as Path<TFieldValues>,
+        (product.specification || '') as unknown as PathValue<TFieldValues, Path<TFieldValues>>
       );
-      form.setValue(`items.${index}.unit`, product.unit || '');
+      form.setValue(`items.${index}.unit` as unknown as Path<TFieldValues>, (product.unit || '') as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
       form.setValue(
-        `items.${index}.piecesPerUnit`,
-        product.piecesPerUnit || undefined
+        `items.${index}.piecesPerUnit` as unknown as Path<TFieldValues>,
+        (product.piecesPerUnit || undefined) as unknown as PathValue<TFieldValues, Path<TFieldValues>>
       );
-      form.setValue(`items.${index}.unitCost`, undefined);
+      form.setValue(`items.${index}.unitCost` as unknown as Path<TFieldValues>, undefined as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
 
       onProductChange?.(product);
     }
@@ -72,26 +72,26 @@ export function IntelligentProductInput<
     unit?: string;
   }) => {
     // 清空库存产品选择
-    form.setValue(`items.${index}.productId`, '');
+    form.setValue(`items.${index}.productId` as unknown as Path<TFieldValues>, '' as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
 
     // 设置临时产品标识和信息
-    form.setValue(`items.${index}.isManualProduct`, true);
-    form.setValue(`items.${index}.manualProductName`, productData.name);
+    form.setValue(`items.${index}.isManualProduct` as unknown as Path<TFieldValues>, true as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
+    form.setValue(`items.${index}.manualProductName` as unknown as Path<TFieldValues>, productData.name as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
     form.setValue(
-      `items.${index}.manualSpecification`,
-      productData.specification || ''
+      `items.${index}.manualSpecification` as unknown as Path<TFieldValues>,
+      (productData.specification || '') as unknown as PathValue<TFieldValues, Path<TFieldValues>>
     );
-    form.setValue(`items.${index}.manualWeight`, productData.weight);
-    form.setValue(`items.${index}.manualUnit`, productData.unit || '');
-    form.setValue(`items.${index}.unitCost`, undefined);
-    form.setValue(`items.${index}.productCode`, '');
+    form.setValue(`items.${index}.manualWeight` as unknown as Path<TFieldValues>, productData.weight as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
+    form.setValue(`items.${index}.manualUnit` as unknown as Path<TFieldValues>, (productData.unit || '') as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
+    form.setValue(`items.${index}.unitCost` as unknown as Path<TFieldValues>, undefined as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
+    form.setValue(`items.${index}.productCode` as unknown as Path<TFieldValues>, '' as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
 
     // 自动填充到表单的通用字段（用于显示）
     form.setValue(
-      `items.${index}.specification`,
-      productData.specification || ''
+      `items.${index}.specification` as unknown as Path<TFieldValues>,
+      (productData.specification || '') as unknown as PathValue<TFieldValues, Path<TFieldValues>>
     );
-    form.setValue(`items.${index}.unit`, productData.unit || '');
+    form.setValue(`items.${index}.unit` as unknown as Path<TFieldValues>, (productData.unit || '') as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
 
     onProductChange?.(null);
   };
@@ -122,13 +122,13 @@ export function IntelligentProductInput<
   return (
     <FormField
       control={form.control}
-      name={`items.${index}.productId`}
+      name={`items.${index}.productId` as unknown as Path<TFieldValues>}
       render={({ field }) => (
         <FormItem>
           <FormControl>
             <SmartProductSearch
               products={productsWithInventory}
-              value={field.value || ''}
+              value={(field.value as string) || ''}
               onValueChange={value => {
                 field.onChange(value);
                 handleProductSelect(value);
@@ -140,7 +140,7 @@ export function IntelligentProductInput<
 
                 // 使用 setTimeout 确保产品信息已更新后再设置批次号
                 setTimeout(() => {
-                  form.setValue(`items.${index}.batchNumber`, batchNumber);
+                  form.setValue(`items.${index}.batchNumber` as unknown as Path<TFieldValues>, batchNumber as unknown as PathValue<TFieldValues, Path<TFieldValues>>);
                   // 调用外部回调
                   onBatchSelect?.(productId, batchNumber);
                 }, 0);

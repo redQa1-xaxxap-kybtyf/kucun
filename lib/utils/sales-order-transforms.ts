@@ -6,6 +6,7 @@
 import type {
   SalesOrderCreateInput,
   SalesOrderItemCreateInput,
+  SalesOrderStatus,
   SalesOrderUpdateInput,
   SalesOrderItemUpdateInput,
 } from '@/lib/types/sales-order';
@@ -15,7 +16,7 @@ import type {
  */
 export interface SalesOrderFormData {
   customerId: string;
-  status?: 'draft' | 'confirmed' | 'shipped' | 'completed' | 'cancelled';
+  status?: SalesOrderStatus;
   orderType?: 'NORMAL' | 'TRANSFER';
   supplierId?: string;
   costAmount?: number;
@@ -39,8 +40,8 @@ export interface SalesOrderFormItem {
   specification?: string;
   remarks?: string;
 
-  // 数量和价格
-  quantity: number;
+  // 数量和价格（可选，因为草稿状态允许为空）
+  quantity?: number;
   unitPrice?: number;
   subtotal?: number;
 
@@ -101,14 +102,14 @@ export function transformFormItemToCreateInput(
     return {
       productId: formItem.productId || '', // 手动商品可能没有productId
       productCode: formItem.productCode?.trim() || undefined,
-      quantity: formItem.quantity,
+      quantity: formItem.quantity ?? 0,
       unitPrice: formItem.unitPrice || 0,
       batchNumber: formItem.batchNumber?.trim() || undefined,
       colorCode: formItem.colorCode,
       productionDate: formItem.productionDate,
       unitCost: formItem.unitCost,
       displayUnit: formItem.displayUnit || '片',
-      displayQuantity: formItem.displayQuantity ?? formItem.quantity,
+      displayQuantity: formItem.displayQuantity ?? formItem.quantity ?? 0,
       piecesPerUnit: formItem.piecesPerUnit,
       specification:
         formItem.specification || formItem.manualSpecification || undefined,
@@ -126,13 +127,13 @@ export function transformFormItemToCreateInput(
     productId: formItem.productId || '',
     productCode: formItem.productCode?.trim() || undefined,
     batchNumber: formItem.batchNumber?.trim() || undefined,
-    quantity: formItem.quantity,
+    quantity: formItem.quantity ?? 0,
     unitPrice: formItem.unitPrice || 0,
     colorCode: formItem.colorCode,
     productionDate: formItem.productionDate,
     unitCost: formItem.unitCost,
     displayUnit: formItem.displayUnit || '片',
-    displayQuantity: formItem.displayQuantity ?? formItem.quantity,
+    displayQuantity: formItem.displayQuantity ?? formItem.quantity ?? 0,
     piecesPerUnit: formItem.piecesPerUnit,
     specification:
       formItem.specification || formItem.product?.specification || undefined,
@@ -176,14 +177,14 @@ export function transformFormItemToUpdateInput(
     return {
       productId: formItem.productId || '',
       productCode: formItem.productCode?.trim() || undefined,
-      quantity: formItem.quantity,
+      quantity: formItem.quantity ?? 0,
       unitPrice: formItem.unitPrice || 0,
       batchNumber: formItem.batchNumber?.trim() || undefined,
       colorCode: formItem.colorCode,
       productionDate: formItem.productionDate,
       unitCost: formItem.unitCost ?? undefined,
       displayUnit: formItem.displayUnit || '片',
-      displayQuantity: formItem.displayQuantity ?? formItem.quantity,
+      displayQuantity: formItem.displayQuantity ?? formItem.quantity ?? 0,
       piecesPerUnit: formItem.piecesPerUnit,
       specification:
         formItem.specification || formItem.manualSpecification || undefined,
@@ -201,13 +202,13 @@ export function transformFormItemToUpdateInput(
     productId: formItem.productId || '',
     productCode: formItem.productCode?.trim() || undefined,
     batchNumber: formItem.batchNumber?.trim() || undefined,
-    quantity: formItem.quantity,
+    quantity: formItem.quantity ?? 0,
     unitPrice: formItem.unitPrice || 0,
     colorCode: formItem.colorCode,
     productionDate: formItem.productionDate,
     unitCost: formItem.unitCost ?? undefined,
     displayUnit: formItem.displayUnit || '片',
-    displayQuantity: formItem.displayQuantity ?? formItem.quantity,
+    displayQuantity: formItem.displayQuantity ?? formItem.quantity ?? 0,
     piecesPerUnit: formItem.piecesPerUnit,
     specification:
       formItem.specification || formItem.product?.specification || undefined,
@@ -238,7 +239,7 @@ export function calculateOrderTotal(items: SalesOrderFormItem[]): number {
   const total = items.reduce((sum, item) => {
     const subtotal =
       item.subtotal ||
-      calculateItemSubtotal(item.quantity, item.unitPrice || 0);
+      calculateItemSubtotal(item.quantity ?? 0, item.unitPrice || 0);
     return sum + subtotal;
   }, 0);
 

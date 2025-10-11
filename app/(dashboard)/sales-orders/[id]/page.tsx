@@ -1,15 +1,19 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ArrowLeft,
+  DollarSign,
   Download,
   Edit,
   MoreHorizontal,
   Printer,
+  Receipt,
   ShoppingCart,
+  Truck,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
@@ -22,12 +26,23 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { ErrorMessage } from '@/components/ui/error-message';
-import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+
+interface PaymentRecord {
+  id: string;
+  paymentNumber: string;
+  paymentAmount: number;
+  paymentMethod: string;
+  paymentDate: string;
+  status: string;
+  remarks?: string;
+  createdAt: string;
+}
 
 interface SalesOrderDetail {
   id: string;
@@ -40,7 +55,10 @@ interface SalesOrderDetail {
   totalAmount: number;
   costAmount: number;
   profitAmount: number;
+  paidAmount: number;
+  remainingAmount: number;
   remarks?: string;
+  shippedAt?: string;
   createdAt: string;
   updatedAt: string;
   customer: {
@@ -73,7 +91,10 @@ interface SalesOrderDetail {
     manualSpecification?: string;
     manualWeight?: number;
     manualUnit?: string;
+    displayUnit?: string;
+    displayQuantity?: number;
     piecesPerUnit?: number;
+    specification?: string;
     remarks?: string;
     product?: {
       id: string;
@@ -85,6 +106,7 @@ interface SalesOrderDetail {
       weight?: number;
     };
   }>;
+  paymentRecords: PaymentRecord[];
 }
 
 async function fetchSalesOrderDetail(id: string): Promise<SalesOrderDetail> {
@@ -173,6 +195,9 @@ export default function SalesOrderDetailPage() {
   const params = useParams();
   const router = useRouter();
   const id = params.id as string;
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
 
   const {
     data: order,
@@ -183,6 +208,90 @@ export default function SalesOrderDetailPage() {
     queryFn: () => fetchSalesOrderDetail(id),
     enabled: !!id,
   });
+
+  // 更新订单状态
+  const updateStatusMutation = useMutation({
+    mutationFn: async (newStatus: string) => {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000); // 30秒超时
+
+      try {
+        const response = await fetch(`/api/sales-orders/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            status: newStatus,
+            idempotencyKey: crypto.randomUUID(),
+          }),
+          signal: controller.signal,
+        });
+
+        clearTimeout(timeoutId);
+
+        if (!response.ok) {
+          let errorMessage = '更新订单状态失败';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.error || errorMessage;
+          } catch {
+            // JSON解析失败，使用默认错误消息
+          }
+          throw new Error(errorMessage);
+        }
+
+        const result = await response.json();
+        if (!result.success) {
+          throw new Error(result.error || '更新订单状态失败');
+        }
+
+        return result;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        if (error instanceof Error && error.name === 'AbortError') {
+          throw new Error('操作超时，请重试');
+        }
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.salesOrders.detail(id) });
+      queryClient.invalidateQueries({ queryKey: queryKeys.salesOrders.lists() });
+      toast({
+        title: '操作成功',
+        description: '订单状态已更新',
+      });
+      setIsUpdatingStatus(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '操作失败',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setIsUpdatingStatus(false);
+    },
+    onSettled: () => {
+      // 确保无论成功还是失败都重置状态
+      setIsUpdatingStatus(false);
+    },
+  });
+
+  // 确认发货
+  const handleConfirmShipment = () => {
+    if (order?.status !== 'confirmed') {
+      toast({
+        title: '操作失败',
+        description: '只有已确认的订单才能发货',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsUpdatingStatus(true);
+    updateStatusMutation.mutate('shipped');
+  };
 
   if (isLoading) {
     return <ContentLoading />;
@@ -215,7 +324,12 @@ export default function SalesOrderDetailPage() {
       <Badge variant="outline">正常销售</Badge>
     );
 
-  const totalDisplayQuantity = order.items.reduce(
+  const orderItems = order.items ?? [];
+  const customerName = order.customer?.name ?? '未关联客户';
+  const customerPhone = order.customer?.phone ?? '-';
+  const userName = order.user?.name ?? '-';
+
+  const totalDisplayQuantity = orderItems.reduce(
     (sum, item) =>
       sum +
       (typeof item.displayQuantity === 'number'
@@ -225,22 +339,25 @@ export default function SalesOrderDetailPage() {
   );
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
+        {/* 页面标题卡片 - 使用标准风格 */}
+        <Card
+          className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+          style={{ boxShadow: 'var(--shadow-medium)' }}
+        >
+          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 shadow-lg shadow-blue-600/30">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-lg">
                   <ShoppingCart className="h-6 w-6 text-white" />
                 </div>
                 <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
                     销售订单详情
                   </h1>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <span>订单号：{order.orderNumber}</span>
+                  <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                    <span className="font-medium">订单号：{order.orderNumber}</span>
                     <Badge variant={getSalesOrderStatusBadgeVariant(order.status)}>
                       {SALES_ORDER_STATUS_LABELS[
                         order.status as keyof typeof SALES_ORDER_STATUS_LABELS
@@ -255,7 +372,7 @@ export default function SalesOrderDetailPage() {
                   variant="outline"
                   size="lg"
                   onClick={() => router.back()}
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                  className="h-11"
                 >
                   <ArrowLeft className="mr-2 h-4 w-4" />
                   返回
@@ -263,23 +380,6 @@ export default function SalesOrderDetailPage() {
                 <Button
                   variant="outline"
                   size="lg"
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <Printer className="mr-2 h-4 w-4" />
-                  打印
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  导出
-                </Button>
-                <Button
-                  variant="outline"
-                  size="lg"
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
                   onClick={() => {
                     if (order.status === 'draft') {
                       router.push(`/sales-orders/${id}/edit`);
@@ -292,20 +392,35 @@ export default function SalesOrderDetailPage() {
                   <Edit className="mr-2 h-4 w-4" />
                   编辑
                 </Button>
+                {order.status === 'confirmed' && (
+                  <Button
+                    variant="default"
+                    size="lg"
+                    onClick={handleConfirmShipment}
+                    disabled={isUpdatingStatus}
+                    className="bg-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary-dark))]"
+                  >
+                    <Truck className="mr-2 h-4 w-4" />
+                    {isUpdatingStatus ? '处理中...' : '确认发货'}
+                  </Button>
+                )}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="lg"
-                      className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                    >
+                    <Button variant="outline" size="lg">
                       <MoreHorizontal className="h-4 w-4" />
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <Printer className="mr-2 h-4 w-4" />
+                      打印订单
+                    </DropdownMenuItem>
+                    <DropdownMenuItem>
+                      <Download className="mr-2 h-4 w-4" />
+                      导出订单
+                    </DropdownMenuItem>
                     <DropdownMenuItem>复制订单</DropdownMenuItem>
-                    <DropdownMenuItem>发送邮件</DropdownMenuItem>
-                    <DropdownMenuItem className="text-destructive">
+                    <DropdownMenuItem className="text-[hsl(var(--color-error))]">
                       删除订单
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -315,20 +430,85 @@ export default function SalesOrderDetailPage() {
           </CardContent>
         </Card>
 
+        {/* 金额统计卡片 - 顶部突出显示 */}
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <Card className="border border-[hsl(var(--color-border-primary))]" style={{ boxShadow: 'var(--shadow-light)' }}>
+            <CardContent className="p-4">
+              <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">订单总金额</div>
+              <div className="mt-2 text-2xl font-bold text-[hsl(var(--color-primary))]">
+                {formatCurrency(order.totalAmount)}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-green-200 bg-green-50/50" style={{ boxShadow: 'var(--shadow-light)' }}>
+            <CardContent className="p-4">
+              <div className="text-xs font-medium text-gray-600">已收金额</div>
+              <div className="mt-2 text-2xl font-bold text-green-600">
+                {formatCurrency(order.paidAmount)}
+              </div>
+              <div className="mt-1 text-xs text-gray-500">
+                {order.paymentRecords.filter(r => r.status === 'confirmed').length} 笔收款
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-orange-200 bg-orange-50/50" style={{ boxShadow: 'var(--shadow-light)' }}>
+            <CardContent className="p-4">
+              <div className="text-xs font-medium text-gray-600">待收金额</div>
+              <div className="mt-2 text-2xl font-bold text-orange-600">
+                {formatCurrency(order.remainingAmount)}
+              </div>
+              <div className="mt-1 text-xs text-gray-500">
+                {order.remainingAmount > 0 ? '未完成收款' : '已全部收款'}
+              </div>
+            </CardContent>
+          </Card>
+
+          {order.orderType === 'TRANSFER' && (
+            <Card className="border border-[hsl(var(--color-border-primary))]" style={{ boxShadow: 'var(--shadow-light)' }}>
+              <CardContent className="p-4">
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">毛利金额</div>
+                <div className="mt-2 text-2xl font-bold text-[hsl(var(--color-success))]">
+                  {formatCurrency(order.profitAmount)}
+                </div>
+                <div className="mt-1 text-xs text-[hsl(var(--color-text-tertiary))]">
+                  毛利率：{order.totalAmount > 0 ? ((order.profitAmount / order.totalAmount) * 100).toFixed(1) : '0.0'}%
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           {/* 基本信息 */}
-          <div className="space-y-6 lg:col-span-2">
-            <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50 py-3">
-                <CardTitle className="flex items-center text-base text-gray-900">
-                  <ShoppingCart className="mr-2 h-4 w-4 text-blue-600" />
+          <div className="space-y-4 lg:col-span-2">
+            <Card
+              className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+              style={{ boxShadow: 'var(--shadow-medium)' }}
+            >
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+                <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
+                  <ShoppingCart className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
                   基本信息
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
+                <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
-                    <div className="text-xs font-medium text-gray-500">
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      客户名称
+                    </div>
+                    <div className="mt-2 font-medium text-[hsl(var(--color-text-primary))]">{customerName}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      客户电话
+                    </div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{customerPhone}</div>
+                  </div>
+                  <div>
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       订单状态
                     </div>
                     <div className="mt-2">
@@ -340,90 +520,92 @@ export default function SalesOrderDetailPage() {
                     </div>
                   </div>
                   <div>
-                    <div className="text-xs font-medium text-gray-500">
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       订单类型
                     </div>
                     <div className="mt-2">
                       {getOrderTypeBadge(order.orderType)}
                     </div>
                   </div>
-                  <div>
-                    <div className="text-xs font-medium text-gray-500">
-                      客户名称
-                    </div>
-                    <div className="mt-2 font-medium text-gray-900">{order.customer.name}</div>
-                  </div>
-                  <div>
-                    <div className="text-xs font-medium text-gray-500">
-                      客户电话
-                    </div>
-                    <div className="mt-2 text-sm text-gray-700">{order.customer.phone || '-'}</div>
-                  </div>
                   {order.supplier && (
                     <div>
-                      <div className="text-xs font-medium text-gray-500">
+                      <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                         供应商
                       </div>
-                      <div className="mt-2 text-sm text-gray-700">{order.supplier.name}</div>
+                      <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{order.supplier.name}</div>
                     </div>
                   )}
                   <div>
-                    <div className="text-xs font-medium text-gray-500">
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       创建人
                     </div>
-                    <div className="mt-2 text-sm text-gray-700">{order.user.name}</div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{userName}</div>
                   </div>
                   <div>
-                    <div className="text-xs font-medium text-gray-500">
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       创建时间
                     </div>
-                    <div className="mt-2 text-sm text-gray-700">{formatDate(order.createdAt)}</div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{formatDate(order.createdAt)}</div>
                   </div>
+                  {order.shippedAt && (
+                    <div>
+                      <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                        发货时间
+                      </div>
+                      <div className="mt-2 text-sm font-medium text-[hsl(var(--color-primary))]">{formatDate(order.shippedAt, 'datetime')}</div>
+                    </div>
+                  )}
                   <div>
-                    <div className="text-xs font-medium text-gray-500">
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       更新时间
                     </div>
-                    <div className="mt-2 text-sm text-gray-700">{formatDate(order.updatedAt)}</div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{formatDate(order.updatedAt)}</div>
                   </div>
                 </div>
                 {order.remarks && (
-                  <div className="mt-4 rounded-lg border border-gray-200 bg-gray-50/50 p-4">
-                    <div className="text-xs font-medium text-gray-500">
+                  <div className="mt-4 rounded-lg border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] p-4">
+                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       备注信息
                     </div>
-                    <div className="mt-2 text-sm text-gray-700">{order.remarks}</div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{order.remarks}</div>
                   </div>
                 )}
               </CardContent>
             </Card>
 
             {/* 订单明细 */}
-            <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
+            <Card
+              className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+              style={{ boxShadow: 'var(--shadow-medium)' }}
+            >
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center text-gray-900">
-                    <ShoppingCart className="mr-2 h-5 w-5 text-blue-600" />
+                  <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
+                    <ShoppingCart className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
                     订单明细
                   </CardTitle>
-                  <div className="flex items-center gap-4 text-xs text-gray-600">
+                  <div className="flex items-center gap-4 text-xs text-[hsl(var(--color-text-secondary))]">
                     <span>
-                      共 <strong className="text-blue-600">{order.items.length}</strong> 种产品
+                      共 <strong className="text-[hsl(var(--color-primary))]">{orderItems.length}</strong> 种产品
                     </span>
-                       <span>
-                        总数量：
-                        <strong className="text-blue-600">
-                          {formatDecimal(totalDisplayQuantity)}
-                        </strong>
-                      </span>
-                    </div>
+                    <span>
+                      总数量：
+                      <strong className="text-[hsl(var(--color-primary))]">
+                        {formatDecimal(totalDisplayQuantity)}
+                      </strong>
+                    </span>
                   </div>
+                </div>
               </CardHeader>
-              <CardContent className="p-0">
+              <CardContent className="bg-[hsl(var(--color-bg-card))] p-0">
                 {/* ERP风格表格 */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="border-b bg-gray-50/80">
-                      <tr className="text-xs text-gray-600">
+                    <thead
+                      className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]"
+                      style={{ boxShadow: 'var(--shadow-light)' }}
+                    >
+                      <tr className="text-xs text-[hsl(var(--color-text-secondary))]">
                         <th className="px-4 py-3 text-left font-medium">产品信息</th>
                         <th className="px-4 py-3 text-left font-medium">产品编码</th>
                         <th className="px-4 py-3 text-center font-medium">每件片数</th>
@@ -445,7 +627,7 @@ export default function SalesOrderDetailPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                       {order.items.map((item, index) => {
+                        {orderItems.map(item => {
                          const unitLabel = resolveUnitLabel(item);
                          const quantityDisplay = formatQuantityDisplay(item);
                          const piecesPerUnitDisplay =
@@ -579,87 +761,291 @@ export default function SalesOrderDetailPage() {
             </Card>
           </div>
 
-          {/* 金额汇总 */}
-          <div className="space-y-6">
-            <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50 py-3">
-                <CardTitle className="flex items-center text-base text-gray-900">
-                  <ShoppingCart className="mr-2 h-4 w-4 text-blue-600" />
-                  金额汇总
+          {/* 右侧边栏 */}
+          <div className="space-y-4">
+
+            {/* 收款记录 */}
+            <Card
+              className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+              style={{ boxShadow: 'var(--shadow-medium)' }}
+            >
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+                <CardTitle className="flex items-center justify-between text-base text-[hsl(var(--color-text-primary))]">
+                  <div className="flex items-center">
+                    <Receipt className="mr-2 h-4 w-4 text-[hsl(var(--color-success))]" />
+                    收款记录
+                  </div>
+                  <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
+                    {order.paymentRecords.filter(r => r.status === 'confirmed').length} / {order.paymentRecords.length} 笔
+                  </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
-                <div className="space-y-4">
-                  <div className="rounded-lg border-2 border-blue-100 bg-blue-50/50 p-4">
-                    <div className="text-xs font-medium text-gray-600">订单总金额</div>
-                    <div className="mt-2 text-2xl font-bold text-blue-600">
+              <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
+                {/* 订单金额总览 */}
+                <div className="mb-4 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500">
+                        <DollarSign className="h-4 w-4 text-white" />
+                      </div>
+                      <span className="text-sm font-semibold text-gray-700">订单总金额</span>
+                    </div>
+                    <div className="text-xl font-bold text-blue-600">
                       {formatCurrency(order.totalAmount)}
                     </div>
                   </div>
-                  {order.orderType === 'TRANSFER' && (
-                    <>
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="rounded-lg border bg-gray-50/50 p-3">
-                          <div className="text-xs font-medium text-gray-500">总成本</div>
-                          <div className="mt-2 text-lg font-semibold text-gray-900">
-                            {formatCurrency(order.costAmount)}
-                          </div>
-                        </div>
-                        <div className="rounded-lg border border-green-100 bg-green-50/50 p-3">
-                          <div className="text-xs font-medium text-gray-600">总毛利</div>
-                          <div className="mt-2 text-lg font-semibold text-green-600">
-                            {formatCurrency(order.profitAmount)}
-                          </div>
-                        </div>
+
+                  {/* 收款进度条 */}
+                  <div className="mb-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium text-gray-600">收款进度</span>
+                      <span className="text-xs font-bold text-green-600">
+                        {order.totalAmount > 0 ? ((order.paidAmount / order.totalAmount) * 100).toFixed(1) : '0.0'}%
+                      </span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
+                        style={{
+                          width: `${order.totalAmount > 0 ? (order.paidAmount / order.totalAmount) * 100 : 0}%`,
+                        }}
+                      ></div>
+                    </div>
+                  </div>
+
+                  {/* 收款明细统计 */}
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="rounded-md bg-white/60 p-2 text-center">
+                      <div className="text-xs text-gray-600">已确认</div>
+                      <div className="mt-1 text-sm font-bold text-green-600">
+                        {formatCurrency(order.paidAmount)}
                       </div>
-                      <div className="rounded-lg border border-green-100 bg-green-50/30 p-3">
-                        <div className="flex items-center justify-between">
-                          <span className="text-xs font-medium text-gray-600">毛利率</span>
-                          <span className="text-xl font-bold text-green-600">
-                            {order.totalAmount > 0
-                              ? (
-                                  (order.profitAmount / order.totalAmount) *
-                                  100
-                                ).toFixed(1)
-                              : '0.0'}
-                            %
-                          </span>
-                        </div>
+                      <div className="text-[10px] text-gray-500">
+                        {order.paymentRecords.filter(r => r.status === 'confirmed').length} 笔
                       </div>
-                    </>
-                  )}
+                    </div>
+                    <div className="rounded-md bg-white/60 p-2 text-center">
+                      <div className="text-xs text-gray-600">待确认</div>
+                      <div className="mt-1 text-sm font-bold text-yellow-600">
+                        {formatCurrency(
+                          order.paymentRecords
+                            .filter(r => r.status === 'pending')
+                            .reduce((sum, r) => sum + Number(r.paymentAmount), 0)
+                        )}
+                      </div>
+                      <div className="text-[10px] text-gray-500">
+                        {order.paymentRecords.filter(r => r.status === 'pending').length} 笔
+                      </div>
+                    </div>
+                    <div className="rounded-md bg-white/60 p-2 text-center">
+                      <div className="text-xs text-gray-600">待收款</div>
+                      <div className="mt-1 text-sm font-bold text-orange-600">
+                        {formatCurrency(order.remainingAmount)}
+                      </div>
+                      <div className="text-[10px] text-gray-500">
+                        {order.remainingAmount > 0 ? '未完成' : '已完成'}
+                      </div>
+                    </div>
+                  </div>
                 </div>
+
+                {order.paymentRecords.length === 0 ? (
+                  <div className="py-8 text-center text-sm text-[hsl(var(--color-text-tertiary))]">
+                    暂无收款记录
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* 待确认收款 */}
+                    {order.paymentRecords.filter(r => r.status === 'pending').length > 0 && (
+                      <div>
+                        <div className="mb-2 flex items-center gap-2">
+                          <div className="h-px flex-1 bg-yellow-200"></div>
+                          <span className="text-xs font-semibold text-yellow-700">
+                            ⏱ 待确认收款
+                          </span>
+                          <div className="h-px flex-1 bg-yellow-200"></div>
+                        </div>
+                        <div className="space-y-2">
+                          {order.paymentRecords
+                            .filter(r => r.status === 'pending')
+                            .map((record, index) => (
+                              <div
+                                key={record.id}
+                                className="group relative overflow-hidden rounded-lg border-2 border-yellow-300 bg-yellow-50 p-4 shadow-sm transition-all hover:border-yellow-400 hover:shadow-md"
+                              >
+                                <div className="absolute left-0 top-0 h-full w-1 bg-yellow-500"></div>
+                                <div className="pl-3">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div>
+                                      <div className="text-lg font-bold text-gray-900">
+                                        {formatCurrency(record.paymentAmount)}
+                                      </div>
+                                      <div className="mt-0.5 text-xs text-gray-600">
+                                        待确认第 {index + 1} 笔
+                                      </div>
+                                    </div>
+                                    <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300">
+                                      ⏱ 待确认
+                                    </Badge>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 rounded-md bg-white/60 p-2 text-xs">
+                                    <div>
+                                      <span className="text-gray-600">收款日期</span>
+                                      <div className="mt-0.5 font-medium text-gray-800">
+                                        {formatDate(record.paymentDate, 'datetime')}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-600">支付方式</span>
+                                      <div className="mt-0.5 font-medium text-gray-800">
+                                        {record.paymentMethod === 'cash'
+                                          ? '💵 现金'
+                                          : record.paymentMethod === 'bank_transfer'
+                                            ? '🏦 银行转账'
+                                            : record.paymentMethod === 'alipay'
+                                              ? '🔵 支付宝'
+                                              : record.paymentMethod === 'wechat'
+                                                ? '💚 微信支付'
+                                                : record.paymentMethod === 'check'
+                                                  ? '📝 支票'
+                                                  : '📌 其他'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {record.paymentNumber && (
+                                    <div className="mt-2 flex items-center gap-1 text-xs">
+                                      <span className="text-gray-600">单号:</span>
+                                      <code className="rounded bg-white px-1.5 py-0.5 font-mono text-gray-700">
+                                        {record.paymentNumber}
+                                      </code>
+                                    </div>
+                                  )}
+                                  {record.remarks && (
+                                    <div className="mt-2 rounded border-l-2 border-yellow-400 bg-white px-2 py-1.5 text-xs text-gray-700">
+                                      <span className="font-medium text-gray-600">备注：</span>
+                                      {record.remarks}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* 已确认收款 */}
+                    {order.paymentRecords.filter(r => r.status === 'confirmed').length > 0 && (
+                      <div>
+                        <div className="mb-2 flex items-center gap-2">
+                          <div className="h-px flex-1 bg-green-200"></div>
+                          <span className="text-xs font-semibold text-green-700">
+                            ✓ 已确认收款
+                          </span>
+                          <div className="h-px flex-1 bg-green-200"></div>
+                        </div>
+                        <div className="space-y-2">
+                          {order.paymentRecords
+                            .filter(r => r.status === 'confirmed')
+                            .map((record, index) => (
+                              <div
+                                key={record.id}
+                                className="group relative overflow-hidden rounded-lg border-2 border-green-300 bg-green-50 p-4 shadow-sm transition-all hover:border-green-400 hover:shadow-md"
+                              >
+                                <div className="absolute left-0 top-0 h-full w-1 bg-green-500"></div>
+                                <div className="pl-3">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div>
+                                      <div className="text-lg font-bold text-gray-900">
+                                        {formatCurrency(record.paymentAmount)}
+                                      </div>
+                                      <div className="mt-0.5 text-xs text-gray-600">
+                                        已确认第 {index + 1} 笔
+                                      </div>
+                                    </div>
+                                    <Badge className="bg-green-100 text-green-700 border-green-300">
+                                      ✓ 已确认
+                                    </Badge>
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2 rounded-md bg-white/60 p-2 text-xs">
+                                    <div>
+                                      <span className="text-gray-600">收款日期</span>
+                                      <div className="mt-0.5 font-medium text-gray-800">
+                                        {formatDate(record.paymentDate, 'datetime')}
+                                      </div>
+                                    </div>
+                                    <div>
+                                      <span className="text-gray-600">支付方式</span>
+                                      <div className="mt-0.5 font-medium text-gray-800">
+                                        {record.paymentMethod === 'cash'
+                                          ? '💵 现金'
+                                          : record.paymentMethod === 'bank_transfer'
+                                            ? '🏦 银行转账'
+                                            : record.paymentMethod === 'alipay'
+                                              ? '🔵 支付宝'
+                                              : record.paymentMethod === 'wechat'
+                                                ? '💚 微信支付'
+                                                : record.paymentMethod === 'check'
+                                                  ? '📝 支票'
+                                                  : '📌 其他'}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  {record.paymentNumber && (
+                                    <div className="mt-2 flex items-center gap-1 text-xs">
+                                      <span className="text-gray-600">单号:</span>
+                                      <code className="rounded bg-white px-1.5 py-0.5 font-mono text-gray-700">
+                                        {record.paymentNumber}
+                                      </code>
+                                    </div>
+                                  )}
+                                  {record.remarks && (
+                                    <div className="mt-2 rounded border-l-2 border-green-400 bg-white px-2 py-1.5 text-xs text-gray-700">
+                                      <span className="font-medium text-gray-600">备注：</span>
+                                      {record.remarks}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
 
             {/* 操作历史 */}
-            <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-              <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50 py-3">
-                <CardTitle className="flex items-center text-base text-gray-900">
-                  <ShoppingCart className="mr-2 h-4 w-4 text-blue-600" />
+            <Card
+              className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+              style={{ boxShadow: 'var(--shadow-medium)' }}
+            >
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+                <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
+                  <ShoppingCart className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
                   操作历史
                 </CardTitle>
               </CardHeader>
-              <CardContent className="p-6">
+              <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
-                    <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-blue-500"></div>
+                    <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-[hsl(var(--color-primary))]"></div>
                     <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-gray-900">订单创建</div>
-                      <div className="mt-0.5 text-xs text-gray-500">
+                      <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">订单创建</div>
+                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
                         {formatDate(order.createdAt)}
                       </div>
-                      <div className="mt-0.5 text-xs text-gray-400">
-                        创建人：{order.user.name}
+                      <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
+                        创建人：{userName}
                       </div>
                     </div>
                   </div>
                   {order.updatedAt !== order.createdAt && (
                     <div className="flex items-start gap-3">
-                      <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-green-500"></div>
+                      <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-[hsl(var(--color-success))]"></div>
                       <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-gray-900">订单更新</div>
-                        <div className="mt-0.5 text-xs text-gray-500">
+                        <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">订单更新</div>
+                        <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
                           {formatDate(order.updatedAt)}
                         </div>
                       </div>

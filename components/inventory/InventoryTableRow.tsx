@@ -6,7 +6,7 @@
 
 'use client';
 
-import { Edit } from 'lucide-react';
+import { Eye } from 'lucide-react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -72,8 +72,11 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
     );
 
     const handleAdjust = React.useCallback(() => {
+      if (!item.batchNumber) {
+        return;
+      }
       onAdjust(item.id);
-    }, [item.id, onAdjust]);
+    }, [item.batchNumber, item.id, onAdjust]);
 
     // 使用useMemo优化计算密集型操作
     const quantityDisplay = React.useMemo(
@@ -145,6 +148,18 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
           {item.product?.name || '-'}
         </TableCell>
         <TableCell>{formattedSpecification}</TableCell>
+        <TableCell className="font-medium">
+          {item.product?.piecesPerUnit ? (
+            <>
+              {item.product.piecesPerUnit}
+              <span className="ml-0.5 text-[10px] font-normal text-[hsl(var(--color-text-tertiary))]">
+                片/件
+              </span>
+            </>
+          ) : (
+            <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
+          )}
+        </TableCell>
         <TableCell className="font-mono">{item.batchNumber || '-'}</TableCell>
         <TableCell className="font-medium">{quantityDisplay}</TableCell>
         <TableCell>{item.reservedQuantity || 0}</TableCell>
@@ -156,10 +171,16 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
             <Button
               variant="ghost"
               size="sm"
-              className="h-6 w-6 p-0"
+              className={`h-6 w-6 p-0 ${item.batchNumber ? '' : 'cursor-not-allowed opacity-60'}`}
               onClick={handleAdjust}
+              disabled={!item.batchNumber}
+              title={
+                item.batchNumber
+                  ? '查看库存变动详情'
+                  : '暂无批次信息，无法查看详情'
+              }
             >
-              <Edit className="h-3 w-3" />
+              <Eye className="h-3 w-3" />
             </Button>
           </div>
         </TableCell>

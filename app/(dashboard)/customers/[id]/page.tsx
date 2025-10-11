@@ -2,6 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import {
+  AlertCircle,
   ArrowLeft,
   Calendar,
   Edit,
@@ -10,6 +11,7 @@ import {
   Phone,
   RotateCcw,
   ShoppingCart,
+  User,
 } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
@@ -28,17 +30,31 @@ import {
   getSalesOrderStatusBadgeVariant,
 } from '@/lib/utils/badge-helpers';
 
+interface CustomerExtendedInfo {
+  contactPerson?: string;
+  email?: string;
+  fax?: string;
+  website?: string;
+  businessLicense?: string;
+  taxNumber?: string;
+  bankAccount?: string;
+  creditLimit?: number;
+  paymentTerms?: string;
+  customerType?: 'company' | 'store' | 'individual';
+  industry?: string;
+  region?: string;
+  level?: 'A' | 'B' | 'C' | 'D';
+  notes?: string;
+  tags?: string[];
+}
+
 interface CustomerDetail {
   id: string;
   name: string;
   phone?: string;
-  email?: string;
   address?: string;
-  contactPerson?: string;
-  creditLimit?: number;
+  extendedInfo?: string;
   status: string;
-  tags?: string[];
-  remarks?: string;
   createdAt: string;
   updatedAt: string;
   _count: {
@@ -50,6 +66,7 @@ interface CustomerDetail {
     orderNumber: string;
     status: string;
     totalAmount: number;
+    paidAmount: number;
     createdAt: string;
   }>;
   returnOrders: Array<{
@@ -157,81 +174,106 @@ export default function CustomerDetailPage() {
     0
   );
 
-  return (
-    <div className="space-y-6">
-      {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-2">
-          <span className="text-muted-foreground">
-            客户名称：{customer.name}
-          </span>
-        </div>
+  // 筛选未付款订单（未完全付款的订单）
+  const unpaidOrders = customer.salesOrders.filter(
+    order => order.paidAmount < order.totalAmount && order.status !== 'cancelled'
+  );
 
-        <div className="flex items-center space-x-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => router.push(`/customers/${id}/edit`)}
-          >
-            <Edit className="mr-2 h-4 w-4" />
-            编辑
-          </Button>
-          <Button size="sm">
-            <ShoppingCart className="mr-2 h-4 w-4" />
-            创建订单
-          </Button>
-        </div>
-      </div>
+  const totalUnpaidAmount = unpaidOrders.reduce(
+    (sum, order) => sum + (order.totalAmount - order.paidAmount),
+    0
+  );
+
+  // 解析扩展信息
+  let extendedInfo: CustomerExtendedInfo = {};
+  try {
+    if (customer.extendedInfo) {
+      extendedInfo = JSON.parse(customer.extendedInfo);
+    }
+  } catch (error) {
+    console.error('Failed to parse extendedInfo:', error);
+  }
+
+  return (
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="space-y-6">
+        {/* 页面标题卡片 */}
+        <Card
+          className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+          style={{ boxShadow: 'var(--shadow-medium)' }}
+        >
+          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] shadow-lg">
+                  <User className="h-6 w-6 text-white" />
+                </div>
+                <div>
+                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+                    {customer.name}
+                  </h1>
+                  <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                    <Badge variant={getCommonStatusBadgeVariant(customer.status)}>
+                      {getStatusLabel(customer.status)}
+                    </Badge>
+                    {customer.phone && (
+                      <span className="font-medium">电话：{customer.phone}</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => router.back()}
+                  className="h-11"
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  返回
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  onClick={() => router.push(`/customers/${id}/edit`)}
+                  className="h-11"
+                >
+                  <Edit className="mr-2 h-4 w-4" />
+                  编辑
+                </Button>
+                <Button size="lg" className="h-11">
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  创建订单
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* 基本信息 */}
+        {/* 联系信息 */}
         <div className="lg:col-span-2">
           <Card>
             <CardHeader>
-              <CardTitle>基本信息</CardTitle>
+              <CardTitle>联系信息</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="text-muted-foreground text-sm font-medium">
-                    客户状态
-                  </label>
-                  <div className="mt-1">
-                    <Badge variant={getCommonStatusBadgeVariant(customer.status)}>
-                      {getStatusLabel(customer.status)}
-                    </Badge>
-                  </div>
-                </div>
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
                     联系人
                   </label>
-                  <p className="mt-1">{customer.contactPerson || '-'}</p>
-                </div>
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    电话号码
-                  </label>
-                  <div className="mt-1 flex items-center space-x-2">
-                    {customer.phone ? (
-                      <>
-                        <Phone className="text-muted-foreground h-4 w-4" />
-                        <span>{customer.phone}</span>
-                      </>
-                    ) : (
-                      <span>-</span>
-                    )}
-                  </div>
+                  <p className="mt-1">{extendedInfo.contactPerson || '-'}</p>
                 </div>
                 <div>
                   <label className="text-muted-foreground text-sm font-medium">
                     邮箱地址
                   </label>
                   <div className="mt-1 flex items-center space-x-2">
-                    {customer.email ? (
+                    {extendedInfo.email ? (
                       <>
                         <Mail className="text-muted-foreground h-4 w-4" />
-                        <span>{customer.email}</span>
+                        <span>{extendedInfo.email}</span>
                       </>
                     ) : (
                       <span>-</span>
@@ -253,48 +295,143 @@ export default function CustomerDetailPage() {
                     )}
                   </div>
                 </div>
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    信用额度
-                  </label>
-                  <p className="mt-1">
-                    {customer.creditLimit
-                      ? formatCurrency(customer.creditLimit)
-                      : '无限制'}
-                  </p>
-                </div>
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    创建时间
-                  </label>
-                  <div className="mt-1 flex items-center space-x-2">
-                    <Calendar className="text-muted-foreground h-4 w-4" />
-                    <span>{formatDate(customer.createdAt)}</span>
+                {extendedInfo.fax && (
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      传真
+                    </label>
+                    <p className="mt-1">{extendedInfo.fax}</p>
                   </div>
-                </div>
+                )}
+                {extendedInfo.website && (
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      网站
+                    </label>
+                    <p className="mt-1">{extendedInfo.website}</p>
+                  </div>
+                )}
               </div>
-              {customer.tags && customer.tags.length > 0 && (
-                <div>
-                  <label className="text-muted-foreground text-sm font-medium">
-                    标签
-                  </label>
-                  <div className="mt-1 flex flex-wrap gap-2">
-                    {customer.tags.map((tag, index) => (
-                      <Badge key={index} variant="outline">
-                        {tag}
-                      </Badge>
-                    ))}
+
+              {/* 客户类型和等级 */}
+              {(extendedInfo.customerType || extendedInfo.level || extendedInfo.industry || extendedInfo.region) && (
+                <div className="border-t pt-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {extendedInfo.customerType && (
+                      <div>
+                        <label className="text-muted-foreground text-sm font-medium">
+                          客户类型
+                        </label>
+                        <p className="mt-1">
+                          {extendedInfo.customerType === 'company' ? '公司' :
+                           extendedInfo.customerType === 'store' ? '门店' :
+                           extendedInfo.customerType === 'individual' ? '个人' :
+                           extendedInfo.customerType}
+                        </p>
+                      </div>
+                    )}
+                    {extendedInfo.level && (
+                      <div>
+                        <label className="text-muted-foreground text-sm font-medium">
+                          客户等级
+                        </label>
+                        <p className="mt-1">{extendedInfo.level}级</p>
+                      </div>
+                    )}
+                    {extendedInfo.industry && (
+                      <div>
+                        <label className="text-muted-foreground text-sm font-medium">
+                          所属行业
+                        </label>
+                        <p className="mt-1">{extendedInfo.industry}</p>
+                      </div>
+                    )}
+                    {extendedInfo.region && (
+                      <div>
+                        <label className="text-muted-foreground text-sm font-medium">
+                          所属区域
+                        </label>
+                        <p className="mt-1">{extendedInfo.region}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
-              {customer.remarks && (
-                <div>
+
+              {/* 财务信息 */}
+              {(extendedInfo.creditLimit || extendedInfo.paymentTerms || extendedInfo.taxNumber || extendedInfo.bankAccount) && (
+                <div className="border-t pt-4">
+                  <h4 className="mb-3 text-sm font-semibold">财务信息</h4>
+                  <div className="grid grid-cols-2 gap-4">
+                    {extendedInfo.creditLimit && (
+                      <div>
+                        <label className="text-muted-foreground text-sm font-medium">
+                          信用额度
+                        </label>
+                        <p className="mt-1">{formatCurrency(extendedInfo.creditLimit)}</p>
+                      </div>
+                    )}
+                    {extendedInfo.paymentTerms && (
+                      <div>
+                        <label className="text-muted-foreground text-sm font-medium">
+                          付款条款
+                        </label>
+                        <p className="mt-1">{extendedInfo.paymentTerms}</p>
+                      </div>
+                    )}
+                    {extendedInfo.taxNumber && (
+                      <div>
+                        <label className="text-muted-foreground text-sm font-medium">
+                          税号
+                        </label>
+                        <p className="mt-1 font-mono text-sm">{extendedInfo.taxNumber}</p>
+                      </div>
+                    )}
+                    {extendedInfo.bankAccount && (
+                      <div>
+                        <label className="text-muted-foreground text-sm font-medium">
+                          银行账号
+                        </label>
+                        <p className="mt-1 font-mono text-sm">{extendedInfo.bankAccount}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* 备注 */}
+              {extendedInfo.notes && (
+                <div className="border-t pt-4">
                   <label className="text-muted-foreground text-sm font-medium">
                     备注信息
                   </label>
-                  <p className="mt-1 text-sm">{customer.remarks}</p>
+                  <p className="mt-1 text-sm">{extendedInfo.notes}</p>
                 </div>
               )}
+
+              {/* 创建时间 */}
+              <div className="border-t pt-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      创建时间
+                    </label>
+                    <div className="mt-1 flex items-center space-x-2">
+                      <Calendar className="text-muted-foreground h-4 w-4" />
+                      <span>{formatDate(customer.createdAt)}</span>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-muted-foreground text-sm font-medium">
+                      最后更新
+                    </label>
+                    <div className="mt-1 flex items-center space-x-2">
+                      <Calendar className="text-muted-foreground h-4 w-4" />
+                      <span>{formatDate(customer.updatedAt)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -334,6 +471,14 @@ export default function CustomerDetailPage() {
                   <p className="text-muted-foreground text-xs">累计退货金额</p>
                 </div>
               )}
+              {totalUnpaidAmount > 0 && (
+                <div className="border-t pt-4 text-center">
+                  <p className="text-lg font-semibold text-[hsl(var(--color-warning))]">
+                    {formatCurrency(totalUnpaidAmount)}
+                  </p>
+                  <p className="text-muted-foreground text-xs">未付款金额</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
@@ -345,8 +490,15 @@ export default function CustomerDetailPage() {
           <CardTitle>订单历史</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="sales" className="w-full">
+          <Tabs defaultValue="unpaid" className="w-full">
             <TabsList>
+              <TabsTrigger
+                value="unpaid"
+                className="flex items-center space-x-2"
+              >
+                <AlertCircle className="h-4 w-4" />
+                <span>未付款订单 ({unpaidOrders.length})</span>
+              </TabsTrigger>
               <TabsTrigger
                 value="sales"
                 className="flex items-center space-x-2"
@@ -362,6 +514,50 @@ export default function CustomerDetailPage() {
                 <span>退货订单 ({customer._count.returnOrders})</span>
               </TabsTrigger>
             </TabsList>
+
+            <TabsContent value="unpaid" className="space-y-4">
+              {unpaidOrders.length > 0 ? (
+                <div className="space-y-3">
+                  {unpaidOrders.map(order => {
+                    const unpaidAmount = order.totalAmount - order.paidAmount;
+                    return (
+                      <div
+                        key={order.id}
+                        className="flex cursor-pointer items-center justify-between rounded-lg border border-[hsl(var(--color-warning))] bg-[hsl(var(--color-bg-card))] p-4 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
+                        onClick={() => router.push(`/sales-orders/${order.id}`)}
+                      >
+                        <div>
+                          <p className="font-medium">{order.orderNumber}</p>
+                          <p className="text-muted-foreground text-sm">
+                            {formatDate(order.createdAt)}
+                          </p>
+                        </div>
+                        <div className="space-y-1 text-right">
+                          <div>
+                            <p className="text-sm text-muted-foreground">
+                              订单金额: {formatCurrency(order.totalAmount)}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              已付: {formatCurrency(order.paidAmount)}
+                            </p>
+                            <p className="font-medium text-[hsl(var(--color-warning))]">
+                              未付: {formatCurrency(unpaidAmount)}
+                            </p>
+                          </div>
+                          <Badge variant={getSalesOrderStatusBadgeVariant(order.status)}>
+                            {getOrderStatusLabel(order.status)}
+                          </Badge>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-muted-foreground py-8 text-center">
+                  暂无未付款订单
+                </div>
+              )}
+            </TabsContent>
 
             <TabsContent value="sales" className="space-y-4">
               {customer.salesOrders.length > 0 ? (
@@ -431,6 +627,7 @@ export default function CustomerDetailPage() {
           </Tabs>
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 }

@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
+import type { AuthUser } from '@/lib/auth/context';
+import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/db';
 import {
   processRefundWithLock,
@@ -12,8 +13,7 @@ import { processRefundSchema } from '@/lib/validations/refund';
 export const POST = withAuth(
   async (
     request: NextRequest,
-    { params }: { params: { id: string } },
-    { user }: { user: { id: string; email: string; name: string } }
+    { params, user }: { params: { id: string }; user: AuthUser }
   ) => {
     let refundId: string | undefined;
     try {

@@ -77,6 +77,7 @@ export function InventoryChecker({
         if (!product) {
           return {
             productId: item.productId,
+            product: undefined,
             requestedQuantity,
             availableQuantity: 0,
             isAvailable: false,
@@ -123,7 +124,7 @@ export function InventoryChecker({
           severity,
         };
       })
-      .filter((result): result is InventoryCheckResult => result !== null);
+      .filter((result) => result !== null) as InventoryCheckResult[];
 
     setCheckResults(results);
     onInventoryCheck?.(results);

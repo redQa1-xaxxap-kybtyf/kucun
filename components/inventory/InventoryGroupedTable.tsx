@@ -5,12 +5,13 @@
 
 'use client';
 
-import { Edit, Package } from 'lucide-react';
+import { Eye, Package } from 'lucide-react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  Table,
   TableBody,
   TableCell,
   TableHead,
@@ -121,7 +122,7 @@ function formatQuantityDisplay(item: Inventory): string {
 function EmptyState() {
   return (
     <TableRow>
-      <TableCell colSpan={10} className="h-32 text-center">
+      <TableCell colSpan={11} className="h-32 text-center">
         <div className="text-muted-foreground flex flex-col items-center gap-2">
           <Package className="h-8 w-8" />
           <span className="text-sm">暂无库存数据</span>
@@ -144,40 +145,40 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
     const groups = React.useMemo(() => groupByProduct(data), [data]);
 
     return (
-      <table className="w-full caption-bottom text-sm">
-        <TableHeader
-          className="sticky top-[132px] z-10 bg-[hsl(var(--color-bg-table-header))]"
-          style={{ boxShadow: 'var(--shadow-light)' }}
-        >
-          <TableRow className="bg-[hsl(var(--color-bg-table-header))]">
-            <TableHead className="text-[hsl(var(--color-text-secondary))]">
+      <Table>
+        <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+          <TableRow>
+            <TableHead>
               产品编码
             </TableHead>
-            <TableHead className="text-[hsl(var(--color-text-secondary))]">
+            <TableHead>
               产品名称
             </TableHead>
-            <TableHead className="text-[hsl(var(--color-text-secondary))]">
+            <TableHead>
               规格
             </TableHead>
-            <TableHead className="text-[hsl(var(--color-text-secondary))]">
+            <TableHead>
+              包装信息
+            </TableHead>
+            <TableHead>
               批次号
             </TableHead>
-            <TableHead className="text-[hsl(var(--color-text-secondary))]">
+            <TableHead>
               库存数量
             </TableHead>
-            <TableHead className="text-[hsl(var(--color-text-secondary))]">
+            <TableHead>
               预留数量
             </TableHead>
-            <TableHead className="text-[hsl(var(--color-text-secondary))]">
+            <TableHead>
               可用数量
             </TableHead>
-            <TableHead className="text-[hsl(var(--color-text-secondary))]">
+            <TableHead>
               库存状态
             </TableHead>
-            <TableHead className="text-[hsl(var(--color-text-secondary))]">
+            <TableHead>
               最后更新
             </TableHead>
-            <TableHead className="text-[hsl(var(--color-text-secondary))]">
+            <TableHead className="text-right">
               操作
             </TableHead>
           </TableRow>
@@ -262,6 +263,26 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                       )}
                     </TableCell>
 
+                    {/* 包装信息 */}
+                    <TableCell
+                      className={`${
+                        isFirstInGroup
+                          ? 'font-medium text-[hsl(var(--color-text-primary))]'
+                          : 'text-[hsl(var(--color-text-secondary))]'
+                      }`}
+                    >
+                      {item.product?.piecesPerUnit ? (
+                        <span className="font-semibold">
+                          {item.product.piecesPerUnit}
+                          <span className="ml-0.5 text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
+                            片/件
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
+                      )}
+                    </TableCell>
+
                     {/* 批次号 */}
                     <TableCell className="font-mono font-medium text-[hsl(var(--color-primary))]">
                       {item.batchNumber || '-'}
@@ -298,15 +319,28 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                     </TableCell>
 
                     {/* 操作 */}
-                    <TableCell>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="group h-8 w-8 rounded-md p-0 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
-                        onClick={() => onAdjust(item.id)}
-                      >
-                        <Edit className="h-4 w-4 text-[hsl(var(--color-text-secondary))] transition-colors group-hover:text-[hsl(var(--color-primary))]" />
-                      </Button>
+                    <TableCell className="text-right">
+                      {item.batchNumber ? (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="group h-8 w-8 rounded-md p-0 transition-colors hover:bg-[hsl(var(--color-primary-light))]"
+                          onClick={() => onAdjust(item.id)}
+                          title="查看库存变动详情"
+                        >
+                          <Eye className="h-4 w-4 text-[hsl(var(--color-text-secondary))] transition-colors group-hover:text-[hsl(var(--color-primary))]" />
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="group h-8 w-8 cursor-not-allowed rounded-md p-0 text-[hsl(var(--color-text-tertiary))]"
+                          disabled
+                          title="暂无批次信息，无法查看详情"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 );
@@ -314,7 +348,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
             )
           )}
         </TableBody>
-      </table>
+      </Table>
     );
   }
 );

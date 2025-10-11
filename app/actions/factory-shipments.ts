@@ -1,10 +1,26 @@
 'use server';
 
+import { getServerSession } from 'next-auth';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-import { auth } from '@/lib/auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
+import { generateFactoryShipmentNumber } from '@/lib/services/simple-order-number-generator';
+import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
+import type { Prisma } from '@prisma/client';
+
+const FACTORY_SHIPMENT_STATUS_VALUES = Object.values(
+  FACTORY_SHIPMENT_STATUS
+) as FactoryShipmentStatus[];
+
+const factoryShipmentStatusEnum = z.enum(
+  FACTORY_SHIPMENT_STATUS_VALUES as [
+    FactoryShipmentStatus,
+    ...FactoryShipmentStatus[]
+  ]
+);
 
 /**
  * 厂家发货模块 Server Actions
@@ -31,50 +47,143 @@ export type ActionResult<T = unknown> = {
 // Zod 验证模式
 // ============================================
 
-const factoryShipmentItemSchema = z.object({
-  productId: z.string().optional(),
-  supplierId: z.string().min(1, '供应商 ID 不能为空'),
-  isManualProduct: z.boolean().default(false),
-  manualProductName: z.string().optional(),
-  quantity: z.number().positive('数量必须大于 0'),
-  unitPrice: z.number().nonnegative('单价不能为负'),
-  totalPrice: z.number().nonnegative('总价不能为负'),
-  colorCode: z.string().optional(),
-  productionDate: z.string().optional(),
-  remarks: z.string().optional(),
-});
+const factoryShipmentItemSchema = z
+  .object({
+    productId: z.string().optional(),
+    supplierId: z.string().min(1, '供应商 ID 不能为空'),
+    isManualProduct: z.boolean().optional(),
+    manualProductName: z.string().optional(),
+    manualSpecification: z.string().optional(),
+    manualWeight: z.number().nonnegative('重量不能为负数').optional(),
+    manualUnit: z.string().optional(),
+    displayName: z.string().min(1, '商品名称不能为空'),
+    specification: z.string().optional(),
+    unit: z.string().optional(),
+    weight: z.number().nonnegative('重量不能为负数').optional(),
+    quantity: z.number().positive('数量必须大于 0'),
+    unitPrice: z.number().nonnegative('单价不能为负'),
+    totalPrice: z.number().nonnegative('总价不能为负'),
+    remarks: z.string().optional(),
+  })
+  .superRefine((item, ctx) => {
+    const trimmedManualName = item.manualProductName?.trim();
+    const hasProduct = Boolean(item.productId && item.productId.trim());
+    const isManual = Boolean(item.isManualProduct);
 
-const temporaryProductSchema = z.object({
-  name: z.string().min(1, '商品名称不能为空'),
-  specification: z.string().optional(),
-  quantity: z.number().positive('数量必须大于 0'),
-  unitPrice: z.number().nonnegative('单价不能为负'),
-  totalPrice: z.number().nonnegative('总价不能为负'),
-  remarks: z.string().optional(),
-});
+    if (!isManual && !hasProduct) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '请选择商品或启用手动商品',
+      });
+    }
+
+    if (isManual && !trimmedManualName) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: '手动商品必须填写名称',
+        path: ['manualProductName'],
+      });
+    }
+  });
 
 const createFactoryShipmentSchema = z.object({
-  containerNumber: z.string().min(1, '柜号不能为空'),
-  status: z
-    .enum(['pending', 'in_transit', 'arrived', 'completed', 'cancelled'])
-    .default('pending'),
+  customerId: z.string().min(1, '客户 ID 不能为空'),
+  containerNumber: z.string().optional(),
+  status: factoryShipmentStatusEnum.default(FACTORY_SHIPMENT_STATUS.DRAFT),
+  planDate: z.string().optional(),
   shipmentDate: z.string().optional(),
   arrivalDate: z.string().optional(),
   items: z.array(factoryShipmentItemSchema).min(1, '至少需要一个商品项'),
-  temporaryProducts: z.array(temporaryProductSchema).optional(),
+  receivableAmount: z.number().nonnegative('应收金额不能为负').optional(),
+  depositAmount: z.number().nonnegative('定金金额不能为负').optional(),
   remarks: z.string().optional(),
 });
 
 const updateFactoryShipmentStatusSchema = z.object({
   shipmentId: z.string().min(1, '发货单 ID 不能为空'),
-  status: z.enum([
-    'pending',
-    'in_transit',
-    'arrived',
-    'completed',
-    'cancelled',
-  ]),
+  status: factoryShipmentStatusEnum,
 });
+
+type FactoryShipmentItemInput = z.infer<typeof factoryShipmentItemSchema>;
+type FactoryShipmentFormData = z.infer<typeof createFactoryShipmentSchema>;
+
+async function resolveShipmentItems(
+  tx: Omit<
+    typeof prisma,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  >,
+  items: FactoryShipmentItemInput[]
+): Promise<
+  Prisma.FactoryShipmentOrderItemUncheckedCreateWithoutFactoryShipmentOrderInput[]
+> {
+  const productIds = Array.from(
+    new Set(items.map(item => item.productId).filter((id): id is string => Boolean(id)))
+  );
+
+  const products =
+    productIds.length > 0
+      ? await tx.product.findMany({
+          where: { id: { in: productIds } },
+          select: {
+            id: true,
+            name: true,
+            specification: true,
+            unit: true,
+            weight: true,
+          },
+        })
+      : [];
+
+  const productMap = new Map(products.map(product => [product.id, product]));
+
+  return items.map(item => {
+    const product = item.productId ? productMap.get(item.productId) : undefined;
+    const trimmedManualName = item.manualProductName?.trim();
+    const trimmedDisplayName =
+      item.displayName?.trim() ||
+      (product?.name ?? trimmedManualName ?? '未知商品');
+    const trimmedSpecification =
+      item.specification?.trim() ?? product?.specification ?? undefined;
+    const trimmedUnit = item.unit?.trim() ?? product?.unit ?? 'piece';
+    const itemWeight =
+      typeof item.weight === 'number' ? item.weight : product?.weight ?? undefined;
+
+    return {
+      productId:
+        item.productId && item.productId.trim().length > 0
+          ? item.productId
+          : null,
+      supplierId: item.supplierId,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      totalPrice: item.totalPrice,
+      isManualProduct: item.isManualProduct ? true : undefined,
+      manualProductName: item.isManualProduct
+        ? trimmedManualName ?? '临时商品'
+        : undefined,
+      manualSpecification: item.isManualProduct
+        ? item.manualSpecification?.trim() ?? undefined
+        : undefined,
+      manualWeight: item.isManualProduct ? item.manualWeight ?? undefined : undefined,
+      manualUnit: item.isManualProduct
+        ? item.manualUnit?.trim() ?? undefined
+        : undefined,
+      remarks: item.remarks?.trim() ?? undefined,
+      displayName: trimmedDisplayName,
+      specification: trimmedSpecification,
+      unit: trimmedUnit,
+      weight: itemWeight,
+    };
+  });
+}
+
+function parseJsonPayload<T>(formData: FormData, key: string): T {
+  const payload = formData.get(key);
+  if (typeof payload !== 'string' || !payload) {
+    throw new Error('提交数据格式不正确');
+  }
+  return JSON.parse(payload) as T;
+}
 
 // ============================================
 // Server Actions
@@ -85,16 +194,16 @@ const updateFactoryShipmentStatusSchema = z.object({
  */
 export async function createFactoryShipment(
   formData: FormData
-): Promise<ActionResult<{ id: string; containerNumber: string }>> {
+): Promise<ActionResult<{ id: string; containerNumber: string | null }>> {
   try {
     // 1. 身份认证
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
 
     // 2. 解析和验证数据
-    const rawData = JSON.parse(formData.get('data') as string);
+    const rawData = parseJsonPayload<FactoryShipmentFormData>(formData, 'data');
     const data = createFactoryShipmentSchema.parse(rawData);
 
     // 3. 计算总金额
@@ -102,62 +211,58 @@ export async function createFactoryShipment(
       (sum, item) => sum + item.totalPrice,
       0
     );
-    const temporaryProductsAmount =
-      data.temporaryProducts?.reduce((sum, item) => sum + item.totalPrice, 0) ||
-      0;
-    const grandTotal = totalAmount + temporaryProductsAmount;
+    const grandTotal = totalAmount;
 
     // 4. 数据库事务
     const result = await prisma.$transaction(async tx => {
+      const itemsPayload = await resolveShipmentItems(tx, data.items);
+      const orderNumber = await generateFactoryShipmentNumber();
+      const status: FactoryShipmentStatus =
+        (data.status as FactoryShipmentStatus | undefined) ??
+        FACTORY_SHIPMENT_STATUS.DRAFT;
+      const receivableAmount = data.receivableAmount ?? grandTotal;
+      const depositAmount = Math.min(
+        data.depositAmount ?? 0,
+        receivableAmount
+      );
+      const trimmedContainer = data.containerNumber?.trim();
+
       // 创建厂家发货订单
       const shipment = await tx.factoryShipmentOrder.create({
         data: {
-          containerNumber: data.containerNumber,
-          status: data.status,
+          orderNumber,
+          containerNumber:
+            trimmedContainer && trimmedContainer.length > 0
+              ? trimmedContainer
+              : null,
+          customerId: data.customerId,
+          status,
           totalAmount: grandTotal,
+          receivableAmount,
+          depositAmount,
+          planDate: data.planDate ? new Date(data.planDate) : undefined,
           shipmentDate: data.shipmentDate
             ? new Date(data.shipmentDate)
             : undefined,
           arrivalDate: data.arrivalDate
             ? new Date(data.arrivalDate)
             : undefined,
-          remarks: data.remarks,
+          remarks: data.remarks?.trim() || undefined,
           userId: session.user.id,
           items: {
-            create: data.items.map(item => ({
-              productId: item.productId,
-              supplierId: item.supplierId,
-              isManualProduct: item.isManualProduct,
-              manualProductName: item.manualProductName,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              totalPrice: item.totalPrice,
-              colorCode: item.colorCode,
-              productionDate: item.productionDate
-                ? new Date(item.productionDate)
-                : undefined,
-              remarks: item.remarks,
-            })),
+            create: itemsPayload,
           },
-          temporaryProducts: data.temporaryProducts
-            ? {
-                create: data.temporaryProducts.map(product => ({
-                  name: product.name,
-                  specification: product.specification,
-                  quantity: product.quantity,
-                  unitPrice: product.unitPrice,
-                  totalPrice: product.totalPrice,
-                  remarks: product.remarks,
-                })),
-              }
-            : undefined,
         },
       });
 
       // 如果订单状态为已到货，增加库存
-      if (data.status === 'arrived' || data.status === 'completed') {
-        for (const item of data.items) {
+      if (
+        status === FACTORY_SHIPMENT_STATUS.ARRIVED ||
+        status === FACTORY_SHIPMENT_STATUS.COMPLETED
+      ) {
+        for (const item of itemsPayload) {
           if (item.productId && !item.isManualProduct) {
+            const quantityDelta = Math.round(item.quantity);
             // 查找或创建库存记录
             const existingInventory = await tx.inventory.findFirst({
               where: { productId: item.productId },
@@ -167,8 +272,8 @@ export async function createFactoryShipment(
               await tx.inventory.update({
                 where: { id: existingInventory.id },
                 data: {
-                  currentQuantity: {
-                    increment: item.quantity,
+                  quantity: {
+                    increment: quantityDelta,
                   },
                 },
               });
@@ -176,10 +281,8 @@ export async function createFactoryShipment(
               await tx.inventory.create({
                 data: {
                   productId: item.productId,
-                  warehouseId: 'default-warehouse-id', // 需要根据实际情况调整
-                  currentQuantity: item.quantity,
-                  minQuantity: 0,
-                  maxQuantity: 10000,
+                  quantity: quantityDelta,
+                  reservedQuantity: 0,
                 },
               });
             }
@@ -201,7 +304,10 @@ export async function createFactoryShipment(
   } catch (error) {
     console.error('创建厂家发货订单失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return {
+        success: false,
+        error: error.issues?.[0]?.message ?? '数据验证失败',
+      };
     }
     return { success: false, error: '创建厂家发货订单失败' };
   }
@@ -214,7 +320,7 @@ export async function updateFactoryShipmentStatus(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
@@ -250,6 +356,7 @@ export async function updateFactoryShipmentStatus(
       ) {
         for (const item of shipment.items) {
           if (item.productId && !item.isManualProduct) {
+            const quantityDelta = Math.round(item.quantity);
             const existingInventory = await tx.inventory.findFirst({
               where: { productId: item.productId },
             });
@@ -258,8 +365,8 @@ export async function updateFactoryShipmentStatus(
               await tx.inventory.update({
                 where: { id: existingInventory.id },
                 data: {
-                  currentQuantity: {
-                    increment: item.quantity,
+                  quantity: {
+                    increment: quantityDelta,
                   },
                 },
               });
@@ -268,24 +375,6 @@ export async function updateFactoryShipmentStatus(
         }
       }
 
-      // 如果从已到货变为取消，减少库存
-      if (
-        (shipment.status === 'arrived' || shipment.status === 'completed') &&
-        data.status === 'cancelled'
-      ) {
-        for (const item of shipment.items) {
-          if (item.productId && !item.isManualProduct) {
-            await tx.inventory.updateMany({
-              where: { productId: item.productId },
-              data: {
-                currentQuantity: {
-                  decrement: item.quantity,
-                },
-              },
-            });
-          }
-        }
-      }
     });
 
     revalidatePath('/factory-shipments');
@@ -296,7 +385,10 @@ export async function updateFactoryShipmentStatus(
   } catch (error) {
     console.error('更新发货单状态失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return {
+        success: false,
+        error: error.issues?.[0]?.message ?? '数据验证失败',
+      };
     }
     return { success: false, error: '更新发货单状态失败' };
   }
@@ -309,7 +401,7 @@ export async function deleteFactoryShipment(
   shipmentId: string
 ): Promise<ActionResult> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
@@ -318,7 +410,7 @@ export async function deleteFactoryShipment(
       // 检查发货单是否存在
       const shipment = await tx.factoryShipmentOrder.findUnique({
         where: { id: shipmentId },
-        include: { items: true, temporaryProducts: true },
+        include: { items: true },
       });
 
       if (!shipment) {
@@ -330,16 +422,9 @@ export async function deleteFactoryShipment(
         throw new Error('不能删除已到货或已完成的发货单');
       }
 
-      // 删除临时商品
-      if (shipment.temporaryProducts.length > 0) {
-        await tx.temporaryProduct.deleteMany({
-          where: { factoryShipmentId: shipmentId },
-        });
-      }
-
       // 删除发货单项
-      await tx.factoryShipmentItem.deleteMany({
-        where: { factoryShipmentId: shipmentId },
+      await tx.factoryShipmentOrderItem.deleteMany({
+        where: { factoryShipmentOrderId: shipmentId },
       });
 
       // 删除发货单
@@ -367,13 +452,18 @@ export async function updateFactoryShipment(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
 
-    const shipmentId = formData.get('shipmentId') as string;
-    const rawData = JSON.parse(formData.get('data') as string);
+    const shipmentIdValue = formData.get('shipmentId');
+    if (typeof shipmentIdValue !== 'string' || !shipmentIdValue) {
+      return { success: false, error: '发货单 ID 不能为空' };
+    }
+    const shipmentId = shipmentIdValue;
+
+    const rawData = parseJsonPayload<FactoryShipmentFormData>(formData, 'data');
     const data = createFactoryShipmentSchema.parse(rawData);
 
     // 计算总金额
@@ -381,16 +471,13 @@ export async function updateFactoryShipment(
       (sum, item) => sum + item.totalPrice,
       0
     );
-    const temporaryProductsAmount =
-      data.temporaryProducts?.reduce((sum, item) => sum + item.totalPrice, 0) ||
-      0;
-    const grandTotal = totalAmount + temporaryProductsAmount;
+    const grandTotal = totalAmount;
 
     await prisma.$transaction(async tx => {
       // 检查发货单是否存在
       const existingShipment = await tx.factoryShipmentOrder.findUnique({
         where: { id: shipmentId },
-        include: { items: true, temporaryProducts: true },
+        include: { items: true },
       });
 
       if (!existingShipment) {
@@ -403,56 +490,51 @@ export async function updateFactoryShipment(
       }
 
       // 删除旧的发货单项和临时商品
-      await tx.factoryShipmentItem.deleteMany({
-        where: { factoryShipmentId: shipmentId },
+      await tx.factoryShipmentOrderItem.deleteMany({
+        where: { factoryShipmentOrderId: shipmentId },
       });
-      await tx.temporaryProduct.deleteMany({
-        where: { factoryShipmentId: shipmentId },
-      });
+
+      const itemsPayload = await resolveShipmentItems(tx, data.items);
+      const receivableAmount = data.receivableAmount ?? grandTotal;
+      const depositAmount = Math.min(
+        data.depositAmount ?? existingShipment.depositAmount ?? 0,
+        receivableAmount
+      );
+      const updateData: Prisma.FactoryShipmentOrderUncheckedUpdateInput = {
+        customerId: data.customerId,
+        status: data.status ?? existingShipment.status,
+        totalAmount: grandTotal,
+        receivableAmount,
+        depositAmount,
+        remarks: data.remarks?.trim() ?? existingShipment.remarks ?? undefined,
+        items: {
+          create: itemsPayload,
+        },
+      };
+
+      if (data.containerNumber !== undefined) {
+        const trimmed = data.containerNumber.trim();
+        if (trimmed.length > 0) {
+          updateData.containerNumber = trimmed;
+        }
+      }
+
+      if (data.planDate) {
+        updateData.planDate = new Date(data.planDate);
+      }
+
+      if (data.shipmentDate) {
+        updateData.shipmentDate = new Date(data.shipmentDate);
+      }
+
+      if (data.arrivalDate) {
+        updateData.arrivalDate = new Date(data.arrivalDate);
+      }
 
       // 更新发货单
       await tx.factoryShipmentOrder.update({
         where: { id: shipmentId },
-        data: {
-          containerNumber: data.containerNumber,
-          status: data.status,
-          totalAmount: grandTotal,
-          shipmentDate: data.shipmentDate
-            ? new Date(data.shipmentDate)
-            : undefined,
-          arrivalDate: data.arrivalDate
-            ? new Date(data.arrivalDate)
-            : undefined,
-          remarks: data.remarks,
-          items: {
-            create: data.items.map(item => ({
-              productId: item.productId,
-              supplierId: item.supplierId,
-              isManualProduct: item.isManualProduct,
-              manualProductName: item.manualProductName,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice,
-              totalPrice: item.totalPrice,
-              colorCode: item.colorCode,
-              productionDate: item.productionDate
-                ? new Date(item.productionDate)
-                : undefined,
-              remarks: item.remarks,
-            })),
-          },
-          temporaryProducts: data.temporaryProducts
-            ? {
-                create: data.temporaryProducts.map(product => ({
-                  name: product.name,
-                  specification: product.specification,
-                  quantity: product.quantity,
-                  unitPrice: product.unitPrice,
-                  totalPrice: product.totalPrice,
-                  remarks: product.remarks,
-                })),
-              }
-            : undefined,
-        },
+        data: updateData,
       });
     });
 
@@ -463,7 +545,10 @@ export async function updateFactoryShipment(
   } catch (error) {
     console.error('更新厂家发货订单失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return {
+        success: false,
+        error: error.issues?.[0]?.message ?? '数据验证失败',
+      };
     }
     return {
       success: false,

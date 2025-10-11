@@ -1,10 +1,13 @@
 'use client';
 
+import { Package, Plus } from 'lucide-react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
+import { PageHeader } from '@/components/common/page-header';
 import { Button } from '@/components/ui/button';
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
 import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
@@ -99,10 +102,7 @@ export function InventoryPageClient({
   // ✅ 统一数据格式后，直接使用，无需复杂的 normalizedData 映射
   // ✅ 兼容旧结构（data.data）与新结构（data.inventories）
   const normalizedData = data?.data;
-  const inventories =
-    normalizedData?.inventories ??
-    (Array.isArray(normalizedData?.data) ? normalizedData?.data : []) ??
-    [];
+  const inventories = normalizedData?.inventories ?? [];
   const pagination = normalizedData?.pagination;
 
   // ✅ 防抖更新URL - 只在用户停止输入后才更新URL和触发数据请求
@@ -302,26 +302,45 @@ export function InventoryPageClient({
   );
 
   // ✅ 使用 Suspense 包装，支持 Streaming 和更好的加载体验
-  // ✅ 修复：使用固定高度容器，避免内容加载时的布局偏移
-  // ✅ 修复：移除外层 padding，让工具栏从顶部开始 sticky
   return (
-    <div className="flex h-full flex-col overflow-auto">
-      <Suspense fallback={<InventoryListSkeleton />}>
-        {error ? (
-          <div className="m-6 rounded-lg border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] p-6 text-center shadow-sm">
-            <p className="text-[hsl(var(--color-error))]">
-              加载失败: {error instanceof Error ? error.message : '未知错误'}
-            </p>
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="space-y-6">
+        {/* 页面标题 */}
+        <PageHeader
+          title="库存管理"
+          description="实时监控库存水平和库存变动"
+          icon={<Package className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-blue))"
+          actions={
             <Button
-              variant="destructive"
-              className="mt-4"
-              onClick={() => window.location.reload()}
+              size="lg"
+              asChild
+              className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
             >
-              重新加载
+              <Link href="/inventory/adjust">
+                <Plus className="mr-2 h-4 w-4" />
+                库存调整
+              </Link>
             </Button>
-          </div>
-        ) : (
-          <div className="min-h-[600px]">
+          }
+        />
+
+        {/* 库存列表 */}
+        <Suspense fallback={<InventoryListSkeleton />}>
+          {error ? (
+            <div className="rounded-lg border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] p-6 text-center shadow-sm">
+              <p className="text-[hsl(var(--color-error))]">
+                加载失败: {error instanceof Error ? error.message : '未知错误'}
+              </p>
+              <Button
+                variant="destructive"
+                className="mt-4"
+                onClick={() => window.location.reload()}
+              >
+                重新加载
+              </Button>
+            </div>
+          ) : (
             <ERPInventoryList
               data={{ data: inventories, pagination }}
               categoryOptions={categoryOptions}
@@ -333,9 +352,9 @@ export function InventoryPageClient({
               onPrevPageHover={handlePrevPageHover}
               isLoading={isLoading}
             />
-          </div>
-        )}
-      </Suspense>
+          )}
+        </Suspense>
+      </div>
     </div>
   );
 }

@@ -66,11 +66,11 @@ export async function getSalesOrders(
     throw new Error(result.error || '获取销售订单列表失败');
   }
 
-  // API路由返回的数据结构是 { success: true, data: [...], pagination: {...} }
-  // 需要转换为 PaginatedResponse 格式
+  // API路由返回的数据结构是 { success: true, data: { data: [...], pagination: {...} } }
+  // handler返回的 { data, pagination } 被 successResponse 包装
   return {
-    data: result.data,
-    pagination: result.pagination,
+    data: result.data.data,
+    pagination: result.data.pagination,
   };
 }
 

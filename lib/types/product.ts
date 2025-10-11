@@ -269,8 +269,8 @@ export const PRODUCT_STATUS_OPTIONS = [
 // 产品状态颜色映射（用于Badge组件）
 export const PRODUCT_STATUS_VARIANTS: Record<
   string,
-  'default' | 'secondary' | 'destructive' | 'outline'
+  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
 > = {
-  active: 'default',
+  active: 'success',
   inactive: 'secondary',
 };

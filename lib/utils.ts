@@ -1,6 +1,12 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
+import {
+  formatCurrency as internalFormatCurrency,
+  formatDate as internalFormatDate,
+} from './utils/format';
+import { formatDateTime as internalFormatDateTime } from './utils/datetime';
+
 /**
  * 合并 Tailwind CSS 类名
  */
@@ -10,40 +16,36 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * 格式化货币
+ * @param amount 金额
+ * @param currency 货币符号，默认为 ¥
+ * @param precision 小数位数，默认为 2
  */
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('zh-CN', {
-    style: 'currency',
-    currency: 'CNY',
-  }).format(amount);
+export function formatCurrency(
+  amount: number,
+  currency: string = '¥',
+  precision: number = 2
+): string {
+  return internalFormatCurrency(amount, currency, precision);
 }
 
 /**
  * 格式化日期
- * @deprecated 请使用 lib/utils/datetime.ts 中的 formatDate 函数
+ * @param date 日期
+ * @param format 格式类型（date | datetime | time）
  */
-export function formatDate(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).format(d);
+export function formatDate(
+  date: Date | string,
+  format: 'date' | 'datetime' | 'time' = 'date'
+): string {
+  return internalFormatDate(date, format);
 }
 
 /**
  * 格式化日期时间
- * @deprecated 请使用 lib/utils/datetime.ts 中的 formatDateTime 函数
+ * @deprecated 请使用 formatDate(date, 'datetime')
  */
 export function formatDateTime(date: Date | string): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
-  return new Intl.DateTimeFormat('zh-CN', {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  }).format(d);
+  return internalFormatDateTime(date);
 }
 
 /**

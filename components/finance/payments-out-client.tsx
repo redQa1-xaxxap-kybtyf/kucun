@@ -221,9 +221,11 @@ export function PaymentsOutClient({
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 items-center gap-2">
               <UnifiedSearchBar
-                placeholder="搜索付款单号、供应商名称、凭证号..."
-                defaultValue={initialParams?.search}
-                onSearch={onSearch}
+                searchValue={initialParams?.search ?? ''}
+                onSearchChange={value => {
+                  if (onSearch) onSearch(value);
+                }}
+                searchPlaceholder="搜索付款单号、供应商名称、凭证号..."
                 className="max-w-sm"
               />
 
@@ -401,7 +403,11 @@ export function PaymentsOutClient({
               <Pagination
                 currentPage={pagination.page}
                 totalPages={pagination.totalPages}
-                onPageChange={onPageChange}
+                onPageChange={page => {
+                  if (onPageChange) {
+                    onPageChange(page);
+                  }
+                }}
               />
             </div>
           )}

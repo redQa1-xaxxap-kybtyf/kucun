@@ -53,6 +53,7 @@ export interface InboundRecord {
   batchNumber?: string; // 批次号
   colorCode?: string; // 色号
   unitCost?: number; // 单位成本
+  totalCost?: number; // 总成本
   location?: string; // 存储位置
   batchSpecificationId?: string; // 批次规格参数ID
 
@@ -176,4 +177,9 @@ export interface InboundOperationResult {
   record?: InboundRecord;
   message?: string;
   error?: string;
+}
+
+// 入库详情类型
+export interface InboundRecordDetail extends InboundRecord {
+  inventoryBalance?: number;
 }

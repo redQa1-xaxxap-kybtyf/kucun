@@ -12,7 +12,9 @@ export type CustomerStatementTransactionType =
   | 'payment_in' // 客户付款
   | 'payment_out' // 我方付款
   | 'refund_out' // 退款给客户
-  | 'refund_in'; // 客户退款给我方
+  | 'refund_in' // 客户退款给我方
+  | 'prepayment_in' // 预收款(客户预付定金)
+  | 'prepayment_out'; // 预付款(向客户作为供应商时预付)
 
 /**
  * 交易明细接口
@@ -41,7 +43,8 @@ export interface CustomerStatementSummary {
     salesReturnAmount: number; // 销售退货金额
     paymentReceived: number; // 已收款
     refundPaid: number; // 已退款
-    receivableBalance: number; // 应收余额 = 销售 - 退货 - 收款 + 退款
+    prepaymentReceived: number; // 预收款
+    receivableBalance: number; // 应收余额 = 销售 - 退货 - 收款 - 预收 + 退款
   };
 
   // 应付账款汇总
@@ -50,7 +53,8 @@ export interface CustomerStatementSummary {
     purchaseReturnAmount: number; // 采购退货金额
     paymentPaid: number; // 已付款
     refundReceived: number; // 已收退款
-    payableBalance: number; // 应付余额 = 采购 - 退货 - 付款 + 退款
+    prepaymentPaid: number; // 预付款
+    payableBalance: number; // 应付余额 = 采购 - 退货 - 付款 - 预付 + 退款
   };
 
   // 净余额
@@ -270,6 +274,20 @@ export const CUSTOMER_STATEMENT_TRANSACTION_TYPES: CustomerStatementTransactionT
       label: '收退款',
       description: '客户(供应商)退款',
       isDebit: false,
+      category: 'payable',
+    },
+    {
+      type: 'prepayment_in',
+      label: '预收款',
+      description: '客户预付定金',
+      isDebit: false,
+      category: 'receivable',
+    },
+    {
+      type: 'prepayment_out',
+      label: '预付款',
+      description: '向客户(供应商)预付',
+      isDebit: true,
       category: 'payable',
     },
   ];

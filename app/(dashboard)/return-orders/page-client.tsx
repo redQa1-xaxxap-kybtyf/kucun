@@ -7,9 +7,9 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
+import { PageHeader } from '@/components/common/page-header';
 import { ERPReturnOrderList } from '@/components/return-orders/erp-return-order-list';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import type { ReturnOrder, ReturnOrderStatus } from '@/lib/types/return-order';
 
 interface ReturnOrderQueryParams {
@@ -159,65 +159,55 @@ export function ReturnOrdersPageClient({
     [router, search, status, sortBy, sortOrder, initialParams.limit]
   );
 
-  // 操作处理函数
-  const handleViewDetail = (_returnOrder: ReturnOrder) => {
-    // TODO: 实现详情对话框
-  };
+  // 操作处理函数 - 这些函数已在 ERPReturnOrderList 中实现，不需要在这里覆盖
+  // 如果需要自定义行为，可以在这里实现
+  // const handleViewDetail = (returnOrder: ReturnOrder) => {
+  //   router.push(`/return-orders/${returnOrder.id}`);
+  // };
 
-  const handleEdit = (_returnOrder: ReturnOrder) => {
-    // TODO: 实现编辑对话框
-  };
+  // const handleEdit = (returnOrder: ReturnOrder) => {
+  //   router.push(`/return-orders/${returnOrder.id}/edit`);
+  // };
 
-  const handleDelete = (_returnOrder: ReturnOrder) => {
-    // TODO: 实现删除确认对话框
-  };
+  // const handleDelete = (returnOrder: ReturnOrder) => {
+  //   // TODO: 实现删除确认对话框
+  // };
 
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-600 shadow-lg shadow-orange-600/30">
-                  <Package className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-gray-900">
-                    退货订单管理
-                  </h1>
-                  <p className="text-sm text-gray-600">
-                    管理客户退货订单，跟踪退货处理状态和退款情况
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  asChild
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <Link href="/return-orders/export">
-                    <Download className="mr-2 h-4 w-4" />
-                    导出
-                  </Link>
-                </Button>
-                <Button
-                  size="lg"
-                  asChild
-                  className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                >
-                  <Link href="/return-orders/create">
-                    <Plus className="mr-2 h-4 w-4" />
-                    新建退货单
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* 页面标题 */}
+        <PageHeader
+          title="退货订单管理"
+          description="管理客户退货订单，跟踪退货处理状态和退款情况"
+          icon={<Package className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-orange))"
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/return-orders/export">
+                  <Download className="mr-2 h-4 w-4" />
+                  导出
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/return-orders/create">
+                  <Plus className="mr-2 h-4 w-4" />
+                  新建退货单
+                </Link>
+              </Button>
+            </>
+          }
+        />
 
         {/* 退货订单列表 */}
         <Suspense
@@ -232,9 +222,6 @@ export function ReturnOrdersPageClient({
             onSearch={handleSearch}
             onFilter={handleFilter}
             onPageChange={handlePageChange}
-            onViewDetail={handleViewDetail}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
           />
         </Suspense>
       </div>

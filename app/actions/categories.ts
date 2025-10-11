@@ -1,10 +1,13 @@
 'use server';
 
+import { getServerSession } from 'next-auth';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
-import { auth } from '@/lib/auth';
+import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+
+import type { Prisma } from '@prisma/client';
 
 /**
  * 分类管理模块 Server Actions
@@ -59,6 +62,14 @@ const updateCategoryStatusSchema = z.object({
   status: z.enum(['active', 'inactive']),
 });
 
+const CATEGORY_CODE_SANITIZE_REGEX = /[^a-zA-Z0-9]/g;
+
+function generateCategoryCode(name: string): string {
+  const cleanName = name.replace(CATEGORY_CODE_SANITIZE_REGEX, '').toUpperCase();
+  const base = cleanName || 'CATEGORY';
+  return `${base}-${Date.now().toString(36).toUpperCase()}`;
+}
+
 // ============================================
 // Server Actions
 // ============================================
@@ -71,19 +82,24 @@ export async function createCategory(
 ): Promise<ActionResult<{ id: string; name: string }>> {
   try {
     // 1. 身份认证
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
 
     // 2. 解析和验证数据
-    const rawData = JSON.parse(formData.get('data') as string);
+    const rawPayload = formData.get('data');
+    if (typeof rawPayload !== 'string') {
+      return { success: false, error: '提交数据格式不正确' };
+    }
+    const rawData = JSON.parse(rawPayload) as unknown;
     const data = createCategorySchema.parse(rawData);
 
     // 3. 检查分类编码是否已存在（如果提供了编码）
-    if (data.code) {
+    const normalizedCode = data.code?.trim();
+    if (normalizedCode) {
       const existingCategory = await prisma.category.findUnique({
-        where: { code: data.code },
+        where: { code: normalizedCode },
       });
 
       if (existingCategory) {
@@ -108,14 +124,16 @@ export async function createCategory(
     }
 
     // 5. 创建分类
+    const categoryData: Prisma.CategoryUncheckedCreateInput = {
+      name: data.name,
+      code: normalizedCode || generateCategoryCode(data.name),
+      sortOrder: data.sortOrder,
+      status: data.status,
+      parentId: data.parentId ?? null,
+    };
+
     const category = await prisma.category.create({
-      data: {
-        name: data.name,
-        code: data.code,
-        parentId: data.parentId,
-        sortOrder: data.sortOrder,
-        status: data.status,
-      },
+      data: categoryData,
     });
 
     // 6. 重新验证路径
@@ -128,7 +146,7 @@ export async function createCategory(
   } catch (error) {
     console.error('创建分类失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues?.[0]?.message ?? '数据验证失败' };
     }
     return { success: false, error: '创建分类失败' };
   }
@@ -141,13 +159,22 @@ export async function updateCategory(
   formData: FormData
 ): Promise<ActionResult<{ id: string; name: string }>> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
 
-    const categoryId = formData.get('categoryId') as string;
-    const rawData = JSON.parse(formData.get('data') as string);
+    const categoryIdValue = formData.get('categoryId');
+    if (typeof categoryIdValue !== 'string' || !categoryIdValue) {
+      return { success: false, error: '分类 ID 不能为空' };
+    }
+    const categoryId = categoryIdValue;
+
+    const rawPayload = formData.get('data');
+    if (typeof rawPayload !== 'string') {
+      return { success: false, error: '提交数据格式不正确' };
+    }
+    const rawData = JSON.parse(rawPayload) as unknown;
     const data = updateCategorySchema.parse(rawData);
 
     // 检查分类是否存在
@@ -163,9 +190,10 @@ export async function updateCategory(
     }
 
     // 如果修改了分类编码，检查新编码是否已存在
-    if (data.code && data.code !== existingCategory.code) {
+    const updatedCode = data.code?.trim();
+    if (updatedCode && updatedCode !== existingCategory.code) {
       const codeExists = await prisma.category.findUnique({
-        where: { code: data.code },
+        where: { code: updatedCode },
       });
 
       if (codeExists) {
@@ -206,15 +234,27 @@ export async function updateCategory(
     }
 
     // 更新分类
+    const updateData: Prisma.CategoryUncheckedUpdateInput = {};
+
+    if (data.name !== undefined) {
+      updateData.name = data.name;
+    }
+    if (updatedCode !== undefined) {
+      updateData.code = updatedCode;
+    }
+    if (data.parentId !== undefined) {
+      updateData.parentId = data.parentId ?? null;
+    }
+    if (data.sortOrder !== undefined) {
+      updateData.sortOrder = data.sortOrder;
+    }
+    if (data.status !== undefined) {
+      updateData.status = data.status;
+    }
+
     const category = await prisma.category.update({
       where: { id: categoryId },
-      data: {
-        name: data.name,
-        code: data.code,
-        parentId: data.parentId === null ? undefined : data.parentId,
-        sortOrder: data.sortOrder,
-        status: data.status,
-      },
+      data: updateData,
     });
 
     revalidatePath('/categories');
@@ -227,7 +267,7 @@ export async function updateCategory(
   } catch (error) {
     console.error('更新分类失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues?.[0]?.message ?? '数据验证失败' };
     }
     return { success: false, error: '更新分类失败' };
   }
@@ -240,14 +280,16 @@ export async function updateCategoryStatus(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
 
+    const categoryId = formData.get('categoryId');
+    const status = formData.get('status');
     const rawData = {
-      categoryId: formData.get('categoryId') as string,
-      status: formData.get('status') as string,
+      categoryId: typeof categoryId === 'string' ? categoryId : '',
+      status: typeof status === 'string' ? status : '',
     };
 
     const data = updateCategoryStatusSchema.parse(rawData);
@@ -294,7 +336,7 @@ export async function updateCategoryStatus(
   } catch (error) {
     console.error('更新分类状态失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues?.[0]?.message ?? '数据验证失败' };
     }
     return { success: false, error: '更新分类状态失败' };
   }
@@ -307,7 +349,7 @@ export async function deleteCategory(
   categoryId: string
 ): Promise<ActionResult> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
@@ -363,7 +405,7 @@ export async function batchUpdateCategoryStatus(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
@@ -428,7 +470,7 @@ export async function batchDeleteCategories(
   formData: FormData
 ): Promise<ActionResult> {
   try {
-    const session = await auth();
+    const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }

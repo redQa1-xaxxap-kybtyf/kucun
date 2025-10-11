@@ -31,6 +31,7 @@ export const GET = withAuth(
         profitAmount: true,
         totalAmount: true,
         remarks: true,
+        shippedAt: true,
         createdAt: true,
         updatedAt: true,
         customer: {
@@ -94,6 +95,21 @@ export const GET = withAuth(
             id: 'asc',
           },
         },
+        payments: {
+          select: {
+            id: true,
+            paymentNumber: true,
+            paymentAmount: true,
+            paymentMethod: true,
+            paymentDate: true,
+            status: true,
+            remarks: true,
+            createdAt: true,
+          },
+          orderBy: {
+            paymentDate: 'desc',
+          },
+        },
       },
     });
 
@@ -101,9 +117,21 @@ export const GET = withAuth(
       throw ApiError.notFound('销售订单');
     }
 
+    // 计算收款统计
+    const paidAmount = salesOrder.payments
+      .filter(record => record.status === 'confirmed')
+      .reduce((sum, record) => sum + Number(record.paymentAmount), 0);
+
+    const remainingAmount = Number(salesOrder.totalAmount) - paidAmount;
+
     return NextResponse.json({
       success: true,
-      data: salesOrder,
+      data: {
+        ...salesOrder,
+        paymentRecords: salesOrder.payments,
+        paidAmount,
+        remainingAmount,
+      },
     });
   },
   { permissions: ['orders:view'] }
@@ -167,6 +195,40 @@ export const PUT = withAuth(
       );
     }
 
+    // 如果要标记为完成状态，检查是否已全部收款
+    if (status === 'completed') {
+      const orderWithPayments = await prisma.salesOrder.findUnique({
+        where: { id },
+        select: {
+          totalAmount: true,
+          payments: {
+            where: { status: 'confirmed' },
+            select: { paymentAmount: true },
+          },
+        },
+      });
+
+      if (orderWithPayments) {
+        const paidAmount = orderWithPayments.payments.reduce(
+          (sum, record) => sum + Number(record.paymentAmount),
+          0
+        );
+        const remainingAmount =
+          Number(orderWithPayments.totalAmount) - paidAmount;
+
+        if (remainingAmount > 0.01) {
+          // 允许0.01的浮点误差
+          return NextResponse.json(
+            {
+              success: false,
+              error: `订单尚未全部收款，还有 ${remainingAmount.toFixed(2)} 元待收款，无法标记为完成`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // 使用幂等性包装器执行状态更新
     const { updateSalesOrderStatus, getAffectedProductIds } = await import(
       '@/lib/api/handlers/sales-order-status'
@@ -179,7 +241,7 @@ export const PUT = withAuth(
       userId,
       { status, remarks },
       async () =>
-        await updateSalesOrderStatus(id, status, existingOrder.status, remarks)
+        await updateSalesOrderStatus(id, status, existingOrder.status, remarks, userId)
     );
 
     // 如果涉及库存变更,清除缓存
@@ -312,9 +374,8 @@ export const PUT = withAuth(
 
 // 完整更新销售订单（草稿状态）
 export const PATCH = withAuth(
-  async (request: NextRequest, { user, params }) => {
+  async (request: NextRequest, { params }) => {
     const { id } = await (params as Promise<{ id: string }>);
-    const userId = user.id;
 
     const body = await request.json();
 
@@ -377,8 +438,10 @@ export const PATCH = withAuth(
 
     if (updateData.items && updateData.items.length > 0) {
       for (const item of updateData.items) {
-        const itemSubtotal = item.quantity * item.unitPrice;
-        const itemCost = (item.unitCost || 0) * item.quantity;
+        const itemQuantity = item.quantity ?? 0;
+        const itemUnitPrice = item.unitPrice ?? 0;
+        const itemSubtotal = itemQuantity * itemUnitPrice;
+        const itemCost = (item.unitCost || 0) * itemQuantity;
 
         totalAmount += itemSubtotal;
         costAmount += itemCost;
@@ -413,9 +476,9 @@ export const PATCH = withAuth(
                   batchNumber: item.batchNumber,
                   colorCode: item.colorCode,
                   productionDate: item.productionDate,
-                  quantity: item.quantity,
-                  unitPrice: item.unitPrice,
-                  subtotal: item.quantity * item.unitPrice,
+                  quantity: item.quantity ?? 0,
+                  unitPrice: item.unitPrice ?? 0,
+                  subtotal: (item.quantity ?? 0) * (item.unitPrice ?? 0),
                   unitCost: item.unitCost,
                   isManualProduct: item.isManualProduct,
                   manualProductName: item.manualProductName,

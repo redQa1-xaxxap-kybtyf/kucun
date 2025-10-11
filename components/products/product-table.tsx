@@ -51,24 +51,27 @@ export function ProductTable({
 
   return (
     <Table>
-      <TableHeader className="bg-[hsl(var(--color-bg-table-header))]">
-        <TableRow className="bg-[hsl(var(--color-bg-table-header))]">
-          <TableHead className="bg-[hsl(var(--color-bg-table-header))]">
+      <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+        <TableRow>
+          <TableHead>
             产品编码
           </TableHead>
-          <TableHead className="bg-[hsl(var(--color-bg-table-header))]">
+          <TableHead>
             产品名称
           </TableHead>
-          <TableHead className="bg-[hsl(var(--color-bg-table-header))]">
+          <TableHead>
             分类
           </TableHead>
-          <TableHead className="bg-[hsl(var(--color-bg-table-header))]">
+          <TableHead>
             规格
           </TableHead>
-          <TableHead className="bg-[hsl(var(--color-bg-table-header))]">
+          <TableHead>
             状态
           </TableHead>
-          <TableHead className="bg-[hsl(var(--color-bg-table-header))] text-right">
+          <TableHead>
+            创建时间
+          </TableHead>
+          <TableHead className="text-right">
             操作
           </TableHead>
         </TableRow>
@@ -92,6 +95,13 @@ export function ProductTable({
               )}
             </TableCell>
             <TableCell>{getStatusBadge(product.status)}</TableCell>
+            <TableCell className="text-[hsl(var(--color-text-secondary))]">
+              {new Date(product.createdAt).toLocaleDateString('zh-CN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+              })}
+            </TableCell>
             <TableCell className="text-right">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>

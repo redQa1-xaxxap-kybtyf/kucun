@@ -4,9 +4,9 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 
-import {
-  adjustmentQueryKeys,} from '@/lib/api/adjustments';
+import { adjustmentQueryKeys } from '@/lib/api/adjustments';
 import { getAdjustmentsServer } from '@/lib/api/adjustments-server';
+import type { AdjustmentQueryParams } from '@/lib/types/inventory';
 
 import { AdjustmentRecordsPageClient } from './page-client';
 
@@ -76,13 +76,14 @@ export default async function AdjustmentRecordsPage({
   };
 
   const sortByValue = urlSearchParams.get('sortBy') || 'createdAt';
-  const sortOrderValue = urlSearchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc';
+  const sortOrderValue: 'asc' | 'desc' =
+    urlSearchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc';
 
   // ✅ 创建 QueryClient（启用 Streaming Queries）
   const queryClient = new QueryClient({
     defaultOptions: {
       dehydrate: {
-        shouldDehydratePendingQuery: true,
+        shouldDehydrateQuery: () => true,
       },
     },
   });
@@ -91,19 +92,19 @@ export default async function AdjustmentRecordsPage({
   const adjustmentData = await getAdjustmentsServer(urlSearchParams);
 
   // 构建查询参数对象
-  const queryParams = {
+  const queryParams: AdjustmentQueryParams = {
     page,
     limit,
     search: getOptional('search'),
     productId: getOptional('productId'),
     variantId: getOptional('variantId'),
     batchNumber: getOptional('batchNumber'),
-    reason: getOptional('reason'),
-    status: getOptional('status'),
+    reason: getOptional('reason') as AdjustmentQueryParams['reason'],
+    status: getOptional('status') as AdjustmentQueryParams['status'],
     operatorId: getOptional('operatorId'),
     startDate: getOptional('startDate'),
     endDate: getOptional('endDate'),
-    sortBy: (sortByValue as 'createdAt' | 'adjustmentNumber' | 'quantity' | 'reason'),
+    sortBy: sortByValue as AdjustmentQueryParams['sortBy'],
     sortOrder: sortOrderValue,
   };
 

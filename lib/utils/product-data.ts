@@ -20,10 +20,14 @@ export class ProductDataTransformer {
   static toCreateApiData(
     formData: ProductCreateFormData
   ): ProductCreateFormData {
-    const normalizedCategoryId =
-      !formData.categoryId || formData.categoryId === 'uncategorized'
-        ? undefined
+    const categoryIdValue =
+      typeof formData.categoryId === 'string'
+        ? formData.categoryId.trim()
         : formData.categoryId;
+    const normalizedCategoryId =
+      typeof categoryIdValue === 'string' && categoryIdValue === ''
+        ? undefined
+        : categoryIdValue;
 
     return {
       ...formData,
@@ -49,15 +53,20 @@ export class ProductDataTransformer {
   static toUpdateApiData(
     formData: ProductUpdateFormData
   ): ProductUpdateFormData {
-    const normalizedCategoryId =
-      !formData.categoryId || formData.categoryId === 'uncategorized'
-        ? undefined
-        : formData.categoryId;
+    let normalizedCategoryId: ProductUpdateFormData['categoryId'];
+    if (typeof formData.categoryId === 'string') {
+      const trimmed = formData.categoryId.trim();
+      normalizedCategoryId =
+        trimmed === '' || trimmed === 'uncategorized' ? '' : trimmed;
+    } else {
+      normalizedCategoryId = formData.categoryId;
+    }
 
     // 从formData中移除id字段（如果存在）
     const { id: _id, ...dataWithoutId } = formData as ProductUpdateFormData & {
       id?: string;
     };
+    void _id;
 
     return {
       ...dataWithoutId,

@@ -146,7 +146,23 @@ export function EnhancedProductInput({
                   <Label className="text-xs">选择商品</Label>
                   <FormControl>
                     <EnhancedProductSelector
-                      products={products}
+                      products={
+                        products.map(p => ({
+                          id: p.id,
+                          code: p.code,
+                          name: p.name,
+                          specification: p.specification,
+                          unit: p.unit,
+                          piecesPerUnit: p.piecesPerUnit,
+                          inventory: p.inventory
+                            ? {
+                                totalInventory: p.inventory.totalQuantity || 0,
+                                availableInventory: p.inventory.availableQuantity || 0,
+                                reservedInventory: p.inventory.reservedQuantity || 0,
+                              }
+                            : undefined,
+                        })) as unknown as Parameters<typeof EnhancedProductSelector>[0]['products']
+                      }
                       value={field.value || ''}
                       onValueChange={value => {
                         field.onChange(value);

@@ -1,6 +1,8 @@
 // 仪表盘数据类型定义
 // 定义仪表盘所需的所有数据结构和接口
 
+import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
+
 // 业务概览数据
 export interface BusinessOverview {
   // 销售数据
@@ -92,6 +94,40 @@ export interface SalesTrendData {
   weekly: ChartDataPoint[]; // 周销售数据
   monthly: ChartDataPoint[]; // 月销售数据
   yearly: ChartDataPoint[]; // 年销售数据
+}
+
+export type DashboardSalesOrderStatus =
+  | 'draft'
+  | 'pending'
+  | 'confirmed'
+  | 'processing'
+  | 'shipped'
+  | 'delivered'
+  | 'completed'
+  | 'cancelled';
+
+export interface DashboardSalesOrderSummary {
+  id: string;
+  orderNumber: string;
+  status: DashboardSalesOrderStatus;
+  totalAmount: number;
+  createdAt: string;
+  customer?: {
+    id: string;
+    name: string | null;
+  };
+}
+
+export interface DashboardFactoryShipmentSummary {
+  id: string;
+  orderNumber: string;
+  status: FactoryShipmentStatus;
+  totalAmount: number;
+  createdAt: string;
+  customer?: {
+    id: string;
+    name: string | null;
+  };
 }
 
 // 库存趋势数据

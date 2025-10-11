@@ -82,63 +82,152 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       return errorResponse('退款记录不存在', 404);
     }
 
-    // 检查状态
-    if (refund.status !== 'pending') {
-      return errorResponse('只能处理待处理状态的退款', 400);
+    const closeRemainingRequested =
+      validatedData.closeRemaining === true &&
+      validatedData.status === 'completed';
+
+    const canProcess =
+      refund.status === 'pending' ||
+      refund.status === 'processing' ||
+      (refund.status === 'completed' &&
+        refund.remainingAmount > 0 &&
+        closeRemainingRequested);
+
+    if (!canProcess) {
+      return errorResponse('当前退款状态不支持该操作', 400);
     }
 
-    // 验证处理金额
-    if (validatedData.processedAmount > refund.remainingAmount) {
+    if (
+      validatedData.processedAmount - refund.remainingAmount >
+      0.00001
+    ) {
       return errorResponse('处理金额不能超过待处理金额', 400);
     }
 
-    // 计算新的已处理金额和剩余金额
-    const newProcessedAmount =
-      refund.processedAmount + validatedData.processedAmount;
-    const newRemainingAmount = refund.refundAmount - newProcessedAmount;
+    const processedAmountDelta = validatedData.processedAmount;
+    const newProcessedAmount = Number(
+      (refund.processedAmount + processedAmountDelta).toFixed(2)
+    );
 
-    // 更新退款记录
-    const updatedRefund = await prisma.refundRecord.update({
-      where: { id },
-      data: {
-        processedAmount: newProcessedAmount,
-        remainingAmount: newRemainingAmount,
-        processedDate: new Date(validatedData.processedDate),
-        status: validatedData.status,
-        remarks: validatedData.remarks || refund.remarks,
-        updatedAt: new Date(),
-      },
-      include: {
-        returnOrder: {
-          select: {
-            id: true,
-            returnNumber: true,
-            type: true,
-            status: true,
+    if (
+      !closeRemainingRequested &&
+      newProcessedAmount - refund.refundAmount > 0.00001
+    ) {
+      return errorResponse('处理金额不能超过应退金额', 400);
+    }
+
+    let calculatedRemaining = Number(
+      (refund.refundAmount - newProcessedAmount).toFixed(2)
+    );
+
+    if (calculatedRemaining < -0.01) {
+      return errorResponse('处理金额不能超过待处理金额', 400);
+    }
+
+    if (Math.abs(calculatedRemaining) < 0.01) {
+      calculatedRemaining = 0;
+    }
+
+    let finalProcessedAmount = newProcessedAmount;
+    let finalRemainingAmount = calculatedRemaining;
+    let finalRefundAmount = Number(refund.refundAmount.toFixed(2));
+    const finalStatus = validatedData.status;
+
+    const providedRemarks = validatedData.remarks?.trim() ?? '';
+    let mergedRemarks =
+      providedRemarks.length > 0
+        ? providedRemarks
+        : refund.remarks?.trim() ?? '';
+
+    let writeOffAmount = 0;
+
+    if (validatedData.status === 'completed') {
+      if (finalRemainingAmount > 0) {
+        if (!closeRemainingRequested) {
+          return errorResponse(
+            '还有剩余金额未处理，如需结清请勾选“抹平剩余金额”并提交。',
+            400
+          );
+        }
+        writeOffAmount = finalRemainingAmount;
+        finalRemainingAmount = 0;
+        finalRefundAmount = Number(finalProcessedAmount.toFixed(2));
+      } else if (closeRemainingRequested && refund.remainingAmount > 0) {
+        writeOffAmount = Number(refund.remainingAmount.toFixed(2));
+        finalRefundAmount = Number(finalProcessedAmount.toFixed(2));
+      }
+    }
+
+    if (writeOffAmount > 0) {
+      const note = `系统自动核销剩余金额 ¥${writeOffAmount.toFixed(2)}`;
+      if (!mergedRemarks.includes(note)) {
+        mergedRemarks = mergedRemarks
+          ? `${mergedRemarks}\n${note}`
+          : note;
+      }
+    }
+
+    const finalRemarks = mergedRemarks || null;
+
+    const updatedRefund = await prisma.$transaction(async tx => {
+      const updatedRecord = await tx.refundRecord.update({
+        where: { id },
+        data: {
+          processedAmount: finalProcessedAmount,
+          remainingAmount: finalRemainingAmount,
+          refundAmount: finalRefundAmount,
+          processedDate: new Date(validatedData.processedDate),
+          status: finalStatus,
+          remarks: finalRemarks,
+        },
+        include: {
+          returnOrder: {
+            select: {
+              id: true,
+              returnNumber: true,
+              type: true,
+              status: true,
+            },
+          },
+          salesOrder: {
+            select: {
+              id: true,
+              orderNumber: true,
+              totalAmount: true,
+              status: true,
+            },
+          },
+          customer: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+            },
           },
         },
-        salesOrder: {
-          select: {
-            id: true,
-            orderNumber: true,
-            totalAmount: true,
-            status: true,
+      });
+
+      if (
+        refund.returnOrderId &&
+        validatedData.status === 'completed' &&
+        closeRemainingRequested &&
+        writeOffAmount > 0
+      ) {
+        await tx.returnOrder.update({
+          where: { id: refund.returnOrderId },
+          data: {
+            refundAmount: finalRefundAmount,
           },
-        },
-        customer: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
+        });
+      }
+
+      return updatedRecord;
     });
 
     return NextResponse.json({ success: true, data: updatedRefund });

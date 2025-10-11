@@ -8,6 +8,7 @@ import {
   navigationItems,
 } from '@/components/common/sidebar-navigation-config';
 import { authOptions } from '@/lib/auth';
+import type { NavigationItem } from '@/lib/types/layout';
 import type { UserRole } from '@/lib/types/user';
 import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
@@ -38,17 +39,11 @@ export default async function DashboardLayout({
   // 在服务端根据用户角色过滤导航项
   const userRole = session?.user?.role as UserRole | undefined;
   const accessibleNavItems = userRole
-    ? getAccessibleNavItems(
-        navigationItems as Array<{ requiredRoles?: UserRole[] }>,
-        userRole
-      )
+    ? getAccessibleNavItems<NavigationItem>(navigationItems, userRole)
     : [];
 
   const accessibleBottomNavItems = userRole
-    ? getAccessibleNavItems(
-        bottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
-        userRole
-      )
+    ? getAccessibleNavItems<NavigationItem>(bottomNavigationItems, userRole)
     : [];
 
   // ✅ 只传递导航项的 ID,避免传递 React 组件(icon)

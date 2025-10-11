@@ -295,6 +295,16 @@ export interface PaymentStatusConfig {
   isActive: boolean;
 }
 
+// 收款状态变体映射（用于Badge组件）
+export const PAYMENT_STATUS_VARIANTS: Record<
+  PaymentStatus,
+  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
+> = {
+  pending: 'warning',
+  confirmed: 'success',
+  cancelled: 'destructive',
+};
+
 // 默认收款状态配置
 export const DEFAULT_PAYMENT_STATUSES: PaymentStatusConfig[] = [
   {

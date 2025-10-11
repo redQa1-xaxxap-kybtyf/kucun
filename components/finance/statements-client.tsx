@@ -142,9 +142,11 @@ export function StatementsClient({
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 items-center gap-2">
               <UnifiedSearchBar
-                placeholder="搜索客户或供应商名称..."
-                defaultValue={initialParams?.search}
-                onSearch={onSearch}
+                searchValue={initialParams?.search ?? ''}
+                onSearchChange={value => {
+                  if (onSearch) onSearch(value);
+                }}
+                searchPlaceholder="搜索客户或供应商名称..."
                 className="max-w-sm"
               />
 
@@ -304,7 +306,11 @@ export function StatementsClient({
               <Pagination
                 currentPage={pagination.page}
                 totalPages={pagination.totalPages}
-                onPageChange={onPageChange}
+                onPageChange={page => {
+                  if (onPageChange) {
+                    onPageChange(page);
+                  }
+                }}
               />
             </div>
           )}

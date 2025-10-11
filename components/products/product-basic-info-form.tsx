@@ -55,13 +55,12 @@ function ProductCodeInput({
           </FormLabel>
           <FormControl>
             <Input
-              placeholder="请输入产品编码（必填）"
+              placeholder="输入产品编码"
               disabled={disabled}
               maxLength={50}
               {...field}
             />
           </FormControl>
-          <FormDescription>产品的业务编码，用于业务识别</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -82,16 +81,15 @@ function ProductNameInput({
       name="name"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>产品名称（选填）</FormLabel>
+          <FormLabel>产品名称</FormLabel>
           <FormControl>
             <Input
-              placeholder="请输入产品名称（选填）"
+              placeholder="可选,留空则使用编码"
               disabled={disabled}
               maxLength={100}
               {...field}
             />
           </FormControl>
-          <FormDescription>产品的显示名称</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -137,7 +135,7 @@ function ProductCategorySelect({
           >
             <FormControl>
               <SelectTrigger>
-                <SelectValue placeholder="请选择产品分类（必选）" />
+                <SelectValue placeholder="选择分类" />
               </SelectTrigger>
             </FormControl>
             <SelectContent>
@@ -149,7 +147,6 @@ function ProductCategorySelect({
               ))}
             </SelectContent>
           </Select>
-          {/* 添加隐藏的 input 来确保表单数据包含此字段 */}
           <input
             type="hidden"
             name={field.name}
@@ -159,7 +156,6 @@ function ProductCategorySelect({
                 : (field.value ?? 'uncategorized')
             }
           />
-          <FormDescription>请选择产品所属分类</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -186,12 +182,11 @@ function ProductSpecificationInput({
           </FormLabel>
           <FormControl>
             <Input
-              placeholder="如：600x600mm（必填）"
+              placeholder="如:600x600mm"
               disabled={disabled}
               {...field}
             />
           </FormControl>
-          <FormDescription>产品的规格描述</FormDescription>
           <FormMessage />
         </FormItem>
       )}
@@ -255,13 +250,13 @@ function ProductThicknessInput({
       name="thickness"
       render={({ field }) => (
         <FormItem>
-          <FormLabel>厚度 (mm)（选填）</FormLabel>
+          <FormLabel>厚度 (mm)</FormLabel>
           <FormControl>
             <Input
               type="number"
               min="0"
               step="0.1"
-              placeholder="0.0（选填）"
+              placeholder="0.0"
               disabled={disabled}
               {...field}
               onChange={e => {
@@ -270,7 +265,6 @@ function ProductThicknessInput({
               }}
             />
           </FormControl>
-          <FormDescription>产品厚度，单位：毫米</FormDescription>
           <FormMessage />
         </FormItem>
       )}

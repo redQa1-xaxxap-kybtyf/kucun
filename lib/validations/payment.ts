@@ -13,18 +13,28 @@ export const paymentMethodSchema = z.enum(
 
 // 收款状态枚举验证
 export const paymentStatusSchema = z.enum(
-  ['pending', 'confirmed', 'cancelled'],
+  ['pending', 'confirmed', 'cancelled', 'applied'],
   {
     message: '请选择有效的收款状态',
+  }
+);
+
+// 收款类型枚举验证
+export const paymentTypeSchema = z.enum(
+  ['order_payment', 'prepayment'],
+  {
+    message: '请选择有效的收款类型',
   }
 );
 
 // 收款记录创建验证规则
 export const createPaymentRecordSchema = z
   .object({
+    paymentType: paymentTypeSchema.default('order_payment'),
+
     salesOrderId: z
       .string({ message: '销售订单ID必须是字符串' })
-      .min(1, { error: '请选择销售订单' }),
+      .optional(),
 
     customerId: z
       .string({ message: '客户ID必须是字符串' })
@@ -54,6 +64,32 @@ export const createPaymentRecordSchema = z
 
     bankInfo: z.string().optional().or(z.literal('')),
   })
+  .refine(
+    data => {
+      // 订单收款时必须提供订单ID
+      if (data.paymentType === 'order_payment' && !data.salesOrderId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: '订单收款时必须选择销售订单',
+      path: ['salesOrderId'],
+    }
+  )
+  .refine(
+    data => {
+      // 预收款时不应提供订单ID
+      if (data.paymentType === 'prepayment' && data.salesOrderId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: '预收款不应关联销售订单',
+      path: ['salesOrderId'],
+    }
+  )
   .refine(
     data => {
       // 银行转账时必须填写银行信息

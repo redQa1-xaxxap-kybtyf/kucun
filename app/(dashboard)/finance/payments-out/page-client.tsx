@@ -10,16 +10,51 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PaymentsOutClient } from '@/components/finance/payments-out-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { PaymentOutRecordDetail } from '@/lib/types/payable';
+import type {
+  PaymentOutMethod,
+  PaymentOutRecordDetail,
+  PaymentOutStatus,
+} from '@/lib/types/payable';
+import { PAYMENT_OUT_SORT_OPTIONS } from '@/lib/types/payable';
+
+type PaymentOutSortField = 'createdAt' | 'paymentAmount' | 'paymentDate';
 
 interface PaymentsOutQueryParams {
   page: number;
   limit: number;
   search?: string;
-  status?: string;
-  paymentMethod?: string;
-  sortBy?: string;
+  status?: PaymentOutStatus;
+  paymentMethod?: PaymentOutMethod;
+  sortBy?: PaymentOutSortField;
   sortOrder?: 'asc' | 'desc';
+}
+
+interface ClientPaymentRecord {
+  id: string;
+  paymentNumber: string;
+  paymentAmount: number;
+  paymentMethod: string;
+  paymentDate: string;
+  status: string;
+  remarks?: string;
+  voucherNumber?: string;
+  payableRecord?: {
+    id: string;
+    payableNumber: string;
+    payableAmount: number;
+    remainingAmount: number;
+  };
+  supplier: {
+    id: string;
+    name: string;
+    phone?: string;
+  };
+  user: {
+    id: string;
+    name: string;
+  };
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface PaymentsOutPageClientProps {
@@ -48,16 +83,130 @@ export function PaymentsOutPageClient({
   const router = useRouter();
   const [_isPending, startTransition] = React.useTransition();
 
-  const [search, setSearch] = React.useState(initialParams.search || '');
-  const [status, setStatus] = React.useState(initialParams.status);
-  const [paymentMethod, setPaymentMethod] = React.useState(
-    initialParams.paymentMethod
+  const PAYMENT_STATUS_VALUES: PaymentOutStatus[] = [
+    'pending',
+    'confirmed',
+    'cancelled',
+  ];
+  const PAYMENT_METHOD_VALUES: PaymentOutMethod[] = [
+    'cash',
+    'bank_transfer',
+    'check',
+    'other',
+  ];
+  const paymentOutSortValues = React.useMemo(
+    () => PAYMENT_OUT_SORT_OPTIONS.map(option => option.value),
+    []
   );
-  const [sortBy, setSortBy] = React.useState(
-    initialParams.sortBy || 'createdAt'
+
+  const isPaymentStatus = React.useCallback(
+    (value?: string): value is PaymentOutStatus =>
+      !!value && PAYMENT_STATUS_VALUES.includes(value as PaymentOutStatus),
+    []
+  );
+
+  const isPaymentMethod = React.useCallback(
+    (value?: string): value is PaymentOutMethod =>
+      !!value && PAYMENT_METHOD_VALUES.includes(value as PaymentOutMethod),
+    []
+  );
+
+  const isPaymentSortField = React.useCallback(
+    (value?: string): value is PaymentOutSortField =>
+      !!value && paymentOutSortValues.includes(value as PaymentOutSortField),
+    [paymentOutSortValues]
+  );
+
+  const normalizedInitialParams = React.useMemo<PaymentsOutQueryParams>(() => {
+    const next: PaymentsOutQueryParams = {
+      page: initialParams.page || 1,
+      limit: initialParams.limit || 20,
+      search: initialParams.search || '',
+      status: undefined,
+      paymentMethod: undefined,
+      sortBy: 'createdAt',
+      sortOrder: initialParams.sortOrder === 'asc' ? 'asc' : 'desc',
+    };
+
+    if (isPaymentStatus(initialParams.status)) {
+      next.status = initialParams.status;
+    }
+
+    if (isPaymentMethod(initialParams.paymentMethod)) {
+      next.paymentMethod = initialParams.paymentMethod;
+    }
+
+    if (isPaymentSortField(initialParams.sortBy)) {
+      next.sortBy = initialParams.sortBy;
+    }
+
+    return next;
+  }, [
+    initialParams.limit,
+    initialParams.page,
+    initialParams.paymentMethod,
+    initialParams.search,
+    initialParams.sortBy,
+    initialParams.sortOrder,
+    initialParams.status,
+    isPaymentMethod,
+    isPaymentSortField,
+    isPaymentStatus,
+  ]);
+
+  const normalizeDate = (value: Date | string): string =>
+    value instanceof Date ? value.toISOString() : value;
+
+  const normalizedInitialData = React.useMemo(() => {
+    const payments: ClientPaymentRecord[] = initialData.payments.map(payment => ({
+      id: payment.id,
+      paymentNumber: payment.paymentNumber,
+      paymentAmount: payment.paymentAmount,
+      paymentMethod: payment.paymentMethod,
+      paymentDate: normalizeDate(payment.paymentDate),
+      status: payment.status,
+      remarks: payment.remarks ?? undefined,
+      voucherNumber: payment.voucherNumber ?? undefined,
+      payableRecord: payment.payableRecord
+        ? {
+            id: payment.payableRecord.id,
+            payableNumber: payment.payableRecord.payableNumber,
+            payableAmount: payment.payableRecord.payableAmount,
+            remainingAmount: payment.payableRecord.remainingAmount,
+          }
+        : undefined,
+      supplier: {
+        id: payment.supplier.id,
+        name: payment.supplier.name,
+        phone: payment.supplier.phone ?? undefined,
+      },
+      user: {
+        id: payment.user.id,
+        name: payment.user.name,
+      },
+      createdAt: normalizeDate(payment.createdAt),
+      updatedAt: normalizeDate(payment.updatedAt),
+    }));
+
+    return {
+      payments,
+      statistics: initialData.statistics,
+      pagination: initialData.pagination,
+    };
+  }, [initialData]);
+
+  const [search, setSearch] = React.useState(normalizedInitialParams.search || '');
+  const [status, setStatus] = React.useState<PaymentOutStatus | undefined>(
+    normalizedInitialParams.status
+  );
+  const [paymentMethod, setPaymentMethod] = React.useState<
+    PaymentOutMethod | undefined
+  >(normalizedInitialParams.paymentMethod);
+  const [sortBy, setSortBy] = React.useState<PaymentOutSortField>(
+    normalizedInitialParams.sortBy || 'createdAt'
   );
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
-    initialParams.sortOrder || 'desc'
+    normalizedInitialParams.sortOrder || 'desc'
   );
 
   const debouncedUpdateURL = useDebouncedCallback(
@@ -96,18 +245,18 @@ export function PaymentsOutPageClient({
     (value: string) => {
       setSearch(value);
       debouncedUpdateURL(value, {
-        ...initialParams,
-        search: value,
+        page: 1,
+        limit: normalizedInitialParams.limit,
+        search: value || undefined,
         status,
         paymentMethod,
         sortBy,
         sortOrder,
-        page: 1,
       });
     },
     [
       debouncedUpdateURL,
-      initialParams,
+      normalizedInitialParams.limit,
       status,
       paymentMethod,
       sortBy,
@@ -117,43 +266,53 @@ export function PaymentsOutPageClient({
 
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
-      const newFilters = { ...initialParams, [key]: value, page: 1 };
+      let nextStatus = status;
+      let nextPaymentMethod = paymentMethod;
+      let nextSortBy = sortBy;
+      let nextSortOrder = sortOrder;
+      let nextLimit = normalizedInitialParams.limit;
 
       if (key === 'status') {
-        setStatus(value);
+        nextStatus = isPaymentStatus(value) ? value : undefined;
+        setStatus(nextStatus);
       } else if (key === 'paymentMethod') {
-        setPaymentMethod(value);
+        nextPaymentMethod = isPaymentMethod(value) ? value : undefined;
+        setPaymentMethod(nextPaymentMethod);
       } else if (key === 'sortBy') {
-        setSortBy(value || 'createdAt');
+        nextSortBy = isPaymentSortField(value) ? value : 'createdAt';
+        setSortBy(nextSortBy);
       } else if (key === 'sortOrder') {
-        setSortOrder((value as 'asc' | 'desc') || 'desc');
+        nextSortOrder = value === 'asc' ? 'asc' : 'desc';
+        setSortOrder(nextSortOrder);
+      } else if (key === 'limit') {
+        const parsed = value ? Number.parseInt(value, 10) : nextLimit;
+        if (Number.isFinite(parsed) && parsed > 0) {
+          nextLimit = parsed;
+        }
       }
 
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (newFilters.status) {
-          params.set('status', newFilters.status);
-        }
-        if (newFilters.paymentMethod) {
-          params.set('paymentMethod', newFilters.paymentMethod);
-        }
-        if (newFilters.sortBy) {
-          params.set('sortBy', newFilters.sortBy);
-        }
-        if (newFilters.sortOrder) {
-          params.set('sortOrder', newFilters.sortOrder);
-        }
-        if (newFilters.limit) {
-          params.set('limit', newFilters.limit.toString());
-        }
-
-        router.push(`/finance/payments-out?${params.toString()}`);
+      debouncedUpdateURL(search, {
+        page: 1,
+        limit: nextLimit,
+        search: search || undefined,
+        status: nextStatus,
+        paymentMethod: nextPaymentMethod,
+        sortBy: nextSortBy,
+        sortOrder: nextSortOrder,
       });
     },
-    [router, search, initialParams]
+    [
+      debouncedUpdateURL,
+      isPaymentMethod,
+      isPaymentSortField,
+      isPaymentStatus,
+      normalizedInitialParams.limit,
+      paymentMethod,
+      search,
+      sortBy,
+      sortOrder,
+      status,
+    ]
   );
 
   const handlePageChange = React.useCallback(
@@ -178,8 +337,8 @@ export function PaymentsOutPageClient({
         if (page > 1) {
           params.set('page', page.toString());
         }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
+        if (normalizedInitialParams.limit) {
+          params.set('limit', normalizedInitialParams.limit.toString());
         }
 
         router.push(`/finance/payments-out?${params.toString()}`);
@@ -192,7 +351,7 @@ export function PaymentsOutPageClient({
       paymentMethod,
       sortBy,
       sortOrder,
-      initialParams.limit,
+      normalizedInitialParams.limit,
     ]
   );
 
@@ -252,8 +411,8 @@ export function PaymentsOutPageClient({
           }
         >
           <PaymentsOutClient
-            initialData={initialData}
-            initialParams={initialParams}
+            initialData={normalizedInitialData}
+            initialParams={normalizedInitialParams}
             onSearch={handleSearch}
             onFilter={handleFilter}
             onPageChange={handlePageChange}

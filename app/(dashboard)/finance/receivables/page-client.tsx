@@ -15,18 +15,18 @@ import type {
   ReceivablesResult,
 } from '@/lib/services/receivables-service';
 
-interface ReceivablesQueryParams {
-  page?: number;
-  limit?: number;
-  search?: string;
+interface ReceivablesPageQueryParams {
+  page: number;
+  limit: number;
+  search: string;
   status?: PaymentStatus;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  sortBy: string;
+  sortOrder: 'asc' | 'desc';
 }
 
 interface ReceivablesPageClientProps {
   initialData: ReceivablesResult;
-  initialParams: ReceivablesQueryParams;
+  initialParams: ReceivablesPageQueryParams;
 }
 
 /**
@@ -39,7 +39,7 @@ export function ReceivablesPageClient({
   initialParams,
 }: ReceivablesPageClientProps) {
   const router = useRouter();
-  const [_isPending, startTransition] = React.useTransition();
+  const [, startTransition] = React.useTransition();
 
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');
@@ -53,7 +53,7 @@ export function ReceivablesPageClient({
 
   // 防抖更新URL - 避免每次输入都触发导航
   const debouncedUpdateURL = useDebouncedCallback(
-    (searchValue: string, filters: ReceivablesQueryParams) => {
+    (searchValue: string, filters: ReceivablesPageQueryParams) => {
       startTransition(() => {
         const params = new URLSearchParams();
         if (searchValue) {
@@ -100,14 +100,19 @@ export function ReceivablesPageClient({
   // 筛选处理
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
-      const newFilters = { ...initialParams, [key]: value, page: 1 };
+      let nextStatus = status;
+      let nextSortBy = sortBy;
+      let nextSortOrder = sortOrder;
 
       if (key === 'status') {
-        setStatus(value as PaymentStatus | undefined);
+        nextStatus = value ? (value as PaymentStatus) : undefined;
+        setStatus(nextStatus);
       } else if (key === 'sortBy') {
-        setSortBy(value || 'orderDate');
+        nextSortBy = value || 'orderDate';
+        setSortBy(nextSortBy);
       } else if (key === 'sortOrder') {
-        setSortOrder((value as 'asc' | 'desc') || 'desc');
+        nextSortOrder = value === 'asc' ? 'asc' : 'desc';
+        setSortOrder(nextSortOrder);
       }
 
       startTransition(() => {
@@ -115,23 +120,23 @@ export function ReceivablesPageClient({
         if (search) {
           params.set('search', search);
         }
-        if (newFilters.status) {
-          params.set('status', newFilters.status);
+        if (nextStatus) {
+          params.set('status', nextStatus);
         }
-        if (newFilters.sortBy) {
-          params.set('sortBy', newFilters.sortBy);
+        if (nextSortBy) {
+          params.set('sortBy', nextSortBy);
         }
-        if (newFilters.sortOrder) {
-          params.set('sortOrder', newFilters.sortOrder);
+        if (nextSortOrder) {
+          params.set('sortOrder', nextSortOrder);
         }
-        if (newFilters.limit) {
-          params.set('limit', newFilters.limit.toString());
+        if (initialParams.limit) {
+          params.set('limit', initialParams.limit.toString());
         }
 
         router.push(`/finance/receivables?${params.toString()}`);
       });
     },
-    [router, search, initialParams]
+    [router, search, initialParams.limit, sortBy, sortOrder, status]
   );
 
   // 分页处理

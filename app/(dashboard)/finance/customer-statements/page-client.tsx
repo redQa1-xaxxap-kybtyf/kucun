@@ -57,17 +57,25 @@ export function CustomerStatementsPageClient({
     useState<CustomerStatementQuery>(initialParams);
 
   // 使用TanStack Query获取数据
-  const { data, isLoading, error } = useCustomerStatements(queryParams, {
+  const {
+    data,
+    isLoading,
+    error,
+  } = useCustomerStatements(queryParams, {
     enabled: true,
   });
 
-  const statements =
-    (data as { statements: CustomerStatementListItem[] })?.statements ||
-    initialData?.statements ||
-    [];
-  const pagination =
-    (data as { pagination: typeof initialData.pagination })?.pagination ||
-    initialData?.pagination;
+  const statementSource =
+    data ??
+    (initialData
+      ? {
+          statements: initialData.statements,
+          pagination: initialData.pagination,
+        }
+      : undefined);
+
+  const statements = statementSource?.statements ?? [];
+  const pagination = statementSource?.pagination;
 
   const {
     data: statisticsData,

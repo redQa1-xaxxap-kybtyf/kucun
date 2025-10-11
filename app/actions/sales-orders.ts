@@ -115,7 +115,6 @@ export async function createSalesOrder(
           costAmount,
           profitAmount,
           paidAmount: 0,
-          paymentStatus: 'unpaid',
           remarks: data.remarks,
           items: {
             create: data.items.map(item => ({
@@ -127,8 +126,10 @@ export async function createSalesOrder(
               manualUnit: item.manualUnit,
               colorCode: item.colorCode,
               productionDate: item.productionDate
-                ? new Date(item.productionDate)
-                : undefined,
+                ? (typeof item.productionDate === 'string'
+                    ? item.productionDate
+                    : (item.productionDate as Date).toISOString())
+                : null,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               subtotal: item.subtotal,
@@ -381,8 +382,10 @@ export async function updateSalesOrder(
               manualUnit: item.manualUnit,
               colorCode: item.colorCode,
               productionDate: item.productionDate
-                ? new Date(item.productionDate)
-                : undefined,
+                ? (typeof item.productionDate === 'string'
+                    ? item.productionDate
+                    : (item.productionDate as Date).toISOString())
+                : null,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               subtotal: item.subtotal,

@@ -204,11 +204,11 @@ export const PAYMENT_OUT_STATUS_LABELS: Record<PaymentOutStatus, string> = {
 // 应付款状态变体映射（用于Badge组件）
 export const PAYABLE_STATUS_VARIANTS: Record<
   PayableStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
+  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
 > = {
-  pending: 'outline',
-  partial: 'secondary',
-  paid: 'default',
+  pending: 'warning',
+  partial: 'info',
+  paid: 'success',
   overdue: 'destructive',
   cancelled: 'destructive',
 };
@@ -216,10 +216,10 @@ export const PAYABLE_STATUS_VARIANTS: Record<
 // 付款状态变体映射（用于Badge组件）
 export const PAYMENT_OUT_STATUS_VARIANTS: Record<
   PaymentOutStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
+  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
 > = {
-  pending: 'outline',
-  confirmed: 'default',
+  pending: 'warning',
+  confirmed: 'success',
   cancelled: 'destructive',
 };
 

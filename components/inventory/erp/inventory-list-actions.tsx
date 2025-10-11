@@ -1,6 +1,6 @@
 'use client';
 
-import { Download, Plus, Settings } from 'lucide-react';
+import { Download, Eye, Plus } from 'lucide-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
@@ -37,8 +37,8 @@ export function InventoryListActions({
       </Button>
 
       <Button variant="outline" size="sm" onClick={onAdjust}>
-        <Settings className="mr-1 h-4 w-4" />
-        调整
+        <Eye className="mr-1 h-4 w-4" />
+        查看变动
       </Button>
     </div>
   );

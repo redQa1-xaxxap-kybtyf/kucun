@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
+import type { AuthUser } from '@/lib/auth/context';
+import { logger } from '@/lib/logger';
 import { ApiError } from '@/lib/api/errors';
 import {
   calculateCustomerFinancials,
@@ -21,7 +22,7 @@ export const GET = withAuth(
   async (
     request: NextRequest,
     context: {
-      user: { id: string; role: string };
+      user: AuthUser;
       params?: Promise<{ id: string }> | { id: string };
     }
   ) => {

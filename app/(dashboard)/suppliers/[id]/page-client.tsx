@@ -47,7 +47,7 @@ interface SupplierDetail {
     status: string;
     payableAmount: number;
     remainingAmount: number;
-    dueDate: string;
+    dueDate: string | null;
     createdAt: string;
   }>;
 }
@@ -65,6 +65,8 @@ export function SupplierDetailPageClient({
   supplier,
 }: SupplierDetailPageClientProps) {
   const router = useRouter();
+  const formatOptionalDate = (value: string | null) =>
+    value ? formatDate(value) : '-';
 
   const getStatusLabel = (status: string) => {
     switch (status) {
@@ -324,7 +326,8 @@ export function SupplierDetailPageClient({
                         <div>
                           <p className="font-medium">{record.payableNumber}</p>
                           <p className="text-muted-foreground text-sm">
-                            到期：{formatDate(record.dueDate)}
+                            到期：
+                            {formatOptionalDate(record.dueDate)}
                           </p>
                         </div>
                         <div className="space-y-1 text-right">

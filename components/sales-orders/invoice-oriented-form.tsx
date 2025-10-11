@@ -40,6 +40,8 @@ import { useToast } from '@/components/ui/use-toast';
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
+import type { Product } from '@/lib/types/product';
+import type { SalesOrderCreateInput } from '@/lib/types/sales-order';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
@@ -157,7 +159,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
   const totalAmount = React.useMemo(
     () =>
       fields.reduce(
-        (sum, item) => sum + item.quantity * (item.unitPrice || 0),
+        (sum, item) => sum + (item.quantity ?? 0) * (item.unitPrice || 0),
         0
       ),
     [fields]
@@ -171,7 +173,9 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
       unitPrice: 0,
       displayUnit: '件' as const,
       displayQuantity: 1,
-    });
+      unitCost: undefined,
+      manualWeight: undefined,
+    } as unknown as never);
   };
 
   // 删除订单项
@@ -191,7 +195,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
     // 自动计算小计
     if (field === 'quantity' || field === 'unitPrice') {
       updatedItem.subtotal =
-        updatedItem.quantity * (updatedItem.unitPrice || 0);
+        (updatedItem.quantity ?? 0) * (updatedItem.unitPrice || 0);
     }
 
     update(index, updatedItem);
@@ -243,12 +247,12 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
       totalAmount,
       items: submitData.items.map(item => ({
         ...item,
-        subtotal: item.quantity * (item.unitPrice || 0),
+        subtotal: (item.quantity ?? 0) * (item.unitPrice || 0),
       })),
     };
 
     // orderData 符合 SalesOrderCreateInput 类型
-    createMutation.mutate(orderData);
+    createMutation.mutate(orderData as unknown as SalesOrderCreateInput);
   };
 
   return (
@@ -433,7 +437,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                         const selectedProduct = productsData?.data?.find(
                           p => p.id === item.productId
                         );
-                        const subtotal = item.quantity * (item.unitPrice || 0);
+                        const subtotal = (item.quantity ?? 0) * (item.unitPrice || 0);
                         const hasStockWarning = stockWarnings[index];
 
                         return (
@@ -448,7 +452,23 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                             {/* 产品名称 */}
                             <TableCell className="border-r">
                               <EnhancedProductSelector
-                                products={productsData?.data || []}
+                                products={
+                                  (productsData?.data || []).map(p => ({
+                                    id: p.id,
+                                    code: p.code,
+                                    name: p.name,
+                                    specification: p.specification,
+                                    unit: p.unit,
+                                    piecesPerUnit: p.piecesPerUnit,
+                                    inventory: p.inventory
+                                      ? {
+                                          totalInventory: p.inventory.totalQuantity || 0,
+                                          availableInventory: p.inventory.availableQuantity || 0,
+                                          reservedInventory: p.inventory.reservedQuantity || 0,
+                                        }
+                                      : undefined,
+                                  })) as unknown as Parameters<typeof EnhancedProductSelector>[0]['products']
+                                }
                                 value={item.productId}
                                 onValueChange={value =>
                                   handleProductSelect(value, index)
@@ -544,7 +564,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                   <span>
                     总数量：
                     <strong className="text-foreground">
-                      {fields.reduce((sum, item) => sum + item.quantity, 0)}
+                      {fields.reduce((sum, item) => sum + (item.quantity ?? 0), 0)}
                     </strong>
                   </span>
                 </div>

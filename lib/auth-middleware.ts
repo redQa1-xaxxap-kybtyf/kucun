@@ -34,6 +34,7 @@ const protectedPaths = [
   '/api/return-orders',
   '/api/payments',
   '/api/dashboard',
+  '/api/refunds',
   '/api/upload',
   '/api/batch-specifications',
   '/api/product-variants',

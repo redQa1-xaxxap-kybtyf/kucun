@@ -278,8 +278,8 @@ export function ERPSalesOrderForm({
   });
 
   const { data: productsData, isLoading: _productsLoading } = useQuery({
-    queryKey: productQueryKeys.list({ includeInventory: true }),
-    queryFn: () => getProducts({ includeInventory: true }),
+    queryKey: productQueryKeys.list({}),
+    queryFn: () => getProducts({}),
   });
 
   const { data: suppliersData, isLoading: suppliersLoading } = useQuery({
@@ -440,14 +440,14 @@ export function ERPSalesOrderForm({
       productCode: '',
       specification: '',
       unit: '',
-      displayUnit: '片' as const,
+      displayUnit: '片',
       displayQuantity: 1,
       quantity: 1,
-      unitPrice: undefined, // 改为undefined，避免默认显示0
+      unitPrice: 0,
       unitCost: undefined,
       piecesPerUnit: undefined,
       remarks: '',
-    });
+    } as any);
   };
 
   // 自动生成订单号状态
@@ -587,7 +587,8 @@ export function ERPSalesOrderForm({
 
   const submitWithStatus = React.useCallback(
     (status: SalesOrderStatus) => {
-      form.setValue('status', status, {
+      // 使用 as unknown as 双重类型转换，因为 CreateSalesOrderData 的 status 类型可能比 SalesOrderStatus 窄
+      form.setValue('status', status as unknown as 'draft' | 'confirmed' | 'shipped' | 'completed' | 'cancelled', {
         shouldDirty: true,
         shouldValidate: false,
       });

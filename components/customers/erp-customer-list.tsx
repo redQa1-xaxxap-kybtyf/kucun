@@ -19,6 +19,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { Pagination } from '@/components/ui/pagination';
 import type { Customer } from '@/lib/types/customer';
 
 interface ERPCustomerListProps {
@@ -35,6 +36,7 @@ interface ERPCustomerListProps {
   onViewDetail?: (customer: Customer) => void;
   onEdit?: (customer: Customer) => void;
   onDelete?: (customer: Customer) => void;
+  onPageChange?: (page: number) => void;
 }
 
 /**
@@ -48,11 +50,13 @@ export function ERPCustomerList({
   onViewDetail,
   onEdit,
   onDelete,
+  onPageChange,
 }: ERPCustomerListProps) {
   const router = useRouter();
 
   // 使用服务器传递的数据
   const customers = initialData.data || [];
+  const pagination = initialData.pagination;
 
   // 处理创建新客户
   const handleCreateNew = () => {
@@ -88,6 +92,22 @@ export function ERPCustomerList({
     }
   };
 
+  // 处理分页
+  const handlePageChange = (page: number) => {
+    if (onPageChange) {
+      onPageChange(page);
+    } else {
+      // 默认行为：导航到新页面
+      const params = new URLSearchParams(window.location.search);
+      if (page > 1) {
+        params.set('page', page.toString());
+      } else {
+        params.delete('page');
+      }
+      router.push(`/customers?${params.toString()}`);
+    }
+  };
+
   // 格式化日期
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString('zh-CN');
@@ -95,10 +115,10 @@ export function ERPCustomerList({
   return (
     <div className="flex h-full flex-col overflow-hidden">
       {/* 表格区域 */}
-      <div className="flex-1 overflow-hidden">
+      <div className="flex-1 overflow-auto">
         <Table>
           <TableHeader>
-            <TableRow className="even:bg-[hsl(var(--color-bg-table-header))] hover:bg-[hsl(var(--color-bg-table-header))] [&>th]:border-b-2 [&>th]:border-b-[hsl(var(--color-border-secondary))] [&>th]:text-[hsl(var(--color-text-primary))] [&>th]:text-xs [&>th]:font-semibold [&>th]:tracking-wide">
+            <TableRow>
               <TableHead>客户名称</TableHead>
               <TableHead>联系电话</TableHead>
               <TableHead>地址</TableHead>
@@ -228,6 +248,18 @@ export function ERPCustomerList({
           </TableBody>
         </Table>
       </div>
+
+      {/* 分页组件 */}
+      {pagination && pagination.total > 0 && (
+        <div className="flex-shrink-0 border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+          <Pagination
+            pagination={pagination}
+            onPageChange={handlePageChange}
+            showRange
+            showTotal
+          />
+        </div>
+      )}
     </div>
   );
 }

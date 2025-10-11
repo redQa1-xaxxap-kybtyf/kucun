@@ -10,6 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import type {
@@ -96,16 +104,16 @@ export function ReceivablesClient({
     }).format(amount);
 
   const getStatusBadge = (status: string) => {
+    const normalizedStatus = status === 'overdue' ? 'unpaid' : status;
     const statusConfig = {
       unpaid: { label: '未收款', variant: 'destructive' as const },
       partial: { label: '部分收款', variant: 'secondary' as const },
       paid: { label: '已收款', variant: 'default' as const },
-      overdue: { label: '逾期', variant: 'destructive' as const },
       pending: { label: '待确认', variant: 'secondary' as const },
       confirmed: { label: '已确认', variant: 'default' as const },
       cancelled: { label: '已取消', variant: 'secondary' as const },
     };
-    const config = statusConfig[status as keyof typeof statusConfig];
+    const config = statusConfig[normalizedStatus as keyof typeof statusConfig];
     return (
       <Badge variant={config?.variant || 'secondary'}>
         {config?.label || '未知状态'}
@@ -171,7 +179,7 @@ export function ReceivablesClient({
   return (
     <div className="space-y-6">
       {/* 统计卡片 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">总应收金额</CardTitle>
@@ -183,21 +191,6 @@ export function ReceivablesClient({
             </div>
             <p className="text-muted-foreground text-xs">
               {currentData.summary?.receivableCount || 0} 个应收订单
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">逾期金额</CardTitle>
-            <AlertCircle className="h-4 w-4 text-[hsl(var(--color-error))]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[hsl(var(--color-error))]">
-              {formatCurrency(currentData.summary?.totalOverdue || 0)}
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {currentData.summary?.overdueCount || 0} 个逾期订单
             </p>
           </CardContent>
         </Card>
@@ -247,7 +240,6 @@ export function ReceivablesClient({
                   { label: '未收款', value: 'unpaid' },
                   { label: '部分收款', value: 'partial' },
                   { label: '已收款', value: 'paid' },
-                  { label: '逾期', value: 'overdue' },
                 ],
                 width: 'w-[140px]',
               },
@@ -303,78 +295,88 @@ export function ReceivablesClient({
                   className="transition-shadow hover:shadow-[var(--shadow-medium)]"
                 >
                   <CardContent className="p-6">
+                    {/* 第一行：订单号和状态 */}
                     <div className="flex items-center justify-between">
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-3">
-                          <h3 className="font-semibold">
-                            {receivable.orderNumber}
-                          </h3>
-                          {getStatusBadge(receivable.paymentStatus)}
-                          {receivable.overdueDays &&
-                            receivable.overdueDays > 0 && (
-                              <Badge variant="destructive">
-                                逾期 {receivable.overdueDays} 天
-                              </Badge>
-                            )}
-                        </div>
-                        <p className="text-muted-foreground text-sm">
-                          客户：{receivable.customerName}
-                        </p>
-                        <div className="text-muted-foreground flex items-center gap-4 text-sm">
-                          <span>订单日期：{receivable.orderDate}</span>
-                          {receivable.lastPaymentDate && (
-                            <span>最后收款：{receivable.lastPaymentDate}</span>
-                          )}
-                        </div>
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
+                          {receivable.orderNumber}
+                        </h3>
+                        {getStatusBadge(receivable.paymentStatus)}
                       </div>
-                      <div className="space-y-2 text-right">
-                        <div>
-                          <p className="text-muted-foreground text-sm">
-                            订单金额
-                          </p>
-                          <p className="font-semibold">
-                            {formatCurrency(receivable.totalAmount)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-sm">
-                            已收金额
-                          </p>
-                          <p className="font-semibold text-[hsl(var(--color-success))]">
-                            {formatCurrency(receivable.paidAmount)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-muted-foreground text-sm">
-                            待收金额
-                          </p>
-                          <p className="font-semibold text-[hsl(var(--color-warning))]">
-                            {formatCurrency(receivable.remainingAmount)}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-4 flex justify-end gap-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          router.push(`/sales-orders/${receivable.id}`)
-                        }
-                      >
-                        查看详情
-                      </Button>
-                      {receivable.remainingAmount > 0 && (
+                      <div className="flex gap-2">
                         <Button
+                          variant="outline"
                           size="sm"
                           onClick={() =>
-                            router.push(
-                              `/finance/payments/create?orderId=${receivable.id}`
-                            )
+                            router.push(`/sales-orders/${receivable.id}`)
                           }
                         >
-                          收款
+                          查看详情
                         </Button>
+                        {receivable.remainingAmount > 0 && (
+                          <Button
+                            size="sm"
+                            onClick={() =>
+                              router.push(
+                                `/finance/payments/create?orderId=${receivable.id}`
+                              )
+                            }
+                          >
+                            收款
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* 第二行：客户信息 */}
+                    <div className="mt-3">
+                      <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                        客户：
+                      </span>
+                      <span className="ml-1 text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                        {receivable.customerName}
+                      </span>
+                    </div>
+
+                    {/* 第三行：金额信息 - 横向排列更紧凑 */}
+                    <div className="mt-4 flex items-center gap-6 border-t border-[hsl(var(--color-border-secondary))] pt-4">
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                          订单金额
+                        </span>
+                        <span className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
+                          {formatCurrency(receivable.totalAmount)}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                          已收
+                        </span>
+                        <span className="text-lg font-semibold text-[hsl(var(--color-success))]">
+                          {formatCurrency(receivable.paidAmount)}
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                          待收
+                        </span>
+                        <span className="text-lg font-semibold text-[hsl(var(--color-warning))]">
+                          {formatCurrency(receivable.remainingAmount)}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* 第四行：日期信息 */}
+                    <div className="mt-3 flex items-center gap-6 text-sm text-[hsl(var(--color-text-tertiary))]">
+                      <div className="flex items-center gap-1">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>订单日期：{receivable.orderDate}</span>
+                      </div>
+                      {receivable.lastPaymentDate && (
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3.5 w-3.5" />
+                          <span>最后收款：{receivable.lastPaymentDate}</span>
+                        </div>
                       )}
                     </div>
                   </CardContent>

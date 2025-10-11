@@ -326,6 +326,11 @@ export default function CustomerStatementDetailPage() {
             <div className="text-2xl font-semibold text-[hsl(var(--color-success))]">
               {formatCurrency(summary.receivables.receivableBalance)}
             </div>
+            {summary.receivables.prepaymentReceived > 0 && (
+              <p className="text-muted-foreground mt-1 text-xs">
+                含预收款：{formatCurrency(summary.receivables.prepaymentReceived)}
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -336,6 +341,11 @@ export default function CustomerStatementDetailPage() {
             <div className="text-2xl font-semibold text-[hsl(var(--color-error))]">
               {formatCurrency(summary.payables.payableBalance)}
             </div>
+            {summary.payables.prepaymentPaid > 0 && (
+              <p className="text-muted-foreground mt-1 text-xs">
+                含预付款：{formatCurrency(summary.payables.prepaymentPaid)}
+              </p>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -407,7 +417,15 @@ export default function CustomerStatementDetailPage() {
                         {formatCurrency(transaction.balance)}
                       </TableCell>
                       <TableCell>
-                        <Badge variant="secondary">{transaction.status}</Badge>
+                        <Badge variant="secondary">
+                          {transaction.status === 'confirmed'
+                            ? '已确认'
+                            : transaction.status === 'pending'
+                              ? '待确认'
+                              : transaction.status === 'cancelled'
+                                ? '已取消'
+                                : transaction.status}
+                        </Badge>
                       </TableCell>
                     </TableRow>
                   ))}

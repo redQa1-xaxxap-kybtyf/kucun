@@ -37,6 +37,7 @@ export type {
   InventoryCountInput,
   InventoryCountItem,
   OutboundCreateInput,
+  OutboundRecordDetail,
   OutboundRecord,
   OutboundType,
 } from './inventory-operations';
@@ -53,6 +54,7 @@ export {
   INBOUND_TYPE_VARIANTS,
   OUTBOUND_NUMBER_FORMAT,
   OUTBOUND_SORT_OPTIONS,
+  OUTBOUND_REASON_LABELS,
   OUTBOUND_TYPE_LABELS,
   OUTBOUND_TYPE_VARIANTS,
   calculateTotalCost,
@@ -83,3 +85,14 @@ export {
   INVENTORY_SORT_OPTIONS,
   PAGE_SIZE_OPTIONS,
 } from './inventory-queries';
+
+// 批次流水相关类型
+export type {
+  BatchHistoryResult,
+  BatchMovementGroup,
+  InventoryMovementEntry,
+  InventoryMovementKind,
+} from './inventory-history';
+
+// 入库详情类型
+export type { InboundRecordDetail } from './inbound';

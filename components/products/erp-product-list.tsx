@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 
 import { ContentLoading } from '@/components/common/loading';
 import { ProductDeleteDialog } from '@/components/products/product-delete-dialogs';
-import { ProductListToolbar } from '@/components/products/product-list-toolbar';
 import { ProductSearchFilters } from '@/components/products/product-search-filters';
 import { ProductTable } from '@/components/products/product-table';
 import { Pagination } from '@/components/ui/pagination';
@@ -32,7 +31,6 @@ export function ERPProductList({
 }: ERPProductListProps) {
   // 状态管理
   const {
-    queryParams,
     deleteDialog,
     setDeleteDialog,
     handleSearch,
@@ -57,15 +55,14 @@ export function ERPProductList({
 
   const categories = categoriesResponse?.data || [];
 
+  // ✅ 直接使用 initialParams，避免状态不同步（参考销售订单模块）
   // 获取产品列表数据
   const { data, isLoading, error } = useQuery({
-    queryKey: productQueryKeys.list(queryParams),
-    queryFn: () => getProducts(queryParams),
-    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的（与服务端缓存策略保持一致）
-    refetchOnMount: false, // 避免重复请求，使用缓存数据
+    queryKey: productQueryKeys.list(initialParams),
+    queryFn: () => getProducts(initialParams),
+    staleTime: 30 * 1000, // 30秒缓存时间，平衡性能和数据新鲜度
     refetchOnWindowFocus: false, // 避免不必要的重新获取
-    initialData: _initialData, // 使用服务端预取的数据
-    placeholderData: previousData => previousData, // 切换查询参数时保持上一次数据
+    initialData: _initialData, // 使用服务端预取的数据，但允许后续更新
   });
 
   // 处理筛选器清空
@@ -99,17 +96,14 @@ export function ERPProductList({
   const pagination = data?.pagination;
 
   return (
-    <div className="space-y-6">
-      {/* 工具栏 */}
-      <ProductListToolbar />
-
+    <div className="space-y-4">
       {/* 搜索和筛选 */}
       <ProductSearchFilters
-        searchValue={queryParams.search || ''}
-        categoryId={queryParams.categoryId}
-        status={queryParams.status}
-        sortBy={queryParams.sortBy || 'createdAt'}
-        sortOrder={queryParams.sortOrder || 'desc'}
+        searchValue={initialParams?.search || ''}
+        categoryId={initialParams?.categoryId}
+        status={initialParams?.status}
+        sortBy={initialParams?.sortBy || 'createdAt'}
+        sortOrder={initialParams?.sortOrder || 'desc'}
         categories={categories}
         onSearchChange={handleSearch}
         onFilterChange={handleFilter}
@@ -117,24 +111,29 @@ export function ERPProductList({
         onClearFilters={handleClearFilters}
       />
 
-      {/* 产品表格 */}
-      <ProductTable
-        products={products}
-        onProductSelect={onProductSelect}
-        onDeleteProduct={handleDeleteProduct}
-      />
+      {/* 产品列表 */}
+      <div
+        className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+        style={{ boxShadow: 'var(--shadow-medium)' }}
+      >
+        <ProductTable
+          products={products}
+          onProductSelect={onProductSelect}
+          onDeleteProduct={handleDeleteProduct}
+        />
 
-      {/* 分页组件 */}
-      {pagination && (
-        <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3" style={{ boxShadow: 'var(--shadow-medium)' }}>
-          <Pagination
-            pagination={pagination}
-            onPageChange={handlePageChange}
-            showRange
-            showTotal
-          />
-        </div>
-      )}
+        {/* 分页组件 */}
+        {pagination && (
+          <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+            <Pagination
+              pagination={pagination}
+              onPageChange={handlePageChange}
+              showRange
+              showTotal
+            />
+          </div>
+        )}
+      </div>
 
       {/* 删除确认对话框 */}
       <ProductDeleteDialog

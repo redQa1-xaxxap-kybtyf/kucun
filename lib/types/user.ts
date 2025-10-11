@@ -91,11 +91,11 @@ export const USER_ROLE_VARIANTS: Record<
 // 用户状态变体（用于Badge组件）
 export const USER_STATUS_VARIANTS: Record<
   UserStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
+  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
 > = {
-  active: 'default',
+  active: 'success',
   inactive: 'secondary',
-  pending: 'outline',
+  pending: 'warning',
 };
 
 // 用户权限检查函数

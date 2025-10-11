@@ -113,7 +113,7 @@ export async function generateUniqueOrderNumber(
 
           return orderNumber;
         },
-        getStandardTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable）
+        getLongTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable）
       );
     } catch (error) {
       attempt++;

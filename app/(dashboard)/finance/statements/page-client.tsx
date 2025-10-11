@@ -7,9 +7,9 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
+import { PageHeader } from '@/components/common/page-header';
 import { StatementsClient } from '@/components/finance/statements-client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 
 interface AccountStatement {
   id: string;
@@ -190,49 +190,38 @@ export function StatementsPageClient({
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
-        {/* 页面标题卡片 */}
-        <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-purple))] shadow-lg shadow-purple-600/30">
-                  <FileText className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    往来账单
-                  </h1>
-                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    管理客户和供应商的综合账务往来
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  asChild
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
-                >
-                  <Link href="/finance/statements/export">
-                    <Download className="mr-2 h-4 w-4" />
-                    导出
-                  </Link>
-                </Button>
-                <Button
-                  size="lg"
-                  asChild
-                  className="h-11 shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
-                >
-                  <Link href="/customers">
-                    <Users className="mr-2 h-4 w-4" />
-                    客户管理
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        {/* 页面标题 */}
+        <PageHeader
+          title="往来账单"
+          description="管理客户和供应商的综合账务往来"
+          icon={<FileText className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-purple))"
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/finance/statements/export">
+                  <Download className="mr-2 h-4 w-4" />
+                  导出
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/customers">
+                  <Users className="mr-2 h-4 w-4" />
+                  客户管理
+                </Link>
+              </Button>
+            </>
+          }
+        />
 
         {/* 客户端交互组件 */}
         <Suspense

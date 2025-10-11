@@ -2,7 +2,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Calculator, Package, Plus, Trash2 } from 'lucide-react';
-import { useFieldArray, useWatch, type Control } from 'react-hook-form';
+import { useFieldArray, useWatch, type Control, type FieldValues } from 'react-hook-form';
 
 // UI Components
 import { EnhancedProductSelector } from '@/components/sales-orders/enhanced-product-selector';
@@ -62,7 +62,7 @@ export function OrderItemsEditor<
   mode = 'create',
 }: OrderItemsEditorProps<TFieldValues>) {
   const { fields, append, remove, update } = useFieldArray({
-    control,
+    control: control as unknown as Control<FieldValues>,
     name: 'items',
   });
 
@@ -76,7 +76,7 @@ export function OrderItemsEditor<
 
   // 监听订单明细变化以计算总金额
   const watchedItems = useWatch({
-    control,
+    control: control as unknown as Control<FieldValues>,
     name,
   }) as (SalesOrderItemCreateFormData | SalesOrderItemUpdateFormData)[];
 
@@ -89,7 +89,7 @@ export function OrderItemsEditor<
       productId: '',
       quantity: 1,
       unitPrice: 0,
-    });
+    } as unknown as never);
   };
 
   // 删除明细
@@ -164,7 +164,10 @@ export function OrderItemsEditor<
                 return (
                   <OrderItemRow
                     key={field.id}
-                    control={control}
+                    control={control as unknown as Control<{
+                      items: SalesOrderItemCreateFormData[];
+                      [key: string]: unknown;
+                    }>}
                     name={`${name}.${index}`}
                     index={index}
                     onRemove={() => removeItem(index)}
@@ -172,7 +175,7 @@ export function OrderItemsEditor<
                     disabled={disabled}
                     isDeleted={isDeleted}
                     _mode={mode}
-                    products={products}
+                    products={products as unknown as Product[]}
                   />
                 );
               })}
@@ -316,7 +319,23 @@ function OrderItemRow({
                     <FormLabel>选择产品</FormLabel>
                     <FormControl>
                       <EnhancedProductSelector
-                        products={products}
+                        products={
+                          products.map(p => ({
+                            id: p.id,
+                            code: p.code,
+                            name: p.name,
+                            specification: p.specification,
+                            unit: p.unit,
+                            piecesPerUnit: p.piecesPerUnit,
+                            inventory: p.inventory
+                              ? {
+                                  totalInventory: p.inventory.totalQuantity || 0,
+                                  availableInventory: p.inventory.availableQuantity || 0,
+                                  reservedInventory: p.inventory.reservedQuantity || 0,
+                                }
+                              : undefined,
+                          })) as unknown as Parameters<typeof EnhancedProductSelector>[0]['products']
+                        }
                         value={field.value}
                         onValueChange={value => {
                           field.onChange(value);

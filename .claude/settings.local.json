@@ -97,7 +97,20 @@
       "Bash(curl -s \"http://localhost:3000/api/price-history/customer?customerId=f46ad8c5-50f7-4563-ac0a-41b05198657e&priceType=SALES\")",
       "Bash(curl -s \"http://localhost:3000/api/sales-orders?startDate=2025-01-09&endDate=2025-01-09&limit=5\")",
       "Bash(curl -s \"http://localhost:3000/api/finance/statements/test-id\")",
-      "Bash(curl -s \"http://localhost:3000/api/finance/statements\")"
+      "Bash(curl -s \"http://localhost:3000/api/finance/statements\")",
+      "Bash(git push:*)",
+      "mcp__microsoft_docs__microsoft_docs_fetch",
+      "Bash(curl -s \"http://localhost:3000/api/finance/customer-statements?page=1&pageSize=20&balanceType=all&sortBy=customerName&sortOrder=desc\")",
+      "Bash(curl -s http://localhost:3000/products/create -I)",
+      "Bash(npx eslint:*)",
+      "Bash(wc:*)",
+      "Bash(curl -s \"http://localhost:3000/api/sales-orders/936bab7f-6840-4896-aa0b-5d684f92982e\")",
+      "Bash(curl -s \"http://localhost:3000/api/sales-orders/cm62a5vup0003qbnkqh1gwsf6\" -X PUT -H \"Content-Type: application/json\" -d '{\"\"\"\"status\"\"\"\":\"\"\"\"shipped\"\"\"\",\"\"\"\"idempotencyKey\"\"\"\":\"\"\"\"test-123\"\"\"\"}')",
+      "mcp__serena__replace_symbol_body",
+      "Bash(cut:*)",
+      "Bash(curl -s \"http://localhost:3000/api/customers?limit=5\")",
+      "Bash(curl -s \"http://localhost:3001/api/return-orders?limit=5\")",
+      "Bash(curl -s \"http://localhost:3000/api/suppliers?page=1&limit=10\")"
     ],
     "deny": [],
     "ask": []

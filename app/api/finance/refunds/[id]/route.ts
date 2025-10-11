@@ -1,13 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
+import type { AuthUser } from '@/lib/auth/context';
+import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/db';
 import { updateRefundRecordSchema } from '@/lib/validations/refund';
 
 // GET /api/finance/refunds/[id] - 获取单个退款记录详情
 export const GET = withAuth(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (
+    request: NextRequest,
+    { params }: { params: { id: string }; user: AuthUser }
+  ) => {
     let refundId: string | undefined;
     try {
       refundId = params.id;
@@ -44,7 +48,10 @@ export const GET = withAuth(
 
 // PUT /api/finance/refunds/[id] - 更新退款记录
 export const PUT = withAuth(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (
+    request: NextRequest,
+    { params }: { params: { id: string }; user: AuthUser }
+  ) => {
     let refundId: string | undefined;
     try {
       refundId = params.id;
@@ -136,7 +143,10 @@ export const PUT = withAuth(
 
 // DELETE /api/finance/refunds/[id] - 删除退款记录
 export const DELETE = withAuth(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (
+    request: NextRequest,
+    { params }: { params: { id: string }; user: AuthUser }
+  ) => {
     let refundId: string | undefined;
     try {
       refundId = params.id;

@@ -13,6 +13,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import {
+  OUTBOUND_REASON_LABELS,
   OUTBOUND_TYPE_LABELS,
   OUTBOUND_TYPE_VARIANTS,
   type OutboundType,
@@ -94,30 +95,27 @@ export function OutboundRecordsTable({
 
       <div className="overflow-x-auto">
         <Table>
-          <TableHeader
-            className="bg-[hsl(var(--color-bg-table-header))]"
-            style={{ boxShadow: 'var(--shadow-light)' }}
-          >
-            <TableRow className="bg-[hsl(var(--color-bg-table-header))]">
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+          <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+            <TableRow>
+              <TableHead>
                 产品编码
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 产品名称
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 规格
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 出库数量
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 出库类型
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 出库原因
               </TableHead>
-              <TableHead className="h-9 text-xs text-[hsl(var(--color-text-secondary))]">
+              <TableHead>
                 操作时间
               </TableHead>
             </TableRow>
@@ -160,7 +158,11 @@ export function OutboundRecordsTable({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    {record.reason || '-'}
+                    {record.reason
+                      ? OUTBOUND_REASON_LABELS[record.reason] ?? record.reason
+                      : OUTBOUND_REASON_LABELS[record.type] ??
+                        OUTBOUND_TYPE_LABELS[record.type] ??
+                        '-'}
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">

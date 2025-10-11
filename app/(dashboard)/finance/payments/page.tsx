@@ -69,7 +69,7 @@ async function getPaymentsData(searchParams: {
           select: { id: true, orderNumber: true, totalAmount: true },
         },
         user: {
-          select: { id: true, name: true, email: true },
+          select: { id: true, name: true },
         },
       },
       orderBy: {
@@ -104,8 +104,85 @@ async function getPaymentsData(searchParams: {
     recordCount: allPayments.length,
   };
 
+  const paymentsWithRelations = payments.filter(
+    (payment): payment is typeof payment & {
+      customer: NonNullable<typeof payment.customer>;
+      salesOrder: NonNullable<typeof payment.salesOrder>;
+      user: NonNullable<typeof payment.user>;
+    } =>
+      Boolean(payment.customer) && Boolean(payment.salesOrder) && Boolean(payment.user)
+  );
+
+  // 计算每个订单的已收款总额和待确认金额
+  const normalizedPayments = await Promise.all(
+    paymentsWithRelations.map(async payment => {
+      // 查询该订单的所有收款记录(按状态分组)
+      const [confirmedPayments, pendingPayments] = await Promise.all([
+        prisma.paymentRecord.findMany({
+          where: {
+            salesOrderId: payment.salesOrderId,
+            status: 'confirmed',
+          },
+          select: {
+            paymentAmount: true,
+          },
+        }),
+        prisma.paymentRecord.findMany({
+          where: {
+            salesOrderId: payment.salesOrderId,
+            status: 'pending',
+          },
+          select: {
+            paymentAmount: true,
+          },
+        }),
+      ]);
+
+      const orderPaidAmount = confirmedPayments.reduce(
+        (sum, p) => sum + Number(p.paymentAmount),
+        0
+      );
+      const orderPendingAmount = pendingPayments.reduce(
+        (sum, p) => sum + Number(p.paymentAmount),
+        0
+      );
+      const orderTotalAmount = Number(payment.salesOrder.totalAmount);
+      const orderRemainingAmount = orderTotalAmount - orderPaidAmount - orderPendingAmount;
+
+      return {
+        id: payment.id,
+        paymentNumber: payment.paymentNumber,
+        paymentAmount: Number(payment.paymentAmount),
+        paymentMethod: payment.paymentMethod ?? 'other',
+        paymentDate: payment.paymentDate.toISOString(),
+        status: payment.status ?? 'pending',
+        remarks: payment.remarks ?? undefined,
+        receiptNumber: payment.receiptNumber ?? undefined,
+        customer: {
+          id: payment.customer.id,
+          name: payment.customer.name,
+          phone: payment.customer.phone ?? undefined,
+        },
+        salesOrder: {
+          id: payment.salesOrder.id,
+          orderNumber: payment.salesOrder.orderNumber,
+          totalAmount: orderTotalAmount,
+          paidAmount: orderPaidAmount,
+          pendingAmount: orderPendingAmount,
+          remainingAmount: orderRemainingAmount,
+        },
+        user: {
+          id: payment.user.id,
+          name: payment.user.name,
+        },
+        createdAt: payment.createdAt.toISOString(),
+        updatedAt: payment.updatedAt.toISOString(),
+      };
+    })
+  );
+
   return {
-    payments,
+    payments: normalizedPayments,
     statistics,
     pagination: {
       page,
@@ -149,3 +226,5 @@ export default async function PaymentsPage({
     <PaymentsPageClient initialData={initialData} initialParams={queryParams} />
   );
 }
+
+

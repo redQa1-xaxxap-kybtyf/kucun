@@ -12,6 +12,7 @@ import * as React from 'react';
 
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 
 interface InventorySearchToolbarProps {
@@ -67,8 +68,11 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
     // 注意：不包括 sortBy，因为它总是有默认值 'updatedAt'
 
     return (
-      <div className="space-y-4">
-        <div className="rounded-lg border bg-white p-4 shadow-md shadow-gray-200/50">
+      <Card
+        className="border border-[hsl(var(--color-border-primary))]"
+        style={{ boxShadow: 'var(--shadow-light)' }}
+      >
+        <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
           <div className="flex flex-wrap items-center gap-2">
             <UnifiedSearchBar
               // 搜索配置
@@ -135,8 +139,8 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
               </Button>
             )}
           </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   }
 );

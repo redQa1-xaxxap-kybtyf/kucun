@@ -54,36 +54,41 @@ export function useERPInventoryList(
   // 优化的事件处理函数
   const handleAdjust = React.useCallback(
     (inventoryId?: string) => {
-      if (inventoryId) {
-        router.push(`/inventory/adjustments?id=${inventoryId}`);
-      } else {
-        router.push('/inventory/adjustments');
+      const firstSelected =
+        selectedInventoryIds.size > 0
+          ? Array.from(selectedInventoryIds)[0]
+          : undefined;
+      const fallbackFirst = data?.data?.[0]?.id;
+      const targetId = inventoryId ?? firstSelected ?? fallbackFirst;
+
+      if (!targetId) {
+        return;
       }
+
+      const inventory = data?.data.find(item => item.id === targetId);
+      if (!inventory || !inventory.batchNumber) {
+        return;
+      }
+
+      const params = new URLSearchParams();
+      params.set('inventoryId', targetId);
+      if (inventory.productId) {
+        params.set('productId', inventory.productId);
+      }
+      if (inventory.variantId) {
+        params.set('variantId', inventory.variantId);
+      } else {
+        params.set('variantId', 'null');
+      }
+
+      router.push(
+        `/inventory/batch/${encodeURIComponent(inventory.batchNumber)}/history?${params.toString()}`
+      );
     },
-    [router]
+    [data?.data, router, selectedInventoryIds]
   );
 
-  const handleInbound = React.useCallback(() => {
-    router.push('/inventory/inbound');
-  }, [router]);
-
-  const handleOutbound = React.useCallback(() => {
-    router.push('/inventory/outbound');
-  }, [router]);
-
   // 分页处理函数
-  const handlePrevPage = React.useCallback(() => {
-    if (data.pagination && data.pagination.page > 1) {
-      onPageChange(data.pagination.page - 1);
-    }
-  }, [data.pagination, onPageChange]);
-
-  const handleNextPage = React.useCallback(() => {
-    if (data.pagination && data.pagination.page < data.pagination.totalPages) {
-      onPageChange(data.pagination.page + 1);
-    }
-  }, [data.pagination, onPageChange]);
-
   // 计算状态
   const hasData = data?.data && data.data.length > 0;
   const selectedCount = selectedInventoryIds.size;
@@ -100,9 +105,5 @@ export function useERPInventoryList(
     handleRowSelect,
     handleSelectAll,
     handleAdjust,
-    handleInbound,
-    handleOutbound,
-    handlePrevPage,
-    handleNextPage,
   };
 }

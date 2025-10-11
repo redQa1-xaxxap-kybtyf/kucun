@@ -184,7 +184,9 @@ export function EnhancedSalesOrderForm({
       unitPrice: 0,
       displayUnit: '件' as const,
       displayQuantity: 1,
-    });
+      unitCost: undefined,
+      manualWeight: undefined,
+    } as unknown as never);
   };
 
   // 删除订单项
@@ -204,7 +206,7 @@ export function EnhancedSalesOrderForm({
     // 自动计算小计
     if (field === 'quantity' || field === 'unitPrice') {
       updatedItem.subtotal =
-        updatedItem.quantity * (updatedItem.unitPrice || 0);
+        (updatedItem.quantity ?? 0) * (updatedItem.unitPrice || 0);
     }
 
     update(index, updatedItem);
@@ -251,7 +253,7 @@ export function EnhancedSalesOrderForm({
   const totalAmount = React.useMemo(
     () =>
       fields.reduce(
-        (sum, item) => sum + item.quantity * (item.unitPrice || 0),
+        (sum, item) => sum + (item.quantity ?? 0) * (item.unitPrice || 0),
         0
       ),
     [fields]
@@ -548,7 +550,7 @@ export function EnhancedSalesOrderForm({
                 <div className="bg-muted/50 rounded-lg p-3 text-center">
                   <div className="text-muted-foreground mb-1">总数量</div>
                   <div className="text-xl font-semibold text-green-600">
-                    {fields.reduce((sum, item) => sum + item.quantity, 0)}
+                    {fields.reduce((sum, item) => sum + (item.quantity ?? 0), 0)}
                   </div>
                   <div className="text-muted-foreground text-xs">件</div>
                 </div>
@@ -572,7 +574,7 @@ export function EnhancedSalesOrderForm({
             <InventoryChecker
               items={fields.map(item => ({
                 productId: item.productId || '',
-                quantity: item.quantity,
+                quantity: item.quantity ?? 0,
                 batchNumber:
                   'batchNumber' in item && typeof item.batchNumber === 'string'
                     ? item.batchNumber
@@ -647,7 +649,7 @@ export function EnhancedSalesOrderForm({
                             p => p.id === item.productId
                           );
                           const subtotal =
-                            item.quantity * (item.unitPrice || 0);
+                            (item.quantity ?? 0) * (item.unitPrice || 0);
                           const hasStockWarning = stockWarnings[index];
 
                           return (
@@ -672,7 +674,7 @@ export function EnhancedSalesOrderForm({
                                     <div className="flex items-center gap-2">
                                       <InventoryStatus
                                         product={selectedProduct}
-                                        requestedQuantity={item.quantity}
+                                        requestedQuantity={item.quantity ?? 0}
                                         className="text-xs"
                                       />
                                     </div>

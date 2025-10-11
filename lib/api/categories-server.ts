@@ -1,4 +1,4 @@
-﻿/**
+/**
  * 分类服务端 API
  * 用于 Server Components 中的数据获取
  * 遵循 Next.js 15 官方最佳实践：使用 React.cache() 避免重复查询
@@ -26,6 +26,7 @@ export interface CategoryWithCounts {
   parent?: {
     id: string;
     name: string;
+    code: string;
   } | null;
 }
 
@@ -86,7 +87,7 @@ export const getCategoriesServer = cache(
         orderBy: { [sortBy]: sortOrder },
         include: {
           parent: {
-            select: { id: true, name: true },
+            select: { id: true, name: true, code: true },
           },
           _count: {
             select: { products: true },
@@ -133,7 +134,7 @@ export const getCategoryServer = cache(
       where: { id },
       include: {
         parent: {
-          select: { id: true, name: true },
+          select: { id: true, name: true, code: true },
         },
         _count: {
           select: { products: true },

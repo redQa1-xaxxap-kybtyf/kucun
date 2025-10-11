@@ -161,6 +161,13 @@ export const returnOrderKeys = {
 
   details: () => [...returnOrderKeys.all, 'detail'] as const,
   detail: (id: string) => [...returnOrderKeys.details(), id] as const,
+
+  // 退货统计
+  stats: () => [...returnOrderKeys.all, 'stats'] as const,
+
+  // 销售订单可退货商品
+  salesOrderItems: (salesOrderId: string) =>
+    [...returnOrderKeys.all, 'sales-order-items', salesOrderId] as const,
 } as const;
 
 /**

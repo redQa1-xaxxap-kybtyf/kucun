@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { ArrowLeft, DollarSign, Package, Receipt, Save } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -58,7 +59,6 @@ const createPaymentSchema = z.object({
   ),
   paymentAmount: z.number().min(0.01, { error: '收款金额必须大于0' }),
   paymentDate: z.string().min(1, { error: '请选择收款日期' }),
-  receiptNumber: z.string().optional(),
   bankInfo: z.string().optional(),
   remarks: z.string().optional(),
 });
@@ -99,7 +99,6 @@ export default function CreatePaymentPage() {
       paymentMethod: 'cash',
       paymentAmount: 0,
       paymentDate: format(new Date(), 'yyyy-MM-dd'),
-      receiptNumber: '',
       bankInfo: '',
       remarks: '',
     },
@@ -110,7 +109,7 @@ export default function CreatePaymentPage() {
   const watchedPaymentMethod = form.watch('paymentMethod');
 
   // 获取销售订单信息
-  const { data: orderData, isLoading: _orderLoading } = useQuery({
+  const { data: orderData } = useQuery({
     queryKey: queryKeys.salesOrders.detail(watchedOrderId || ''),
     queryFn: async () => {
       if (!watchedOrderId) {
@@ -178,6 +177,14 @@ export default function CreatePaymentPage() {
     },
   });
 
+  // 当通过URL参数指定订单时，自动设置客户ID和收款金额
+  useEffect(() => {
+    if (orderId && salesOrder) {
+      form.setValue('customerId', salesOrder.customer.id);
+      form.setValue('paymentAmount', salesOrder.remainingAmount);
+    }
+  }, [orderId, salesOrder, form]);
+
   // 处理订单选择
   const handleOrderSelect = (orderId: string) => {
     const order = availableOrders.find(o => o.id === orderId);
@@ -193,7 +200,7 @@ export default function CreatePaymentPage() {
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden p-6">
+    <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
         {/* 页面标题卡片 */}
         <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
@@ -251,36 +258,51 @@ export default function CreatePaymentPage() {
                       render={({ field }) => (
                         <FormItem>
                           <FormLabel>销售订单 *</FormLabel>
-                          <Select
-                            value={field.value}
-                            onValueChange={value => {
-                              field.onChange(value);
-                              handleOrderSelect(value);
-                            }}
-                            disabled={ordersLoading}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择销售订单" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {availableOrders.map(order => (
-                                <SelectItem key={order.id} value={order.id}>
-                                  <div className="flex w-full items-center justify-between">
-                                    <span>{order.orderNumber}</span>
-                                    <span className="ml-2 text-sm text-[hsl(var(--color-text-tertiary))]">
-                                      {order.customer.name} - 待收：
-                                      {formatCurrency(order.remainingAmount)}
-                                    </span>
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            选择需要收款的销售订单
-                          </FormDescription>
+                          {orderId ? (
+                            // 如果URL中指定了订单ID，显示为只读
+                            <div className="rounded-md border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-3 py-2">
+                              <p className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                                {salesOrder?.orderNumber || '加载中...'}
+                              </p>
+                              <p className="mt-1 text-xs text-[hsl(var(--color-text-tertiary))]">
+                                此收款记录关联到指定订单，无法修改
+                              </p>
+                            </div>
+                          ) : (
+                            // 如果没有指定订单，允许选择
+                            <Select
+                              value={field.value}
+                              onValueChange={value => {
+                                field.onChange(value);
+                                handleOrderSelect(value);
+                              }}
+                              disabled={ordersLoading}
+                            >
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="选择销售订单" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {availableOrders.map(order => (
+                                  <SelectItem key={order.id} value={order.id}>
+                                    <div className="flex w-full items-center justify-between">
+                                      <span>{order.orderNumber}</span>
+                                      <span className="ml-2 text-sm text-[hsl(var(--color-text-tertiary))]">
+                                        {order.customer.name} - 待收：
+                                        {formatCurrency(order.remainingAmount)}
+                                      </span>
+                                    </div>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          {!orderId && (
+                            <FormDescription>
+                              选择需要收款的销售订单
+                            </FormDescription>
+                          )}
                           <FormMessage />
                         </FormItem>
                       )}
@@ -353,24 +375,6 @@ export default function CreatePaymentPage() {
                           <FormControl>
                             <Input type="date" {...field} />
                           </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* 收据号码 */}
-                    <FormField
-                      control={form.control}
-                      name="receiptNumber"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>收据号码</FormLabel>
-                          <FormControl>
-                            <Input placeholder="收据或凭证号码" {...field} />
-                          </FormControl>
-                          <FormDescription>
-                            收款凭证的编号（可选）
-                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}

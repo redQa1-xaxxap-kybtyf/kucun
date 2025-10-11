@@ -1,4 +1,5 @@
 import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 import { env } from './env';
 
@@ -104,15 +105,24 @@ export async function healthCheck() {
 }
 
 // 事务辅助函数
+type TransactionCallback<T> = (
+  tx: Omit<
+    PrismaClient,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  >
+) => Promise<T>;
+
+type TransactionOptions = {
+  isolationLevel?: Prisma.TransactionIsolationLevel;
+  maxWait?: number;
+  timeout?: number;
+};
+
 export async function withTransaction<T>(
-  fn: (
-    tx: Omit<
-      PrismaClient,
-      '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
-    >
-  ) => Promise<T>
+  fn: TransactionCallback<T>,
+  options?: TransactionOptions
 ): Promise<T> {
-  return await prisma.$transaction(fn);
+  return await prisma.$transaction(fn, options);
 }
 
 // 数据库统计信息

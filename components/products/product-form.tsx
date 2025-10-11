@@ -1,26 +1,17 @@
 'use client';
 
-// React相关
-
-// 第三方库
 import { AlertCircle, ArrowLeft, Package } from 'lucide-react';
 
-// UI组件
 import { ProductBasicInfoForm } from '@/components/products/product-basic-info-form';
 import { ProductDetailsForm } from '@/components/products/product-details-form';
-import { ProductFormActions } from '@/components/products/product-form-actions';
 import { ProductImageUpload } from '@/components/products/product-image-upload';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
+import { Separator } from '@/components/ui/separator';
 import { useProductForm } from '@/hooks/use-product-form';
+import { cn } from '@/lib/utils';
 import { type Product } from '@/lib/types/product';
 
 interface ProductFormProps {
@@ -32,13 +23,23 @@ interface ProductFormProps {
   variant?: 'default' | 'erp';
 }
 
+/**
+ * 优化版产品表单
+ *
+ * 优化要点:
+ * 1. 减少卡片层级,信息更紧凑
+ * 2. 合并基础信息和详细参数到一个卡片
+ * 3. 移除冗余的CardDescription
+ * 4. 使用Separator分隔区域,替代多个卡片
+ * 5. 悬浮操作栏,无需滚动即可保存
+ */
 export function ProductForm({
   mode,
   productId,
   initialData,
   onSuccess,
   onCancel,
-  variant = 'default',
+  variant: _variant = 'default',
 }: ProductFormProps) {
   const { form, isEdit, isLoading, submitError, onSubmit, handleCancel } =
     useProductForm({
@@ -49,132 +50,137 @@ export function ProductForm({
       onCancel,
     });
 
+  void _variant;
+
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
-      {/* 页面标题卡片 */}
-      <Card
-        className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-        style={{ boxShadow: 'var(--shadow-medium)' }}
-      >
-        <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div
-                className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]"
-                style={{ boxShadow: 'var(--shadow-light)' }}
-              >
-                <Package className="h-6 w-6" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                  {isEdit ? '编辑产品' : '新建产品'}
-                </h1>
-                <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                  {isEdit ? '修改产品信息' : '创建新的产品记录'}
-                </p>
-              </div>
+    <div className="flex h-full flex-col">
+      {/* 精简的页面标题 */}
+      <div className="border-b bg-background px-6 py-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <Package className="h-5 w-5 text-primary" />
             </div>
-            <Button
-              type="button"
-              variant="outline"
-              size="lg"
-              onClick={handleCancel}
-              className="h-11 gap-2"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              返回
-            </Button>
+            <div>
+              <h1 className="text-xl font-semibold">
+                {isEdit ? '编辑产品' : '新建产品'}
+              </h1>
+              <p className="text-sm text-muted-foreground">
+                {isEdit ? '修改产品信息' : '填写必填信息即可快速创建'}
+              </p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
-
-      {/* 错误提示 */}
-      {submitError && (
-        <Alert variant="destructive" className="shadow-[var(--shadow-light)]">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{submitError}</AlertDescription>
-        </Alert>
-      )}
-
-      <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          {/* 基础信息 */}
-          <Card
-            className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-            style={{ boxShadow: 'var(--shadow-medium)' }}
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleCancel}
+            className="gap-2"
           >
-            <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
-              <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
-                <Package className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
-                基础信息
-              </CardTitle>
-              <CardDescription>
-                产品的基本信息，包括编码、名称、规格等
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <ProductBasicInfoForm
-                control={form.control}
-                isLoading={isLoading}
-                isCreateMode={mode === 'create'}
-              />
-            </CardContent>
-          </Card>
+            <ArrowLeft className="h-4 w-4" />
+            返回
+          </Button>
+        </div>
+      </div>
 
-          {/* 详细参数 */}
-          <Card
-            className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-            style={{ boxShadow: 'var(--shadow-medium)' }}
-          >
-            <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
-              <CardTitle className="text-[hsl(var(--color-text-primary))]">
-                详细参数
-              </CardTitle>
-              <CardDescription>产品的详细技术参数和规格信息</CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <ProductDetailsForm
-                control={form.control}
-                isLoading={isLoading}
-              />
-            </CardContent>
-          </Card>
+      {/* 表单内容区 */}
+      <div className="flex-1 overflow-auto p-6">
+        <div className="space-y-6">
+          {/* 错误提示 */}
+          {submitError && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>{submitError}</AlertDescription>
+            </Alert>
+          )}
 
-          {/* 产品图片 */}
-          <Card
-            className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
-            style={{ boxShadow: 'var(--shadow-medium)' }}
-          >
-            <CardHeader className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
-              <CardTitle className="text-[hsl(var(--color-text-primary))]">
-                产品图片
-              </CardTitle>
-              <CardDescription>
-                上传产品的缩略图、主图和效果图，支持多张图片上传
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="p-6">
-              <ProductImageUpload
-                thumbnailUrl={form.watch('thumbnailUrl') || ''}
-                images={form.watch('images') || []}
-                onThumbnailChange={url => form.setValue('thumbnailUrl', url)}
-                onImagesChange={images => form.setValue('images', images)}
-                disabled={isLoading}
-                maxFiles={8}
-                maxSize={5}
-              />
-            </CardContent>
-          </Card>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+              {/* 核心信息区 - 合并基础信息和详细参数 */}
+              <Card>
+                <CardHeader className="pb-4">
+                  <CardTitle className="flex items-center text-lg">
+                    <Package className="mr-2 h-4 w-4" />
+                    产品信息
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {/* 基础信息 */}
+                  <div>
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+                      基础信息
+                    </h3>
+                    <ProductBasicInfoForm
+                      control={form.control}
+                      isLoading={isLoading}
+                      isCreateMode={mode === 'create'}
+                    />
+                  </div>
 
-          {/* 表单操作 */}
-          <ProductFormActions
-            mode={mode}
-            isLoading={isLoading}
-            onCancel={handleCancel}
-          />
-        </form>
-      </Form>
+                  <Separator />
+
+                  {/* 详细参数 */}
+                  <div>
+                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+                      补充信息
+                    </h3>
+                    <ProductDetailsForm
+                      control={form.control}
+                      isLoading={isLoading}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* 产品图片 - 可选区域 */}
+              <Card>
+                <CardHeader className="pb-4">
+                  <div className="flex items-center justify-between">
+                    <CardTitle className="text-lg">产品图片</CardTitle>
+                    <span className="text-sm text-muted-foreground">选填</span>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ProductImageUpload
+                    thumbnailUrl={form.watch('thumbnailUrl') || ''}
+                    images={form.watch('images') || []}
+                    onThumbnailChange={url => form.setValue('thumbnailUrl', url)}
+                    onImagesChange={images => form.setValue('images', images)}
+                    disabled={isLoading}
+                    maxFiles={8}
+                    maxSize={5}
+                  />
+                </CardContent>
+              </Card>
+
+              {/* 悬浮操作栏 */}
+              <div
+                className={cn(
+                  'sticky bottom-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60',
+                  'px-6 py-4 -mx-6'
+                )}
+              >
+                <div className="flex items-center justify-end gap-3">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={isLoading}
+                  >
+                    取消
+                  </Button>
+                  <Button type="submit" disabled={isLoading}>
+                    {isLoading
+                      ? '保存中...'
+                      : isEdit
+                        ? '保存修改'
+                        : '创建产品'}
+                  </Button>
+                </div>
+              </div>
+            </form>
+          </Form>
+        </div>
       </div>
     </div>
   );

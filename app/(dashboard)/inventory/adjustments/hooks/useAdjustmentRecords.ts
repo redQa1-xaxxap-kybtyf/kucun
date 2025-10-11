@@ -51,19 +51,19 @@ function normalizeQueryParams(
 function sanitizePartialParams(
   params: Partial<AdjustmentQueryParams>
 ): Partial<AdjustmentQueryParams> {
-  const sanitized: Partial<AdjustmentQueryParams> = {};
+  const sanitized: Record<string, unknown> = {};
 
   Object.entries(params).forEach(([key, value]) => {
     if (typeof value === 'string') {
       const trimmed = value.trim();
-      sanitized[key as keyof AdjustmentQueryParams] =
-        trimmed === '' ? undefined : trimmed;
-    } else {
-      sanitized[key as keyof AdjustmentQueryParams] = value;
+      sanitized[key] = trimmed === '' ? undefined : trimmed;
+      return;
     }
+
+    sanitized[key] = value;
   });
 
-  return sanitized;
+  return sanitized as Partial<AdjustmentQueryParams>;
 }
 
 export function useAdjustmentRecords(

@@ -36,15 +36,12 @@ export function ProductDetailsForm({
             <FormLabel>产品描述</FormLabel>
             <FormControl>
               <Textarea
-                placeholder="请输入产品描述（可选）"
+                placeholder="输入产品描述"
                 className="min-h-[100px]"
                 disabled={isLoading}
                 {...field}
               />
             </FormControl>
-            <FormDescription>
-              详细的产品描述信息，包括特性、用途等
-            </FormDescription>
             <FormMessage />
           </FormItem>
         )}

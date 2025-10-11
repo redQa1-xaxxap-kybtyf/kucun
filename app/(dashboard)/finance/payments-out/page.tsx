@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
+import type { PaymentOutMethod, PaymentOutRecordDetail, PaymentOutStatus } from '@/lib/types/payable';
+import { PAYMENT_OUT_SORT_OPTIONS } from '@/lib/types/payable';
+
+type PaymentOutSortField = 'createdAt' | 'paymentAmount' | 'paymentDate';
 
 import { PaymentsOutPageClient } from './page-client';
 
@@ -27,7 +31,16 @@ async function getPaymentsOutData(searchParams: {
   const search = searchParams.search || '';
   const status = searchParams.status;
   const paymentMethod = searchParams.paymentMethod;
-  const sortBy = searchParams.sortBy || 'createdAt';
+  const sortFieldValues: PaymentOutSortField[] = [
+    'createdAt',
+    'paymentAmount',
+    'paymentDate',
+  ];
+  const sortBy: PaymentOutSortField =
+    searchParams.sortBy &&
+    sortFieldValues.includes(searchParams.sortBy as PaymentOutSortField)
+      ? (searchParams.sortBy as PaymentOutSortField)
+      : 'createdAt';
   const sortOrder = searchParams.sortOrder || 'desc';
 
   // 构建查询条件
@@ -110,8 +123,31 @@ async function getPaymentsOutData(searchParams: {
     recordCount: allPayments.length,
   };
 
+  const normalizedPayments: PaymentOutRecordDetail[] = payments.map(payment => ({
+    id: payment.id,
+    paymentNumber: payment.paymentNumber,
+    payableRecordId: payment.payableRecordId ?? undefined,
+    supplierId: payment.supplierId,
+    userId: payment.userId,
+    paymentMethod: (payment.paymentMethod ?? 'other') as PaymentOutMethod,
+    paymentAmount: Number(payment.paymentAmount),
+    paymentDate: payment.paymentDate,
+    status: (payment.status ?? 'pending') as PaymentOutStatus,
+    remarks: payment.remarks ?? undefined,
+    voucherNumber: payment.voucherNumber ?? undefined,
+    bankInfo: payment.bankInfo ?? undefined,
+    createdAt: payment.createdAt,
+    updatedAt: payment.updatedAt,
+    payableRecord: payment.payableRecord ?? undefined,
+    supplier: {
+      ...payment.supplier,
+      phone: payment.supplier.phone ?? undefined,
+    },
+    user: payment.user,
+  }));
+
   return {
-    payments,
+    payments: normalizedPayments,
     statistics,
     pagination: {
       page,
@@ -144,10 +180,28 @@ export default async function PaymentsOutPage({
   const queryParams = {
     page: parseInt(params.page || '1', 10),
     limit: parseInt(params.limit || '20', 10),
-    search: params.search,
-    status: params.status,
-    paymentMethod: params.paymentMethod,
-    sortBy: params.sortBy || 'createdAt',
+    search: params.search || '',
+    status: ((): PaymentOutStatus | undefined => {
+      const value = params.status;
+      const statuses: PaymentOutStatus[] = ['pending', 'confirmed', 'cancelled'];
+      return value && statuses.includes(value as PaymentOutStatus)
+        ? (value as PaymentOutStatus)
+        : undefined;
+    })(),
+    paymentMethod: ((): PaymentOutMethod | undefined => {
+      const value = params.paymentMethod;
+      const methods: PaymentOutMethod[] = ['cash', 'bank_transfer', 'check', 'other'];
+      return value && methods.includes(value as PaymentOutMethod)
+        ? (value as PaymentOutMethod)
+        : undefined;
+    })(),
+    sortBy: ((): PaymentOutSortField => {
+      const value = params.sortBy;
+      const sortValues = PAYMENT_OUT_SORT_OPTIONS.map(option => option.value);
+      return value && sortValues.includes(value)
+        ? (value as PaymentOutSortField)
+        : 'createdAt';
+    })(),
     sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
   };
 
@@ -158,3 +212,5 @@ export default async function PaymentsOutPage({
     />
   );
 }
+
+

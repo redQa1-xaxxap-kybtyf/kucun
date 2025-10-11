@@ -182,66 +182,154 @@ export const POST = withAuth(
   async (request: NextRequest, { user }) => {
     const userId = user.id;
 
-    // 解析请求体
-    const body = await request.json();
-    const validationResult = createReturnOrderSchema.safeParse(body);
+    try {
+      // 解析请求体
+      const body = await request.json();
+      const validationResult = createReturnOrderSchema.safeParse(body);
 
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '数据验证失败',
-          details: validationResult.error.issues,
-        },
-        { status: 400 }
-      );
-    }
+      if (!validationResult.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: '数据验证失败',
+            details: validationResult.error.issues,
+          },
+          { status: 400 }
+        );
+      }
 
-    const data = validationResult.data;
+      const data = validationResult.data;
 
-    // 验证销售订单是否存在
-    const salesOrder = await prisma.salesOrder.findUnique({
-      where: { id: data.salesOrderId },
-      include: {
-        items: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
+    // 根据退货模式进行不同的验证逻辑
+    let salesOrder: any = null;
+    const salesOrderItemsMap = new Map<string, any>();
+
+    if (data.returnMode === 'single_order') {
+      // 单订单模式：验证指定的销售订单
+      if (!data.salesOrderId || data.salesOrderId.trim() === '') {
+        return NextResponse.json(
+          { success: false, error: '单订单模式下销售订单ID不能为空' },
+          { status: 400 }
+        );
+      }
+
+      salesOrder = await prisma.salesOrder.findUnique({
+        where: { id: data.salesOrderId.trim() },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  name: true,
+                },
               },
             },
           },
+          customer: true,
         },
-        customer: true,
-      },
-    });
+      });
 
-    if (!salesOrder) {
-      return NextResponse.json(
-        { success: false, error: '销售订单不存在' },
-        { status: 404 }
-      );
-    }
+      if (!salesOrder) {
+        return NextResponse.json(
+          { success: false, error: '销售订单不存在' },
+          { status: 404 }
+        );
+      }
 
-    // 验证客户ID是否匹配
-    if (salesOrder.customerId !== data.customerId) {
-      return NextResponse.json(
-        { success: false, error: '客户信息不匹配' },
-        { status: 400 }
-      );
-    }
+      // 验证客户ID是否匹配
+      if (salesOrder.customerId !== data.customerId) {
+        return NextResponse.json(
+          { success: false, error: '客户信息不匹配' },
+          { status: 400 }
+        );
+      }
 
-    // 检查订单状态是否允许退货
-    const allowedStatuses = ['confirmed', 'shipped', 'completed'];
-    if (!allowedStatuses.includes(salesOrder.status)) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `订单状态为 ${salesOrder.status}，不允许退货`,
+      // 检查订单状态是否允许退货
+      const allowedStatuses = ['confirmed', 'shipped', 'completed'];
+      if (!allowedStatuses.includes(salesOrder.status)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `订单状态为 ${salesOrder.status}，不允许退货`,
+          },
+          { status: 400 }
+        );
+      }
+
+      // 构建 salesOrderItemsMap
+      salesOrder.items.forEach((item: any) => {
+        salesOrderItemsMap.set(item.id, item);
+      });
+    } else {
+      // 多订单模式：需要查询每个退货明细对应的销售订单明细
+      const salesOrderItemIds = data.items.map(item => item.salesOrderItemId);
+
+      const salesOrderItems = await prisma.salesOrderItem.findMany({
+        where: {
+          id: { in: salesOrderItemIds },
         },
-        { status: 400 }
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          salesOrder: {
+            include: {
+              customer: true,
+            },
+          },
+        },
+      });
+
+      // 验证所有商品都找到了
+      if (salesOrderItems.length !== data.items.length) {
+        return NextResponse.json(
+          { success: false, error: '部分销售订单明细不存在' },
+          { status: 404 }
+        );
+      }
+
+      // 验证所有商品都属于同一个客户
+      const customerIds = new Set(
+        salesOrderItems.map(item => item.salesOrder.customerId)
       );
+      if (customerIds.size > 1) {
+        return NextResponse.json(
+          { success: false, error: '退货商品必须属于同一个客户' },
+          { status: 400 }
+        );
+      }
+
+      // 验证客户ID是否匹配
+      const firstCustomerId = salesOrderItems[0].salesOrder.customerId;
+      if (firstCustomerId !== data.customerId) {
+        return NextResponse.json(
+          { success: false, error: '客户信息不匹配' },
+          { status: 400 }
+        );
+      }
+
+      // 检查所有订单状态是否允许退货
+      const allowedStatuses = ['confirmed', 'shipped', 'completed'];
+      for (const item of salesOrderItems) {
+        if (!allowedStatuses.includes(item.salesOrder.status)) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: `订单 ${item.salesOrder.orderNumber} 状态为 ${item.salesOrder.status}，不允许退货`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+
+      // 构建 salesOrderItemsMap
+      salesOrderItems.forEach((item: any) => {
+        salesOrderItemsMap.set(item.id, item);
+      });
     }
 
     // 生成退货单号 - 使用安全的订单号生成服务
@@ -295,8 +383,8 @@ export const POST = withAuth(
 
         // 验证每个退货明细
         for (const returnItem of data.items) {
-          const salesOrderItem = salesOrder.items.find(
-            item => item.id === returnItem.salesOrderItemId
+          const salesOrderItem = salesOrderItemsMap.get(
+            returnItem.salesOrderItemId
           );
 
           if (!salesOrderItem) {
@@ -312,10 +400,7 @@ export const POST = withAuth(
 
           // 验证退货数量
           if (returnItem.returnQuantity > remainingQuantity) {
-            const productName =
-              salesOrder.items.find(
-                item => item.id === returnItem.salesOrderItemId
-              )?.product?.name || '未知产品';
+            const productName = salesOrderItem.product?.name || '未知产品';
             throw new Error(
               `产品 ${productName} 退货数量超过可退数量。` +
                 `已购买: ${salesOrderItem.quantity}, 已退货: ${alreadyReturnedQuantity}, ` +
@@ -331,13 +416,14 @@ export const POST = withAuth(
         const newReturnOrder = await tx.returnOrder.create({
           data: {
             returnNumber,
-            salesOrderId: data.salesOrderId,
+            returnMode: data.returnMode || 'single_order',
+            salesOrderId: data.salesOrderId || null,
             customerId: data.customerId,
             userId,
             type: data.type,
             processType: data.processType,
             status: 'draft',
-            reason: data.reason,
+            reason: data.reason || null,
             remarks: data.remarks,
             totalAmount,
             refundAmount,
@@ -413,6 +499,15 @@ export const POST = withAuth(
       data: fullReturnOrder,
       message: '退货订单创建成功',
     });
+    } catch (error: any) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: error.message || '创建退货订单时发生错误',
+        },
+        { status: 500 }
+      );
+    }
   },
   { permissions: ['returns:create'] }
 );

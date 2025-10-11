@@ -44,6 +44,9 @@ interface PaymentRecord {
     id: string;
     orderNumber: string;
     totalAmount: number;
+    paidAmount: number;
+    pendingAmount: number;
+    remainingAmount: number;
   };
   user: {
     id: string;
@@ -238,9 +241,9 @@ export function PaymentsClient({
           <div className="mb-6 flex flex-col gap-4 sm:flex-row">
             <div className="flex-1">
               <UnifiedSearchBar
-                searchValue={initialParams?.search || ''}
+                searchValue={initialParams?.search ?? ''}
                 onSearchChange={handleSearch}
-                placeholder="搜索收款单号、客户名称或订单号..."
+                searchPlaceholder="搜索收款单号、客户名称或订单号..."
               />
             </div>
             <Select
@@ -284,46 +287,151 @@ export function PaymentsClient({
             </div>
           ) : (
             <div className="space-y-4">
-              {payments.map(payment => (
-                <Card key={payment.id} className="overflow-hidden">
-                  <CardContent className="p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="mb-2 flex items-center gap-2">
-                          <h3 className="font-semibold">
-                            {payment.paymentNumber}
-                          </h3>
-                          <StatusBadge status={payment.status} />
-                        </div>
-                        <div className="space-y-1 text-sm text-[hsl(var(--color-text-secondary))]">
-                          <p>客户：{payment.customer.name}</p>
-                          <p>订单：{payment.salesOrder.orderNumber}</p>
-                          <p>
-                            收款日期：
-                            {format(
-                              new Date(payment.paymentDate),
-                              'yyyy-MM-dd'
+              {payments.map(payment => {
+                const orderTotal = payment.salesOrder.totalAmount;
+                const orderPaid = payment.salesOrder.paidAmount;
+                const orderPending = payment.salesOrder.pendingAmount;
+                const orderRemaining = payment.salesOrder.remainingAmount;
+                const progressPercent = orderTotal > 0 ? (orderPaid / orderTotal) * 100 : 0;
+
+                return (
+                  <Card key={payment.id} className="overflow-hidden">
+                    <CardContent className="p-6">
+                      <div className="flex items-start justify-between gap-6">
+                        {/* 左侧信息区 */}
+                        <div className="flex-1 space-y-3">
+                          {/* 收款单号和状态 */}
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-semibold text-base">
+                              {payment.paymentNumber}
+                            </h3>
+                            <StatusBadge status={payment.status} />
+                            {payment.status === 'confirmed' && (
+                              <>
+                                {orderRemaining <= 0 ? (
+                                  <Badge variant="outline" className="gap-1 border-green-300 bg-green-50 text-green-700">
+                                    <CheckCircle className="h-3 w-3" />
+                                    订单已收款
+                                  </Badge>
+                                ) : (
+                                  <Badge variant="outline" className="gap-1 border-yellow-300 bg-yellow-50 text-yellow-700">
+                                    <Clock className="h-3 w-3" />
+                                    订单部分收款
+                                  </Badge>
+                                )}
+                              </>
                             )}
-                          </p>
-                          {payment.receiptNumber && (
-                            <p>收据号：{payment.receiptNumber}</p>
-                          )}
+                          </div>
+
+                          {/* 客户和订单信息 */}
+                          <div className="space-y-1.5 text-sm text-[hsl(var(--color-text-secondary))]">
+                            <p className="flex items-center gap-1">
+                              <span className="text-[hsl(var(--color-text-tertiary))]">客户:</span>
+                              <span className="font-medium">{payment.customer.name}</span>
+                            </p>
+                            <p className="flex items-center gap-1">
+                              <span className="text-[hsl(var(--color-text-tertiary))]">订单:</span>
+                              <span className="font-medium">{payment.salesOrder.orderNumber}</span>
+                            </p>
+                            <p className="flex items-center gap-1">
+                              <span className="text-[hsl(var(--color-text-tertiary))]">收款时间:</span>
+                              <span className="font-medium">
+                                {format(
+                                  new Date(payment.paymentDate),
+                                  'yyyy-MM-dd HH:mm'
+                                )}
+                              </span>
+                            </p>
+                            <p className="flex items-center gap-1">
+                              <span className="text-[hsl(var(--color-text-tertiary))]">创建时间:</span>
+                              <span className="text-xs">
+                                {format(
+                                  new Date(payment.createdAt),
+                                  'yyyy-MM-dd HH:mm'
+                                )}
+                              </span>
+                            </p>
+                            {payment.receiptNumber && (
+                              <p className="flex items-center gap-1">
+                                <span className="text-[hsl(var(--color-text-tertiary))]">收据号:</span>
+                                <span className="font-mono text-xs">{payment.receiptNumber}</span>
+                              </p>
+                            )}
+                          </div>
+
+                          {/* 订单收款情况 */}
+                          <div className="rounded-md border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50/30 p-3 space-y-2">
+                            <div className="text-xs font-semibold text-gray-700 mb-2">订单收款情况</div>
+
+                            <div className="grid grid-cols-4 gap-2 text-xs">
+                              <div className="rounded bg-white/80 p-2 text-center">
+                                <div className="text-[10px] text-gray-600 mb-0.5">订单总额</div>
+                                <div className="font-bold text-blue-600">
+                                  {formatCurrency(orderTotal)}
+                                </div>
+                              </div>
+                              <div className="rounded bg-white/80 p-2 text-center">
+                                <div className="text-[10px] text-gray-600 mb-0.5">已确认</div>
+                                <div className="font-bold text-green-600">
+                                  {formatCurrency(orderPaid)}
+                                </div>
+                              </div>
+                              <div className="rounded bg-white/80 p-2 text-center">
+                                <div className="text-[10px] text-gray-600 mb-0.5">待确认</div>
+                                <div className="font-bold text-yellow-600">
+                                  {formatCurrency(orderPending)}
+                                </div>
+                              </div>
+                              <div className="rounded bg-white/80 p-2 text-center">
+                                <div className="text-[10px] text-gray-600 mb-0.5">待收款</div>
+                                <div className="font-bold text-orange-600">
+                                  {formatCurrency(orderRemaining)}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* 进度条 */}
+                            <div className="mt-2">
+                              <div className="mb-1 flex items-center justify-between">
+                                <span className="text-[10px] text-gray-600">收款进度</span>
+                                <span className="text-[10px] font-bold text-green-600">
+                                  {progressPercent.toFixed(1)}%
+                                </span>
+                              </div>
+                              <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
+                                <div
+                                  className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
+                                  style={{ width: `${Math.min(progressPercent, 100)}%` }}
+                                ></div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* 右侧操作区 */}
+                        <div className="flex flex-col items-end justify-between">
+                          <div className="mb-3 text-right">
+                            <div className="text-xs text-[hsl(var(--color-text-tertiary))] mb-1">
+                              本次收款
+                            </div>
+                            <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
+                              {formatCurrency(payment.paymentAmount)}
+                            </div>
+                            <div className="mt-1 text-[10px] text-[hsl(var(--color-text-tertiary))]">
+                              {payment.status === 'confirmed' ? '已确认' : '待确认'}
+                            </div>
+                          </div>
+                          <Button size="sm" asChild>
+                            <Link href={`/finance/payments/${payment.id}`}>
+                              查看详情
+                            </Link>
+                          </Button>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <div className="mb-2 text-2xl font-bold text-[hsl(var(--color-success))]">
-                          {formatCurrency(payment.paymentAmount)}
-                        </div>
-                        <Button size="sm" asChild>
-                          <Link href={`/finance/payments/${payment.id}`}>
-                            查看详情
-                          </Link>
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           )}
 

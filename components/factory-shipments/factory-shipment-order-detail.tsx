@@ -378,23 +378,20 @@ export function FactoryShipmentOrderDetail({
         <CardContent className="bg-[hsl(var(--color-bg-card))]">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader
-                className="bg-[hsl(var(--color-bg-table-header))]"
-                style={{ boxShadow: 'var(--shadow-light)' }}
-              >
-                <TableRow className="bg-[hsl(var(--color-bg-table-header))]">
-                  <TableHead className="font-semibold text-[hsl(var(--color-text-secondary))]">序号</TableHead>
-                  <TableHead className="font-semibold text-[hsl(var(--color-text-secondary))]">商品名称</TableHead>
-                  <TableHead className="font-semibold text-[hsl(var(--color-text-secondary))]">供应商</TableHead>
-                  <TableHead className="font-semibold text-[hsl(var(--color-text-secondary))]">规格</TableHead>
-                  <TableHead className="text-right font-semibold text-[hsl(var(--color-text-secondary))]">
+              <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
+                <TableRow>
+                  <TableHead>序号</TableHead>
+                  <TableHead>商品名称</TableHead>
+                  <TableHead>供应商</TableHead>
+                  <TableHead>规格</TableHead>
+                  <TableHead className="text-right">
                     数量
                   </TableHead>
-                  <TableHead className="font-semibold text-[hsl(var(--color-text-secondary))]">单位</TableHead>
-                  <TableHead className="text-right font-semibold text-[hsl(var(--color-text-secondary))]">
+                  <TableHead>单位</TableHead>
+                  <TableHead className="text-right">
                     单价
                   </TableHead>
-                  <TableHead className="text-right font-semibold text-[hsl(var(--color-text-secondary))]">
+                  <TableHead className="text-right">
                     小计
                   </TableHead>
                 </TableRow>

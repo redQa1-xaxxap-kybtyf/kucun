@@ -5,6 +5,7 @@
  */
 
 import type { LucideIcon } from 'lucide-react';
+import type { UserRole } from './user';
 
 /**
  * 导航菜单项类型
@@ -25,7 +26,7 @@ export interface NavigationItem {
   /** 是否禁用 */
   disabled?: boolean;
   /** 权限要求 */
-  requiredRoles?: string[];
+  requiredRoles?: UserRole[];
   /**
    * @deprecated 已废弃 - 徽章功能已移除，保留此字段仅为向后兼容
    */

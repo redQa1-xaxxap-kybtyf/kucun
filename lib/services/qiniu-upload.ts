@@ -1,6 +1,7 @@
 import qiniu from 'qiniu';
 
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { decrypt } from '@/lib/utils/encryption';
 
 /**
@@ -15,6 +16,11 @@ export interface QiniuConfig {
   pathFormat?: string;
 }
 
+// 配置缓存
+let cachedConfig: QiniuConfig | null = null;
+let cacheTimestamp = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5分钟缓存
+
 /**
  * 上传结果接口
  */
@@ -26,10 +32,19 @@ export interface UploadResult {
 }
 
 /**
- * 获取七牛云配置
+ * 获取七牛云配置（带缓存）
  */
 async function getQiniuConfig(): Promise<QiniuConfig | null> {
   try {
+    const now = Date.now();
+
+    // 检查缓存是否有效
+    if (cachedConfig && (now - cacheTimestamp) < CACHE_TTL) {
+      logger.debug('qiniu', 'Using cached Qiniu config');
+      return cachedConfig;
+    }
+
+    logger.info('qiniu', 'Fetching Qiniu config from database');
     const settings = await prisma.systemSetting.findMany({
       where: {
         key: {
@@ -51,24 +66,14 @@ async function getQiniuConfig(): Promise<QiniuConfig | null> {
       switch (setting.key) {
         case 'qiniu_access_key':
           if (setting.value) {
-            const decrypted = decrypt(setting.value);
-            config.accessKey = decrypted;
-            console.log('AccessKey 解密:', {
-              encrypted: `${setting.value.substring(0, 20)}...`,
-              decrypted: `${decrypted.substring(0, 10)}...`,
-              length: decrypted.length,
-            });
+            config.accessKey = decrypt(setting.value);
+            logger.debug('qiniu', 'AccessKey decrypted', { length: config.accessKey.length });
           }
           break;
         case 'qiniu_secret_key':
           if (setting.value) {
-            const decrypted = decrypt(setting.value);
-            config.secretKey = decrypted;
-            console.log('SecretKey 解密:', {
-              encrypted: `${setting.value.substring(0, 20)}...`,
-              decrypted: `${decrypted.substring(0, 10)}...`,
-              length: decrypted.length,
-            });
+            config.secretKey = decrypt(setting.value);
+            logger.debug('qiniu', 'SecretKey decrypted', { length: config.secretKey.length });
           }
           break;
         case 'qiniu_bucket':
@@ -93,30 +98,39 @@ async function getQiniuConfig(): Promise<QiniuConfig | null> {
       !config.bucket ||
       !config.domain
     ) {
-      console.error('七牛云配置不完整:', {
+      logger.error('qiniu', 'Qiniu config incomplete', undefined, {
         hasAccessKey: !!config.accessKey,
         hasSecretKey: !!config.secretKey,
         hasBucket: !!config.bucket,
         hasDomain: !!config.domain,
-        accessKeyLength: config.accessKey?.length || 0,
-        secretKeyLength: config.secretKey?.length || 0,
       });
       return null;
     }
 
-    console.log('七牛云配置验证通过:', {
-      accessKeyLength: config.accessKey.length,
-      secretKeyLength: config.secretKey.length,
+    logger.info('qiniu', 'Qiniu config loaded successfully', {
       bucket: config.bucket,
       domain: config.domain,
-      region: config.region,
+      region: config.region || 'z0',
     });
+
+    // 更新缓存
+    cachedConfig = config as QiniuConfig;
+    cacheTimestamp = now;
 
     return config as QiniuConfig;
   } catch (error) {
-    console.error('获取七牛云配置失败:', error);
+    logger.error('qiniu', 'Failed to get Qiniu config', error);
     return null;
   }
+}
+
+/**
+ * 清除配置缓存（用于配置更新后）
+ */
+export function clearQiniuConfigCache(): void {
+  cachedConfig = null;
+  cacheTimestamp = 0;
+  logger.info('qiniu', 'Qiniu config cache cleared');
 }
 
 /**
@@ -198,11 +212,12 @@ export async function uploadToQiniu(
     // 使用配置的目录格式生成文件key
     const key = generateFilePath(fileName, type, config.pathFormat);
 
-    console.log('七牛云上传配置:', {
+    logger.info('qiniu', 'Uploading file to Qiniu', {
+      fileName,
+      type,
       bucket: config.bucket,
       region: config.region,
-      pathFormat: config.pathFormat,
-      generatedKey: key,
+      key,
     });
 
     // 生成上传凭证
@@ -225,7 +240,7 @@ export async function uploadToQiniu(
         putExtra,
         (respErr, respBody, respInfo) => {
           if (respErr) {
-            console.error('七牛云上传失败:', respErr);
+            logger.error('qiniu', 'Upload failed', respErr);
             resolve({
               success: false,
               error: `上传失败: ${respErr.message}`,
@@ -235,14 +250,17 @@ export async function uploadToQiniu(
 
           if (respInfo.statusCode === 200) {
             const url = `${config.domain}/${key}`;
-            console.log('七牛云上传成功:', { key, url });
+            logger.info('qiniu', 'Upload successful', { key, url });
             resolve({
               success: true,
               url,
               key,
             });
           } else {
-            console.error('七牛云上传失败:', respInfo.statusCode, respBody);
+            logger.error('qiniu', 'Upload failed', undefined, {
+              statusCode: respInfo.statusCode,
+              body: respBody,
+            });
             resolve({
               success: false,
               error: `上传失败: HTTP ${respInfo.statusCode}`,
@@ -252,7 +270,7 @@ export async function uploadToQiniu(
       );
     });
   } catch (error) {
-    console.error('七牛云上传异常:', error);
+    logger.error('qiniu', 'Upload exception', error);
     return {
       success: false,
       error: `上传异常: ${error instanceof Error ? error.message : '未知错误'}`,
@@ -267,9 +285,11 @@ export async function deleteFromQiniu(key: string): Promise<boolean> {
   try {
     const config = await getQiniuConfig();
     if (!config) {
-      console.error('七牛云配置未设置，无法删除文件');
+      logger.error('qiniu', 'Config not found, cannot delete file');
       return false;
     }
+
+    logger.info('qiniu', 'Deleting file from Qiniu', { key });
 
     const mac = new qiniu.auth.digest.Mac(config.accessKey, config.secretKey);
     const qiniuConfig = new qiniu.conf.Config({
@@ -281,22 +301,26 @@ export async function deleteFromQiniu(key: string): Promise<boolean> {
     return new Promise(resolve => {
       bucketManager.delete(config.bucket, key, (err, respBody, respInfo) => {
         if (err) {
-          console.error('七牛云删除文件失败:', err);
+          logger.error('qiniu', 'File deletion failed', err, { key });
           resolve(false);
           return;
         }
 
         if (respInfo.statusCode === 200) {
-          console.log('七牛云删除文件成功:', key);
+          logger.info('qiniu', 'File deleted successfully', { key });
           resolve(true);
         } else {
-          console.error('七牛云删除文件失败:', respInfo.statusCode, respBody);
+          logger.error('qiniu', 'File deletion failed', undefined, {
+            statusCode: respInfo.statusCode,
+            body: respBody,
+            key,
+          });
           resolve(false);
         }
       });
     });
   } catch (error) {
-    console.error('七牛云删除文件异常:', error);
+    logger.error('qiniu', 'File deletion exception', error, { key });
     return false;
   }
 }
@@ -317,9 +341,7 @@ export async function testQiniuConnection(): Promise<{
       };
     }
 
-    console.log('开始测试七牛云连接:', {
-      accessKeyPrefix: config.accessKey.substring(0, 10),
-      secretKeyPrefix: config.secretKey.substring(0, 10),
+    logger.info('qiniu', 'Testing Qiniu connection', {
       bucket: config.bucket,
       region: config.region,
     });
@@ -337,6 +359,7 @@ export async function testQiniuConnection(): Promise<{
         { limit: 1 },
         (err, respBody, respInfo) => {
           if (err) {
+            logger.error('qiniu', 'Connection test failed', err);
             resolve({
               success: false,
               message: `连接失败: ${err.message}`,
@@ -345,21 +368,27 @@ export async function testQiniuConnection(): Promise<{
           }
 
           if (respInfo.statusCode === 200) {
+            logger.info('qiniu', 'Connection test successful');
             resolve({
               success: true,
               message: '七牛云连接测试成功',
             });
           } else if (respInfo.statusCode === 401) {
+            logger.error('qiniu', 'Authentication failed', undefined, { statusCode: 401 });
             resolve({
               success: false,
               message: '连接失败: Access Key 或 Secret Key 不正确',
             });
           } else if (respInfo.statusCode === 631) {
+            logger.error('qiniu', 'Bucket not found', undefined, { statusCode: 631 });
             resolve({
               success: false,
               message: '连接失败: 存储空间不存在',
             });
           } else {
+            logger.error('qiniu', 'Connection test failed', undefined, {
+              statusCode: respInfo.statusCode,
+            });
             resolve({
               success: false,
               message: `连接失败: HTTP ${respInfo.statusCode}`,
@@ -369,6 +398,7 @@ export async function testQiniuConnection(): Promise<{
       );
     });
   } catch (error) {
+    logger.error('qiniu', 'Connection test exception', error);
     return {
       success: false,
       message: `连接异常: ${error instanceof Error ? error.message : '未知错误'}`,

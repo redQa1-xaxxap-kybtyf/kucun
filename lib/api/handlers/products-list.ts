@@ -243,8 +243,14 @@ export function formatProductList(params: {
             inboundRecords: counts.inboundRecords,
           }
         : undefined,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
+      createdAt:
+        product.createdAt instanceof Date
+          ? product.createdAt.toISOString()
+          : product.createdAt,
+      updatedAt:
+        product.updatedAt instanceof Date
+          ? product.updatedAt.toISOString()
+          : product.updatedAt,
     };
   });
 }

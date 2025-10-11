@@ -1,6 +1,8 @@
 import { getCategoriesServer } from '@/lib/api/categories-server';
 import { getProductsForServer } from '@/lib/api/products-server';
 import { paginationConfig, productConfig } from '@/lib/env';
+import type { PaginatedResponse } from '@/lib/types/api';
+import type { Product } from '@/lib/types/product';
 import { ProductsPageClient } from './page-client';
 
 /**
@@ -55,9 +57,34 @@ export default async function ProductsPage({
     getCategoriesServer({ status: 'active' }), // 只获取激活的分类
   ]);
 
+  const normalizedData: PaginatedResponse<Product> = initialData
+    ? {
+        data: initialData.data.map<Product>(product => ({
+          ...product,
+          createdAt:
+            product.createdAt instanceof Date
+              ? product.createdAt.toISOString()
+              : product.createdAt,
+          updatedAt:
+            product.updatedAt instanceof Date
+              ? product.updatedAt.toISOString()
+              : product.updatedAt,
+        })),
+        pagination: initialData.pagination,
+      }
+    : {
+        data: [],
+        pagination: {
+          page,
+          limit,
+          total: 0,
+          totalPages: 0,
+        },
+      };
+
   return (
     <ProductsPageClient
-      initialData={initialData}
+      initialData={normalizedData}
       initialParams={{
         page,
         limit,

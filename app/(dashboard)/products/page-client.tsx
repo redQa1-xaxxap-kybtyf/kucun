@@ -1,7 +1,11 @@
 'use client';
 
+import { Package, Plus } from 'lucide-react';
+import Link from 'next/link';
 import * as React from 'react';
 
+import { PageHeader } from '@/components/common/page-header';
+import { Button } from '@/components/ui/button';
 import { ERPProductList } from '@/components/products/erp-product-list';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Category } from '@/lib/types/category';
@@ -26,7 +30,30 @@ export function ProductsPageClient({
 }: ProductsPageClientProps) {
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
-      <ERPProductList initialData={initialData} initialParams={initialParams} />
+      <div className="space-y-6">
+        {/* 页面标题 */}
+        <PageHeader
+          title="产品管理"
+          description="管理产品信息、规格和库存状态"
+          icon={<Package className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-primary))"
+          actions={
+            <Button
+              size="lg"
+              asChild
+              className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+            >
+              <Link href="/products/create">
+                <Plus className="mr-2 h-4 w-4" />
+                新建产品
+              </Link>
+            </Button>
+          }
+        />
+
+        {/* 产品列表 */}
+        <ERPProductList _initialData={initialData} initialParams={initialParams} />
+      </div>
     </div>
   );
 }

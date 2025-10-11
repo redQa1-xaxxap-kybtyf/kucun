@@ -57,6 +57,7 @@ import {
   useSalesOrderReturnableItems,
   useUpdateReturnOrder,
 } from '@/lib/api/return-orders';
+import type { ReturnableItem } from '@/lib/services/sales-order-service';
 import {
   type ReturnOrder,
   RETURN_ORDER_TYPE_LABELS,
@@ -404,24 +405,15 @@ export function ReturnOrderForm({
                 <div className="space-y-4">
                   {/* 可选择的销售订单明细 */}
                   {returnableItemsData?.data &&
-                    returnableItemsData.data.length > 0 && (
+                    returnableItemsData.data.returnableItems &&
+                    returnableItemsData.data.returnableItems.length > 0 && (
                       <div>
                         <Label className="text-sm font-medium">
                           可退货明细
                         </Label>
                         <div className="mt-2 space-y-2">
-                          {returnableItemsData.data.map(
-                            (item: {
-                              id: string;
-                              productId: string;
-                              quantity: number;
-                              unitPrice: number;
-                              product: {
-                                name: string;
-                                code: string;
-                                unit: string;
-                              };
-                            }) => (
+                          {returnableItemsData.data.returnableItems.map(
+                            (item: ReturnableItem) => (
                               <div
                                 key={item.id}
                                 className="flex items-center justify-between rounded-lg border p-3"

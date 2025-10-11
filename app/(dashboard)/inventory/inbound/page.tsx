@@ -6,6 +6,7 @@ import {
 
 import { getInboundRecordsServer } from '@/lib/api/inbound-server';
 import { queryKeys } from '@/lib/queryKeys';
+import type { InboundQueryParams } from '@/lib/types/inbound';
 
 import { InboundRecordsPageClient } from './page-client';
 
@@ -73,14 +74,24 @@ export default async function InboundRecordsPage({
     return value && value.trim() !== '' ? value : undefined;
   };
 
-  const sortByValue = urlSearchParams.get('sortBy') || 'createdAt';
-  const sortOrderValue = urlSearchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc';
+  const rawSortBy = urlSearchParams.get('sortBy') || undefined;
+  const allowedSortFields: NonNullable<InboundQueryParams['sortBy']>[] = [
+    'createdAt',
+    'quantity',
+    'recordNumber',
+  ];
+  const sortByValue: NonNullable<InboundQueryParams['sortBy']> =
+    rawSortBy && allowedSortFields.includes(rawSortBy as typeof allowedSortFields[number])
+      ? (rawSortBy as typeof allowedSortFields[number])
+      : 'createdAt';
+  const sortOrderValue: 'asc' | 'desc' =
+    urlSearchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc';
 
   // ✅ 创建 QueryClient（启用 Streaming Queries）
   const queryClient = new QueryClient({
     defaultOptions: {
       dehydrate: {
-        shouldDehydratePendingQuery: true,
+        shouldDehydrateQuery: () => true,
       },
     },
   });
@@ -89,12 +100,12 @@ export default async function InboundRecordsPage({
   const inboundData = await getInboundRecordsServer(urlSearchParams);
 
   // 构建查询参数对象
-  const queryParams = {
+  const queryParams: InboundQueryParams = {
     page,
     limit,
     search: getOptional('search'),
     productId: getOptional('productId'),
-    reason: getOptional('reason'),
+    reason: getOptional('reason') as InboundQueryParams['reason'],
     userId: getOptional('userId'),
     startDate: getOptional('startDate'),
     endDate: getOptional('endDate'),

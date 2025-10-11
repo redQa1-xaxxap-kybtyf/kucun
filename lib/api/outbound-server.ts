@@ -4,6 +4,7 @@
  */
 
 import { prisma } from '@/lib/db';
+import type { OutboundRecord } from '@/lib/types/inventory';
 
 interface OutboundQueryParams {
   page: number;
@@ -26,6 +27,23 @@ type OutboundWhereClause = {
     lte?: Date;
   };
 };
+
+const OUTBOUND_REASON_TYPE_MAP: Record<string, OutboundRecord['type']> = {
+  sales_outbound: 'sales_outbound',
+  adjust_outbound: 'adjust_outbound',
+  transfer: 'adjust_outbound',
+  damage: 'adjust_outbound',
+  manual_outbound: 'normal_outbound',
+  normal_outbound: 'normal_outbound',
+};
+
+function mapOutboundReasonToType(reason?: string): OutboundRecord['type'] {
+  if (!reason) {
+    return 'normal_outbound';
+  }
+
+  return OUTBOUND_REASON_TYPE_MAP[reason] ?? 'normal_outbound';
+}
 
 /**
  * 构建出库记录查询条件
@@ -64,26 +82,53 @@ function buildOutboundWhereClause(params: {
   return where;
 }
 
-type OutboundRecordWithProduct = {
+type OutboundRecordWithRelations = {
   id: string;
   recordNumber: string;
   productId: string;
+  variantId: string | null;
+  inventoryId: string;
   quantity: number;
   reason: string;
   notes: string | null;
+  customerId: string | null;
+  salesOrderId: string | null;
+  operatorId: string;
+  batchNumber: string | null;
+  unitCost: number | null;
+  totalCost: number | null;
   createdAt: Date;
   updatedAt: Date;
   product: {
+    id: string;
     code: string;
     name: string;
     specification: string | null;
+    unit: string;
   };
+  variant: {
+    id: string;
+    colorCode: string;
+    colorName: string | null;
+  } | null;
+  operator: {
+    id: string;
+    name: string;
+  };
+  customer: {
+    id: string;
+    name: string;
+  } | null;
+  salesOrder: {
+    id: string;
+    orderNumber: string;
+  } | null;
 };
 
 /**
  * 格式化出库记录数据
  */
-function formatOutboundRecord(record: OutboundRecordWithProduct) {
+function formatOutboundRecord(record: OutboundRecordWithRelations) {
   return {
     id: record.id,
     recordNumber: record.recordNumber,
@@ -91,9 +136,9 @@ function formatOutboundRecord(record: OutboundRecordWithProduct) {
     productCode: record.product.code,
     productName: record.product.name,
     productSpecification: record.product.specification,
-    quantity: record.quantity,
-    type: record.reason,
-    reason: record.notes || undefined,
+    quantity: Number(record.quantity),
+    type: mapOutboundReasonToType(record.reason),
+    reason: record.reason,
     createdAt: record.createdAt.toISOString(),
     updatedAt: record.updatedAt.toISOString(),
   };
@@ -136,6 +181,32 @@ export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
             code: true,
             name: true,
             specification: true,
+            unit: true,
+          },
+        },
+        variant: {
+          select: {
+            id: true,
+            colorCode: true,
+            colorName: true,
+          },
+        },
+        operator: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        customer: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+        salesOrder: {
+          select: {
+            id: true,
+            orderNumber: true,
           },
         },
       },
@@ -144,7 +215,9 @@ export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
   ]);
 
   // 格式化数据
-  const formattedRecords = records.map(formatOutboundRecord);
+  const formattedRecords = records.map(record =>
+    formatOutboundRecord(record as OutboundRecordWithRelations)
+  );
 
   return {
     data: formattedRecords,
@@ -155,4 +228,129 @@ export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
       totalPages: Math.ceil(total / limit),
     },
   };
+}
+
+/**
+ * 根据出库单号获取详情
+ */
+export async function getOutboundRecordByNumber(
+  recordNumber: string
+): Promise<
+  (OutboundRecord & {
+    inventoryBalance?: number;
+    customer?: { id: string; name: string };
+    salesOrder?: { id: string; orderNumber: string };
+  }) | null
+> {
+  if (!recordNumber) {
+    return null;
+  }
+
+  const record = await prisma.outboundRecord.findUnique({
+    where: { recordNumber },
+    include: {
+      product: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          specification: true,
+          unit: true,
+        },
+      },
+      variant: {
+        select: {
+          id: true,
+          colorCode: true,
+          colorName: true,
+        },
+      },
+      operator: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      customer: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      salesOrder: {
+        select: {
+          id: true,
+          orderNumber: true,
+        },
+      },
+    },
+  });
+
+  if (!record) {
+    return null;
+  }
+
+  const inventoryRecord = await prisma.inventory.findUnique({
+    where: { id: record.inventoryId },
+    select: { quantity: true },
+  });
+
+  const detail: OutboundRecord & {
+    inventoryBalance?: number;
+    customer?: { id: string; name: string };
+    salesOrder?: { id: string; orderNumber: string };
+  } = {
+    id: record.id,
+    recordNumber: record.recordNumber,
+    type: mapOutboundReasonToType(record.reason),
+    productId: record.productId,
+    batchNumber: record.batchNumber ?? undefined,
+    quantity: Number(record.quantity),
+    unitCost: record.unitCost ?? undefined,
+    totalCost: record.totalCost ?? undefined,
+    customerId: record.customerId ?? undefined,
+    salesOrderId: record.salesOrderId ?? undefined,
+    userId: record.operatorId,
+    remarks: record.notes ?? undefined,
+    createdAt: record.createdAt.toISOString(),
+    product: record.product
+      ? {
+          id: record.product.id,
+          code: record.product.code,
+          name: record.product.name,
+          specification: record.product.specification ?? undefined,
+          unit: record.product.unit,
+        }
+      : undefined,
+    user: record.operator
+      ? {
+          id: record.operator.id,
+          name: record.operator.name ?? '—',
+        }
+      : undefined,
+    variant: record.variant
+      ? {
+          id: record.variant.id,
+          colorCode: record.variant.colorCode,
+          colorName: record.variant.colorName,
+        }
+      : undefined,
+    customer: record.customer
+      ? {
+          id: record.customer.id,
+          name: record.customer.name,
+        }
+      : undefined,
+    salesOrder: record.salesOrder
+      ? {
+          id: record.salesOrder.id,
+          orderNumber: record.salesOrder.orderNumber,
+        }
+      : undefined,
+    reason: record.reason,
+    updatedAt: record.updatedAt.toISOString(),
+    inventoryBalance: inventoryRecord?.quantity ?? undefined,
+  };
+
+  return detail;
 }

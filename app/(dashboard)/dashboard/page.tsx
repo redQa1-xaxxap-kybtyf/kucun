@@ -12,6 +12,10 @@ import { ERPDashboard } from '@/components/dashboard/erp-dashboard';
 import { dashboardQueryKeys } from '@/lib/api/dashboard';
 import { getDashboardData } from '@/lib/api/handlers/dashboard';
 import { prisma } from '@/lib/db';
+import type {
+  DashboardFactoryShipmentSummary,
+  DashboardSalesOrderSummary,
+} from '@/lib/types/dashboard';
 
 /**
  * 仪表盘主页面组件 - 使用服务器组件优化首屏加载
@@ -41,8 +45,8 @@ export default async function DashboardPage({
   // ✅ 创建 QueryClient（启用 Streaming Queries）
   const queryClient = new QueryClient({
     defaultOptions: {
-      dehydrate: {
-        shouldDehydratePendingQuery: true,
+      queries: {
+        staleTime: Infinity,
       },
     },
   });
@@ -103,6 +107,44 @@ export default async function DashboardPage({
       }),
     ]);
 
+  const toCustomerSummary = (
+    customer: { id: string; name: string | null } | null | undefined
+  ) =>
+    customer
+      ? {
+          id: customer.id,
+          name: customer.name ?? null,
+        }
+      : undefined;
+
+  const mapSalesOrders = (
+    orders: typeof recentOrders
+  ): DashboardSalesOrderSummary[] =>
+    orders.map(order => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status as DashboardSalesOrderSummary['status'],
+      totalAmount: Number(order.totalAmount ?? 0),
+      createdAt: order.createdAt.toISOString(),
+      customer: toCustomerSummary(order.customer),
+    }));
+
+  const mapFactoryShipments = (
+    orders: typeof factoryShipments
+  ): DashboardFactoryShipmentSummary[] =>
+    orders.map(order => ({
+      id: order.id,
+      orderNumber: order.orderNumber,
+      status: order.status as DashboardFactoryShipmentSummary['status'],
+      totalAmount: Number(order.totalAmount ?? 0),
+      createdAt: order.createdAt.toISOString(),
+      customer: toCustomerSummary(order.customer),
+    }));
+
+  const recentOrderSummaries = mapSalesOrders(recentOrders);
+  const pendingOrderSummaries = mapSalesOrders(pendingOrders);
+  const factoryShipmentSummaries = mapFactoryShipments(factoryShipments);
+
   // ✅ 将服务端数据预设到 QueryClient（避免客户端重复请求）
   queryClient.setQueryData(
     dashboardQueryKeys.overview(),
@@ -115,9 +157,9 @@ export default async function DashboardPage({
         initialData={dashboardData}
         initialTimeRange={timeRange}
         initialOrders={{
-          recent: recentOrders,
-          pending: pendingOrders,
-          shipments: factoryShipments,
+          recent: recentOrderSummaries,
+          pending: pendingOrderSummaries,
+          shipments: factoryShipmentSummaries,
         }}
       />
     </HydrationBoundary>

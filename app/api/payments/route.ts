@@ -154,9 +154,10 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
  * POST /api/payments - 创建收款记录
  */
 export const POST = withAuth(async (request: NextRequest, { user }) => {
-  try {
-    const userId = user.id;
+  const userId = user.id;
+  let data: any = null;
 
+  try {
     // 解析请求体
     const body = await request.json();
     const validationResult = createPaymentRecordSchema.safeParse(body);
@@ -172,54 +173,70 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       );
     }
 
-    const data = validationResult.data;
+    data = validationResult.data;
 
-    // 验证销售订单是否存在并获取已收款信息
-    const salesOrder = await prisma.salesOrder.findUnique({
-      where: { id: data.salesOrderId },
-      select: {
-        id: true,
-        customerId: true,
-        totalAmount: true,
-        status: true,
-        payments: {
-          where: { status: 'confirmed' },
-          select: { paymentAmount: true },
+    // 根据收款类型执行不同的验证逻辑
+    if (data.paymentType === 'order_payment') {
+      // 订单收款：验证销售订单
+      const salesOrder = await prisma.salesOrder.findUnique({
+        where: { id: data.salesOrderId },
+        select: {
+          id: true,
+          customerId: true,
+          totalAmount: true,
+          status: true,
+          payments: {
+            where: { status: 'confirmed' },
+            select: { paymentAmount: true },
+          },
         },
-      },
-    });
+      });
 
-    if (!salesOrder) {
-      return NextResponse.json(
-        { success: false, error: '销售订单不存在' },
-        { status: 404 }
+      if (!salesOrder) {
+        return NextResponse.json(
+          { success: false, error: '销售订单不存在' },
+          { status: 404 }
+        );
+      }
+
+      // 验证客户ID是否匹配
+      if (salesOrder.customerId !== data.customerId) {
+        return NextResponse.json(
+          { success: false, error: '客户信息与订单不匹配' },
+          { status: 400 }
+        );
+      }
+
+      // 金额验证：计算已收款金额和剩余应收金额
+      const totalPaid = salesOrder.payments.reduce(
+        (sum, p) => sum + p.paymentAmount,
+        0
       );
-    }
+      const remainingAmount = salesOrder.totalAmount - totalPaid;
 
-    // 验证客户ID是否匹配
-    if (salesOrder.customerId !== data.customerId) {
-      return NextResponse.json(
-        { success: false, error: '客户信息与订单不匹配' },
-        { status: 400 }
-      );
-    }
+      // 验证收款金额不超过剩余应收金额
+      if (data.paymentAmount > remainingAmount) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `收款金额超过应收金额。应收: ¥${remainingAmount.toFixed(2)}, 本次收款: ¥${data.paymentAmount.toFixed(2)}`,
+          },
+          { status: 400 }
+        );
+      }
+    } else {
+      // 预收款：验证客户是否存在
+      const customer = await prisma.customer.findUnique({
+        where: { id: data.customerId },
+        select: { id: true },
+      });
 
-    // 金额验证：计算已收款金额和剩余应收金额
-    const totalPaid = salesOrder.payments.reduce(
-      (sum, p) => sum + p.paymentAmount,
-      0
-    );
-    const remainingAmount = salesOrder.totalAmount - totalPaid;
-
-    // 验证收款金额不超过剩余应收金额
-    if (data.paymentAmount > remainingAmount) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: `收款金额超过应收金额。应收: ¥${remainingAmount.toFixed(2)}, 本次收款: ¥${data.paymentAmount.toFixed(2)}`,
-        },
-        { status: 400 }
-      );
+      if (!customer) {
+        return NextResponse.json(
+          { success: false, error: '客户不存在' },
+          { status: 404 }
+        );
+      }
     }
 
     // 生成收款单号(使用数据库序列表确保并发安全)
@@ -231,10 +248,19 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         // 创建收款记录
         const newPayment = await tx.paymentRecord.create({
           data: {
-            ...data,
             paymentNumber,
+            salesOrderId: data.salesOrderId || null, // ✅ 预收款时为null
+            customerId: data.customerId,
             userId,
+            paymentType: data.paymentType, // ✅ 支持 order_payment | prepayment
+            paymentMethod: data.paymentMethod,
+            paymentAmount: data.paymentAmount,
+            appliedAmount: 0, // ✅ 预收款初始已冲抵金额为0
             paymentDate: new Date(data.paymentDate),
+            status: data.paymentType === 'prepayment' ? 'confirmed' : 'pending', // ✅ 预收款直接确认
+            remarks: data.remarks,
+            receiptNumber: data.receiptNumber,
+            bankInfo: data.bankInfo,
           },
           include: {
             customer: {
@@ -261,24 +287,49 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
           },
         });
 
-        // 验证收款金额不超过订单总额
-        if (totalPaid + data.paymentAmount > salesOrder.totalAmount) {
-          throw new Error('收款金额超过订单总额');
-        }
-
-        // 如果收款金额达到或超过订单总额,更新订单状态
-        const newTotalPaid = totalPaid + data.paymentAmount;
-        if (
-          newTotalPaid >= salesOrder.totalAmount &&
-          salesOrder.status === 'confirmed'
-        ) {
-          await tx.salesOrder.update({
+        // ✅ 仅订单付款需要验证金额和更新订单状态
+        if (data.paymentType === 'order_payment' && data.salesOrderId) {
+          // 从之前的验证中获取订单信息(避免重复查询)
+          const salesOrder = await tx.salesOrder.findUnique({
             where: { id: data.salesOrderId },
-            data: {
-              status: 'shipped', // 全额收款后可以发货
-              updatedAt: new Date(),
+            select: {
+              totalAmount: true,
+              status: true,
+              payments: {
+                where: { status: 'confirmed' },
+                select: { paymentAmount: true },
+              },
             },
           });
+
+          if (!salesOrder) {
+            throw new Error('销售订单不存在');
+          }
+
+          const totalPaid = salesOrder.payments.reduce(
+            (sum, p) => sum + p.paymentAmount,
+            0
+          );
+
+          // 验证收款金额不超过订单总额
+          if (totalPaid + data.paymentAmount > salesOrder.totalAmount) {
+            throw new Error('收款金额超过订单总额');
+          }
+
+          // 如果收款金额达到或超过订单总额且订单已发货,自动更新为已完成
+          const newTotalPaid = totalPaid + data.paymentAmount;
+          if (
+            newTotalPaid >= salesOrder.totalAmount &&
+            salesOrder.status === 'shipped'
+          ) {
+            await tx.salesOrder.update({
+              where: { id: data.salesOrderId },
+              data: {
+                status: 'completed', // 已发货 + 全额收款 = 已完成
+                updatedAt: new Date(),
+              },
+            });
+          }
         }
 
         return newPayment;

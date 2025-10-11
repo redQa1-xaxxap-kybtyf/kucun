@@ -15,6 +15,7 @@ import * as React from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -32,6 +33,14 @@ interface RefundProcessPageProps {
   params: Promise<{ id: string }>;
 }
 
+type RefundFormState = {
+  processedAmount: string;
+  processedDate: string;
+  status: 'completed' | 'rejected';
+  remarks: string;
+  closeRemaining: boolean;
+};
+
 /**
  * 退款处理页面
  * 处理退款申请的审核和执行
@@ -46,11 +55,12 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
     params.then(p => setRefundId(p.id));
   }, [params]);
 
-  const [formData, setFormData] = React.useState({
+  const [formData, setFormData] = React.useState<RefundFormState>({
     processedAmount: '',
     processedDate: new Date().toISOString().split('T')[0],
-    status: 'completed' as 'completed' | 'rejected',
+    status: 'completed',
     remarks: '',
+    closeRemaining: false,
   });
 
   // 获取退款详情
@@ -104,14 +114,35 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
+    const processedAmountValue = Number.parseFloat(formData.processedAmount);
+
+    if (Number.isNaN(processedAmountValue) || processedAmountValue < 0) {
+      toast({
+        title: '输入错误',
+        description: '请输入正确的处理金额',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!formData.closeRemaining && processedAmountValue === 0) {
+      toast({
+        title: '输入错误',
+        description: '处理金额必须大于0，或勾选“抹平剩余金额”。',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       await processRefundMutation.mutateAsync({
         id: refundId,
         data: {
-          processedAmount: parseFloat(formData.processedAmount),
+          processedAmount: processedAmountValue,
           processedDate: formData.processedDate,
           status: formData.status,
           remarks: formData.remarks,
+          closeRemaining: formData.closeRemaining,
         },
       });
 
@@ -134,9 +165,43 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
     }
   };
 
-  const handleInputChange = (field: string, value: string) => {
+  const handleInputChange = <K extends keyof RefundFormState>(
+    field: K,
+    value: RefundFormState[K]
+  ) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
+
+  const handleCheckboxChange = (checked: boolean | 'indeterminate') => {
+    const value = checked === true;
+
+    setFormData(prev => {
+      if (value) {
+        const processedAmount =
+          prev.processedAmount.trim() === '' ? '0' : prev.processedAmount;
+        return { ...prev, closeRemaining: true, processedAmount };
+      }
+
+      const processedAmount =
+        prev.processedAmount === '0' ? '' : prev.processedAmount;
+      return { ...prev, closeRemaining: false, processedAmount };
+    });
+  };
+
+  React.useEffect(() => {
+    if (formData.status !== 'completed') {
+      setFormData(prev =>
+        prev.closeRemaining
+          ? {
+              ...prev,
+              closeRemaining: false,
+              processedAmount:
+                prev.processedAmount === '0' ? '' : prev.processedAmount,
+            }
+          : prev
+      );
+    }
+  }, [formData.status]);
 
   // 加载状态
   if (isLoading || !refundId) {
@@ -305,7 +370,12 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                 <Label htmlFor="status">处理结果 *</Label>
                 <Select
                   value={formData.status}
-                  onValueChange={value => handleInputChange('status', value)}
+                  onValueChange={value =>
+                    handleInputChange(
+                      'status',
+                      value as RefundFormState['status']
+                    )
+                  }
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -326,6 +396,41 @@ export default function RefundProcessPage({ params }: RefundProcessPageProps) {
                   </SelectContent>
                 </Select>
               </div>
+
+              {refund.remainingAmount > 0 && (
+                <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-3">
+                  <div className="flex items-start gap-3">
+                    <Checkbox
+                      id="closeRemaining"
+                      checked={formData.closeRemaining}
+                      onCheckedChange={handleCheckboxChange}
+                      disabled={
+                        formData.status !== 'completed' ||
+                        processRefundMutation.isPending
+                      }
+                    />
+                    <div className="space-y-1 text-sm">
+                      <Label
+                        htmlFor="closeRemaining"
+                        className="flex items-center gap-2 font-medium text-[hsl(var(--color-text-primary))]"
+                      >
+                        抹平剩余金额
+                        <Badge variant="outline">
+                          剩余 {formatCurrency(refund.remainingAmount)}
+                        </Badge>
+                      </Label>
+                      <p className="text-muted-foreground text-xs">
+                        已确认无需退还剩余零头时勾选，系统会将剩余金额记为核销并更新应退金额。
+                      </p>
+                      {formData.status !== 'completed' && (
+                        <p className="text-xs text-[hsl(var(--color-warning))]">
+                          仅在选择“批准退款”时可核销剩余金额。
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <div className="space-y-2">
                 <Label htmlFor="remarks">处理备注</Label>

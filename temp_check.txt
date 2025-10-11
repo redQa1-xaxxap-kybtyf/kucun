@@ -1,0 +1,40 @@
+  status: factoryShipmentStatusEnum.default('draft'),
+  planDate: z.string().optional(),
+  shipmentDate: z.string().optional(),
+  arrivalDate: z.string().optional(),
+  items: z.array(factoryShipmentItemSchema).min(1, '至少需要一个商品项'),
+  receivableAmount: z.number().nonnegative('应收金额不能为负').optional(),
+  depositAmount: z.number().nonnegative('定金金额不能为负').optional(),
+  remarks: z.string().optional(),
+});
+
+const updateFactoryShipmentStatusSchema = z.object({
+  shipmentId: z.string().min(1, '发货单 ID 不能为空'),
+  status: factoryShipmentStatusEnum,
+});
+
+type FactoryShipmentItemInput = z.infer<typeof factoryShipmentItemSchema>;
+type FactoryShipmentFormData = z.infer<typeof createFactoryShipmentSchema>;
+
+async function resolveShipmentItems(
+  tx: Omit<
+    typeof prisma,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  >,
+  items: FactoryShipmentItemInput[]
+): Promise<
+  Prisma.FactoryShipmentOrderItemUncheckedCreateWithoutFactoryShipmentOrderInput[]
+> {
+  const productIds = Array.from(
+    new Set(items.map(item => item.productId).filter((id): id is string => Boolean(id)))
+  );
+
+  const products =
+    productIds.length > 0
+      ? await tx.product.findMany({
+          where: { id: { in: productIds } },
+          select: {
+            id: true,
+            name: true,
+            specification: true,
+            unit: true,

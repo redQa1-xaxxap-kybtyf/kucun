@@ -33,6 +33,22 @@ export const FACTORY_SHIPMENT_STATUS_LABELS: Record<
   [FACTORY_SHIPMENT_STATUS.COMPLETED]: '已完成',
 };
 
+// 厂家发货订单状态变体映射（用于Badge组件）
+export const FACTORY_SHIPMENT_STATUS_VARIANTS: Record<
+  FactoryShipmentStatus,
+  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
+> = {
+  [FACTORY_SHIPMENT_STATUS.DRAFT]: 'outline',
+  [FACTORY_SHIPMENT_STATUS.PLANNING]: 'secondary',
+  [FACTORY_SHIPMENT_STATUS.WAITING_DEPOSIT]: 'warning',
+  [FACTORY_SHIPMENT_STATUS.DEPOSIT_PAID]: 'info',
+  [FACTORY_SHIPMENT_STATUS.FACTORY_SHIPPED]: 'info',
+  [FACTORY_SHIPMENT_STATUS.IN_TRANSIT]: 'info',
+  [FACTORY_SHIPMENT_STATUS.ARRIVED]: 'secondary',
+  [FACTORY_SHIPMENT_STATUS.DELIVERED]: 'success',
+  [FACTORY_SHIPMENT_STATUS.COMPLETED]: 'success',
+};
+
 // 厂家发货订单明细项
 export interface FactoryShipmentOrderItem {
   id: string;

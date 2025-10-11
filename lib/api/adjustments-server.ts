@@ -265,3 +265,109 @@ export async function getAdjustmentsServer(searchParams: URLSearchParams) {
     },
   };
 }
+
+/**
+ * 根据调整单号获取详情
+ */
+export async function getAdjustmentByNumber(adjustmentNumber: string) {
+  if (!adjustmentNumber) {
+    return null;
+  }
+
+  const adjustment = await prisma.inventoryAdjustment.findUnique({
+    where: { adjustmentNumber },
+    include: {
+      product: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          specification: true,
+          unit: true,
+        },
+      },
+      variant: {
+        select: {
+          id: true,
+          colorCode: true,
+          colorName: true,
+        },
+      },
+      operator: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      approver: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+
+  if (!adjustment) {
+    return null;
+  }
+
+  const inventoryRecord = await prisma.inventory.findFirst({
+    where: {
+      productId: adjustment.productId,
+      variantId: adjustment.variantId ?? null,
+      batchNumber: adjustment.batchNumber ?? null,
+    },
+    select: {
+      quantity: true,
+    },
+  });
+
+  return {
+    id: adjustment.id,
+    adjustmentNumber: adjustment.adjustmentNumber,
+    productId: adjustment.productId,
+    variantId: adjustment.variantId ?? undefined,
+    batchNumber: adjustment.batchNumber ?? undefined,
+    beforeQuantity: adjustment.beforeQuantity,
+    adjustQuantity: adjustment.adjustQuantity,
+    afterQuantity: adjustment.afterQuantity,
+    reason: adjustment.reason,
+    notes: adjustment.notes ?? undefined,
+    status: adjustment.status,
+    operatorId: adjustment.operatorId,
+    approverId: adjustment.approverId ?? undefined,
+    approvedAt: adjustment.approvedAt?.toISOString(),
+    createdAt: adjustment.createdAt.toISOString(),
+    updatedAt: adjustment.updatedAt.toISOString(),
+    product: adjustment.product
+      ? {
+          id: adjustment.product.id,
+          code: adjustment.product.code,
+          name: adjustment.product.name,
+          specification: adjustment.product.specification ?? undefined,
+          unit: adjustment.product.unit,
+        }
+      : undefined,
+    variant: adjustment.variant
+      ? {
+          id: adjustment.variant.id,
+          colorCode: adjustment.variant.colorCode,
+          colorName: adjustment.variant.colorName,
+        }
+      : undefined,
+    operator: adjustment.operator
+      ? {
+          id: adjustment.operator.id,
+          name: adjustment.operator.name ?? '—',
+        }
+      : undefined,
+    approver: adjustment.approver
+      ? {
+          id: adjustment.approver.id,
+          name: adjustment.approver.name ?? '—',
+        }
+      : undefined,
+    inventoryBalance: inventoryRecord?.quantity ?? undefined,
+  };
+}

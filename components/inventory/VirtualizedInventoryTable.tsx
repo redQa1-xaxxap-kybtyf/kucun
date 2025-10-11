@@ -59,6 +59,7 @@ const TableHeaderComponent = React.memo<{
       <TableHead className="text-xs">产品编码</TableHead>
       <TableHead className="text-xs">产品名称</TableHead>
       <TableHead className="text-xs">规格</TableHead>
+      <TableHead className="text-xs">包装信息</TableHead>
       <TableHead className="text-xs">批次号</TableHead>
       <TableHead className="text-xs">库存数量</TableHead>
       <TableHead className="text-xs">预留数量</TableHead>
@@ -86,7 +87,7 @@ const EmptyState = React.memo(() => (
       <TableBody>
         <TableRow>
           <TableCell
-            colSpan={11}
+            colSpan={12}
             className="text-muted-foreground h-24 text-center"
           >
             <div className="flex flex-col items-center gap-2">

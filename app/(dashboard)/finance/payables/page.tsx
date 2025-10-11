@@ -1,6 +1,10 @@
 import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
+import type { PayableSourceType, PayableStatus } from '@/lib/types/payable';
+import { PAYABLE_SORT_OPTIONS } from '@/lib/types/payable';
+
+type PayableSortField = 'createdAt' | 'payableAmount' | 'dueDate' | 'remainingAmount';
 
 import { PayablesPageClient } from './page-client';
 
@@ -33,7 +37,17 @@ async function getPayablesData(searchParams: {
   const search = searchParams.search || '';
   const status = searchParams.status;
   const sourceType = searchParams.sourceType;
-  const sortBy = searchParams.sortBy || 'createdAt';
+  const sortFieldValues: PayableSortField[] = [
+    'createdAt',
+    'payableAmount',
+    'dueDate',
+    'remainingAmount',
+  ];
+  const sortBy: PayableSortField =
+    searchParams.sortBy &&
+    sortFieldValues.includes(searchParams.sortBy as PayableSortField)
+      ? (searchParams.sortBy as PayableSortField)
+      : 'createdAt';
   const sortOrder = searchParams.sortOrder || 'desc';
 
   // 构建查询条件
@@ -167,10 +181,40 @@ export default async function PayablesPage({
   const queryParams = {
     page: parseInt(params.page || '1', 10),
     limit: parseInt(params.limit || '20', 10),
-    search: params.search,
-    status: params.status,
-    sourceType: params.sourceType,
-    sortBy: params.sortBy || 'createdAt',
+    search: params.search || '',
+    status: ((): PayableStatus | undefined => {
+      const value = params.status;
+      const statuses: PayableStatus[] = [
+        'pending',
+        'partial',
+        'paid',
+        'overdue',
+        'cancelled',
+      ];
+      return value && statuses.includes(value as PayableStatus)
+        ? (value as PayableStatus)
+        : undefined;
+    })(),
+    sourceType: ((): PayableSourceType | undefined => {
+      const value = params.sourceType;
+      const sources: PayableSourceType[] = [
+        'purchase_order',
+        'factory_shipment',
+        'sales_order',
+        'service',
+        'other',
+      ];
+      return value && sources.includes(value as PayableSourceType)
+        ? (value as PayableSourceType)
+        : undefined;
+    })(),
+    sortBy: ((): PayableSortField => {
+      const value = params.sortBy;
+      const sortValues = PAYABLE_SORT_OPTIONS.map(option => option.value);
+      return value && sortValues.includes(value as PayableSortField)
+        ? (value as PayableSortField)
+        : 'createdAt';
+    })(),
     sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
   };
 

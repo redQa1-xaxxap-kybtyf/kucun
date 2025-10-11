@@ -297,10 +297,9 @@ export function getAccessibleMenuItems(role: UserRole | undefined) {
 /**
  * 获取用户可访问的导航项（兼容现有代码）
  */
-export function getAccessibleNavItems(
-  navItems: Array<{ requiredRoles?: UserRole[] }>,
-  role: UserRole | undefined
-): Array<{ requiredRoles?: UserRole[] }> {
+export function getAccessibleNavItems<
+  T extends { requiredRoles?: UserRole[] }
+>(navItems: T[], role: UserRole | undefined): T[] {
   return navItems.filter(item => {
     // 如果没有角色要求，所有用户都可以访问
     if (!item.requiredRoles || item.requiredRoles.length === 0) {

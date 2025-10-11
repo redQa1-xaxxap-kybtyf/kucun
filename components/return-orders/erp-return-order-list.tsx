@@ -11,6 +11,7 @@ import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Pagination } from '@/components/ui/pagination';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,6 +31,7 @@ import { queryKeys } from '@/lib/queryKeys';
 import {
   type ReturnOrder,
   type ReturnOrderQueryParams,
+  type ReturnOrderStatus,
   RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
@@ -78,23 +80,24 @@ export function ERPReturnOrderList({
     data: queryData,
     isLoading,
     error,
+    refetch,
   } = useQuery({
     queryKey: queryKeys.returnOrders.list(queryParams),
-    queryFn: async () =>
-      // 待办：实现真实的退货订单API
-      // 目前返回空数据，等待后端API实现
-      ({
-        success: true,
-        data: {
-          returnOrders: [],
-          pagination: {
-            page: 1,
-            limit: 20,
-            total: 0,
-            totalPages: 1,
-          },
-        },
-      }),
+    queryFn: async () => {
+      const response = await fetch(
+        `/api/return-orders?${new URLSearchParams(
+          Object.entries(queryParams)
+            .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+            .map(([key, value]) => [key, String(value)])
+        ).toString()}`
+      );
+
+      if (!response.ok) {
+        throw new Error(`获取退货订单列表失败: ${response.statusText}`);
+      }
+
+      return response.json();
+    },
     staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
     refetchOnWindowFocus: false,
   });
@@ -141,7 +144,9 @@ export function ERPReturnOrderList({
         if (key === 'status') {
           setQueryParams(prev => ({
             ...prev,
-            status: value === 'all' || !value ? undefined : value,
+            status: (value === 'all' || !value
+              ? undefined
+              : value) as ReturnOrderStatus | undefined,
             page: 1,
           }));
         } else if (key === 'sortBy') {
@@ -274,16 +279,16 @@ export function ERPReturnOrderList({
       </Card>
 
       {/* 数据表格 */}
-      <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
+      <div className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]" style={{ boxShadow: 'var(--shadow-medium)' }}>
         <Table>
           <TableHeader>
-            <TableRow className="bg-muted/50 hover:bg-muted/50">
+            <TableRow>
               <TableHead>退货单号</TableHead>
               <TableHead>关联销售单</TableHead>
               <TableHead>客户名称</TableHead>
               <TableHead>退货类型</TableHead>
               <TableHead>处理方式</TableHead>
-              <TableHead>退货金额</TableHead>
+              <TableHead>实际退款金额</TableHead>
               <TableHead>订单状态</TableHead>
               <TableHead>创建时间</TableHead>
               <TableHead className="text-center">操作</TableHead>
@@ -328,7 +333,33 @@ export function ERPReturnOrderList({
                     {RETURN_PROCESS_TYPE_LABELS[returnOrder.processType]}
                   </TableCell>
                   <TableCell className="font-mono">
-                    {formatAmount(returnOrder.totalAmount)}
+                    {(() => {
+                      const actualAmount =
+                        typeof returnOrder.refundAmount === 'number'
+                          ? returnOrder.refundAmount
+                          : returnOrder.totalAmount;
+                      const hasAdjustment =
+                        Math.abs(actualAmount - returnOrder.totalAmount) > 0.005;
+                      const hasRemaining =
+                        typeof returnOrder.remainingAmount === 'number' &&
+                        returnOrder.remainingAmount > 0.005;
+
+                      return (
+                        <div className="flex flex-col items-end gap-0.5">
+                          <span>{formatAmount(actualAmount)}</span>
+                          {hasAdjustment && (
+                            <span className="text-muted-foreground text-xs">
+                              原退货金额 {formatAmount(returnOrder.totalAmount)}
+                            </span>
+                          )}
+                          {hasRemaining && (
+                            <span className="text-[hsl(var(--color-warning))] text-xs">
+                              待处理 {formatAmount(returnOrder.remainingAmount!)}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    })()}
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusColor(returnOrder.status)}>
@@ -388,6 +419,18 @@ export function ERPReturnOrderList({
             )}
           </TableBody>
         </Table>
+
+        {/* 分页组件 */}
+        {displayData?.data.pagination && displayData.data.pagination.total > 0 && (
+          <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+            <Pagination
+              pagination={displayData.data.pagination}
+              onPageChange={onPageChange || (() => {})}
+              showRange
+              showTotal
+            />
+          </div>
+        )}
       </div>
     </div>
   );

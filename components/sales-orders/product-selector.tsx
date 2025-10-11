@@ -232,25 +232,33 @@ export function ProductInfo({ product, className }: ProductInfoProps) {
         </div>
       )}
 
-      {'tileSpecifications' in product && product.tileSpecifications && (
-        <div className="border-t pt-2">
-          <div className="mb-1 text-xs font-medium">瓷砖规格:</div>
-          <div className="text-muted-foreground grid grid-cols-2 gap-1 text-xs">
-            {product.tileSpecifications.size && (
-              <div>尺寸: {product.tileSpecifications.size}</div>
-            )}
-            {product.tileSpecifications.thickness && (
-              <div>厚度: {product.tileSpecifications.thickness}mm</div>
-            )}
-            {product.tileSpecifications.surface && (
-              <div>表面: {product.tileSpecifications.surface}</div>
-            )}
-            {product.tileSpecifications.grade && (
-              <div>等级: {product.tileSpecifications.grade}</div>
-            )}
+      {('tileSpecifications' in product && product.tileSpecifications && (() => {
+        const tileSpec = product.tileSpecifications as unknown as {
+          size?: string;
+          thickness?: number;
+          surface?: string;
+          grade?: string;
+        };
+        return (
+          <div className="border-t pt-2">
+            <div className="mb-1 text-xs font-medium">瓷砖规格:</div>
+            <div className="text-muted-foreground grid grid-cols-2 gap-1 text-xs">
+              {tileSpec.size && (
+                <div>尺寸: {tileSpec.size}</div>
+              )}
+              {tileSpec.thickness && (
+                <div>厚度: {tileSpec.thickness}mm</div>
+              )}
+              {tileSpec.surface && (
+                <div>表面: {tileSpec.surface}</div>
+              )}
+              {tileSpec.grade && (
+                <div>等级: {tileSpec.grade}</div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        );
+      })()) as React.ReactNode}
     </div>
   );
 }

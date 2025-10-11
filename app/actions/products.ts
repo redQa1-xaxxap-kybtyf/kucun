@@ -34,18 +34,15 @@ export type ActionResult<T = unknown> = {
 const createProductSchema = z.object({
   code: z.string().min(1, '产品编码不能为空'),
   name: z.string().min(1, '产品名称不能为空'),
-  categoryId: z.string().min(1, '产品分类不能为空'),
   unit: z.string().min(1, '计量单位不能为空'),
+  categoryId: z.string().optional(),
   specification: z.string().optional(),
-  model: z.string().optional(),
-  brand: z.string().optional(),
-  barcode: z.string().optional(),
   description: z.string().optional(),
+  piecesPerUnit: z.number().int().positive('每件片数必须为正整数').optional(),
+  weight: z.number().nonnegative('重量不能为负').optional(),
+  thickness: z.number().nonnegative('厚度不能为负').optional(),
+  thumbnailUrl: z.string().url('缩略图地址格式不正确').optional(),
   status: z.enum(['active', 'inactive']).default('active'),
-  costPrice: z.number().nonnegative('成本价不能为负').optional(),
-  sellingPrice: z.number().nonnegative('销售价不能为负').optional(),
-  minStock: z.number().nonnegative('最小库存不能为负').optional(),
-  maxStock: z.number().nonnegative('最大库存不能为负').optional(),
 });
 
 const updateProductSchema = createProductSchema.partial();
@@ -92,33 +89,17 @@ export async function createProduct(
         data: {
           code: data.code,
           name: data.name,
-          categoryId: data.categoryId,
           unit: data.unit,
-          specification: data.specification,
-          model: data.model,
-          brand: data.brand,
-          barcode: data.barcode,
-          description: data.description,
+          categoryId: data.categoryId ?? null,
+          specification: data.specification ?? null,
+          description: data.description ?? null,
+          piecesPerUnit: data.piecesPerUnit ?? 1,
+          weight: data.weight ?? null,
+          thickness: data.thickness ?? null,
+          thumbnailUrl: data.thumbnailUrl ?? null,
           status: data.status,
-          costPrice: data.costPrice || 0,
-          sellingPrice: data.sellingPrice || 0,
-          minStock: data.minStock || 0,
-          maxStock: data.maxStock || 0,
         },
       });
-
-      // 如果设置了库存信息，创建初始库存记录
-      if (data.minStock !== undefined || data.maxStock !== undefined) {
-        await tx.inventory.create({
-          data: {
-            productId: product.id,
-            warehouseId: 'default-warehouse-id', // 需要根据实际情况调整
-            currentQuantity: 0,
-            minQuantity: data.minStock || 0,
-            maxQuantity: data.maxStock || 0,
-          },
-        });
-      }
 
       return product;
     });
@@ -134,7 +115,7 @@ export async function createProduct(
   } catch (error) {
     console.error('创建产品失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0]?.message ?? '输入数据格式不正确' };
     }
     return { success: false, error: '创建产品失败' };
   }
@@ -181,49 +162,31 @@ export async function updateProduct(
       await tx.product.update({
         where: { id: productId },
         data: {
-          code: data.code,
-          name: data.name,
-          categoryId: data.categoryId,
-          unit: data.unit,
-          specification: data.specification,
-          model: data.model,
-          brand: data.brand,
-          barcode: data.barcode,
-          description: data.description,
-          status: data.status,
-          costPrice: data.costPrice,
-          sellingPrice: data.sellingPrice,
-          minStock: data.minStock,
-          maxStock: data.maxStock,
+          ...(data.code ? { code: data.code } : {}),
+          ...(data.name ? { name: data.name } : {}),
+          ...(data.unit ? { unit: data.unit } : {}),
+          ...(data.categoryId !== undefined
+            ? { categoryId: data.categoryId || null }
+            : {}),
+          ...(data.specification !== undefined
+            ? { specification: data.specification || null }
+            : {}),
+          ...(data.description !== undefined
+            ? { description: data.description || null }
+            : {}),
+          ...(data.piecesPerUnit !== undefined
+            ? { piecesPerUnit: data.piecesPerUnit }
+            : {}),
+          ...(data.weight !== undefined ? { weight: data.weight ?? null } : {}),
+          ...(data.thickness !== undefined
+            ? { thickness: data.thickness ?? null }
+            : {}),
+          ...(data.thumbnailUrl !== undefined
+            ? { thumbnailUrl: data.thumbnailUrl || null }
+            : {}),
+          ...(data.status ? { status: data.status } : {}),
         },
       });
-
-      // 如果修改了库存信息，更新库存记录
-      if (data.minStock !== undefined || data.maxStock !== undefined) {
-        const inventory = await tx.inventory.findFirst({
-          where: { productId },
-        });
-
-        if (inventory) {
-          await tx.inventory.update({
-            where: { id: inventory.id },
-            data: {
-              minQuantity: data.minStock,
-              maxQuantity: data.maxStock,
-            },
-          });
-        } else {
-          await tx.inventory.create({
-            data: {
-              productId,
-              warehouseId: 'default-warehouse-id',
-              currentQuantity: 0,
-              minQuantity: data.minStock || 0,
-              maxQuantity: data.maxStock || 0,
-            },
-          });
-        }
-      }
     });
 
     revalidatePath('/products');
@@ -234,7 +197,7 @@ export async function updateProduct(
   } catch (error) {
     console.error('更新产品失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0]?.message ?? '输入数据格式不正确' };
     }
     return { success: false, error: '更新产品失败' };
   }
@@ -271,7 +234,7 @@ export async function updateProductStatus(
   } catch (error) {
     console.error('更新产品状态失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.errors[0].message };
+      return { success: false, error: error.issues[0]?.message ?? '输入数据格式不正确' };
     }
     return { success: false, error: '更新产品状态失败' };
   }
@@ -301,7 +264,7 @@ export async function deleteProduct(productId: string): Promise<ActionResult> {
       const inventoryCount = await tx.inventory.count({
         where: {
           productId,
-          currentQuantity: { gt: 0 },
+          quantity: { gt: 0 },
         },
       });
 

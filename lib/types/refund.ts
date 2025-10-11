@@ -237,6 +237,18 @@ export interface RefundStatusConfig {
   isActive: boolean;
 }
 
+// 退款状态变体映射（用于Badge组件）
+export const REFUND_STATUS_VARIANTS: Record<
+  RefundStatus,
+  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
+> = {
+  pending: 'warning',
+  processing: 'info',
+  completed: 'success',
+  rejected: 'destructive',
+  cancelled: 'outline',
+};
+
 // 默认退款状态配置
 export const DEFAULT_REFUND_STATUSES: RefundStatusConfig[] = [
   {

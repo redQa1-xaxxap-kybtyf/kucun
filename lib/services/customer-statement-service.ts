@@ -1,6 +1,8 @@
 // 客户对账单服务层
 // 提供客户对账单的查询、计算和导出功能
 
+import type { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 import type {
   CustomerStatementDetail,
@@ -259,8 +261,43 @@ export async function getCustomerStatementStatistics(): Promise<CustomerStatemen
   };
 }
 
+type SupplierIdentifier = { id: string };
+
+async function findSupplierForCustomer(
+  customerId: string
+): Promise<SupplierIdentifier | null> {
+  const customer = await prisma.customer.findUnique({
+    where: { id: customerId },
+    select: { name: true, phone: true },
+  });
+
+  if (!customer || (!customer.name && !customer.phone)) {
+    return null;
+  }
+
+  const orConditions: Prisma.SupplierWhereInput[] = [
+    ...(customer.name ? [{ name: { contains: customer.name } }] : []),
+    ...(customer.phone ? [{ phone: customer.phone }] : []),
+  ];
+
+  if (orConditions.length === 0) {
+    return null;
+  }
+
+  return prisma.supplier.findFirst({
+    where: { OR: orConditions },
+    select: { id: true },
+  });
+}
+
 /**
  * 计算客户对账单汇总数据
+ *
+ * 业务逻辑说明：
+ * 1. 应收账款 = 销售金额 - 销售退货 - 收款 - 预收款 + 补偿退款
+ * 2. 退货退款：退款金额已在ReturnOrder.refundAmount中，不重复计算
+ * 3. 补偿退款：无退货关联的退款(returnOrderId=null)，增加应收
+ * 4. 当前系统：所有退款都关联退货，补偿退款为0
  */
 async function calculateCustomerStatementSummary(
   customerId: string,
@@ -306,25 +343,43 @@ async function calculateCustomerStatementSummary(
   );
 
   // 3. 查询收款记录
+  // ✅ 修正: 分别统计订单付款和预收款已冲抵金额
   const payments = await prisma.paymentRecord.findMany({
     where: {
       customerId,
-      status: 'confirmed',
+      status: { in: ['pending', 'confirmed', 'applied'] }, // ✅ 覆盖部分收款（待确认）和已冲抵记录
       ...(Object.keys(dateFilter).length > 0 && { paymentDate: dateFilter }),
     },
-    select: { paymentAmount: true },
+    select: {
+      paymentType: true, // ✅ 新增: 用于区分类型
+      paymentAmount: true,
+      appliedAmount: true, // ✅ 新增: 预收款已冲抵金额
+    },
   });
 
-  const paymentReceived = payments.reduce(
+  // 订单付款(直接付款)
+  const orderPayments = payments.filter(p => p.paymentType === 'order_payment');
+  const paymentReceived = orderPayments.reduce(
     (sum, payment) => sum + Number(payment.paymentAmount),
     0
   );
 
+  // 预收款已冲抵金额(减少应收)
+  const prepayments = payments.filter(p => p.paymentType === 'prepayment');
+  const prepaymentReceived = prepayments.reduce(
+    (sum, p) => sum + Number(p.appliedAmount),
+    0
+  );
+
   // 4. 查询退款记录(退款给客户)
+  // 注意：当前系统中所有退款都关联退货订单(returnOrderId不为空)
+  // 退款金额已在ReturnOrder.refundAmount中统计，此处只查询无退货关联的补偿/折扣类退款
+  // 避免重复计算：退货已减少应收，不应再单独计退款
   const refunds = await prisma.refundRecord.findMany({
     where: {
       customerId,
       status: 'completed',
+      returnOrderId: null, // 只查询无退货关联的退款(补偿、折扣等)
       ...(Object.keys(dateFilter).length > 0 && { refundDate: dateFilter }),
     },
     select: { refundAmount: true },
@@ -334,8 +389,9 @@ async function calculateCustomerStatementSummary(
     (sum, refund) => sum + Number(refund.refundAmount),
     0
   );
+  // 当前系统中refundPaid通常为0，因为所有退款都关联退货
 
-  // 5. 查询采购订单(应付 - 客户作为供应商)
+  // 6. 查询采购订单(应付 - 客户作为供应商)
   // 需要通过supplier表关联到customer
   // 暂时设为0,后续实现客户-供应商双重身份关联
   const purchaseAmount = 0;
@@ -343,11 +399,41 @@ async function calculateCustomerStatementSummary(
   const paymentPaid = 0;
   const refundReceived = 0;
 
+  // 7. 查询预付款(向客户作为供应商时预付)
+  // 通过供应商表查找是否有客户作为供应商的预付款
+  // 首先查找是否有对应的供应商记录
+  const customerAsSupplier = await findSupplierForCustomer(customerId);
+
+  let prepaymentPaid = 0;
+  if (customerAsSupplier) {
+    const supplierPayments = await prisma.paymentOutRecord.findMany({
+      where: {
+        supplierId: customerAsSupplier.id,
+        status: { in: ['confirmed'] },
+        ...(Object.keys(dateFilter).length > 0 && { paymentDate: dateFilter }),
+      },
+      select: { paymentAmount: true },
+    });
+
+    prepaymentPaid = supplierPayments.reduce(
+      (sum, record) => sum + Number(record.paymentAmount),
+      0
+    );
+  }
+
   // 计算余额
   const receivableBalance =
-    salesAmount - salesReturnAmount - paymentReceived + refundPaid;
+    salesAmount -
+    salesReturnAmount -
+    paymentReceived -
+    prepaymentReceived +
+    refundPaid;
   const payableBalance =
-    purchaseAmount - purchaseReturnAmount - paymentPaid + refundReceived;
+    purchaseAmount -
+    purchaseReturnAmount -
+    paymentPaid -
+    prepaymentPaid +
+    refundReceived;
   const netBalance = receivableBalance - payableBalance;
 
   return {
@@ -356,6 +442,7 @@ async function calculateCustomerStatementSummary(
       salesReturnAmount,
       paymentReceived,
       refundPaid,
+      prepaymentReceived,
       receivableBalance,
     },
     payables: {
@@ -363,6 +450,7 @@ async function calculateCustomerStatementSummary(
       purchaseReturnAmount,
       paymentPaid,
       refundReceived,
+      prepaymentPaid,
       payableBalance,
     },
     netBalance,
@@ -385,6 +473,9 @@ async function getCustomerTransactions(
     gte: new Date(startDate),
     lte: new Date(endDate),
   };
+
+  // 检查客户是否也作为供应商存在
+  const customerAsSupplier = await findSupplierForCustomer(customerId);
 
   // 1. 获取销售订单
   const salesOrders = await prisma.salesOrder.findMany({
@@ -421,7 +512,8 @@ async function getCustomerTransactions(
   const payments = await prisma.paymentRecord.findMany({
     where: {
       customerId,
-      status: 'confirmed',
+      status: { in: ['pending', 'confirmed', 'applied'] },
+      paymentType: 'order_payment',
       paymentDate: dateFilter,
     },
     select: {
@@ -482,10 +574,13 @@ async function getCustomerTransactions(
   }
 
   // 4. 获取退款记录
+  // 注意：只查询无退货关联的退款(补偿、折扣等)
+  // 退货关联的退款已在退货记录中体现，不应重复记录
   const refunds = await prisma.refundRecord.findMany({
     where: {
       customerId,
       status: 'completed',
+      returnOrderId: null, // 只查询无退货关联的退款
       refundDate: dateFilter,
     },
     select: {
@@ -494,11 +589,14 @@ async function getCustomerTransactions(
       refundAmount: true,
       refundDate: true,
       refundMethod: true,
+      refundType: true,
       status: true,
     },
     orderBy: { refundDate: 'asc' },
   });
 
+  // 无退货关联的退款作为借方(增加应收)
+  // 例如：质量补偿、价格调整等，客户又欠我们的
   for (const refund of refunds) {
     transactionEntries.push({
       id: refund.id,
@@ -506,11 +604,85 @@ async function getCustomerTransactions(
       transactionDate: refund.refundDate.toISOString(),
       referenceNumber: refund.refundNumber,
       referenceId: refund.id,
-      description: `退款 ${refund.refundNumber} (${refund.refundMethod})`,
-      debitAmount: Number(refund.refundAmount),
+      description: `${refund.refundType === 'compensation_refund' ? '补偿退款' : '退款'} ${refund.refundNumber} (${refund.refundMethod})`,
+      debitAmount: Number(refund.refundAmount), // 借方：增加应收
       creditAmount: 0,
       status: refund.status,
     });
+  }
+  // 当前系统中通常无记录，因为所有退款都关联退货
+
+  // 5. 获取预收款记录
+  const prepaymentRecords = await prisma.paymentRecord.findMany({
+    where: {
+      customerId,
+      paymentType: 'prepayment',
+      status: { in: ['confirmed', 'applied'] },
+      paymentDate: dateFilter,
+    },
+    select: {
+      id: true,
+      paymentNumber: true,
+      paymentAmount: true,
+      appliedAmount: true,
+      paymentDate: true,
+      paymentMethod: true,
+      status: true,
+    },
+    orderBy: { paymentDate: 'asc' },
+  });
+
+  for (const prepayment of prepaymentRecords) {
+    const appliedAmount =
+      prepayment.appliedAmount !== null && prepayment.appliedAmount !== undefined
+        ? prepayment.appliedAmount
+        : prepayment.paymentAmount;
+
+    transactionEntries.push({
+      id: prepayment.id,
+      transactionType: 'prepayment_in',
+      transactionDate: prepayment.paymentDate.toISOString(),
+      referenceNumber: prepayment.paymentNumber,
+      referenceId: prepayment.id,
+      description: `预收款 ${prepayment.paymentNumber} (${prepayment.paymentMethod})`,
+      debitAmount: 0,
+      creditAmount: Number(appliedAmount), // 贷方：减少应收
+      status: prepayment.status,
+    });
+  }
+
+  // 6. 获取预付款记录(客户作为供应商场景)
+  if (customerAsSupplier) {
+    const supplierPrepayments = await prisma.paymentOutRecord.findMany({
+      where: {
+        supplierId: customerAsSupplier.id,
+        status: 'confirmed',
+        paymentDate: dateFilter,
+      },
+      select: {
+        id: true,
+        paymentNumber: true,
+        paymentAmount: true,
+        paymentDate: true,
+        paymentMethod: true,
+        status: true,
+      },
+      orderBy: { paymentDate: 'asc' },
+    });
+
+    for (const payment of supplierPrepayments) {
+      transactionEntries.push({
+        id: payment.id,
+        transactionType: 'prepayment_out',
+        transactionDate: payment.paymentDate.toISOString(),
+        referenceNumber: payment.paymentNumber,
+        referenceId: payment.id,
+        description: `预付款 ${payment.paymentNumber} (${payment.paymentMethod})`,
+        debitAmount: Number(payment.paymentAmount), // 借方：增加应付
+        creditAmount: 0,
+        status: payment.status,
+      });
+    }
   }
 
   // 按日期排序

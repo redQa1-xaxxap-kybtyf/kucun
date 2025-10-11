@@ -77,7 +77,7 @@ export default async function InventoryPage({
     defaultOptions: {
       dehydrate: {
         // ✅ 允许 pending queries 序列化，支持 Streaming SSR
-        shouldDehydratePendingQuery: true,
+        shouldDehydrateQuery: () => true,
       },
     },
   });
@@ -113,14 +113,16 @@ export default async function InventoryPage({
     queryParams.limit || 20
   );
 
-  // ✅ 包装成 API 响应格式，与客户端 Hook 期望的格式一致
+  // ✅ 将服务端数据预设到 QueryClient（使用统一格式，无需额外映射）
   const inventoryData = {
     success: true,
-    data: formattedData, // { inventories, pagination }
+    data: formattedData,
   };
 
-  // ✅ 将服务端数据预设到 QueryClient（使用统一格式，无需额外映射）
-  queryClient.setQueryData(inventoryQueryKeys.list(queryParams), inventoryData);
+  queryClient.setQueryData(
+    inventoryQueryKeys.list(queryParams),
+    inventoryData
+  );
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

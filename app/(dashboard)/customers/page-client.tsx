@@ -7,13 +7,17 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
+import { PageHeader } from '@/components/common/page-header';
 import { CustomerDeleteDialog } from '@/components/customers/customer-delete-dialog';
 import { CustomerDetailDialog } from '@/components/customers/customer-detail-dialog';
 import { CustomerSearchFilters } from '@/components/customers/customer-search-filters';
 import { ERPCustomerList } from '@/components/customers/erp-customer-list';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import type { Customer, CustomerQueryParams } from '@/lib/types/customer';
+import {
+  CUSTOMER_SORT_OPTIONS,
+  type Customer,
+  type CustomerQueryParams,
+} from '@/lib/types/customer';
 
 interface CustomersPageClientProps {
   initialData: {
@@ -43,8 +47,11 @@ export function CustomersPageClient({
 
   // 本地状态管理
   const [search, setSearch] = React.useState(initialParams.search || '');
-  const [sortBy, setSortBy] = React.useState(
-    initialParams.sortBy || 'createdAt'
+  type SortField = NonNullable<CustomerQueryParams['sortBy']>;
+  const isSortField = (value: string): value is SortField =>
+    CUSTOMER_SORT_OPTIONS.some(option => option.value === value);
+  const [sortBy, setSortBy] = React.useState<SortField>(
+    initialParams.sortBy ?? 'createdAt'
   );
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
@@ -88,15 +95,36 @@ export function CustomersPageClient({
     newSortBy: string,
     newSortOrder: 'asc' | 'desc'
   ) => {
-    setSortBy(newSortBy);
+    const nextSortBy = isSortField(newSortBy) ? newSortBy : 'createdAt';
+    setSortBy(nextSortBy);
     setSortOrder(newSortOrder);
     startTransition(() => {
       const params = new URLSearchParams();
       if (search) {
         params.set('search', search);
       }
-      params.set('sortBy', newSortBy);
+      params.set('sortBy', nextSortBy);
       params.set('sortOrder', newSortOrder);
+      router.push(`/customers?${params.toString()}`);
+    });
+  };
+
+  // 处理分页 - 更新URL参数触发服务器端重新获取数据
+  const handlePageChange = (page: number) => {
+    startTransition(() => {
+      const params = new URLSearchParams();
+      if (search) {
+        params.set('search', search);
+      }
+      if (sortBy) {
+        params.set('sortBy', sortBy);
+      }
+      if (sortOrder) {
+        params.set('sortOrder', sortOrder);
+      }
+      if (page > 1) {
+        params.set('page', page.toString());
+      }
       router.push(`/customers?${params.toString()}`);
     });
   };
@@ -114,50 +142,39 @@ export function CustomersPageClient({
 
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
-      {/* 页面标题卡片 - 固定在顶部 */}
+      {/* 页面标题 */}
       <div className="mb-6 flex-shrink-0">
-        <Card className="overflow-hidden">
-          <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-purple))] shadow-[0_8px_20px_rgba(114,46,209,0.25)]">
-                  <Users className="h-6 w-6 text-white" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                    客户管理
-                  </h1>
-                  <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    管理客户信息，跟踪客户订单和交易记录
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  asChild
-                  className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-                >
-                  <Link href="/customers/export">
-                    <Download className="mr-2 h-4 w-4" />
-                    导出
-                  </Link>
-                </Button>
-                <Button
-                  size="lg"
-                  asChild
-                  className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-                >
-                  <Link href="/customers/create">
-                    <Plus className="mr-2 h-4 w-4" />
-                    新建客户
-                  </Link>
-                </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <PageHeader
+          title="客户管理"
+          description="管理客户信息，跟踪客户订单和交易记录"
+          icon={<Users className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-purple))"
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/customers/export">
+                  <Download className="mr-2 h-4 w-4" />
+                  导出
+                </Link>
+              </Button>
+              <Button
+                size="lg"
+                asChild
+                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+              >
+                <Link href="/customers/create">
+                  <Plus className="mr-2 h-4 w-4" />
+                  新建客户
+                </Link>
+              </Button>
+            </>
+          }
+        />
       </div>
 
       {/* 搜索和筛选 - 固定在顶部 */}
@@ -184,6 +201,7 @@ export function CustomersPageClient({
             initialData={initialData}
             onViewDetail={handleViewDetail}
             onDelete={handleDelete}
+            onPageChange={handlePageChange}
           />
         </Suspense>
       </div>

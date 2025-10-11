@@ -214,7 +214,7 @@ export const processRefundSchema = z.object({
     .number({
       error: '请输入处理金额',
     })
-    .positive('处理金额必须大于0')
+    .nonnegative('处理金额不能为负数')
     .max(999999999, '处理金额不能超过999,999,999'),
 
   processedDate: z
@@ -232,7 +232,15 @@ export const processRefundSchema = z.object({
   }),
 
   remarks: z.string().optional().or(z.literal('')),
-});
+
+  closeRemaining: z.boolean().optional(),
+}).refine(
+  data => (data.closeRemaining ? true : data.processedAmount > 0),
+  {
+    message: '处理金额必须大于0',
+    path: ['processedAmount'],
+  }
+);
 
 // 批量退款验证规则
 export const batchRefundSchema = z.object({

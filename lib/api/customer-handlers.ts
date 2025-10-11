@@ -73,17 +73,41 @@ export async function getCustomerDetail(id: string): Promise<Customer> {
           createdAt: 'desc',
         },
       },
-      // 最近的订单
+      // 最近的订单（包含付款信息）
       salesOrders: {
         select: {
           id: true,
+          orderNumber: true,
           totalAmount: true,
+          paidAmount: true,
+          status: true,
           createdAt: true,
         },
         orderBy: {
           createdAt: 'desc',
         },
-        take: 5, // 只获取最近5个订单
+        take: 20, // 获取最近20个订单以便显示未付款订单
+      },
+      // 退货订单
+      returnOrders: {
+        select: {
+          id: true,
+          returnNumber: true,
+          totalAmount: true,
+          status: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+        take: 10,
+      },
+      // 订单数量统计
+      _count: {
+        select: {
+          salesOrders: true,
+          returnOrders: true,
+        },
       },
     },
   });
@@ -103,6 +127,17 @@ export async function getCustomerDetail(id: string): Promise<Customer> {
   );
   const lastOrderDate = customer.salesOrders[0]?.createdAt.toISOString();
 
+  // 转换订单数据，将 Date 转换为 string
+  const salesOrders = customer.salesOrders.map(order => ({
+    ...order,
+    createdAt: order.createdAt.toISOString(),
+  }));
+
+  const returnOrders = customer.returnOrders.map(order => ({
+    ...order,
+    createdAt: order.createdAt.toISOString(),
+  }));
+
   return {
     id: customer.id,
     name: customer.name,
@@ -114,6 +149,9 @@ export async function getCustomerDetail(id: string): Promise<Customer> {
     updatedAt: customer.updatedAt.toISOString(),
     parentCustomer: customer.parentCustomer || undefined,
     childCustomers: customer.childCustomers || undefined,
+    salesOrders,
+    returnOrders,
+    _count: customer._count,
     totalOrders,
     totalAmount,
     lastOrderDate,
