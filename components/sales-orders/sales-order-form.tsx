@@ -13,9 +13,10 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type Control, type FieldValues } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/customers/customer-hierarchy';
+import { FeeItemsInput } from '@/components/sales-orders/fee-items-input';
 import { OrderItemsEditor } from '@/components/sales-orders/order-items-editor';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
@@ -57,8 +58,10 @@ import {
   SALES_ORDER_STATUS_VARIANTS,
   type SalesOrder,
   type SalesOrderCreateInput,
+  type SalesOrderStatus,
   type SalesOrderUpdateInput,
 } from '@/lib/types/sales-order';
+import { type SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   salesOrderUpdateSchema as UpdateSalesOrderSchema,
@@ -72,6 +75,21 @@ interface SalesOrderFormProps {
   onSuccess?: (salesOrder: SalesOrder) => void;
   onCancel?: () => void;
 }
+
+// 表单数据类型（简化版，用于表单组件）
+type FormData = {
+  id?: string;
+  customerId: string;
+  status?: SalesOrderStatus;
+  remarks?: string;
+  items: Array<{
+    id?: string;
+    productId?: string;
+    quantity?: number;
+    unitPrice?: number;
+  }>;
+  feeItems?: SalesOrderFeeItem[];
+};
 
 export function SalesOrderForm({
   mode,
@@ -87,7 +105,7 @@ export function SalesOrderForm({
   const isEdit = mode === 'edit';
   const schema = isEdit ? UpdateSalesOrderSchema : CreateSalesOrderSchema;
 
-  const form = useForm<CreateSalesOrderData | UpdateSalesOrderData>({
+  const form = useForm<FormData>({
     resolver: zodResolver(schema),
     defaultValues:
       isEdit && initialData
@@ -103,10 +121,14 @@ export function SalesOrderForm({
                 quantity: item.quantity,
                 unitPrice: item.unitPrice,
               })) || [],
+            feeItems: initialData.feeItems || [],
           }
         : {
-            ...salesOrderFormDefaults,
             customerId: '',
+            status: 'draft',
+            items: [],
+            remarks: '',
+            feeItems: [],
           },
   });
 
@@ -159,14 +181,17 @@ export function SalesOrderForm({
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
   // 表单提交
-  const onSubmit = async (data: SalesOrderFormData) => {
+  const onSubmit = async (data: FormData) => {
     setSubmitError('');
 
     try {
       if (isEdit) {
+        // 更新时需要包含 id
         await updateMutation.mutateAsync(data as SalesOrderUpdateInput);
       } else {
-        await createMutation.mutateAsync(data as SalesOrderCreateInput);
+        // 创建时不需要 id
+        const { id: _id, ...createData } = data;
+        await createMutation.mutateAsync(createData as SalesOrderCreateInput);
       }
     } catch (error) {
       // 错误已在 mutation 的 onError 中处理
@@ -257,7 +282,7 @@ export function SalesOrderForm({
                 {/* 客户选择 */}
                 <div className="md:col-span-1">
                   <CustomerSelector
-                    control={form.control}
+                    control={form.control as unknown as Control<FieldValues>}
                     name="customerId"
                     label="选择客户 *"
                     placeholder="搜索客户..."
@@ -346,11 +371,26 @@ export function SalesOrderForm({
 
           {/* 订单明细 */}
           <OrderItemsEditor
-            control={form.control}
+            control={form.control as unknown as Control<FieldValues>}
             name="items"
             disabled={isLoading}
             mode={mode}
           />
+
+          {/* 额外费用 */}
+          <Card>
+            <CardHeader>
+              <CardTitle>额外费用</CardTitle>
+              <CardDescription>添加加工费、运费等额外费用项目</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FeeItemsInput
+                feeItems={form.watch('feeItems') || []}
+                onChange={feeItems => form.setValue('feeItems', feeItems)}
+                disabled={isLoading}
+              />
+            </CardContent>
+          </Card>
 
           {/* 客户信息显示 */}
           {form.watch('customerId') && (

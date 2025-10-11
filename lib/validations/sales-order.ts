@@ -31,6 +31,28 @@ export const salesOrderStatusSchema = z.enum([
 export const salesOrderTypeSchema = z.enum(['NORMAL', 'TRANSFER']);
 
 /**
+ * 销售订单费用项验证规则
+ */
+export const salesOrderFeeItemSchema = z.object({
+  id: z.string().optional(),
+  feeType: z.enum(['processing', 'shipping', 'other']),
+  feeName: z
+    .string()
+    .min(1, '费用名称不能为空')
+    .max(100, '费用名称不能超过100个字符'),
+  feeAmount: z
+    .number()
+    .min(0, '费用金额不能为负数')
+    .max(999999.99, '费用金额不能超过999,999.99')
+    .multipleOf(0.01, '费用金额最多保留2位小数'),
+  remarks: z
+    .string()
+    .max(200, '备注不能超过200个字符')
+    .optional()
+    .or(z.literal('')),
+});
+
+/**
  * 销售订单明细验证规则
  */
 export const salesOrderItemSchema = z.object({
@@ -151,46 +173,86 @@ export const salesOrderItemSchema = z.object({
 /**
  * 基础销售订单验证规则
  */
-const baseSalesOrderSchema = z.object({
-  orderNumber: z
-    .string()
-    .min(1, '订单号不能为空')
-    .max(50, '订单号不能超过50个字符')
-    .optional(), // 订单号可选，由后端自动生成
+const baseSalesOrderSchema = z
+  .object({
+    orderNumber: z
+      .string()
+      .min(1, '订单号不能为空')
+      .max(50, '订单号不能超过50个字符')
+      .optional(), // 订单号可选，由后端自动生成
 
-  customerId: z.string().min(1, '客户ID不能为空'),
+    customerId: z.string().min(1, '客户ID不能为空'),
 
-  status: salesOrderStatusSchema.default('draft'),
+    status: salesOrderStatusSchema.default('draft'),
 
-  orderType: salesOrderTypeSchema.default('NORMAL'),
+    orderType: salesOrderTypeSchema.default('NORMAL'),
 
-  supplierId: z
-    .string()
-    .min(1, '供应商ID不能为空')
-    .optional()
-    .or(z.literal('')),
+    supplierId: z
+      .string()
+      .min(1, '供应商ID不能为空')
+      .optional()
+      .or(z.literal('')),
 
-  costAmount: nullableNumber(
-    z
-      .number()
-      .min(0, '成本金额不能为负数')
-      .max(999999999.99, '成本金额不能超过999,999,999.99')
-      .multipleOf(0.01, '成本金额最多保留2位小数')
-  ),
+    costAmount: nullableNumber(
+      z
+        .number()
+        .min(0, '成本金额不能为负数')
+        .max(999999999.99, '成本金额不能超过999,999,999.99')
+        .multipleOf(0.01, '成本金额最多保留2位小数')
+    ),
 
-  remarks: z
-    .string()
-    .max(1000, '备注不能超过1000个字符')
-    .optional()
-    .or(z.literal('')),
+    remarks: z
+      .string()
+      .max(1000, '备注不能超过1000个字符')
+      .optional()
+      .or(z.literal('')),
 
-  items: z
-    .array(salesOrderItemSchema)
-    .min(0, '订单明细不能为负')
-    .max(100, '订单明细不能超过100条'),
+    items: z
+      .array(salesOrderItemSchema)
+      .min(0, '订单明细不能为负')
+      .max(100, '订单明细不能超过100条'),
 
-  totalAmount: z.number().min(0, '总金额不能为负数').optional(),
-});
+    feeItems: z.array(salesOrderFeeItemSchema).optional().default([]),
+
+    itemsAmount: z.number().min(0, '商品金额不能为负数').optional(),
+    additionalFees: z.number().min(0, '额外费用不能为负数').optional(),
+    totalAmount: z.number().min(0, '总金额不能为负数').optional(),
+
+    // ✅ 预收款相关字段
+    usePrepayment: z.boolean().optional().default(false), // 是否使用预收款冲抵
+    prepaymentAmount: nullableNumber(
+      z
+        .number()
+        .min(0, '预收款冲抵金额不能为负数')
+        .max(999999999.99, '预收款冲抵金额不能超过999,999,999.99')
+        .multipleOf(0.01, '预收款冲抵金额最多保留2位小数')
+    ), // 手动指定冲抵金额(可选,默认自动计算)
+  })
+  .superRefine((data, ctx) => {
+    const status = data.status ?? 'draft';
+
+    if (status === 'draft' || !Array.isArray(data.items)) {
+      return;
+    }
+
+    data.items.forEach((item, index) => {
+      if (typeof item.quantity !== 'number' || Number.isNaN(item.quantity)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '非草稿订单的明细必须填写数量',
+          path: ['items', index, 'quantity'],
+        });
+      }
+
+      if (typeof item.unitPrice !== 'number' || Number.isNaN(item.unitPrice)) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '非草稿订单的明细必须填写单价',
+          path: ['items', index, 'unitPrice'],
+        });
+      }
+    });
+  });
 
 /**
  * 验证订单明细组合唯一性的函数
@@ -211,28 +273,34 @@ function validateItemCombinations(items: SalesOrderItemFormData[]): boolean {
  * 销售订单创建验证规则
  */
 export const salesOrderCreateSchema = baseSalesOrderSchema
-  .refine(data => {
-    // 草稿状态允许空订单项
-    if (data.status === 'draft') {
-      return true;
+  .refine(
+    data => {
+      // 草稿状态允许空订单项
+      if (data.status === 'draft') {
+        return true;
+      }
+      // 非草稿状态至少需要一个订单项
+      return data.items && data.items.length > 0;
+    },
+    {
+      message: '至少需要一个订单项',
+      path: ['items'],
     }
-    // 非草稿状态至少需要一个订单项
-    return data.items && data.items.length > 0;
-  }, {
-    message: '至少需要一个订单项',
-    path: ['items'],
-  })
-  .refine(data => {
-    // 草稿状态使用宽松验证
-    if (data.status === 'draft') {
-      return true;
+  )
+  .refine(
+    data => {
+      // 草稿状态使用宽松验证
+      if (data.status === 'draft') {
+        return true;
+      }
+      // 非草稿状态验证组合唯一性
+      return validateItemCombinations(data.items);
+    },
+    {
+      message: '订单明细中存在重复的产品规格组合',
+      path: ['items'],
     }
-    // 非草稿状态验证组合唯一性
-    return validateItemCombinations(data.items);
-  }, {
-    message: '订单明细中存在重复的产品规格组合',
-    path: ['items'],
-  })
+  )
   .refine(
     data => {
       // 草稿状态跳过验证
@@ -404,6 +472,7 @@ export type SalesOrderCreateFormData = z.infer<typeof salesOrderCreateSchema>;
 export type SalesOrderUpdateFormData = z.infer<typeof salesOrderUpdateSchema>;
 export type SalesOrderQueryFormData = z.infer<typeof salesOrderQuerySchema>;
 export type SalesOrderItemFormData = z.infer<typeof salesOrderItemSchema>;
+export type SalesOrderFeeItemFormData = z.infer<typeof salesOrderFeeItemSchema>;
 export type BatchDeleteSalesOrdersFormData = z.infer<
   typeof batchDeleteSalesOrdersSchema
 >;

@@ -208,26 +208,30 @@ model ProductVariant {
 
 // 销售单表 - 销售订单主表
 model SalesOrder {
-  id           String   @id @default(uuid())
-  orderNumber  String   @unique @map("order_number")
-  customerId   String   @map("customer_id")
-  userId       String   @map("user_id")
-  status       String   @default("draft") // draft, confirmed, shipped, completed, cancelled
-  orderType    String   @default("NORMAL") @map("order_type") // NORMAL, TRANSFER
-  supplierId   String?  @map("supplier_id") // 调货销售时的供应商ID
-  costAmount   Float?   @default(0) @map("cost_amount") // 调货销售的成本金额
-  profitAmount Float?   @default(0) @map("profit_amount") // 调货销售的毛利金额
-  totalAmount  Float    @default(0) @map("total_amount")
-  paidAmount   Float    @default(0) @map("paid_amount") // 已付金额
-  remarks      String?
-  createdAt    DateTime @default(now()) @map("created_at")
-  updatedAt    DateTime @updatedAt @map("updated_at")
+  id              String   @id @default(uuid())
+  orderNumber     String   @unique @map("order_number")
+  customerId      String   @map("customer_id")
+  userId          String   @map("user_id")
+  status          String   @default("draft") // draft, confirmed, shipped, completed, cancelled
+  orderType       String   @default("NORMAL") @map("order_type") // NORMAL, TRANSFER
+  supplierId      String?  @map("supplier_id") // 调货销售时的供应商ID
+  costAmount      Float?   @default(0) @map("cost_amount") // 调货销售的成本金额
+  profitAmount    Float?   @default(0) @map("profit_amount") // 调货销售的毛利金额
+  itemsAmount     Float    @default(0) @map("items_amount") // 商品总金额
+  additionalFees  Float    @default(0) @map("additional_fees") // 额外费用总额（加工费、运费等）
+  totalAmount     Float    @default(0) @map("total_amount") // 订单总额 = 商品总额 + 额外费用
+  paidAmount      Float    @default(0) @map("paid_amount") // 已付金额
+  remarks         String?
+  shippedAt       DateTime? @map("shipped_at") // 发货时间
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
 
   // 关联关系
-  customer        Customer         @relation(fields: [customerId], references: [id])
-  user            User             @relation(fields: [userId], references: [id])
-  supplier        Supplier?        @relation(fields: [supplierId], references: [id])
+  customer        Customer              @relation(fields: [customerId], references: [id])
+  user            User                  @relation(fields: [userId], references: [id])
+  supplier        Supplier?             @relation(fields: [supplierId], references: [id])
   items           SalesOrderItem[]
+  feeItems        SalesOrderFeeItem[]   // 费用项明细
   payments        PaymentRecord[]
   refunds         RefundRecord[]
   returnOrders    ReturnOrder[]
@@ -244,6 +248,25 @@ model SalesOrder {
   @@index([status, createdAt(sort: Desc)], map: "idx_sales_orders_status_date")
   @@index([userId, status, createdAt(sort: Desc)], map: "idx_sales_orders_user_status_date")
   @@map("sales_orders")
+}
+
+// 销售订单费用项表 - 记录加工费、运费等额外费用
+model SalesOrderFeeItem {
+  id           String  @id @default(uuid())
+  salesOrderId String  @map("sales_order_id")
+  feeType      String  @map("fee_type") // processing: 加工费, shipping: 运费, other: 其他
+  feeName      String  @map("fee_name") // 费用名称
+  feeAmount    Float   @map("fee_amount") // 费用金额
+  remarks      String? // 备注
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  // 关联关系
+  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+
+  @@index([salesOrderId], map: "idx_sales_order_fee_items_order")
+  @@index([feeType], map: "idx_sales_order_fee_items_type")
+  @@map("sales_order_fee_items")
 }
 
 // 销售单明细表 - 销售订单明细，包含瓷砖行业特有字段
@@ -541,17 +564,19 @@ model InventoryAdjustment {
   @@map("inventory_adjustments")
 }
 
-// 收款记录表 - 收款管理，支持部分收款和分期收款
+// 收款记录表 - 收款管理，支持部分收款、分期收款和预收款
 model PaymentRecord {
   id            String   @id @default(uuid())
   paymentNumber String   @unique @map("payment_number")
-  salesOrderId  String   @map("sales_order_id")
+  salesOrderId  String?  @map("sales_order_id") // 订单收款时必填,预收款时为空
   customerId    String   @map("customer_id")
   userId        String   @map("user_id")
+  paymentType   String   @default("order_payment") @map("payment_type") // order_payment, prepayment
   paymentMethod String   @default("cash") // cash, bank_transfer, check, other
   paymentAmount Float    @map("payment_amount")
+  appliedAmount Float    @default(0) @map("applied_amount") // 已冲抵金额(预收款使用)
   paymentDate   DateTime @map("payment_date")
-  status        String   @default("pending") // pending, confirmed, cancelled
+  status        String   @default("pending") // pending, confirmed, cancelled, applied
   remarks       String?
   receiptNumber String?  @map("receipt_number") // 收据号
   bankInfo      String?  @map("bank_info") // 银行信息（转账时使用）
@@ -559,17 +584,19 @@ model PaymentRecord {
   updatedAt     DateTime @updatedAt @map("updated_at")
 
   // 关联关系
-  salesOrder SalesOrder @relation(fields: [salesOrderId], references: [id])
-  customer   Customer   @relation(fields: [customerId], references: [id])
-  user       User       @relation(fields: [userId], references: [id])
+  salesOrder SalesOrder? @relation(fields: [salesOrderId], references: [id])
+  customer   Customer    @relation(fields: [customerId], references: [id])
+  user       User        @relation(fields: [userId], references: [id])
 
   @@index([salesOrderId], map: "idx_payment_records_order")
   @@index([customerId], map: "idx_payment_records_customer")
   @@index([userId], map: "idx_payment_records_user")
   @@index([status], map: "idx_payment_records_status")
+  @@index([paymentType], map: "idx_payment_records_type")
   @@index([paymentDate(sort: Desc)], map: "idx_payment_records_date")
   @@index([paymentMethod], map: "idx_payment_records_method")
   // 复合索引优化：支持常见查询模式
+  @@index([customerId, paymentType, status], map: "idx_payment_records_customer_type_status")
   @@index([customerId, status, paymentDate(sort: Desc)], map: "idx_payment_records_customer_status_date")
   @@index([salesOrderId, status], map: "idx_payment_records_order_status")
   @@map("payment_records")
@@ -653,16 +680,18 @@ model FactoryShipmentOrderItem {
 }
 
 // 退货订单表 - 退货管理，支持质量问题、产品错误、客户变更等退货类型
+// 支持两种退货模式: single_order (单订单退货), multi_order (多订单退货)
 model ReturnOrder {
   id           String    @id @default(uuid())
   returnNumber String    @unique @map("return_number")
-  salesOrderId String    @map("sales_order_id")
+  returnMode   String    @default("single_order") @map("return_mode") // single_order, multi_order
+  salesOrderId String?   @map("sales_order_id") // 单订单模式使用，多订单模式为null
   customerId   String    @map("customer_id")
   userId       String    @map("user_id")
-  type         String    @map("type") // quality_issue, wrong_product, customer_change, damage_in_transit, other
+  type         String    @map("type") // quality_issue, wrong_product, customer_change, damage_in_transit, remaining_return, other
   processType  String    @map("process_type") // refund, exchange, repair, credit
   status       String    @default("draft") // draft, submitted, approved, rejected, processing, completed, cancelled
-  reason       String
+  reason       String?
   totalAmount  Float     @map("total_amount")
   refundAmount Float     @map("refund_amount")
   remarks      String?
@@ -674,12 +703,13 @@ model ReturnOrder {
   updatedAt    DateTime  @updatedAt @map("updated_at")
 
   // 关联关系
-  salesOrder    SalesOrder        @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
+  salesOrder    SalesOrder?       @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
   customer      Customer          @relation(fields: [customerId], references: [id], onDelete: Cascade)
   user          User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   items         ReturnOrderItem[]
   refundRecords RefundRecord[]
 
+  @@index([returnMode], map: "idx_return_orders_mode")
   @@index([salesOrderId], map: "idx_return_orders_sales_order")
   @@index([customerId], map: "idx_return_orders_customer")
   @@index([userId], map: "idx_return_orders_user")
@@ -687,6 +717,7 @@ model ReturnOrder {
   @@index([type], map: "idx_return_orders_type")
   @@index([createdAt(sort: Desc)], map: "idx_return_orders_created")
   // 复合索引优化：支持常见查询模式
+  @@index([returnMode, customerId, status], map: "idx_return_orders_mode_customer_status")
   @@index([customerId, status, createdAt(sort: Desc)], map: "idx_return_orders_customer_status_date")
   @@index([salesOrderId, status], map: "idx_return_orders_order_status")
   @@index([status, type], map: "idx_return_orders_status_type")
@@ -1008,3 +1039,4 @@ model AccountLockout {
   @@index([lockedUntil], map: "idx_account_lockouts_until")
   @@map("account_lockouts")
 }
+

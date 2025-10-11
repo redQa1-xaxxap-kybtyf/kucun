@@ -102,6 +102,7 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
         profitAmount: true,
         totalAmount: true,
         remarks: true,
+        shippedAt: true,
         createdAt: true,
         updatedAt: true,
         customer: {
@@ -159,6 +160,14 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
             },
           },
         },
+        payments: {
+          where: {
+            status: 'confirmed',
+          },
+          select: {
+            paymentAmount: true,
+          },
+        },
         _count: {
           select: {
             items: true,
@@ -171,7 +180,15 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
 
   return {
     data: orders.map(order => {
-      const { _count, ...orderData } = order;
+      const { _count, payments, ...orderData } = order;
+      // 计算已收款金额
+      const paidAmount = payments.reduce(
+        (sum, payment) => sum + Number(payment.paymentAmount),
+        0
+      );
+      // 计算待收款金额
+      const remainingAmount = Number(orderData.totalAmount) - paidAmount;
+
       return {
         ...orderData,
         status: orderData.status as SalesOrderStatus,
@@ -180,9 +197,14 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
         costAmount: orderData.costAmount ?? undefined,
         profitAmount: orderData.profitAmount ?? undefined,
         remarks: orderData.remarks ?? undefined,
+        shippedAt: orderData.shippedAt
+          ? orderData.shippedAt.toISOString()
+          : undefined,
         createdAt: orderData.createdAt.toISOString(),
         updatedAt: orderData.updatedAt.toISOString(),
         itemCount: _count.items,
+        paidAmount,
+        remainingAmount,
       };
     }),
     pagination: {
@@ -294,7 +316,9 @@ export async function getSalesOrderById(id: string) {
       ...item,
       batchNumber: item.batchNumber ?? undefined,
       productionDate: item.productionDate
-        ? item.productionDate.toISOString()
+        ? typeof item.productionDate === 'string'
+          ? item.productionDate
+          : (item.productionDate as Date).toISOString()
         : undefined,
       displayUnit: item.displayUnit || undefined,
       displayQuantity: item.displayQuantity ?? undefined,
@@ -309,6 +333,81 @@ export async function getSalesOrderById(id: string) {
       product: item.product ? { ...item.product } : undefined,
     })),
     itemCount: _count.items,
+  };
+}
+
+/**
+ * 自动冲抵预收款 (FIFO策略)
+ * @param tx Prisma事务对象
+ * @param customerId 客户ID
+ * @param orderTotal 订单总额
+ * @param specifiedAmount 手动指定冲抵金额(可选)
+ * @returns 冲抵结果 { totalApplied: 总冲抵金额, records: 冲抵记录详情 }
+ */
+async function applyPrepaymentToOrder(
+  tx: Prisma.TransactionClient,
+  customerId: string,
+  orderTotal: number,
+  specifiedAmount?: number
+): Promise<{
+  totalApplied: number;
+  records: Array<{ id: string; amount: number }>;
+}> {
+  // 查询客户可用的预收款(按FIFO策略,最早的先冲抵)
+  const prepayments = await tx.paymentRecord.findMany({
+    where: {
+      customerId,
+      paymentType: 'prepayment',
+      status: { in: ['confirmed', 'applied'] }, // 已确认或部分已冲抵的预收款
+    },
+    orderBy: { paymentDate: 'asc' }, // FIFO: 按付款日期升序
+  });
+
+  // 过滤出有剩余可用金额的预收款
+  const availablePrepayments = prepayments.filter(
+    p => p.paymentAmount - p.appliedAmount > 0
+  );
+
+  if (availablePrepayments.length === 0) {
+    return { totalApplied: 0, records: [] };
+  }
+
+  // 计算需要冲抵的金额
+  const targetAmount = specifiedAmount
+    ? Math.min(specifiedAmount, orderTotal)
+    : orderTotal;
+
+  let remainingAmount = targetAmount;
+  const appliedRecords: Array<{ id: string; amount: number }> = [];
+
+  // 逐个冲抵预收款(FIFO)
+  for (const prepayment of availablePrepayments) {
+    if (remainingAmount <= 0) {
+      break;
+    }
+
+    const availableAmount = prepayment.paymentAmount - prepayment.appliedAmount;
+    const applyAmount = Math.min(availableAmount, remainingAmount);
+
+    // 更新预收款已冲抵金额
+    await tx.paymentRecord.update({
+      where: { id: prepayment.id },
+      data: {
+        appliedAmount: { increment: applyAmount },
+        status:
+          prepayment.appliedAmount + applyAmount >= prepayment.paymentAmount
+            ? 'applied' // 全部冲抵完成
+            : 'confirmed', // 部分冲抵
+      },
+    });
+
+    appliedRecords.push({ id: prepayment.id, amount: applyAmount });
+    remainingAmount -= applyAmount;
+  }
+
+  return {
+    totalApplied: targetAmount - remainingAmount,
+    records: appliedRecords,
   };
 }
 
@@ -331,8 +430,9 @@ export async function createSalesOrder(
   let profitAmount = 0;
 
   for (const item of validatedData.items) {
-    const itemSubtotal = item.subtotal || item.quantity * item.unitPrice;
-    const itemCost = (item.unitCost || 0) * item.quantity;
+    const itemSubtotal =
+      item.subtotal || (item.quantity ?? 0) * (item.unitPrice ?? 0);
+    const itemCost = (item.unitCost || 0) * (item.quantity ?? 0);
 
     totalAmount += itemSubtotal;
     costAmount += itemCost;
@@ -392,66 +492,142 @@ export async function createSalesOrder(
       // 优化前：N次库存查询 + N次库存更新，10个订单项=20次数据库操作
       // 优化后：1次批量查询 + N次更新（Map缓存），10个订单项=11次操作（减少45%）
       if (validatedData.status === 'confirmed') {
-        // 1. 收集所有需要查询库存的产品ID
-        const inventoryProductIds = validatedData.items
+        const reservationTargets = validatedData.items
           .filter(item => !item.isManualProduct && item.productId)
-          .map(item => item.productId!)
-          .filter((id, index, self) => self.indexOf(id) === index); // 去重
+          .map(item => ({
+            productId: item.productId as string,
+            batchNumber: item.batchNumber ?? null,
+          }));
 
-        // 2. 批量查询所有库存记录（一次性查询）
-        const inventories = await tx.inventory.findMany({
-          where: {
-            productId: { in: inventoryProductIds },
-            // TODO: 添加variantId和batchNumber支持
-          },
-        });
+        if (reservationTargets.length > 0) {
+          const uniqueProductIds = Array.from(
+            new Set(reservationTargets.map(target => target.productId))
+          );
 
-        // 3. 构建库存查找Map（productId -> inventory），实现O(1)查找性能
-        const inventoryMap = new Map(
-          inventories.map(inv => [inv.productId, inv])
-        );
-
-        // 4. 循环验证和预留库存（无额外数据库查询，只有更新操作）
-        for (const item of validatedData.items) {
-          // 跳过手动输入的商品
-          if (item.isManualProduct || !item.productId) {
-            continue;
-          }
-
-          // 从Map中O(1)时间查找库存记录
-          const inventory = inventoryMap.get(item.productId);
-
-          if (!inventory) {
-            throw new Error(`产品ID ${item.productId} 库存记录不存在`);
-          }
-
-          // 检查可用库存是否足够
-          const availableQuantity =
-            inventory.quantity - inventory.reservedQuantity;
-          if (availableQuantity < item.quantity) {
-            throw new Error(
-              `产品ID ${item.productId} 可用库存不足。可用: ${availableQuantity}, 需要: ${item.quantity}`
-            );
-          }
-
-          // 预留库存 - 使用乐观锁（保持原有的并发安全机制）
-          const updatedCount = await tx.inventory.updateMany({
+          const inventories = await tx.inventory.findMany({
             where: {
-              id: inventory.id,
-              quantity: { gte: inventory.reservedQuantity + item.quantity }, // 确保总库存足够
-            },
-            data: {
-              reservedQuantity: { increment: item.quantity },
+              productId: { in: uniqueProductIds },
             },
           });
 
-          if (updatedCount.count === 0) {
-            throw new Error(
-              `产品ID ${item.productId} 库存预留失败,可能已被其他订单占用,请重试`
+          const normalizeBatchNumber = (value?: string | null) =>
+            value ? value.trim() : '';
+          const buildInventoryKey = (
+            productId: string,
+            batchNumber?: string | null
+          ) => `${productId}::${normalizeBatchNumber(batchNumber)}`;
+
+          const inventoryByKey = new Map<
+            string,
+            (typeof inventories)[number]
+          >();
+          const inventoryByProduct = new Map<
+            string,
+            Array<(typeof inventories)[number]>
+          >();
+
+          for (const inv of inventories) {
+            const key = buildInventoryKey(inv.productId, inv.batchNumber);
+            inventoryByKey.set(key, inv);
+            const bucket = inventoryByProduct.get(inv.productId) ?? [];
+            bucket.push(inv);
+            inventoryByProduct.set(inv.productId, bucket);
+          }
+
+          const localReservation = new Map<string, number>();
+
+          for (const item of validatedData.items) {
+            if (item.isManualProduct || !item.productId) {
+              continue;
+            }
+
+            const batchKey = buildInventoryKey(
+              item.productId,
+              item.batchNumber ?? null
+            );
+            const candidates = inventoryByProduct.get(item.productId) ?? [];
+            let inventory = inventoryByKey.get(batchKey);
+
+            if (!inventory && item.batchNumber) {
+              const normalizedTarget = normalizeBatchNumber(item.batchNumber);
+              inventory = candidates.find(
+                candidate =>
+                  normalizeBatchNumber(candidate.batchNumber) ===
+                  normalizedTarget
+              );
+            }
+
+            if (!inventory) {
+              if (candidates.length === 0) {
+                throw new Error(`产品ID ${item.productId} 库存记录不存在`);
+              }
+              if (candidates.length > 1) {
+                throw new Error(
+                  `产品ID ${item.productId} 存在多个库存批次，请在订单明细中指定批次号`
+                );
+              }
+              inventory = candidates[0];
+            }
+
+            if (!inventory) {
+              throw new Error(`产品ID ${item.productId} 库存记录不存在`);
+            }
+
+            inventoryByKey.set(batchKey, inventory);
+
+            const reservationKey = buildInventoryKey(
+              inventory.productId,
+              inventory.batchNumber
+            );
+            const pendingReservation =
+              localReservation.get(reservationKey) ?? 0;
+            const effectiveReserved =
+              inventory.reservedQuantity + pendingReservation;
+            const availableQuantity = inventory.quantity - effectiveReserved;
+
+            const batchLabel = normalizeBatchNumber(
+              item.batchNumber ?? inventory.batchNumber ?? null
+            );
+            const batchMessage = batchLabel ? ` (批次: ${batchLabel})` : '';
+
+            const itemQuantity = item.quantity ?? 0;
+            if (availableQuantity < itemQuantity) {
+              throw new Error(
+                `产品ID ${item.productId}${batchMessage} 可用库存不足。可用: ${availableQuantity}, 需要: ${itemQuantity}`
+              );
+            }
+
+            const expectedReserved =
+              inventory.reservedQuantity + pendingReservation;
+            const updatedCount = await tx.inventory.updateMany({
+              where: {
+                id: inventory.id,
+                reservedQuantity: expectedReserved,
+                quantity: { gte: expectedReserved + itemQuantity },
+              },
+              data: {
+                reservedQuantity: { increment: itemQuantity },
+              },
+            });
+
+            if (updatedCount.count === 0) {
+              throw new Error(
+                `产品ID ${item.productId}${batchMessage} 库存预留失败,可能已被其他订单占用,请重试`
+              );
+            }
+
+            localReservation.set(
+              reservationKey,
+              pendingReservation + itemQuantity
             );
           }
         }
       }
+
+      // 计算额外费用总额
+      const additionalFees =
+        validatedData.feeItems?.reduce((sum, fee) => sum + fee.feeAmount, 0) ||
+        0;
 
       // 创建订单
       const salesOrder = await tx.salesOrder.create({
@@ -464,7 +640,9 @@ export async function createSalesOrder(
           orderType: validatedData.orderType,
           costAmount,
           profitAmount,
-          totalAmount,
+          itemsAmount: totalAmount,
+          additionalFees,
+          totalAmount: totalAmount + additionalFees,
           remarks: validatedData.remarks,
           items: {
             create: validatedData.items.map(item => ({
@@ -472,12 +650,12 @@ export async function createSalesOrder(
               batchNumber: item.batchNumber || null,
               colorCode: item.colorCode,
               productionDate: item.productionDate,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice || 0,
-              subtotal: item.subtotal || 0,
+              quantity: item.quantity ?? 0,
+              unitPrice: item.unitPrice ?? 0,
+              subtotal: item.subtotal ?? 0,
               unitCost: item.unitCost,
               displayUnit: item.displayUnit || '片',
-              displayQuantity: item.displayQuantity ?? item.quantity,
+              displayQuantity: item.displayQuantity ?? item.quantity ?? 0,
               piecesPerUnit: item.piecesPerUnit ?? null,
               specification: item.specification || null,
               remarks: item.remarks || null,
@@ -489,6 +667,15 @@ export async function createSalesOrder(
               manualWeight: item.manualWeight,
               manualUnit: item.manualUnit,
             })),
+          },
+          feeItems: {
+            create:
+              validatedData.feeItems?.map(fee => ({
+                feeType: fee.feeType,
+                feeName: fee.feeName,
+                feeAmount: fee.feeAmount,
+                remarks: fee.remarks || null,
+              })) || [],
           },
         },
         select: {
@@ -502,6 +689,7 @@ export async function createSalesOrder(
           costAmount: true,
           profitAmount: true,
           totalAmount: true,
+          paidAmount: true,
           remarks: true,
           createdAt: true,
           updatedAt: true,
@@ -607,8 +795,7 @@ export async function createSalesOrder(
         validatedData.orderType === 'TRANSFER' &&
         validatedData.supplierId &&
         costAmount > 0 &&
-        (validatedData.status === 'confirmed' ||
-          validatedData.status === 'draft')
+        validatedData.status === 'confirmed'
       ) {
         // 生成应付款单号
         const payableNumber = `PAY-${Date.now()}-${salesOrder.id.slice(-6)}`;
@@ -637,6 +824,29 @@ export async function createSalesOrder(
         });
       }
 
+      // ✅ 自动冲抵预收款
+      if (validatedData.usePrepayment) {
+        const prepaymentResult = await applyPrepaymentToOrder(
+          tx,
+          validatedData.customerId,
+          totalAmount,
+          validatedData.prepaymentAmount ?? undefined
+        );
+
+        // 更新订单已付金额
+        if (prepaymentResult.totalApplied > 0) {
+          await tx.salesOrder.update({
+            where: { id: salesOrder.id },
+            data: {
+              paidAmount: prepaymentResult.totalApplied,
+            },
+          });
+
+          // 更新返回的订单对象
+          salesOrder.paidAmount = prepaymentResult.totalApplied;
+        }
+      }
+
       return salesOrder;
     },
     getLongTransactionOptions() // 根据数据库类型自动配置事务选项（SQLite默认串行化，MySQL/PostgreSQL使用Serializable，15秒超时）
@@ -652,7 +862,9 @@ export async function createSalesOrder(
       ...item,
       batchNumber: item.batchNumber ?? undefined,
       productionDate: item.productionDate
-        ? item.productionDate.toISOString()
+        ? typeof item.productionDate === 'string'
+          ? item.productionDate
+          : (item.productionDate as Date).toISOString()
         : undefined,
       displayUnit: item.displayUnit || undefined,
       displayQuantity: item.displayQuantity ?? undefined,

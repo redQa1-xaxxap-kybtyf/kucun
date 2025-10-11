@@ -3,6 +3,7 @@
 
 import type { Customer } from './customer';
 import type { Product } from './product';
+import type { SalesOrderFeeItem } from './sales-order-fee';
 import type { User } from './user';
 
 // 销售订单状态枚举
@@ -15,6 +16,9 @@ export type SalesOrderStatus =
   | 'delivered'
   | 'completed'
   | 'cancelled';
+
+// 销售订单类型枚举
+export type SalesOrderType = 'NORMAL' | 'TRANSFER';
 
 // 销售订单明细类型
 export interface SalesOrderItem {
@@ -63,10 +67,17 @@ export interface SalesOrder {
   supplierId?: string;
   costAmount?: number;
   profitAmount?: number;
-  totalAmount: number;
+  itemsAmount?: number; // 商品总额
+  additionalFees?: number; // 额外费用总额
+  totalAmount: number; // 总金额 = itemsAmount + additionalFees
   remarks?: string;
+  shippedAt?: string;
   createdAt: string;
   updatedAt: string;
+
+  // 收款相关字段（列表查询时返回）
+  paidAmount?: number;
+  remainingAmount?: number;
 
   // 关联数据（可选，根据查询需要包含）
   customer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
@@ -77,6 +88,7 @@ export interface SalesOrder {
     phone?: string;
   };
   items?: SalesOrderItem[];
+  feeItems?: SalesOrderFeeItem[]; // 费用项列表
 }
 
 // API 查询参数类型
@@ -123,6 +135,7 @@ export interface SalesOrderCreateInput {
   costAmount?: number;
   remarks?: string;
   items: SalesOrderItemCreateInput[];
+  feeItems?: SalesOrderFeeItem[];
 }
 
 // 销售订单更新输入类型
@@ -135,6 +148,7 @@ export interface SalesOrderUpdateInput {
   costAmount?: number;
   remarks?: string;
   items?: SalesOrderItemUpdateInput[];
+  feeItems?: SalesOrderFeeItem[];
 }
 
 // 销售订单明细创建输入类型
@@ -222,15 +236,21 @@ export const SALES_ORDER_STATUS_LABELS: Record<SalesOrderStatus, string> = {
 
 export const SALES_ORDER_STATUS_VARIANTS: Record<
   SalesOrderStatus,
-  'default' | 'secondary' | 'destructive' | 'outline'
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info'
 > = {
   draft: 'outline',
-  pending: 'outline',
+  pending: 'warning',
   confirmed: 'default',
-  processing: 'secondary',
-  shipped: 'secondary',
-  delivered: 'default',
-  completed: 'default',
+  processing: 'info',
+  shipped: 'info',
+  delivered: 'success',
+  completed: 'success',
   cancelled: 'destructive',
 };
 
@@ -362,5 +382,3 @@ export const formatProductionDate = (dateString?: string): string => {
 // 注意：分页配置已迁移到环境配置 (lib/env.ts)
 // 请使用 paginationConfig.defaultPageSize 和 paginationConfig.maxPageSize
 // 分页选项可以根据 paginationConfig.maxPageSize 动态生成
-
-
