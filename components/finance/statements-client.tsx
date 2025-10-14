@@ -17,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { logger } from '@/lib/logger';
 import { formatCurrency } from '@/lib/utils/format';
 
 type StatementBadgeType = 'customer' | 'supplier' | 'partner';
@@ -74,6 +73,12 @@ interface StatementsClientProps {
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
   };
+  filters?: {
+    search?: string;
+    type?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  };
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
   onPageChange?: (page: number) => void;
@@ -85,11 +90,18 @@ interface StatementsClientProps {
 export function StatementsClient({
   initialData,
   initialParams,
+  filters,
   onSearch,
   onFilter,
   onPageChange,
 }: StatementsClientProps) {
   const { statements, summary, pagination } = initialData;
+  const effectiveFilters = {
+    search: filters?.search ?? initialParams?.search ?? '',
+    type: filters?.type ?? initialParams?.type ?? 'all',
+    sortBy: filters?.sortBy ?? initialParams?.sortBy ?? 'totalAmount',
+    sortOrder: filters?.sortOrder ?? initialParams?.sortOrder ?? 'desc',
+  };
 
   return (
     <div className="space-y-4">
@@ -158,7 +170,7 @@ export function StatementsClient({
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
             <div className="flex flex-1 items-center gap-2">
               <UnifiedSearchBar
-                searchValue={initialParams?.search ?? ''}
+                searchValue={effectiveFilters.search ?? ''}
                 onSearchChange={value => {
                   if (onSearch) {
                     onSearch(value);
@@ -169,7 +181,7 @@ export function StatementsClient({
               />
 
               <Select
-                value={initialParams?.type || 'all'}
+                value={effectiveFilters.type || 'all'}
                 onValueChange={value =>
                   onFilter?.('type', value === 'all' ? undefined : value)
                 }
@@ -186,7 +198,7 @@ export function StatementsClient({
               </Select>
 
               <Select
-                value={initialParams?.sortBy || 'totalAmount'}
+                value={effectiveFilters.sortBy || 'totalAmount'}
                 onValueChange={value => onFilter?.('sortBy', value)}
               >
                 <SelectTrigger className="w-[140px]">
@@ -228,10 +240,12 @@ export function StatementsClient({
 
                 // 计算付款率和待收付百分比
                 const paymentRate =
-                  statement.totalAmount > 0
-                    ? (statement.paidAmount / statement.totalAmount) * 100
+                  Math.abs(statement.totalAmount) > 0
+                    ? (Math.abs(statement.paidAmount) /
+                        Math.abs(statement.totalAmount)) *
+                      100
                     : 0;
-                const pendingRate = 100 - paymentRate;
+                const pendingRate = Math.max(100 - paymentRate, 0);
 
                 return (
                   <Card

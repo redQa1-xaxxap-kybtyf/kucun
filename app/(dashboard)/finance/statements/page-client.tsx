@@ -236,6 +236,12 @@ export function StatementsPageClient({
           <StatementsClient
             initialData={initialData}
             initialParams={initialParams}
+            filters={{
+              search,
+              type,
+              sortBy,
+              sortOrder,
+            }}
             onSearch={handleSearch}
             onFilter={handleFilter}
             onPageChange={handlePageChange}
