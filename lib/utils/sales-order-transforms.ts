@@ -6,10 +6,13 @@
 import type {
   SalesOrderCreateInput,
   SalesOrderItemCreateInput,
+  SalesOrderItemUpdateInput,
   SalesOrderStatus,
   SalesOrderUpdateInput,
-  SalesOrderItemUpdateInput,
+  TransferFulfillmentMode,
 } from '@/lib/types/sales-order';
+import type { SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
+import { FEE_TYPE_LABELS } from '@/lib/types/sales-order-fee';
 
 /**
  * 表单数据类型 - 包含UI层特有的字段
@@ -18,10 +21,15 @@ export interface SalesOrderFormData {
   customerId: string;
   status?: SalesOrderStatus;
   orderType?: 'NORMAL' | 'TRANSFER';
+  transferMode?: TransferFulfillmentMode;
   supplierId?: string;
   costAmount?: number;
   remarks?: string;
+  feeItems?: SalesOrderFeeItem[];
   items: SalesOrderFormItem[];
+  roundingAdjustment?: number;
+  usePrepayment?: boolean;
+  prepaymentAmount?: number;
 }
 
 /**
@@ -52,6 +60,8 @@ export interface SalesOrderFormItem {
 
   // 调货销售相关
   unitCost?: number;
+  localQuantity?: number;
+  transferQuantity?: number;
 
   // 手动输入商品
   isManualProduct?: boolean;
@@ -68,6 +78,59 @@ export interface SalesOrderFormItem {
     specification?: string;
     piecesPerBox?: number;
   };
+}
+
+const toNumberOrDefault = (value: unknown, defaultValue = 0): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return defaultValue;
+};
+
+const toOptionalNumber = (value: unknown): number | undefined => {
+  if (value === null || value === undefined || value === '') {
+    return undefined;
+  }
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === 'string') {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return undefined;
+};
+
+function sanitizeFeeItems(feeItems?: SalesOrderFeeItem[]): SalesOrderFeeItem[] {
+  if (!Array.isArray(feeItems)) {
+    return [];
+  }
+
+  return feeItems
+    .map(item => {
+      const feeAmount = toNumberOrDefault(item.feeAmount, 0);
+      const trimmedName = item.feeName?.trim() ?? '';
+
+      return {
+        id: item.id,
+        feeType: item.feeType ?? 'other',
+        feeName:
+          trimmedName.length > 0
+            ? trimmedName
+            : FEE_TYPE_LABELS[item.feeType ?? 'other'],
+        feeAmount: feeAmount < 0 ? 0 : Number(feeAmount.toFixed(2)),
+        remarks: item.remarks?.trim() || undefined,
+      };
+    })
+    .filter(item => item.feeName.length > 0 && item.feeAmount >= 0);
 }
 
 /**
@@ -96,14 +159,24 @@ export function transformFormDataToCreateInput(
       return Boolean(item.productId?.trim());
     });
 
+  const sanitizedFeeItems = sanitizeFeeItems(formData.feeItems);
+  const effectiveOrderType = formData.orderType || 'NORMAL';
+  const transferMode: TransferFulfillmentMode | undefined =
+    effectiveOrderType === 'TRANSFER'
+      ? (formData.transferMode ?? 'SUPPLIER_ONLY')
+      : undefined;
+
   return {
     customerId: formData.customerId,
     status: formData.status || 'draft',
-    orderType: formData.orderType || 'NORMAL',
+    orderType: effectiveOrderType,
+    transferMode,
     supplierId: formData.supplierId?.trim() || undefined,
     costAmount: formData.costAmount || undefined,
     remarks: formData.remarks?.trim() || undefined,
     items,
+    feeItems: sanitizedFeeItems.length ? sanitizedFeeItems : undefined,
+    roundingAdjustment: formData.roundingAdjustment ?? undefined,
   };
 }
 
@@ -115,27 +188,38 @@ export function transformFormDataToCreateInput(
 export function transformFormItemToCreateInput(
   formItem: SalesOrderFormItem
 ): SalesOrderItemCreateInput {
+  const quantity = toNumberOrDefault(formItem.quantity, 0);
+  const unitPrice = toNumberOrDefault(formItem.unitPrice, 0);
+  const displayQuantity =
+    toOptionalNumber(formItem.displayQuantity) ?? quantity;
+  const piecesPerUnit = toOptionalNumber(formItem.piecesPerUnit);
+  const unitCost = toOptionalNumber(formItem.unitCost);
+  const localQuantity = toOptionalNumber(formItem.localQuantity);
+  const transferQuantity = toOptionalNumber(formItem.transferQuantity);
+
   // 手动输入商品的情况
   if (formItem.isManualProduct) {
     return {
       productId: formItem.productId?.trim() || undefined, // 手动商品可能没有productId
       productCode: formItem.productCode?.trim() || undefined,
-      quantity: formItem.quantity ?? 0,
-      unitPrice: formItem.unitPrice || 0,
+      quantity,
+      unitPrice,
       batchNumber: formItem.batchNumber?.trim() || undefined,
       colorCode: formItem.colorCode,
       productionDate: formItem.productionDate,
-      unitCost: formItem.unitCost,
+      unitCost,
+      localQuantity,
+      transferQuantity,
       displayUnit: formItem.displayUnit || '片',
-      displayQuantity: formItem.displayQuantity ?? formItem.quantity ?? 0,
-      piecesPerUnit: formItem.piecesPerUnit,
+      displayQuantity,
+      piecesPerUnit,
       specification:
         formItem.specification || formItem.manualSpecification || undefined,
       remarks: formItem.remarks?.trim() || undefined,
       isManualProduct: true,
       manualProductName: formItem.manualProductName?.trim() || undefined,
       manualSpecification: formItem.manualSpecification?.trim() || undefined,
-      manualWeight: formItem.manualWeight,
+      manualWeight: toOptionalNumber(formItem.manualWeight),
       manualUnit: formItem.manualUnit?.trim() || undefined,
     };
   }
@@ -145,14 +229,16 @@ export function transformFormItemToCreateInput(
     productId: formItem.productId?.trim() || '',
     productCode: formItem.productCode?.trim() || undefined,
     batchNumber: formItem.batchNumber?.trim() || undefined,
-    quantity: formItem.quantity ?? 0,
-    unitPrice: formItem.unitPrice || 0,
+    quantity,
+    unitPrice,
     colorCode: formItem.colorCode,
     productionDate: formItem.productionDate,
-    unitCost: formItem.unitCost,
+    unitCost,
+    localQuantity,
+    transferQuantity,
     displayUnit: formItem.displayUnit || '片',
-    displayQuantity: formItem.displayQuantity ?? formItem.quantity ?? 0,
-    piecesPerUnit: formItem.piecesPerUnit,
+    displayQuantity,
+    piecesPerUnit,
     specification:
       formItem.specification || formItem.product?.specification || undefined,
     remarks: formItem.remarks?.trim() || undefined,
@@ -188,15 +274,25 @@ export function transformFormDataToUpdateInput(
       return Boolean(item.productId?.trim());
     });
 
+  const sanitizedFeeItems = sanitizeFeeItems(formData.feeItems);
+  const effectiveOrderType = formData.orderType;
+  const transferMode: TransferFulfillmentMode | undefined =
+    effectiveOrderType === 'TRANSFER'
+      ? (formData.transferMode ?? 'SUPPLIER_ONLY')
+      : undefined;
+
   return {
     id: orderId,
     customerId: formData.customerId,
     status: formData.status,
-    orderType: formData.orderType,
+    orderType: effectiveOrderType,
+    transferMode,
     supplierId: formData.supplierId?.trim() || undefined,
     costAmount: formData.costAmount ?? undefined,
     remarks: formData.remarks?.trim() || undefined,
     items,
+    feeItems: sanitizedFeeItems.length ? sanitizedFeeItems : undefined,
+    roundingAdjustment: formData.roundingAdjustment ?? undefined,
   };
 }
 
@@ -208,27 +304,38 @@ export function transformFormDataToUpdateInput(
 export function transformFormItemToUpdateInput(
   formItem: SalesOrderFormItem
 ): SalesOrderItemUpdateInput {
+  const quantity = toNumberOrDefault(formItem.quantity, 0);
+  const unitPrice = toNumberOrDefault(formItem.unitPrice, 0);
+  const displayQuantity =
+    toOptionalNumber(formItem.displayQuantity) ?? quantity;
+  const piecesPerUnit = toOptionalNumber(formItem.piecesPerUnit);
+  const unitCost = toOptionalNumber(formItem.unitCost);
+  const localQuantity = toOptionalNumber(formItem.localQuantity);
+  const transferQuantity = toOptionalNumber(formItem.transferQuantity);
+
   // 手动输入商品的情况
   if (formItem.isManualProduct) {
     return {
       productId: formItem.productId?.trim() || undefined,
       productCode: formItem.productCode?.trim() || undefined,
-      quantity: formItem.quantity ?? 0,
-      unitPrice: formItem.unitPrice || 0,
+      quantity,
+      unitPrice,
       batchNumber: formItem.batchNumber?.trim() || undefined,
       colorCode: formItem.colorCode,
       productionDate: formItem.productionDate,
-      unitCost: formItem.unitCost ?? undefined,
+      unitCost,
+      localQuantity,
+      transferQuantity,
       displayUnit: formItem.displayUnit || '片',
-      displayQuantity: formItem.displayQuantity ?? formItem.quantity ?? 0,
-      piecesPerUnit: formItem.piecesPerUnit,
+      displayQuantity,
+      piecesPerUnit,
       specification:
         formItem.specification || formItem.manualSpecification || undefined,
       remarks: formItem.remarks?.trim() || undefined,
       isManualProduct: true,
       manualProductName: formItem.manualProductName?.trim() || undefined,
       manualSpecification: formItem.manualSpecification?.trim() || undefined,
-      manualWeight: formItem.manualWeight ?? undefined,
+      manualWeight: toOptionalNumber(formItem.manualWeight),
       manualUnit: formItem.manualUnit?.trim() || undefined,
     };
   }
@@ -238,14 +345,16 @@ export function transformFormItemToUpdateInput(
     productId: formItem.productId?.trim() || '',
     productCode: formItem.productCode?.trim() || undefined,
     batchNumber: formItem.batchNumber?.trim() || undefined,
-    quantity: formItem.quantity ?? 0,
-    unitPrice: formItem.unitPrice || 0,
+    quantity,
+    unitPrice,
     colorCode: formItem.colorCode,
     productionDate: formItem.productionDate,
-    unitCost: formItem.unitCost ?? undefined,
+    unitCost,
+    localQuantity,
+    transferQuantity,
     displayUnit: formItem.displayUnit || '片',
-    displayQuantity: formItem.displayQuantity ?? formItem.quantity ?? 0,
-    piecesPerUnit: formItem.piecesPerUnit,
+    displayQuantity,
+    piecesPerUnit,
     specification:
       formItem.specification || formItem.product?.specification || undefined,
     remarks: formItem.remarks?.trim() || undefined,
@@ -292,6 +401,12 @@ export function validateFormData(formData: SalesOrderFormData): {
   errors: string[];
 } {
   const errors: string[] = [];
+  const items = Array.isArray(formData.items) ? formData.items : [];
+  const transferMode: TransferFulfillmentMode | undefined =
+    formData.orderType === 'TRANSFER'
+      ? (formData.transferMode ?? 'SUPPLIER_ONLY')
+      : undefined;
+  const epsilon = 0.01;
 
   // 验证客户ID
   if (!formData.customerId?.trim()) {
@@ -299,12 +414,12 @@ export function validateFormData(formData: SalesOrderFormData): {
   }
 
   // 验证订单明细
-  if (!formData.items || formData.items.length === 0) {
+  if (items.length === 0) {
     errors.push('至少需要添加一个订单明细');
   }
 
   // 验证每个明细项
-  formData.items.forEach((item, index) => {
+  items.forEach((item, index) => {
     if (item.isManualProduct) {
       // 手动商品必须有商品名称
       if (!item.manualProductName?.trim()) {
@@ -318,13 +433,54 @@ export function validateFormData(formData: SalesOrderFormData): {
     }
 
     // 验证数量
-    if (!item.quantity || item.quantity <= 0) {
+    const itemQuantity = toNumberOrDefault(item.quantity, 0);
+    if (itemQuantity <= 0) {
       errors.push(`第${index + 1}个明细项：数量必须大于0`);
     }
 
     // 验证单价
     if (item.unitPrice === undefined || item.unitPrice < 0) {
       errors.push(`第${index + 1}个明细项：单价不能为负数`);
+    }
+
+    if (formData.orderType === 'TRANSFER') {
+      const localQuantity = toNumberOrDefault(item.localQuantity, 0);
+      const transferQuantity =
+        transferMode === 'MIXED'
+          ? toNumberOrDefault(item.transferQuantity, 0)
+          : toNumberOrDefault(item.transferQuantity, itemQuantity);
+
+      if (transferMode === 'MIXED') {
+        if (localQuantity < 0) {
+          errors.push(`第${index + 1}个明细项：本地发货数量不能为负数`);
+        }
+        if (transferQuantity < 0) {
+          errors.push(`第${index + 1}个明细项：调货数量不能为负数`);
+        }
+        if (
+          Math.abs(localQuantity + transferQuantity - itemQuantity) > epsilon
+        ) {
+          errors.push(
+            `第${index + 1}个明细项：本地发货数量与调货数量之和必须等于系统数量`
+          );
+        }
+      } else {
+        if (Math.abs(localQuantity) > epsilon) {
+          errors.push(
+            `第${index + 1}个明细项：调货模式下本地发货数量应为0，请检查`
+          );
+        }
+        if (Math.abs(transferQuantity - itemQuantity) > epsilon) {
+          errors.push(
+            `第${index + 1}个明细项：调货模式下调货数量必须等于系统数量`
+          );
+        }
+      }
+
+      const unitCost = toOptionalNumber(item.unitCost);
+      if (unitCost !== undefined && unitCost < 0) {
+        errors.push(`第${index + 1}个明细项：成本单价不能为负数`);
+      }
     }
   });
 
@@ -336,7 +492,29 @@ export function validateFormData(formData: SalesOrderFormData): {
     if (!formData.costAmount || formData.costAmount <= 0) {
       errors.push('调货销售必须填写成本金额');
     }
+    if (!formData.transferMode) {
+      errors.push('请选择调货履约模式');
+    }
+    if (
+      formData.transferMode &&
+      !['SUPPLIER_ONLY', 'MIXED'].includes(formData.transferMode)
+    ) {
+      errors.push('请选择有效的调货履约模式');
+    }
   }
+
+  // 验证费用项
+  (formData.feeItems ?? []).forEach((feeItem, index) => {
+    const trimmedName = feeItem.feeName?.trim() ?? '';
+    if (!trimmedName) {
+      errors.push(`第${index + 1}个费用项：费用名称不能为空`);
+    }
+
+    const amount = toNumberOrDefault(feeItem.feeAmount, 0);
+    if (amount < 0) {
+      errors.push(`第${index + 1}个费用项：费用金额不能为负数`);
+    }
+  });
 
   return {
     valid: errors.length === 0,

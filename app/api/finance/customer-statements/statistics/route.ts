@@ -1,11 +1,28 @@
-import { NextResponse } from 'next/server';
+import { type NextRequest } from 'next/server';
 
-export async function GET() {
-  return NextResponse.json(
-    {
-      success: false,
-      error: '该接口已下线，请改用 /api/finance/statements',
-    },
-    { status: 410 }
-  );
-}
+import {
+  errorResponse,
+  successResponse,
+  withAuth,
+} from '@/lib/auth/api-helpers';
+import { logger } from '@/lib/logger';
+import { getCustomerStatementStatistics } from '@/lib/services/customer-statement-service';
+
+export const GET = withAuth(
+  async (_request: NextRequest) => {
+    try {
+      const statistics = await getCustomerStatementStatistics();
+      return successResponse(statistics);
+    } catch (error) {
+      logger.error(
+        'finance-customer-statements',
+        '获取客户对账单统计失败',
+        error instanceof Error ? error : undefined
+      );
+      const message =
+        error instanceof Error ? error.message : '获取客户对账单统计失败';
+      return errorResponse(message, 500);
+    }
+  },
+  { permissions: ['finance:view'] }
+);

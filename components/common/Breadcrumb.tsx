@@ -60,6 +60,7 @@ const PATH_TITLES: Record<string, string> = {
   '/inventory/outbound': '出库记录',
   '/inventory/adjust': '库存调整',
   '/inventory/adjustments': '调整记录',
+  '/inventory/batch': '批次管理',
   '/products': '产品管理',
   '/products/create': '新建产品',
   '/sales-orders': '销售订单',
@@ -125,6 +126,7 @@ const PATH_TITLES: Record<string, string> = {
   storage: '存储',
   users: '用户',
   history: '变动历史',
+  batch: '批次管理',
 };
 
 /**

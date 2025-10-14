@@ -1,18 +1,81 @@
-// 客户对账单API客户端
-// 基于TanStack Query实现客户对账单查询、详情、统计等API调用函数
-
 import { useQuery } from '@tanstack/react-query';
 import type { QueryKey } from '@tanstack/react-query';
 
 import type {
-  CustomerStatementQuery,
   CustomerStatementDetail,
   CustomerStatementListResponse,
+  CustomerStatementQuery,
   CustomerStatementStatistics,
 } from '@/lib/types/customer-statement';
 
-const DEPRECATION_MESSAGE =
-  '客户对账单接口已下线，请改用统一的 /api/finance/statements 服务';
+const CUSTOMER_STATEMENTS_API_BASE = '/api/finance/customer-statements';
+const CUSTOMER_STATEMENTS_STATISTICS_API = `${CUSTOMER_STATEMENTS_API_BASE}/statistics`;
+
+function buildQueryParams(query: CustomerStatementQuery = {}): string {
+  const params = new URLSearchParams();
+
+  if (query.page) {
+    params.set('page', String(query.page));
+  }
+
+  if (query.pageSize) {
+    params.set('pageSize', String(query.pageSize));
+  }
+
+  if (query.customerId) {
+    params.set('customerId', query.customerId);
+  }
+
+  if (query.customerName) {
+    params.set('customerName', query.customerName);
+  }
+
+  if (query.startDate) {
+    params.set('startDate', query.startDate);
+  }
+
+  if (query.endDate) {
+    params.set('endDate', query.endDate);
+  }
+
+  if (query.minBalance !== undefined) {
+    params.set('minBalance', String(query.minBalance));
+  }
+
+  if (query.maxBalance !== undefined) {
+    params.set('maxBalance', String(query.maxBalance));
+  }
+
+  if (query.balanceType && query.balanceType !== 'all') {
+    params.set('balanceType', query.balanceType);
+  }
+
+  if (query.sortBy) {
+    params.set('sortBy', query.sortBy);
+  }
+
+  if (query.sortOrder) {
+    params.set('sortOrder', query.sortOrder);
+  }
+
+  return params.toString();
+}
+
+async function handleResponse<T>(
+  response: Response,
+  fallbackError: string
+): Promise<T> {
+  if (!response.ok) {
+    throw new Error(`${fallbackError}: ${response.statusText}`);
+  }
+
+  const payload = await response.json();
+  if (!payload?.success) {
+    throw new Error(payload?.error || fallbackError);
+  }
+
+  return payload.data as T;
+}
 
 export const customerStatementQueryKeys = {
   all: ['customer-statements'] as const satisfies QueryKey,
@@ -37,22 +100,69 @@ export const customerStatementQueryKeys = {
 };
 
 export const customerStatementApi = {
-  getStatements: async () => {
-    throw new Error(DEPRECATION_MESSAGE);
+  async getStatements(
+    query: CustomerStatementQuery = {}
+  ): Promise<CustomerStatementListResponse['data']> {
+    const queryString = buildQueryParams(query);
+    const response = await fetch(
+      queryString
+        ? `${CUSTOMER_STATEMENTS_API_BASE}?${queryString}`
+        : CUSTOMER_STATEMENTS_API_BASE,
+      {
+        credentials: 'include',
+      }
+    );
+
+    return handleResponse<CustomerStatementListResponse['data']>(
+      response,
+      '获取客户对账单失败'
+    );
   },
-  getStatementDetail: async () => {
-    throw new Error(DEPRECATION_MESSAGE);
+
+  async getStatementDetail(
+    customerId: string,
+    startDate: string,
+    endDate: string
+  ): Promise<CustomerStatementDetail> {
+    const params = new URLSearchParams();
+    if (startDate) {
+      params.set('startDate', startDate);
+    }
+    if (endDate) {
+      params.set('endDate', endDate);
+    }
+
+    const response = await fetch(
+      `${CUSTOMER_STATEMENTS_API_BASE}/${customerId}?${params.toString()}`,
+      {
+        credentials: 'include',
+      }
+    );
+
+    return handleResponse<CustomerStatementDetail>(
+      response,
+      '获取客户对账单详情失败'
+    );
   },
-  getStatistics: async () => {
-    throw new Error(DEPRECATION_MESSAGE);
+
+  async getStatistics(): Promise<CustomerStatementStatistics> {
+    const response = await fetch(CUSTOMER_STATEMENTS_STATISTICS_API, {
+      credentials: 'include',
+    });
+
+    return handleResponse<CustomerStatementStatistics>(
+      response,
+      '获取客户对账单统计失败'
+    );
   },
-  exportStatement: async () => {
-    throw new Error(DEPRECATION_MESSAGE);
+
+  async exportStatement() {
+    throw new Error('客户对账单导出功能尚未实现');
   },
 };
 
 export const useCustomerStatements = (
-  query?: CustomerStatementQuery,
+  query: CustomerStatementQuery = {},
   options?: { enabled?: boolean }
 ) =>
   useQuery<
@@ -60,10 +170,10 @@ export const useCustomerStatements = (
     Error,
     CustomerStatementListResponse['data']
   >({
-    queryKey: customerStatementQueryKeys.list(query ?? {}),
-    queryFn: (): Promise<CustomerStatementListResponse['data']> =>
-      Promise.reject(new Error(DEPRECATION_MESSAGE)),
-    enabled: options?.enabled ?? false,
+    queryKey: customerStatementQueryKeys.list(query),
+    queryFn: () => customerStatementApi.getStatements(query),
+    enabled: options?.enabled ?? true,
+    staleTime: 5 * 60 * 1000,
   });
 
 export const useCustomerStatementDetail = (
@@ -74,18 +184,19 @@ export const useCustomerStatementDetail = (
 ) =>
   useQuery<CustomerStatementDetail, Error, CustomerStatementDetail>({
     queryKey: customerStatementQueryKeys.detail(customerId, startDate, endDate),
-    queryFn: (): Promise<CustomerStatementDetail> =>
-      Promise.reject(new Error(DEPRECATION_MESSAGE)),
-    enabled: options?.enabled ?? false,
+    queryFn: () =>
+      customerStatementApi.getStatementDetail(customerId, startDate, endDate),
+    enabled: (options?.enabled ?? true) && Boolean(customerId),
+    staleTime: 5 * 60 * 1000,
   });
 
 export const useCustomerStatementStatistics = (
-  query?: CustomerStatementQuery,
+  _query?: CustomerStatementQuery,
   options?: { enabled?: boolean }
 ) =>
   useQuery<CustomerStatementStatistics, Error, CustomerStatementStatistics>({
     queryKey: customerStatementQueryKeys.statistics(),
-    queryFn: (): Promise<CustomerStatementStatistics> =>
-      Promise.reject(new Error(DEPRECATION_MESSAGE)),
-    enabled: options?.enabled ?? false,
+    queryFn: () => customerStatementApi.getStatistics(),
+    enabled: options?.enabled ?? true,
+    staleTime: 5 * 60 * 1000,
   });

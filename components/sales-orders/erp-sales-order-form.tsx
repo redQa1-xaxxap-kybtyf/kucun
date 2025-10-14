@@ -12,11 +12,10 @@ import {
   type Path,
 } from 'react-hook-form';
 
-import { BatchSelector } from '@/components/sales-orders/batch-selector';
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
-import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
 import { OrderItemRow } from '@/components/sales-orders/order-item-row';
+import { FeeItemsInput } from '@/components/sales-orders/fee-items-input';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -61,8 +60,11 @@ import {
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
 import {
   SALES_ORDER_STATUS_LABELS,
+  TRANSFER_MODE_LABELS,
   type SalesOrderStatus,
+  type TransferFulfillmentMode,
 } from '@/lib/types/sales-order';
+import type { SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
 import {
   transformFormDataToCreateInput,
@@ -250,10 +252,13 @@ export function ERPSalesOrderForm({
       customerId: '',
       status: 'draft',
       orderType: 'NORMAL',
+      transferMode: 'SUPPLIER_ONLY',
       supplierId: '',
       costAmount: undefined,
       remarks: '',
+      feeItems: [],
       items: [],
+      roundingAdjustment: undefined,
     },
   });
 
@@ -326,13 +331,25 @@ export function ERPSalesOrderForm({
         | UpdateSalesOrderFormData['items'][number]
       >
     ): { valid: true } | { valid: false; message: string; path: string } => {
+      const toNumber = (value: unknown, fallback = 0) => {
+        const numeric = Number(value);
+        return Number.isFinite(numeric) ? numeric : fallback;
+      };
+      const currentOrderType = form.getValues('orderType');
+      const currentTransferMode: TransferFulfillmentMode | undefined =
+        currentOrderType === 'TRANSFER'
+          ? ((form.getValues('transferMode') as TransferFulfillmentMode) ??
+            'SUPPLIER_ONLY')
+          : undefined;
+      const epsilon = 0.01;
+
       for (let index = 0; index < items.length; index += 1) {
         const item = items[index];
         const manual = Boolean(item.isManualProduct);
         const manualName = item.manualProductName?.trim() ?? '';
         const productId = item.productId?.trim() ?? '';
-        const quantity = Number(item.quantity);
-        const unitPrice = Number(item.unitPrice);
+        const quantity = toNumber(item.quantity);
+        const unitPrice = toNumber(item.unitPrice);
 
         if (manual) {
           if (!manualName) {
@@ -365,16 +382,78 @@ export function ERPSalesOrderForm({
             path: `items.${index}.unitPrice`,
           };
         }
+
+        if (currentOrderType === 'TRANSFER') {
+          const localQuantity = toNumber(item.localQuantity);
+          const transferQuantity =
+            currentTransferMode === 'MIXED'
+              ? toNumber(item.transferQuantity)
+              : toNumber(item.transferQuantity, quantity);
+          if (currentTransferMode === 'MIXED') {
+            if (localQuantity < 0) {
+              return {
+                valid: false,
+                message: `第 ${index + 1} 行：本地发货数量不能为负数`,
+                path: `items.${index}.localQuantity`,
+              };
+            }
+            if (transferQuantity < 0) {
+              return {
+                valid: false,
+                message: `第 ${index + 1} 行：调货数量不能为负数`,
+                path: `items.${index}.transferQuantity`,
+              };
+            }
+            if (
+              Math.abs(localQuantity + transferQuantity - quantity) > epsilon
+            ) {
+              return {
+                valid: false,
+                message: `第 ${index + 1} 行：本地发货数量与调货数量之和必须等于系统数量`,
+                path: `items.${index}.transferQuantity`,
+              };
+            }
+          } else {
+            if (Math.abs(localQuantity) > epsilon) {
+              return {
+                valid: false,
+                message: `第 ${index + 1} 行：调货模式下本地发货数量应为 0`,
+                path: `items.${index}.localQuantity`,
+              };
+            }
+            if (Math.abs(transferQuantity - quantity) > epsilon) {
+              return {
+                valid: false,
+                message: `第 ${index + 1} 行：调货模式下调货数量必须等于系统数量`,
+                path: `items.${index}.transferQuantity`,
+              };
+            }
+          }
+
+          const unitCost = toNumber(item.unitCost);
+          if (unitCost < 0) {
+            return {
+              valid: false,
+              message: `第 ${index + 1} 行：成本单价不能为负数`,
+              path: `items.${index}.unitCost`,
+            };
+          }
+        }
       }
 
       return { valid: true };
     },
-    []
+    [form]
   );
 
   // 监听客户ID变化
   const selectedCustomerId = form.watch('customerId');
   const orderType = form.watch('orderType');
+  const transferMode = form.watch('transferMode') as
+    | TransferFulfillmentMode
+    | undefined;
+  const feeItems = (form.watch('feeItems') || []) as SalesOrderFeeItem[];
+  const roundingAdjustment = Number(form.watch('roundingAdjustment') ?? 0);
 
   // 数据查询
   const { data: customersData, isLoading: customersLoading } = useQuery({
@@ -511,6 +590,41 @@ export function ERPSalesOrderForm({
     [watchedItems]
   );
 
+  React.useEffect(() => {
+    if (orderType === 'TRANSFER') {
+      if (!form.getValues('transferMode')) {
+        form.setValue('transferMode', 'SUPPLIER_ONLY', {
+          shouldDirty: false,
+          shouldValidate: false,
+        });
+      }
+    } else {
+      if (form.getValues('transferMode') !== 'SUPPLIER_ONLY') {
+        form.setValue('transferMode', 'SUPPLIER_ONLY', {
+          shouldDirty: false,
+          shouldValidate: false,
+        });
+      }
+      if (form.getValues('supplierId')) {
+        form.setValue('supplierId', '', {
+          shouldDirty: true,
+          shouldValidate: false,
+        });
+      }
+      if (form.getValues('costAmount')) {
+        form.setValue('costAmount', undefined, {
+          shouldDirty: true,
+          shouldValidate: false,
+        });
+      }
+    }
+  }, [form, orderType]);
+
+  const coerceNumeric = (value: unknown): number => {
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : 0;
+  };
+
   const totalAmount = watchedItems.reduce((sum, item) => {
     // 计算片单价（如果当前显示单位是件，需要转换为片单价）
     const piecePriceForCalculation =
@@ -524,6 +638,31 @@ export function ERPSalesOrderForm({
     // 金额 = 系统数量（片数） × 片单价
     return sum + (item.quantity || 0) * piecePriceForCalculation;
   }, 0);
+
+  const additionalFees = feeItems.reduce(
+    (sum: number, fee) => sum + coerceNumeric(fee.feeAmount),
+    0
+  );
+  const orderTotalWithFees = totalAmount + additionalFees + roundingAdjustment;
+
+  const totalLocalQuantity = watchedItems.reduce(
+    (sum, item) => sum + coerceNumeric(item.localQuantity),
+    0
+  );
+  const totalTransferQuantity = watchedItems.reduce(
+    (sum, item) => sum + coerceNumeric(item.transferQuantity),
+    0
+  );
+  const formatCurrency = (value: number) =>
+    value.toLocaleString('zh-CN', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
+  const formatPieces = (value: number) =>
+    `${value.toLocaleString('zh-CN', {
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 2,
+    })} 片`;
 
   // 重量格式化工具函数
   const formatWeight = (totalKg: number): string => {
@@ -608,9 +747,14 @@ export function ERPSalesOrderForm({
       customerId: initialData.customerId,
       status: initialData.status,
       orderType: initialData.orderType,
+      transferMode:
+        (initialData.transferMode as TransferFulfillmentMode | undefined) ??
+        'SUPPLIER_ONLY',
       supplierId: initialData.supplierId || '',
       costAmount: initialData.costAmount ?? undefined,
       remarks: initialData.remarks || '',
+      roundingAdjustment:
+        (initialData.roundingAdjustment as number | undefined) ?? undefined,
       items:
         initialData.items?.map((item: Record<string, unknown>) => ({
           productId: (item.productId as string) || '',
@@ -652,7 +796,19 @@ export function ERPSalesOrderForm({
           manualSpecification: (item.manualSpecification as string) || '',
           manualWeight: (item.manualWeight as number) ?? undefined,
           manualUnit: (item.manualUnit as string) || '',
+          localQuantity: (item.localQuantity as number) ?? undefined,
+          transferQuantity: (item.transferQuantity as number) ?? undefined,
         })) || [],
+      feeItems: Array.isArray(initialData.feeItems)
+        ? (initialData.feeItems as Array<Record<string, unknown>>).map(fee => ({
+            id: (fee.id as string) || undefined,
+            feeType:
+              (fee.feeType as 'processing' | 'shipping' | 'other') || 'other',
+            feeName: (fee.feeName as string) || '',
+            feeAmount: Number(fee.feeAmount ?? 0),
+            remarks: (fee.remarks as string) || '',
+          }))
+        : [],
     });
   }, [form, mode, initialData]);
 
@@ -901,12 +1057,71 @@ export function ERPSalesOrderForm({
               </div>
 
               {/* 调货销售特殊字段 */}
-              {form.watch('orderType') === 'TRANSFER' && (
+              {orderType === 'TRANSFER' && (
                 <div className="mb-6 rounded-lg border border-orange-200 bg-orange-50/50 p-4">
                   <h4 className="mb-4 text-sm font-semibold text-orange-800">
                     调货销售信息
                   </h4>
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                    <FormField
+                      control={form.control}
+                      name="transferMode"
+                      render={({ field }) => (
+                        <FormItem className="space-y-2 md:col-span-3">
+                          <FormLabel className="text-sm font-medium text-gray-700">
+                            调货履约模式 <span className="text-red-500">*</span>
+                          </FormLabel>
+                          <FormControl>
+                            <RadioGroup
+                              value={field.value ?? 'SUPPLIER_ONLY'}
+                              onValueChange={value =>
+                                field.onChange(value as TransferFulfillmentMode)
+                              }
+                              className="grid gap-3 md:grid-cols-2"
+                            >
+                              <div className="border-border flex items-start gap-2 rounded-md border bg-white/80 p-3 shadow-sm">
+                                <RadioGroupItem
+                                  value="SUPPLIER_ONLY"
+                                  id="transfer-mode-supplier"
+                                  className="mt-0.5"
+                                />
+                                <div className="space-y-1">
+                                  <Label
+                                    htmlFor="transfer-mode-supplier"
+                                    className="cursor-pointer text-sm font-medium text-gray-700"
+                                  >
+                                    {TRANSFER_MODE_LABELS.SUPPLIER_ONLY}
+                                  </Label>
+                                  <p className="text-xs text-gray-500">
+                                    订单全部由供应商调货发出，本地仓无需参与。
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="border-border flex items-start gap-2 rounded-md border bg-white/80 p-3 shadow-sm">
+                                <RadioGroupItem
+                                  value="MIXED"
+                                  id="transfer-mode-mixed"
+                                  className="mt-0.5"
+                                />
+                                <div className="space-y-1">
+                                  <Label
+                                    htmlFor="transfer-mode-mixed"
+                                    className="cursor-pointer text-sm font-medium text-gray-700"
+                                  >
+                                    {TRANSFER_MODE_LABELS.MIXED}
+                                  </Label>
+                                  <p className="text-xs text-gray-500">
+                                    本地仓与供应商共同完成发货，可在订单明细中拆分数量。
+                                  </p>
+                                </div>
+                              </div>
+                            </RadioGroup>
+                          </FormControl>
+                          <FormMessage className="text-xs" />
+                        </FormItem>
+                      )}
+                    />
+
                     {/* 供应商选择 */}
                     <FormField
                       control={form.control}
@@ -1024,7 +1239,7 @@ export function ERPSalesOrderForm({
                       <TableHead className="h-8 text-xs">单位</TableHead>
                       <TableHead className="h-8 text-xs">数量</TableHead>
                       <TableHead className="h-8 text-xs">单价</TableHead>
-                      {form.watch('orderType') === 'TRANSFER' && (
+                      {orderType === 'TRANSFER' && (
                         <TableHead className="h-8 text-xs">成本单价</TableHead>
                       )}
                       <TableHead className="h-8 text-xs">金额</TableHead>
@@ -1093,6 +1308,7 @@ export function ERPSalesOrderForm({
                           }
                         }}
                         orderType={orderType}
+                        transferMode={transferMode}
                         unitMapping={UNIT_MAPPING}
                       />
                     ))}
@@ -1102,13 +1318,38 @@ export function ERPSalesOrderForm({
             )}
           </div>
 
+          {/* 费用项管理 */}
+          <div className="bg-card rounded border">
+            <div className="bg-muted/30 border-b px-3 py-2">
+              <h3 className="text-sm font-medium">费用项管理</h3>
+            </div>
+            <div className="space-y-3 p-3">
+              <div className="flex items-center justify-between rounded border bg-amber-50/60 px-3 py-2">
+                <span className="text-muted-foreground text-xs">费用合计</span>
+                <span className="text-sm font-semibold text-amber-600">
+                  ¥{formatCurrency(additionalFees)}
+                </span>
+              </div>
+              <FeeItemsInput
+                feeItems={feeItems}
+                onChange={next =>
+                  form.setValue('feeItems', next, {
+                    shouldDirty: true,
+                    shouldValidate: false,
+                  })
+                }
+                disabled={createMutation.isPending || updateMutation.isPending}
+              />
+            </div>
+          </div>
+
           {/* ERP标准布局：汇总信息 */}
           <div className="bg-card rounded border">
             <div className="bg-muted/30 border-b px-3 py-2">
               <h3 className="text-sm font-medium">汇总信息</h3>
             </div>
             <div className="p-3">
-              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5">
                 <div className="flex items-center justify-between rounded border bg-blue-50/50 px-3 py-2">
                   <span className="text-muted-foreground text-xs">
                     商品种类
@@ -1137,37 +1378,90 @@ export function ERPSalesOrderForm({
                 </div>
                 <div className="flex items-center justify-between rounded border bg-orange-50/50 px-3 py-2">
                   <span className="text-muted-foreground text-xs">
-                    订单总金额
+                    商品金额
                   </span>
                   <span className="text-lg font-bold text-orange-600">
-                    ¥
-                    {totalAmount.toLocaleString('zh-CN', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                    ¥{formatCurrency(totalAmount)}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded border bg-amber-50/60 px-3 py-2">
+                  <span className="text-muted-foreground text-xs">
+                    额外费用
+                  </span>
+                  <span className="text-sm font-semibold text-amber-600">
+                    ¥{formatCurrency(additionalFees)}
+                  </span>
+                </div>
+                {Math.abs(roundingAdjustment) > 0.0001 && (
+                  <div className="flex items-center justify-between rounded border bg-slate-50 px-3 py-2">
+                    <span className="text-muted-foreground text-xs">
+                      抹零调整
+                    </span>
+                    <span className="text-sm font-semibold text-slate-700">
+                      ¥{formatCurrency(roundingAdjustment)}
+                    </span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between rounded border bg-orange-100 px-3 py-2">
+                  <span className="text-muted-foreground text-xs">
+                    订单总金额
+                  </span>
+                  <span className="text-lg font-bold text-orange-700">
+                    ¥{formatCurrency(orderTotalWithFees)}
                   </span>
                 </div>
 
+                {orderType === 'TRANSFER' && (
+                  <div className="flex items-center justify-between rounded border bg-sky-50 px-3 py-2">
+                    <span className="text-muted-foreground text-xs">
+                      履约模式
+                    </span>
+                    <span className="text-sm font-semibold text-sky-700">
+                      {transferMode
+                        ? TRANSFER_MODE_LABELS[transferMode]
+                        : TRANSFER_MODE_LABELS.SUPPLIER_ONLY}
+                    </span>
+                  </div>
+                )}
+                {orderType === 'TRANSFER' && (
+                  <div className="flex items-center justify-between rounded border bg-sky-50/80 px-3 py-2">
+                    <span className="text-muted-foreground text-xs">
+                      调货数量
+                    </span>
+                    <span className="text-sm font-semibold text-sky-700">
+                      {formatPieces(totalTransferQuantity)}
+                    </span>
+                  </div>
+                )}
+                {orderType === 'TRANSFER' && transferMode === 'MIXED' && (
+                  <div className="flex items-center justify-between rounded border bg-emerald-50/70 px-3 py-2">
+                    <span className="text-muted-foreground text-xs">
+                      本地发货数量
+                    </span>
+                    <span className="text-sm font-semibold text-emerald-700">
+                      {formatPieces(totalLocalQuantity)}
+                    </span>
+                  </div>
+                )}
+
                 {/* 调货销售财务汇总 */}
-                {form.watch('orderType') === 'TRANSFER' && (
+                {orderType === 'TRANSFER' && (
                   <div className="flex items-center justify-between rounded border bg-blue-50/50 px-3 py-2">
                     <span className="text-muted-foreground text-xs">
                       总成本
                     </span>
                     <span className="text-sm font-semibold text-blue-600">
                       ¥
-                      {(() => {
-                        const items = form.watch('items') || [];
-                        const totalCost = items.reduce((sum, item) => {
-                          const unitCost = item.unitCost || 0;
-                          const quantity = item.quantity || 0;
-                          return sum + unitCost * quantity;
-                        }, 0);
-                        return totalCost.toLocaleString('zh-CN', {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        });
-                      })()}
+                      {formatCurrency(
+                        watchedItems.reduce((sum, item) => {
+                          const unitCost = Number(item.unitCost) || 0;
+                          const effectiveQuantity =
+                            transferMode === 'MIXED'
+                              ? Number(item.transferQuantity) || 0
+                              : Number(item.quantity) || 0;
+                          return sum + unitCost * effectiveQuantity;
+                        }, 0)
+                      )}
                     </span>
                   </div>
                 )}

@@ -31,6 +31,11 @@ export const salesOrderStatusSchema = z.enum([
 export const salesOrderTypeSchema = z.enum(['NORMAL', 'TRANSFER']);
 
 /**
+ * 调货履约模式枚举
+ */
+export const transferFulfillmentModeSchema = z.enum(['SUPPLIER_ONLY', 'MIXED']);
+
+/**
  * 销售订单费用项验证规则
  */
 export const salesOrderFeeItemSchema = z.object({
@@ -140,6 +145,22 @@ export const salesOrderItemSchema = z.object({
       .multipleOf(0.01, '成本价最多保留2位小数')
   ),
 
+  localQuantity: nullableNumber(
+    z
+      .number()
+      .min(0, '本地发货数量不能为负数')
+      .max(999999.99, '本地发货数量不能超过999,999.99')
+      .multipleOf(0.01, '本地发货数量最多保留2位小数')
+  ),
+
+  transferQuantity: nullableNumber(
+    z
+      .number()
+      .min(0, '调货数量不能为负数')
+      .max(999999.99, '调货数量不能超过999,999.99')
+      .multipleOf(0.01, '调货数量最多保留2位小数')
+  ),
+
   // 手动输入商品信息（调货销售时使用）
   isManualProduct: z.boolean().optional(),
 
@@ -187,6 +208,10 @@ const baseSalesOrderSchema = z
 
     orderType: salesOrderTypeSchema.default('NORMAL'),
 
+    transferMode: transferFulfillmentModeSchema
+      .optional()
+      .default('SUPPLIER_ONLY'),
+
     supplierId: z
       .string()
       .min(1, '供应商ID不能为空')
@@ -199,6 +224,14 @@ const baseSalesOrderSchema = z
         .min(0, '成本金额不能为负数')
         .max(999999999.99, '成本金额不能超过999,999,999.99')
         .multipleOf(0.01, '成本金额最多保留2位小数')
+    ),
+
+    roundingAdjustment: nullableNumber(
+      z
+        .number()
+        .min(-999999999.99, '抹零金额不能小于-999,999,999.99')
+        .max(999999999.99, '抹零金额不能超过999,999,999.99')
+        .multipleOf(0.01, '抹零金额最多保留2位小数')
     ),
 
     remarks: z
@@ -235,6 +268,8 @@ const baseSalesOrderSchema = z
       return;
     }
 
+    const epsilon = 0.01;
+
     data.items.forEach((item, index) => {
       if (typeof item.quantity !== 'number' || Number.isNaN(item.quantity)) {
         ctx.addIssue({
@@ -250,6 +285,69 @@ const baseSalesOrderSchema = z
           message: '非草稿订单的明细必须填写单价',
           path: ['items', index, 'unitPrice'],
         });
+      }
+
+      if (data.orderType === 'TRANSFER') {
+        const transferMode =
+          data.transferMode &&
+          transferFulfillmentModeSchema.safeParse(data.transferMode).success
+            ? data.transferMode
+            : 'SUPPLIER_ONLY';
+        const quantity =
+          typeof item.quantity === 'number' && Number.isFinite(item.quantity)
+            ? item.quantity
+            : 0;
+        const localQuantity =
+          typeof item.localQuantity === 'number' &&
+          Number.isFinite(item.localQuantity)
+            ? item.localQuantity
+            : 0;
+        const transferQuantity =
+          typeof item.transferQuantity === 'number' &&
+          Number.isFinite(item.transferQuantity)
+            ? item.transferQuantity
+            : transferMode === 'MIXED'
+              ? 0
+              : quantity;
+
+        if (transferMode === 'MIXED') {
+          if (localQuantity < 0) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '本地发货数量不能为负数',
+              path: ['items', index, 'localQuantity'],
+            });
+          }
+          if (transferQuantity < 0) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '调货数量不能为负数',
+              path: ['items', index, 'transferQuantity'],
+            });
+          }
+          if (Math.abs(localQuantity + transferQuantity - quantity) > epsilon) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '本地发货数量与调货数量之和必须等于系统数量',
+              path: ['items', index, 'transferQuantity'],
+            });
+          }
+        } else {
+          if (Math.abs(localQuantity) > epsilon) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '调货模式下本地发货数量应为0，请检查',
+              path: ['items', index, 'localQuantity'],
+            });
+          }
+          if (Math.abs(transferQuantity - quantity) > epsilon) {
+            ctx.addIssue({
+              code: z.ZodIssueCode.custom,
+              message: '调货模式下调货数量必须等于系统数量',
+              path: ['items', index, 'transferQuantity'],
+            });
+          }
+        }
       }
     });
   });

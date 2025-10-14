@@ -213,6 +213,15 @@ export const inventoryKeys = {
   ) => [...inventoryKeys.outbounds(), 'list', params] as const,
   outbound: (id: string) => [...inventoryKeys.outbounds(), id] as const,
 
+  // 批次规格参数
+  batchSpecifications: () =>
+    [...inventoryKeys.all, 'batch-specifications'] as const,
+  batchSpecificationsList: (
+    params?: BaseFilters & { productId?: string; batchNumber?: string }
+  ) => [...inventoryKeys.batchSpecifications(), 'list', params] as const,
+  batchSpecification: (id: string) =>
+    [...inventoryKeys.batchSpecifications(), id] as const,
+
   // 库存可用性检查
   availability: (productId: string, variantId?: string) =>
     [...inventoryKeys.all, 'availability', productId, variantId] as const,
