@@ -40,7 +40,8 @@ export const POST = withAuth(
           validatedData.processedAmount,
           validatedData.status,
           user.id,
-          tx
+          tx,
+          { closeRemaining: validatedData.closeRemaining }
         );
 
         if (!processResult.success) {

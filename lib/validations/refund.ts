@@ -208,10 +208,30 @@ export const refundQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
+// 退款处理验证规则
+export const processRefundSchema = z.object({
+  processedAmount: z
+    .number({ message: '处理金额必须是数字' })
+    .min(0, '处理金额不能小于0'),
+  processedDate: z
+    .string({ message: '处理日期必须是字符串' })
+    .min(1, '请选择处理日期')
+    .refine(date => {
+      const parsedDate = new Date(date);
+      return !Number.isNaN(parsedDate.getTime());
+    }, '请输入有效的日期格式'),
+  status: z.enum(['completed', 'rejected'], {
+    message: '请选择有效的处理结果',
+  }),
+  remarks: z.string().optional().or(z.literal('')),
+  closeRemaining: z.boolean().optional(),
+});
+
 // TypeScript类型推导
 export type CreateRefundRecordInput = z.infer<typeof createRefundRecordSchema>;
 export type UpdateRefundRecordInput = z.infer<typeof updateRefundRecordSchema>;
 export type RefundQueryInput = z.infer<typeof refundQuerySchema>;
+export type ProcessRefundInput = z.infer<typeof processRefundSchema>;
 
 // 表单字段配置
 export const REFUND_FORM_FIELDS = {

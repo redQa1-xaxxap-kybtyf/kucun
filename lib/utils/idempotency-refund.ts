@@ -107,7 +107,8 @@ export async function processRefundWithLock(
   processAmount: number,
   status: 'completed' | 'rejected',
   operatorId: string,
-  tx: Prisma.TransactionClient
+  tx: Prisma.TransactionClient,
+  options?: { closeRemaining?: boolean }
 ): Promise<RefundProcessResult> {
   // 创建锁
   const lock = new RefundProcessLock(refundId, operatorId);
@@ -164,12 +165,15 @@ export async function processRefundWithLock(
       };
     }
 
+    const shouldCloseRemaining =
+      options?.closeRemaining === true && status === 'completed';
+
     // 计算新的处理金额
     const newProcessedAmount = refund.processedAmount + processAmount;
     const newRemainingAmount = refund.refundAmount - newProcessedAmount;
 
-    // 验证金额
-    if (newProcessedAmount > refund.refundAmount) {
+    // 验证金额（除非抹平剩余金额）
+    if (!shouldCloseRemaining && newProcessedAmount > refund.refundAmount) {
       throw new Error(
         `处理金额超出剩余金额。剩余: ¥${refund.remainingAmount.toFixed(2)}, 尝试处理: ¥${processAmount.toFixed(2)}`
       );
@@ -179,11 +183,20 @@ export async function processRefundWithLock(
     let finalStatus: string;
     if (status === 'rejected') {
       finalStatus = 'rejected';
+    } else if (shouldCloseRemaining) {
+      finalStatus = 'completed';
     } else if (newRemainingAmount <= 0) {
       finalStatus = 'completed';
     } else {
       finalStatus = 'processing';
     }
+
+    const processedAmountToPersist = shouldCloseRemaining
+      ? refund.refundAmount
+      : newProcessedAmount;
+    const remainingAmountToPersist = shouldCloseRemaining
+      ? 0
+      : Math.max(0, newRemainingAmount);
 
     // 使用乐观锁更新（检查processedAmount未变化）
     const updated = await tx.refundRecord.updateMany({
@@ -192,8 +205,8 @@ export async function processRefundWithLock(
         processedAmount: refund.processedAmount, // 乐观锁条件
       },
       data: {
-        processedAmount: newProcessedAmount,
-        remainingAmount: Math.max(0, newRemainingAmount),
+        processedAmount: processedAmountToPersist,
+        remainingAmount: remainingAmountToPersist,
         status: finalStatus,
       },
     });
@@ -216,8 +229,8 @@ export async function processRefundWithLock(
     return {
       success: true,
       refundId,
-      processedAmount: newProcessedAmount,
-      remainingAmount: Math.max(0, newRemainingAmount),
+      processedAmount: processedAmountToPersist,
+      remainingAmount: remainingAmountToPersist,
       status: finalStatus,
       message: `退款${finalStatus === 'completed' ? '完成' : finalStatus === 'rejected' ? '已拒绝' : '处理中'}`,
     };

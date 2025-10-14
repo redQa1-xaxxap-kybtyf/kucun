@@ -1,5 +1,6 @@
 'use client';
 
+import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Calendar,
@@ -10,6 +11,7 @@ import {
   TrendingDown,
 } from 'lucide-react';
 
+import { RefundProcessDialog } from '@/components/finance/refund-process-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -118,7 +120,22 @@ export function RefundsClient({
   onPageChange,
 }: RefundsClientProps) {
   const router = useRouter();
+  const [processDialogOpen, setProcessDialogOpen] = React.useState(false);
+  const [selectedRefundId, setSelectedRefundId] = React.useState<string | null>(
+    null
+  );
   const { refunds, statistics, pagination } = initialData;
+
+  const handleDialogOpenChange = React.useCallback((open: boolean) => {
+    setProcessDialogOpen(open);
+    if (!open) {
+      setSelectedRefundId(null);
+    }
+  }, []);
+
+  const handleProcessSuccess = React.useCallback(() => {
+    router.refresh();
+  }, [router]);
 
   const getStatusBadge = (status: RefundStatus) => {
     const statusConfig = {
@@ -457,9 +474,8 @@ export function RefundsClient({
                             size="sm"
                             onClick={event => {
                               event.stopPropagation();
-                              router.push(
-                                `/finance/refunds/${refund.id}/process`
-                              );
+                              setSelectedRefundId(refund.id);
+                              setProcessDialogOpen(true);
                             }}
                           >
                             处理退款
@@ -504,6 +520,12 @@ export function RefundsClient({
           )}
         </CardContent>
       </Card>
+      <RefundProcessDialog
+        refundId={selectedRefundId}
+        open={processDialogOpen && !!selectedRefundId}
+        onOpenChange={handleDialogOpenChange}
+        onSuccess={handleProcessSuccess}
+      />
     </div>
   );
 }

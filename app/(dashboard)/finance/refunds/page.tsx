@@ -17,6 +17,10 @@ export const metadata: Metadata = {
   description: '管理退货订单产生的应退账款，跟踪退款处理状态',
 };
 
+export const dynamic = 'force-dynamic';
+export const fetchCache = 'force-no-store';
+export const revalidate = 0;
+
 /**
  * 服务器组件传递给客户端的退款记录类型
  * Date 被序列化为 string，包含关联数据
