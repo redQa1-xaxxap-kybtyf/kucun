@@ -13,7 +13,7 @@ import { financeStatisticsQuerySchema } from '@/lib/validations/finance';
  * 财务管理概览API
  * GET /api/finance - 获取财务管理概览数据
  */
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(async () => {
   try {
     // 使用缓存包装查询
     const cacheKey = buildCacheKey('finance:overview', {});

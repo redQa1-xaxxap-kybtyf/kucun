@@ -40,7 +40,6 @@ import { useToast } from '@/components/ui/use-toast';
 import type {
   ShippingQuery,
   ShippingQueriesResponse,
-  ShippingSite,
   ShippingSitesResponse,
 } from '@/lib/types/shipping';
 

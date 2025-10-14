@@ -26,7 +26,6 @@ export default function InventoryAdjustPage() {
     showAdjustDialog,
     inventoryRecords,
     isLoading,
-    error: _error,
     handleAdjustSuccess,
     openAdjustDialog,
     closeAdjustDialog,

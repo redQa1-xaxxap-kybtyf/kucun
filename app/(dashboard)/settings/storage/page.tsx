@@ -42,11 +42,7 @@ export default function StorageSettingsPage() {
   const [testError, setTestError] = React.useState<string | null>(null);
 
   // 获取七牛云存储配置
-  const {
-    data: storageConfig,
-    isLoading: _isLoadingConfig,
-    error: configError,
-  } = useQuery({
+  const { data: storageConfig, error: configError } = useQuery({
     queryKey: queryKeys.settings.storage(),
     queryFn: async () => {
       const response = await fetch('/api/settings/storage');

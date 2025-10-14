@@ -43,7 +43,7 @@ export function CustomersPageClient({
   initialParams,
 }: CustomersPageClientProps) {
   const router = useRouter();
-  const [isPending, startTransition] = React.useTransition();
+  const [, startTransition] = React.useTransition();
 
   // 本地状态管理
   const [search, setSearch] = React.useState(initialParams.search || '');

@@ -1,13 +1,12 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { successResponse, withAuth } from '@/lib/auth/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { formatPaginatedResponse } from '@/lib/api/inventory-formatter';
 import {
   getInventoryCount,
   getOptimizedInventoryList,
 } from '@/lib/api/inventory-query-builder';
 import { prisma } from '@/lib/db';
-import { logger } from '@/lib/utils/console-logger';
 import {
   inventoryAdjustSchema,
   inventoryQuerySchema,
@@ -19,7 +18,7 @@ import {
 // - Client Component 通过 TanStack Query 缓存（staleTime=Infinity）
 // - Redis 低命中率场景下反而增加 20-50ms 延迟
 export const GET = withAuth(
-  async (request: NextRequest, { user }) => {
+  async (request: NextRequest) => {
     const { searchParams } = request.nextUrl;
 
     // 直接传递字符串参数给验证器，让验证器自己转换
@@ -77,7 +76,7 @@ export const GET = withAuth(
 
 // 库存调整（已弃用 - 使用 /api/inventory/adjust 端点）
 export const POST = withAuth(
-  async (request: NextRequest, { user }) => {
+  async (request: NextRequest) => {
     const body = await request.json();
 
     // 验证输入数据

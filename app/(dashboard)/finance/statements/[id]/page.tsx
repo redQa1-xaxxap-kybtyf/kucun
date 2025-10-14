@@ -18,7 +18,6 @@ import type { AccountStatementDetail } from '@/lib/types/statement';
 import { formatCurrency } from '@/lib/utils/format';
 
 import { StatementBasicInfo } from './components/statement-basic-info';
-import { StatementFinancialSummary } from './components/statement-financial-summary';
 import { StatementHeader } from './components/statement-header';
 import { StatementStatistics } from './components/statement-statistics';
 import { StatementTransactions } from './components/statement-transactions';

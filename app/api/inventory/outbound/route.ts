@@ -100,7 +100,7 @@ function formatOutboundRecord(record: OutboundRecordWithProduct) {
  * GET /api/inventory/outbound
  */
 export const GET = withAuth(
-  async (request: NextRequest, { user }) => {
+  async (request: NextRequest) => {
     return withErrorHandling(async () => {
       // 解析查询参数
       const { searchParams } = request.nextUrl;

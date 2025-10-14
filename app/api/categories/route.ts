@@ -24,7 +24,7 @@ import {
  * GET /api/categories - 获取分类列表
  */
 export const GET = withAuth(
-  async (request: NextRequest, { user }) => {
+  async (request: NextRequest) => {
     return withErrorHandling(async request => {
       const { searchParams } = request.nextUrl;
 
@@ -63,7 +63,7 @@ export const GET = withAuth(
  * POST /api/categories - 创建分类
  */
 export const POST = withAuth(
-  async (request: NextRequest, { user }) => {
+  async (request: NextRequest) => {
     return withErrorHandling(async request => {
       // 1. 解析请求体
       const body = await request.json();

@@ -49,6 +49,8 @@ export const GET = withAuth(async (request: NextRequest) => {
     const cacheKey = buildCacheKey('inventory:alerts', {
       severity,
       limit,
+      productId,
+      categoryId,
     });
 
     // 从缓存获取或生成数据
@@ -59,6 +61,8 @@ export const GET = withAuth(async (request: NextRequest) => {
         const lowStockProducts = await prisma.product.findMany({
           where: {
             status: 'active',
+            ...(productId && { id: productId }),
+            ...(categoryId && { categoryId }),
             inventory: {
               some: {
                 quantity: {
@@ -94,6 +98,8 @@ export const GET = withAuth(async (request: NextRequest) => {
         const zeroStockProducts = await prisma.product.findMany({
           where: {
             status: 'active',
+            ...(productId && { id: productId }),
+            ...(categoryId && { categoryId }),
             inventory: {
               none: {},
             },

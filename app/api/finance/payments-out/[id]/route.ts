@@ -105,7 +105,8 @@ export async function PUT(
       );
     }
 
-    const { id: _, ...updateData } = validationResult.data;
+    const updateData = { ...validationResult.data };
+    delete (updateData as { id?: string }).id;
 
     // 检查付款记录是否存在
     const existingPayment = await prisma.paymentOutRecord.findUnique({

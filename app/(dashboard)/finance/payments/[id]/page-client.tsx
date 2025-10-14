@@ -17,12 +17,7 @@ import { useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
 
@@ -135,7 +130,9 @@ export function PaymentDetailClient({
 
   // 确认收款
   const handleConfirm = async () => {
-    if (isConfirming) return;
+    if (isConfirming) {
+      return;
+    }
 
     setIsConfirming(true);
     try {
@@ -249,16 +246,13 @@ export function PaymentDetailClient({
                   <div>
                     <p className="mb-1 text-xs text-gray-500">收款日期</p>
                     <p className="text-base font-medium text-gray-900">
-                      {new Date(payment.paymentDate).toLocaleString(
-                        'zh-CN',
-                        {
-                          year: 'numeric',
-                          month: '2-digit',
-                          day: '2-digit',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        }
-                      )}
+                      {new Date(payment.paymentDate).toLocaleString('zh-CN', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
                     </p>
                   </div>
                 </div>

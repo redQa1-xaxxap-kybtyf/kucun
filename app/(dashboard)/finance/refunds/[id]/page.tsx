@@ -78,7 +78,7 @@ async function getRefundDetail(id: string) {
     });
 
     return refund;
-  } catch (error) {
+  } catch {
     // 错误已被捕获，返回 null 让组件显示错误状态
     return null;
   }
@@ -117,7 +117,10 @@ function StatusBadge({ status }: { status: string }) {
   const IconComponent = config.icon;
 
   return (
-    <Badge variant={config.variant} className="flex items-center gap-1 text-xs font-medium">
+    <Badge
+      variant={config.variant}
+      className="flex items-center gap-1 text-xs font-medium"
+    >
       <IconComponent className="h-3 w-3" />
       {config.label}
     </Badge>
@@ -332,20 +335,26 @@ export default async function RefundDetailPage({
 
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-[hsl(var(--color-text-tertiary))]">创建时间</span>
+                    <span className="text-[hsl(var(--color-text-tertiary))]">
+                      创建时间
+                    </span>
                     <span>
                       {new Date(refund.createdAt).toLocaleString('zh-CN')}
                     </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-[hsl(var(--color-text-tertiary))]">更新时间</span>
+                    <span className="text-[hsl(var(--color-text-tertiary))]">
+                      更新时间
+                    </span>
                     <span>
                       {new Date(refund.updatedAt).toLocaleString('zh-CN')}
                     </span>
                   </div>
                   {refund.processedDate && (
                     <div className="flex justify-between">
-                      <span className="text-[hsl(var(--color-text-tertiary))]">处理时间</span>
+                      <span className="text-[hsl(var(--color-text-tertiary))]">
+                        处理时间
+                      </span>
                       <span>
                         {new Date(refund.processedDate).toLocaleString('zh-CN')}
                       </span>

@@ -81,19 +81,16 @@ export function PaymentsOutPageClient({
   initialParams,
 }: PaymentsOutPageClientProps) {
   const router = useRouter();
-  const [_isPending, startTransition] = React.useTransition();
+  const [, startTransition] = React.useTransition();
 
-  const PAYMENT_STATUS_VALUES: PaymentOutStatus[] = [
-    'pending',
-    'confirmed',
-    'cancelled',
-  ];
-  const PAYMENT_METHOD_VALUES: PaymentOutMethod[] = [
-    'cash',
-    'bank_transfer',
-    'check',
-    'other',
-  ];
+  const PAYMENT_STATUS_VALUES = React.useMemo<PaymentOutStatus[]>(
+    () => ['pending', 'confirmed', 'cancelled'],
+    []
+  );
+  const PAYMENT_METHOD_VALUES = React.useMemo<PaymentOutMethod[]>(
+    () => ['cash', 'bank_transfer', 'check', 'other'],
+    []
+  );
   const paymentOutSortValues = React.useMemo(
     () => PAYMENT_OUT_SORT_OPTIONS.map(option => option.value),
     []
@@ -102,13 +99,13 @@ export function PaymentsOutPageClient({
   const isPaymentStatus = React.useCallback(
     (value?: string): value is PaymentOutStatus =>
       !!value && PAYMENT_STATUS_VALUES.includes(value as PaymentOutStatus),
-    []
+    [PAYMENT_STATUS_VALUES]
   );
 
   const isPaymentMethod = React.useCallback(
     (value?: string): value is PaymentOutMethod =>
       !!value && PAYMENT_METHOD_VALUES.includes(value as PaymentOutMethod),
-    []
+    [PAYMENT_METHOD_VALUES]
   );
 
   const isPaymentSortField = React.useCallback(
@@ -158,35 +155,37 @@ export function PaymentsOutPageClient({
     value instanceof Date ? value.toISOString() : value;
 
   const normalizedInitialData = React.useMemo(() => {
-    const payments: ClientPaymentRecord[] = initialData.payments.map(payment => ({
-      id: payment.id,
-      paymentNumber: payment.paymentNumber,
-      paymentAmount: payment.paymentAmount,
-      paymentMethod: payment.paymentMethod,
-      paymentDate: normalizeDate(payment.paymentDate),
-      status: payment.status,
-      remarks: payment.remarks ?? undefined,
-      voucherNumber: payment.voucherNumber ?? undefined,
-      payableRecord: payment.payableRecord
-        ? {
-            id: payment.payableRecord.id,
-            payableNumber: payment.payableRecord.payableNumber,
-            payableAmount: payment.payableRecord.payableAmount,
-            remainingAmount: payment.payableRecord.remainingAmount,
-          }
-        : undefined,
-      supplier: {
-        id: payment.supplier.id,
-        name: payment.supplier.name,
-        phone: payment.supplier.phone ?? undefined,
-      },
-      user: {
-        id: payment.user.id,
-        name: payment.user.name,
-      },
-      createdAt: normalizeDate(payment.createdAt),
-      updatedAt: normalizeDate(payment.updatedAt),
-    }));
+    const payments: ClientPaymentRecord[] = initialData.payments.map(
+      payment => ({
+        id: payment.id,
+        paymentNumber: payment.paymentNumber,
+        paymentAmount: payment.paymentAmount,
+        paymentMethod: payment.paymentMethod,
+        paymentDate: normalizeDate(payment.paymentDate),
+        status: payment.status,
+        remarks: payment.remarks ?? undefined,
+        voucherNumber: payment.voucherNumber ?? undefined,
+        payableRecord: payment.payableRecord
+          ? {
+              id: payment.payableRecord.id,
+              payableNumber: payment.payableRecord.payableNumber,
+              payableAmount: payment.payableRecord.payableAmount,
+              remainingAmount: payment.payableRecord.remainingAmount,
+            }
+          : undefined,
+        supplier: {
+          id: payment.supplier.id,
+          name: payment.supplier.name,
+          phone: payment.supplier.phone ?? undefined,
+        },
+        user: {
+          id: payment.user.id,
+          name: payment.user.name,
+        },
+        createdAt: normalizeDate(payment.createdAt),
+        updatedAt: normalizeDate(payment.updatedAt),
+      })
+    );
 
     return {
       payments,
@@ -195,7 +194,9 @@ export function PaymentsOutPageClient({
     };
   }, [initialData]);
 
-  const [search, setSearch] = React.useState(normalizedInitialParams.search || '');
+  const [search, setSearch] = React.useState(
+    normalizedInitialParams.search || ''
+  );
   const [status, setStatus] = React.useState<PaymentOutStatus | undefined>(
     normalizedInitialParams.status
   );

@@ -203,15 +203,6 @@ export default function PaymentsPage() {
     router.push(`/finance/payments?${params}`);
   };
 
-  // 重置筛选
-  const _handleReset = () => {
-    setSearch('');
-    setStatus('all');
-    setPaymentMethod('all');
-    setPage(1);
-    router.push('/finance/payments');
-  };
-
   return (
     <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
       <div className="space-y-4">

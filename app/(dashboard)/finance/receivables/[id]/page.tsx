@@ -1,15 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import {
-  ArrowLeft,
-  Calendar,
-  DollarSign,
-  Edit,
-  FileText,
-  TrendingUp,
-  Users,
-} from 'lucide-react';
+import { Calendar, DollarSign, Edit, FileText, Users } from 'lucide-react';
 import { useParams, useRouter } from 'next/navigation';
 
 import { ContentLoading } from '@/components/common/loading';
@@ -128,7 +120,6 @@ export default function ReceivableDetailPage() {
     );
   }
 
-
   const isOverdue =
     new Date(receivable.dueDate) < new Date() &&
     receivable.status !== 'received';
@@ -175,7 +166,11 @@ export default function ReceivableDetailPage() {
                       收款状态
                     </label>
                     <div className="mt-1 flex items-center space-x-2">
-                      <Badge variant={getReceivableStatusBadgeVariant(receivable.status)}>
+                      <Badge
+                        variant={getReceivableStatusBadgeVariant(
+                          receivable.status
+                        )}
+                      >
                         {RECEIVABLE_STATUS_LABELS[
                           receivable.status as keyof typeof RECEIVABLE_STATUS_LABELS
                         ] || receivable.status}
@@ -230,7 +225,11 @@ export default function ReceivableDetailPage() {
                     </label>
                     <div className="mt-1 flex items-center space-x-2">
                       <Calendar className="text-muted-foreground h-4 w-4" />
-                      <span className={isOverdue ? 'text-[hsl(var(--color-error))]' : ''}>
+                      <span
+                        className={
+                          isOverdue ? 'text-[hsl(var(--color-error))]' : ''
+                        }
+                      >
                         {formatDate(receivable.dueDate)}
                       </span>
                     </div>

@@ -4,10 +4,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { withErrorHandling } from '@/lib/api/middleware';
 import { successResponse, errorResponse } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import type {
-  ShippingSiteCreateInput,
-  ShippingSiteUpdateInput,
-} from '@/lib/types/shipping';
+import type { ShippingSiteCreateInput } from '@/lib/types/shipping';
 import {
   normalizeSelector,
   normalizeSelectorGroup,

@@ -1,9 +1,7 @@
-import { CreditCard } from 'lucide-react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { PayableEditClient } from '@/components/finance/payable-edit-client';
-import { Card, CardContent } from '@/components/ui/card';
 import { payablesApi } from '@/lib/api/payables';
 
 export const metadata: Metadata = {
@@ -30,7 +28,7 @@ export default async function EditPayablePage({
   let payable;
   try {
     payable = await payablesApi.getPayableRecord(id);
-  } catch (error) {
+  } catch {
     notFound();
   }
 

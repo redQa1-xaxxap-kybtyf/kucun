@@ -27,6 +27,8 @@ export function calculatePaymentStatus(
   orderDate: Date,
   dueDays: number = 30
 ): PaymentStatus {
+  void orderDate;
+  void dueDays;
   // 已全额支付
   if (paidAmount >= totalAmount) {
     return 'paid';
@@ -49,9 +51,11 @@ export function calculatePaymentStatus(
  * @returns 逾期天数（未逾期返回0）
  */
 export function calculateOverdueDays(
-  _orderDate: Date,
-  _dueDays: number = 30
+  orderDate: Date,
+  dueDays: number = 30
 ): number {
+  void orderDate;
+  void dueDays;
   // 逾期概念已移除，固定返回0以兼容旧逻辑
   return 0;
 }

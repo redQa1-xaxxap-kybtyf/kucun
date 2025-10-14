@@ -1,7 +1,7 @@
 // 应付款统计 API 路由
 // 遵循 Next.js 15.4 App Router 架构和全局约定规范
 
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
@@ -11,7 +11,7 @@ import type { PayableStatistics } from '@/lib/types/payable';
 /**
  * GET /api/finance/payables/statistics - 获取应付款统计数据
  */
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(async () => {
   try {
     // 获取当前日期范围
     const now = new Date();

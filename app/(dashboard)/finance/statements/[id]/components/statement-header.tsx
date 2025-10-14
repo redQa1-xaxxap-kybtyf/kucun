@@ -6,13 +6,10 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { formatCurrency } from '@/lib/utils/format';
-
 interface StatementHeaderProps {
   name: string;
   type: 'customer' | 'supplier' | 'partner';
   status: 'active' | 'settled' | 'suspended';
-  currentBalance: number;
 }
 
 const TYPE_LABEL_MAP: Record<StatementHeaderProps['type'], string> = {
@@ -30,12 +27,7 @@ const STATUS_BADGE_MAP: Record<
   suspended: { label: '已暂停', variant: 'destructive' },
 };
 
-export function StatementHeader({
-  name,
-  type,
-  status,
-  currentBalance,
-}: StatementHeaderProps) {
+export function StatementHeader({ name, type, status }: StatementHeaderProps) {
   const router = useRouter();
 
   const statusInfo = STATUS_BADGE_MAP[status] ?? STATUS_BADGE_MAP.active;

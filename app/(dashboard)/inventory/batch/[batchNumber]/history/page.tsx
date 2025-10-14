@@ -1,25 +1,10 @@
-import type { ReactNode } from 'react';
-
 import Link from 'next/link';
-import {
-  ActivitySquare,
-  ArrowLeft,
-  Clock,
-  PackageSearch,
-  TrendingDown,
-  TrendingUp,
-} from 'lucide-react';
+import { ActivitySquare, ArrowLeft, Clock, PackageSearch } from 'lucide-react';
 
 import { getBatchHistoryByNumber } from '@/lib/api/batch-history-server';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   Table,
   TableBody,
@@ -86,8 +71,10 @@ export default async function BatchHistoryPage({
 
   const primaryGroup = history.groups[0];
 
-  const focusProduct = history.targetInventory?.product ?? primaryGroup?.product;
-  const focusVariant = history.targetInventory?.variant ?? primaryGroup?.variant;
+  const focusProduct =
+    history.targetInventory?.product ?? primaryGroup?.product;
+  const focusVariant =
+    history.targetInventory?.variant ?? primaryGroup?.variant;
   const currentQuantity =
     primaryGroup?.currentQuantity ??
     history.targetInventory?.quantity ??
@@ -125,7 +112,9 @@ export default async function BatchHistoryPage({
                     批次库存变动历史
                   </h1>
                   <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                    <span className="font-medium">批次号：{history.batchNumber || batchNumber || '—'}</span>
+                    <span className="font-medium">
+                      批次号：{history.batchNumber || batchNumber || '—'}
+                    </span>
                     {history.filteredBy?.inventoryId && (
                       <Badge variant="outline">
                         库存ID：{history.filteredBy.inventoryId}
@@ -135,12 +124,7 @@ export default async function BatchHistoryPage({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="lg"
-                  asChild
-                  className="h-11"
-                >
+                <Button variant="outline" size="lg" asChild className="h-11">
                   <Link href="/inventory">
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     返回
@@ -153,27 +137,44 @@ export default async function BatchHistoryPage({
 
         {/* 统计卡片 */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border border-[hsl(var(--color-border-primary))]" style={{ boxShadow: 'var(--shadow-light)' }}>
+          <Card
+            className="border border-[hsl(var(--color-border-primary))]"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
             <CardContent className="p-4">
-              <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">期初库存</div>
-              <div className="mt-2 text-2xl font-bold text-[hsl(var(--color-primary))]">
-                {openingBalance !== undefined ? formatNumber(openingBalance) : '—'}
+              <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                期初库存
               </div>
-              <div className="mt-1 text-xs text-[hsl(var(--color-text-tertiary))]">片</div>
+              <div className="mt-2 text-2xl font-bold text-[hsl(var(--color-primary))]">
+                {openingBalance !== undefined
+                  ? formatNumber(openingBalance)
+                  : '—'}
+              </div>
+              <div className="mt-1 text-xs text-[hsl(var(--color-text-tertiary))]">
+                片
+              </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-green-200 bg-green-50/50" style={{ boxShadow: 'var(--shadow-light)' }}>
+          <Card
+            className="border border-green-200 bg-green-50/50"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
             <CardContent className="p-4">
               <div className="text-xs font-medium text-gray-600">当前库存</div>
               <div className="mt-2 text-2xl font-bold text-green-600">
-                {currentQuantity !== undefined ? formatNumber(currentQuantity) : '—'}
+                {currentQuantity !== undefined
+                  ? formatNumber(currentQuantity)
+                  : '—'}
               </div>
               <div className="mt-1 text-xs text-gray-500">片</div>
             </CardContent>
           </Card>
 
-          <Card className="border border-blue-200 bg-blue-50/50" style={{ boxShadow: 'var(--shadow-light)' }}>
+          <Card
+            className="border border-blue-200 bg-blue-50/50"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
             <CardContent className="p-4">
               <div className="text-xs font-medium text-gray-600">净变动</div>
               <div className="mt-2 text-2xl font-bold text-blue-600">
@@ -183,21 +184,38 @@ export default async function BatchHistoryPage({
             </CardContent>
           </Card>
 
-          <Card className="border border-[hsl(var(--color-border-primary))]" style={{ boxShadow: 'var(--shadow-light)' }}>
+          <Card
+            className="border border-[hsl(var(--color-border-primary))]"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
             <CardContent className="p-4">
-              <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">变动汇总</div>
+              <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                变动汇总
+              </div>
               <div className="mt-2 space-y-1 text-xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[hsl(var(--color-text-secondary))]">入库</span>
-                  <span className="font-semibold text-green-600">+{formatNumber(totalInbound)}</span>
+                  <span className="text-[hsl(var(--color-text-secondary))]">
+                    入库
+                  </span>
+                  <span className="font-semibold text-green-600">
+                    +{formatNumber(totalInbound)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[hsl(var(--color-text-secondary))]">出库</span>
-                  <span className="font-semibold text-red-600">-{formatNumber(totalOutbound)}</span>
+                  <span className="text-[hsl(var(--color-text-secondary))]">
+                    出库
+                  </span>
+                  <span className="font-semibold text-red-600">
+                    -{formatNumber(totalOutbound)}
+                  </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-[hsl(var(--color-text-secondary))]">调整</span>
-                  <span className="font-semibold text-orange-600">{formatChange(totalAdjustment)}</span>
+                  <span className="text-[hsl(var(--color-text-secondary))]">
+                    调整
+                  </span>
+                  <span className="font-semibold text-orange-600">
+                    {formatChange(totalAdjustment)}
+                  </span>
                 </div>
               </div>
             </CardContent>
@@ -218,26 +236,34 @@ export default async function BatchHistoryPage({
           <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
             <div className="grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-2 lg:grid-cols-3">
               <div>
-                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">产品编码</div>
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                  产品编码
+                </div>
                 <div className="mt-2 font-medium text-[hsl(var(--color-text-primary))]">
                   {focusProduct?.code || '—'}
                 </div>
               </div>
               <div>
-                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">产品名称</div>
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                  产品名称
+                </div>
                 <div className="mt-2 font-medium text-[hsl(var(--color-text-primary))]">
                   {focusProduct?.name || '—'}
                 </div>
               </div>
               <div>
-                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">批次号</div>
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                  批次号
+                </div>
                 <div className="mt-2 font-medium text-[hsl(var(--color-text-primary))]">
                   {history.batchNumber || batchNumber || '—'}
                 </div>
               </div>
               {focusVariant && (
                 <div>
-                  <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">色号/变体</div>
+                  <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                    色号/变体
+                  </div>
                   <div className="mt-2 font-medium text-[hsl(var(--color-text-primary))]">
                     {focusVariant.colorCode
                       ? `${focusVariant.colorCode}${
@@ -265,7 +291,14 @@ export default async function BatchHistoryPage({
                 变动历史
               </CardTitle>
               <div className="text-xs text-[hsl(var(--color-text-secondary))]">
-                共 <strong className="text-[hsl(var(--color-primary))]">{history.groups.reduce((sum, g) => sum + g.movements.length, 0)}</strong> 条记录
+                共{' '}
+                <strong className="text-[hsl(var(--color-primary))]">
+                  {history.groups.reduce(
+                    (sum, g) => sum + g.movements.length,
+                    0
+                  )}
+                </strong>{' '}
+                条记录
               </div>
             </div>
           </CardHeader>
@@ -282,14 +315,30 @@ export default async function BatchHistoryPage({
                     style={{ boxShadow: 'var(--shadow-light)' }}
                   >
                     <TableRow className="text-xs text-[hsl(var(--color-text-secondary))]">
-                      <TableHead className="px-4 py-3 text-left font-medium">时间</TableHead>
-                      <TableHead className="px-4 py-3 text-left font-medium">类型</TableHead>
-                      <TableHead className="px-4 py-3 text-left font-medium">单据编号</TableHead>
-                      <TableHead className="px-4 py-3 text-right font-medium">变动数量</TableHead>
-                      <TableHead className="px-4 py-3 text-right font-medium">操作前</TableHead>
-                      <TableHead className="px-4 py-3 text-right font-medium">操作后</TableHead>
-                      <TableHead className="px-4 py-3 text-left font-medium">操作人</TableHead>
-                      <TableHead className="px-4 py-3 text-left font-medium">原因/备注</TableHead>
+                      <TableHead className="px-4 py-3 text-left font-medium">
+                        时间
+                      </TableHead>
+                      <TableHead className="px-4 py-3 text-left font-medium">
+                        类型
+                      </TableHead>
+                      <TableHead className="px-4 py-3 text-left font-medium">
+                        单据编号
+                      </TableHead>
+                      <TableHead className="px-4 py-3 text-right font-medium">
+                        变动数量
+                      </TableHead>
+                      <TableHead className="px-4 py-3 text-right font-medium">
+                        操作前
+                      </TableHead>
+                      <TableHead className="px-4 py-3 text-right font-medium">
+                        操作后
+                      </TableHead>
+                      <TableHead className="px-4 py-3 text-left font-medium">
+                        操作人
+                      </TableHead>
+                      <TableHead className="px-4 py-3 text-left font-medium">
+                        原因/备注
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody className="divide-y">
@@ -299,16 +348,18 @@ export default async function BatchHistoryPage({
                         return (
                           <TableRow
                             key={`${entry.type}-${entry.id}-${entry.createdAt}`}
-                            className="hover:bg-gray-50/50 transition-colors"
+                            className="transition-colors hover:bg-gray-50/50"
                           >
                             <TableCell className="px-4 py-3 text-sm text-[hsl(var(--color-text-secondary))]">
                               {formatDateTimeCN(entry.createdAt)}
                             </TableCell>
                             <TableCell className="px-4 py-3">
-                              <Badge variant={meta.badge} className="text-xs">{meta.label}</Badge>
+                              <Badge variant={meta.badge} className="text-xs">
+                                {meta.label}
+                              </Badge>
                             </TableCell>
                             <TableCell className="px-4 py-3">
-                              <code className="text-sm font-mono text-[hsl(var(--color-primary))]">
+                              <code className="font-mono text-sm text-[hsl(var(--color-primary))]">
                                 {entry.recordNumber}
                               </code>
                             </TableCell>
@@ -332,7 +383,8 @@ export default async function BatchHistoryPage({
                               <div className="max-w-xs">
                                 <div className="text-sm text-[hsl(var(--color-text-secondary))]">
                                   {entry.reason
-                                    ? OUTBOUND_REASON_LABELS[entry.reason] ?? entry.reason
+                                    ? (OUTBOUND_REASON_LABELS[entry.reason] ??
+                                      entry.reason)
                                     : '—'}
                                 </div>
                                 {entry.referenceNumber && (
@@ -358,113 +410,6 @@ export default async function BatchHistoryPage({
           </CardContent>
         </Card>
       </div>
-    </div>
-  );
-}
-
-function SummaryItem({
-  icon,
-  label,
-  value,
-}: {
-  icon: ReactNode;
-  label: string;
-  value: ReactNode;
-}) {
-  return (
-    <div className="flex items-start gap-3 rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))] p-4 shadow-[var(--shadow-light)]">
-      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--color-primary-light))] text-[hsl(var(--color-primary))]">
-        {icon}
-      </div>
-      <div>
-        <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
-          {label}
-        </div>
-        <div className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-          {value ?? '—'}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function MovementTable({ movements }: { movements: InventoryMovementEntry[] }) {
-  if (!movements.length) {
-    return (
-      <div className="py-10 text-center text-sm text-[hsl(var(--color-text-secondary))]">
-        该批次尚未产生历史记录。
-      </div>
-    );
-  }
-
-  return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader className="bg-[hsl(var(--color-bg-secondary))]">
-          <TableRow>
-            <TableHead className="w-36">时间</TableHead>
-            <TableHead className="w-24">类型</TableHead>
-            <TableHead className="w-36">单据编号</TableHead>
-            <TableHead className="text-right">变动数量</TableHead>
-            <TableHead className="text-right">操作前库存</TableHead>
-            <TableHead className="text-right">操作后库存</TableHead>
-            <TableHead>操作人</TableHead>
-            <TableHead>原因 / 备注</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {movements.map(entry => {
-            const meta = MOVEMENT_META[entry.type];
-            return (
-              <TableRow
-                key={`${entry.type}-${entry.id}-${entry.createdAt}`}
-                className="text-sm"
-              >
-                <TableCell className="text-[hsl(var(--color-text-secondary))]">
-                  {formatDateTimeCN(entry.createdAt)}
-                </TableCell>
-                <TableCell>
-                  <Badge variant={meta.badge}>{meta.label}</Badge>
-                </TableCell>
-                <TableCell className="font-mono text-[hsl(var(--color-primary))]">
-                  {entry.recordNumber}
-                </TableCell>
-                <TableCell className="text-right font-semibold">
-                  {formatChange(entry.quantityChange)} 片
-                </TableCell>
-                <TableCell className="text-right">
-                  {entry.balanceBefore !== undefined
-                    ? `${formatNumber(entry.balanceBefore)} 片`
-                    : '—'}
-                </TableCell>
-                <TableCell className="text-right">
-                  {entry.balanceAfter !== undefined
-                    ? `${formatNumber(entry.balanceAfter)} 片`
-                    : '—'}
-                </TableCell>
-                <TableCell>{entry.operator?.name || '—'}</TableCell>
-                <TableCell className="max-w-xs text-[hsl(var(--color-text-secondary))]">
-                  <div>
-                    {entry.reason
-                      ? OUTBOUND_REASON_LABELS[entry.reason] ?? entry.reason
-                      : '—'}
-                  </div>
-                  {entry.referenceNumber && (
-                    <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                      关联单据：{entry.referenceNumber}
-                    </div>
-                  )}
-                  {entry.remarks && (
-                    <div className="mt-1 text-xs text-[hsl(var(--color-text-tertiary))]">
-                      {entry.remarks}
-                    </div>
-                  )}
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
     </div>
   );
 }

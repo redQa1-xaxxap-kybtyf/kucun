@@ -61,8 +61,8 @@ export const GET = withAuth(
       search,
       status,
       customerId,
-      returnOrderId: _returnOrderId,
-      salesOrderId: _salesOrderId,
+      returnOrderId,
+      salesOrderId,
       refundType,
       startDate,
       endDate,
@@ -87,6 +87,14 @@ export const GET = withAuth(
 
     if (customerId) {
       where.customerId = customerId;
+    }
+
+    if (returnOrderId) {
+      where.returnOrderId = returnOrderId;
+    }
+
+    if (salesOrderId) {
+      where.salesOrderId = salesOrderId;
     }
 
     if (refundType) {

@@ -37,7 +37,7 @@ const DEFAULT_BASIC_SETTINGS: BasicSettings = {
  * GET /api/settings/basic - 获取基本设置
  */
 export const GET = withAuth(
-  async (request: NextRequest, { user }) => {
+  async () => {
     try {
       // 获取基本设置
       const settings = await prisma.systemSetting.findMany({
@@ -211,7 +211,7 @@ export const PUT = withAuth(
 
       // 记录设置变更日志
       const changes = Object.entries(settingsData)
-        .filter(([_key, value]) => value !== undefined)
+        .filter(([, value]) => value !== undefined)
         .map(([key, value]) => {
           let stringValue: string;
           if (typeof value === 'number') {

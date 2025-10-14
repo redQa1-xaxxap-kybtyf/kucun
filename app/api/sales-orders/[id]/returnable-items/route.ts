@@ -2,7 +2,6 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { getReturnableItems } from '@/lib/services/sales-order-service';
-import { logger } from '@/lib/utils/console-logger';
 
 /**
  * GET /api/sales-orders/[id]/returnable-items

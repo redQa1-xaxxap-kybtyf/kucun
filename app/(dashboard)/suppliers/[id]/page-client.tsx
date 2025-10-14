@@ -1,15 +1,6 @@
 'use client';
 
-import {
-  ArrowLeft,
-  Calendar,
-  DollarSign,
-  Edit,
-  Mail,
-  MapPin,
-  Phone,
-  Truck,
-} from 'lucide-react';
+import { Calendar, DollarSign, Edit, MapPin, Phone, Truck } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
@@ -152,7 +143,9 @@ export function SupplierDetailPageClient({
                       供应商状态
                     </label>
                     <div className="mt-1">
-                      <Badge variant={getCommonStatusBadgeVariant(supplier.status)}>
+                      <Badge
+                        variant={getCommonStatusBadgeVariant(supplier.status)}
+                      >
                         {getStatusLabel(supplier.status)}
                       </Badge>
                     </div>
@@ -337,7 +330,11 @@ export function SupplierDetailPageClient({
                           <p className="text-muted-foreground text-xs">
                             / {formatCurrency(record.payableAmount)}
                           </p>
-                          <Badge variant={getPayableStatusBadgeVariant(record.status)}>
+                          <Badge
+                            variant={getPayableStatusBadgeVariant(
+                              record.status
+                            )}
+                          >
                             {getPayableStatusLabel(record.status)}
                           </Badge>
                         </div>

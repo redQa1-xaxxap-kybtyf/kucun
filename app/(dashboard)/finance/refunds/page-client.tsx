@@ -54,7 +54,7 @@ export function RefundsPageClient({
   initialParams,
 }: RefundsPageClientProps) {
   const router = useRouter();
-  const [_isPending, startTransition] = React.useTransition();
+  const [, startTransition] = React.useTransition();
 
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');

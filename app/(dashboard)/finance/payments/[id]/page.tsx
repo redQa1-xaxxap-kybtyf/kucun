@@ -61,7 +61,6 @@ interface PaymentRecord {
   updatedAt: string;
 }
 
-
 /**
  * 获取收款记录详情数据
  */
@@ -150,7 +149,7 @@ async function getPaymentDetail(id: string): Promise<PaymentRecord | null> {
       createdAt: payment.createdAt.toISOString(),
       updatedAt: payment.updatedAt.toISOString(),
     };
-  } catch (_error) {
+  } catch {
     return null;
   }
 }

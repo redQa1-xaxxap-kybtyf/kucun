@@ -74,10 +74,7 @@ function decrypt(text: string): string {
  * 获取七牛云存储配置
  */
 export const GET = withAuth(
-  async (
-    request: NextRequest,
-    { user }
-  ): Promise<NextResponse<SettingsApiResponse<QiniuStorageConfig>>> => {
+  async (): Promise<NextResponse<SettingsApiResponse<QiniuStorageConfig>>> => {
     try {
       // 获取七牛云配置
       const settings = await prisma.systemSetting.findMany({

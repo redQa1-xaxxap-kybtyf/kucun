@@ -1,7 +1,7 @@
 // 退货订单统计API路由
 // 遵循Next.js 15.4 App Router架构和全局约定规范
 
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
@@ -10,7 +10,7 @@ import { prisma } from '@/lib/db';
  * GET /api/return-orders/stats - 获取退货订单统计信息
  */
 export const GET = withAuth(
-  async (request: NextRequest) => {
+  async () => {
     // 获取当前月份的开始和结束时间
     const now = new Date();
     const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);

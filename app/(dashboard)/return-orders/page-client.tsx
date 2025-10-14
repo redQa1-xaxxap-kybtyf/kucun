@@ -10,7 +10,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PageHeader } from '@/components/common/page-header';
 import { ERPReturnOrderList } from '@/components/return-orders/erp-return-order-list';
 import { Button } from '@/components/ui/button';
-import type { ReturnOrder, ReturnOrderStatus } from '@/lib/types/return-order';
+import type { ReturnOrderStatus } from '@/lib/types/return-order';
 
 interface ReturnOrderQueryParams {
   page?: number;
@@ -34,7 +34,7 @@ export function ReturnOrdersPageClient({
   initialParams,
 }: ReturnOrdersPageClientProps) {
   const router = useRouter();
-  const [_isPending, startTransition] = React.useTransition();
+  const [, startTransition] = React.useTransition();
 
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');

@@ -6,8 +6,6 @@ import { prisma } from '@/lib/db';
 import {
   productVariantBatchCreateSchema,
   productVariantBatchOperationSchema,
-  productVariantBatchCheckSkuSchema,
-  productVariantBatchGenerateSkuSchema,
 } from '@/lib/validations/product';
 
 // 批量创建产品变体

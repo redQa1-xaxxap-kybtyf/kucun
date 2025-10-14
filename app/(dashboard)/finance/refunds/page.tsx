@@ -22,55 +22,6 @@ export const fetchCache = 'force-no-store';
 export const revalidate = 0;
 
 /**
- * 服务器组件传递给客户端的退款记录类型
- * Date 被序列化为 string，包含关联数据
- */
-type SerializedRefundRecord = {
-  id: string;
-  refundNumber: string;
-  returnOrderId: string | null;
-  salesOrderId: string;
-  customerId: string;
-  userId: string;
-  refundType: RefundType;
-  refundMethod: RefundMethod;
-  refundAmount: number;
-  processedAmount: number;
-  remainingAmount: number;
-  refundDate: string;
-  processedDate: string | null;
-  status: RefundStatus;
-  reason: string;
-  remarks: string | null;
-  bankInfo: string | null;
-  receiptNumber: string | null;
-  returnOrderNumber: string | null;
-  createdAt: string;
-  updatedAt: string;
-  // 关联数据
-  customer: {
-    id: string;
-    name: string;
-    phone: string | null;
-  } | null;
-  salesOrder: {
-    id: string;
-    orderNumber: string;
-    totalAmount: number;
-  } | null;
-  returnOrder: {
-    id: string;
-    returnOrderNumber: string;
-    totalAmount: number;
-    status?: string;
-  } | null;
-  user: {
-    id: string;
-    name: string;
-  } | null;
-};
-
-/**
  * 服务器端获取退款数据
  */
 async function getRefundsData(searchParams: {

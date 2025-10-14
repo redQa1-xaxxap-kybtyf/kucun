@@ -1,8 +1,7 @@
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { generateSalesOrderNumber } from '@/lib/services/simple-order-number-generator';
-import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 生成销售订单号API
@@ -11,7 +10,7 @@ import { logger } from '@/lib/utils/console-logger';
 
 // 生成订单号API
 export const GET = withAuth(
-  async (request: NextRequest) => {
+  async () => {
     // 使用新的安全订单号生成服务
     const orderNumber = await generateSalesOrderNumber();
 

@@ -46,7 +46,7 @@ function transformUser(user: {
 
 // GET - 获取用户列表
 export const GET = withAuth(
-  async (request: NextRequest, { user }) => {
+  async (request: NextRequest) => {
     try {
       // 解析查询参数
       const { searchParams } = new URL(request.url);

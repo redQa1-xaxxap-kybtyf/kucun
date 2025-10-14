@@ -1,10 +1,10 @@
-import { NextResponse, type NextRequest } from 'next/server';
+import { NextResponse } from 'next/server';
 
 import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 
-export const GET = withAuth(async (request: NextRequest) => {
+export const GET = withAuth(async () => {
   try {
     const now = new Date();
     const startOfToday = new Date(

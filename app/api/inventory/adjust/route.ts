@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { withErrorHandling } from '@/lib/api/middleware';
-import { successResponse, withAuth } from '@/lib/auth/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';

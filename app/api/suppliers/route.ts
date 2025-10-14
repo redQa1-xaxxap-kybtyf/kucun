@@ -12,7 +12,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
-import { successResponse, withAuth } from '@/lib/auth/api-helpers';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { createSupplier, getSuppliers } from '@/lib/services/supplier-service';
 import {
   CreateSupplierSchema,

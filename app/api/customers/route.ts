@@ -10,7 +10,7 @@ import { customerCreateSchema } from '@/lib/validations/customer';
  * 获取客户列表
  */
 export const GET = withAuth(
-  async (request: NextRequest, { user }) => {
+  async (request: NextRequest) => {
     return withErrorHandling(async request => {
       const { searchParams } = new URL(request.url);
 
@@ -62,7 +62,7 @@ export const GET = withAuth(
  * 创建客户
  */
 export const POST = withAuth(
-  async (request: NextRequest, { user }) => {
+  async (request: NextRequest) => {
     return withErrorHandling(async request => {
       const body = await request.json();
 

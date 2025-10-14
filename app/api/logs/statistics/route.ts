@@ -3,7 +3,7 @@
  * 遵循 Next.js 15.4 App Router 架构和全局约定规范
  */
 
-import { type NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
@@ -12,7 +12,7 @@ import { prisma } from '@/lib/db';
 /**
  * GET /api/logs/statistics - 获取系统日志统计数据
  */
-export async function GET(_request: NextRequest) {
+export async function GET() {
   try {
     // 身份验证
     const session = await getServerSession(authOptions);

@@ -25,13 +25,7 @@ export const GET = withAuth(async (request: NextRequest) => {
       );
     }
 
-    const {
-      timeRange,
-      productCategory: _productCategory,
-      customerType: _customerType,
-      salesChannel: _salesChannel,
-      region: _region,
-    } = validationResult.data;
+    const { timeRange } = validationResult.data;
 
     // 计算时间范围
     const now = new Date();

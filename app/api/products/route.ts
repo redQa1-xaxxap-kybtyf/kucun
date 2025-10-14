@@ -81,7 +81,7 @@ export const GET = withAuth(
 
 // 创建产品
 export const POST = withAuth(
-  async (request: NextRequest, { user }) => {
+  async (request: NextRequest) => {
     const body = await request.json();
 
     // 验证请求数据
@@ -184,7 +184,7 @@ export const POST = withAuth(
         logger.warn(
           'products',
           '解析产品图片失败，使用空数组作为兜底',
-          undefined,
+          error instanceof Error ? error : undefined,
           {
             productId: product.id,
           }

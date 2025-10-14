@@ -8,7 +8,6 @@ import {
   Edit,
   Mail,
   MapPin,
-  Phone,
   RotateCcw,
   ShoppingCart,
   User,

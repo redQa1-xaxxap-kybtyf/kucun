@@ -26,6 +26,8 @@ import {
 } from '@/components/ui/select';
 import { formatCurrency } from '@/lib/utils/format';
 import type { PaymentStatus } from '@/lib/types/payment';
+import { useConfirmPayment } from '@/lib/api/payments';
+import { useToast } from '@/components/ui/use-toast';
 
 interface PaymentRecord {
   id: string;
@@ -85,6 +87,7 @@ interface PaymentsClientProps {
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: PaymentStatus | string | undefined) => void;
   onPageChange?: (page: number) => void;
+  onRefresh?: () => void;
 }
 
 /**
@@ -134,8 +137,12 @@ export function PaymentsClient({
   onSearch: externalOnSearch,
   onFilter: externalOnFilter,
   onPageChange: externalOnPageChange,
+  onRefresh: externalOnRefresh,
 }: PaymentsClientProps) {
   const { payments, statistics, pagination } = initialData;
+  const { toast } = useToast();
+  const confirmPaymentMutation = useConfirmPayment();
+  const [confirmingId, setConfirmingId] = React.useState<string | null>(null);
 
   // 处理搜索
   const handleSearch = React.useCallback(
@@ -173,6 +180,29 @@ export function PaymentsClient({
       }
     },
     [externalOnPageChange]
+  );
+
+  const handleConfirm = React.useCallback(
+    async (paymentId: string) => {
+      try {
+        setConfirmingId(paymentId);
+        await confirmPaymentMutation.mutateAsync({ id: paymentId });
+        toast({
+          title: '收款已确认',
+          description: '该收款记录已成功确认到账。',
+        });
+        externalOnRefresh?.();
+      } catch (error) {
+        toast({
+          title: '确认失败',
+          description: error instanceof Error ? error.message : '请稍后重试',
+          variant: 'destructive',
+        });
+      } finally {
+        setConfirmingId(null);
+      }
+    },
+    [confirmPaymentMutation, toast, externalOnRefresh]
   );
 
   return (
@@ -396,6 +426,19 @@ export function PaymentsClient({
                                 )}
                               </span>
                             </p>
+                            {payment.status === 'confirmed' && (
+                              <p className="flex items-center gap-1">
+                                <span className="text-[hsl(var(--color-text-tertiary))]">
+                                  确认时间:
+                                </span>
+                                <span className="text-xs font-medium text-[hsl(var(--color-success))]">
+                                  {format(
+                                    new Date(payment.updatedAt),
+                                    'yyyy-MM-dd HH:mm'
+                                  )}
+                                </span>
+                              </p>
+                            )}
                             {payment.receiptNumber && (
                               <p className="flex items-center gap-1">
                                 <span className="text-[hsl(var(--color-text-tertiary))]">
@@ -484,11 +527,28 @@ export function PaymentsClient({
                               {paymentStatusLabel}
                             </div>
                           </div>
-                          <Button size="sm" asChild>
-                            <Link href={`/finance/payments/${payment.id}`}>
-                              查看详情
-                            </Link>
-                          </Button>
+                          <div className="flex gap-2">
+                            {payment.status === 'pending' && (
+                              <Button
+                                size="sm"
+                                variant="default"
+                                onClick={() => handleConfirm(payment.id)}
+                                disabled={
+                                  confirmingId === payment.id ||
+                                  confirmPaymentMutation.isPending
+                                }
+                              >
+                                {confirmingId === payment.id
+                                  ? '确认中...'
+                                  : '确认收款'}
+                              </Button>
+                            )}
+                            <Button size="sm" asChild>
+                              <Link href={`/finance/payments/${payment.id}`}>
+                                查看详情
+                              </Link>
+                            </Button>
+                          </div>
                         </div>
                       </div>
                     </CardContent>

@@ -2,7 +2,6 @@ import { type NextRequest } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { ApiError } from '@/lib/api/errors';
-import { withErrorHandling } from '@/lib/api/middleware';
 import { successResponse } from '@/lib/api/response';
 import { invalidateProductCache } from '@/lib/cache/product-cache';
 import { prisma } from '@/lib/db';
@@ -13,7 +12,7 @@ import { batchDeleteProductsSchema } from '@/lib/validations/product';
  * 批量删除产品
  * DELETE /api/products/batch
  */
-export const DELETE = withAuth(async (request: NextRequest, { user }) => {
+export const DELETE = withAuth(async (request: NextRequest) => {
   // 1. 解析请求体
   const body = await request.json();
 

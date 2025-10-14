@@ -1,5 +1,3 @@
-import { type NextRequest } from 'next/server';
-
 import {
   errorResponse,
   successResponse,
@@ -9,7 +7,7 @@ import { logger } from '@/lib/logger';
 import { getCustomerStatementStatistics } from '@/lib/services/customer-statement-service';
 
 export const GET = withAuth(
-  async (_request: NextRequest) => {
+  async () => {
     try {
       const statistics = await getCustomerStatementStatistics();
       return successResponse(statistics);

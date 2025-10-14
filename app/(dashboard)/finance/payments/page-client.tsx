@@ -80,7 +80,7 @@ export function PaymentsPageClient({
   initialParams,
 }: PaymentsPageClientProps) {
   const router = useRouter();
-  const [_isPending, startTransition] = React.useTransition();
+  const [, startTransition] = React.useTransition();
 
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');
@@ -254,6 +254,12 @@ export function PaymentsPageClient({
     ]
   );
 
+  const handleRefresh = React.useCallback(() => {
+    startTransition(() => {
+      router.refresh();
+    });
+  }, [router]);
+
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
@@ -315,6 +321,7 @@ export function PaymentsPageClient({
             onSearch={handleSearch}
             onFilter={handleFilter}
             onPageChange={handlePageChange}
+            onRefresh={handleRefresh}
           />
         </Suspense>
       </div>

@@ -104,7 +104,7 @@ export default function ShippingSitesPage() {
           : `/api/shipping/sites/${data.id}`;
       const method = formMode === 'create' ? 'POST' : 'PUT';
 
-      const { id, extractSelectors, ...rest } = data;
+      const { extractSelectors, ...rest } = data;
       const payload = {
         ...rest,
         searchInputSelector: normalizeSelector(rest.searchInputSelector),

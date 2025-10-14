@@ -13,6 +13,7 @@ import { Pagination } from '@/components/ui/pagination';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils/datetime';
 import type {
   ReceivableItem,
   ReceivablesResult,
@@ -278,41 +279,46 @@ export function ReceivablesClient({
               currentData.receivables.map((receivable: ReceivableItem) => (
                 <Card
                   key={receivable.id}
-                  className="overflow-hidden transition-shadow hover:shadow-[var(--shadow-medium)]"
+                  className="group overflow-hidden border border-[hsl(var(--color-border-secondary))] bg-white transition-all duration-300 hover:border-[hsl(var(--color-primary))]/40 hover:shadow-lg"
                 >
                   <CardContent className="p-0">
-                    {/* 顶部信息栏 - 订单号、客户、状态 */}
-                    <div className="flex items-center justify-between border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-r from-[hsl(var(--color-bg-tertiary))] to-[hsl(var(--color-bg-secondary))] px-6 py-4">
-                      <div className="flex flex-col gap-2">
+                    {/* 顶部信息栏 - 优化渐变和间距 */}
+                    <div className="relative flex items-center justify-between border-b border-[hsl(var(--color-border-secondary))]/50 bg-gradient-to-br from-[hsl(var(--color-bg-secondary))] via-[hsl(var(--color-bg-tertiary))] to-white px-6 py-5">
+                      {/* 装饰性渐变条 */}
+                      <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary))]/20 opacity-0 transition-opacity duration-300 group-hover:opacity-100"></div>
+
+                      <div className="flex flex-col gap-2.5">
                         <div className="flex items-center gap-3">
-                          <h3 className="text-base font-bold text-[hsl(var(--color-text-primary))]">
+                          <h3 className="text-lg font-bold tracking-tight text-[hsl(var(--color-text-primary))] transition-colors group-hover:text-[hsl(var(--color-primary))]">
                             {receivable.orderNumber}
                           </h3>
                           {getStatusBadge(receivable.paymentStatus)}
                         </div>
                         <div className="flex items-center gap-2">
-                          <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
-                            客户:
+                          <span className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                            客户
                           </span>
-                          <span className="text-sm font-medium text-[hsl(var(--color-text-secondary))]">
+                          <span className="text-sm font-semibold text-[hsl(var(--color-text-secondary))]">
                             {receivable.customerName}
                           </span>
                         </div>
                       </div>
-                      <div className="flex gap-2">
+
+                      <div className="flex gap-2.5">
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() =>
                             router.push(`/sales-orders/${receivable.id}`)
                           }
+                          className="border-[hsl(var(--color-border-primary))] hover:border-[hsl(var(--color-primary))] hover:bg-[hsl(var(--color-primary))]/5 hover:text-[hsl(var(--color-primary))]"
                         >
                           查看详情
                         </Button>
                         {receivable.remainingAmount > 0 && (
                           <Button
                             size="sm"
-                            className="shadow-[var(--shadow-light)] transition-all hover:scale-105 hover:shadow-[var(--shadow-medium)]"
+                            className="bg-gradient-to-r from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary))]/90 shadow-md transition-all hover:scale-105 hover:shadow-lg"
                             onClick={() =>
                               router.push(
                                 `/finance/payments/create?orderId=${receivable.id}`
@@ -325,48 +331,64 @@ export function ReceivablesClient({
                       </div>
                     </div>
 
-                    {/* 金额信息区域 - 更突出的视觉展示 */}
-                    <div className="grid grid-cols-3 divide-x divide-[hsl(var(--color-border-secondary))] px-6 py-5">
-                      <div className="flex flex-col items-center justify-center">
-                        <span className="mb-1 text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                    {/* 金额信息区域 - 增强视觉层次 */}
+                    <div className="grid grid-cols-3 gap-px bg-[hsl(var(--color-border-secondary))]/30">
+                      <div className="flex flex-col items-center justify-center bg-white px-6 py-6 transition-colors hover:bg-[hsl(var(--color-bg-secondary))]">
+                        <span className="mb-2 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
                           订单金额
                         </span>
-                        <span className="text-xl font-bold text-[hsl(var(--color-text-primary))]">
+                        <span className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
                           {formatCurrency(receivable.totalAmount)}
                         </span>
                       </div>
-                      <div className="flex flex-col items-center justify-center">
-                        <span className="mb-1 text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      <div className="flex flex-col items-center justify-center bg-white px-6 py-6 transition-colors hover:bg-[hsl(var(--color-success))]/5">
+                        <span className="mb-2 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
                           已收金额
                         </span>
-                        <span className="text-xl font-bold text-[hsl(var(--color-success))]">
+                        <span className="text-2xl font-bold tracking-tight text-[hsl(var(--color-success))]">
                           {formatCurrency(receivable.paidAmount)}
                         </span>
                       </div>
-                      <div className="flex flex-col items-center justify-center">
-                        <span className="mb-1 text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                      <div className="relative flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[hsl(var(--color-warning))]/5 to-white px-6 py-6 transition-all hover:from-[hsl(var(--color-warning))]/10">
+                        {receivable.remainingAmount > 0 && (
+                          <div className="absolute top-2 right-2 h-2 w-2 animate-pulse rounded-full bg-[hsl(var(--color-warning))]"></div>
+                        )}
+                        <span className="mb-2 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
                           待收金额
                         </span>
-                        <span className="text-xl font-bold text-[hsl(var(--color-warning))]">
+                        <span className="text-2xl font-bold tracking-tight text-[hsl(var(--color-warning))]">
                           {formatCurrency(receivable.remainingAmount)}
                         </span>
                       </div>
                     </div>
 
-                    {/* 日期信息栏 */}
-                    <div className="flex items-center gap-6 border-t border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] px-6 py-3 text-xs text-[hsl(var(--color-text-tertiary))]">
-                      <div className="flex items-center gap-1.5">
-                        <Calendar className="h-3.5 w-3.5" />
-                        <span>订单日期: {receivable.orderDate}</span>
+                    {/* 日期信息栏 - 精简设计 */}
+                    <div className="flex items-center gap-6 border-t border-[hsl(var(--color-border-secondary))]/30 bg-[hsl(var(--color-bg-tertiary))]/30 px-6 py-3.5 text-xs">
+                      <div className="flex items-center gap-2">
+                        <Calendar className="h-3.5 w-3.5 text-[hsl(var(--color-text-tertiary))]" />
+                        <span className="text-[hsl(var(--color-text-tertiary))]">
+                          订单日期:
+                        </span>
+                        <span className="font-medium text-[hsl(var(--color-text-secondary))]">
+                          {receivable.orderDate}
+                        </span>
                       </div>
                       {receivable.lastPaymentDate && (
                         <>
                           <span className="text-[hsl(var(--color-border-primary))]">
                             •
                           </span>
-                          <div className="flex items-center gap-1.5">
-                            <Calendar className="h-3.5 w-3.5" />
-                            <span>最后收款: {receivable.lastPaymentDate}</span>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-3.5 w-3.5 text-[hsl(var(--color-success))]" />
+                            <span className="text-[hsl(var(--color-text-tertiary))]">
+                              最后收款:
+                            </span>
+                            <span className="font-medium text-[hsl(var(--color-success))]">
+                              {formatDateTime(
+                                receivable.lastPaymentDate,
+                                'yyyy-MM-dd HH:mm'
+                              )}
+                            </span>
                           </div>
                         </>
                       )}
