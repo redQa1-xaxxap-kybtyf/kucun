@@ -51,6 +51,7 @@ jest.mock('next-auth/react', () => ({
 }));
 
 jest.mock('next-auth', () => ({
+  __esModule: true,
   getServerSession: jest.fn(() =>
     Promise.resolve({
       user: {
@@ -61,6 +62,7 @@ jest.mock('next-auth', () => ({
       },
     })
   ),
+  default: jest.fn(() => ({})),
 }));
 
 // 全局测试工具函数
@@ -126,3 +128,15 @@ jest.mock('@faker-js/faker', () => ({
     },
   },
 }));
+
+// Polyfill TransformStream 用于 Node 环境下的浏览器 API 依赖
+if (typeof globalThis.TransformStream === 'undefined') {
+  class MockTransformStream {
+    constructor() {
+      this.readable = { locked: false };
+      this.writable = { locked: false };
+    }
+  }
+
+  globalThis.TransformStream = MockTransformStream;
+}

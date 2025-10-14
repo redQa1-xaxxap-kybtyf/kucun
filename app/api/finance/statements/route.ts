@@ -3,7 +3,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { paginationConfig } from '@/lib/env';
-import { getStatementsList } from '@/lib/services/finance-statistics';
+// ✅ P1修复: 使用带缓存的财务统计服务
+import {
+  getStatementsList,
+  type StatementQueryParams,
+} from '@/lib/services/finance-statistics-cached';
+import type { StatementType } from '@/lib/types/statement';
 
 /**
  * GET /api/finance/statements - 获取往来账单列表
@@ -13,14 +18,19 @@ export const GET = withAuth(async (request: NextRequest) => {
   try {
     // 解析查询参数
     const searchParams = new URL(request.url).searchParams;
+    const searchValue = searchParams.get('search')?.trim();
+    const typeValue = searchParams.get('type')?.trim();
     const queryParams = {
-      page: parseInt(searchParams.get('page') || '1'),
+      page: parseInt(searchParams.get('page') || '1', 10),
       limit: parseInt(
-        searchParams.get('limit') || paginationConfig.defaultPageSize.toString()
+        searchParams.get('limit') ||
+          paginationConfig.defaultPageSize.toString(),
+        10
       ),
-      search: searchParams.get('search') || '',
-      type: searchParams.get('type') as 'customer' | 'supplier' | undefined,
-      sortBy: searchParams.get('sortBy') || 'totalAmount',
+      search: searchValue || undefined,
+      type: (typeValue as StatementType | 'all' | undefined) || 'all',
+      sortBy: (searchParams.get('sortBy') ||
+        'totalAmount') as StatementQueryParams['sortBy'],
       sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
     };
 

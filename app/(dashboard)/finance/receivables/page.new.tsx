@@ -151,8 +151,6 @@ export default async function ReceivablesPage({
             summary: {
               totalReceivable: 0,
               receivableCount: 0,
-              totalOverdue: 0,
-              overdueCount: 0,
               paidCount: 0,
               unpaidCount: 0,
               partialCount: 0,

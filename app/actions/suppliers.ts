@@ -116,7 +116,7 @@ export async function createSupplier(
     });
 
     let sequenceNumber = 1;
-    if (lastSupplier) {
+    if (lastSupplier?.supplierCode) {
       // 提取序号并加1
       const lastSequence = parseInt(lastSupplier.supplierCode.slice(-4));
       sequenceNumber = lastSequence + 1;
@@ -143,7 +143,7 @@ export async function createSupplier(
       data: {
         id: supplier.id,
         name: supplier.name,
-        supplierCode: supplier.supplierCode,
+        supplierCode: supplier.supplierCode ?? supplierCode,
       },
     };
   } catch (error) {
@@ -232,7 +232,7 @@ export async function updateSupplierStatus(
       include: {
         factoryShipmentOrderItems: {
           include: {
-            order: true,
+            factoryShipmentOrder: true,
           },
         },
         payableRecords: true,
@@ -246,10 +246,14 @@ export async function updateSupplierStatus(
     // 如果要停用供应商，检查是否有未完成的业务
     if (data.status === 'inactive') {
       // 检查是否有进行中的厂家发货订单
-      const activeOrders = supplier.factoryShipmentOrderItems.filter(
-        item =>
-          item.order.status !== 'completed' && item.order.status !== 'cancelled'
-      );
+      const activeOrders = supplier.factoryShipmentOrderItems.filter(item => {
+        const status = item.factoryShipmentOrder?.status;
+        return (
+          status !== undefined &&
+          status !== 'completed' &&
+          status !== 'cancelled'
+        );
+      });
 
       if (activeOrders.length > 0) {
         return {
@@ -375,7 +379,7 @@ export async function batchUpdateSupplierStatus(
         include: {
           factoryShipmentOrderItems: {
             include: {
-              order: true,
+              factoryShipmentOrder: true,
             },
           },
           payableRecords: true,
@@ -386,8 +390,8 @@ export async function batchUpdateSupplierStatus(
         // 检查进行中的订单
         const activeOrders = supplier.factoryShipmentOrderItems.filter(
           item =>
-            item.order.status !== 'completed' &&
-            item.order.status !== 'cancelled'
+            item.factoryShipmentOrder?.status !== 'completed' &&
+            item.factoryShipmentOrder?.status !== 'cancelled'
         );
 
         if (activeOrders.length > 0) {

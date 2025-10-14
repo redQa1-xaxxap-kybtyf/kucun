@@ -4,6 +4,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { updateFactoryShipmentStatus } from '@/lib/api/handlers/factory-shipment-status';
+import { auth } from '@/lib/auth';
 import { logger } from '@/lib/logger';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateFactoryShipmentOrderStatusSchema } from '@/lib/validations/factory-shipment';
@@ -28,6 +29,12 @@ interface RouteParams {
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   const { id } = params;
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: '未授权操作' }, { status: 401 });
+    }
+    const userId = session.user.id;
+
     // 解析请求体
     const body = await request.json();
 
@@ -60,7 +67,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       idempotencyKey,
       'factory_shipment_status_change',
       id,
-      user.id,
+      userId,
       {
         status,
         containerNumber,

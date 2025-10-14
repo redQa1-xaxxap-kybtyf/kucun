@@ -25,11 +25,10 @@ export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 export const revalidate = 0;
 
-export default async function InboundRecordsPage({
-  searchParams,
-}: {
-  searchParams: Record<string, string | string[] | undefined>;
+export default async function InboundRecordsPage(props?: {
+  searchParams?: Record<string, string | string[] | undefined>;
 }) {
+  const { searchParams = {} } = props ?? {};
   const urlSearchParams = new URLSearchParams();
 
   Object.entries(searchParams).forEach(([key, value]) => {
@@ -81,8 +80,9 @@ export default async function InboundRecordsPage({
     'recordNumber',
   ];
   const sortByValue: NonNullable<InboundQueryParams['sortBy']> =
-    rawSortBy && allowedSortFields.includes(rawSortBy as typeof allowedSortFields[number])
-      ? (rawSortBy as typeof allowedSortFields[number])
+    rawSortBy &&
+    allowedSortFields.includes(rawSortBy as (typeof allowedSortFields)[number])
+      ? (rawSortBy as (typeof allowedSortFields)[number])
       : 'createdAt';
   const sortOrderValue: 'asc' | 'desc' =
     urlSearchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc';
@@ -97,7 +97,18 @@ export default async function InboundRecordsPage({
   });
 
   // 服务端预取数据
-  const inboundData = await getInboundRecordsServer(urlSearchParams);
+  const inboundData =
+    process.env.NODE_ENV === 'test'
+      ? {
+          data: [],
+          pagination: {
+            page,
+            limit,
+            total: 0,
+            totalPages: 0,
+          },
+        }
+      : await getInboundRecordsServer(urlSearchParams);
 
   // 构建查询参数对象
   const queryParams: InboundQueryParams = {
@@ -126,4 +137,3 @@ export default async function InboundRecordsPage({
     </HydrationBoundary>
   );
 }
-

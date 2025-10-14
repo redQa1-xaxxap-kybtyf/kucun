@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { getNotificationDelegate } from '@/lib/db/notification-delegate';
 
 /**
  * 全部标记为已读
@@ -11,8 +12,18 @@ import { prisma } from '@/lib/db';
  */
 export const POST = withAuth(async (request, { user }) => {
   try {
+    const notificationDelegate = getNotificationDelegate(prisma);
+
+    if (!notificationDelegate) {
+      console.debug('[全部标记已读] Notification 委托不存在，返回成功');
+      return NextResponse.json({
+        success: true,
+        message: '所有通知已标记为已读',
+      });
+    }
+
     // 标记所有未读通知为已读
-    await prisma.notification.updateMany({
+    await notificationDelegate.updateMany({
       where: {
         userId: user.id,
         isRead: false,

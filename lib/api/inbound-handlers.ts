@@ -64,10 +64,11 @@ export function generateInboundRecordNumber(): string {
   const now = new Date();
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
   const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
+  const millisecondStr = now.getMilliseconds().toString().padStart(3, '0');
   const random = Math.floor(Math.random() * 1000)
     .toString()
     .padStart(3, '0');
-  return `IN${dateStr}${timeStr}${random}`;
+  return `IN${dateStr}${timeStr}${millisecondStr}${random}`;
 }
 
 /**
@@ -407,6 +408,42 @@ export async function createInboundRecord(
     );
 
     batchSpecificationId = batchSpec.id;
+
+    // 同步重量到产品表：如果产品的weight为空且入库时提供了weight，则更新产品表
+    if (data.weight !== undefined) {
+      const product = await prismaClient.product.findUnique({
+        where: { id: data.productId },
+        select: { weight: true },
+      });
+
+      const currentWeight = product?.weight ?? null;
+      const hasDifferentWeight =
+        currentWeight === null ||
+        Number.isNaN(currentWeight) ||
+        Math.abs(currentWeight - data.weight) > 0.0001;
+
+      if (hasDifferentWeight) {
+        await prismaClient.product.update({
+          where: { id: data.productId },
+          data: { weight: data.weight },
+        });
+      }
+    }
+
+    // 同步每件片数到产品表：如果产品的piecesPerUnit为默认值1且入库时提供了piecesPerUnit，则更新产品表
+    if (data.piecesPerUnit && data.piecesPerUnit > 1) {
+      const product = await prismaClient.product.findUnique({
+        where: { id: data.productId },
+        select: { piecesPerUnit: true },
+      });
+
+      if (product?.piecesPerUnit === 1) {
+        await prismaClient.product.update({
+          where: { id: data.productId },
+          data: { piecesPerUnit: data.piecesPerUnit },
+        });
+      }
+    }
   }
 
   // 生成记录编号

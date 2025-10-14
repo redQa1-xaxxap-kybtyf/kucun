@@ -109,11 +109,7 @@ export default function EditSalesOrderPage() {
 
   // 检查订单状态：只允许编辑草稿状态的订单（必须在所有 Hooks 之后，条件返回之前）
   React.useEffect(() => {
-    if (
-      !hasRedirectedRef.current &&
-      order &&
-      order.status !== 'draft'
-    ) {
+    if (!hasRedirectedRef.current && order && order.status !== 'draft') {
       hasRedirectedRef.current = true;
       // 非草稿状态，跳转回详情页
       router.replace(`/sales-orders/${id}`);
@@ -185,8 +181,8 @@ export default function EditSalesOrderPage() {
           orderId={id}
           initialData={order}
           onSuccess={() => {
-            // 编辑成功后跳转到订单详情页
-            router.push(`/sales-orders/${id}`);
+            // 编辑成功后返回订单列表
+            router.push('/sales-orders');
           }}
           onCancel={() => {
             router.push(`/sales-orders/${id}`);

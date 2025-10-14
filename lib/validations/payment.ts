@@ -20,21 +20,16 @@ export const paymentStatusSchema = z.enum(
 );
 
 // 收款类型枚举验证
-export const paymentTypeSchema = z.enum(
-  ['order_payment', 'prepayment'],
-  {
-    message: '请选择有效的收款类型',
-  }
-);
+export const paymentTypeSchema = z.enum(['order_payment', 'prepayment'], {
+  message: '请选择有效的收款类型',
+});
 
 // 收款记录创建验证规则
 export const createPaymentRecordSchema = z
   .object({
     paymentType: paymentTypeSchema.default('order_payment'),
 
-    salesOrderId: z
-      .string({ message: '销售订单ID必须是字符串' })
-      .optional(),
+    salesOrderId: z.string({ message: '销售订单ID必须是字符串' }).optional(),
 
     customerId: z
       .string({ message: '客户ID必须是字符串' })
@@ -210,7 +205,7 @@ export const accountsReceivableQuerySchema = z
     limit: z.number().int().positive().max(100).optional().default(10),
     search: z.string().optional(),
     customerId: z.string().optional(),
-    paymentStatus: z.enum(['unpaid', 'partial', 'paid', 'overdue']).optional(),
+    paymentStatus: z.enum(['unpaid', 'partial', 'paid']).optional(),
     startDate: z
       .string()
       .optional()
@@ -232,13 +227,7 @@ export const accountsReceivableQuerySchema = z
         return !isNaN(parsedDate.getTime());
       }, '请输入有效的结束日期格式'),
     sortBy: z
-      .enum([
-        'orderDate',
-        'totalAmount',
-        'remainingAmount',
-        'overdueDays',
-        'customerName',
-      ])
+      .enum(['orderDate', 'totalAmount', 'remainingAmount', 'customerName'])
       .optional()
       .default('orderDate'),
     sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),

@@ -4,7 +4,11 @@ import { prisma } from '@/lib/db';
 import type { PayableSourceType, PayableStatus } from '@/lib/types/payable';
 import { PAYABLE_SORT_OPTIONS } from '@/lib/types/payable';
 
-type PayableSortField = 'createdAt' | 'payableAmount' | 'dueDate' | 'remainingAmount';
+type PayableSortField =
+  | 'createdAt'
+  | 'payableAmount'
+  | 'dueDate'
+  | 'remainingAmount';
 
 import { PayablesPageClient } from './page-client';
 
@@ -124,18 +128,10 @@ async function getPayablesData(searchParams: {
     0
   );
 
-  const now = new Date();
-  const overduePayables = allPayables.filter(
-    p => p.dueDate && p.dueDate < now && p.remainingAmount > 0
-  );
-  const overdueAmount = overduePayables.reduce(
-    (sum, p) => sum + p.remainingAmount,
-    0
-  );
-
   const pendingCount = allPayables.filter(p => p.status === 'pending').length;
+  const partialCount = allPayables.filter(p => p.status === 'partial').length;
+  const overdueCount = allPayables.filter(p => p.status === 'overdue').length;
   const paidCount = allPayables.filter(p => p.status === 'paid').length;
-  const overdueCount = overduePayables.length;
 
   return {
     payables:
@@ -144,10 +140,10 @@ async function getPayablesData(searchParams: {
       totalPayables,
       totalPaidAmount,
       totalRemainingAmount,
-      overdueAmount,
       pendingCount,
-      paidCount,
+      partialCount,
       overdueCount,
+      paidCount,
     },
     pagination: {
       page,

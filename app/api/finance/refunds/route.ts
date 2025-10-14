@@ -222,7 +222,7 @@ export const POST = withAuth(
           where: {
             returnOrderId: validatedData.returnOrderId,
             returnOrderNumber: validatedData.returnOrderNumber,
-            status: { in: ['pending', 'processing', 'completed'] },
+            status: 'completed', // 只检查已完成的退款
           },
         });
 
@@ -256,7 +256,7 @@ export const POST = withAuth(
         const existingRefund = await tx.refundRecord.findFirst({
           where: {
             returnOrderId: validatedData.returnOrderId,
-            status: { in: ['pending', 'processing', 'completed'] },
+            status: 'completed', // 只检查已完成的退款
           },
         });
         if (existingRefund) {
@@ -277,7 +277,7 @@ export const POST = withAuth(
       const existingRefunds = await tx.refundRecord.aggregate({
         where: {
           salesOrderId: validatedData.salesOrderId,
-          status: { in: ['pending', 'processing', 'completed'] },
+          status: 'completed', // 只统计已完成的退款
         },
         _sum: { refundAmount: true },
       });
@@ -294,7 +294,7 @@ export const POST = withAuth(
       // 6. 生成退款单号
       const refundNumber = `RT-${new Date().getFullYear()}-${String(Date.now()).slice(-6)}`;
 
-      // 7. 创建退款记录
+      // 7. 创建退款记录（进销存系统：退款是记录已发生的事实，直接标记为已完成）
       return await tx.refundRecord.create({
         data: {
           refundNumber,
@@ -305,10 +305,11 @@ export const POST = withAuth(
           refundType: validatedData.refundType,
           refundMethod: validatedData.refundMethod,
           refundAmount: validatedData.refundAmount,
-          processedAmount: 0,
-          remainingAmount: validatedData.refundAmount,
-          status: 'pending',
+          processedAmount: validatedData.refundAmount, // 进销存：创建时即已完成
+          remainingAmount: 0, // 进销存：无剩余金额
+          status: 'completed', // 进销存：直接完成
           refundDate: new Date(validatedData.refundDate),
+          processedDate: new Date(validatedData.refundDate), // 处理日期=退款日期
           reason: validatedData.reason,
           remarks: validatedData.remarks,
           bankInfo: validatedData.bankInfo,

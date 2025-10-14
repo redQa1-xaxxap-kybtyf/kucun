@@ -11,7 +11,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { Separator } from '@/components/ui/separator';
-import { useProductForm } from '@/hooks/use-product-form';
+import {
+  useProductForm,
+  type ProductFormSuccessHandler,
+} from '@/hooks/use-product-form';
 import { cn } from '@/lib/utils';
 import { type Product } from '@/lib/types/product';
 
@@ -19,7 +22,7 @@ interface ProductFormProps {
   mode: 'create' | 'edit';
   productId?: string;
   initialData?: Product;
-  onSuccess?: (product: Product) => void;
+  onSuccess?: ProductFormSuccessHandler;
   onCancel?: () => void;
   variant?: 'default' | 'erp';
 }
@@ -56,17 +59,17 @@ export function ProductFormOptimized({
   return (
     <div className="flex h-full flex-col">
       {/* 精简的页面标题 - 无卡片,直接展示 */}
-      <div className="border-b bg-background px-6 py-4">
+      <div className="bg-background border-b px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
-              <Package className="h-5 w-5 text-primary" />
+            <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-lg">
+              <Package className="text-primary h-5 w-5" />
             </div>
             <div>
               <h1 className="text-xl font-semibold">
                 {isEdit ? '编辑产品' : '新建产品'}
               </h1>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-sm">
                 {isEdit ? '修改产品信息' : '填写必填信息即可快速创建'}
               </p>
             </div>
@@ -108,7 +111,7 @@ export function ProductFormOptimized({
                 <CardContent className="space-y-6">
                   {/* 基础信息 */}
                   <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+                    <h3 className="text-muted-foreground mb-4 text-sm font-medium">
                       基础信息
                     </h3>
                     <ProductBasicInfoForm
@@ -122,7 +125,7 @@ export function ProductFormOptimized({
 
                   {/* 详细参数 */}
                   <div>
-                    <h3 className="mb-4 text-sm font-medium text-muted-foreground">
+                    <h3 className="text-muted-foreground mb-4 text-sm font-medium">
                       补充信息
                     </h3>
                     <ProductDetailsForm
@@ -138,14 +141,16 @@ export function ProductFormOptimized({
                 <CardHeader className="pb-4">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">产品图片</CardTitle>
-                    <span className="text-sm text-muted-foreground">选填</span>
+                    <span className="text-muted-foreground text-sm">选填</span>
                   </div>
                 </CardHeader>
                 <CardContent>
                   <ProductImageUpload
                     thumbnailUrl={form.watch('thumbnailUrl') || ''}
                     images={form.watch('images') || []}
-                    onThumbnailChange={url => form.setValue('thumbnailUrl', url)}
+                    onThumbnailChange={url =>
+                      form.setValue('thumbnailUrl', url)
+                    }
                     onImagesChange={images => form.setValue('images', images)}
                     disabled={isLoading}
                     maxFiles={8}
@@ -157,8 +162,8 @@ export function ProductFormOptimized({
               {/* 悬浮操作栏 */}
               <div
                 className={cn(
-                  'sticky bottom-0 z-10 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60',
-                  'px-6 py-4 -mx-6'
+                  'bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky bottom-0 z-10 border-t backdrop-blur',
+                  '-mx-6 px-6 py-4'
                 )}
               >
                 <div className="mx-auto flex max-w-4xl items-center justify-end gap-3">
@@ -171,11 +176,7 @@ export function ProductFormOptimized({
                     取消
                   </Button>
                   <Button type="submit" disabled={isLoading}>
-                    {isLoading
-                      ? '保存中...'
-                      : isEdit
-                        ? '保存修改'
-                        : '创建产品'}
+                    {isLoading ? '保存中...' : isEdit ? '保存修改' : '创建产品'}
                   </Button>
                 </div>
               </div>

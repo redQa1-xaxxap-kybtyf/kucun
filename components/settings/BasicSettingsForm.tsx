@@ -134,8 +134,21 @@ export function BasicSettingsForm() {
   const updateMutation = useMutation({
     mutationFn: updateBasicSettings,
     onSuccess: data => {
+      const parsedLowStock =
+        typeof data.lowStockThreshold === 'string'
+          ? Number(data.lowStockThreshold)
+          : data.lowStockThreshold;
+
+      const normalizedData: BasicSettings = {
+        ...data,
+        lowStockThreshold:
+          typeof parsedLowStock === 'number' && Number.isFinite(parsedLowStock)
+            ? parsedLowStock
+            : inventoryConfig.defaultMinQuantity,
+      };
+
       // 更新缓存
-      queryClient.setQueryData(['settings', 'basic'], data);
+      queryClient.setQueryData(queryKeys.settings.basic(), normalizedData);
       toast({
         title: '保存成功',
         description: '基本设置已保存',
@@ -143,7 +156,7 @@ export function BasicSettingsForm() {
       });
 
       // 重置表单状态
-      form.reset(data);
+      form.reset(normalizedData);
     },
     onError: error => {
       toast({
@@ -178,19 +191,54 @@ export function BasicSettingsForm() {
   // 当数据加载完成时，更新表单默认值
   React.useEffect(() => {
     if (settings) {
-      form.reset(settings);
+      const parsedLowStock =
+        typeof settings.lowStockThreshold === 'string'
+          ? Number(settings.lowStockThreshold)
+          : settings.lowStockThreshold;
+
+      form.reset({
+        ...settings,
+        lowStockThreshold:
+          typeof parsedLowStock === 'number' && Number.isFinite(parsedLowStock)
+            ? parsedLowStock
+            : inventoryConfig.defaultMinQuantity,
+      });
     }
   }, [settings, form]);
 
   // 表单提交处理
   const onSubmit = (data: BasicSettingsFormData) => {
-    updateMutation.mutate(data);
+    const parsedLowStock =
+      typeof data.lowStockThreshold === 'string'
+        ? Number(data.lowStockThreshold)
+        : data.lowStockThreshold;
+
+    const payload: BasicSettingsFormData = {
+      ...data,
+      lowStockThreshold:
+        typeof parsedLowStock === 'number' && Number.isFinite(parsedLowStock)
+          ? parsedLowStock
+          : inventoryConfig.defaultMinQuantity,
+    };
+
+    updateMutation.mutate(payload);
   };
 
   // 重置表单
   const handleReset = () => {
     if (settings) {
-      form.reset(settings);
+      const parsedLowStock =
+        typeof settings.lowStockThreshold === 'string'
+          ? Number(settings.lowStockThreshold)
+          : settings.lowStockThreshold;
+
+      form.reset({
+        ...settings,
+        lowStockThreshold:
+          typeof parsedLowStock === 'number' && Number.isFinite(parsedLowStock)
+            ? parsedLowStock
+            : inventoryConfig.defaultMinQuantity,
+      });
       toast({
         title: '重置成功',
         description: '表单已重置',
@@ -227,99 +275,6 @@ export function BasicSettingsForm() {
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {/* 公司信息 */}
-        <SettingsSection
-          title="公司信息"
-          description="配置公司基本信息和联系方式"
-        >
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="companyName"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>公司名称 *</FormLabel>
-                  <FormControl>
-                    <Input placeholder="请输入公司名称" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="companyPhone"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>联系电话</FormLabel>
-                  <FormControl>
-                    <Input placeholder="请输入联系电话" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          <FormField
-            control={form.control}
-            name="companyAddress"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>公司地址</FormLabel>
-                <FormControl>
-                  <Textarea
-                    placeholder="请输入公司地址"
-                    className="resize-none"
-                    rows={2}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <div className="grid gap-4 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="companyEmail"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>公司邮箱</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="email"
-                      placeholder="请输入公司邮箱"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="companyWebsite"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>公司网站</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="url"
-                      placeholder="https://example.com"
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-        </SettingsSection>
-
         {/* 系统配置 */}
         <SettingsSection
           title="系统配置"

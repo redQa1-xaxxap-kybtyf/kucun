@@ -18,6 +18,7 @@ import type {
   TimeRange,
   TodoItem,
 } from '@/lib/types/dashboard';
+import { formatCurrency as formatCurrencyValue } from '@/lib/utils';
 import { formatTimeAgo } from '@/lib/utils/datetime';
 
 // API基础URL
@@ -337,11 +338,7 @@ export const useDismissAlert = () => {
 
 // 工具函数
 export const dashboardUtils = {
-  formatCurrency: (amount: number): string =>
-    new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-    }).format(amount),
+  formatCurrency: (amount: number): string => formatCurrencyValue(amount),
 
   formatNumber: (num: number): string => {
     if (num >= 1000000) {

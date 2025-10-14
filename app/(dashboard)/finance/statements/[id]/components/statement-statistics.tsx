@@ -3,6 +3,7 @@
 import { TrendingDown, TrendingUp } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface StatementStatisticsProps {
   summary: {
@@ -18,12 +19,6 @@ interface StatementStatisticsProps {
  * 账单统计分析卡片组件
  */
 export function StatementStatistics({ summary }: StatementStatisticsProps) {
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-    }).format(amount);
-
   const monthTrend =
     summary.currentMonthAmount > summary.lastMonthAmount ? 'up' : 'down';
 
@@ -60,7 +55,7 @@ export function StatementStatistics({ summary }: StatementStatisticsProps) {
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground text-sm">付款率</span>
-          <span className="font-medium">{summary.paymentRate}%</span>
+          <span className="font-medium">{summary.paymentRate.toFixed(2)}%</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground text-sm">平均付款天数</span>

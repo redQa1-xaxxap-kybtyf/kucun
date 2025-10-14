@@ -7,13 +7,28 @@ import { prisma } from '@/lib/db';
 import { updateRefundRecordSchema } from '@/lib/validations/refund';
 
 // GET /api/finance/refunds/[id] - 获取单个退款记录详情
+type WithParamsContext = {
+  params?: Promise<Record<string, string>> | Record<string, string>;
+  user: AuthUser;
+};
+
+function resolveParams(
+  params: WithParamsContext['params']
+): Promise<Record<string, string> | undefined> {
+  if (!params) {
+    return Promise.resolve(undefined);
+  }
+  return params instanceof Promise ? params : Promise.resolve(params);
+}
+
 export const GET = withAuth(
-  async (
-    request: NextRequest,
-    { params }: { params: { id: string }; user: AuthUser }
-  ) => {
+  async (request: NextRequest, context: WithParamsContext) => {
     let refundId: string | undefined;
     try {
+      const params = await resolveParams(context.params);
+      if (!params?.id) {
+        return NextResponse.json({ error: '缺少退款记录ID' }, { status: 400 });
+      }
       refundId = params.id;
       const refund = await prisma.refundRecord.findUnique({
         where: { id: params.id },
@@ -48,12 +63,13 @@ export const GET = withAuth(
 
 // PUT /api/finance/refunds/[id] - 更新退款记录
 export const PUT = withAuth(
-  async (
-    request: NextRequest,
-    { params }: { params: { id: string }; user: AuthUser }
-  ) => {
+  async (request: NextRequest, context: WithParamsContext) => {
     let refundId: string | undefined;
     try {
+      const params = await resolveParams(context.params);
+      if (!params?.id) {
+        return NextResponse.json({ error: '缺少退款记录ID' }, { status: 400 });
+      }
       refundId = params.id;
       const body = await request.json();
       const validatedData = updateRefundRecordSchema.parse(body);
@@ -143,12 +159,13 @@ export const PUT = withAuth(
 
 // DELETE /api/finance/refunds/[id] - 删除退款记录
 export const DELETE = withAuth(
-  async (
-    request: NextRequest,
-    { params }: { params: { id: string }; user: AuthUser }
-  ) => {
+  async (request: NextRequest, context: WithParamsContext) => {
     let refundId: string | undefined;
     try {
+      const params = await resolveParams(context.params);
+      if (!params?.id) {
+        return NextResponse.json({ error: '缺少退款记录ID' }, { status: 400 });
+      }
       refundId = params.id;
       // 检查退款记录是否存在且可以删除
       const refund = await prisma.refundRecord.findUnique({

@@ -208,65 +208,10 @@ export const refundQuerySchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).optional(),
 });
 
-// 退款处理验证规则
-export const processRefundSchema = z.object({
-  processedAmount: z
-    .number({
-      error: '请输入处理金额',
-    })
-    .nonnegative('处理金额不能为负数')
-    .max(999999999, '处理金额不能超过999,999,999'),
-
-  processedDate: z
-    .string({
-      error: '请选择处理日期',
-    })
-    .min(1, '请选择处理日期')
-    .refine(date => {
-      const parsedDate = new Date(date);
-      return !isNaN(parsedDate.getTime());
-    }, '请输入有效的日期格式'),
-
-  status: z.enum(['completed', 'rejected'], {
-    error: '请选择处理结果',
-  }),
-
-  remarks: z.string().optional().or(z.literal('')),
-
-  closeRemaining: z.boolean().optional(),
-}).refine(
-  data => (data.closeRemaining ? true : data.processedAmount > 0),
-  {
-    message: '处理金额必须大于0',
-    path: ['processedAmount'],
-  }
-);
-
-// 批量退款验证规则
-export const batchRefundSchema = z.object({
-  refundIds: z
-    .array(z.string(), {
-      error: '请选择要处理的退款记录',
-    })
-    .min(1, '请至少选择一个退款记录')
-    .max(
-      returnRefundConfig.refundBatchLimit,
-      `一次最多处理${returnRefundConfig.refundBatchLimit}个退款记录`
-    ),
-
-  action: z.enum(['approve', 'reject', 'cancel'], {
-    error: '请选择批量操作类型',
-  }),
-
-  remarks: z.string().optional().or(z.literal('')),
-});
-
 // TypeScript类型推导
 export type CreateRefundRecordInput = z.infer<typeof createRefundRecordSchema>;
 export type UpdateRefundRecordInput = z.infer<typeof updateRefundRecordSchema>;
 export type RefundQueryInput = z.infer<typeof refundQuerySchema>;
-export type ProcessRefundInput = z.infer<typeof processRefundSchema>;
-export type BatchRefundInput = z.infer<typeof batchRefundSchema>;
 
 // 表单字段配置
 export const REFUND_FORM_FIELDS = {

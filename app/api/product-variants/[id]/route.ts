@@ -4,12 +4,20 @@ import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { productVariantUpdateSchema } from '@/lib/validations/product';
+import { resolveParams } from '@/lib/api/middleware';
 
 // 获取单个产品变体详情
 export const GET = withAuth(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
-    const { id } = params;
+  async (
+    request: NextRequest,
+    context: {
+      params?: Promise<Record<string, string>> | Record<string, string>;
+    }
+  ) => {
+    let variantId: string | undefined;
     try {
+      const { id } = await resolveParams(context.params);
+      variantId = id;
       // 验证ID格式
       if (!id || typeof id !== 'string') {
         return NextResponse.json(
@@ -99,7 +107,12 @@ export const GET = withAuth(
         data: formattedVariant,
       });
     } catch (error) {
-      logger.error('product-variants', '获取产品变体详情失败', error, { variantId: id });
+      logger.error(
+        'product-variants',
+        '获取产品变体详情失败',
+        error,
+        variantId ? { variantId } : undefined
+      );
 
       return NextResponse.json(
         {
@@ -115,9 +128,16 @@ export const GET = withAuth(
 
 // 更新产品变体
 export const PUT = withAuth(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
-    const { id } = params;
+  async (
+    request: NextRequest,
+    context: {
+      params?: Promise<Record<string, string>> | Record<string, string>;
+    }
+  ) => {
+    let variantId: string | undefined;
     try {
+      const { id } = await resolveParams(context.params);
+      variantId = id;
       const body = await request.json();
 
       // 验证ID格式
@@ -250,7 +270,12 @@ export const PUT = withAuth(
         data: formattedVariant,
       });
     } catch (error) {
-      logger.error('product-variants', '更新产品变体失败', error, { variantId: id });
+      logger.error(
+        'product-variants',
+        '更新产品变体失败',
+        error,
+        variantId ? { variantId } : undefined
+      );
 
       return NextResponse.json(
         {
@@ -265,9 +290,16 @@ export const PUT = withAuth(
 
 // 删除产品变体
 export const DELETE = withAuth(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
-    const { id } = params;
+  async (
+    request: NextRequest,
+    context: {
+      params?: Promise<Record<string, string>> | Record<string, string>;
+    }
+  ) => {
+    let variantId: string | undefined;
     try {
+      const { id } = await resolveParams(context.params);
+      variantId = id;
       // 验证ID格式
       if (!id || typeof id !== 'string') {
         return NextResponse.json(
@@ -322,7 +354,12 @@ export const DELETE = withAuth(
         data: null,
       });
     } catch (error) {
-      logger.error('product-variants', '删除产品变体失败', error, { variantId: id });
+      logger.error(
+        'product-variants',
+        '删除产品变体失败',
+        error,
+        variantId ? { variantId } : undefined
+      );
 
       return NextResponse.json(
         {

@@ -105,16 +105,16 @@ export function ReturnOrderForm({
                 salesOrderItemId: item.salesOrderItemId,
                 productId: item.productId,
                 returnQuantity: item.returnQuantity,
+                damagedQuantity: item.damagedQuantity || 0,
                 originalQuantity: item.originalQuantity,
                 unitPrice: item.unitPrice,
                 subtotal: item.subtotal,
                 reason: item.reason,
-                condition: item.condition,
               })) || [],
           },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -125,9 +125,9 @@ export function ReturnOrderForm({
     if (watchedSalesOrderId && watchedSalesOrderId !== selectedSalesOrderId) {
       setSelectedSalesOrderId(watchedSalesOrderId);
       // 清空现有明细
-      form.setValue('items', []);
+      replace([]);
     }
-  }, [watchedSalesOrderId, selectedSalesOrderId, form]);
+  }, [watchedSalesOrderId, selectedSalesOrderId, replace]);
 
   // 获取可退货明细
   const { data: returnableItemsData, isLoading: isLoadingItems } =
@@ -160,10 +160,10 @@ export function ReturnOrderForm({
       salesOrderItemId: salesOrderItem.id,
       productId: salesOrderItem.productId,
       returnQuantity: 1,
+      damagedQuantity: 0,
       originalQuantity: salesOrderItem.quantity,
       unitPrice: salesOrderItem.unitPrice,
       subtotal: salesOrderItem.unitPrice,
-      condition: 'good' as const,
     };
     append(newItem);
   };
@@ -462,9 +462,9 @@ export function ReturnOrderForm({
                                   <TableHead>产品</TableHead>
                                   <TableHead>色号</TableHead>
                                   <TableHead>退货数量</TableHead>
+                                  <TableHead>破损数量</TableHead>
                                   <TableHead>单价</TableHead>
                                   <TableHead>小计</TableHead>
-                                  <TableHead>商品状态</TableHead>
                                   <TableHead>操作</TableHead>
                                 </TableRow>
                               </TableHeader>
@@ -513,6 +513,34 @@ export function ReturnOrderForm({
                                       />
                                     </TableCell>
                                     <TableCell>
+                                      <FormField
+                                        control={form.control}
+                                        name={`items.${index}.damagedQuantity`}
+                                        render={({ field: damagedField }) => (
+                                          <FormItem>
+                                            <FormControl>
+                                              <Input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                className="w-24"
+                                                placeholder="0"
+                                                {...damagedField}
+                                                onChange={e => {
+                                                  damagedField.onChange(
+                                                    parseFloat(
+                                                      e.target.value
+                                                    ) || 0
+                                                  );
+                                                }}
+                                              />
+                                            </FormControl>
+                                            <FormMessage />
+                                          </FormItem>
+                                        )}
+                                      />
+                                    </TableCell>
+                                    <TableCell>
                                       <span className="font-medium">
                                         {formatReturnAmount(field.unitPrice)}
                                       </span>
@@ -521,40 +549,6 @@ export function ReturnOrderForm({
                                       <span className="font-medium">
                                         {formatReturnAmount(field.subtotal)}
                                       </span>
-                                    </TableCell>
-                                    <TableCell>
-                                      <FormField
-                                        control={form.control}
-                                        name={`items.${index}.condition`}
-                                        render={({ field: conditionField }) => (
-                                          <FormItem>
-                                            <Select
-                                              onValueChange={
-                                                conditionField.onChange
-                                              }
-                                              value={conditionField.value}
-                                            >
-                                              <FormControl>
-                                                <SelectTrigger className="w-24">
-                                                  <SelectValue />
-                                                </SelectTrigger>
-                                              </FormControl>
-                                              <SelectContent>
-                                                <SelectItem value="good">
-                                                  完好
-                                                </SelectItem>
-                                                <SelectItem value="damaged">
-                                                  损坏
-                                                </SelectItem>
-                                                <SelectItem value="defective">
-                                                  缺陷
-                                                </SelectItem>
-                                              </SelectContent>
-                                            </Select>
-                                            <FormMessage />
-                                          </FormItem>
-                                        )}
-                                      />
                                     </TableCell>
                                     <TableCell>
                                       <Button
@@ -619,35 +613,28 @@ export function ReturnOrderForm({
                                       />
                                     </div>
                                     <div>
-                                      <Label>商品状态</Label>
+                                      <Label>破损数量</Label>
                                       <FormField
                                         control={form.control}
-                                        name={`items.${index}.condition`}
-                                        render={({ field: conditionField }) => (
+                                        name={`items.${index}.damagedQuantity`}
+                                        render={({ field: damagedField }) => (
                                           <FormItem>
-                                            <Select
-                                              onValueChange={
-                                                conditionField.onChange
-                                              }
-                                              value={conditionField.value}
-                                            >
-                                              <FormControl>
-                                                <SelectTrigger>
-                                                  <SelectValue />
-                                                </SelectTrigger>
-                                              </FormControl>
-                                              <SelectContent>
-                                                <SelectItem value="good">
-                                                  完好
-                                                </SelectItem>
-                                                <SelectItem value="damaged">
-                                                  损坏
-                                                </SelectItem>
-                                                <SelectItem value="defective">
-                                                  缺陷
-                                                </SelectItem>
-                                              </SelectContent>
-                                            </Select>
+                                            <FormControl>
+                                              <Input
+                                                type="number"
+                                                min="0"
+                                                step="0.01"
+                                                placeholder="0"
+                                                {...damagedField}
+                                                onChange={e => {
+                                                  damagedField.onChange(
+                                                    parseFloat(
+                                                      e.target.value
+                                                    ) || 0
+                                                  );
+                                                }}
+                                              />
+                                            </FormControl>
                                             <FormMessage />
                                           </FormItem>
                                         )}

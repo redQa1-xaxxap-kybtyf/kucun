@@ -3,34 +3,31 @@
 import { Users } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatDate } from '@/lib/utils/format';
 
 interface StatementBasicInfoProps {
-  contact: {
-    phone: string;
-    address: string;
+  entity: {
+    name: string;
+    phone?: string;
+    address?: string;
   };
-  creditLimit: number;
-  paymentTerms: string;
-  lastTransactionDate: string | null;
-  lastPaymentDate: string | null;
+  partnerRole: 'customer' | 'supplier' | 'both';
+  lastTransactionDate?: Date | string | null;
+  lastPaymentDate?: Date | string | null;
 }
 
-/**
- * 账单基本信息卡片组件
- */
+const ROLE_LABEL_MAP: Record<StatementBasicInfoProps['partnerRole'], string> = {
+  customer: '客户',
+  supplier: '供应商',
+  both: '客户 / 供应商',
+};
+
 export function StatementBasicInfo({
-  contact,
-  creditLimit,
-  paymentTerms,
+  entity,
+  partnerRole,
   lastTransactionDate,
   lastPaymentDate,
 }: StatementBasicInfoProps) {
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-    }).format(amount);
-
   return (
     <Card>
       <CardHeader>
@@ -41,30 +38,32 @@ export function StatementBasicInfo({
       </CardHeader>
       <CardContent className="space-y-3">
         <div className="flex justify-between">
+          <span className="text-muted-foreground text-sm">伙伴类型</span>
+          <span className="font-medium">{ROLE_LABEL_MAP[partnerRole]}</span>
+        </div>
+        <div className="flex justify-between">
           <span className="text-muted-foreground text-sm">联系电话</span>
-          <span className="font-medium">{contact.phone || '-'}</span>
+          <span className="font-medium">{entity.phone || '-'}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-muted-foreground text-sm">地址</span>
           <span className="text-right text-sm font-medium">
-            {contact.address || '-'}
+            {entity.address || '-'}
           </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground text-sm">信用额度</span>
-          <span className="font-medium">{formatCurrency(creditLimit)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-muted-foreground text-sm">账期</span>
-          <span className="font-medium">{paymentTerms}</span>
-        </div>
-        <div className="flex justify-between">
           <span className="text-muted-foreground text-sm">最后交易</span>
-          <span className="font-medium">{lastTransactionDate || '-'}</span>
+          <span className="font-medium">
+            {lastTransactionDate
+              ? formatDate(lastTransactionDate, 'date')
+              : '-'}
+          </span>
         </div>
         <div className="flex justify-between">
-          <span className="text-muted-foreground text-sm">最后付款</span>
-          <span className="font-medium">{lastPaymentDate || '-'}</span>
+          <span className="text-muted-foreground text-sm">最近收付</span>
+          <span className="font-medium">
+            {lastPaymentDate ? formatDate(lastPaymentDate, 'date') : '-'}
+          </span>
         </div>
       </CardContent>
     </Card>

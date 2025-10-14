@@ -20,7 +20,7 @@ import {
 } from '@/components/ui/table';
 import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
-import { formatInventoryQuantity } from '@/lib/utils/piece-calculation';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
 
 interface InventoryGroupedTableProps {
@@ -40,7 +40,7 @@ interface ProductGroup {
   items: Inventory[];
   totalPieces: number; // 总片数
   totalUnits: number; // 总件数
-  piecesPerUnit: number; // 每件片数（用于计算）
+  remainingPieces: number; // 剩余片数（汇总时保留不同包装的零头）
 }
 
 /**
@@ -60,7 +60,7 @@ function groupByProduct(inventories: Inventory[]): ProductGroup[] {
         items: [inventory],
         totalPieces: 0,
         totalUnits: 0,
-        piecesPerUnit: inventory.product?.piecesPerUnit || 1,
+        remainingPieces: 0,
       });
     } else {
       groups.get(code)!.items.push(inventory);
@@ -69,11 +69,26 @@ function groupByProduct(inventories: Inventory[]): ProductGroup[] {
 
   // 计算每个分组的总计
   groups.forEach(group => {
-    group.totalPieces = group.items.reduce(
-      (sum, item) => sum + item.quantity,
-      0
-    );
-    group.totalUnits = Math.floor(group.totalPieces / group.piecesPerUnit);
+    let totalPieces = 0;
+    let totalUnits = 0;
+    let remainingPieces = 0;
+
+    group.items.forEach(item => {
+      const packaging =
+        item.batchPiecesPerUnit ?? item.product?.piecesPerUnit ?? 1;
+      totalPieces += item.quantity;
+
+      if (packaging > 0) {
+        totalUnits += Math.floor(item.quantity / packaging);
+        remainingPieces += item.quantity % packaging;
+      } else {
+        remainingPieces += item.quantity;
+      }
+    });
+
+    group.totalPieces = totalPieces;
+    group.totalUnits = totalUnits;
+    group.remainingPieces = remainingPieces;
   });
 
   return Array.from(groups.values());
@@ -102,21 +117,6 @@ function formatSpecification(spec: string | null | undefined): string {
   }
 
   return spec.length > 11 ? `${spec.slice(0, 11)}...` : spec;
-}
-
-/**
- * 格式化库存数量显示
- */
-function formatQuantityDisplay(item: Inventory): string {
-  if (!item.product?.piecesPerUnit) {
-    const unit = item.product?.unit
-      ? PRODUCT_UNIT_LABELS[
-          item.product.unit as keyof typeof PRODUCT_UNIT_LABELS
-        ] || item.product.unit
-      : '件';
-    return `${item.quantity} ${unit}`;
-  }
-  return formatInventoryQuantity(item.quantity, item.product, true);
 }
 
 function EmptyState() {
@@ -148,39 +148,17 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
       <Table>
         <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
           <TableRow>
-            <TableHead>
-              产品编码
-            </TableHead>
-            <TableHead>
-              产品名称
-            </TableHead>
-            <TableHead>
-              规格
-            </TableHead>
-            <TableHead>
-              包装信息
-            </TableHead>
-            <TableHead>
-              批次号
-            </TableHead>
-            <TableHead>
-              库存数量
-            </TableHead>
-            <TableHead>
-              预留数量
-            </TableHead>
-            <TableHead>
-              可用数量
-            </TableHead>
-            <TableHead>
-              库存状态
-            </TableHead>
-            <TableHead>
-              最后更新
-            </TableHead>
-            <TableHead className="text-right">
-              操作
-            </TableHead>
+            <TableHead>产品编码</TableHead>
+            <TableHead>产品名称</TableHead>
+            <TableHead>规格</TableHead>
+            <TableHead>包装信息</TableHead>
+            <TableHead>批次号</TableHead>
+            <TableHead>库存数量</TableHead>
+            <TableHead>预留数量</TableHead>
+            <TableHead>可用数量</TableHead>
+            <TableHead>库存状态</TableHead>
+            <TableHead>最后更新</TableHead>
+            <TableHead className="text-right">操作</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -190,9 +168,26 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
             groups.map((group, groupIndex) =>
               group.items.map((item, index) => {
                 const isFirstInGroup = index === 0;
-                
-                const availableQuantity =
-                  item.quantity - (item.reservedQuantity || 0);
+
+                const packaging =
+                  item.batchPiecesPerUnit ?? item.product?.piecesPerUnit ?? 0;
+                const unitLabel = item.product?.unit
+                  ? PRODUCT_UNIT_LABELS[
+                      item.product.unit as keyof typeof PRODUCT_UNIT_LABELS
+                    ] || item.product.unit
+                  : '件';
+                const quantityDisplay = formatPieceSummary(
+                  item.quantity,
+                  packaging,
+                  {
+                    prefix: '总计',
+                    fallbackUnit: unitLabel,
+                  }
+                );
+                const availableQuantity = Math.max(
+                  item.quantity - (item.reservedQuantity ?? 0),
+                  0
+                );
                 const { label, variant } = getInventoryStatus(
                   item.quantity,
                   item.reservedQuantity || 0
@@ -200,14 +195,30 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                 const formattedDate = new Date(
                   item.updatedAt
                 ).toLocaleDateString('zh-CN');
-                const quantityDisplay = formatQuantityDisplay(item);
-                // 可用数量只显示片数
-                const availableQuantityDisplay = `${availableQuantity} 片`;
+                const reservedDisplay = (() => {
+                  const reserved = item.reservedQuantity ?? 0;
+                  if (reserved <= 0) {
+                    return '0';
+                  }
+                  return formatPieceSummary(reserved, packaging, {
+                    fallbackUnit: unitLabel,
+                    zeroDisplay: '0',
+                  });
+                })();
+                const availableDisplay = (() => {
+                  if (availableQuantity <= 0) {
+                    return '0';
+                  }
+                  return formatPieceSummary(availableQuantity, packaging, {
+                    fallbackUnit: unitLabel,
+                    zeroDisplay: '0',
+                  });
+                })();
 
                 return (
                   <TableRow
                     key={item.id}
-                    className={`text-sm transition-colors hover:bg-[hsl(var(--color-primary-light))] border-b border-[hsl(var(--color-border-primary))] ${isFirstInGroup ? 'border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]' : ''}`}
+                    className={`border-b border-[hsl(var(--color-border-primary))] text-sm transition-colors hover:bg-[hsl(var(--color-primary-light))] ${isFirstInGroup ? 'border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]' : ''}`}
                   >
                     {/* 产品编码 */}
                     <TableCell
@@ -254,8 +265,10 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                         <div className="flex flex-col gap-0.5">
                           <span>{group.specification}</span>
                           <span className="text-xs font-semibold text-[hsl(var(--color-primary))]">
-                            总计: {group.totalUnits}件+
-                            {group.totalPieces % group.piecesPerUnit}片
+                            总计: {group.totalUnits}件
+                            {group.remainingPieces > 0
+                              ? `+${group.remainingPieces}片`
+                              : ''}
                           </span>
                         </div>
                       ) : (
@@ -271,15 +284,17 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                           : 'text-[hsl(var(--color-text-secondary))]'
                       }`}
                     >
-                      {item.product?.piecesPerUnit ? (
+                      {packaging > 0 ? (
                         <span className="font-semibold">
-                          {item.product.piecesPerUnit}
+                          {packaging}
                           <span className="ml-0.5 text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
                             片/件
                           </span>
                         </span>
                       ) : (
-                        <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
+                        <span className="text-[hsl(var(--color-text-tertiary))]">
+                          -
+                        </span>
                       )}
                     </TableCell>
 
@@ -295,20 +310,17 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
 
                     {/* 预留数量 */}
                     <TableCell className="font-medium text-[hsl(var(--color-warning))]">
-                      {item.reservedQuantity || 0}
+                      {reservedDisplay}
                     </TableCell>
 
                     {/* 可用数量 */}
                     <TableCell className="font-semibold text-[hsl(var(--color-text-primary))]">
-                      {availableQuantityDisplay}
+                      {availableDisplay}
                     </TableCell>
 
                     {/* 库存状态 */}
                     <TableCell>
-                      <Badge
-                        variant={variant}
-                        className="text-xs font-medium"
-                      >
+                      <Badge variant={variant} className="text-xs font-medium">
                         {label}
                       </Badge>
                     </TableCell>

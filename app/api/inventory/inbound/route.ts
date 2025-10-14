@@ -154,10 +154,13 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   );
 
   // 修复：添加缓存失效调用
-  const { invalidateInventoryCache } = await import(
-    '@/lib/cache/inventory-cache'
-  );
+  const [{ invalidateInventoryCache }, { revalidateProducts }] =
+    await Promise.all([
+      import('@/lib/cache/inventory-cache'),
+      import('@/lib/cache'),
+    ]);
   await invalidateInventoryCache(validatedData.productId);
+  await revalidateProducts(validatedData.productId);
 
   return NextResponse.json({
     success: true,

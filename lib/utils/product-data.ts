@@ -25,17 +25,19 @@ export class ProductDataTransformer {
         ? formData.categoryId.trim()
         : formData.categoryId;
     const normalizedCategoryId =
-      typeof categoryIdValue === 'string' && categoryIdValue === ''
-        ? undefined
-        : categoryIdValue;
+      typeof categoryIdValue === 'string' && categoryIdValue !== ''
+        ? categoryIdValue
+        : 'uncategorized';
+
+    const cleanedSpecification =
+      ProductDataTransformer.cleanSpecification(formData.specification) ??
+      formData.specification;
 
     return {
       ...formData,
       categoryId: normalizedCategoryId,
       // 清理规格字段,确保是纯字符串
-      specification: ProductDataTransformer.cleanSpecification(
-        formData.specification
-      ),
+      specification: cleanedSpecification,
       // 处理数值字段：0值转为undefined，避免不必要的存储
       thickness: formData.thickness === 0 ? undefined : formData.thickness,
       // 处理图片字段
@@ -72,9 +74,9 @@ export class ProductDataTransformer {
       ...dataWithoutId,
       categoryId: normalizedCategoryId,
       // 清理规格字段,确保是纯字符串
-      specification: ProductDataTransformer.cleanSpecification(
-        formData.specification
-      ),
+      specification:
+        ProductDataTransformer.cleanSpecification(formData.specification) ??
+        formData.specification,
       // 处理数值字段：0值转为undefined
       thickness: formData.thickness === 0 ? undefined : formData.thickness,
       weight: formData.weight === 0 ? undefined : formData.weight,

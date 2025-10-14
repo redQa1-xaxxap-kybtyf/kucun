@@ -17,7 +17,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 
 interface Customer {
   id: string;
@@ -83,8 +83,12 @@ export function CustomerSalesOrderSelector({
 
   // 过滤客户列表（如果还没选择客户）
   const filteredCustomers = React.useMemo(() => {
-    if (internalCustomerId) return [];
-    if (!searchValue) return customers;
+    if (internalCustomerId) {
+      return [];
+    }
+    if (!searchValue) {
+      return customers;
+    }
 
     const search = searchValue.toLowerCase();
     return customers.filter(
@@ -96,7 +100,9 @@ export function CustomerSalesOrderSelector({
 
   // 过滤销售订单列表（已选择客户后）
   const filteredSalesOrders = React.useMemo(() => {
-    if (!internalCustomerId) return [];
+    if (!internalCustomerId) {
+      return [];
+    }
 
     // 过滤: 只显示该客户的订单，且只显示已发货/已送达/已完成的订单（可退货状态）
     const returnableStatuses: Array<string> = [
@@ -110,7 +116,9 @@ export function CustomerSalesOrderSelector({
         returnableStatuses.includes(order.status)
     );
 
-    if (!searchValue) return customerOrders;
+    if (!searchValue) {
+      return customerOrders;
+    }
 
     const search = searchValue.toLowerCase();
     return customerOrders.filter(order =>
@@ -152,14 +160,6 @@ export function CustomerSalesOrderSelector({
   };
 
   // 格式化金额
-  const formatAmount = (amount: number) => {
-    return new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-      minimumFractionDigits: 2,
-    }).format(amount);
-  };
-
   // 格式化状态
   const formatStatus = (status: string) => {
     const statusMap: Record<string, string> = {
@@ -224,7 +224,7 @@ export function CustomerSalesOrderSelector({
               <>
                 {isLoadingCustomers ? (
                   <div className="flex items-center justify-center py-6">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    <div className="border-primary h-6 w-6 animate-spin rounded-full border-2 border-t-transparent" />
                   </div>
                 ) : filteredCustomers.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-6">
@@ -261,7 +261,7 @@ export function CustomerSalesOrderSelector({
             {/* 显示销售订单列表 */}
             {internalCustomerId && (
               <>
-                <div className="border-b bg-muted/30 p-2">
+                <div className="bg-muted/30 border-b p-2">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <User className="text-muted-foreground h-4 w-4" />
@@ -282,7 +282,7 @@ export function CustomerSalesOrderSelector({
 
                 {isLoadingSalesOrders ? (
                   <div className="flex items-center justify-center py-6">
-                    <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                    <div className="border-primary h-6 w-6 animate-spin rounded-full border-2 border-t-transparent" />
                   </div>
                 ) : filteredSalesOrders.length === 0 ? (
                   <div className="flex flex-col items-center gap-2 py-6">
@@ -321,7 +321,7 @@ export function CustomerSalesOrderSelector({
                               {formatDate(order.createdAt)}
                             </span>
                             <span className="font-medium">
-                              {formatAmount(order.totalAmount)}
+                              {formatCurrency(order.totalAmount)}
                             </span>
                           </div>
                         </div>

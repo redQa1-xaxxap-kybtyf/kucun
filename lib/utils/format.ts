@@ -4,23 +4,20 @@
 /**
  * 格式化货币金额
  * @param amount 金额数值
- * @param currency 货币符号，默认为 ¥
  * @param precision 小数位数，默认为 2
  * @returns 格式化后的货币字符串
  */
-export function formatCurrency(
-  amount: number,
-  currency: string = '¥',
-  precision: number = 2
-): string {
-  if (typeof amount !== 'number' || isNaN(amount)) {
-    return `${currency}0.00`;
+export function formatCurrency(amount: number, precision: number = 2): string {
+  if (typeof amount !== 'number' || Number.isNaN(amount)) {
+    return '¥0.00';
   }
 
-  return `${currency}${amount.toLocaleString('zh-CN', {
+  const formatted = amount.toLocaleString('zh-CN', {
     minimumFractionDigits: precision,
     maximumFractionDigits: precision,
-  })}`;
+  });
+
+  return `¥${formatted}`;
 }
 
 /**

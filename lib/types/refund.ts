@@ -9,12 +9,13 @@ export type RefundMethod =
   | 'other';
 
 // 退款状态枚举
+// 包含完整的退款处理流程状态
 export type RefundStatus =
-  | 'pending'
-  | 'processing'
-  | 'completed'
-  | 'rejected'
-  | 'cancelled';
+  | 'pending' // 待处理（退款申请已创建）
+  | 'processing' // 处理中（退款正在处理）
+  | 'completed' // 已完成（退款已完成）
+  | 'rejected' // 已拒绝（退款申请被拒绝）
+  | 'cancelled'; // 已取消（手动撤销）
 
 // 退款类型枚举
 export type RefundType = 'full_refund' | 'partial_refund' | 'exchange_refund';
@@ -240,7 +241,13 @@ export interface RefundStatusConfig {
 // 退款状态变体映射（用于Badge组件）
 export const REFUND_STATUS_VARIANTS: Record<
   RefundStatus,
-  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info'
 > = {
   pending: 'warning',
   processing: 'info',
@@ -254,7 +261,7 @@ export const DEFAULT_REFUND_STATUSES: RefundStatusConfig[] = [
   {
     status: 'pending',
     label: '待处理',
-    description: '退款申请已提交，等待处理',
+    description: '退款申请已创建，等待处理',
     color: 'yellow',
     isActive: true,
   },
@@ -282,7 +289,7 @@ export const DEFAULT_REFUND_STATUSES: RefundStatusConfig[] = [
   {
     status: 'cancelled',
     label: '已取消',
-    description: '退款申请已取消',
+    description: '退款已撤销',
     color: 'gray',
     isActive: true,
   },
@@ -317,6 +324,15 @@ export const DEFAULT_REFUND_TYPES: RefundTypeConfig[] = [
     isActive: true,
   },
 ];
+
+// 退款状态标签映射
+export const REFUND_STATUS_LABELS: Record<RefundStatus, string> = {
+  pending: '待处理',
+  processing: '处理中',
+  completed: '已完成',
+  rejected: '已拒绝',
+  cancelled: '已取消',
+};
 
 // 工具函数类型
 export interface RefundUtils {

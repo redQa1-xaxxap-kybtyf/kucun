@@ -111,7 +111,7 @@ export async function PUT(
       );
     }
 
-    const { id: _, ...updateData } = validationResult.data;
+    const updateData = validationResult.data;
 
     // 检查应付款记录是否存在
     const existingPayable = await prisma.payableRecord.findUnique({
@@ -152,7 +152,6 @@ export async function PUT(
       data: {
         ...updateData,
         ...(updateData.payableAmount !== undefined && { remainingAmount }),
-        ...(updateData.dueDate && { dueDate: new Date(updateData.dueDate) }),
       },
       include: {
         supplier: {

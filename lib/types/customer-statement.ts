@@ -26,8 +26,8 @@ export interface CustomerStatementTransaction {
   referenceNumber: string; // 单据号
   referenceId: string; // 单据ID
   description: string; // 交易描述
-  debitAmount: number; // 借方金额(应收增加/应付减少)
-  creditAmount: number; // 贷方金额(应收减少/应付增加)
+  debitAmount: number; // 应收增加/应付减少金额
+  creditAmount: number; // 应收减少/应付增加金额
   balance: number; // 余额(正数=客户欠款,负数=我方欠款)
   status: string; // 状态
   remarks?: string; // 备注
@@ -44,7 +44,10 @@ export interface CustomerStatementSummary {
     paymentReceived: number; // 已收款
     refundPaid: number; // 已退款
     prepaymentReceived: number; // 预收款
-    receivableBalance: number; // 应收余额 = 销售 - 退货 - 收款 - 预收 + 退款
+    refundProcessed?: number; // 实际已退款金额（含退货退款）
+    refundPending?: number; // 待退金额
+    refundCompensation?: number; // 补偿性退款金额
+    receivableBalance: number; // 应收余额 = 销售 - 退货 - 收款 - 预收 - 退款
   };
 
   // 应付账款汇总
@@ -77,8 +80,16 @@ export interface CustomerStatementDetail {
   // 期初余额
   openingBalance: number;
 
-  // 交易明细
+  // 交易明细（✅ P1修复: 支持分页）
   transactions: CustomerStatementTransaction[];
+
+  // ✅ P1修复: 交易分页信息
+  transactionsPagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
 
   // 汇总数据
   summary: CustomerStatementSummary;
@@ -168,6 +179,15 @@ export interface CustomerStatementStatistics {
   // 总净余额
   totalNetBalance: number;
 
+  // 总应退余额（可选，后端未实现时前端使用当前页数据回退）
+  totalPendingRefundBalance?: number;
+
+  // 总退货金额（可选）
+  totalReturnAmount?: number;
+
+  // 总已退款金额（可选）
+  totalRefundPaidAmount?: number;
+
   // 逾期客户数
   overdueCustomers: number;
 
@@ -211,7 +231,7 @@ export interface CustomerStatementTransactionTypeConfig {
   type: CustomerStatementTransactionType;
   label: string;
   description: string;
-  isDebit: boolean; // 是否为借方
+  isDebit: boolean; // 是否为增加应收/减少应付
   category: 'receivable' | 'payable'; // 所属类别
 }
 
@@ -306,4 +326,3 @@ export interface CustomerStatementUtils {
   isReceivableTransaction: (type: CustomerStatementTransactionType) => boolean;
   isPayableTransaction: (type: CustomerStatementTransactionType) => boolean;
 }
-

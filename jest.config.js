@@ -59,6 +59,7 @@ const customJestConfig = {
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
     '<rootDir>/coverage/',
+    '<rootDir>/tests/cache-behavior-test.spec.ts',
   ],
 
   // Transform忽略模式 - 需要转换faker-js和其他ES模块

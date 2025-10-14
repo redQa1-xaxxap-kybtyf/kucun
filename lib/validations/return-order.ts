@@ -21,6 +21,11 @@ export const returnOrderItemSchema = z
       .number()
       .min(0.01, '退货数量必须大于0')
       .max(999999, '退货数量不能超过999999'),
+    damagedQuantity: z
+      .number()
+      .min(0, '破损数量不能为负数')
+      .max(999999, '破损数量不能超过999999')
+      .optional(),
     originalQuantity: z.number().min(0, '原始数量不能为负数'),
     unitPrice: z
       .number()
@@ -51,6 +56,15 @@ export const returnOrderItemSchema = z
       message: '小计计算错误',
       path: ['subtotal'],
     }
+  )
+  .refine(
+    data =>
+      data.damagedQuantity === undefined ||
+      data.damagedQuantity <= data.returnQuantity,
+    {
+      message: '破损数量不能超过退货数量',
+      path: ['damagedQuantity'],
+    }
   );
 
 // 退货订单创建验证规则
@@ -77,7 +91,7 @@ export const createReturnOrderSchema = z
         error: '请选择退货类型',
       }
     ),
-    processType: z.enum(['refund', 'exchange', 'repair', 'credit'] as const, {
+    processType: z.enum(['refund', 'exchange'] as const, {
       error: '请选择处理方式',
     }),
     reason: z.string().max(500, '退货原因不能超过500字符').optional(),
@@ -131,7 +145,7 @@ export const updateReturnOrderSchema = z.object({
       'other',
     ])
     .optional(),
-  processType: z.enum(['refund', 'exchange', 'repair', 'credit']).optional(),
+  processType: z.enum(['refund', 'exchange']).optional(),
   reason: z.string().optional(),
   remarks: z.string().optional(),
   items: z.array(returnOrderItemSchema).optional(),
@@ -194,7 +208,7 @@ export const returnOrderQuerySchema = z.object({
       'other',
     ])
     .optional(),
-  processType: z.enum(['refund', 'exchange', 'repair', 'credit']).optional(),
+  processType: z.enum(['refund', 'exchange']).optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   sortBy: z
@@ -230,9 +244,7 @@ export const returnOrderSearchSchema = z
         'other',
       ] as const)
       .optional(),
-    processType: z
-      .enum(['', 'refund', 'exchange', 'repair', 'credit'] as const)
-      .optional(),
+    processType: z.enum(['', 'refund', 'exchange'] as const).optional(),
     customerId: z.string().optional(),
     salesOrderId: z.string().optional(),
     userId: z.string().optional(),

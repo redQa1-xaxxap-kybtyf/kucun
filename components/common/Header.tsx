@@ -264,33 +264,35 @@ function HeaderComponent({
               {notifications.length > 0 ? (
                 <>
                   <div className="max-h-96 overflow-y-auto">
-                    {notifications.slice(0, 10).map(notification => (
-                      <DropdownMenuItem
-                        key={notification.id}
-                        onClick={() => handleNotificationClick(notification)}
-                        className={cn(
-                          'hover:bg-accent flex cursor-pointer flex-col items-start p-3',
-                          notification.isRead && 'opacity-60'
-                        )}
-                      >
-                        <div className="flex w-full items-start justify-between">
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">
-                              {notification.title}
-                            </p>
-                            <p className="text-muted-foreground mt-1 text-xs">
-                              {notification.message}
-                            </p>
-                            <p className="text-muted-foreground mt-1 text-xs">
-                              {notification.createdAt.toLocaleTimeString()}
-                            </p>
-                          </div>
-                          {!notification.isRead && (
-                            <div className="bg-primary mt-1 ml-2 h-2 w-2 rounded-full" />
+                    {notifications
+                      .slice(0, 10)
+                      .map((notification: NotificationItem) => (
+                        <DropdownMenuItem
+                          key={notification.id}
+                          onClick={() => handleNotificationClick(notification)}
+                          className={cn(
+                            'hover:bg-accent flex cursor-pointer flex-col items-start p-3',
+                            notification.isRead && 'opacity-60'
                           )}
-                        </div>
-                      </DropdownMenuItem>
-                    ))}
+                        >
+                          <div className="flex w-full items-start justify-between">
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">
+                                {notification.title}
+                              </p>
+                              <p className="text-muted-foreground mt-1 text-xs">
+                                {notification.message}
+                              </p>
+                              <p className="text-muted-foreground mt-1 text-xs">
+                                {notification.createdAt.toLocaleTimeString()}
+                              </p>
+                            </div>
+                            {!notification.isRead && (
+                              <div className="bg-primary mt-1 ml-2 h-2 w-2 rounded-full" />
+                            )}
+                          </div>
+                        </DropdownMenuItem>
+                      ))}
                   </div>
                   <DropdownMenuSeparator />
                   <div className="flex gap-2 p-2">

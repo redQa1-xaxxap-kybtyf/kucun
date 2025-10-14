@@ -10,6 +10,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
@@ -147,6 +148,7 @@ export function PaymentsOutClient({
   onFilter,
   onPageChange,
 }: PaymentsOutClientProps) {
+  const router = useRouter();
   const { payments, statistics, pagination } = initialData;
 
   return (
@@ -223,7 +225,9 @@ export function PaymentsOutClient({
               <UnifiedSearchBar
                 searchValue={initialParams?.search ?? ''}
                 onSearchChange={value => {
-                  if (onSearch) onSearch(value);
+                  if (onSearch) {
+                    onSearch(value);
+                  }
                 }}
                 searchPlaceholder="搜索付款单号、供应商名称、凭证号..."
                 className="max-w-sm"
@@ -296,7 +300,18 @@ export function PaymentsOutClient({
               payments.map(payment => (
                 <Card
                   key={payment.id}
-                  className="transition-shadow hover:shadow-[var(--shadow-medium)]"
+                  className="cursor-pointer transition-shadow hover:shadow-[var(--shadow-medium)]"
+                  onClick={() => {
+                    router.push(`/finance/payments-out/${payment.id}`);
+                  }}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      router.push(`/finance/payments-out/${payment.id}`);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <CardContent className="p-6">
                     <div className="flex items-start justify-between">
@@ -375,7 +390,10 @@ export function PaymentsOutClient({
                         </p>
                         <div className="mt-4 flex gap-2">
                           <Button variant="outline" size="sm" asChild>
-                            <Link href={`/finance/payments-out/${payment.id}`}>
+                            <Link
+                              href={`/finance/payments-out/${payment.id}`}
+                              onClick={event => event.stopPropagation()}
+                            >
                               查看详情
                             </Link>
                           </Button>
@@ -383,6 +401,7 @@ export function PaymentsOutClient({
                             <Button size="sm" asChild>
                               <Link
                                 href={`/finance/payments-out/${payment.id}/edit`}
+                                onClick={event => event.stopPropagation()}
                               >
                                 编辑
                               </Link>

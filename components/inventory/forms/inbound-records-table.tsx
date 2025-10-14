@@ -30,6 +30,7 @@ interface InboundRecordWithProduct extends Omit<BaseInboundRecord, 'product'> {
     code: string;
     name: string;
     specification?: string;
+    piecesPerUnit: number;
   };
 }
 
@@ -91,6 +92,27 @@ const formatSpecification = (specification?: string) => {
     : specification;
 };
 
+// 格式化数量显示（X件Y片（共XX片））
+const formatQuantity = (quantity: number, piecesPerUnit: number) => {
+  // 数据验证
+  if (!quantity || !piecesPerUnit || piecesPerUnit <= 0) {
+    return `${quantity || 0}片`;
+  }
+
+  const units = Math.floor(quantity / piecesPerUnit);
+  const pieces = quantity % piecesPerUnit;
+
+  if (units === 0) {
+    return `${pieces}片`;
+  }
+
+  if (pieces === 0) {
+    return `${units}件（共${quantity}片）`;
+  }
+
+  return `${units}件${pieces}片（共${quantity}片）`;
+};
+
 /**
  * 入库记录表格组件
  * ✅ 符合产品模块UI风格规范
@@ -121,36 +143,21 @@ export function InboundRecordsTable({
         <Table>
           <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
             <TableRow>
-              <TableHead>
-                产品编码
-              </TableHead>
-              <TableHead>
-                产品名称
-              </TableHead>
-              <TableHead>
-                规格
-              </TableHead>
-              <TableHead>
-                入库数量
-              </TableHead>
-              <TableHead>
-                操作类型
-              </TableHead>
-              <TableHead>
-                批次号
-              </TableHead>
-              <TableHead>
-                操作时间
-              </TableHead>
-              <TableHead>
-                备注
-              </TableHead>
+              <TableHead>产品编码</TableHead>
+              <TableHead>产品名称</TableHead>
+              <TableHead>规格</TableHead>
+              <TableHead>每件片数</TableHead>
+              <TableHead>入库数量</TableHead>
+              <TableHead>操作类型</TableHead>
+              <TableHead>批次号</TableHead>
+              <TableHead>操作时间</TableHead>
+              <TableHead>备注</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {records.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
+                <TableCell colSpan={9} className="h-24 text-center">
                   <div className="text-muted-foreground flex flex-col items-center gap-2">
                     <Package className="h-8 w-8" />
                     <span className="text-sm">暂无入库记录</span>
@@ -172,9 +179,18 @@ export function InboundRecordsTable({
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {formatSpecification(record.product?.specification) || '-'}
                   </TableCell>
+                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    {record.product?.piecesPerUnit || '-'}
+                  </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
-                    <span className="font-medium">{record.quantity}</span>{' '}
-                    片
+                    <span className="font-medium">
+                      {record.product?.piecesPerUnit
+                        ? formatQuantity(
+                            record.quantity,
+                            record.product.piecesPerUnit
+                          )
+                        : `${record.quantity}片`}
+                    </span>
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
                     <Badge

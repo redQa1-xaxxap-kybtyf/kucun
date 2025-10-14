@@ -305,7 +305,7 @@ export default function UsersSettingsPage() {
   if (session?.user?.role !== 'admin') {
     return (
       <div className="flex h-full flex-col overflow-hidden p-6">
-        <div className="space-y-6">
+        <div className="flex-1 space-y-6 overflow-y-auto">
           {/* 页面头部 */}
           <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
             <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
@@ -361,7 +361,7 @@ export default function UsersSettingsPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
-      <div className="space-y-6">
+      <div className="flex-1 space-y-6 overflow-y-auto">
         {/* 页面头部 */}
         <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
           <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
@@ -394,15 +394,6 @@ export default function UsersSettingsPage() {
 
         {/* 用户管理卡片 */}
         <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-            <CardTitle className="flex items-center text-gray-900">
-              <Users className="mr-2 h-5 w-5 text-gray-600" />
-              用户账户管理
-            </CardTitle>
-            <CardDescription>
-              创建、编辑和管理系统用户账户，控制用户权限和状态
-            </CardDescription>
-          </CardHeader>
           <CardContent className="space-y-6 p-6">
             {/* 操作栏 */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

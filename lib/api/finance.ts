@@ -22,6 +22,7 @@ import type {
   ReconciliationStatement,
   StatementQuery,
   StatementStatistics,
+  StatementListResponse,
 } from '@/lib/types/statement';
 
 // 导入统一的类型定义，遵循唯一真理源原则
@@ -260,10 +261,7 @@ export const financeApi = {
   // 往来账单相关
   getStatements: async (
     query: StatementQuery
-  ): Promise<{
-    data: AccountStatementDetail[];
-    pagination: PaginationResponse;
-  }> => {
+  ): Promise<StatementListResponse['data']> => {
     const params = new URLSearchParams();
     Object.entries(query).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {
@@ -276,7 +274,7 @@ export const financeApi = {
       throw new Error(`获取往来账单失败: ${response.statusText}`);
     }
 
-    const result = await response.json();
+    const result: StatementListResponse = await response.json();
     if (!result.success) {
       throw new Error(result.error || '获取往来账单失败');
     }

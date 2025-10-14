@@ -33,13 +33,49 @@ const nextConfig = {
   // Webpack 配置 - 优化 Windows 文件系统缓存
   webpack: (config, { isServer }) => {
     // 配置缓存压缩，减少文件锁定问题
-    if (config.cache && typeof config.cache === 'object' && config.cache.type === 'filesystem') {
+    if (
+      config.cache &&
+      typeof config.cache === 'object' &&
+      config.cache.type === 'filesystem'
+    ) {
       config.cache = {
         type: 'filesystem', // 必须保持 filesystem
         compression: false, // 禁用压缩，减少文件操作
         hashAlgorithm: 'xxhash64',
       };
     }
+
+    // 忽略 qiniu 包的依赖问题（仅在客户端构建时）
+    if (!isServer) {
+      config.resolve.fallback = {
+        ...config.resolve.fallback,
+        fs: false,
+        net: false,
+        tls: false,
+        crypto: false,
+        stream: false,
+        http: false,
+        https: false,
+        zlib: false,
+        'coffee-script': false,
+      };
+
+      // 忽略 qiniu 及其依赖的警告
+      config.ignoreWarnings = [
+        ...(config.ignoreWarnings || []),
+        {
+          module: /node_modules\/vm2/,
+        },
+        {
+          module: /node_modules\/pac-proxy-agent/,
+        },
+        {
+          module: /node_modules\/qiniu/,
+        },
+        /coffee-script/,
+      ];
+    }
+
     return config;
   },
 

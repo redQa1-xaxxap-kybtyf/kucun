@@ -28,7 +28,15 @@ import {
 import { ErrorMessage } from '@/components/ui/error-message';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
-import { SALES_ORDER_STATUS_LABELS } from '@/lib/types/sales-order';
+import {
+  RETURN_ORDER_STATUS_LABELS,
+  RETURN_ORDER_STATUS_VARIANTS,
+  type ReturnOrderStatus,
+} from '@/lib/types/return-order';
+import {
+  SALES_ORDER_STATUS_LABELS,
+  TRANSFER_MODE_LABELS,
+} from '@/lib/types/sales-order';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
@@ -52,6 +60,10 @@ interface SalesOrderDetail {
   supplierId?: string;
   status: string;
   orderType: string;
+  transferMode: string;
+  itemsAmount: number;
+  additionalFees: number;
+  roundingAdjustment: number;
   totalAmount: number;
   costAmount: number;
   profitAmount: number;
@@ -61,6 +73,7 @@ interface SalesOrderDetail {
   shippedAt?: string;
   createdAt: string;
   updatedAt: string;
+  hasReturnOrder?: boolean;
   customer: {
     id: string;
     name: string;
@@ -86,6 +99,8 @@ interface SalesOrderDetail {
     unitCost?: number;
     costSubtotal?: number;
     profitAmount?: number;
+    localQuantity?: number;
+    transferQuantity?: number;
     isManualProduct: boolean;
     manualProductName?: string;
     manualSpecification?: string;
@@ -105,6 +120,19 @@ interface SalesOrderDetail {
       piecesPerUnit?: number;
       weight?: number;
     };
+  }>;
+  feeItems: Array<{
+    id: string;
+    feeType: string;
+    feeName: string;
+    feeAmount: number;
+    remarks?: string;
+  }>;
+  returnOrders?: Array<{
+    id: string;
+    returnNumber: string;
+    status: string;
+    createdAt: string;
   }>;
   paymentRecords: PaymentRecord[];
 }
@@ -148,7 +176,9 @@ function formatQuantityDisplay(item: SalesOrderDetail['items'][0]): string {
   return formatDecimal(value);
 }
 
-function formatPiecesBreakdown(item: SalesOrderDetail['items'][0]): string | null {
+function formatPiecesBreakdown(
+  item: SalesOrderDetail['items'][0]
+): string | null {
   const quantity = item.quantity;
   const piecesPerUnit = item.piecesPerUnit ?? item.product?.piecesPerUnit;
 
@@ -180,7 +210,11 @@ function resolveUnitLabel(item: SalesOrderDetail['items'][0]): string {
     return item.displayUnit.trim();
   }
 
-  if (item.isManualProduct && typeof item.manualUnit === 'string' && item.manualUnit.trim()) {
+  if (
+    item.isManualProduct &&
+    typeof item.manualUnit === 'string' &&
+    item.manualUnit.trim()
+  ) {
     return item.manualUnit.trim();
   }
 
@@ -256,8 +290,12 @@ export default function SalesOrderDetailPage() {
       }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.salesOrders.detail(id) });
-      queryClient.invalidateQueries({ queryKey: queryKeys.salesOrders.lists() });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.detail(id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.salesOrders.lists(),
+      });
       toast({
         title: '操作成功',
         description: '订单状态已更新',
@@ -317,14 +355,40 @@ export default function SalesOrderDetailPage() {
     );
   }
 
+  const isReturnOrderStatus = (value: unknown): value is ReturnOrderStatus =>
+    typeof value === 'string' && value in RETURN_ORDER_STATUS_LABELS;
+
   const getOrderTypeBadge = (orderType: string) =>
     orderType === 'TRANSFER' ? (
       <Badge variant="secondary">调货销售</Badge>
     ) : (
       <Badge variant="outline">正常销售</Badge>
     );
+  const getTransferModeBadge = (mode: string | undefined) => {
+    const label =
+      mode === 'MIXED'
+        ? TRANSFER_MODE_LABELS.MIXED
+        : TRANSFER_MODE_LABELS.SUPPLIER_ONLY;
+
+    return mode === 'MIXED' ? (
+      <Badge
+        variant="outline"
+        className="border-sky-200 bg-sky-50 text-sky-700"
+      >
+        {label}
+      </Badge>
+    ) : (
+      <Badge
+        variant="outline"
+        className="border-amber-200 bg-amber-50 text-amber-700"
+      >
+        {label}
+      </Badge>
+    );
+  };
 
   const orderItems = order.items ?? [];
+  const relatedReturnOrders = order.returnOrders ?? [];
   const customerName = order.customer?.name ?? '未关联客户';
   const customerPhone = order.customer?.phone ?? '-';
   const userName = order.user?.name ?? '-';
@@ -335,6 +399,14 @@ export default function SalesOrderDetailPage() {
       (typeof item.displayQuantity === 'number'
         ? item.displayQuantity
         : item.quantity || 0),
+    0
+  );
+  const totalLocalQuantity = orderItems.reduce(
+    (sum, item) => sum + (item.localQuantity ?? 0),
+    0
+  );
+  const totalTransferQuantity = orderItems.reduce(
+    (sum, item) => sum + (item.transferQuantity ?? 0),
     0
   );
 
@@ -357,14 +429,38 @@ export default function SalesOrderDetailPage() {
                     销售订单详情
                   </h1>
                   <div className="mt-1 flex items-center gap-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                    <span className="font-medium">订单号：{order.orderNumber}</span>
-                    <Badge variant={getSalesOrderStatusBadgeVariant(order.status)}>
+                    <span className="font-medium">
+                      订单号：{order.orderNumber}
+                    </span>
+                    <Badge
+                      variant={getSalesOrderStatusBadgeVariant(order.status)}
+                    >
                       {SALES_ORDER_STATUS_LABELS[
                         order.status as keyof typeof SALES_ORDER_STATUS_LABELS
                       ] || order.status}
                     </Badge>
                     {getOrderTypeBadge(order.orderType)}
+                    {order.orderType === 'TRANSFER' &&
+                      getTransferModeBadge(order.transferMode)}
                   </div>
+                  {order.returnOrders && order.returnOrders.length > 0 && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[hsl(var(--color-text-secondary))]">
+                      <span className="font-medium">关联退货单：</span>
+                      {order.returnOrders.map(returnOrder => (
+                        <Button
+                          key={returnOrder.id}
+                          variant="link"
+                          size="sm"
+                          className="h-auto p-0 text-[hsl(var(--color-primary))]"
+                          onClick={() =>
+                            router.push(`/return-orders/${returnOrder.id}`)
+                          }
+                        >
+                          {returnOrder.returnNumber}
+                        </Button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -432,28 +528,43 @@ export default function SalesOrderDetailPage() {
 
         {/* 金额统计卡片 - 顶部突出显示 */}
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-          <Card className="border border-[hsl(var(--color-border-primary))]" style={{ boxShadow: 'var(--shadow-light)' }}>
+          <Card
+            className="border border-[hsl(var(--color-border-primary))]"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
             <CardContent className="p-4">
-              <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">订单总金额</div>
+              <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                订单总金额
+              </div>
               <div className="mt-2 text-2xl font-bold text-[hsl(var(--color-primary))]">
                 {formatCurrency(order.totalAmount)}
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-green-200 bg-green-50/50" style={{ boxShadow: 'var(--shadow-light)' }}>
+          <Card
+            className="border border-green-200 bg-green-50/50"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
             <CardContent className="p-4">
               <div className="text-xs font-medium text-gray-600">已收金额</div>
               <div className="mt-2 text-2xl font-bold text-green-600">
                 {formatCurrency(order.paidAmount)}
               </div>
               <div className="mt-1 text-xs text-gray-500">
-                {order.paymentRecords.filter(r => r.status === 'confirmed').length} 笔收款
+                {
+                  order.paymentRecords.filter(r => r.status === 'confirmed')
+                    .length
+                }{' '}
+                笔收款
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border border-orange-200 bg-orange-50/50" style={{ boxShadow: 'var(--shadow-light)' }}>
+          <Card
+            className="border border-orange-200 bg-orange-50/50"
+            style={{ boxShadow: 'var(--shadow-light)' }}
+          >
             <CardContent className="p-4">
               <div className="text-xs font-medium text-gray-600">待收金额</div>
               <div className="mt-2 text-2xl font-bold text-orange-600">
@@ -466,14 +577,25 @@ export default function SalesOrderDetailPage() {
           </Card>
 
           {order.orderType === 'TRANSFER' && (
-            <Card className="border border-[hsl(var(--color-border-primary))]" style={{ boxShadow: 'var(--shadow-light)' }}>
+            <Card
+              className="border border-[hsl(var(--color-border-primary))]"
+              style={{ boxShadow: 'var(--shadow-light)' }}
+            >
               <CardContent className="p-4">
-                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">毛利金额</div>
+                <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
+                  毛利金额
+                </div>
                 <div className="mt-2 text-2xl font-bold text-[hsl(var(--color-success))]">
                   {formatCurrency(order.profitAmount)}
                 </div>
                 <div className="mt-1 text-xs text-[hsl(var(--color-text-tertiary))]">
-                  毛利率：{order.totalAmount > 0 ? ((order.profitAmount / order.totalAmount) * 100).toFixed(1) : '0.0'}%
+                  毛利率：
+                  {order.totalAmount > 0
+                    ? ((order.profitAmount / order.totalAmount) * 100).toFixed(
+                        1
+                      )
+                    : '0.0'}
+                  %
                 </div>
               </CardContent>
             </Card>
@@ -499,20 +621,27 @@ export default function SalesOrderDetailPage() {
                     <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       客户名称
                     </div>
-                    <div className="mt-2 font-medium text-[hsl(var(--color-text-primary))]">{customerName}</div>
+                    <div className="mt-2 font-medium text-[hsl(var(--color-text-primary))]">
+                      {customerName}
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       客户电话
                     </div>
-                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{customerPhone}</div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      {customerPhone}
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       订单状态
                     </div>
                     <div className="mt-2">
-                      <Badge variant={getSalesOrderStatusBadgeVariant(order.status)} className="text-xs">
+                      <Badge
+                        variant={getSalesOrderStatusBadgeVariant(order.status)}
+                        className="text-xs"
+                      >
                         {SALES_ORDER_STATUS_LABELS[
                           order.status as keyof typeof SALES_ORDER_STATUS_LABELS
                         ] || order.status}
@@ -523,8 +652,11 @@ export default function SalesOrderDetailPage() {
                     <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       订单类型
                     </div>
-                    <div className="mt-2">
+                    <div className="mt-2 space-y-1">
                       {getOrderTypeBadge(order.orderType)}
+                      {order.orderType === 'TRANSFER' && (
+                        <div>{getTransferModeBadge(order.transferMode)}</div>
+                      )}
                     </div>
                   </div>
                   {order.supplier && (
@@ -532,34 +664,44 @@ export default function SalesOrderDetailPage() {
                       <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                         供应商
                       </div>
-                      <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{order.supplier.name}</div>
+                      <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                        {order.supplier.name}
+                      </div>
                     </div>
                   )}
                   <div>
                     <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       创建人
                     </div>
-                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{userName}</div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      {userName}
+                    </div>
                   </div>
                   <div>
                     <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       创建时间
                     </div>
-                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{formatDate(order.createdAt)}</div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      {formatDate(order.createdAt)}
+                    </div>
                   </div>
                   {order.shippedAt && (
                     <div>
                       <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                         发货时间
                       </div>
-                      <div className="mt-2 text-sm font-medium text-[hsl(var(--color-primary))]">{formatDate(order.shippedAt, 'datetime')}</div>
+                      <div className="mt-2 text-sm font-medium text-[hsl(var(--color-primary))]">
+                        {formatDate(order.shippedAt, 'datetime')}
+                      </div>
                     </div>
                   )}
                   <div>
                     <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       更新时间
                     </div>
-                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{formatDate(order.updatedAt)}</div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      {formatDate(order.updatedAt)}
+                    </div>
                   </div>
                 </div>
                 {order.remarks && (
@@ -567,11 +709,95 @@ export default function SalesOrderDetailPage() {
                     <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                       备注信息
                     </div>
-                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">{order.remarks}</div>
+                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                      {order.remarks}
+                    </div>
                   </div>
                 )}
               </CardContent>
             </Card>
+
+            {relatedReturnOrders.length > 0 && (
+              <Card
+                className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+                style={{ boxShadow: 'var(--shadow-medium)' }}
+              >
+                <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+                  <CardTitle className="flex items-center text-base text-[hsl(var(--color-text-primary))]">
+                    <Receipt className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
+                    关联退货单
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="bg-[hsl(var(--color-bg-card))] p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] text-xs text-[hsl(var(--color-text-secondary))]">
+                        <tr>
+                          <th className="px-4 py-3 text-left font-medium">
+                            退货单号
+                          </th>
+                          <th className="px-4 py-3 text-left font-medium">
+                            状态
+                          </th>
+                          <th className="px-4 py-3 text-left font-medium">
+                            创建时间
+                          </th>
+                          <th className="px-4 py-3 text-center font-medium">
+                            操作
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[hsl(var(--color-border-secondary))]">
+                        {relatedReturnOrders.map(returnOrder => {
+                          const status = isReturnOrderStatus(returnOrder.status)
+                            ? returnOrder.status
+                            : 'draft';
+
+                          return (
+                            <tr
+                              key={returnOrder.id}
+                              className="text-[hsl(var(--color-text-primary))]"
+                            >
+                              <td className="px-4 py-3 font-mono text-[hsl(var(--color-primary))]">
+                                {returnOrder.returnNumber}
+                              </td>
+                              <td className="px-4 py-3">
+                                <Badge
+                                  variant={
+                                    RETURN_ORDER_STATUS_VARIANTS[status] ??
+                                    'secondary'
+                                  }
+                                  className="text-xs"
+                                >
+                                  {RETURN_ORDER_STATUS_LABELS[status] ?? status}
+                                </Badge>
+                              </td>
+                              <td className="px-4 py-3 text-sm text-[hsl(var(--color-text-secondary))]">
+                                {formatDate(returnOrder.createdAt)}
+                              </td>
+                              <td className="px-4 py-3 text-center">
+                                <Button
+                                  variant="link"
+                                  size="sm"
+                                  className="px-0 text-[hsl(var(--color-primary))]"
+                                  onClick={() =>
+                                    router.push(
+                                      `/return-orders/${returnOrder.id}`
+                                    )
+                                  }
+                                >
+                                  查看详情
+                                </Button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* 订单明细 */}
             <Card
@@ -586,7 +812,11 @@ export default function SalesOrderDetailPage() {
                   </CardTitle>
                   <div className="flex items-center gap-4 text-xs text-[hsl(var(--color-text-secondary))]">
                     <span>
-                      共 <strong className="text-[hsl(var(--color-primary))]">{orderItems.length}</strong> 种产品
+                      共{' '}
+                      <strong className="text-[hsl(var(--color-primary))]">
+                        {orderItems.length}
+                      </strong>{' '}
+                      种产品
                     </span>
                     <span>
                       总数量：
@@ -606,59 +836,94 @@ export default function SalesOrderDetailPage() {
                       style={{ boxShadow: 'var(--shadow-light)' }}
                     >
                       <tr className="text-xs text-[hsl(var(--color-text-secondary))]">
-                        <th className="px-4 py-3 text-left font-medium">产品信息</th>
-                        <th className="px-4 py-3 text-left font-medium">产品编码</th>
-                        <th className="px-4 py-3 text-center font-medium">每件片数</th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          产品信息
+                        </th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          产品编码
+                        </th>
+                        <th className="px-4 py-3 text-center font-medium">
+                          每件片数
+                        </th>
                         <th className="px-4 py-3 text-center font-medium">
                           批次 / 生产日期
                         </th>
-                        <th className="px-4 py-3 text-left font-medium">规格</th>
-                        <th className="px-4 py-3 text-center font-medium">单位</th>
-                        <th className="px-4 py-3 text-right font-medium">数量</th>
-                        <th className="px-4 py-3 text-right font-medium">单价</th>
-                        <th className="px-4 py-3 text-right font-medium">小计</th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          规格
+                        </th>
+                        <th className="px-4 py-3 text-center font-medium">
+                          单位
+                        </th>
+                        <th className="px-4 py-3 text-right font-medium">
+                          数量
+                        </th>
+                        <th className="px-4 py-3 text-right font-medium">
+                          单价
+                        </th>
+                        <th className="px-4 py-3 text-right font-medium">
+                          小计
+                        </th>
                         {order.orderType === 'TRANSFER' && (
                           <>
-                            <th className="px-4 py-3 text-right font-medium">成本</th>
-                            <th className="px-4 py-3 text-right font-medium">毛利</th>
+                            <th className="px-4 py-3 text-right font-medium">
+                              本地发货
+                            </th>
+                            <th className="px-4 py-3 text-right font-medium">
+                              调货数量
+                            </th>
+                            <th className="px-4 py-3 text-right font-medium">
+                              成本
+                            </th>
+                            <th className="px-4 py-3 text-right font-medium">
+                              毛利
+                            </th>
                           </>
                         )}
-                        <th className="px-4 py-3 text-left font-medium">备注</th>
+                        <th className="px-4 py-3 text-left font-medium">
+                          备注
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
-                        {orderItems.map(item => {
-                         const unitLabel = resolveUnitLabel(item);
-                         const quantityDisplay = formatQuantityDisplay(item);
-                         const piecesPerUnitDisplay =
-                           item.piecesPerUnit ?? item.product?.piecesPerUnit;
+                      {orderItems.map(item => {
+                        const unitLabel = resolveUnitLabel(item);
+                        const quantityDisplay = formatQuantityDisplay(item);
+                        const piecesPerUnitDisplay =
+                          item.piecesPerUnit ?? item.product?.piecesPerUnit;
 
-                         const remarkParts: string[] = [];
-                         const piecesBreakdown = formatPiecesBreakdown(item);
-                         if (piecesBreakdown) {
-                           remarkParts.push(piecesBreakdown);
-                         }
-                         if (typeof item.remarks === 'string' && item.remarks.trim()) {
-                           remarkParts.push(item.remarks.trim());
-                         }
-                         if (typeof item.manualWeight === 'number') {
-                           remarkParts.push(
-                             `重量：${formatDecimal(item.manualWeight)}${
-                               item.manualUnit ? item.manualUnit : ''
-                             }`
-                           );
-                         }
-                         const remarkText = remarkParts.length > 0 ? remarkParts.join('；') : '-';
-                         const specificationText = item.isManualProduct
-                           ? item.manualSpecification ||
-                             item.specification ||
-                             '-'
+                        const remarkParts: string[] = [];
+                        const piecesBreakdown = formatPiecesBreakdown(item);
+                        if (piecesBreakdown) {
+                          remarkParts.push(piecesBreakdown);
+                        }
+                        if (
+                          typeof item.remarks === 'string' &&
+                          item.remarks.trim()
+                        ) {
+                          remarkParts.push(item.remarks.trim());
+                        }
+                        if (typeof item.manualWeight === 'number') {
+                          remarkParts.push(
+                            `重量：${formatDecimal(item.manualWeight)}${
+                              item.manualUnit ? item.manualUnit : ''
+                            }`
+                          );
+                        }
+                        const remarkText =
+                          remarkParts.length > 0 ? remarkParts.join('；') : '-';
+                        const specificationText = item.isManualProduct
+                          ? item.manualSpecification ||
+                            item.specification ||
+                            '-'
                           : item.specification ||
                             item.product?.specification ||
                             '-';
 
                         return (
-                          <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
+                          <tr
+                            key={item.id}
+                            className="transition-colors hover:bg-gray-50/50"
+                          >
                             <td className="px-4 py-3">
                               <div className="font-medium text-gray-900">
                                 {item.isManualProduct
@@ -667,15 +932,17 @@ export default function SalesOrderDetailPage() {
                               </div>
                             </td>
                             <td className="px-4 py-3 text-gray-700">
-                              <div className="text-sm font-mono">
-                                {!item.isManualProduct ? item.product?.code : '-'}
+                              <div className="font-mono text-sm">
+                                {!item.isManualProduct
+                                  ? item.product?.code
+                                  : '-'}
                               </div>
                             </td>
-                             <td className="px-4 py-3 text-center text-gray-600">
-                               {typeof piecesPerUnitDisplay === 'number'
-                                 ? formatDecimal(piecesPerUnitDisplay)
-                                 : '-'}
-                             </td>
+                            <td className="px-4 py-3 text-center text-gray-600">
+                              {typeof piecesPerUnitDisplay === 'number'
+                                ? formatDecimal(piecesPerUnitDisplay)
+                                : '-'}
+                            </td>
                             <td className="px-4 py-3 text-center text-gray-700">
                               <div className="text-xs font-medium text-gray-900">
                                 {item.batchNumber || '-'}
@@ -687,9 +954,7 @@ export default function SalesOrderDetailPage() {
                               )}
                             </td>
                             <td className="px-4 py-3 text-gray-700">
-                              <div className="text-sm">
-                                {specificationText}
-                              </div>
+                              <div className="text-sm">{specificationText}</div>
                               {item.colorCode && (
                                 <div className="mt-0.5 text-[11px] text-gray-500">
                                   色号：{item.colorCode}
@@ -697,8 +962,8 @@ export default function SalesOrderDetailPage() {
                               )}
                             </td>
                             <td className="px-4 py-3 text-center text-gray-700">
-                               {unitLabel || '-'}
-                             </td>
+                              {unitLabel || '-'}
+                            </td>
                             <td className="px-4 py-3 text-right font-medium text-gray-900">
                               {quantityDisplay}
                             </td>
@@ -710,6 +975,12 @@ export default function SalesOrderDetailPage() {
                             </td>
                             {order.orderType === 'TRANSFER' && (
                               <>
+                                <td className="px-4 py-3 text-right text-gray-700">
+                                  {formatDecimal(item.localQuantity ?? 0)} 片
+                                </td>
+                                <td className="px-4 py-3 text-right text-gray-700">
+                                  {formatDecimal(item.transferQuantity ?? 0)} 片
+                                </td>
                                 <td className="px-4 py-3 text-right text-gray-600">
                                   {item.costSubtotal
                                     ? formatCurrency(item.costSubtotal)
@@ -722,9 +993,9 @@ export default function SalesOrderDetailPage() {
                                 </td>
                               </>
                             )}
-                             <td className="px-4 py-3 text-gray-700">
-                               <div className="text-sm">{remarkText}</div>
-                             </td>
+                            <td className="px-4 py-3 text-gray-700">
+                              <div className="text-sm">{remarkText}</div>
+                            </td>
                           </tr>
                         );
                       })}
@@ -732,7 +1003,10 @@ export default function SalesOrderDetailPage() {
                     {/* 合计行 */}
                     <tfoot className="border-t-2 bg-gray-50/80 font-medium">
                       <tr>
-                        <td colSpan={7} className="px-4 py-3 text-right text-gray-700">
+                        <td
+                          colSpan={6}
+                          className="px-4 py-3 text-right text-gray-700"
+                        >
                           合计
                         </td>
                         <td className="px-4 py-3 text-right text-gray-900">
@@ -744,6 +1018,12 @@ export default function SalesOrderDetailPage() {
                         </td>
                         {order.orderType === 'TRANSFER' && (
                           <>
+                            <td className="px-4 py-3 text-right text-gray-900">
+                              {formatDecimal(totalLocalQuantity)} 片
+                            </td>
+                            <td className="px-4 py-3 text-right text-gray-900">
+                              {formatDecimal(totalTransferQuantity)} 片
+                            </td>
                             <td className="px-4 py-3 text-right text-gray-900">
                               {formatCurrency(order.costAmount)}
                             </td>
@@ -763,7 +1043,6 @@ export default function SalesOrderDetailPage() {
 
           {/* 右侧边栏 */}
           <div className="space-y-4">
-
             {/* 收款记录 */}
             <Card
               className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
@@ -776,19 +1055,25 @@ export default function SalesOrderDetailPage() {
                     收款记录
                   </div>
                   <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
-                    {order.paymentRecords.filter(r => r.status === 'confirmed').length} / {order.paymentRecords.length} 笔
+                    {
+                      order.paymentRecords.filter(r => r.status === 'confirmed')
+                        .length
+                    }{' '}
+                    / {order.paymentRecords.length} 笔
                   </span>
                 </CardTitle>
               </CardHeader>
               <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
                 {/* 订单金额总览 */}
                 <div className="mb-4 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-                  <div className="flex items-center justify-between mb-3">
+                  <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500">
                         <DollarSign className="h-4 w-4 text-white" />
                       </div>
-                      <span className="text-sm font-semibold text-gray-700">订单总金额</span>
+                      <span className="text-sm font-semibold text-gray-700">
+                        订单总金额
+                      </span>
                     </div>
                     <div className="text-xl font-bold text-blue-600">
                       {formatCurrency(order.totalAmount)}
@@ -797,10 +1082,18 @@ export default function SalesOrderDetailPage() {
 
                   {/* 收款进度条 */}
                   <div className="mb-3">
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium text-gray-600">收款进度</span>
+                    <div className="mb-1 flex items-center justify-between">
+                      <span className="text-xs font-medium text-gray-600">
+                        收款进度
+                      </span>
                       <span className="text-xs font-bold text-green-600">
-                        {order.totalAmount > 0 ? ((order.paidAmount / order.totalAmount) * 100).toFixed(1) : '0.0'}%
+                        {order.totalAmount > 0
+                          ? (
+                              (order.paidAmount / order.totalAmount) *
+                              100
+                            ).toFixed(1)
+                          : '0.0'}
+                        %
                       </span>
                     </div>
                     <div className="h-2 w-full overflow-hidden rounded-full bg-gray-200">
@@ -821,7 +1114,12 @@ export default function SalesOrderDetailPage() {
                         {formatCurrency(order.paidAmount)}
                       </div>
                       <div className="text-[10px] text-gray-500">
-                        {order.paymentRecords.filter(r => r.status === 'confirmed').length} 笔
+                        {
+                          order.paymentRecords.filter(
+                            r => r.status === 'confirmed'
+                          ).length
+                        }{' '}
+                        笔
                       </div>
                     </div>
                     <div className="rounded-md bg-white/60 p-2 text-center">
@@ -830,11 +1128,19 @@ export default function SalesOrderDetailPage() {
                         {formatCurrency(
                           order.paymentRecords
                             .filter(r => r.status === 'pending')
-                            .reduce((sum, r) => sum + Number(r.paymentAmount), 0)
+                            .reduce(
+                              (sum, r) => sum + Number(r.paymentAmount),
+                              0
+                            )
                         )}
                       </div>
                       <div className="text-[10px] text-gray-500">
-                        {order.paymentRecords.filter(r => r.status === 'pending').length} 笔
+                        {
+                          order.paymentRecords.filter(
+                            r => r.status === 'pending'
+                          ).length
+                        }{' '}
+                        笔
                       </div>
                     </div>
                     <div className="rounded-md bg-white/60 p-2 text-center">
@@ -856,7 +1162,8 @@ export default function SalesOrderDetailPage() {
                 ) : (
                   <div className="space-y-4">
                     {/* 待确认收款 */}
-                    {order.paymentRecords.filter(r => r.status === 'pending').length > 0 && (
+                    {order.paymentRecords.filter(r => r.status === 'pending')
+                      .length > 0 && (
                       <div>
                         <div className="mb-2 flex items-center gap-2">
                           <div className="h-px flex-1 bg-yellow-200"></div>
@@ -873,9 +1180,9 @@ export default function SalesOrderDetailPage() {
                                 key={record.id}
                                 className="group relative overflow-hidden rounded-lg border-2 border-yellow-300 bg-yellow-50 p-4 shadow-sm transition-all hover:border-yellow-400 hover:shadow-md"
                               >
-                                <div className="absolute left-0 top-0 h-full w-1 bg-yellow-500"></div>
+                                <div className="absolute top-0 left-0 h-full w-1 bg-yellow-500"></div>
                                 <div className="pl-3">
-                                  <div className="flex items-start justify-between mb-2">
+                                  <div className="mb-2 flex items-start justify-between">
                                     <div>
                                       <div className="text-lg font-bold text-gray-900">
                                         {formatCurrency(record.paymentAmount)}
@@ -884,29 +1191,39 @@ export default function SalesOrderDetailPage() {
                                         待确认第 {index + 1} 笔
                                       </div>
                                     </div>
-                                    <Badge className="bg-yellow-100 text-yellow-700 border-yellow-300">
+                                    <Badge className="border-yellow-300 bg-yellow-100 text-yellow-700">
                                       ⏱ 待确认
                                     </Badge>
                                   </div>
                                   <div className="grid grid-cols-2 gap-2 rounded-md bg-white/60 p-2 text-xs">
                                     <div>
-                                      <span className="text-gray-600">收款日期</span>
+                                      <span className="text-gray-600">
+                                        收款日期
+                                      </span>
                                       <div className="mt-0.5 font-medium text-gray-800">
-                                        {formatDate(record.paymentDate, 'datetime')}
+                                        {formatDate(
+                                          record.paymentDate,
+                                          'datetime'
+                                        )}
                                       </div>
                                     </div>
                                     <div>
-                                      <span className="text-gray-600">支付方式</span>
+                                      <span className="text-gray-600">
+                                        支付方式
+                                      </span>
                                       <div className="mt-0.5 font-medium text-gray-800">
                                         {record.paymentMethod === 'cash'
                                           ? '💵 现金'
-                                          : record.paymentMethod === 'bank_transfer'
+                                          : record.paymentMethod ===
+                                              'bank_transfer'
                                             ? '🏦 银行转账'
                                             : record.paymentMethod === 'alipay'
                                               ? '🔵 支付宝'
-                                              : record.paymentMethod === 'wechat'
+                                              : record.paymentMethod ===
+                                                  'wechat'
                                                 ? '💚 微信支付'
-                                                : record.paymentMethod === 'check'
+                                                : record.paymentMethod ===
+                                                    'check'
                                                   ? '📝 支票'
                                                   : '📌 其他'}
                                       </div>
@@ -914,7 +1231,9 @@ export default function SalesOrderDetailPage() {
                                   </div>
                                   {record.paymentNumber && (
                                     <div className="mt-2 flex items-center gap-1 text-xs">
-                                      <span className="text-gray-600">单号:</span>
+                                      <span className="text-gray-600">
+                                        单号:
+                                      </span>
                                       <code className="rounded bg-white px-1.5 py-0.5 font-mono text-gray-700">
                                         {record.paymentNumber}
                                       </code>
@@ -922,7 +1241,9 @@ export default function SalesOrderDetailPage() {
                                   )}
                                   {record.remarks && (
                                     <div className="mt-2 rounded border-l-2 border-yellow-400 bg-white px-2 py-1.5 text-xs text-gray-700">
-                                      <span className="font-medium text-gray-600">备注：</span>
+                                      <span className="font-medium text-gray-600">
+                                        备注：
+                                      </span>
                                       {record.remarks}
                                     </div>
                                   )}
@@ -934,7 +1255,8 @@ export default function SalesOrderDetailPage() {
                     )}
 
                     {/* 已确认收款 */}
-                    {order.paymentRecords.filter(r => r.status === 'confirmed').length > 0 && (
+                    {order.paymentRecords.filter(r => r.status === 'confirmed')
+                      .length > 0 && (
                       <div>
                         <div className="mb-2 flex items-center gap-2">
                           <div className="h-px flex-1 bg-green-200"></div>
@@ -951,9 +1273,9 @@ export default function SalesOrderDetailPage() {
                                 key={record.id}
                                 className="group relative overflow-hidden rounded-lg border-2 border-green-300 bg-green-50 p-4 shadow-sm transition-all hover:border-green-400 hover:shadow-md"
                               >
-                                <div className="absolute left-0 top-0 h-full w-1 bg-green-500"></div>
+                                <div className="absolute top-0 left-0 h-full w-1 bg-green-500"></div>
                                 <div className="pl-3">
-                                  <div className="flex items-start justify-between mb-2">
+                                  <div className="mb-2 flex items-start justify-between">
                                     <div>
                                       <div className="text-lg font-bold text-gray-900">
                                         {formatCurrency(record.paymentAmount)}
@@ -962,29 +1284,39 @@ export default function SalesOrderDetailPage() {
                                         已确认第 {index + 1} 笔
                                       </div>
                                     </div>
-                                    <Badge className="bg-green-100 text-green-700 border-green-300">
+                                    <Badge className="border-green-300 bg-green-100 text-green-700">
                                       ✓ 已确认
                                     </Badge>
                                   </div>
                                   <div className="grid grid-cols-2 gap-2 rounded-md bg-white/60 p-2 text-xs">
                                     <div>
-                                      <span className="text-gray-600">收款日期</span>
+                                      <span className="text-gray-600">
+                                        收款日期
+                                      </span>
                                       <div className="mt-0.5 font-medium text-gray-800">
-                                        {formatDate(record.paymentDate, 'datetime')}
+                                        {formatDate(
+                                          record.paymentDate,
+                                          'datetime'
+                                        )}
                                       </div>
                                     </div>
                                     <div>
-                                      <span className="text-gray-600">支付方式</span>
+                                      <span className="text-gray-600">
+                                        支付方式
+                                      </span>
                                       <div className="mt-0.5 font-medium text-gray-800">
                                         {record.paymentMethod === 'cash'
                                           ? '💵 现金'
-                                          : record.paymentMethod === 'bank_transfer'
+                                          : record.paymentMethod ===
+                                              'bank_transfer'
                                             ? '🏦 银行转账'
                                             : record.paymentMethod === 'alipay'
                                               ? '🔵 支付宝'
-                                              : record.paymentMethod === 'wechat'
+                                              : record.paymentMethod ===
+                                                  'wechat'
                                                 ? '💚 微信支付'
-                                                : record.paymentMethod === 'check'
+                                                : record.paymentMethod ===
+                                                    'check'
                                                   ? '📝 支票'
                                                   : '📌 其他'}
                                       </div>
@@ -992,7 +1324,9 @@ export default function SalesOrderDetailPage() {
                                   </div>
                                   {record.paymentNumber && (
                                     <div className="mt-2 flex items-center gap-1 text-xs">
-                                      <span className="text-gray-600">单号:</span>
+                                      <span className="text-gray-600">
+                                        单号:
+                                      </span>
                                       <code className="rounded bg-white px-1.5 py-0.5 font-mono text-gray-700">
                                         {record.paymentNumber}
                                       </code>
@@ -1000,7 +1334,9 @@ export default function SalesOrderDetailPage() {
                                   )}
                                   {record.remarks && (
                                     <div className="mt-2 rounded border-l-2 border-green-400 bg-white px-2 py-1.5 text-xs text-gray-700">
-                                      <span className="font-medium text-gray-600">备注：</span>
+                                      <span className="font-medium text-gray-600">
+                                        备注：
+                                      </span>
                                       {record.remarks}
                                     </div>
                                   )}
@@ -1030,8 +1366,10 @@ export default function SalesOrderDetailPage() {
                 <div className="space-y-3">
                   <div className="flex items-start gap-3">
                     <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-[hsl(var(--color-primary))]"></div>
-                    <div className="flex-1 min-w-0">
-                      <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">订单创建</div>
+                    <div className="min-w-0 flex-1">
+                      <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                        订单创建
+                      </div>
                       <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
                         {formatDate(order.createdAt)}
                       </div>
@@ -1043,8 +1381,10 @@ export default function SalesOrderDetailPage() {
                   {order.updatedAt !== order.createdAt && (
                     <div className="flex items-start gap-3">
                       <div className="mt-1.5 h-2 w-2 flex-shrink-0 rounded-full bg-[hsl(var(--color-success))]"></div>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">订单更新</div>
+                      <div className="min-w-0 flex-1">
+                        <div className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                          订单更新
+                        </div>
                         <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
                           {formatDate(order.updatedAt)}
                         </div>
@@ -1060,4 +1400,3 @@ export default function SalesOrderDetailPage() {
     </div>
   );
 }
-

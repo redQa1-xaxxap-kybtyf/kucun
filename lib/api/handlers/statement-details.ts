@@ -227,36 +227,6 @@ export function calculateCustomerFinancials(customer: CustomerWithOrders) {
 }
 
 /**
- * 计算逾期金额
- */
-export function calculateOverdueAmount(customer: CustomerWithOrders): number {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-  const overdueOrders = customer.salesOrders.filter(
-    order =>
-      order.createdAt < thirtyDaysAgo &&
-      ['confirmed', 'shipped'].includes(order.status)
-  );
-
-  return overdueOrders.reduce((sum, order) => {
-    const orderPaidAmount = order.payments.reduce(
-      (paySum, payment) => paySum + payment.paymentAmount,
-      0
-    );
-    const orderRefundAmount = order.refunds.reduce(
-      (refundSum, refund) => refundSum + refund.refundAmount,
-      0
-    );
-    const orderPendingAmount = Math.max(
-      0,
-      order.totalAmount - orderPaidAmount - orderRefundAmount
-    );
-    return sum + orderPendingAmount;
-  }, 0);
-}
-
-/**
  * 计算供应商财务统计
  */
 export function calculateSupplierFinancials(supplier: SupplierWithOrders) {
@@ -282,31 +252,6 @@ export function calculateSupplierFinancials(supplier: SupplierWithOrders) {
     transferPaidAmount,
     transferPendingAmount,
   };
-}
-
-/**
- * 计算供应商逾期金额
- */
-export function calculateSupplierOverdueAmount(
-  supplier: SupplierWithOrders
-): number {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
-  const overdueOrders = supplier.salesOrders.filter(
-    order =>
-      order.createdAt < thirtyDaysAgo &&
-      ['confirmed', 'shipped'].includes(order.status)
-  );
-
-  return overdueOrders.reduce((sum, order) => {
-    const orderPaidAmount = order.payments.reduce(
-      (paySum, payment) => paySum + payment.paymentAmount,
-      0
-    );
-    const orderPendingAmount = Math.max(0, order.totalAmount - orderPaidAmount);
-    return sum + orderPendingAmount;
-  }, 0);
 }
 
 /**

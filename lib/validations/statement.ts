@@ -10,7 +10,7 @@ export const statementTypeSchema = z.enum(['customer', 'supplier'], {
 
 // 账单状态验证规则
 export const statementStatusSchema = z.enum(
-  ['active', 'settled', 'overdue', 'suspended'],
+  ['active', 'settled', 'suspended'],
   {
     error: '请选择账单状态',
   }
@@ -35,17 +35,10 @@ export const statementQuerySchema = z.object({
   creditLimitMax: z.number().min(0).optional(),
   pendingAmountMin: z.number().min(0).optional(),
   pendingAmountMax: z.number().min(0).optional(),
-  overdueOnly: z.boolean().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
   sortBy: z
-    .enum([
-      'entityName',
-      'totalAmount',
-      'pendingAmount',
-      'overdueAmount',
-      'lastTransactionDate',
-    ])
+    .enum(['entityName', 'totalAmount', 'pendingAmount', 'lastTransactionDate'])
     .optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
 });
@@ -57,7 +50,7 @@ export const transactionQuerySchema = z.object({
   transactionType: transactionTypeSchema.optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
-  status: z.enum(['pending', 'completed', 'overdue']).optional(),
+  status: z.enum(['pending', 'completed']).optional(),
   sortBy: z.enum(['transactionDate', 'amount']).optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
 });

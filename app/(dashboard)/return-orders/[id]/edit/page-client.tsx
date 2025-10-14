@@ -51,11 +51,11 @@ interface ReturnOrderDetail {
     colorCode?: string;
     productionDate?: string;
     returnQuantity: number;
+    damagedQuantity: number;
     originalQuantity: number;
     unitPrice: number;
     subtotal: number;
     reason?: string;
-    condition: 'good' | 'damaged' | 'defective';
     product: {
       id: string;
       code: string;

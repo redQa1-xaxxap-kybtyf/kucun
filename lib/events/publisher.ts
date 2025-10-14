@@ -149,7 +149,7 @@ export async function publishApprovalResult(data: {
  * 发布财务事件
  */
 export async function publishFinanceEvent(data: {
-  action: 'created' | 'confirmed' | 'cancelled' | 'overdue';
+  action: 'created' | 'confirmed' | 'cancelled';
   recordType: 'payment' | 'paymentOut' | 'refund';
   recordId: string;
   recordNumber: string;
@@ -161,11 +161,7 @@ export async function publishFinanceEvent(data: {
   userId?: string;
 }): Promise<void> {
   const eventType =
-    data.action === 'overdue'
-      ? 'finance:overdue'
-      : data.recordType === 'refund'
-        ? 'finance:refund'
-        : 'finance:payment';
+    data.recordType === 'refund' ? 'finance:refund' : 'finance:payment';
 
   await publishEvent(EventChannels.finance, {
     type: eventType,

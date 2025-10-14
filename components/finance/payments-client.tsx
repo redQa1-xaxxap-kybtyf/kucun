@@ -25,6 +25,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { formatCurrency } from '@/lib/utils/format';
+import type { PaymentStatus } from '@/lib/types/payment';
 
 interface PaymentRecord {
   id: string;
@@ -32,7 +33,7 @@ interface PaymentRecord {
   paymentAmount: number;
   paymentMethod: string;
   paymentDate: string;
-  status: string;
+  status: PaymentStatus;
   remarks?: string;
   receiptNumber?: string;
   customer: {
@@ -76,26 +77,31 @@ interface PaymentsClientProps {
     page: number;
     limit: number;
     search?: string;
-    status?: string;
+    status?: PaymentStatus;
     paymentMethod?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
   };
   onSearch?: (value: string) => void;
-  onFilter?: (key: string, value: string | undefined) => void;
+  onFilter?: (key: string, value: PaymentStatus | string | undefined) => void;
   onPageChange?: (page: number) => void;
 }
 
 /**
  * 状态显示组件
  */
-function StatusBadge({ status }: { status: string }) {
+function StatusBadge({ status }: { status: PaymentStatus }) {
   const statusConfig = {
     pending: { label: '待确认', variant: 'secondary' as const, icon: Clock },
     confirmed: {
       label: '已确认',
       variant: 'default' as const,
       icon: CheckCircle,
+    },
+    applied: {
+      label: '已冲抵',
+      variant: 'outline' as const,
+      icon: Receipt,
     },
     cancelled: {
       label: '已取消',
@@ -104,7 +110,7 @@ function StatusBadge({ status }: { status: string }) {
     },
   };
 
-  const config = statusConfig[status as keyof typeof statusConfig] || {
+  const config = statusConfig[status] || {
     label: '未知',
     variant: 'secondary' as const,
     icon: Clock,
@@ -144,9 +150,17 @@ export function PaymentsClient({
   // 处理筛选
   const handleFilterChange = React.useCallback(
     (key: string, value: string) => {
-      if (externalOnFilter) {
-        externalOnFilter(key, value === 'all' ? undefined : value);
+      if (!externalOnFilter) {
+        return;
       }
+      if (value === 'all' || !value) {
+        externalOnFilter(key, undefined);
+        return;
+      }
+      externalOnFilter(
+        key,
+        key === 'status' ? (value as PaymentStatus) : value
+      );
     },
     [externalOnFilter]
   );
@@ -182,7 +196,9 @@ export function PaymentsClient({
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">已确认金额</CardTitle>
+            <CardTitle className="text-sm font-medium">
+              已确认 / 冲抵金额
+            </CardTitle>
             <CheckCircle className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
           <CardContent>
@@ -190,7 +206,7 @@ export function PaymentsClient({
               {formatCurrency(statistics.confirmedAmount)}
             </div>
             <p className="text-muted-foreground text-xs">
-              确认率{' '}
+              含预收款冲抵，确认率{' '}
               {statistics.totalAmount > 0
                 ? (
                     (statistics.confirmedAmount / statistics.totalAmount) *
@@ -257,6 +273,7 @@ export function PaymentsClient({
                 <SelectItem value="all">全部状态</SelectItem>
                 <SelectItem value="pending">待确认</SelectItem>
                 <SelectItem value="confirmed">已确认</SelectItem>
+                <SelectItem value="applied">已冲抵</SelectItem>
                 <SelectItem value="cancelled">已取消</SelectItem>
               </SelectContent>
             </Select>
@@ -292,7 +309,16 @@ export function PaymentsClient({
                 const orderPaid = payment.salesOrder.paidAmount;
                 const orderPending = payment.salesOrder.pendingAmount;
                 const orderRemaining = payment.salesOrder.remainingAmount;
-                const progressPercent = orderTotal > 0 ? (orderPaid / orderTotal) * 100 : 0;
+                const progressPercent =
+                  orderTotal > 0 ? (orderPaid / orderTotal) * 100 : 0;
+                const paymentStatusLabel =
+                  payment.status === 'pending'
+                    ? '待确认'
+                    : payment.status === 'cancelled'
+                      ? '已取消'
+                      : payment.status === 'applied'
+                        ? '已冲抵'
+                        : '已确认';
 
                 return (
                   <Card key={payment.id} className="overflow-hidden">
@@ -302,19 +328,26 @@ export function PaymentsClient({
                         <div className="flex-1 space-y-3">
                           {/* 收款单号和状态 */}
                           <div className="flex items-center gap-2">
-                            <h3 className="font-semibold text-base">
+                            <h3 className="text-base font-semibold">
                               {payment.paymentNumber}
                             </h3>
                             <StatusBadge status={payment.status} />
-                            {payment.status === 'confirmed' && (
+                            {(payment.status === 'confirmed' ||
+                              payment.status === 'applied') && (
                               <>
                                 {orderRemaining <= 0 ? (
-                                  <Badge variant="outline" className="gap-1 border-green-300 bg-green-50 text-green-700">
+                                  <Badge
+                                    variant="outline"
+                                    className="gap-1 border-green-300 bg-green-50 text-green-700"
+                                  >
                                     <CheckCircle className="h-3 w-3" />
                                     订单已收款
                                   </Badge>
                                 ) : (
-                                  <Badge variant="outline" className="gap-1 border-yellow-300 bg-yellow-50 text-yellow-700">
+                                  <Badge
+                                    variant="outline"
+                                    className="gap-1 border-yellow-300 bg-yellow-50 text-yellow-700"
+                                  >
                                     <Clock className="h-3 w-3" />
                                     订单部分收款
                                   </Badge>
@@ -326,15 +359,25 @@ export function PaymentsClient({
                           {/* 客户和订单信息 */}
                           <div className="space-y-1.5 text-sm text-[hsl(var(--color-text-secondary))]">
                             <p className="flex items-center gap-1">
-                              <span className="text-[hsl(var(--color-text-tertiary))]">客户:</span>
-                              <span className="font-medium">{payment.customer.name}</span>
+                              <span className="text-[hsl(var(--color-text-tertiary))]">
+                                客户:
+                              </span>
+                              <span className="font-medium">
+                                {payment.customer.name}
+                              </span>
                             </p>
                             <p className="flex items-center gap-1">
-                              <span className="text-[hsl(var(--color-text-tertiary))]">订单:</span>
-                              <span className="font-medium">{payment.salesOrder.orderNumber}</span>
+                              <span className="text-[hsl(var(--color-text-tertiary))]">
+                                订单:
+                              </span>
+                              <span className="font-medium">
+                                {payment.salesOrder.orderNumber}
+                              </span>
                             </p>
                             <p className="flex items-center gap-1">
-                              <span className="text-[hsl(var(--color-text-tertiary))]">收款时间:</span>
+                              <span className="text-[hsl(var(--color-text-tertiary))]">
+                                收款时间:
+                              </span>
                               <span className="font-medium">
                                 {format(
                                   new Date(payment.paymentDate),
@@ -343,7 +386,9 @@ export function PaymentsClient({
                               </span>
                             </p>
                             <p className="flex items-center gap-1">
-                              <span className="text-[hsl(var(--color-text-tertiary))]">创建时间:</span>
+                              <span className="text-[hsl(var(--color-text-tertiary))]">
+                                创建时间:
+                              </span>
                               <span className="text-xs">
                                 {format(
                                   new Date(payment.createdAt),
@@ -353,37 +398,51 @@ export function PaymentsClient({
                             </p>
                             {payment.receiptNumber && (
                               <p className="flex items-center gap-1">
-                                <span className="text-[hsl(var(--color-text-tertiary))]">收据号:</span>
-                                <span className="font-mono text-xs">{payment.receiptNumber}</span>
+                                <span className="text-[hsl(var(--color-text-tertiary))]">
+                                  收据号:
+                                </span>
+                                <span className="font-mono text-xs">
+                                  {payment.receiptNumber}
+                                </span>
                               </p>
                             )}
                           </div>
 
                           {/* 订单收款情况 */}
-                          <div className="rounded-md border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50/30 p-3 space-y-2">
-                            <div className="text-xs font-semibold text-gray-700 mb-2">订单收款情况</div>
+                          <div className="space-y-2 rounded-md border border-blue-200 bg-gradient-to-br from-blue-50 to-indigo-50/30 p-3">
+                            <div className="mb-2 text-xs font-semibold text-gray-700">
+                              订单收款情况
+                            </div>
 
                             <div className="grid grid-cols-4 gap-2 text-xs">
                               <div className="rounded bg-white/80 p-2 text-center">
-                                <div className="text-[10px] text-gray-600 mb-0.5">订单总额</div>
+                                <div className="mb-0.5 text-[10px] text-gray-600">
+                                  订单总额
+                                </div>
                                 <div className="font-bold text-blue-600">
                                   {formatCurrency(orderTotal)}
                                 </div>
                               </div>
                               <div className="rounded bg-white/80 p-2 text-center">
-                                <div className="text-[10px] text-gray-600 mb-0.5">已确认</div>
+                                <div className="mb-0.5 text-[10px] text-gray-600">
+                                  已确认
+                                </div>
                                 <div className="font-bold text-green-600">
                                   {formatCurrency(orderPaid)}
                                 </div>
                               </div>
                               <div className="rounded bg-white/80 p-2 text-center">
-                                <div className="text-[10px] text-gray-600 mb-0.5">待确认</div>
+                                <div className="mb-0.5 text-[10px] text-gray-600">
+                                  待确认
+                                </div>
                                 <div className="font-bold text-yellow-600">
                                   {formatCurrency(orderPending)}
                                 </div>
                               </div>
                               <div className="rounded bg-white/80 p-2 text-center">
-                                <div className="text-[10px] text-gray-600 mb-0.5">待收款</div>
+                                <div className="mb-0.5 text-[10px] text-gray-600">
+                                  待收款
+                                </div>
                                 <div className="font-bold text-orange-600">
                                   {formatCurrency(orderRemaining)}
                                 </div>
@@ -393,7 +452,9 @@ export function PaymentsClient({
                             {/* 进度条 */}
                             <div className="mt-2">
                               <div className="mb-1 flex items-center justify-between">
-                                <span className="text-[10px] text-gray-600">收款进度</span>
+                                <span className="text-[10px] text-gray-600">
+                                  收款进度
+                                </span>
                                 <span className="text-[10px] font-bold text-green-600">
                                   {progressPercent.toFixed(1)}%
                                 </span>
@@ -401,7 +462,9 @@ export function PaymentsClient({
                               <div className="h-1.5 w-full overflow-hidden rounded-full bg-gray-200">
                                 <div
                                   className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
-                                  style={{ width: `${Math.min(progressPercent, 100)}%` }}
+                                  style={{
+                                    width: `${Math.min(progressPercent, 100)}%`,
+                                  }}
                                 ></div>
                               </div>
                             </div>
@@ -411,14 +474,14 @@ export function PaymentsClient({
                         {/* 右侧操作区 */}
                         <div className="flex flex-col items-end justify-between">
                           <div className="mb-3 text-right">
-                            <div className="text-xs text-[hsl(var(--color-text-tertiary))] mb-1">
+                            <div className="mb-1 text-xs text-[hsl(var(--color-text-tertiary))]">
                               本次收款
                             </div>
                             <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
                               {formatCurrency(payment.paymentAmount)}
                             </div>
                             <div className="mt-1 text-[10px] text-[hsl(var(--color-text-tertiary))]">
-                              {payment.status === 'confirmed' ? '已确认' : '待确认'}
+                              {paymentStatusLabel}
                             </div>
                           </div>
                           <Button size="sm" asChild>

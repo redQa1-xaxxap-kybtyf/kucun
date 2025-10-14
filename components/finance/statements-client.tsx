@@ -20,24 +20,39 @@ import {
 import { logger } from '@/lib/logger';
 import { formatCurrency } from '@/lib/utils/format';
 
-interface AccountStatement {
+type StatementBadgeType = 'customer' | 'supplier' | 'partner';
+
+interface AccountStatementItem {
   id: string;
   name: string;
-  type: 'customer' | 'supplier';
+  type: StatementBadgeType;
+  partnerRole: 'customer' | 'supplier' | 'both';
+  status: 'active' | 'settled' | 'suspended';
   totalOrders: number;
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
-  overdueAmount: number;
-  creditLimit: number;
-  paymentTerms: string;
+  currentBalance: number;
   lastTransactionDate: string | null;
+  lastPaymentDate: string | null;
 }
+
+const TYPE_LABEL_MAP: Record<StatementBadgeType, string> = {
+  customer: '客户',
+  supplier: '供应商',
+  partner: '往来伙伴',
+};
+
+const STATUS_LABEL_MAP: Record<AccountStatementItem['status'], string> = {
+  active: '进行中',
+  settled: '已结清',
+  suspended: '已暂停',
+};
 
 interface StatementsClientProps {
   initialData: {
-    statements: AccountStatement[];
-    statistics: {
+    statements: AccountStatementItem[];
+    summary: {
       totalReceivable: number;
       totalPayable: number;
       totalCustomers: number;
@@ -46,6 +61,7 @@ interface StatementsClientProps {
     pagination: {
       page: number;
       limit: number;
+      pageSize?: number;
       total: number;
       totalPages: number;
     };
@@ -73,7 +89,7 @@ export function StatementsClient({
   onFilter,
   onPageChange,
 }: StatementsClientProps) {
-  const { statements, statistics, pagination } = initialData;
+  const { statements, summary, pagination } = initialData;
 
   return (
     <div className="space-y-4">
@@ -86,10 +102,10 @@ export function StatementsClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
-              {formatCurrency(statistics.totalReceivable)}
+              {formatCurrency(summary.totalReceivable)}
             </div>
             <p className="text-muted-foreground text-xs">
-              {statistics.totalCustomers} 个客户
+              {summary.totalCustomers} 个客户
             </p>
           </CardContent>
         </Card>
@@ -101,10 +117,10 @@ export function StatementsClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--color-warning))]">
-              {formatCurrency(statistics.totalPayable)}
+              {formatCurrency(summary.totalPayable)}
             </div>
             <p className="text-muted-foreground text-xs">
-              {statistics.totalSuppliers} 个供应商
+              {summary.totalSuppliers} 个供应商
             </p>
           </CardContent>
         </Card>
@@ -116,7 +132,7 @@ export function StatementsClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
-              {statistics.totalCustomers}
+              {summary.totalCustomers}
             </div>
             <p className="text-muted-foreground text-xs">活跃客户</p>
           </CardContent>
@@ -129,7 +145,7 @@ export function StatementsClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--color-purple))]">
-              {statistics.totalSuppliers}
+              {summary.totalSuppliers}
             </div>
             <p className="text-muted-foreground text-xs">活跃供应商</p>
           </CardContent>
@@ -144,22 +160,28 @@ export function StatementsClient({
               <UnifiedSearchBar
                 searchValue={initialParams?.search ?? ''}
                 onSearchChange={value => {
-                  if (onSearch) onSearch(value);
+                  if (onSearch) {
+                    onSearch(value);
+                  }
                 }}
-                searchPlaceholder="搜索客户或供应商名称..."
+                searchPlaceholder="搜索伙伴名称..."
                 className="max-w-sm"
               />
 
               <Select
-                value={initialParams?.type || 'customer'}
-                onValueChange={value => onFilter?.('type', value)}
+                value={initialParams?.type || 'all'}
+                onValueChange={value =>
+                  onFilter?.('type', value === 'all' ? undefined : value)
+                }
               >
                 <SelectTrigger className="w-[140px]">
                   <SelectValue placeholder="类型" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="all">全部</SelectItem>
                   <SelectItem value="customer">客户</SelectItem>
                   <SelectItem value="supplier">供应商</SelectItem>
+                  <SelectItem value="partner">往来伙伴</SelectItem>
                 </SelectContent>
               </Select>
 
@@ -172,8 +194,7 @@ export function StatementsClient({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="totalAmount">总金额</SelectItem>
-                  <SelectItem value="pendingAmount">待付金额</SelectItem>
-                  <SelectItem value="overdueAmount">逾期金额</SelectItem>
+                  <SelectItem value="pendingAmount">余额</SelectItem>
                   <SelectItem value="totalOrders">订单数量</SelectItem>
                 </SelectContent>
               </Select>
@@ -189,105 +210,188 @@ export function StatementsClient({
               </div>
             ) : (
               statements.map(statement => {
-                // 调试：检查statement.id是否存在
-                if (!statement.id) {
-                  logger.error(
-                    'finance-statements',
-                    'Statement missing id',
-                    undefined,
-                    undefined,
-                    { statement }
-                  );
-                }
+                const balance = statement.currentBalance ?? 0;
+                const balanceLabel =
+                  balance > 0 ? '应收余额' : balance < 0 ? '应付余额' : '余额';
+                const balanceColorClass =
+                  balance > 0
+                    ? 'text-[hsl(var(--color-success))]'
+                    : balance < 0
+                      ? 'text-[hsl(var(--color-warning))]'
+                      : 'text-muted-foreground';
+                const statusVariant =
+                  statement.status === 'settled'
+                    ? 'secondary'
+                    : statement.status === 'suspended'
+                      ? 'destructive'
+                      : 'outline';
+
+                // 计算付款率和待收付百分比
+                const paymentRate =
+                  statement.totalAmount > 0
+                    ? (statement.paidAmount / statement.totalAmount) * 100
+                    : 0;
+                const pendingRate = 100 - paymentRate;
 
                 return (
                   <Card
                     key={statement.id}
-                    className="transition-shadow hover:shadow-[var(--shadow-medium)]"
+                    className="overflow-hidden transition-all hover:border-[hsl(var(--color-primary))] hover:shadow-[var(--shadow-medium)]"
                   >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1 space-y-2">
-                          <div className="flex items-center gap-3">
-                            <h3 className="text-lg font-semibold">
+                    <CardContent className="p-0">
+                      <div className="flex flex-col lg:flex-row">
+                        {/* 左侧：主要信息 */}
+                        <div className="flex-1 space-y-4 p-6">
+                          {/* 标题区域 */}
+                          <div className="flex flex-wrap items-center gap-3">
+                            <h3 className="text-xl font-bold text-[hsl(var(--color-text-primary))]">
                               {statement.name}
                             </h3>
-                            <Badge variant="outline">
-                              {statement.type === 'customer'
-                                ? '客户'
-                                : '供应商'}
+                            <Badge variant="outline" className="font-medium">
+                              {TYPE_LABEL_MAP[statement.type]}
                             </Badge>
-                            {statement.overdueAmount > 0 && (
-                              <Badge variant="destructive">逾期</Badge>
-                            )}
+                            <Badge
+                              variant={statusVariant}
+                              className="font-medium"
+                            >
+                              {STATUS_LABEL_MAP[statement.status]}
+                            </Badge>
                           </div>
 
-                          <div className="text-muted-foreground grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="font-medium">订单数量：</span>
-                              {statement.totalOrders}
+                          {/* 统计指标网格 */}
+                          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                            <div className="space-y-1">
+                              <p className="text-muted-foreground text-xs">
+                                订单数量
+                              </p>
+                              <p className="text-2xl font-bold text-[hsl(var(--color-info))]">
+                                {statement.totalOrders}
+                              </p>
                             </div>
-                            <div>
-                              <span className="font-medium">信用额度：</span>
-                              {formatCurrency(statement.creditLimit)}
-                            </div>
-                            <div>
-                              <span className="font-medium">付款条款：</span>
-                              {statement.paymentTerms}
-                            </div>
-                            {statement.lastTransactionDate && (
-                              <div>
-                                <span className="font-medium">最后交易：</span>
-                                {format(
-                                  new Date(statement.lastTransactionDate),
-                                  'yyyy-MM-dd'
+                            <div className="space-y-1">
+                              <p className="text-muted-foreground text-xs">
+                                总交易额
+                              </p>
+                              <p className="text-2xl font-bold">
+                                {formatCurrency(
+                                  Math.abs(statement.totalAmount)
                                 )}
+                              </p>
+                            </div>
+                            <div className="space-y-1">
+                              <p className="text-muted-foreground text-xs">
+                                已收付金额
+                              </p>
+                              <p className="text-2xl font-bold text-[hsl(var(--color-success))]">
+                                {formatCurrency(Math.abs(statement.paidAmount))}
+                              </p>
+                            </div>
+                          </div>
+
+                          {/* 付款进度条 */}
+                          {statement.totalAmount > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex justify-between text-sm">
+                                <span className="text-muted-foreground">
+                                  付款进度
+                                </span>
+                                <span className="font-medium">
+                                  {paymentRate.toFixed(1)}%
+                                </span>
+                              </div>
+                              <div className="bg-muted h-2 overflow-hidden rounded-full">
+                                <div
+                                  className="h-full bg-gradient-to-r from-[hsl(var(--color-success))] to-[hsl(var(--color-info))] transition-all"
+                                  style={{ width: `${paymentRate}%` }}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          {/* 时间信息 */}
+                          <div className="text-muted-foreground flex flex-wrap gap-4 text-sm">
+                            {statement.lastTransactionDate && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium">最后交易:</span>
+                                <span>
+                                  {format(
+                                    new Date(statement.lastTransactionDate),
+                                    'yyyy-MM-dd HH:mm'
+                                  )}
+                                </span>
+                              </div>
+                            )}
+                            {statement.lastPaymentDate && (
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-medium">最近收付:</span>
+                                <span>
+                                  {format(
+                                    new Date(statement.lastPaymentDate),
+                                    'yyyy-MM-dd HH:mm'
+                                  )}
+                                </span>
                               </div>
                             )}
                           </div>
                         </div>
 
-                        <div className="ml-6 space-y-2 text-right">
-                          <div>
-                            <p className="text-muted-foreground text-sm">
-                              总金额
-                            </p>
-                            <p className="text-xl font-bold">
-                              {formatCurrency(statement.totalAmount)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-sm">
-                              已付
-                            </p>
-                            <p className="text-sm font-semibold text-[hsl(var(--color-success))]">
-                              {formatCurrency(statement.paidAmount)}
-                            </p>
-                          </div>
-                          <div>
-                            <p className="text-muted-foreground text-sm">
-                              待付
-                            </p>
-                            <p className="text-sm font-semibold text-[hsl(var(--color-warning))]">
-                              {formatCurrency(statement.pendingAmount)}
-                            </p>
-                          </div>
-                          {statement.overdueAmount > 0 && (
-                            <div>
+                        {/* 右侧：余额和操作 */}
+                        <div className="bg-muted/30 flex flex-col justify-between space-y-4 p-6 lg:w-64">
+                          <div className="space-y-4">
+                            {/* 当前余额 */}
+                            <div className="space-y-2 text-center">
                               <p className="text-muted-foreground text-sm">
-                                逾期
+                                {balanceLabel}
                               </p>
-                              <p className="text-sm font-semibold text-[hsl(var(--color-error))]">
-                                {formatCurrency(statement.overdueAmount)}
+                              <p
+                                className={`text-3xl font-bold ${balanceColorClass}`}
+                              >
+                                {formatCurrency(Math.abs(balance))}
                               </p>
                             </div>
-                          )}
-                          <div className="mt-4 flex gap-2">
-                            <Button variant="outline" size="sm" asChild>
+
+                            {/* 待收付金额 */}
+                            {statement.pendingAmount > 0 && (
+                              <div className="border-border/50 border-t pt-4">
+                                <div className="space-y-1 text-center">
+                                  <p className="text-muted-foreground text-xs">
+                                    待收付金额
+                                  </p>
+                                  <p className="text-lg font-semibold text-[hsl(var(--color-warning))]">
+                                    {formatCurrency(statement.pendingAmount)}
+                                  </p>
+                                  <p className="text-muted-foreground text-xs">
+                                    占比 {pendingRate.toFixed(1)}%
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* 操作按钮 */}
+                          <div className="flex flex-col gap-2">
+                            <Button
+                              variant="default"
+                              size="sm"
+                              className="w-full"
+                              asChild
+                            >
                               <Link
                                 href={`/finance/statements/${statement.id}`}
                               >
                                 查看详情
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              asChild
+                            >
+                              <Link
+                                href={`/finance/statements/${statement.id}/transactions`}
+                              >
+                                交易记录
                               </Link>
                             </Button>
                           </div>

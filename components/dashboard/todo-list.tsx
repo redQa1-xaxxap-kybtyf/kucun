@@ -111,11 +111,9 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
     const priorityConfig = PRIORITY_CONFIG[todo.priority];
     const IconComponent = typeConfig.icon;
 
-    const isOverdue = todo.dueDate && new Date(todo.dueDate) < new Date();
     const isDueSoon =
       todo.dueDate &&
-      new Date(todo.dueDate) <= new Date(Date.now() + 24 * 60 * 60 * 1000) &&
-      !isOverdue;
+      new Date(todo.dueDate) <= new Date(Date.now() + 24 * 60 * 60 * 1000);
 
     if (compact) {
       return (
@@ -163,11 +161,12 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
                 variant="outline"
                 className={cn(
                   'text-xs',
-                  isOverdue && 'border-red-200 text-red-700',
-                  isDueSoon && 'border-yellow-200 text-yellow-700'
+                  isDueSoon
+                    ? 'border-yellow-200 text-yellow-700'
+                    : 'border-slate-200 text-slate-600'
                 )}
               >
-                {isOverdue ? '已逾期' : isDueSoon ? '即将到期' : '待处理'}
+                {isDueSoon ? '即将到期' : '待处理'}
               </Badge>
             )}
             {onView && (
@@ -250,10 +249,7 @@ const TodoItemComponent = React.forwardRef<HTMLDivElement, TodoItemProps>(
                   <div className="flex items-center space-x-1">
                     <Calendar className="h-3 w-3" />
                     <span
-                      className={cn(
-                        isOverdue && 'text-red-600',
-                        isDueSoon && 'text-yellow-600'
-                      )}
+                      className={cn(isDueSoon ? 'text-yellow-600' : undefined)}
                     >
                       {new Date(todo.dueDate).toLocaleDateString('zh-CN')}
                     </span>
@@ -357,7 +353,6 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
         total: todos.length,
         pending: 0,
         completed: 0,
-        overdue: 0,
         urgent: 0,
       };
 
@@ -368,9 +363,6 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
           stats.pending++;
           if (todo.priority === 'urgent') {
             stats.urgent++;
-          }
-          if (todo.dueDate && new Date(todo.dueDate) < new Date()) {
-            stats.overdue++;
           }
         }
       });
@@ -405,9 +397,9 @@ const TodoList = React.forwardRef<HTMLDivElement, TodoListProps>(
                 </CardTitle>
                 <CardDescription>
                   {todoStats.urgent > 0 && `${todoStats.urgent} 紧急`}
-                  {todoStats.overdue > 0 &&
-                    `${todoStats.urgent > 0 ? ', ' : ''}${todoStats.overdue} 逾期`}
-                  {todoStats.pending === 0 && '暂无待办事项'}
+                  {todoStats.urgent === 0 &&
+                    todoStats.pending === 0 &&
+                    '暂无待办事项'}
                 </CardDescription>
               </div>
               <div className="flex items-center space-x-2">

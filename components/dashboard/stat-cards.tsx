@@ -6,7 +6,7 @@
 import {
   AlertTriangle,
   ArrowRight,
-  DollarSign,
+  BadgeJapaneseYen,
   Minus,
   Package,
   RotateCcw,
@@ -27,7 +27,7 @@ import { cn } from '@/lib/utils';
 
 // 图标映射
 const ICON_MAP = {
-  'dollar-sign': DollarSign,
+  'dollar-sign': BadgeJapaneseYen,
   'shopping-cart': ShoppingCart,
   package: Package,
   users: Users,

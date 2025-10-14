@@ -50,9 +50,9 @@ export default function CreateSalesOrderPage() {
 
         {/* 表单 */}
         <ERPSalesOrderForm
-          onSuccess={(order: { id: string }) => {
-            // 创建成功后跳转到订单详情页或列表页
-            router.push(`/sales-orders/${order.id}`);
+          onSuccess={() => {
+            // 创建成功后返回订单列表
+            router.push('/sales-orders');
           }}
           onCancel={() => {
             router.push('/sales-orders');

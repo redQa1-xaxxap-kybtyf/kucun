@@ -19,6 +19,7 @@ export interface FormattedInventory {
   location?: string;
   unitCost?: number;
   updatedAt: string;
+  batchPiecesPerUnit?: number;
   product: {
     id: string;
     code: string;
@@ -52,6 +53,7 @@ export function formatInventoryRecord(
     location: record.location ?? undefined,
     unitCost: record.unitCost ?? undefined,
     updatedAt: record.updatedAt.toISOString(),
+    batchPiecesPerUnit: record.batch_piecesPerUnit ?? undefined,
     product: {
       id: record.product_id,
       code: record.product_code,

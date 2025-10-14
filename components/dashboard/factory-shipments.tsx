@@ -10,6 +10,7 @@ import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ContentLoading } from '@/components/common/loading';
+import { formatCurrency } from '@/lib/utils';
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentStatus,
@@ -22,25 +23,18 @@ interface FactoryShipmentsProps {
 }
 
 // 状态配置
-const STATUS_VARIANT_MAP: Record<FactoryShipmentStatus, BadgeProps['variant']> = {
-  draft: 'secondary',
-  planning: 'info',
-  waiting_deposit: 'warning',
-  deposit_paid: 'success',
-  factory_shipped: 'info',
-  in_transit: 'info',
-  arrived: 'purple',
-  delivered: 'success',
-  completed: 'success',
-};
-
-// 格式化货币
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('zh-CN', {
-    style: 'currency',
-    currency: 'CNY',
-  }).format(amount);
-};
+const STATUS_VARIANT_MAP: Record<FactoryShipmentStatus, BadgeProps['variant']> =
+  {
+    draft: 'secondary',
+    planning: 'info',
+    waiting_deposit: 'warning',
+    deposit_paid: 'success',
+    factory_shipped: 'info',
+    in_transit: 'info',
+    arrived: 'purple',
+    delivered: 'success',
+    completed: 'success',
+  };
 
 // 格式化时间
 const formatTime = (dateString: string) => {

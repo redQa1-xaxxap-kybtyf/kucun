@@ -27,13 +27,25 @@ interface BreadcrumbProps {
  */
 const SKIP_INTERMEDIATE_PATHS: Record<string, string[]> = {
   // 库存管理 - 入库相关
-  '/inventory/inbound/create': ['/dashboard', '/inventory', '/inventory/inbound/create'],
+  '/inventory/inbound/create': [
+    '/dashboard',
+    '/inventory',
+    '/inventory/inbound/create',
+  ],
 
   // 库存管理 - 出库相关
-  '/inventory/outbound/create': ['/dashboard', '/inventory', '/inventory/outbound/create'],
+  '/inventory/outbound/create': [
+    '/dashboard',
+    '/inventory',
+    '/inventory/outbound/create',
+  ],
 
   // 库存管理 - 调整相关
-  '/inventory/adjustments/create': ['/dashboard', '/inventory', '/inventory/adjustments/create'],
+  '/inventory/adjustments/create': [
+    '/dashboard',
+    '/inventory',
+    '/inventory/adjustments/create',
+  ],
 };
 
 /**
@@ -92,7 +104,6 @@ const PATH_TITLES: Record<string, string> = {
   '/finance/payables/create': '新建应付款',
   '/finance/payments-out': '付款记录',
   '/finance/payments-out/create': '新建付款',
-  '/finance/customer-statements': '客户对账单',
   // 财务管理子路由
   receivables: '应收货款',
   refunds: '应退货款',
@@ -100,7 +111,6 @@ const PATH_TITLES: Record<string, string> = {
   payments: '收款记录',
   payables: '应付款',
   'payments-out': '付款记录',
-  'customer-statements': '客户对账单',
 
   // 设置模块路径映射
   '/settings/logs': '系统日志',

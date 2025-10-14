@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
+import type { PaymentStatus } from '@/lib/types/payment';
 
 import { PaymentsPageClient } from './page-client';
 
@@ -96,7 +97,7 @@ async function getPaymentsData(searchParams: {
       0
     ),
     confirmedAmount: allPayments
-      .filter(p => p.status === 'confirmed')
+      .filter(p => p.status === 'confirmed' || p.status === 'applied')
       .reduce((sum, p) => sum + Number(p.paymentAmount), 0),
     pendingAmount: allPayments
       .filter(p => p.status === 'pending')
@@ -105,12 +106,16 @@ async function getPaymentsData(searchParams: {
   };
 
   const paymentsWithRelations = payments.filter(
-    (payment): payment is typeof payment & {
+    (
+      payment
+    ): payment is typeof payment & {
       customer: NonNullable<typeof payment.customer>;
       salesOrder: NonNullable<typeof payment.salesOrder>;
       user: NonNullable<typeof payment.user>;
     } =>
-      Boolean(payment.customer) && Boolean(payment.salesOrder) && Boolean(payment.user)
+      Boolean(payment.customer) &&
+      Boolean(payment.salesOrder) &&
+      Boolean(payment.user)
   );
 
   // 计算每个订单的已收款总额和待确认金额
@@ -147,7 +152,8 @@ async function getPaymentsData(searchParams: {
         0
       );
       const orderTotalAmount = Number(payment.salesOrder.totalAmount);
-      const orderRemainingAmount = orderTotalAmount - orderPaidAmount - orderPendingAmount;
+      const orderRemainingAmount =
+        orderTotalAmount - orderPaidAmount - orderPendingAmount;
 
       return {
         id: payment.id,
@@ -155,7 +161,7 @@ async function getPaymentsData(searchParams: {
         paymentAmount: Number(payment.paymentAmount),
         paymentMethod: payment.paymentMethod ?? 'other',
         paymentDate: payment.paymentDate.toISOString(),
-        status: payment.status ?? 'pending',
+        status: (payment.status ?? 'pending') as PaymentStatus,
         remarks: payment.remarks ?? undefined,
         receiptNumber: payment.receiptNumber ?? undefined,
         customer: {
@@ -226,5 +232,3 @@ export default async function PaymentsPage({
     <PaymentsPageClient initialData={initialData} initialParams={queryParams} />
   );
 }
-
-

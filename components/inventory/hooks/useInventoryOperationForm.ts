@@ -14,7 +14,7 @@ import {
   createInbound,
   createOutbound,
 } from '@/lib/api/inventory';
-import { getProduct } from '@/lib/api/products';
+import { getProduct, productQueryKeys } from '@/lib/api/products';
 import { queryKeys } from '@/lib/queryKeys';
 import { type InboundFormData } from '@/lib/types/inbound';
 import {
@@ -125,6 +125,14 @@ export function useInventoryOperationForm({
       queryClient.invalidateQueries({
         queryKey: queryKeys.inventory.all,
       });
+      queryClient.invalidateQueries({
+        queryKey: productQueryKeys.lists(),
+      });
+      if (response.productId) {
+        queryClient.invalidateQueries({
+          queryKey: productQueryKeys.detail(response.productId),
+        });
+      }
       form.reset();
       setSubmitError('');
       onSuccess?.(response);

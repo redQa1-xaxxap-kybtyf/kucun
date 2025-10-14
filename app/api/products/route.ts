@@ -110,7 +110,7 @@ export const POST = withAuth(
 
     // 处理分类ID：如果是"uncategorized"则设置为null
     const processedCategoryId =
-      categoryId === 'uncategorized' ? null : categoryId;
+      categoryId === 'uncategorized' ? null : (categoryId ?? null);
 
     // ✅ 使用事务和数据库唯一约束防止并发创建重复编码
     const product = await prisma.$transaction(async tx => {
@@ -145,20 +145,7 @@ export const POST = withAuth(
             images: images ? JSON.stringify(images) : null,
             status: 'active',
           },
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            specification: true,
-            description: true,
-            unit: true,
-            piecesPerUnit: true,
-            weight: true,
-            thickness: true,
-            status: true,
-            categoryId: true,
-            thumbnailUrl: true,
-            images: true,
+          include: {
             category: {
               select: {
                 id: true,
@@ -166,8 +153,6 @@ export const POST = withAuth(
                 code: true,
               },
             },
-            createdAt: true,
-            updatedAt: true,
           },
         });
       } catch (error: unknown) {
@@ -196,9 +181,14 @@ export const POST = withAuth(
         );
         parsedImages = Array.isArray(parsed) ? parsed : [];
       } catch (error) {
-        logger.warn('products', '解析产品图片失败，使用空数组作为兜底', undefined, {
-          productId: product.id,
-        });
+        logger.warn(
+          'products',
+          '解析产品图片失败，使用空数组作为兜底',
+          undefined,
+          {
+            productId: product.id,
+          }
+        );
         parsedImages = [];
       }
     }

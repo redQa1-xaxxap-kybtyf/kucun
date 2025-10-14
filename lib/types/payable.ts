@@ -46,9 +46,7 @@ export interface PayableRecord {
   payableAmount: number;
   paidAmount: number;
   remainingAmount: number;
-  dueDate?: Date | string;
   status: PayableStatus;
-  paymentTerms: string;
   description?: string;
   remarks?: string;
   createdAt: Date | string;
@@ -118,10 +116,8 @@ export interface PayableStatistics {
   totalPayables: number;
   totalPaidAmount: number;
   totalRemainingAmount: number;
-  overdueAmount: number;
   pendingCount: number;
   paidCount: number;
-  overdueCount: number;
   thisMonthPayables: number;
   thisMonthPayments: number;
 }
@@ -173,7 +169,7 @@ export const PAYABLE_STATUS_LABELS: Record<PayableStatus, string> = {
   pending: '待付款',
   partial: '部分付款',
   paid: '已付款',
-  overdue: '逾期',
+  overdue: '已逾期',
   cancelled: '已取消',
 };
 
@@ -204,7 +200,13 @@ export const PAYMENT_OUT_STATUS_LABELS: Record<PaymentOutStatus, string> = {
 // 应付款状态变体映射（用于Badge组件）
 export const PAYABLE_STATUS_VARIANTS: Record<
   PayableStatus,
-  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info'
 > = {
   pending: 'warning',
   partial: 'info',
@@ -216,7 +218,13 @@ export const PAYABLE_STATUS_VARIANTS: Record<
 // 付款状态变体映射（用于Badge组件）
 export const PAYMENT_OUT_STATUS_VARIANTS: Record<
   PaymentOutStatus,
-  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info'
 > = {
   pending: 'warning',
   confirmed: 'success',

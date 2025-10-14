@@ -255,6 +255,9 @@ export function SalesOrdersPageClient({
           onSearch={handleSearch}
           onFilter={handleFilter}
           onPageChange={handlePageChange}
+          onOrderSelect={order => {
+            router.push(`/sales-orders/${order.id}`);
+          }}
         />
       </div>
     </div>

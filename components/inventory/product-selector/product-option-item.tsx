@@ -5,7 +5,7 @@ import React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import type { ProductOption } from '@/lib/types/inbound';
-import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 import { cn } from '@/lib/utils';
 
 interface ProductOptionItemProps {
@@ -17,6 +17,16 @@ export function ProductOptionItem({
   product,
   isSelected,
 }: ProductOptionItemProps) {
+  const stockDisplay = React.useMemo(() => {
+    const totalPieces = product.currentStock ?? 0;
+    if (!totalPieces || totalPieces <= 0) {
+      return '0片';
+    }
+    return formatPieceSummary(totalPieces, product.piecesPerUnit, {
+      fallbackUnit: '片',
+    });
+  }, [product.currentStock, product.piecesPerUnit]);
+
   return (
     <div className="flex w-full items-center justify-between">
       <div className="flex min-w-0 items-center gap-2">
@@ -29,8 +39,7 @@ export function ProductOptionItem({
             </Badge>
           </div>
           <div className="text-muted-foreground text-xs">
-            库存: {product.currentStock}{' '}
-            {PRODUCT_UNIT_LABELS[product.unit] || product.unit}
+            库存: {stockDisplay}
           </div>
         </div>
       </div>

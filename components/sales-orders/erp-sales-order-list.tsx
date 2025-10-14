@@ -1,7 +1,15 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { AlertCircle, Edit, Eye, MoreHorizontal, Trash2, Truck } from 'lucide-react';
+import {
+  AlertCircle,
+  Ban,
+  Edit,
+  Eye,
+  MoreHorizontal,
+  Trash2,
+  Truck,
+} from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useToast } from '@/components/ui/use-toast';
@@ -38,10 +46,17 @@ import {
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import {
   SALES_ORDER_STATUS_LABELS,
+  TRANSFER_MODE_LABELS,
   type SalesOrder,
   type SalesOrderQueryParams,
   type SalesOrderStatus,
 } from '@/lib/types/sales-order';
+
+const NON_CANCELABLE_STATUSES: SalesOrderStatus[] = [
+  'shipped',
+  'completed',
+  'cancelled',
+];
 
 interface ERPSalesOrderListProps {
   onOrderSelect?: (order: SalesOrder) => void;
@@ -73,7 +88,18 @@ export function ERPSalesOrderList({
   const [selectedOrder, setSelectedOrder] = React.useState<SalesOrder | null>(
     null
   );
-  const [updatingOrderId, setUpdatingOrderId] = React.useState<string | null>(null);
+  const [updatingOrderId, setUpdatingOrderId] = React.useState<string | null>(
+    null
+  );
+  const [cancelConfirmOpen, setCancelConfirmOpen] = React.useState(false);
+  const [orderPendingCancel, setOrderPendingCancel] =
+    React.useState<SalesOrder | null>(null);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = React.useState(false);
+  const [orderPendingDelete, setOrderPendingDelete] =
+    React.useState<SalesOrder | null>(null);
+  const [deletingOrderId, setDeletingOrderId] = React.useState<string | null>(
+    null
+  );
 
   // ✅ 移除内部 queryParams 状态，完全依赖外部传入的 initialParams
   // ✅ 单一数据源原则：状态统一在父组件管理
@@ -135,7 +161,13 @@ export function ERPSalesOrderList({
 
   // 订单状态更新 mutation
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ orderId, newStatus }: { orderId: string; newStatus: string }) => {
+    mutationFn: async ({
+      orderId,
+      newStatus,
+    }: {
+      orderId: string;
+      newStatus: string;
+    }) => {
       const response = await fetch(`/api/sales-orders/${orderId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -185,6 +217,113 @@ export function ERPSalesOrderList({
     },
     [toast, updateStatusMutation]
   );
+
+  const isOrderCancelable = React.useCallback(
+    (status: SalesOrderStatus) => !NON_CANCELABLE_STATUSES.includes(status),
+    []
+  );
+
+  const handleCancelOrderClick = React.useCallback(
+    (order: SalesOrder, event: React.MouseEvent) => {
+      event.stopPropagation();
+      if (!isOrderCancelable(order.status)) {
+        toast({
+          title: '操作受限',
+          description: '只有未发货的订单才能取消',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setOrderPendingCancel(order);
+      setCancelConfirmOpen(true);
+    },
+    [isOrderCancelable, toast]
+  );
+
+  const handleConfirmCancelOrder = React.useCallback(() => {
+    if (!orderPendingCancel) {
+      return;
+    }
+    const orderId = orderPendingCancel.id;
+    setUpdatingOrderId(orderId);
+    updateStatusMutation.mutate({ orderId, newStatus: 'cancelled' });
+    setCancelConfirmOpen(false);
+    setOrderPendingCancel(null);
+  }, [orderPendingCancel, updateStatusMutation]);
+
+  const handleCancelDialogOpenChange = React.useCallback((open: boolean) => {
+    setCancelConfirmOpen(open);
+    if (!open) {
+      setOrderPendingCancel(null);
+    }
+  }, []);
+
+  const deleteOrderMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const response = await fetch(`/api/sales-orders/${orderId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || '删除订单失败');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
+      toast({
+        title: '删除成功',
+        description: '销售订单已删除',
+      });
+      setDeletingOrderId(null);
+      setOrderPendingDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '删除失败',
+        description: error.message,
+        variant: 'destructive',
+      });
+      setDeletingOrderId(null);
+    },
+    onSettled: () => {
+      setDeleteConfirmOpen(false);
+    },
+  });
+
+  const handleDeleteOrderClick = React.useCallback(
+    (order: SalesOrder, event: React.MouseEvent) => {
+      event.stopPropagation();
+      if (order.status !== 'cancelled') {
+        toast({
+          title: '操作受限',
+          description: '仅已取消的订单支持删除',
+          variant: 'destructive',
+        });
+        return;
+      }
+      setOrderPendingDelete(order);
+      setDeleteConfirmOpen(true);
+    },
+    [toast]
+  );
+
+  const handleConfirmDeleteOrder = React.useCallback(() => {
+    if (!orderPendingDelete) {
+      return;
+    }
+    const orderId = orderPendingDelete.id;
+    setDeletingOrderId(orderId);
+    deleteOrderMutation.mutate(orderId);
+  }, [deleteOrderMutation, orderPendingDelete]);
+
+  const handleDeleteDialogOpenChange = React.useCallback((open: boolean) => {
+    setDeleteConfirmOpen(open);
+    if (!open) {
+      setOrderPendingDelete(null);
+    }
+  }, []);
 
   // 计算当前选中的日期范围类型
   const getActiveDateRange = React.useCallback(() => {
@@ -277,16 +416,10 @@ export function ERPSalesOrderList({
     const statusStyles: Record<SalesOrderStatus, string> = {
       draft:
         'border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] text-[hsl(var(--color-text-secondary))]',
-      pending:
-        'border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
       confirmed:
         'border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))] text-[hsl(var(--color-primary))]',
-      processing:
-        'border-[hsl(var(--color-purple))] bg-[hsl(var(--color-purple-light))] text-[hsl(var(--color-purple))]',
       shipped:
         'border-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
-      delivered:
-        'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
       completed:
         'border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
       cancelled:
@@ -319,8 +452,12 @@ export function ERPSalesOrderList({
     const totalAmount = order.totalAmount || 0;
 
     // 未发货的订单不显示收款状态
-    if (order.status !== 'shipped' && order.status !== 'delivered' && order.status !== 'completed') {
-      return <span className="text-xs text-[hsl(var(--color-text-tertiary))]">-</span>;
+    if (order.status !== 'shipped' && order.status !== 'completed') {
+      return (
+        <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
+          -
+        </span>
+      );
     }
 
     // 已完成订单
@@ -328,7 +465,7 @@ export function ERPSalesOrderList({
       return (
         <Badge
           variant="outline"
-          className="text-xs font-medium border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]"
+          className="border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-xs font-medium text-[hsl(var(--color-success))]"
         >
           已完成
         </Badge>
@@ -340,7 +477,7 @@ export function ERPSalesOrderList({
       return (
         <Badge
           variant="outline"
-          className="text-xs font-medium border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] text-[hsl(var(--color-error))]"
+          className="border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))] text-xs font-medium text-[hsl(var(--color-error))]"
         >
           未收款
         </Badge>
@@ -352,7 +489,7 @@ export function ERPSalesOrderList({
       return (
         <Badge
           variant="outline"
-          className="text-xs font-medium border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]"
+          className="border-[hsl(var(--color-warning))] bg-[hsl(var(--color-warning-light))] text-xs font-medium text-[hsl(var(--color-warning))]"
         >
           部分收款
         </Badge>
@@ -363,7 +500,7 @@ export function ERPSalesOrderList({
     return (
       <Badge
         variant="outline"
-        className="text-xs font-medium border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]"
+        className="border-[hsl(var(--color-success))] bg-[hsl(var(--color-success-light))] text-xs font-medium text-[hsl(var(--color-success))]"
       >
         已收款
       </Badge>
@@ -524,28 +661,14 @@ export function ERPSalesOrderList({
           <TableHeader>
             <TableRow>
               <TableHead>订单号</TableHead>
-              <TableHead>
-                客户名称
-              </TableHead>
+              <TableHead>客户名称</TableHead>
               <TableHead>状态</TableHead>
-              <TableHead className="text-right">
-                订单金额
-              </TableHead>
-              <TableHead>
-                收款状态
-              </TableHead>
-              <TableHead>
-                发货时间
-              </TableHead>
-              <TableHead>
-                创建时间
-              </TableHead>
-              <TableHead>
-                更新时间
-              </TableHead>
-              <TableHead className="w-16">
-                操作
-              </TableHead>
+              <TableHead className="text-right">订单金额</TableHead>
+              <TableHead>收款状态</TableHead>
+              <TableHead>发货时间</TableHead>
+              <TableHead>创建时间</TableHead>
+              <TableHead>更新时间</TableHead>
+              <TableHead className="w-16">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -569,10 +692,57 @@ export function ERPSalesOrderList({
                 <TableRow
                   key={order.id}
                   className="cursor-pointer"
-                  onClick={() => onOrderSelect?.(order)}
+                  onClick={() => {
+                    if (onOrderSelect) {
+                      onOrderSelect(order);
+                      return;
+                    }
+                    router.push(`/sales-orders/${order.id}`);
+                  }}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      if (onOrderSelect) {
+                        onOrderSelect(order);
+                      } else {
+                        router.push(`/sales-orders/${order.id}`);
+                      }
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
-                  <TableCell className="h-8 font-mono text-xs font-semibold text-[hsl(var(--color-primary))] transition-colors hover:text-[hsl(var(--color-primary-hover))]">
-                    {order.orderNumber}
+                  <TableCell className="h-8 text-xs">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-mono font-semibold text-[hsl(var(--color-primary))] transition-colors hover:text-[hsl(var(--color-primary-hover))]">
+                        {order.orderNumber}
+                      </span>
+                      {order.orderType === 'TRANSFER' && (
+                        <div className="flex flex-wrap gap-1">
+                          <Badge
+                            variant="outline"
+                            className="border-sky-200 bg-sky-50 text-sky-700"
+                          >
+                            调货销售
+                          </Badge>
+                          <Badge
+                            variant="secondary"
+                            className="border-amber-200 bg-amber-50 text-amber-700"
+                          >
+                            {TRANSFER_MODE_LABELS[order.transferMode] ??
+                              order.transferMode}
+                          </Badge>
+                        </div>
+                      )}
+                      {order.hasReturnOrder && (
+                        <Badge
+                          variant="outline"
+                          className="w-fit border-rose-200 bg-rose-50 text-rose-700"
+                        >
+                          已发生退货
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="h-8 text-xs font-medium text-[hsl(var(--color-text-primary))]">
                     {order.customer?.name || (
@@ -590,10 +760,12 @@ export function ERPSalesOrderList({
                           size="sm"
                           onClick={e => handleConfirmShipment(order, e)}
                           disabled={updatingOrderId === order.id}
-                          className="h-6 px-2 text-xs bg-[hsl(var(--color-primary))] text-white hover:bg-[hsl(var(--color-primary-dark))] shadow-sm"
+                          className="h-6 bg-[hsl(var(--color-primary))] px-2 text-xs text-white shadow-sm hover:bg-[hsl(var(--color-primary-dark))]"
                         >
                           <Truck className="mr-1 h-3 w-3" />
-                          {updatingOrderId === order.id ? '处理中...' : '确认发货'}
+                          {updatingOrderId === order.id
+                            ? '处理中...'
+                            : '确认发货'}
                         </Button>
                       )}
                     </div>
@@ -610,7 +782,9 @@ export function ERPSalesOrderList({
                         {formatDateTime(order.shippedAt)}
                       </span>
                     ) : (
-                      <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
+                      <span className="text-[hsl(var(--color-text-tertiary))]">
+                        -
+                      </span>
                     )}
                   </TableCell>
                   <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
@@ -657,13 +831,28 @@ export function ERPSalesOrderList({
                           <Edit className="mr-1 h-3 w-3" />
                           编辑
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={e => e.stopPropagation()}
-                          className="text-xs text-[hsl(var(--color-error))]"
-                        >
-                          <Trash2 className="mr-1 h-3 w-3" />
-                          删除
-                        </DropdownMenuItem>
+                        {isOrderCancelable(order.status) && (
+                          <DropdownMenuItem
+                            onClick={event =>
+                              handleCancelOrderClick(order, event)
+                            }
+                            className="text-xs text-[hsl(var(--color-error))]"
+                          >
+                            <Ban className="mr-1 h-3 w-3" />
+                            取消
+                          </DropdownMenuItem>
+                        )}
+                        {order.status === 'cancelled' && (
+                          <DropdownMenuItem
+                            onClick={event =>
+                              handleDeleteOrderClick(order, event)
+                            }
+                            className="text-xs text-[hsl(var(--color-error))]"
+                          >
+                            <Trash2 className="mr-1 h-3 w-3" />
+                            删除
+                          </DropdownMenuItem>
+                        )}
                       </DropdownMenuContent>
                     </DropdownMenu>
                   </TableCell>
@@ -694,6 +883,87 @@ export function ERPSalesOrderList({
           </div>
         )}
       </div>
+
+      {/* 取消订单确认模态框 */}
+      <AlertDialog
+        open={cancelConfirmOpen}
+        onOpenChange={handleCancelDialogOpenChange}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--color-error-light))]">
+                <Ban className="h-5 w-5 text-[hsl(var(--color-error))]" />
+              </div>
+              <AlertDialogTitle>确认取消订单</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-4 text-sm leading-6 text-[hsl(var(--color-text-secondary))]">
+              确定要取消订单{' '}
+              <strong className="text-[hsl(var(--color-error))]">
+                {orderPendingCancel?.orderNumber}
+              </strong>
+              吗？
+              <br />
+              取消后，该订单状态将变为
+              <strong>已取消</strong>，无法继续发货或收款。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>保留订单</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmCancelOrder}
+              disabled={
+                !!orderPendingCancel &&
+                updatingOrderId === orderPendingCancel.id
+              }
+            >
+              {orderPendingCancel && updatingOrderId === orderPendingCancel.id
+                ? '正在取消...'
+                : '确认取消'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* 删除订单确认模态框 */}
+      <AlertDialog
+        open={deleteConfirmOpen}
+        onOpenChange={handleDeleteDialogOpenChange}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[hsl(var(--color-error-light))]">
+                <Trash2 className="h-5 w-5 text-[hsl(var(--color-error))]" />
+              </div>
+              <AlertDialogTitle>永久删除订单</AlertDialogTitle>
+            </div>
+            <AlertDialogDescription className="pt-4 text-sm leading-6 text-[hsl(var(--color-text-secondary))]">
+              将永久删除订单{' '}
+              <strong className="text-[hsl(var(--color-error))]">
+                {orderPendingDelete?.orderNumber}
+              </strong>
+              ，以及相关的明细和费用记录。
+              <br />
+              此操作不可撤销，请确认已经完成所有必要的记录。
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>保留订单</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDeleteOrder}
+              disabled={
+                !!orderPendingDelete &&
+                deletingOrderId === orderPendingDelete.id
+              }
+            >
+              {orderPendingDelete && deletingOrderId === orderPendingDelete.id
+                ? '正在删除...'
+                : '确认删除'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* 编辑警告模态框 */}
       <AlertDialog open={showEditWarning} onOpenChange={setShowEditWarning}>

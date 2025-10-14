@@ -83,7 +83,7 @@ export const BasicSettingsSchema = z.object({
     .default(systemConfig.defaultLanguage),
 
   // 库存配置
-  lowStockThreshold: z
+  lowStockThreshold: z.coerce
     .number()
     .int('库存阈值必须为整数')
     .min(1, '库存阈值必须大于0')
@@ -139,13 +139,67 @@ export const UserSettingsSchema = z.object({
   enableUserRegistration: z.boolean().default(false),
 });
 
+const QiniuAccessKeySchema = z
+  .string()
+  .min(1, 'Access Key不能为空')
+  .max(100, 'Access Key不能超过100个字符')
+  .regex(/^[A-Za-z0-9_-]+$/, 'Access Key格式不正确');
+
+const QiniuSecretKeySchema = z
+  .string()
+  .min(1, 'Secret Key不能为空')
+  .max(100, 'Secret Key不能超过100个字符')
+  .regex(/^[A-Za-z0-9_-]+$/, 'Secret Key格式不正确');
+
+const QiniuBucketSchema = z
+  .string()
+  .min(1, '存储空间名称不能为空')
+  .max(50, '存储空间名称不能超过50个字符')
+  .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, '存储空间名称格式不正确');
+
+const QiniuDomainSchema = z
+  .string()
+  .min(1, '访问域名不能为空')
+  .max(200, '访问域名不能超过200个字符')
+  .regex(
+    /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*(:[1-9][0-9]{0,4})?(\/.*)?$/,
+    '访问域名格式不正确，请输入完整的HTTP/HTTPS地址（例如: https://cdn.example.com）'
+  )
+  .refine(
+    value => {
+      const portMatch = value.match(/:(\d+)/);
+      if (portMatch) {
+        const port = parseInt(portMatch[1], 10);
+        return port >= 1 && port <= 65535;
+      }
+      return true;
+    },
+    { message: '端口号必须在 1-65535 范围内' }
+  );
+
+const QiniuAccessKeyFormSchema = z
+  .union([QiniuAccessKeySchema, z.literal('')])
+  .transform(value => value.trim());
+
+const QiniuSecretKeyFormSchema = z
+  .union([QiniuSecretKeySchema, z.literal('')])
+  .transform(value => value.trim());
+
+const QiniuBucketFormSchema = z
+  .union([QiniuBucketSchema, z.literal('')])
+  .transform(value => value.trim());
+
+const QiniuDomainFormSchema = z
+  .union([QiniuDomainSchema, z.literal('')])
+  .transform(value => value.trim());
+
 // 七牛云存储设置验证规则
 export const StorageSettingsSchema = z.object({
   // 七牛云配置
-  qiniuAccessKey: z.string().min(1, 'Access Key不能为空'),
-  qiniuSecretKey: z.string().min(1, 'Secret Key不能为空'),
-  qiniuBucket: z.string().min(1, 'Bucket名称不能为空'),
-  qiniuDomain: z.string().url('域名格式不正确'),
+  qiniuAccessKey: QiniuAccessKeySchema,
+  qiniuSecretKey: QiniuSecretKeySchema,
+  qiniuBucket: QiniuBucketSchema,
+  qiniuDomain: QiniuDomainSchema,
   qiniuRegion: z.string().min(1, '区域不能为空'),
 
   // 上传配置
@@ -303,41 +357,10 @@ export const ResetPasswordSchema = z.object({
 
 // 七牛云存储配置验证规则
 export const QiniuStorageConfigSchema = z.object({
-  accessKey: z
-    .string()
-    .min(1, 'Access Key不能为空')
-    .max(100, 'Access Key不能超过100个字符')
-    .regex(/^[A-Za-z0-9_-]+$/, 'Access Key格式不正确'),
-  secretKey: z
-    .string()
-    .min(1, 'Secret Key不能为空')
-    .max(100, 'Secret Key不能超过100个字符')
-    .regex(/^[A-Za-z0-9_-]+$/, 'Secret Key格式不正确'),
-  bucket: z
-    .string()
-    .min(1, '存储空间名称不能为空')
-    .max(50, '存储空间名称不能超过50个字符')
-    .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, '存储空间名称格式不正确'),
-  domain: z
-    .string()
-    .min(1, '访问域名不能为空')
-    .max(200, '访问域名不能超过200个字符')
-    .regex(
-      /^https?:\/\/[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*(:[1-9][0-9]{0,4})?(\/.*)?$/,
-      '访问域名格式不正确，请输入完整的HTTP/HTTPS地址（例如: https://cdn.example.com）'
-    )
-    .refine(
-      value => {
-        // 提取端口号并验证范围 (1-65535)
-        const portMatch = value.match(/:(\d+)/);
-        if (portMatch) {
-          const port = parseInt(portMatch[1], 10);
-          return port >= 1 && port <= 65535;
-        }
-        return true;
-      },
-      { message: '端口号必须在 1-65535 范围内' }
-    ),
+  accessKey: QiniuAccessKeySchema,
+  secretKey: QiniuSecretKeySchema,
+  bucket: QiniuBucketSchema,
+  domain: QiniuDomainSchema,
   region: z.string().max(20, '存储区域不能超过20个字符').optional().nullable(),
   pathFormat: z
     .string()
@@ -366,19 +389,24 @@ export const QiniuStorageConfigSchema = z.object({
     ),
 });
 
+export const QiniuStorageConfigFormSchema = z.object({
+  accessKey: QiniuAccessKeyFormSchema,
+  secretKey: QiniuSecretKeyFormSchema,
+  bucket: QiniuBucketFormSchema,
+  domain: QiniuDomainFormSchema,
+  region: z.string().max(20, '存储区域不能超过20个字符').optional().nullable(),
+  pathFormat: z
+    .string()
+    .max(200, '存储目录格式不能超过200个字符')
+    .optional()
+    .nullable()
+    .transform(value => value?.trim() ?? ''),
+});
+
 export const QiniuStorageTestSchema = z.object({
-  accessKey: z
-    .string()
-    .min(1, 'Access Key不能为空')
-    .regex(/^[A-Za-z0-9_-]+$/, 'Access Key格式不正确'),
-  secretKey: z
-    .string()
-    .min(1, 'Secret Key不能为空')
-    .regex(/^[A-Za-z0-9_-]+$/, 'Secret Key格式不正确'),
-  bucket: z
-    .string()
-    .min(1, '存储空间名称不能为空')
-    .regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, '存储空间名称格式不正确'),
+  accessKey: QiniuAccessKeySchema,
+  secretKey: QiniuSecretKeySchema,
+  bucket: QiniuBucketSchema,
   region: z.string().max(20, '存储区域不能超过20个字符').optional().nullable(),
 });
 

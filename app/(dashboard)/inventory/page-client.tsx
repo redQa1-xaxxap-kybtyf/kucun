@@ -13,7 +13,10 @@ import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
 import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
 import type { CategoryOption } from '@/lib/types/category';
-import type { InventoryQueryParams } from '@/lib/types/inventory';
+import type {
+  InventoryListResponse,
+  InventoryQueryParams,
+} from '@/lib/types/inventory';
 
 interface InventoryPageClientProps {
   initialParams: InventoryQueryParams;
@@ -34,6 +37,7 @@ export function InventoryPageClient({
   categoryOptions,
 }: InventoryPageClientProps) {
   const router = useRouter();
+  const replace = router.replace;
 
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');
@@ -53,10 +57,13 @@ export function InventoryPageClient({
     initialParams.sortOrder || 'desc'
   );
   const [limit, setLimit] = React.useState<number>(
-    typeof initialParams.limit === 'number' && Number.isFinite(initialParams.limit)
+    typeof initialParams.limit === 'number' &&
+      Number.isFinite(initialParams.limit)
       ? initialParams.limit
       : 50
   );
+  const searchRef = React.useRef(search);
+  const limitRef = React.useRef(limit);
 
   React.useEffect(() => {
     setSearch(initialParams.search || '');
@@ -66,11 +73,18 @@ export function InventoryPageClient({
     setSortBy(initialParams.sortBy || 'updatedAt');
     setSortOrder(initialParams.sortOrder === 'asc' ? 'asc' : 'desc');
     setLimit(current =>
-      typeof initialParams.limit === 'number' && Number.isFinite(initialParams.limit)
+      typeof initialParams.limit === 'number' &&
+      Number.isFinite(initialParams.limit)
         ? initialParams.limit
         : current
     );
   }, [initialParams]);
+  React.useEffect(() => {
+    searchRef.current = search;
+  }, [search]);
+  React.useEffect(() => {
+    limitRef.current = limit;
+  }, [limit]);
 
   // ✅ 使用 ref 存储最新的筛选状态，避免闭包问题
   const filtersRef = React.useRef({
@@ -99,14 +113,52 @@ export function InventoryPageClient({
       params: initialParams,
     });
 
-  // ✅ 统一数据格式后，直接使用，无需复杂的 normalizedData 映射
-  // ✅ 兼容旧结构（data.data）与新结构（data.inventories）
-  const normalizedData = data?.data;
+  const normalizedData = React.useMemo<
+    InventoryListResponse['data'] | undefined
+  >(() => {
+    const payload = data?.data;
+    if (!payload) {
+      return undefined;
+    }
+
+    if (
+      typeof (payload as InventoryListResponse['data']).inventories !==
+        'undefined' &&
+      Array.isArray((payload as InventoryListResponse['data']).inventories)
+    ) {
+      return payload as InventoryListResponse['data'];
+    }
+
+    if (
+      Object.prototype.hasOwnProperty.call(payload, 'data') ||
+      Object.prototype.hasOwnProperty.call(payload, 'pagination')
+    ) {
+      const legacy = payload as {
+        data?: InventoryListResponse['data']['inventories'];
+        pagination?: InventoryListResponse['data']['pagination'];
+      };
+
+      return {
+        inventories: Array.isArray(legacy.data) ? legacy.data : [],
+        pagination: legacy.pagination,
+      };
+    }
+
+    return undefined;
+  }, [data]);
+
   const inventories = normalizedData?.inventories ?? [];
   const pagination = normalizedData?.pagination;
+  const listData = React.useMemo(
+    () => ({
+      data: inventories,
+      pagination,
+    }),
+    [inventories, pagination]
+  );
 
   // ✅ 防抖更新URL - 只在用户停止输入后才更新URL和触发数据请求
-  const debouncedUpdateURL = useDebouncedCallback(
+  const updateURL = React.useCallback(
     (searchValue: string) => {
       const filters = filtersRef.current;
       const params = new URLSearchParams();
@@ -133,25 +185,29 @@ export function InventoryPageClient({
 
       params.set('page', '1');
 
-      if (Number.isFinite(limit) && limit > 0) {
-        params.set('limit', limit.toString());
+      const currentLimit = limitRef.current;
+      if (Number.isFinite(currentLimit) && currentLimit > 0) {
+        params.set('limit', currentLimit.toString());
       }
 
-      router.replace(`/inventory?${params.toString()}`, { scroll: false });
+      replace(`/inventory?${params.toString()}`, { scroll: false });
     },
-    500 // ✅ 增加防抖时间到 500ms，减少不必要的请求
+    [replace]
   );
 
+  const debouncedUpdateURL = useDebouncedCallback(updateURL, 500);
+  const debouncedUpdateURLRef = React.useRef(debouncedUpdateURL);
+
+  React.useEffect(() => {
+    debouncedUpdateURLRef.current = debouncedUpdateURL;
+  }, [debouncedUpdateURL]);
+
   // ✅ 搜索处理 - 立即更新本地状态（不触发重渲染），防抖更新URL
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      // ✅ 立即更新本地状态，保证输入流畅
-      setSearch(value);
-      // ✅ 防抖更新URL，避免频繁请求
-      debouncedUpdateURL(value);
-    },
-    [debouncedUpdateURL]
-  );
+  const handleSearch = React.useCallback((value: string) => {
+    setSearch(value);
+    searchRef.current = value;
+    debouncedUpdateURLRef.current(value);
+  }, []);
 
   // 筛选处理
   const handleFilter = React.useCallback(
@@ -159,40 +215,41 @@ export function InventoryPageClient({
       key: keyof InventoryQueryParams,
       value: string | number | boolean | undefined
     ) => {
-      let nextCategoryId = categoryId;
-      let nextLowStock = lowStock;
-      let nextHasStock = hasStock;
-      let nextSortBy = sortBy;
-      let nextSortOrder = sortOrder;
-      let nextLimit = limit;
+      const nextFilters = { ...filtersRef.current };
+      let nextLimit = limitRef.current;
 
-      const stringValue =
-        typeof value === 'string' ? value.trim() : value;
+      const stringValue = typeof value === 'string' ? value.trim() : value;
 
       if (key === 'categoryId') {
-        nextCategoryId = typeof stringValue === 'string' ? stringValue : '';
-        setCategoryId(nextCategoryId);
+        const categoryValue =
+          typeof stringValue === 'string' ? stringValue : '';
+        nextFilters.categoryId = categoryValue;
+        setCategoryId(categoryValue);
       } else if (key === 'lowStock') {
-        nextLowStock = Boolean(stringValue);
-        setLowStock(nextLowStock);
-        if (nextLowStock) {
-          nextHasStock = false;
+        const lowStockValue = Boolean(stringValue);
+        nextFilters.lowStock = lowStockValue;
+        setLowStock(lowStockValue);
+        if (lowStockValue) {
+          nextFilters.hasStock = false;
           setHasStock(false);
         }
       } else if (key === 'hasStock') {
-        nextHasStock = Boolean(stringValue);
-        setHasStock(nextHasStock);
-        if (nextHasStock) {
-          nextLowStock = false;
+        const hasStockValue = Boolean(stringValue);
+        nextFilters.hasStock = hasStockValue;
+        setHasStock(hasStockValue);
+        if (hasStockValue) {
+          nextFilters.lowStock = false;
           setLowStock(false);
         }
       } else if (key === 'sortBy') {
-        nextSortBy =
+        const sortByValue =
           (stringValue as InventoryQueryParams['sortBy']) || 'updatedAt';
-        setSortBy(nextSortBy);
+        nextFilters.sortBy = sortByValue;
+        setSortBy(sortByValue);
       } else if (key === 'sortOrder') {
-        nextSortOrder = stringValue === 'asc' ? 'asc' : 'desc';
-        setSortOrder(nextSortOrder);
+        const sortOrderValue = stringValue === 'asc' ? 'asc' : 'desc';
+        nextFilters.sortOrder = sortOrderValue;
+        setSortOrder(sortOrderValue);
       } else if (key === 'limit') {
         const parsed = Number(stringValue);
         if (Number.isFinite(parsed) && parsed > 0) {
@@ -203,23 +260,24 @@ export function InventoryPageClient({
 
       const params = new URLSearchParams();
 
-      if (search.trim()) {
-        params.set('search', search.trim());
+      const searchValue = searchRef.current.trim();
+      if (searchValue) {
+        params.set('search', searchValue);
       }
-      if (nextCategoryId) {
-        params.set('categoryId', nextCategoryId);
+      if (nextFilters.categoryId) {
+        params.set('categoryId', nextFilters.categoryId);
       }
-      if (nextLowStock) {
+      if (nextFilters.lowStock) {
         params.set('lowStock', 'true');
       }
-      if (nextHasStock) {
+      if (nextFilters.hasStock) {
         params.set('hasStock', 'true');
       }
-      if (nextSortBy) {
-        params.set('sortBy', nextSortBy);
+      if (nextFilters.sortBy) {
+        params.set('sortBy', nextFilters.sortBy);
       }
-      if (nextSortOrder) {
-        params.set('sortOrder', nextSortOrder);
+      if (nextFilters.sortOrder) {
+        params.set('sortOrder', nextFilters.sortOrder);
       }
 
       params.set('page', '1');
@@ -228,53 +286,51 @@ export function InventoryPageClient({
         params.set('limit', nextLimit.toString());
       }
 
-      router.replace(`/inventory?${params.toString()}`, { scroll: false });
+      filtersRef.current = nextFilters;
+      limitRef.current = nextLimit;
+
+      replace(`/inventory?${params.toString()}`, { scroll: false });
     },
-    [categoryId, hasStock, limit, lowStock, router, search, sortBy, sortOrder]
+    [replace]
   );
 
   // 分页处理
   const handlePageChange = React.useCallback(
     (page: number) => {
       const params = new URLSearchParams();
-      if (search) {
-        params.set('search', search);
+      const searchValue = searchRef.current.trim();
+      const currentFilters = filtersRef.current;
+      const currentLimit = limitRef.current;
+
+      if (searchValue) {
+        params.set('search', searchValue);
       }
-      if (categoryId) {
-        params.set('categoryId', categoryId);
+      if (currentFilters.categoryId) {
+        params.set('categoryId', currentFilters.categoryId);
       }
-      if (lowStock) {
+      if (currentFilters.lowStock) {
         params.set('lowStock', 'true');
       }
-      if (hasStock) {
+      if (currentFilters.hasStock) {
         params.set('hasStock', 'true');
       }
-      if (sortBy) {
-        params.set('sortBy', sortBy);
+      if (currentFilters.sortBy) {
+        params.set('sortBy', currentFilters.sortBy);
       }
-      if (sortOrder) {
-        params.set('sortOrder', sortOrder);
+      if (currentFilters.sortOrder) {
+        params.set('sortOrder', currentFilters.sortOrder);
       }
       if (page > 1) {
         params.set('page', page.toString());
       }
-      if (Number.isFinite(limit) && limit > 0) {
-        params.set('limit', limit.toString());
+      if (Number.isFinite(currentLimit) && currentLimit > 0) {
+        params.set('limit', currentLimit.toString());
       }
 
       // ✅ 使用 replace 而不是 push，避免输入框失去焦点
-      router.replace(`/inventory?${params.toString()}`, { scroll: false });
+      replace(`/inventory?${params.toString()}`, { scroll: false });
     },
-    [
-      router,
-      search,
-      categoryId,
-      lowStock,
-      hasStock,
-      sortBy,
-      sortOrder,
-      limit,
-    ]
+    [replace]
   );
 
   // ✅ hover 预取处理 - 提升用户体验
@@ -298,7 +354,16 @@ export function InventoryPageClient({
       page: initialParams.page,
       limit,
     }),
-    [search, categoryId, lowStock, hasStock, sortBy, sortOrder, limit, initialParams]
+    [
+      search,
+      categoryId,
+      lowStock,
+      hasStock,
+      sortBy,
+      sortOrder,
+      limit,
+      initialParams,
+    ]
   );
 
   // ✅ 使用 Suspense 包装，支持 Streaming 和更好的加载体验
@@ -342,7 +407,7 @@ export function InventoryPageClient({
             </div>
           ) : (
             <ERPInventoryList
-              data={{ data: inventories, pagination }}
+              data={listData}
               categoryOptions={categoryOptions}
               queryParams={currentQueryParams}
               onSearch={handleSearch}
@@ -358,4 +423,3 @@ export function InventoryPageClient({
     </div>
   );
 }
-

@@ -17,6 +17,7 @@ import type {
   PaymentStatus,
   UpdatePaymentRecordData,
 } from '@/lib/types/payment';
+import { formatCurrency as formatCurrencyValue } from '@/lib/utils';
 import { formatTimeAgo } from '@/lib/utils/datetime';
 
 // API基础URL
@@ -42,6 +43,14 @@ export const paymentQueryKeys = {
   customerPayments: (customerId: string) =>
     [...paymentQueryKeys.all, 'customer', customerId] as const,
 };
+
+interface PaymentStatisticsQuery {
+  startDate?: string;
+  endDate?: string;
+  customerId?: string;
+  paymentMethod?: PaymentMethod;
+  groupBy?: string;
+}
 
 // API调用函数
 export const paymentsApi = {
@@ -274,7 +283,7 @@ export const paymentsApi = {
 
   // 获取收款统计
   getPaymentStatistics: async (
-    query: Record<string, unknown> = {}
+    query: PaymentStatisticsQuery = {}
   ): Promise<PaymentStatisticsResponse['data']> => {
     const params = new URLSearchParams();
 
@@ -482,11 +491,7 @@ export const useCancelPayment = () => {
 
 // 工具函数
 export const paymentUtils = {
-  formatAmount: (amount: number): string =>
-    new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-    }).format(amount),
+  formatAmount: (amount: number): string => formatCurrencyValue(amount),
 
   formatPaymentMethod: (method: PaymentMethod): string => {
     const methodMap = {
@@ -501,6 +506,7 @@ export const paymentUtils = {
   formatPaymentStatus: (status: PaymentStatus): string => {
     const statusMap = {
       pending: '待确认',
+      applied: '已冲抵',
       confirmed: '已确认',
       cancelled: '已取消',
     };
@@ -525,6 +531,7 @@ export const paymentUtils = {
   getPaymentStatusColor: (status: PaymentStatus): string => {
     const colorMap = {
       pending: 'yellow',
+      applied: 'blue',
       confirmed: 'green',
       cancelled: 'red',
     };

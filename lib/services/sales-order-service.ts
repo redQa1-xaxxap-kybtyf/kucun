@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/db';
+import type { SalesOrderStatus } from '@/lib/types/sales-order';
 
 /**
  * 销售订单服务层
@@ -47,6 +48,11 @@ export interface ReturnableItemsResponse {
   };
 }
 
+const RETURN_ALLOWED_SALES_ORDER_STATUSES: ReadonlyArray<SalesOrderStatus> = [
+  'shipped',
+  'completed',
+];
+
 /**
  * 获取销售订单的可退货明细
  * @param orderId 销售订单ID
@@ -90,9 +96,9 @@ export async function getReturnableItems(
   }
 
   // 检查订单状态是否允许退货
-  const allowedStatuses = ['confirmed', 'shipped', 'completed'];
-  if (!allowedStatuses.includes(salesOrder.status)) {
-    throw new Error(`订单状态为 ${salesOrder.status}，不允许退货`);
+  const orderStatus = salesOrder.status as SalesOrderStatus;
+  if (!RETURN_ALLOWED_SALES_ORDER_STATUSES.includes(orderStatus)) {
+    throw new Error(`订单状态为 ${salesOrder.status}，尚未发货，无法退货`);
   }
 
   // 查询已退货数量

@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { resolveParams } from '@/lib/api/middleware';
 
 interface BatchSummary {
   batchNumber: string;
@@ -22,9 +23,17 @@ interface LocationSummary {
 
 // 获取产品变体的库存汇总
 export const GET = withAuth(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
-    const { id } = params;
+  async (
+    request: NextRequest,
+    context: {
+      params?: Promise<Record<string, string>> | Record<string, string>;
+    }
+  ) => {
+    let variantId: string | undefined;
     try {
+      const { id } = await resolveParams(context.params);
+      variantId = id;
+
       // 验证ID格式
       if (!id || typeof id !== 'string') {
         return NextResponse.json(
@@ -212,9 +221,12 @@ export const GET = withAuth(
         data: summary,
       });
     } catch (error) {
-      logger.error('product-variants', '获取变体库存汇总失败', error, {
-        variantId: id,
-      });
+      logger.error(
+        'product-variants',
+        '获取变体库存汇总失败',
+        error,
+        variantId ? { variantId } : undefined
+      );
 
       return NextResponse.json(
         {

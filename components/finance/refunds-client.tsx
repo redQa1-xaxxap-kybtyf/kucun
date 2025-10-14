@@ -26,11 +26,12 @@ import type {
   RefundStatus,
   RefundType,
 } from '@/lib/types/refund';
+import { formatCurrency } from '@/lib/utils';
 
 /**
  * 服务器组件传递的退款记录类型（日期字段已序列化为 ISO 字符串，包含关联数据）
  */
-type RefundRecordFromServer = {
+export type RefundRecordFromServer = {
   id: string;
   refundNumber: string;
   returnOrderId: string | null;
@@ -118,12 +119,6 @@ export function RefundsClient({
 }: RefundsClientProps) {
   const router = useRouter();
   const { refunds, statistics, pagination } = initialData;
-
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-    }).format(amount);
 
   const getStatusBadge = (status: RefundStatus) => {
     const statusConfig = {
@@ -300,7 +295,18 @@ export function RefundsClient({
               refunds.map(refund => (
                 <Card
                   key={refund.id}
-                  className="overflow-hidden transition-shadow hover:shadow-[var(--shadow-medium)]"
+                  className="cursor-pointer overflow-hidden transition-shadow hover:shadow-[var(--shadow-medium)]"
+                  onClick={() => {
+                    router.push(`/finance/refunds/${refund.id}`);
+                  }}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      router.push(`/finance/refunds/${refund.id}`);
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <CardContent className="p-6">
                     {/* 第一行：退款单号、状态和金额 */}
@@ -420,11 +426,12 @@ export function RefundsClient({
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
+                            onClick={event => {
+                              event.stopPropagation();
                               router.push(
                                 `/return-orders/${refund.returnOrderId}`
-                              )
-                            }
+                              );
+                            }}
                           >
                             查看退货单
                           </Button>
@@ -433,11 +440,12 @@ export function RefundsClient({
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() =>
+                            onClick={event => {
+                              event.stopPropagation();
                               router.push(
                                 `/sales-orders/${refund.salesOrder.id}`
-                              )
-                            }
+                              );
+                            }}
                           >
                             查看订单
                           </Button>
@@ -447,11 +455,12 @@ export function RefundsClient({
                           refund.remainingAmount > 0) && (
                           <Button
                             size="sm"
-                            onClick={() =>
+                            onClick={event => {
+                              event.stopPropagation();
                               router.push(
                                 `/finance/refunds/${refund.id}/process`
-                              )
-                            }
+                              );
+                            }}
                           >
                             处理退款
                           </Button>

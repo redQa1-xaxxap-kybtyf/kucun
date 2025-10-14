@@ -255,37 +255,40 @@ export function FactoryShipmentOrderList({
           <Table>
             <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
               <TableRow>
-                <TableHead>
-                  订单编号
-                </TableHead>
-                <TableHead>
-                  集装箱号码
-                </TableHead>
-                <TableHead>
-                  客户
-                </TableHead>
-                <TableHead>
-                  状态
-                </TableHead>
-                <TableHead className="text-right">
-                  订单金额
-                </TableHead>
-                <TableHead className="text-right">
-                  应收金额
-                </TableHead>
-                <TableHead>
-                  创建时间
-                </TableHead>
-                <TableHead>
-                  操作
-                </TableHead>
+                <TableHead>订单编号</TableHead>
+                <TableHead>集装箱号码</TableHead>
+                <TableHead>客户</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead className="text-right">订单金额</TableHead>
+                <TableHead className="text-right">应收金额</TableHead>
+                <TableHead>创建时间</TableHead>
+                <TableHead>操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {orders.map(order => (
                 <TableRow
                   key={order.id}
-                  className="border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
+                  className="cursor-pointer border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
+                  onClick={() => {
+                    if (onOrderSelect) {
+                      onOrderSelect(order);
+                      return;
+                    }
+                    router.push(`/factory-shipments/${order.id}`);
+                  }}
+                  onKeyDown={event => {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                      event.preventDefault();
+                      if (onOrderSelect) {
+                        onOrderSelect(order);
+                      } else {
+                        router.push(`/factory-shipments/${order.id}`);
+                      }
+                    }
+                  }}
+                  role="button"
+                  tabIndex={0}
                 >
                   <TableCell className="font-mono font-medium text-[hsl(var(--color-primary))]">
                     <Link
@@ -308,7 +311,9 @@ export function FactoryShipmentOrderList({
                   </TableCell>
                   <TableCell>
                     <Badge
-                      variant={getFactoryShipmentStatusBadgeVariant(order.status)}
+                      variant={getFactoryShipmentStatusBadgeVariant(
+                        order.status
+                      )}
                       className="text-xs font-medium"
                     >
                       {

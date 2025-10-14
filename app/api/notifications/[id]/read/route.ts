@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { getNotificationDelegate } from '@/lib/db/notification-delegate';
+import { resolveParams } from '@/lib/api/middleware';
 
 /**
  * 标记通知为已读
@@ -12,19 +14,26 @@ import { prisma } from '@/lib/db';
 export const POST = withAuth(
   async (
     request: NextRequest,
-    {
-      user,
-      params,
-    }: {
+    context: {
       user: { id: string; name: string; email: string };
-      params: Promise<{ id: string }>;
+      params?: Promise<Record<string, string>> | Record<string, string>;
     }
   ) => {
     try {
-      const { id } = await params;
+      const { id } = await resolveParams(context.params);
+      const { user } = context;
+      const notificationDelegate = getNotificationDelegate(prisma);
+
+      if (!notificationDelegate) {
+        console.debug('[标记已读] Notification 委托不存在，返回成功');
+        return NextResponse.json({
+          success: true,
+          message: '通知已标记为已读',
+        });
+      }
 
       // 检查通知是否属于当前用户
-      const notification = await prisma.notification.findFirst({
+      const notification = await notificationDelegate.findFirst({
         where: {
           id,
           userId: user.id,
@@ -42,7 +51,7 @@ export const POST = withAuth(
       }
 
       // 标记为已读
-      await prisma.notification.update({
+      await notificationDelegate.update({
         where: { id },
         data: { isRead: true },
       });

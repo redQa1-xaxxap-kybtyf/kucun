@@ -18,7 +18,7 @@ import {
   SALES_ORDER_STATUS_VARIANTS,
   type SalesOrderStatus,
 } from '@/lib/types/sales-order';
-import { cn } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 
 interface Customer {
   id: string;
@@ -65,14 +65,6 @@ export function OrderStatusBar({
   };
 
   const statusConfig = getStatusConfig(status);
-
-  // 格式化金额
-  const formatAmount = (amount: number) =>
-    new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-      minimumFractionDigits: 2,
-    }).format(amount);
 
   return (
     <Card className={cn('mb-6 p-4', className)}>
@@ -148,7 +140,7 @@ export function OrderStatusBar({
           <div className="space-y-1">
             <div className="text-muted-foreground text-xs">订单金额</div>
             <div className="text-lg font-medium">
-              {formatAmount(totalAmount)}
+              {formatCurrency(totalAmount)}
             </div>
           </div>
         </div>

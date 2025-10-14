@@ -144,7 +144,7 @@ export default function StorageSettingsPage() {
   if (session?.user?.role !== 'admin') {
     return (
       <div className="flex h-full flex-col overflow-hidden p-6">
-        <div className="space-y-6">
+        <div className="flex-1 space-y-6 overflow-y-auto">
           {/* 页面头部 */}
           <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
             <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
@@ -205,7 +205,7 @@ export default function StorageSettingsPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden p-6">
-      <div className="space-y-6">
+      <div className="flex-1 space-y-6 overflow-y-auto">
         {/* 页面头部 */}
         <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
           <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
@@ -238,15 +238,6 @@ export default function StorageSettingsPage() {
 
         {/* 配置表单 */}
         <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
-          <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
-            <CardTitle className="flex items-center text-gray-900">
-              <Cloud className="mr-2 h-5 w-5 text-gray-600" />
-              七牛云存储配置
-            </CardTitle>
-            <CardDescription>
-              配置七牛云对象存储服务，用于文件上传和管理
-            </CardDescription>
-          </CardHeader>
           <CardContent className="p-6">
             {configError ? (
               <div className="text-muted-foreground flex h-32 flex-col items-center justify-center">

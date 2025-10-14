@@ -3,7 +3,32 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { productVariantGenerateSkuSchema } from '@/lib/validations/product';
+import {
+  productVariantGenerateSkuSchema,
+  productVariantBatchGenerateSkuSchema,
+} from '@/lib/validations/product';
+
+interface BatchGenerateSkuItem {
+  productCode: string;
+  colorCode: string;
+  customSuffix?: string;
+}
+
+interface BatchGenerateSkuResult {
+  productCode: string;
+  colorCode: string;
+  customSuffix?: string;
+  originalSku: string;
+  sku: string;
+  isGenerated: boolean;
+  conflict?:
+    | {
+        reason: string;
+      }
+    | undefined;
+}
+
+type PreparedSkuItem = BatchGenerateSkuItem & { baseSku: string };
 
 // SKU生成服务
 export const POST = withAuth(async (request: NextRequest) => {
@@ -135,16 +160,18 @@ export const PUT = withAuth(async (request: NextRequest) => {
     const { items } = validationResult.data;
 
     // 生成所有基础SKU
-    const baseSkus = items.map(item => {
-      let baseSku = `${item.productCode}-${item.colorCode}`;
-      if (item.customSuffix) {
-        baseSku += `-${item.customSuffix}`;
+    const baseSkus: PreparedSkuItem[] = items.map(
+      (item: BatchGenerateSkuItem) => {
+        let baseSku = `${item.productCode}-${item.colorCode}`;
+        if (item.customSuffix) {
+          baseSku += `-${item.customSuffix}`;
+        }
+        return {
+          ...item,
+          baseSku,
+        } satisfies PreparedSkuItem;
       }
-      return {
-        ...item,
-        baseSku,
-      };
-    });
+    );
 
     // 检查内部重复
     const skuCounts = new Map<string, number>();
@@ -166,57 +193,61 @@ export const PUT = withAuth(async (request: NextRequest) => {
     const existingSkuSet = new Set(existingSkus.map(v => v.sku));
 
     // 为每个项目生成可用的SKU
-    const results = baseSkus.map((item, index) => {
-      const { baseSku } = item;
-      const duplicateCount = skuCounts.get(baseSku) || 1;
-      const isInternalDuplicate = duplicateCount > 1;
+    const results: BatchGenerateSkuResult[] = baseSkus.map(
+      (item, index): BatchGenerateSkuResult => {
+        const { baseSku } = item;
+        const duplicateCount = skuCounts.get(baseSku) || 1;
+        const isInternalDuplicate = duplicateCount > 1;
 
-      let finalSku = baseSku;
-      let isGenerated = false;
+        let finalSku = baseSku;
+        let isGenerated = false;
 
-      // 如果是内部重复或数据库中已存在，生成新的SKU
-      if (isInternalDuplicate || existingSkuSet.has(baseSku)) {
-        // 为内部重复的项目添加序号
-        if (isInternalDuplicate) {
-          const currentIndex = baseSkus
-            .slice(0, index + 1)
-            .filter(b => b.baseSku === baseSku).length;
-          finalSku = `${baseSku}-${currentIndex.toString().padStart(2, '0')}`;
-        }
-
-        // 如果生成的SKU仍然存在，继续生成
-        let counter = 1;
-        while (existingSkuSet.has(finalSku)) {
-          finalSku = `${baseSku}-${counter.toString().padStart(2, '0')}`;
-          counter++;
-
-          // 防止无限循环
-          if (counter > 999) {
-            const timestamp = Date.now().toString().slice(-6);
-            finalSku = `${baseSku}-${timestamp}`;
-            break;
+        // 如果是内部重复或数据库中已存在，生成新的SKU
+        if (isInternalDuplicate || existingSkuSet.has(baseSku)) {
+          // 为内部重复的项目添加序号
+          if (isInternalDuplicate) {
+            const currentIndex = baseSkus
+              .slice(0, index + 1)
+              .filter(b => b.baseSku === baseSku).length;
+            finalSku = `${baseSku}-${currentIndex.toString().padStart(2, '0')}`;
           }
+
+          // 如果生成的SKU仍然存在，继续生成
+          let counter = 1;
+          while (existingSkuSet.has(finalSku)) {
+            finalSku = `${baseSku}-${counter.toString().padStart(2, '0')}`;
+            counter++;
+
+            // 防止无限循环
+            if (counter > 999) {
+              const timestamp = Date.now().toString().slice(-6);
+              finalSku = `${baseSku}-${timestamp}`;
+              break;
+            }
+          }
+
+          isGenerated = true;
+          // 将生成的SKU添加到已存在集合中，避免后续重复
+          existingSkuSet.add(finalSku);
         }
 
-        isGenerated = true;
-        // 将生成的SKU添加到已存在集合中，避免后续重复
-        existingSkuSet.add(finalSku);
+        return {
+          productCode: item.productCode,
+          colorCode: item.colorCode,
+          customSuffix: item.customSuffix,
+          originalSku: baseSku,
+          sku: finalSku,
+          isGenerated,
+          conflict: isGenerated
+            ? {
+                reason: isInternalDuplicate
+                  ? '批量生成中存在重复'
+                  : 'SKU已存在',
+              }
+            : undefined,
+        };
       }
-
-      return {
-        productCode: item.productCode,
-        colorCode: item.colorCode,
-        customSuffix: item.customSuffix,
-        originalSku: baseSku,
-        sku: finalSku,
-        isGenerated,
-        conflict: isGenerated
-          ? {
-              reason: isInternalDuplicate ? '批量生成中存在重复' : 'SKU已存在',
-            }
-          : undefined,
-      };
-    });
+    );
 
     return NextResponse.json({
       success: true,

@@ -5,8 +5,8 @@ import Link from 'next/link';
 import {
   AlertCircle,
   ArrowRight,
+  BadgeJapaneseYen,
   Clock,
-  DollarSign,
   Eye,
   Package,
   User,
@@ -16,20 +16,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ContentLoading } from '@/components/common/loading';
+import { formatCurrency } from '@/lib/utils';
 import type { SalesOrder } from '@/lib/types/sales-order';
 
 interface PendingOrdersProps {
   orders: SalesOrder[];
   loading?: boolean;
 }
-
-// 格式化货币
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('zh-CN', {
-    style: 'currency',
-    currency: 'CNY',
-  }).format(amount);
-};
 
 // 计算订单天数
 const getDaysOld = (dateString: string) => {
@@ -161,10 +154,9 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
             ? 'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--color-error))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)] transition-transform group-hover:scale-110'
             : 'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--color-warning))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-light)] transition-transform group-hover:scale-110';
 
-          const orderLinkHover =
-            urgent
-              ? 'hover:text-[hsl(var(--color-error))]'
-              : 'hover:text-[hsl(var(--color-warning))]';
+          const orderLinkHover = urgent
+            ? 'hover:text-[hsl(var(--color-error))]'
+            : 'hover:text-[hsl(var(--color-warning))]';
 
           const timeTextClass = urgent
             ? 'flex items-center gap-1.5 text-[hsl(var(--color-error))]'
@@ -209,7 +201,7 @@ export function PendingOrders({ orders, loading }: PendingOrdersProps) {
 
                 <div className="flex flex-wrap items-center gap-3 text-sm">
                   <div className="flex items-center gap-1.5 text-[hsl(var(--color-text-secondary))]">
-                    <DollarSign className="h-3.5 w-3.5" />
+                    <BadgeJapaneseYen className="h-3.5 w-3.5" />
                     <span className="font-medium text-[hsl(var(--color-text-primary))]">
                       {formatCurrency(order.totalAmount)}
                     </span>

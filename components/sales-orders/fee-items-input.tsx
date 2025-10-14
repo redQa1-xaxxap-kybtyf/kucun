@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,24 +36,52 @@ export function FeeItemsInput({
   onChange,
   disabled = false,
 }: FeeItemsInputProps) {
-  const [localItems, setLocalItems] = useState<SalesOrderFeeItem[]>(feeItems);
+  const sanitizeFeeItems = (items: SalesOrderFeeItem[]): SalesOrderFeeItem[] =>
+    items.map((item, index, array) => {
+      const trimmedName = item.feeName?.trim() ?? '';
+      const baseLabel = FEE_TYPE_LABELS[item.feeType] ?? '费用';
+      const fallbackName =
+        array.length > 1 ? `${baseLabel}${index + 1}` : baseLabel;
+
+      return {
+        ...item,
+        feeName: trimmedName.length > 0 ? trimmedName : fallbackName,
+        feeAmount: Number.isFinite(item.feeAmount)
+          ? item.feeAmount
+          : Number(item.feeAmount) || 0,
+      };
+    });
+
+  const [localItems, setLocalItems] = useState<SalesOrderFeeItem[]>(
+    sanitizeFeeItems(feeItems)
+  );
+
+  // 与外部受控数据保持同步，避免编辑模式下初始值不同步
+  useEffect(() => {
+    const sanitized = sanitizeFeeItems(feeItems);
+    setLocalItems(sanitized);
+  }, [feeItems]);
+
+  const emitChange = (items: SalesOrderFeeItem[]) => {
+    const sanitized = sanitizeFeeItems(items);
+    setLocalItems(sanitized);
+    onChange(sanitized);
+  };
 
   const handleAddFeeItem = () => {
     const newItem: SalesOrderFeeItem = {
       feeType: 'other',
-      feeName: '',
+      feeName: FEE_TYPE_LABELS.other,
       feeAmount: 0,
       remarks: '',
     };
     const updated = [...localItems, newItem];
-    setLocalItems(updated);
-    onChange(updated);
+    emitChange(updated);
   };
 
   const handleRemoveFeeItem = (index: number) => {
     const updated = localItems.filter((_, i) => i !== index);
-    setLocalItems(updated);
-    onChange(updated);
+    emitChange(updated);
   };
 
   const handleUpdateFeeItem = (
@@ -70,8 +98,7 @@ export function FeeItemsInput({
       }
       return item;
     });
-    setLocalItems(updated);
-    onChange(updated);
+    emitChange(updated);
   };
 
   const totalFees = localItems.reduce(
@@ -160,7 +187,7 @@ export function FeeItemsInput({
                   step="0.01"
                   min="0"
                   placeholder="0.00"
-                  value={item.feeAmount || ''}
+                  value={item.feeAmount ?? ''}
                   onChange={e =>
                     handleUpdateFeeItem(
                       index,

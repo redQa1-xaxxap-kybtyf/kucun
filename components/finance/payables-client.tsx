@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertCircle, CheckCircle, Clock, DollarSign } from 'lucide-react';
+import { CheckCircle, Clock, DollarSign } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
@@ -25,13 +25,9 @@ const isValidSortField = (
 ): value is PayableRecordQuery['sortBy'] =>
   value === 'createdAt' ||
   value === 'payableAmount' ||
-  value === 'dueDate' ||
   value === 'remainingAmount';
 
-const areQueriesEqual = (
-  a: PayableRecordQuery,
-  b: PayableRecordQuery
-) =>
+const areQueriesEqual = (a: PayableRecordQuery, b: PayableRecordQuery) =>
   a.page === b.page &&
   a.limit === b.limit &&
   a.search === b.search &&
@@ -47,10 +43,10 @@ interface PayablesClientProps {
       totalPayables: number;
       totalPaidAmount: number;
       totalRemainingAmount: number;
-      overdueAmount: number;
       pendingCount: number;
-      paidCount: number;
+      partialCount: number;
       overdueCount: number;
+      paidCount: number;
     };
     pagination: {
       page: number;
@@ -93,7 +89,7 @@ export function PayablesClient({
     const rawSearch =
       typeof initialParams?.search === 'string'
         ? initialParams.search
-        : searchParams.get('search') ?? undefined;
+        : (searchParams.get('search') ?? undefined);
 
     const rawStatus =
       initialParams?.status ??
@@ -112,10 +108,8 @@ export function PayablesClient({
       initialParams?.sortOrder ??
       (searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc');
 
-    const page =
-      Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
-    const limit =
-      Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
+    const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
+    const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
 
     const normalizedSearch =
       typeof rawSearch === 'string' && rawSearch.trim().length > 0
@@ -136,11 +130,12 @@ export function PayablesClient({
     };
   }, [initialParams, searchParams]);
 
-  const [query, setQuery] =
-    React.useState<PayableRecordQuery>(derivedQuery);
+  const [query, setQuery] = React.useState<PayableRecordQuery>(derivedQuery);
 
   React.useEffect(() => {
-    setQuery(prev => (areQueriesEqual(prev, derivedQuery) ? prev : derivedQuery));
+    setQuery(prev =>
+      areQueriesEqual(prev, derivedQuery) ? prev : derivedQuery
+    );
   }, [derivedQuery]);
 
   // 获取应付款记录列表
@@ -259,6 +254,11 @@ export function PayablesClient({
   );
 
   const statistics = initialData.statistics;
+  const totalTrackedCount =
+    statistics.pendingCount +
+    statistics.partialCount +
+    statistics.overdueCount +
+    statistics.paidCount;
 
   return (
     <div className="space-y-6">
@@ -274,10 +274,11 @@ export function PayablesClient({
               {formatCurrency(statistics.totalPayables)}
             </div>
             <p className="text-muted-foreground text-xs">
-              {statistics.pendingCount +
-                statistics.paidCount +
-                statistics.overdueCount}{' '}
-              个应付订单
+              共 {totalTrackedCount} 个应付订单
+            </p>
+            <p className="text-muted-foreground text-xs">
+              待付款 {statistics.pendingCount} · 部分付款{' '}
+              {statistics.partialCount} · 逾期 {statistics.overdueCount}
             </p>
           </CardContent>
         </Card>
@@ -316,21 +317,6 @@ export function PayablesClient({
             <p className="text-muted-foreground text-xs">待付款金额</p>
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">逾期金额</CardTitle>
-            <AlertCircle className="h-4 w-4 text-[hsl(var(--color-error))]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[hsl(var(--color-error))]">
-              {formatCurrency(statistics.overdueAmount)}
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {statistics.overdueCount} 个逾期订单
-            </p>
-          </CardContent>
-        </Card>
       </div>
 
       {/* 搜索和筛选 */}
@@ -351,7 +337,8 @@ export function PayablesClient({
                   { label: '待付款', value: 'pending' },
                   { label: '部分付款', value: 'partial' },
                   { label: '已付款', value: 'paid' },
-                  { label: '逾期', value: 'overdue' },
+                  { label: '已逾期', value: 'overdue' },
+                  { label: '已取消', value: 'cancelled' },
                 ],
                 width: 'w-[140px]',
               },
@@ -372,7 +359,6 @@ export function PayablesClient({
                 options: [
                   { label: '创建时间', value: 'createdAt' },
                   { label: '应付金额', value: 'payableAmount' },
-                  { label: '到期日期', value: 'dueDate' },
                   { label: '剩余金额', value: 'remainingAmount' },
                 ],
                 width: 'w-[140px]',
@@ -429,12 +415,6 @@ export function PayablesClient({
                             创建时间：
                             {new Date(payable.createdAt).toLocaleDateString()}
                           </span>
-                          {payable.dueDate && (
-                            <span>
-                              到期日期：
-                              {new Date(payable.dueDate).toLocaleDateString()}
-                            </span>
-                          )}
                         </div>
                         {payable.sourceNumber && (
                           <p className="text-muted-foreground text-sm">

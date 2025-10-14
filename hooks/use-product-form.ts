@@ -21,11 +21,15 @@ import {
   type ProductUpdateFormData,
 } from '@/lib/validations/product';
 
+export type ProductFormSuccessHandler = (
+  product: Product
+) => void | boolean | Promise<void | boolean>;
+
 interface UseProductFormProps {
   mode: 'create' | 'edit';
   productId?: string | undefined;
   initialData?: Product | undefined;
-  onSuccess?: ((product: Product) => void) | undefined;
+  onSuccess?: ProductFormSuccessHandler | undefined;
   onCancel?: (() => void) | undefined;
 }
 
@@ -75,6 +79,10 @@ export function useProductForm({
   };
 
   // 创建产品
+  const navigateToList = () => {
+    router.replace('/products');
+  };
+
   const createMutation = useMutation({
     mutationFn: createProduct,
     onSuccess: async product => {
@@ -88,10 +96,21 @@ export function useProductForm({
         refetchType: 'all', // 强制重新获取所有相关查询,不仅仅是活跃的
       });
 
-      // 强制刷新Router Cache,确保Server Component数据也更新
-      router.refresh();
+      let shouldNavigate = true;
+      if (onSuccess) {
+        try {
+          const result = await Promise.resolve(onSuccess(product));
+          if (result === false) {
+            shouldNavigate = false;
+          }
+        } catch (error) {
+          console.error('[useProductForm] onSuccess callback failed', error);
+        }
+      }
 
-      onSuccess?.(product);
+      if (shouldNavigate) {
+        navigateToList();
+      }
     },
     onError: (error: Error) => {
       const errorMessage = error.message || '创建产品失败';
@@ -117,10 +136,21 @@ export function useProductForm({
         refetchType: 'all', // 强制重新获取所有相关查询,不仅仅是活跃的
       });
 
-      // 强制刷新Router Cache,确保Server Component数据也更新
-      router.refresh();
+      let shouldNavigate = true;
+      if (onSuccess) {
+        try {
+          const result = await Promise.resolve(onSuccess(product));
+          if (result === false) {
+            shouldNavigate = false;
+          }
+        } catch (error) {
+          console.error('[useProductForm] onSuccess callback failed', error);
+        }
+      }
 
-      onSuccess?.(product);
+      if (shouldNavigate) {
+        navigateToList();
+      }
     },
     onError: (error: Error) => {
       const errorMessage = error.message || '更新产品失败';

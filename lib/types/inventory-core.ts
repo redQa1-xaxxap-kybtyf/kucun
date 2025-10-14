@@ -16,6 +16,7 @@ export interface Inventory {
   unitCost?: number; // 单位成本
   location?: string; // 存储位置
   updatedAt: string;
+  batchPiecesPerUnit?: number; // 批次级每件片数
 
   // 关联数据（可选，根据查询需要包含）
   product?: Product;

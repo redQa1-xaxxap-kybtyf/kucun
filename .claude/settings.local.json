@@ -110,7 +110,17 @@
       "Bash(cut:*)",
       "Bash(curl -s \"http://localhost:3000/api/customers?limit=5\")",
       "Bash(curl -s \"http://localhost:3001/api/return-orders?limit=5\")",
-      "Bash(curl -s \"http://localhost:3000/api/suppliers?page=1&limit=10\")"
+      "Bash(curl -s \"http://localhost:3000/api/suppliers?page=1&limit=10\")",
+      "Bash(curl -s \"http://localhost:3000/api/finance/statements?page=1&limit=20\")",
+      "Bash(curl -s http://localhost:3000/finance/statements)",
+      "Bash(curl -s http://localhost:3000/inventory/adjustments -I)",
+      "Bash(curl -s http://localhost:3000/settings/basic -I)",
+      "Bash(curl -s \"http://localhost:3000/api/inventory/inbound?limit=3\")",
+      "Bash(curl -s \"http://localhost:3000/api/inventory/outbound?limit=3\")",
+      "Bash(curl -s \"http://localhost:3000/api/products?limit=1\")",
+      "Bash(xargs -I {} sh -c 'dir=$(dirname \"\"\"\"{}\"\"\"\"); if [ -f \"\"\"\"$dir/page-client.tsx\"\"\"\" ]; then echo \"\"\"\"$dir\"\"\"\"; fi')",
+      "Bash(du:*)",
+      "Bash(git fsck:*)"
     ],
     "deny": [],
     "ask": []

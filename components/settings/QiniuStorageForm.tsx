@@ -29,7 +29,11 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type { QiniuStorageConfig } from '@/lib/types/settings';
-import { QiniuStorageConfigSchema } from '@/lib/validations/settings';
+import {
+  QiniuStorageConfigFormSchema,
+  QiniuStorageConfigSchema,
+} from '@/lib/validations/settings';
+import type { z } from 'zod';
 
 interface QiniuStorageFormProps {
   /** 初始配置数据 */
@@ -54,6 +58,8 @@ const QINIU_REGIONS = [
   { value: 'cn-east-2', label: '华东-浙江2' },
 ] as const;
 
+type QiniuStorageFormValues = z.infer<typeof QiniuStorageConfigFormSchema>;
+
 /**
  * 七牛云存储配置表单组件
  */
@@ -67,15 +73,15 @@ export const QiniuStorageForm = ({
   const [showAccessKey, setShowAccessKey] = React.useState(false);
   const [showSecretKey, setShowSecretKey] = React.useState(false);
 
-  const form = useForm<QiniuStorageConfig>({
-    resolver: zodResolver(QiniuStorageConfigSchema),
+  const form = useForm<QiniuStorageFormValues>({
+    resolver: zodResolver(QiniuStorageConfigFormSchema),
     defaultValues: {
-      accessKey: initialData?.accessKey || '',
-      secretKey: initialData?.secretKey || '',
-      bucket: initialData?.bucket || '',
-      domain: initialData?.domain || '',
-      region: initialData?.region || 'z0',
-      pathFormat: initialData?.pathFormat || '',
+      accessKey: initialData?.accessKey?.trim() || '',
+      secretKey: initialData?.secretKey?.trim() || '',
+      bucket: initialData?.bucket?.trim() || '',
+      domain: initialData?.domain?.trim() || '',
+      region: initialData?.region?.trim() || 'z0',
+      pathFormat: initialData?.pathFormat?.trim() || '',
     },
   });
 
@@ -83,27 +89,114 @@ export const QiniuStorageForm = ({
   React.useEffect(() => {
     if (initialData) {
       form.reset({
-        accessKey: initialData.accessKey || '',
-        secretKey: initialData.secretKey || '',
-        bucket: initialData.bucket || '',
-        domain: initialData.domain || '',
-        region: initialData.region || 'z0',
-        pathFormat: initialData.pathFormat || '',
+        accessKey: initialData.accessKey?.trim() || '',
+        secretKey: initialData.secretKey?.trim() || '',
+        bucket: initialData.bucket?.trim() || '',
+        domain: initialData.domain?.trim() || '',
+        region: initialData.region?.trim() || 'z0',
+        pathFormat: initialData.pathFormat?.trim() || '',
       });
     }
   }, [initialData, form]);
 
-  const handleSubmit = (data: QiniuStorageConfig) => {
-    onSubmit(data);
+  const normalizeAndValidate = (
+    values: QiniuStorageFormValues
+  ): QiniuStorageConfig | null => {
+    const trimmed: QiniuStorageFormValues = {
+      accessKey: values.accessKey?.trim() ?? '',
+      secretKey: values.secretKey?.trim() ?? '',
+      bucket: values.bucket?.trim() ?? '',
+      domain: values.domain?.trim() ?? '',
+      region: values.region?.trim() ?? 'z0',
+      pathFormat: values.pathFormat?.trim() ?? '',
+    };
+
+    form.clearErrors();
+
+    const requiredFields: Array<keyof QiniuStorageFormValues> = [
+      'accessKey',
+      'secretKey',
+      'bucket',
+      'domain',
+    ];
+
+    let hasEmpty = false;
+    requiredFields.forEach(field => {
+      if (!trimmed[field]) {
+        hasEmpty = true;
+        form.setError(field, {
+          type: 'manual',
+          message:
+            field === 'accessKey'
+              ? 'Access Key不能为空'
+              : field === 'secretKey'
+                ? 'Secret Key不能为空'
+                : field === 'bucket'
+                  ? '存储空间名称不能为空'
+                  : '访问域名不能为空',
+        });
+      } else if (values[field] !== trimmed[field]) {
+        form.setValue(field, trimmed[field] as string, { shouldDirty: true });
+      }
+    });
+
+    if (values.region !== trimmed.region) {
+      form.setValue('region', trimmed.region ?? 'z0', { shouldDirty: true });
+    }
+
+    if (values.pathFormat !== trimmed.pathFormat) {
+      form.setValue('pathFormat', trimmed.pathFormat ?? '', {
+        shouldDirty: true,
+      });
+    }
+
+    if (hasEmpty) {
+      return null;
+    }
+
+    const validation = QiniuStorageConfigSchema.safeParse({
+      ...trimmed,
+    });
+
+    if (!validation.success) {
+      validation.error.issues.forEach(issue => {
+        const field = issue.path[0];
+        if (typeof field === 'string') {
+          form.setError(field as keyof QiniuStorageFormValues, {
+            type: 'manual',
+            message: issue.message,
+          });
+        }
+      });
+      return null;
+    }
+
+    const normalized = validation.data;
+
+    return {
+      accessKey: normalized.accessKey.trim(),
+      secretKey: normalized.secretKey.trim(),
+      bucket: normalized.bucket.trim(),
+      domain: normalized.domain.trim(),
+      region: normalized.region?.trim() || 'z0',
+      pathFormat: normalized.pathFormat?.trim() || '',
+    };
+  };
+
+  const handleSubmit = (data: QiniuStorageFormValues) => {
+    const normalized = normalizeAndValidate(data);
+    if (!normalized) {
+      return;
+    }
+    onSubmit(normalized);
   };
 
   const handleTestConnection = () => {
-    const formData = form.getValues();
-    form.trigger().then(isValid => {
-      if (isValid) {
-        onTestConnection(formData);
-      }
-    });
+    const normalized = normalizeAndValidate(form.getValues());
+    if (!normalized) {
+      return;
+    }
+    onTestConnection(normalized);
   };
 
   const isFormDisabled = isSaving || isTesting;

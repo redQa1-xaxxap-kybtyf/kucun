@@ -4,7 +4,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { productVariantQuerySchema } from '@/lib/validations/product';
+import {
+  productVariantQuerySchema,
+  productVariantCreateSchema,
+} from '@/lib/validations/product';
 
 // 获取产品变体列表
 export const GET = withAuth(async (request: NextRequest) => {

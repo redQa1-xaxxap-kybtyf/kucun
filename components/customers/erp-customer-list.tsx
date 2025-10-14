@@ -108,9 +108,20 @@ export function ERPCustomerList({
     }
   };
 
-  // 格式化日期
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('zh-CN');
+  // 格式化日期时间（显示到分钟）
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date
+      .toLocaleString('zh-CN', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+      })
+      .replace(/\//g, '-');
+  };
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
@@ -193,11 +204,11 @@ export function ERPCustomerList({
                   </TableCell>
                   <TableCell className="text-muted-foreground text-xs">
                     {customer.lastOrderDate
-                      ? formatDate(customer.lastOrderDate)
+                      ? formatDateTime(customer.lastOrderDate)
                       : '-'}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">
-                    {formatDate(customer.createdAt)}
+                  <TableCell className="text-muted-foreground text-xs">
+                    {formatDateTime(customer.createdAt)}
                   </TableCell>
                   <TableCell className="text-center">
                     <DropdownMenu>

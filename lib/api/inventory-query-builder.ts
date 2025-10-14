@@ -33,6 +33,7 @@ const inventoryQueryResultSchema = z.object({
   specification_size: z.string().nullable(),
   product_unit: z.string(),
   product_piecesPerUnit: z.number(),
+  batch_piecesPerUnit: z.number().nullable(),
   product_status: z.string(),
   category_id: z.string().nullable(),
   category_name: z.string().nullable(),
@@ -163,12 +164,15 @@ export async function getOptimizedInventoryList(
       p.specification as specification_size,
       p.unit as product_unit,
       p.pieces_per_unit as product_piecesPerUnit,
+      bs.pieces_per_unit as batch_piecesPerUnit,
       p.status as product_status,
       c.id as category_id,
       c.name as category_name,
       c.code as category_code
     FROM inventory i
     LEFT JOIN products p ON i.product_id = p.id
+    LEFT JOIN batch_specifications bs
+      ON bs.product_id = i.product_id AND bs.batch_number = i.batch_number
     LEFT JOIN categories c ON p.category_id = c.id
     WHERE ${whereClause}
     ORDER BY ${orderByClause}
@@ -244,6 +248,7 @@ export function formatInventoryQueryResult(record: InventoryQueryResult): {
   location: string | null;
   unitCost: number | null;
   updatedAt: Date;
+  batchPiecesPerUnit?: number;
   product: {
     id: string;
     code: string;
@@ -266,13 +271,11 @@ export function formatInventoryQueryResult(record: InventoryQueryResult): {
     batchNumber: record.batchNumber,
     quantity: record.quantity,
     reservedQuantity: record.reservedQuantity,
-    availableQuantity: Math.max(
-      record.quantity - record.reservedQuantity,
-      0
-    ),
+    availableQuantity: Math.max(record.quantity - record.reservedQuantity, 0),
     location: record.location,
     unitCost: record.unitCost,
     updatedAt: record.updatedAt,
+    batchPiecesPerUnit: record.batch_piecesPerUnit ?? undefined,
     product: {
       id: record.product_id,
       code: record.product_code,

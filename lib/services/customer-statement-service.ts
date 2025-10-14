@@ -299,7 +299,63 @@ async function findSupplierForCustomer(
  * 3. 补偿退款：无退货关联的退款(returnOrderId=null)，增加应收
  * 4. 当前系统：所有退款都关联退货，补偿退款为0
  */
-async function calculateCustomerStatementSummary(
+type RefundRecordForStatement = {
+  refundAmount: number | null;
+  processedAmount: number | null;
+  remainingAmount: number | null;
+  status: string;
+  returnOrder?: {
+    refundAmount: number | null;
+  } | null;
+};
+
+function normalizeRefundAmounts(record: RefundRecordForStatement) {
+  const refundAmountRaw = Number(record.refundAmount ?? 0);
+  const processedAmountRaw = Number(record.processedAmount ?? 0);
+  const fallbackAmount = Number(record.returnOrder?.refundAmount ?? 0);
+
+  const effectiveTotal =
+    refundAmountRaw > 0
+      ? refundAmountRaw
+      : processedAmountRaw > 0
+        ? processedAmountRaw
+        : fallbackAmount;
+
+  const effectiveProcessed =
+    processedAmountRaw > 0
+      ? processedAmountRaw
+      : record.status === 'completed'
+        ? effectiveTotal
+        : 0;
+
+  const fallbackRemaining = Math.max(0, effectiveTotal - effectiveProcessed);
+
+  const hasRemainingField =
+    record.remainingAmount !== null && record.remainingAmount !== undefined;
+  const remainingFieldValue = Number(record.remainingAmount ?? 0);
+
+  let effectiveRemaining = hasRemainingField
+    ? remainingFieldValue
+    : fallbackRemaining;
+
+  if (record.status === 'completed') {
+    effectiveRemaining = 0;
+  } else {
+    effectiveRemaining = Math.max(0, effectiveRemaining);
+    if (effectiveRemaining === 0 && fallbackRemaining > 0) {
+      effectiveRemaining = fallbackRemaining;
+    }
+  }
+
+  return {
+    effectiveTotal,
+    effectiveProcessed,
+    effectiveRemaining:
+      record.status === 'completed' ? 0 : Math.max(0, effectiveRemaining),
+  };
+}
+
+export async function calculateCustomerStatementSummary(
   customerId: string,
   startDate?: string,
   endDate?: string
@@ -312,7 +368,13 @@ async function calculateCustomerStatementSummary(
     dateFilter.lte = new Date(endDate);
   }
 
-  // 1. 查询销售订单(应收)
+  // 1. 查询销售订单(应收) - 包含所有有效状态
+  // pending: 待处理（订单已提交，客户已承诺购买）
+  // confirmed: 已确认
+  // processing: 处理中
+  // confirmed: 已确认
+  // shipped: 已发货
+  // completed: 已完成
   const salesOrders = await prisma.salesOrder.findMany({
     where: {
       customerId,
@@ -327,11 +389,12 @@ async function calculateCustomerStatementSummary(
     0
   );
 
-  // 2. 查询销售退货(冲减应收)
+  // 2. 查询销售退货(冲减应收) - 只包含有效状态的订单用于计算余额
+  // 注意：不包含已取消(cancelled)和已拒绝(rejected)的订单
   const returnOrders = await prisma.returnOrder.findMany({
     where: {
       customerId,
-      status: { in: ['approved', 'processing', 'completed'] },
+      status: { in: ['submitted', 'approved', 'processing', 'completed'] },
       ...(Object.keys(dateFilter).length > 0 && { createdAt: dateFilter }),
     },
     select: { refundAmount: true },
@@ -372,24 +435,44 @@ async function calculateCustomerStatementSummary(
   );
 
   // 4. 查询退款记录(退款给客户)
-  // 注意：当前系统中所有退款都关联退货订单(returnOrderId不为空)
-  // 退款金额已在ReturnOrder.refundAmount中统计，此处只查询无退货关联的补偿/折扣类退款
-  // 避免重复计算：退货已减少应收，不应再单独计退款
-  const refunds = await prisma.refundRecord.findMany({
+  const refundRecords = await prisma.refundRecord.findMany({
     where: {
       customerId,
-      status: 'completed',
-      returnOrderId: null, // 只查询无退货关联的退款(补偿、折扣等)
+      status: { in: ['pending', 'processing', 'completed'] },
       ...(Object.keys(dateFilter).length > 0 && { refundDate: dateFilter }),
     },
-    select: { refundAmount: true },
+    select: {
+      refundAmount: true,
+      processedAmount: true,
+      remainingAmount: true,
+      returnOrderId: true,
+      status: true,
+      returnOrder: {
+        select: {
+          refundAmount: true,
+        },
+      },
+    },
   });
 
-  const refundPaid = refunds.reduce(
-    (sum, refund) => sum + Number(refund.refundAmount),
-    0
-  );
-  // 当前系统中refundPaid通常为0，因为所有退款都关联退货
+  const refundCompensationPaid = refundRecords
+    .filter(record => record.returnOrderId === null)
+    .reduce((sum, record) => {
+      const { effectiveProcessed } = normalizeRefundAmounts(record);
+      return sum + effectiveProcessed;
+    }, 0);
+
+  const refundProcessed = refundRecords.reduce((sum, record) => {
+    const { effectiveProcessed } = normalizeRefundAmounts(record);
+    return sum + effectiveProcessed;
+  }, 0);
+
+  const refundPending = refundRecords.reduce((sum, record) => {
+    const { effectiveRemaining } = normalizeRefundAmounts(record);
+    return sum + effectiveRemaining;
+  }, 0);
+
+  const refundPaid = refundCompensationPaid;
 
   // 6. 查询采购订单(应付 - 客户作为供应商)
   // 需要通过supplier表关联到customer
@@ -443,6 +526,9 @@ async function calculateCustomerStatementSummary(
       paymentReceived,
       refundPaid,
       prepaymentReceived,
+      refundProcessed,
+      refundPending,
+      refundCompensation: refundCompensationPaid,
       receivableBalance,
     },
     payables: {
@@ -477,7 +563,7 @@ async function getCustomerTransactions(
   // 检查客户是否也作为供应商存在
   const customerAsSupplier = await findSupplierForCustomer(customerId);
 
-  // 1. 获取销售订单
+  // 1. 获取销售订单 - 包含所有有效状态
   const salesOrders = await prisma.salesOrder.findMany({
     where: {
       customerId,
@@ -541,11 +627,12 @@ async function getCustomerTransactions(
     });
   }
 
-  // 3. 获取退货订单
+  // 3. 获取退货订单（包含所有非草稿状态，用于完整的历史记录）
+  // 注意：已取消/已拒绝的订单也会显示，但在计算余额时会被排除
   const returnOrders = await prisma.returnOrder.findMany({
     where: {
       customerId,
-      status: { in: ['approved', 'processing', 'completed'] },
+      status: { not: 'draft' }, // 排除草稿，其他所有状态都包含
       createdAt: dateFilter,
     },
     select: {
@@ -560,57 +647,87 @@ async function getCustomerTransactions(
   });
 
   for (const returnOrder of returnOrders) {
+    // 已取消或已拒绝的退货订单：显示在明细中但金额为0（不影响余额）
+    const isInvalidStatus = ['cancelled', 'rejected'].includes(
+      returnOrder.status
+    );
+    const effectiveRefundAmount = isInvalidStatus
+      ? 0
+      : Number(returnOrder.refundAmount);
+
+    const description = isInvalidStatus
+      ? `销售退货 ${returnOrder.returnNumber} (已${returnOrder.status === 'cancelled' ? '取消' : '拒绝'})`
+      : `销售退货 ${returnOrder.returnNumber}`;
+
     transactionEntries.push({
       id: returnOrder.id,
       transactionType: 'sales_return',
       transactionDate: returnOrder.createdAt.toISOString(),
       referenceNumber: returnOrder.returnNumber,
       referenceId: returnOrder.id,
-      description: `销售退货 ${returnOrder.returnNumber}`,
+      description,
       debitAmount: 0,
-      creditAmount: Number(returnOrder.refundAmount),
+      creditAmount: effectiveRefundAmount,
       status: returnOrder.status,
     });
   }
 
   // 4. 获取退款记录
-  // 注意：只查询无退货关联的退款(补偿、折扣等)
-  // 退货关联的退款已在退货记录中体现，不应重复记录
   const refunds = await prisma.refundRecord.findMany({
     where: {
       customerId,
-      status: 'completed',
-      returnOrderId: null, // 只查询无退货关联的退款
+      status: { in: ['pending', 'processing', 'completed'] },
       refundDate: dateFilter,
     },
     select: {
       id: true,
       refundNumber: true,
       refundAmount: true,
+      processedAmount: true,
+      remainingAmount: true,
       refundDate: true,
       refundMethod: true,
       refundType: true,
       status: true,
+      returnOrderId: true,
+      returnOrderNumber: true,
+      returnOrder: {
+        select: {
+          refundAmount: true,
+        },
+      },
     },
     orderBy: { refundDate: 'asc' },
   });
 
-  // 无退货关联的退款作为借方(增加应收)
-  // 例如：质量补偿、价格调整等，客户又欠我们的
   for (const refund of refunds) {
+    const { effectiveProcessed, effectiveRemaining } =
+      normalizeRefundAmounts(refund);
+
+    const descriptionParts = [
+      `退款 ${refund.refundNumber} (${refund.refundMethod})`,
+    ];
+
+    if (refund.returnOrderNumber) {
+      descriptionParts.push(`关联退货 ${refund.returnOrderNumber}`);
+    }
+
+    if (effectiveRemaining > 0) {
+      descriptionParts.push(`待退 ${effectiveRemaining.toFixed(2)}`);
+    }
+
     transactionEntries.push({
       id: refund.id,
       transactionType: 'refund_out',
       transactionDate: refund.refundDate.toISOString(),
       referenceNumber: refund.refundNumber,
       referenceId: refund.id,
-      description: `${refund.refundType === 'compensation_refund' ? '补偿退款' : '退款'} ${refund.refundNumber} (${refund.refundMethod})`,
-      debitAmount: Number(refund.refundAmount), // 借方：增加应收
+      description: descriptionParts.join(' / '),
+      debitAmount: effectiveProcessed,
       creditAmount: 0,
       status: refund.status,
     });
   }
-  // 当前系统中通常无记录，因为所有退款都关联退货
 
   // 5. 获取预收款记录
   const prepaymentRecords = await prisma.paymentRecord.findMany({
@@ -634,7 +751,8 @@ async function getCustomerTransactions(
 
   for (const prepayment of prepaymentRecords) {
     const appliedAmount =
-      prepayment.appliedAmount !== null && prepayment.appliedAmount !== undefined
+      prepayment.appliedAmount !== null &&
+      prepayment.appliedAmount !== undefined
         ? prepayment.appliedAmount
         : prepayment.paymentAmount;
 
@@ -646,7 +764,7 @@ async function getCustomerTransactions(
       referenceId: prepayment.id,
       description: `预收款 ${prepayment.paymentNumber} (${prepayment.paymentMethod})`,
       debitAmount: 0,
-      creditAmount: Number(appliedAmount), // 贷方：减少应收
+      creditAmount: Number(appliedAmount), // 减少应收
       status: prepayment.status,
     });
   }
@@ -678,14 +796,14 @@ async function getCustomerTransactions(
         referenceNumber: payment.paymentNumber,
         referenceId: payment.id,
         description: `预付款 ${payment.paymentNumber} (${payment.paymentMethod})`,
-        debitAmount: Number(payment.paymentAmount), // 借方：增加应付
+        debitAmount: Number(payment.paymentAmount), // 增加应付
         creditAmount: 0,
         status: payment.status,
       });
     }
   }
 
-  // 按日期排序
+  // 按日期升序排序（用于正确计算余额）
   const sortedTransactions = [...transactionEntries].sort((a, b) => {
     const dateDiff =
       new Date(a.transactionDate).getTime() -
@@ -756,7 +874,9 @@ async function getLastTransactionDate(
       prisma.paymentRecord.findFirst({
         where: {
           customerId,
-          ...(Object.keys(dateFilter).length > 0 && { paymentDate: dateFilter }),
+          ...(Object.keys(dateFilter).length > 0 && {
+            paymentDate: dateFilter,
+          }),
         },
         orderBy: { paymentDate: 'desc' },
         select: { paymentDate: true },

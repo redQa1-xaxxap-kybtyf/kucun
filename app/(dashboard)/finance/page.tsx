@@ -6,7 +6,6 @@ import {
   Calendar,
   CreditCard,
   DollarSign,
-  FileText,
   Receipt,
   TrendingDown,
   TrendingUp,
@@ -17,6 +16,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/utils/format';
 
 /**
  * 财务管理主页面
@@ -27,11 +27,9 @@ export default function FinancePage() {
   const mockStats = {
     totalReceivable: 125000.0,
     totalRefundable: 8500.0,
-    overdueAmount: 15000.0,
     monthlyReceived: 85000.0,
     receivableCount: 23,
     refundCount: 5,
-    overdueCount: 3,
   };
 
   const financeModules = [
@@ -80,7 +78,7 @@ export default function FinancePage() {
     {
       id: 'statements',
       title: '往来账单',
-      description: '管理客户和供应商的综合账务往来',
+      description: '统一管理业务伙伴往来账本',
       href: '/finance/statements',
       icon: Receipt,
       color: 'text-[hsl(var(--color-primary))]',
@@ -91,27 +89,7 @@ export default function FinancePage() {
         label: '账单总数',
       },
     },
-    {
-      id: 'customer-statements',
-      title: '客户对账单',
-      description: '管理与客户之间的完整财务往来记录',
-      href: '/finance/customer-statements',
-      icon: FileText,
-      color: 'text-[hsl(var(--color-primary))]',
-      bgColor: 'bg-[hsl(var(--color-primary-light))]',
-      stats: {
-        amount: mockStats.totalReceivable,
-        count: mockStats.receivableCount,
-        label: '有往来客户',
-      },
-    },
   ];
-
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-    }).format(amount);
 
   return (
     <div className="space-y-6">
@@ -165,21 +143,6 @@ export default function FinancePage() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">逾期金额</CardTitle>
-            <AlertCircle className="h-4 w-4 text-[hsl(var(--color-error))]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[hsl(var(--color-error))]">
-              {formatCurrency(mockStats.overdueAmount)}
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {mockStats.overdueCount} 个逾期订单
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">本月收款</CardTitle>
             <DollarSign className="h-4 w-4 text-[hsl(var(--color-primary))]" />
           </CardHeader>
@@ -197,7 +160,10 @@ export default function FinancePage() {
         {financeModules.map(module => {
           const IconComponent = module.icon;
           return (
-            <Card key={module.id} className="transition-shadow hover:shadow-[var(--shadow-medium)]">
+            <Card
+              key={module.id}
+              className="transition-shadow hover:shadow-[var(--shadow-medium)]"
+            >
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <div className={`rounded-lg p-2 ${module.bgColor}`}>
@@ -261,10 +227,8 @@ export default function FinancePage() {
             <div className="bg-muted/50 flex items-center gap-3 rounded-lg p-3">
               <AlertCircle className="h-5 w-5 text-[hsl(var(--color-warning))]" />
               <div>
-                <p className="font-medium">逾期提醒</p>
-                <p className="text-muted-foreground text-sm">
-                  处理逾期应收账款
-                </p>
+                <p className="font-medium">收款提醒</p>
+                <p className="text-muted-foreground text-sm">跟进待收款项</p>
               </div>
             </div>
           </div>

@@ -1,21 +1,37 @@
 // 收款管理类型定义
 // 定义收款记录、应收账款等相关数据结构
 
-// 收款方式枚举
-export type PaymentMethod = 'cash' | 'bank_transfer' | 'check' | 'other';
+import type { z } from 'zod';
 
-// 收款状态枚举
-export type PaymentStatus = 'pending' | 'confirmed' | 'cancelled';
+import {
+  paymentMethodSchema,
+  paymentStatusSchema,
+  paymentTypeSchema,
+  type AccountsReceivableQueryInput,
+  type BatchPaymentOperationInput,
+  type CreatePaymentRecordInput,
+  type PaymentConfirmationInput,
+  type PaymentRecordQueryInput,
+  type PaymentStatisticsQueryInput,
+  type UpdatePaymentRecordInput,
+} from '@/lib/validations/payment';
+
+// 收款方式、状态、类型枚举（从 Zod Schema 推导，保持单一真理源）
+export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
+export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
+export type PaymentType = z.infer<typeof paymentTypeSchema>;
 
 // 收款记录基础数据
 export interface PaymentRecord {
   id: string;
   paymentNumber: string;
-  salesOrderId: string;
+  salesOrderId: string | null;
   customerId: string;
   userId: string;
+  paymentType: PaymentType;
   paymentMethod: PaymentMethod;
   paymentAmount: number;
+  appliedAmount: number;
   paymentDate: Date | string; // 支持Date对象和ISO字符串
   status: PaymentStatus;
   remarks?: string;
@@ -44,28 +60,9 @@ export interface PaymentRecordDetail extends PaymentRecord {
   };
 }
 
-// 收款记录创建数据
-export interface CreatePaymentRecordData {
-  salesOrderId: string;
-  customerId: string;
-  paymentMethod: PaymentMethod;
-  paymentAmount: number;
-  paymentDate: Date | string; // 支持Date对象和ISO字符串
-  remarks?: string;
-  receiptNumber?: string;
-  bankInfo?: string;
-}
-
-// 收款记录更新数据
-export interface UpdatePaymentRecordData {
-  paymentMethod?: PaymentMethod;
-  paymentAmount?: number;
-  paymentDate?: Date | string; // 支持Date对象和ISO字符串
-  status?: PaymentStatus;
-  remarks?: string;
-  receiptNumber?: string;
-  bankInfo?: string;
-}
+// 收款记录创建/更新数据（直接复用 Zod 输入类型，保持与验证规则一致）
+export type CreatePaymentRecordData = CreatePaymentRecordInput;
+export type UpdatePaymentRecordData = UpdatePaymentRecordInput;
 
 // 应收账款数据
 export interface AccountsReceivable {
@@ -76,10 +73,9 @@ export interface AccountsReceivable {
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
-  paymentStatus: 'unpaid' | 'partial' | 'paid' | 'overdue';
+  paymentStatus: 'unpaid' | 'partial' | 'paid';
   orderDate: Date | string; // 支持Date对象和ISO字符串
   dueDate?: Date | string;
-  overdueDays?: number;
   lastPaymentDate?: Date | string;
 }
 
@@ -88,11 +84,9 @@ export interface PaymentStatistics {
   totalReceivable: number; // 总应收金额
   totalReceived: number; // 总已收金额
   totalPending: number; // 总待收金额
-  totalOverdue: number; // 总逾期金额
   receivableCount: number; // 应收账款数量
   receivedCount: number; // 已收款数量
   pendingCount: number; // 待收款数量
-  overdueCount: number; // 逾期数量
   averagePaymentDays: number; // 平均收款天数
   paymentRate: number; // 收款率 (%)
 }
@@ -113,39 +107,30 @@ export interface CustomerPaymentStatistics {
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
-  overdueAmount: number;
   averagePaymentDays: number;
   paymentRate: number;
   lastPaymentDate?: string;
 }
 
-// 收款记录查询参数
-export interface PaymentRecordQuery {
-  page?: number;
+// 收款记录查询参数（limit 为后端字段，pageSize 供前端组件使用）
+export type PaymentRecordQuery = Omit<PaymentRecordQueryInput, 'limit'> & {
   pageSize?: number;
-  search?: string; // 搜索关键词（订单号、客户名称等）
-  customerId?: string; // 客户ID筛选
-  userId?: string; // 用户ID筛选
-  paymentMethod?: PaymentMethod; // 收款方式筛选
-  status?: PaymentStatus; // 状态筛选
-  startDate?: string; // 开始日期
-  endDate?: string; // 结束日期
-  sortBy?: 'paymentDate' | 'paymentAmount' | 'createdAt';
-  sortOrder?: 'asc' | 'desc';
-}
+  limit?: number;
+};
 
 // 应收账款查询参数
-export interface AccountsReceivableQuery {
-  page?: number;
+export type AccountsReceivableQuery = Omit<
+  AccountsReceivableQueryInput,
+  'limit'
+> & {
   pageSize?: number;
-  search?: string; // 搜索关键词
-  customerId?: string; // 客户ID筛选
-  paymentStatus?: 'unpaid' | 'partial' | 'paid' | 'overdue';
-  startDate?: string; // 订单开始日期
-  endDate?: string; // 订单结束日期
-  sortBy?: 'orderDate' | 'totalAmount' | 'remainingAmount' | 'overdueDays';
-  sortOrder?: 'asc' | 'desc';
-}
+  limit?: number;
+};
+
+// 统计/批量操作相关输入（保持与验证层命名一致）
+export type PaymentStatisticsQuery = PaymentStatisticsQueryInput;
+export type PaymentConfirmationData = PaymentConfirmationInput;
+export type BatchPaymentOperationData = BatchPaymentOperationInput;
 
 // API响应类型
 export interface PaymentRecordResponse {
@@ -205,8 +190,7 @@ export interface PaymentReminder {
   paidAmount: number;
   remainingAmount: number;
   dueDate?: string;
-  overdueDays: number;
-  reminderType: 'due_soon' | 'overdue' | 'long_overdue';
+  reminderType: 'due_soon' | 'follow_up';
   lastReminderDate?: string;
 }
 
@@ -229,7 +213,7 @@ export interface PaymentInstallment {
   installmentNumber: number;
   amount: number;
   dueDate: string;
-  status: 'pending' | 'paid' | 'overdue';
+  status: 'pending' | 'paid';
   paymentRecordId?: string;
   paidDate?: string;
   paidAmount?: number;
@@ -298,9 +282,16 @@ export interface PaymentStatusConfig {
 // 收款状态变体映射（用于Badge组件）
 export const PAYMENT_STATUS_VARIANTS: Record<
   PaymentStatus,
-  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info'
 > = {
   pending: 'warning',
+  applied: 'info',
   confirmed: 'success',
   cancelled: 'destructive',
 };
@@ -312,6 +303,13 @@ export const DEFAULT_PAYMENT_STATUSES: PaymentStatusConfig[] = [
     label: '待确认',
     description: '收款记录已创建，等待确认',
     color: 'yellow',
+    isActive: true,
+  },
+  {
+    status: 'applied',
+    label: '已冲抵',
+    description: '预收款已部分或全部冲抵销售订单',
+    color: 'blue',
     isActive: true,
   },
   {

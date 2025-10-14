@@ -2,8 +2,8 @@
 
 import {
   ArrowRight,
+  BadgeJapaneseYen,
   Clock,
-  DollarSign,
   Package,
   TrendingUp,
   User,
@@ -13,6 +13,7 @@ import Link from 'next/link';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ContentLoading } from '@/components/common/loading';
+import { formatCurrency } from '@/lib/utils';
 import type { DashboardSalesOrderSummary } from '@/lib/types/dashboard';
 
 interface RecentOrdersProps {
@@ -42,14 +43,6 @@ const statusConfig = {
     label: '已取消',
     variant: 'destructive' as const,
   },
-};
-
-// 格式化货币
-const formatCurrency = (amount: number) => {
-  return new Intl.NumberFormat('zh-CN', {
-    style: 'currency',
-    currency: 'CNY',
-  }).format(amount);
 };
 
 // 格式化时间
@@ -177,7 +170,11 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
             } as const);
 
           return (
-            <Link key={order.id} href={`/sales-orders/${order.id}`} className="group block">
+            <Link
+              key={order.id}
+              href={`/sales-orders/${order.id}`}
+              className="group block"
+            >
               <div className="flex items-start gap-4 rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] p-4 transition-all hover:border-[hsl(var(--color-primary))] hover:shadow-[var(--shadow-light)]">
                 <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-[var(--shadow-medium)] transition-transform group-hover:scale-110">
                   <Package className="h-6 w-6" />
@@ -194,14 +191,17 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
                         <span>{order.customer?.name || '未知客户'}</span>
                       </div>
                     </div>
-                    <Badge variant={statusInfo.variant} className="shrink-0 text-xs font-medium">
+                    <Badge
+                      variant={statusInfo.variant}
+                      className="shrink-0 text-xs font-medium"
+                    >
                       {statusInfo.label}
                     </Badge>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-3 text-sm">
                     <div className="flex items-center gap-1.5 text-[hsl(var(--color-text-secondary))]">
-                      <DollarSign className="h-3.5 w-3.5" />
+                      <BadgeJapaneseYen className="h-3.5 w-3.5" />
                       <span className="font-medium text-[hsl(var(--color-text-primary))]">
                         {formatCurrency(order.totalAmount)}
                       </span>

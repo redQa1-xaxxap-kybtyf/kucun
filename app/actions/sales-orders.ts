@@ -31,22 +31,46 @@ export type ActionResult<T = unknown> = {
 // Zod 验证模式
 // ============================================
 
-const salesOrderItemSchema = z.object({
-  productId: z.string().optional(),
-  isManualProduct: z.boolean().default(false),
-  manualProductName: z.string().optional(),
-  manualSpecification: z.string().optional(),
-  manualWeight: z.number().optional(),
-  manualUnit: z.string().optional(),
-  colorCode: z.string().optional(),
-  productionDate: z.string().optional(),
-  quantity: z.number().positive('数量必须大于 0'),
-  unitPrice: z.number().nonnegative('单价不能为负'),
-  subtotal: z.number().nonnegative('小计不能为负'),
-  unitCost: z.number().optional(),
-  costSubtotal: z.number().optional(),
-  profitAmount: z.number().optional(),
-});
+const salesOrderItemSchema = z
+  .object({
+    productId: z.string().optional(),
+    isManualProduct: z.boolean().default(false),
+    manualProductName: z.string().optional(),
+    manualSpecification: z.string().optional(),
+    manualWeight: z.number().optional(),
+    manualUnit: z.string().optional(),
+    colorCode: z.string().optional(),
+    productionDate: z.string().optional(),
+    quantity: z.number().positive('数量必须大于 0'),
+    unitPrice: z.number().positive('单价必须大于 0'),
+    subtotal: z.number().nonnegative('小计不能为负'),
+    unitCost: z.number().optional(),
+    costSubtotal: z.number().optional(),
+    profitAmount: z.number().optional(),
+  })
+  .superRefine((item, ctx) => {
+    if (item.isManualProduct) {
+      if (
+        !item.manualProductName ||
+        item.manualProductName.trim().length === 0
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '手动输入商品必须填写商品名称',
+          path: ['manualProductName'],
+        });
+      }
+    } else {
+      const productId = item.productId?.trim();
+      if (!productId) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '产品ID不能为空',
+          path: ['productId'],
+        });
+      }
+    }
+  });
 
 const createSalesOrderSchema = z.object({
   customerId: z.string().min(1, '客户 ID 不能为空'),
@@ -126,9 +150,9 @@ export async function createSalesOrder(
               manualUnit: item.manualUnit,
               colorCode: item.colorCode,
               productionDate: item.productionDate
-                ? (typeof item.productionDate === 'string'
-                    ? item.productionDate
-                    : (item.productionDate as Date).toISOString())
+                ? typeof item.productionDate === 'string'
+                  ? item.productionDate
+                  : (item.productionDate as Date).toISOString()
                 : null,
               quantity: item.quantity,
               unitPrice: item.unitPrice,
@@ -382,9 +406,9 @@ export async function updateSalesOrder(
               manualUnit: item.manualUnit,
               colorCode: item.colorCode,
               productionDate: item.productionDate
-                ? (typeof item.productionDate === 'string'
-                    ? item.productionDate
-                    : (item.productionDate as Date).toISOString())
+                ? typeof item.productionDate === 'string'
+                  ? item.productionDate
+                  : (item.productionDate as Date).toISOString()
                 : null,
               quantity: item.quantity,
               unitPrice: item.unitPrice,

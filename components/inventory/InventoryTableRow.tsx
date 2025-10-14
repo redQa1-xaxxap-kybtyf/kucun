@@ -15,7 +15,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
-import { formatInventoryQuantity } from '@/lib/utils/piece-calculation';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryTableRowProps {
   item: Inventory;
@@ -42,22 +42,6 @@ const getStockBadge = (quantity: number, reservedQuantity: number = 0) => {
 };
 
 /**
- * 格式化库存数量显示
- */
-const formatQuantityDisplay = (item: Inventory) => {
-  if (!item.product?.piecesPerUnit) {
-    const unit = item.product?.unit
-      ? PRODUCT_UNIT_LABELS[
-          item.product.unit as keyof typeof PRODUCT_UNIT_LABELS
-        ] || item.product.unit
-      : '件';
-    return `${item.quantity} ${unit}`;
-  }
-  // 显示 "5件+3片 (总计53片)" 完整格式
-  return formatInventoryQuantity(item.quantity, item.product, true);
-};
-
-/**
  * 库存表格行组件
  * 使用React.memo优化重渲染性能
  */
@@ -79,9 +63,29 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
     }, [item.batchNumber, item.id, onAdjust]);
 
     // 使用useMemo优化计算密集型操作
+    const unitLabel = React.useMemo(() => {
+      if (!item.product?.unit) {
+        return '件';
+      }
+      return (
+        PRODUCT_UNIT_LABELS[
+          item.product.unit as keyof typeof PRODUCT_UNIT_LABELS
+        ] || item.product.unit
+      );
+    }, [item.product?.unit]);
+
+    const packaging = React.useMemo(
+      () => item.batchPiecesPerUnit ?? item.product?.piecesPerUnit ?? 0,
+      [item.batchPiecesPerUnit, item.product?.piecesPerUnit]
+    );
+
     const quantityDisplay = React.useMemo(
-      () => formatQuantityDisplay(item),
-      [item]
+      () =>
+        formatPieceSummary(item.quantity, packaging, {
+          prefix: '总计',
+          fallbackUnit: unitLabel,
+        }),
+      [item.quantity, packaging, unitLabel]
     );
 
     const stockBadge = React.useMemo(
@@ -123,6 +127,27 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
       [item.quantity, item.reservedQuantity]
     );
 
+    const reservedDisplay = React.useMemo(() => {
+      const reserved = item.reservedQuantity || 0;
+      if (reserved === 0) {
+        return '0';
+      }
+      return formatPieceSummary(reserved, packaging, {
+        fallbackUnit: unitLabel,
+        zeroDisplay: '0',
+      });
+    }, [item.reservedQuantity, packaging, unitLabel]);
+
+    const availableDisplay = React.useMemo(() => {
+      if (availableQuantity <= 0) {
+        return '0';
+      }
+      return formatPieceSummary(availableQuantity, packaging, {
+        fallbackUnit: unitLabel,
+        zeroDisplay: '0',
+      });
+    }, [availableQuantity, packaging, unitLabel]);
+
     const formattedDate = React.useMemo(
       () => new Date(item.updatedAt).toLocaleDateString('zh-CN'),
       [item.updatedAt]
@@ -149,9 +174,9 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
         </TableCell>
         <TableCell>{formattedSpecification}</TableCell>
         <TableCell className="font-medium">
-          {item.product?.piecesPerUnit ? (
+          {packaging > 0 ? (
             <>
-              {item.product.piecesPerUnit}
+              {packaging}
               <span className="ml-0.5 text-[10px] font-normal text-[hsl(var(--color-text-tertiary))]">
                 片/件
               </span>
@@ -162,8 +187,8 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
         </TableCell>
         <TableCell className="font-mono">{item.batchNumber || '-'}</TableCell>
         <TableCell className="font-medium">{quantityDisplay}</TableCell>
-        <TableCell>{item.reservedQuantity || 0}</TableCell>
-        <TableCell className="font-medium">{availableQuantity}</TableCell>
+        <TableCell>{reservedDisplay}</TableCell>
+        <TableCell className="font-medium">{availableDisplay}</TableCell>
         <TableCell>{stockBadge}</TableCell>
         <TableCell>{formattedDate}</TableCell>
         <TableCell>

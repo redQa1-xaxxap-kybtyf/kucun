@@ -14,71 +14,50 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-
-interface Transaction {
-  id: string;
-  type: string;
-  referenceNumber: string;
-  amount: number;
-  balance: number;
-  description: string;
-  transactionDate: string;
-  dueDate?: string;
-  status: string;
-}
+import type { StatementTransaction } from '@/lib/types/statement';
+import { formatCurrency, formatDate } from '@/lib/utils/format';
 
 interface StatementTransactionsProps {
-  transactions: Transaction[];
+  transactions: StatementTransaction[];
 }
 
-/**
- * 账单交易明细表格组件
- */
+const TRANSACTION_TYPE_LABEL: Record<string, string> = {
+  sale: '销售',
+  sales_return: '销售退货',
+  payment_in: '收款',
+  payment_out: '付款',
+  prepayment_in: '预收款',
+  prepayment_out: '预付款',
+  refund: '退款',
+  purchase: '采购',
+  adjustment: '调整',
+};
+
 export function StatementTransactions({
   transactions,
 }: StatementTransactionsProps) {
   const router = useRouter();
 
-  const formatCurrency = (amount: number) =>
-    new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-    }).format(amount);
+  // 倒序显示交易记录（最新的在前）
+  const reversedTransactions = [...transactions].reverse();
 
   const getTransactionTypeBadge = (type: string) => {
-    const typeMap: Record<
-      string,
-      { label: string; variant: 'default' | 'secondary' | 'outline' }
-    > = {
-      sale: { label: '销售', variant: 'default' },
-      payment: { label: '收款', variant: 'secondary' },
-      refund: { label: '退款', variant: 'outline' },
-      purchase: { label: '采购', variant: 'default' },
-      payment_out: { label: '付款', variant: 'secondary' },
-    };
-
-    const typeInfo = typeMap[type] || {
-      label: '其他',
-      variant: 'outline' as const,
-    };
-    return <Badge variant={typeInfo.variant}>{typeInfo.label}</Badge>;
+    const label = TRANSACTION_TYPE_LABEL[type] ?? '其他';
+    const variant =
+      type === 'payment_in' || type === 'prepayment_in'
+        ? 'secondary'
+        : type === 'payment_out' || type === 'prepayment_out'
+          ? 'destructive'
+          : 'outline';
+    return <Badge variant={variant}>{label}</Badge>;
   };
 
-  const getTransactionStatusBadge = (status: string) => {
-    const statusMap: Record<
-      string,
-      { label: string; variant: 'default' | 'secondary' | 'destructive' }
-    > = {
-      pending: { label: '待处理', variant: 'secondary' },
-      completed: { label: '已完成', variant: 'default' },
-      overdue: { label: '逾期', variant: 'destructive' },
-    };
-
-    const statusInfo = statusMap[status] || {
-      label: '未知',
-      variant: 'secondary' as const,
-    };
-    return <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>;
+  const getTransactionStatusBadge = (
+    status: StatementTransaction['status']
+  ) => {
+    const variant = status === 'pending' ? 'secondary' : 'outline';
+    const label = status === 'pending' ? '待入账' : '已完成';
+    return <Badge variant={variant}>{label}</Badge>;
   };
 
   return (
@@ -95,57 +74,68 @@ export function StatementTransactions({
             <TableRow>
               <TableHead>交易类型</TableHead>
               <TableHead>单据号</TableHead>
-              <TableHead>交易描述</TableHead>
-              <TableHead>交易金额</TableHead>
-              <TableHead>余额</TableHead>
+              <TableHead>描述</TableHead>
+              <TableHead className="text-right">应收增加</TableHead>
+              <TableHead className="text-right">应收减少</TableHead>
+              <TableHead className="text-right">余额</TableHead>
               <TableHead>交易日期</TableHead>
-              <TableHead>到期日期</TableHead>
               <TableHead>状态</TableHead>
-              <TableHead>操作</TableHead>
+              <TableHead className="text-right">操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {transactions.map(transaction => (
-              <TableRow key={transaction.id}>
-                <TableCell>
-                  {getTransactionTypeBadge(transaction.type)}
-                </TableCell>
-                <TableCell className="font-medium">
-                  {transaction.referenceNumber}
-                </TableCell>
-                <TableCell>{transaction.description}</TableCell>
-                <TableCell>
-                  <span
-                    className={
-                      transaction.amount >= 0
-                        ? 'text-[hsl(var(--color-success))]'
-                        : 'text-[hsl(var(--color-error))]'
-                    }
+            {reversedTransactions.map(transaction => {
+              const debit = transaction.debitAmount || 0;
+              const credit = transaction.creditAmount || 0;
+              const balanceClass =
+                transaction.balance >= 0
+                  ? 'text-[hsl(var(--color-success))]'
+                  : 'text-[hsl(var(--color-warning))]';
+
+              return (
+                <TableRow key={transaction.id}>
+                  <TableCell>
+                    {getTransactionTypeBadge(transaction.transactionType)}
+                  </TableCell>
+                  <TableCell className="font-medium">
+                    {transaction.referenceNumber || '-'}
+                  </TableCell>
+                  <TableCell className="max-w-[220px] truncate">
+                    {transaction.description}
+                  </TableCell>
+                  <TableCell className="text-right font-medium text-[hsl(var(--color-error))]">
+                    {debit > 0 ? formatCurrency(debit) : '-'}
+                  </TableCell>
+                  <TableCell className="text-right font-medium text-[hsl(var(--color-success))]">
+                    {credit > 0 ? formatCurrency(credit) : '-'}
+                  </TableCell>
+                  <TableCell
+                    className={`text-right font-semibold ${balanceClass}`}
                   >
-                    {formatCurrency(transaction.amount)}
-                  </span>
-                </TableCell>
-                <TableCell className="font-medium">
-                  {formatCurrency(transaction.balance)}
-                </TableCell>
-                <TableCell>{transaction.transactionDate}</TableCell>
-                <TableCell>{transaction.dueDate || '-'}</TableCell>
-                <TableCell>
-                  {getTransactionStatusBadge(transaction.status)}
-                </TableCell>
-                <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() =>
-                      router.push(`/finance/transactions/${transaction.id}`)
-                    }
-                  >
-                    <Eye className="h-4 w-4" />
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
+                    {formatCurrency(
+                      transaction.afterBalance ?? transaction.balance
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {formatDate(transaction.transactionDate, 'datetime')}
+                  </TableCell>
+                  <TableCell>
+                    {getTransactionStatusBadge(transaction.status)}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() =>
+                        router.push(`/finance/transactions/${transaction.id}`)
+                      }
+                    >
+                      <Eye className="h-4 w-4" />
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </CardContent>

@@ -93,3 +93,15 @@ verify-*.js
 quick-check.js
 kill-all-node.bat
 start-clean.bat
+
+# 清理规则：临时文件和旧版本文件
+temp*.txt
+jest-output.txt
+*.old.tsx
+*.old.ts
+*.old.jsx
+*.old.js
+*.new.tsx
+*.new.ts
+*.new.jsx
+*.new.js

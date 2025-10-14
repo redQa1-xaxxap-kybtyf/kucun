@@ -16,7 +16,6 @@ import '@tanstack/react-query';
 type QueryKeyPrefix =
   | 'products'
   | 'customers'
-  | 'customer-statements'
   | 'suppliers'
   | 'sales-orders'
   | 'return-orders'

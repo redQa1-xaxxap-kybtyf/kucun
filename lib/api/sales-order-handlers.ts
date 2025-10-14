@@ -114,6 +114,15 @@ export async function getSalesOrdersList(params: SalesOrderQueryFormData) {
             phone: true,
           },
         },
+        returnOrders: {
+          where: {
+            status: {
+              not: 'cancelled',
+            },
+          },
+          select: { id: true },
+          take: 1,
+        },
         _count: {
           select: {
             items: true,
@@ -124,8 +133,16 @@ export async function getSalesOrdersList(params: SalesOrderQueryFormData) {
     prisma.salesOrder.count({ where }),
   ]);
 
+  const formattedOrders = salesOrders.map(order => {
+    const { returnOrders, ...rest } = order;
+    return {
+      ...rest,
+      hasReturnOrder: returnOrders.length > 0,
+    };
+  });
+
   return {
-    salesOrders,
+    salesOrders: formattedOrders,
     pagination: {
       page: params.page,
       limit: params.limit,
@@ -139,7 +156,7 @@ export async function getSalesOrdersList(params: SalesOrderQueryFormData) {
  * 获取单个销售订单详情
  */
 export async function getSalesOrderById(id: string) {
-  return await prisma.salesOrder.findUnique({
+  const order = await prisma.salesOrder.findUnique({
     where: { id },
     select: {
       id: true,
@@ -209,8 +226,40 @@ export async function getSalesOrderById(id: string) {
           // createdAt: 'asc', // 移除不支持的排序字段
         },
       },
+      returnOrders: {
+        where: {
+          status: {
+            not: 'cancelled',
+          },
+        },
+        select: {
+          id: true,
+          returnNumber: true,
+          status: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
     },
   });
+
+  if (!order) {
+    return null;
+  }
+
+  const { returnOrders, ...rest } = order;
+  return {
+    ...rest,
+    hasReturnOrder: returnOrders.length > 0,
+    returnOrders: returnOrders.map(returnOrder => ({
+      id: returnOrder.id,
+      returnNumber: returnOrder.returnNumber,
+      status: returnOrder.status,
+      createdAt: returnOrder.createdAt.toISOString(),
+    })),
+  };
 }
 
 /**
@@ -258,18 +307,20 @@ export function calculateTransferCosts(
   let totalProfit = 0;
 
   items.forEach(item => {
-    if (item.unitCost && item.quantity) {
-      const costSubtotal =
-        Math.round(item.unitCost * item.quantity * 100) / 100;
-      const profitAmount =
-        Math.round((item.subtotal - costSubtotal) * 100) / 100;
-
-      // item.costSubtotal = costSubtotal; // 属性不存在
-      // item.profitAmount = profitAmount; // 属性不存在
-
-      totalCost += costSubtotal;
-      totalProfit += profitAmount;
+    const unitCost = item.unitCost ?? 0;
+    const quantity = item.quantity ?? 0;
+    if (!Number.isFinite(unitCost) || !Number.isFinite(quantity)) {
+      return;
     }
+
+    const costSubtotal = Math.round(unitCost * quantity * 100) / 100;
+    const profitAmount = Math.round((item.subtotal - costSubtotal) * 100) / 100;
+
+    // item.costSubtotal = costSubtotal; // 属性不存在
+    // item.profitAmount = profitAmount; // 属性不存在
+
+    totalCost += costSubtotal;
+    totalProfit += profitAmount;
   });
 
   return {
@@ -286,17 +337,20 @@ export function processOrderItems(
   orderType: string
 ) {
   const processedItems = items.map(item => {
-    const subtotal = calculateItemSubtotal(item.quantity, item.unitPrice || 0);
+    const quantity = item.quantity ?? 0;
+    const unitPrice = item.unitPrice ?? 0;
+    const subtotal = calculateItemSubtotal(quantity, unitPrice);
 
     const processedItem = {
       ...item,
+      quantity,
+      unitPrice,
       subtotal,
     };
 
     // 调货销售需要计算成本和毛利
-    if (orderType === 'TRANSFER' && item.unitCost) {
-      const costSubtotal =
-        Math.round(item.unitCost * item.quantity * 100) / 100;
+    if (orderType === 'TRANSFER' && item.unitCost !== undefined) {
+      const costSubtotal = Math.round(item.unitCost * quantity * 100) / 100;
       const _profitAmount = Math.round((subtotal - costSubtotal) * 100) / 100;
 
       // processedItem.costSubtotal = costSubtotal; // 属性不存在
@@ -352,10 +406,11 @@ export async function createSalesOrder(
             productId: item.productId || null,
             colorCode: item.colorCode || null,
             productionDate: item.productionDate || null,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice || 0,
+            quantity: item.quantity ?? 0,
+            unitPrice: item.unitPrice ?? 0,
             subtotal: item.subtotal,
-            unitCost: item.unitCost || null,
+            unitCost:
+              item.unitCost === undefined ? null : (item.unitCost ?? null),
             // costSubtotal: item.costSubtotal || null, // 属性不存在
             // profitAmount: item.profitAmount || null, // 属性不存在
             isManualProduct: item.isManualProduct || false,

@@ -98,6 +98,10 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
         supplierId: true,
         status: true,
         orderType: true,
+        transferMode: true,
+        itemsAmount: true,
+        additionalFees: true,
+        roundingAdjustment: true,
         costAmount: true,
         profitAmount: true,
         totalAmount: true,
@@ -141,6 +145,8 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
             unitPrice: true,
             subtotal: true,
             unitCost: true,
+            localQuantity: true,
+            transferQuantity: true,
             profitAmount: true,
             isManualProduct: true,
             manualProductName: true,
@@ -168,6 +174,15 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
             paymentAmount: true,
           },
         },
+        returnOrders: {
+          where: {
+            status: {
+              not: 'cancelled',
+            },
+          },
+          select: { id: true },
+          take: 1,
+        },
         _count: {
           select: {
             items: true,
@@ -180,7 +195,7 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
 
   return {
     data: orders.map(order => {
-      const { _count, payments, ...orderData } = order;
+      const { _count, payments, returnOrders, ...orderData } = order;
       // 计算已收款金额
       const paidAmount = payments.reduce(
         (sum, payment) => sum + Number(payment.paymentAmount),
@@ -205,6 +220,7 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
         itemCount: _count.items,
         paidAmount,
         remainingAmount,
+        hasReturnOrder: returnOrders.length > 0,
       };
     }),
     pagination: {
@@ -230,6 +246,10 @@ export async function getSalesOrderById(id: string) {
       supplierId: true,
       status: true,
       orderType: true,
+      transferMode: true,
+      itemsAmount: true,
+      additionalFees: true,
+      roundingAdjustment: true,
       costAmount: true,
       profitAmount: true,
       totalAmount: true,
@@ -275,6 +295,8 @@ export async function getSalesOrderById(id: string) {
           unitPrice: true,
           subtotal: true,
           unitCost: true,
+          localQuantity: true,
+          transferQuantity: true,
           profitAmount: true,
           isManualProduct: true,
           manualProductName: true,
@@ -294,6 +316,31 @@ export async function getSalesOrderById(id: string) {
           },
         },
       },
+      feeItems: {
+        select: {
+          id: true,
+          feeType: true,
+          feeName: true,
+          feeAmount: true,
+          remarks: true,
+        },
+      },
+      returnOrders: {
+        where: {
+          status: {
+            not: 'cancelled',
+          },
+        },
+        select: {
+          id: true,
+          returnNumber: true,
+          status: true,
+          createdAt: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      },
       _count: {
         select: {
           items: true,
@@ -306,12 +353,19 @@ export async function getSalesOrderById(id: string) {
     return null;
   }
 
-  const { _count, items, createdAt, updatedAt, ...rest } = order;
+  const { _count, items, createdAt, updatedAt, returnOrders, ...rest } = order;
 
   return {
     ...rest,
     createdAt: createdAt.toISOString(),
     updatedAt: updatedAt.toISOString(),
+    hasReturnOrder: returnOrders.length > 0,
+    returnOrders: returnOrders.map(returnOrder => ({
+      id: returnOrder.id,
+      returnNumber: returnOrder.returnNumber,
+      status: returnOrder.status,
+      createdAt: returnOrder.createdAt.toISOString(),
+    })),
     items: items.map(item => ({
       ...item,
       batchNumber: item.batchNumber ?? undefined,
@@ -389,16 +443,37 @@ async function applyPrepaymentToOrder(
     const availableAmount = prepayment.paymentAmount - prepayment.appliedAmount;
     const applyAmount = Math.min(availableAmount, remainingAmount);
 
-    // 更新预收款已冲抵金额
-    await tx.paymentRecord.update({
-      where: { id: prepayment.id },
+    // ✅ P0修复: 使用乐观锁防止并发冲抵导致的数据不一致
+    // updateMany返回受影响行数，如果为0说明发生了并发冲突
+    const updatedCount = await tx.paymentRecord.updateMany({
+      where: {
+        id: prepayment.id,
+        // 乐观锁: 确保appliedAmount未被其他事务修改
+        appliedAmount: prepayment.appliedAmount,
+        // 防护: 确保冲抵后不超过paymentAmount
+        paymentAmount: { gte: prepayment.appliedAmount + applyAmount },
+      },
       data: {
         appliedAmount: { increment: applyAmount },
-        status:
-          prepayment.appliedAmount + applyAmount >= prepayment.paymentAmount
-            ? 'applied' // 全部冲抵完成
-            : 'confirmed', // 部分冲抵
+        // 注意: updateMany不支持复杂的条件更新status，需要二次更新
       },
+    });
+
+    if (updatedCount.count === 0) {
+      // 并发冲突: 预收款已被其他事务修改，抛出错误回滚整个订单事务
+      throw new Error(
+        `预收款 ${prepayment.id} 冲抵冲突，请重试。可能原因：其他订单正在使用该预收款。`
+      );
+    }
+
+    // 二次更新status（基于最新的appliedAmount）
+    const newAppliedAmount = prepayment.appliedAmount + applyAmount;
+    const newStatus =
+      newAppliedAmount >= prepayment.paymentAmount ? 'applied' : 'confirmed';
+
+    await tx.paymentRecord.update({
+      where: { id: prepayment.id },
+      data: { status: newStatus },
     });
 
     appliedRecords.push({ id: prepayment.id, amount: applyAmount });
@@ -425,19 +500,31 @@ export async function createSalesOrder(
   const orderNumber = await generateSalesOrderNumber();
 
   // 计算订单金额
-  let totalAmount = 0;
+  let itemsAmount = 0;
   let costAmount = 0;
   let profitAmount = 0;
+
+  const transferMode =
+    validatedData.orderType === 'TRANSFER'
+      ? (validatedData.transferMode ?? 'SUPPLIER_ONLY')
+      : 'SUPPLIER_ONLY';
 
   for (const item of validatedData.items) {
     const itemSubtotal =
       item.subtotal || (item.quantity ?? 0) * (item.unitPrice ?? 0);
-    const itemCost = (item.unitCost || 0) * (item.quantity ?? 0);
+    const effectiveTransferQuantity =
+      validatedData.orderType === 'TRANSFER' && transferMode === 'MIXED'
+        ? (item.transferQuantity ?? 0)
+        : (item.quantity ?? 0);
+    const itemCost = (item.unitCost || 0) * effectiveTransferQuantity;
 
-    totalAmount += itemSubtotal;
+    itemsAmount += itemSubtotal;
     costAmount += itemCost;
-    profitAmount += itemSubtotal - itemCost; // 正确计算：销售额 - 成本
   }
+
+  itemsAmount = Math.round(itemsAmount * 100) / 100;
+  costAmount = Math.round(costAmount * 100) / 100;
+  profitAmount = Math.round((itemsAmount - costAmount) * 100) / 100;
 
   // 使用事务创建订单，确保数据一致性
   const order = await prisma.$transaction(
@@ -491,9 +578,17 @@ export async function createSalesOrder(
       // ✅ 性能优化2: 批量查询和预留库存（如果订单状态为confirmed）
       // 优化前：N次库存查询 + N次库存更新，10个订单项=20次数据库操作
       // 优化后：1次批量查询 + N次更新（Map缓存），10个订单项=11次操作（减少45%）
-      if (validatedData.status === 'confirmed') {
+      if (
+        validatedData.status === 'confirmed' &&
+        (validatedData.orderType !== 'TRANSFER' || transferMode === 'MIXED')
+      ) {
         const reservationTargets = validatedData.items
           .filter(item => !item.isManualProduct && item.productId)
+          .filter(item =>
+            validatedData.orderType === 'TRANSFER' && transferMode === 'MIXED'
+              ? (item.localQuantity ?? 0) > 0
+              : true
+          )
           .map(item => ({
             productId: item.productId as string,
             batchNumber: item.batchNumber ?? null,
@@ -590,7 +685,13 @@ export async function createSalesOrder(
             );
             const batchMessage = batchLabel ? ` (批次: ${batchLabel})` : '';
 
-            const itemQuantity = item.quantity ?? 0;
+            const itemQuantity =
+              validatedData.orderType === 'TRANSFER' && transferMode === 'MIXED'
+                ? (item.localQuantity ?? 0)
+                : (item.quantity ?? 0);
+            if (itemQuantity <= 0) {
+              continue;
+            }
             if (availableQuantity < itemQuantity) {
               throw new Error(
                 `产品ID ${item.productId}${batchMessage} 可用库存不足。可用: ${availableQuantity}, 需要: ${itemQuantity}`
@@ -625,9 +726,15 @@ export async function createSalesOrder(
       }
 
       // 计算额外费用总额
-      const additionalFees =
-        validatedData.feeItems?.reduce((sum, fee) => sum + fee.feeAmount, 0) ||
+      const rawAdditionalFees =
+        validatedData.feeItems?.reduce((sum, fee) => sum + fee.feeAmount, 0) ??
         0;
+      const additionalFees = Math.round(rawAdditionalFees * 100) / 100;
+      const roundingAdjustment =
+        Math.round((validatedData.roundingAdjustment ?? 0) * 100) / 100;
+      const orderTotal =
+        Math.round((itemsAmount + additionalFees + roundingAdjustment) * 100) /
+        100;
 
       // 创建订单
       const salesOrder = await tx.salesOrder.create({
@@ -638,35 +745,53 @@ export async function createSalesOrder(
           supplierId: validatedData.supplierId,
           status: validatedData.status || 'draft',
           orderType: validatedData.orderType,
+          transferMode,
           costAmount,
           profitAmount,
-          itemsAmount: totalAmount,
+          itemsAmount: itemsAmount,
           additionalFees,
-          totalAmount: totalAmount + additionalFees,
+          roundingAdjustment: roundingAdjustment,
+          totalAmount: orderTotal,
           remarks: validatedData.remarks,
           items: {
-            create: validatedData.items.map(item => ({
-              productId: item.productId,
-              batchNumber: item.batchNumber || null,
-              colorCode: item.colorCode,
-              productionDate: item.productionDate,
-              quantity: item.quantity ?? 0,
-              unitPrice: item.unitPrice ?? 0,
-              subtotal: item.subtotal ?? 0,
-              unitCost: item.unitCost,
-              displayUnit: item.displayUnit || '片',
-              displayQuantity: item.displayQuantity ?? item.quantity ?? 0,
-              piecesPerUnit: item.piecesPerUnit ?? null,
-              specification: item.specification || null,
-              remarks: item.remarks || null,
-              // costSubtotal: item.costSubtotal, // 属性不存在
-              // profitAmount: item.profitAmount, // 属性不存在
-              isManualProduct: item.isManualProduct,
-              manualProductName: item.manualProductName,
-              manualSpecification: item.manualSpecification,
-              manualWeight: item.manualWeight,
-              manualUnit: item.manualUnit,
-            })),
+            create: validatedData.items.map(item => {
+              const quantity = item.quantity ?? 0;
+              const localQuantity =
+                validatedData.orderType === 'TRANSFER'
+                  ? transferMode === 'MIXED'
+                    ? (item.localQuantity ?? 0)
+                    : 0
+                  : quantity;
+              const transferQuantity =
+                validatedData.orderType === 'TRANSFER'
+                  ? transferMode === 'MIXED'
+                    ? (item.transferQuantity ?? 0)
+                    : quantity
+                  : 0;
+
+              return {
+                productId: item.productId,
+                batchNumber: item.batchNumber || null,
+                colorCode: item.colorCode,
+                productionDate: item.productionDate,
+                quantity,
+                unitPrice: item.unitPrice ?? 0,
+                subtotal: item.subtotal ?? quantity * (item.unitPrice ?? 0),
+                unitCost: item.unitCost,
+                localQuantity,
+                transferQuantity,
+                displayUnit: item.displayUnit || '片',
+                displayQuantity: item.displayQuantity ?? quantity,
+                piecesPerUnit: item.piecesPerUnit ?? null,
+                specification: item.specification || null,
+                remarks: item.remarks || null,
+                isManualProduct: item.isManualProduct,
+                manualProductName: item.manualProductName,
+                manualSpecification: item.manualSpecification,
+                manualWeight: item.manualWeight,
+                manualUnit: item.manualUnit,
+              };
+            }),
           },
           feeItems: {
             create:
@@ -686,6 +811,10 @@ export async function createSalesOrder(
           supplierId: true,
           status: true,
           orderType: true,
+          transferMode: true,
+          itemsAmount: true,
+          additionalFees: true,
+          roundingAdjustment: true,
           costAmount: true,
           profitAmount: true,
           totalAmount: true,
@@ -729,6 +858,8 @@ export async function createSalesOrder(
               unitPrice: true,
               subtotal: true,
               unitCost: true,
+              localQuantity: true,
+              transferQuantity: true,
               profitAmount: true,
               isManualProduct: true,
               manualProductName: true,
@@ -858,6 +989,8 @@ export async function createSalesOrder(
     ...rest,
     createdAt: createdAt.toISOString(),
     updatedAt: updatedAt.toISOString(),
+    hasReturnOrder: false,
+    returnOrders: [],
     items: items.map(item => ({
       ...item,
       batchNumber: item.batchNumber ?? undefined,

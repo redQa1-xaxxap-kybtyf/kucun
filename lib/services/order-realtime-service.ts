@@ -8,6 +8,7 @@ import { prisma } from '@/lib/db';
 import { redis } from '@/lib/redis/redis-client';
 import { publish } from '@/lib/redis/redis-pubsub';
 import type { SalesOrderStatus } from '@/lib/types/sales-order';
+import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 
 type OrderStatus = SalesOrderStatus;
 
@@ -61,7 +62,7 @@ export async function updateOrderStatus(
       throw new Error('订单不存在');
     }
 
-    const previousStatus = order.status;
+    const previousStatus = order.status as OrderStatus;
 
     // 2. 使用 Redis 事务更新缓存
     const orderKey = `order:${orderId}`;
@@ -120,7 +121,7 @@ export async function updateOrderStatus(
       publish('order:status:changed', event),
 
       // 用户通知
-      publish(`user:${order.customerId}:notifications`, {
+      publish(`user:${order.userId}:notifications`, {
         type: 'order_status_changed',
         orderId,
         orderNumber: order.orderNumber,
@@ -177,11 +178,13 @@ export async function processOrderPayment(
       pipeline.hset(orderKey, 'lastPaymentAt', new Date().toISOString());
 
       // 如果全额支付，更新状态
+      pipeline.hset(
+        orderKey,
+        'paymentStatus',
+        remainingAmount <= 0 ? 'paid' : 'partial'
+      );
       if (remainingAmount <= 0) {
-        pipeline.hset(orderKey, 'paymentStatus', 'paid');
         pipeline.hset(orderKey, 'paidAt', new Date().toISOString());
-      } else {
-        pipeline.hset(orderKey, 'paymentStatus', 'partial');
       }
 
       // 更新每日统计
@@ -208,21 +211,26 @@ export async function processOrderPayment(
       where: { id: orderId },
       data: {
         paidAmount,
-        paymentStatus: remainingAmount <= 0 ? 'paid' : 'partial',
         updatedAt: new Date(),
       },
     });
 
     // 4. 创建支付记录
-    await prisma.payment.create({
+    const paymentNumber = await generatePaymentNumber();
+    await prisma.paymentRecord.create({
       data: {
-        orderId,
+        paymentNumber,
+        salesOrderId: orderId,
         customerId: order.customerId,
-        amount: paymentAmount,
+        userId: metadata?.userId ?? order.userId,
+        paymentType: 'order_payment',
         paymentMethod,
-        transactionId: metadata?.transactionId,
-        userId: metadata?.userId,
-        status: 'completed',
+        paymentAmount,
+        paymentDate: new Date(),
+        status: 'confirmed',
+        remarks: metadata?.transactionId
+          ? `交易号: ${metadata.transactionId}`
+          : undefined,
       },
     });
 
@@ -334,11 +342,9 @@ export async function cancelOrder(
  */
 function getStatusLabel(status: OrderStatus): string {
   const labels: Record<OrderStatus, string> = {
-    pending: '待处理',
+    draft: '草稿',
     confirmed: '已确认',
-    processing: '处理中',
     shipped: '已发货',
-    delivered: '已送达',
     completed: '已完成',
     cancelled: '已取消',
   };

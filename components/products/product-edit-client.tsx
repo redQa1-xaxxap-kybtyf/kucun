@@ -1,7 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-
 import { ProductForm } from '@/components/products/product-form';
 import { useToast } from '@/components/ui/use-toast';
 import type { Product } from '@/lib/types/product';
@@ -15,19 +13,14 @@ export function ProductEditClient({
   productId,
   initialData,
 }: ProductEditClientProps) {
-  const router = useRouter();
   const { toast } = useToast();
 
   const handleSuccess = (product: Product) => {
-    // 显示成功提示
     toast({
       title: '更新成功',
       description: `产品编码 "${product.code}" 更新成功！所有修改已保存。`,
       variant: 'success',
     });
-
-    // 跳转到产品列表页(缓存失效已在use-product-form中处理)
-    router.push('/products');
   };
 
   return (

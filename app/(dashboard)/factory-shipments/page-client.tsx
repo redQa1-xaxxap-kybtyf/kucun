@@ -162,57 +162,55 @@ export function FactoryShipmentsPageClient({
   );
 
   return (
-    <div className="flex h-full flex-col overflow-auto p-6">
-      <div className="space-y-6">
-        {/* 页面标题 */}
-        <PageHeader
-          title="厂家发货管理"
-          description="管理厂家发货订单，跟踪货物运输状态和到货情况"
-          icon={<Package className="h-6 w-6 text-white" />}
-          variant="solid"
-          actions={
-            <>
-              <Button
-                variant="outline"
-                size="lg"
-                asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-              >
-                <Link href="/factory-shipments/export">
-                  <Download className="mr-2 h-4 w-4" />
-                  导出
-                </Link>
-              </Button>
-              <Button
-                size="lg"
-                asChild
-                className="h-11 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
-              >
-                <Link href="/factory-shipments/create">
-                  <Plus className="mr-2 h-4 w-4" />
-                  新建发货单
-                </Link>
-              </Button>
-            </>
-          }
-        />
+    <div className="space-y-6 p-6">
+      {/* 页面标题 */}
+      <PageHeader
+        title="厂家发货管理"
+        description="管理厂家发货订单，跟踪货物运输状态和到货情况"
+        icon={<Package className="h-6 w-6 text-white" />}
+        variant="solid"
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="lg"
+              asChild
+              className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+            >
+              <Link href="/factory-shipments/export">
+                <Download className="mr-2 h-4 w-4" />
+                导出
+              </Link>
+            </Button>
+            <Button
+              size="lg"
+              asChild
+              className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+            >
+              <Link href="/factory-shipments/create">
+                <Plus className="mr-2 h-4 w-4" />
+                新建发货单
+              </Link>
+            </Button>
+          </>
+        }
+      />
 
-        {/* 厂家发货列表 */}
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">加载中...</div>
-            </div>
-          }
-        >
-          <FactoryShipmentOrderList
-            initialParams={initialParams}
-            onSearch={handleSearch}
-            onFilter={handleFilter}
-            onPageChange={handlePageChange}
-          />
-        </Suspense>
-      </div>
+      {/* 厂家发货列表 */}
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center py-12">
+            <div className="text-muted-foreground">加载中...</div>
+          </div>
+        }
+      >
+        <FactoryShipmentOrderList
+          initialParams={initialParams}
+          onSearch={handleSearch}
+          onFilter={handleFilter}
+          onPageChange={handlePageChange}
+        />
+      </Suspense>
     </div>
   );
 }

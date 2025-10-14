@@ -83,8 +83,8 @@ export function CustomerCreateDialog({
     mutationFn: createCustomer,
     onSuccess: data => {
       toast({
-        title: '创建成功',
-        description: `客户 "${data.name}" 创建成功！`,
+        title: '客户创建成功',
+        description: `客户 "${data.name}" 已创建并自动选中`,
         variant: 'success',
       });
 

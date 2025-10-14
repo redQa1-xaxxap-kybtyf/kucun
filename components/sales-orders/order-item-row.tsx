@@ -25,6 +25,7 @@ import {
 import { TableCell, TableRow } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import type { Product } from '@/lib/types/product';
+import type { TransferFulfillmentMode } from '@/lib/types/sales-order';
 
 interface OrderItemRowProps {
   index: number;
@@ -32,6 +33,7 @@ interface OrderItemRowProps {
   onRemove: (index: number) => void;
   onProductChange?: (index: number, product: Product | null) => void;
   orderType: 'NORMAL' | 'TRANSFER';
+  transferMode?: TransferFulfillmentMode;
   unitMapping: Record<string, string>;
 }
 
@@ -41,6 +43,7 @@ export function OrderItemRow({
   onRemove,
   onProductChange,
   orderType,
+  transferMode,
   unitMapping,
 }: OrderItemRowProps) {
   const form = useFormContext();
@@ -61,6 +64,16 @@ export function OrderItemRow({
     control: form.control,
     name: `items.${index}.quantity`,
     defaultValue: 0,
+  });
+  const watchedLocalQuantity = useWatch({
+    control: form.control,
+    name: `items.${index}.localQuantity`,
+    defaultValue: orderType === 'TRANSFER' ? 0 : 0,
+  });
+  const watchedTransferQuantity = useWatch({
+    control: form.control,
+    name: `items.${index}.transferQuantity`,
+    defaultValue: orderType === 'TRANSFER' ? 0 : 0,
   });
 
   const watchedUnitPrice = useWatch({
@@ -86,7 +99,27 @@ export function OrderItemRow({
     defaultValue: 1,
   });
 
-  const _selectedProduct = products.find(p => p.id === watchedProductId);
+  const productFromList = React.useMemo(
+    () => products.find(p => p.id === watchedProductId),
+    [products, watchedProductId]
+  );
+  const [productOverride, setProductOverride] = React.useState<Product | null>(
+    null
+  );
+
+  React.useEffect(() => {
+    if (!watchedProductId) {
+      setProductOverride(null);
+      return;
+    }
+    if (productFromList) {
+      setProductOverride(prev =>
+        prev && prev.id === productFromList.id ? prev : productFromList
+      );
+    }
+  }, [productFromList, watchedProductId]);
+
+  const resolvedProduct = productOverride ?? productFromList ?? null;
 
   // 获取当前行的批次号
   const currentBatchNumber = useWatch({
@@ -98,20 +131,35 @@ export function OrderItemRow({
     name: `items.${index}.remarks`,
   });
 
+  const handleProductChange = React.useCallback(
+    (product: Product | null) => {
+      setProductOverride(product);
+      onProductChange?.(index, product);
+    },
+    [index, onProductChange]
+  );
+
   // 构建批次列表：合并产品库存批次和当前已选批次（用于编辑模式）
   const availableBatches = React.useMemo(() => {
-    const inventoryBatches = _selectedProduct?.inventory?.batches || [];
+    const inventoryBatches = resolvedProduct?.inventory?.batches || [];
 
     // 如果当前有批次号，但不在库存批次列表中，添加它（用于编辑模式回显）
-    if (currentBatchNumber && !inventoryBatches.find(b => b.batchNumber === currentBatchNumber)) {
+    if (
+      currentBatchNumber &&
+      !inventoryBatches.find(b => b.batchNumber === currentBatchNumber)
+    ) {
       return [
         { batchNumber: currentBatchNumber, quantity: 0 }, // 数量0表示这是历史批次
-        ...inventoryBatches
+        ...inventoryBatches,
       ];
     }
 
     return inventoryBatches;
-  }, [_selectedProduct?.id, _selectedProduct?.inventory?.batches, currentBatchNumber]);
+  }, [
+    resolvedProduct?.inventory?.batches,
+    currentBatchNumber,
+    resolvedProduct?.id,
+  ]);
 
   // 计算片单价
   const piecePriceForCalculation =
@@ -121,6 +169,18 @@ export function OrderItemRow({
 
   // 金额 = 系统数量（片数） × 片单价
   const itemAmount = (watchedQuantity || 0) * piecePriceForCalculation;
+  const localQuantityDisplay = Math.max(Number(watchedLocalQuantity) || 0, 0);
+  const transferQuantityDisplay = Math.max(
+    Number(watchedTransferQuantity) || 0,
+    0
+  );
+  const formatQuantity = (value: number) =>
+    Number.isFinite(value)
+      ? value.toLocaleString('zh-CN', {
+          minimumFractionDigits: 0,
+          maximumFractionDigits: 2,
+        })
+      : '0';
   React.useEffect(() => {
     const displayQty = Number(watchedDisplayQuantity) || 0;
     const piecesPerUnit = Number(watchedPiecesPerUnit) || 0;
@@ -146,6 +206,71 @@ export function OrderItemRow({
     watchedQuantity,
   ]);
 
+  React.useEffect(() => {
+    const total = Number(watchedQuantity) || 0;
+    const local = Number(watchedLocalQuantity) || 0;
+    const transfer = Number(watchedTransferQuantity) || 0;
+
+    const clamp = (value: number, min: number, max: number) =>
+      Math.min(Math.max(value, min), max);
+
+    if (orderType === 'TRANSFER') {
+      if (transferMode === 'MIXED') {
+        const boundedLocal = clamp(local, 0, total);
+        if (Math.abs(boundedLocal - local) > 0.01) {
+          form.setValue(`items.${index}.localQuantity`, boundedLocal, {
+            shouldDirty: true,
+            shouldValidate: false,
+          });
+          return;
+        }
+        const expectedTransfer = Math.max(total - boundedLocal, 0);
+        if (Math.abs(expectedTransfer - transfer) > 0.01) {
+          form.setValue(`items.${index}.transferQuantity`, expectedTransfer, {
+            shouldDirty: true,
+            shouldValidate: false,
+          });
+        }
+      } else {
+        if (Math.abs(local) > 0.01) {
+          form.setValue(`items.${index}.localQuantity`, 0, {
+            shouldDirty: true,
+            shouldValidate: false,
+          });
+          return;
+        }
+        if (Math.abs(transfer - total) > 0.01) {
+          form.setValue(`items.${index}.transferQuantity`, total, {
+            shouldDirty: true,
+            shouldValidate: false,
+          });
+        }
+      }
+    } else {
+      if (Math.abs(local - total) > 0.01) {
+        form.setValue(`items.${index}.localQuantity`, total, {
+          shouldDirty: true,
+          shouldValidate: false,
+        });
+        return;
+      }
+      if (Math.abs(transfer) > 0.01) {
+        form.setValue(`items.${index}.transferQuantity`, 0, {
+          shouldDirty: true,
+          shouldValidate: false,
+        });
+      }
+    }
+  }, [
+    form,
+    index,
+    orderType,
+    transferMode,
+    watchedLocalQuantity,
+    watchedQuantity,
+    watchedTransferQuantity,
+  ]);
+
   // 自动生成备注：始终显示 X件Y片 格式
   React.useEffect(() => {
     const quantity = Number(watchedQuantity) || 0;
@@ -153,7 +278,10 @@ export function OrderItemRow({
 
     if (quantity > 0 && piecesPerUnit > 0) {
       try {
-        const result = calculatePieceDisplay(Math.floor(quantity), piecesPerUnit);
+        const result = calculatePieceDisplay(
+          Math.floor(quantity),
+          piecesPerUnit
+        );
         // 始终显示完整的格式，无论是否整件
         let remarksText = '';
         if (result.fullUnits === 0) {
@@ -203,7 +331,7 @@ export function OrderItemRow({
           form={form}
           index={index}
           products={products}
-          onProductChange={product => onProductChange?.(index, product)}
+          onProductChange={handleProductChange}
         />
       </TableCell>
 
@@ -218,7 +346,7 @@ export function OrderItemRow({
                 <Input
                   {...field}
                   value={field.value ?? ''}
-                  className="h-8 text-xs font-mono"
+                  className="h-8 font-mono text-xs"
                   placeholder="产品编码"
                   readOnly={!allowProductCodeEdit}
                 />
@@ -264,7 +392,7 @@ export function OrderItemRow({
                   batches={availableBatches}
                   value={field.value}
                   onValueChange={field.onChange}
-                  disabled={!_selectedProduct}
+                  disabled={!resolvedProduct}
                 />
               </FormControl>
               <FormMessage className="text-xs" />
@@ -303,10 +431,14 @@ export function OrderItemRow({
             render={({ field }) => (
               <FormItem className="flex-1">
                 <Select
-                  onValueChange={(newUnit) => {
+                  onValueChange={newUnit => {
                     const oldUnit = field.value;
-                    const currentPrice = form.getValues(`items.${index}.unitPrice`);
-                    const piecesPerUnit = form.getValues(`items.${index}.piecesPerUnit`);
+                    const currentPrice = form.getValues(
+                      `items.${index}.unitPrice`
+                    );
+                    const piecesPerUnit = form.getValues(
+                      `items.${index}.piecesPerUnit`
+                    );
 
                     // 单位切换时自动换算单价
                     if (oldUnit !== newUnit && currentPrice && piecesPerUnit) {
@@ -319,10 +451,14 @@ export function OrderItemRow({
                         newPrice = currentPrice / piecesPerUnit;
                       }
                       // 保留2位小数
-                      form.setValue(`items.${index}.unitPrice`, Math.round(newPrice * 100) / 100, {
-                        shouldDirty: true,
-                        shouldValidate: true,
-                      });
+                      form.setValue(
+                        `items.${index}.unitPrice`,
+                        Math.round(newPrice * 100) / 100,
+                        {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        }
+                      );
                     }
 
                     field.onChange(newUnit);
@@ -338,7 +474,7 @@ export function OrderItemRow({
                     <SelectItem value="片">片</SelectItem>
                     <SelectItem
                       value="件"
-                      disabled={!_selectedProduct?.piecesPerUnit}
+                      disabled={!resolvedProduct?.piecesPerUnit}
                     >
                       件
                     </SelectItem>
@@ -356,6 +492,13 @@ export function OrderItemRow({
         <FormField
           control={form.control}
           name={`items.${index}.displayQuantity`}
+          rules={{
+            required: '数量不能为空',
+            validate: value => {
+              const numeric = Number(value) || 0;
+              return numeric > 0 || '数量必须大于 0';
+            },
+          }}
           render={({ field }) => (
             <FormItem>
               <FormControl>
@@ -366,8 +509,10 @@ export function OrderItemRow({
                   className="h-8 text-xs"
                   placeholder="数量"
                   onChange={e => {
-                    const value = parseFloat(e.target.value) || 0;
-                    field.onChange(value);
+                    const value = e.target.value;
+                    field.onChange(
+                      value === '' ? undefined : parseFloat(value)
+                    );
                   }}
                 />
               </FormControl>
@@ -382,6 +527,13 @@ export function OrderItemRow({
         <FormField
           control={form.control}
           name={`items.${index}.unitPrice`}
+          rules={{
+            required: '单价不能为空',
+            validate: value => {
+              const numeric = Number(value);
+              return numeric > 0 || '单价必须大于 0';
+            },
+          }}
           render={({ field }) => (
             <FormItem>
               <FormControl>
@@ -394,7 +546,9 @@ export function OrderItemRow({
                   placeholder="单价"
                   onChange={e => {
                     const value = e.target.value;
-                    field.onChange(value === '' ? undefined : parseFloat(value));
+                    field.onChange(
+                      value === '' ? undefined : parseFloat(value)
+                    );
                   }}
                 />
               </FormControl>
@@ -422,7 +576,9 @@ export function OrderItemRow({
                     placeholder="成本单价"
                     onChange={e => {
                       const value = e.target.value;
-                      field.onChange(value === '' ? undefined : parseFloat(value));
+                      field.onChange(
+                        value === '' ? undefined : parseFloat(value)
+                      );
                     }}
                   />
                 </FormControl>
@@ -430,6 +586,50 @@ export function OrderItemRow({
               </FormItem>
             )}
           />
+        </TableCell>
+      )}
+
+      {orderType === 'TRANSFER' && (
+        <TableCell className="min-w-[160px]">
+          {transferMode === 'MIXED' ? (
+            <div className="space-y-1">
+              <FormField
+                control={form.control}
+                name={`items.${index}.localQuantity`}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        {...field}
+                        value={field.value ?? ''}
+                        className="h-8 text-xs"
+                        placeholder="本地数量"
+                        onChange={e => {
+                          const value = e.target.value;
+                          field.onChange(
+                            value === '' ? undefined : parseFloat(value)
+                          );
+                        }}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+              <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                本地发货：{formatQuantity(localQuantityDisplay)} 片
+              </div>
+              <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                调货数量：{formatQuantity(transferQuantityDisplay)} 片
+              </div>
+            </div>
+          ) : (
+            <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
+              全部由供应商调货（{formatQuantity(transferQuantityDisplay)} 片）
+            </div>
+          )}
         </TableCell>
       )}
 

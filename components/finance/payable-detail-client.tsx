@@ -38,10 +38,7 @@ interface PayableDetailClientProps {
 export function PayableDetailClient({ payable }: PayableDetailClientProps) {
   const router = useRouter();
 
-  const isOverdue =
-    payable.dueDate &&
-    new Date(payable.dueDate) < new Date() &&
-    payable.status !== 'paid';
+  const isOverdue = payable.status === 'overdue';
 
   const paymentProgress =
     payable.payableAmount > 0
@@ -157,33 +154,6 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                   </div>
                 )}
 
-                {payable.dueDate && (
-                  <div>
-                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                      到期日期
-                    </div>
-                    <div className="mt-2 flex items-center gap-2">
-                      <Calendar className="h-4 w-4 text-[hsl(var(--color-text-disabled))]" />
-                      <span
-                        className={`text-sm ${isOverdue ? 'font-semibold text-[hsl(var(--color-error))]' : 'text-[hsl(var(--color-text-secondary))]'}`}
-                      >
-                        {new Date(payable.dueDate).toLocaleDateString()}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {payable.paymentTerms && (
-                  <div>
-                    <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                      付款条件
-                    </div>
-                    <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                      {payable.paymentTerms}
-                    </div>
-                  </div>
-                )}
-
                 <div>
                   <div className="text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                     创建人
@@ -293,7 +263,9 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
               ) : (
                 <div className="py-8 text-center">
                   <DollarSign className="mx-auto mb-4 h-12 w-12 text-[hsl(var(--color-border-secondary))]" />
-                  <p className="text-sm text-[hsl(var(--color-text-tertiary))]">暂无付款记录</p>
+                  <p className="text-sm text-[hsl(var(--color-text-tertiary))]">
+                    暂无付款记录
+                  </p>
                 </div>
               )}
             </CardContent>
@@ -305,24 +277,32 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
           {/* 金额汇总 */}
           <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
             <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
-              <CardTitle className="text-[hsl(var(--color-text-primary))]">金额汇总</CardTitle>
+              <CardTitle className="text-[hsl(var(--color-text-primary))]">
+                金额汇总
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[hsl(var(--color-text-secondary))]">应付金额</span>
+                  <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                    应付金额
+                  </span>
                   <span className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
                     {formatCurrency(payable.payableAmount)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[hsl(var(--color-text-secondary))]">已付金额</span>
+                  <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                    已付金额
+                  </span>
                   <span className="text-lg font-semibold text-[hsl(var(--color-success))]">
                     {formatCurrency(payable.paidAmount)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-[hsl(var(--color-text-secondary))]">剩余金额</span>
+                  <span className="text-sm text-[hsl(var(--color-text-secondary))]">
+                    剩余金额
+                  </span>
                   <span className="text-lg font-semibold text-[hsl(var(--color-warning))]">
                     {formatCurrency(payable.remainingAmount)}
                   </span>
@@ -332,7 +312,9 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between text-sm">
-                    <span className="text-[hsl(var(--color-text-secondary))]">付款进度</span>
+                    <span className="text-[hsl(var(--color-text-secondary))]">
+                      付款进度
+                    </span>
                     <span className="font-medium text-[hsl(var(--color-text-primary))]">
                       {paymentProgress.toFixed(1)}%
                     </span>
@@ -351,7 +333,9 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
           {/* 供应商信息 */}
           <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
             <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]">
-              <CardTitle className="text-[hsl(var(--color-text-primary))]">供应商信息</CardTitle>
+              <CardTitle className="text-[hsl(var(--color-text-primary))]">
+                供应商信息
+              </CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="space-y-4">

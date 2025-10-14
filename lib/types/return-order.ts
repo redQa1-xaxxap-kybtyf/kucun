@@ -1,6 +1,7 @@
 // 退货管理类型定义
 // 严格遵循命名约定：数据库 snake_case → API camelCase → 前端 camelCase
 
+import { formatCurrency } from '@/lib/utils';
 import type { Customer } from './customer';
 import type { Product } from './product';
 import type { SalesOrder } from './sales-order';
@@ -25,12 +26,10 @@ export type ReturnOrderType =
   | 'remaining_return' // 剩余退货
   | 'other'; // 其他原因
 
-// 退货处理方式枚举
+// 退货处理方式枚举（进销存系统：瓷砖行业只退换货，不维修，无积分系统）
 export type ReturnProcessType =
   | 'refund' // 退款
-  | 'exchange' // 换货
-  | 'repair' // 维修
-  | 'credit'; // 积分补偿
+  | 'exchange'; // 换货
 
 // 退货模式枚举
 export type ReturnOrderMode =
@@ -77,6 +76,7 @@ export interface ReturnOrderItem {
   colorCode?: string;
   productionDate?: string;
   returnQuantity: number;
+  damagedQuantity?: number;
   originalQuantity: number;
   unitPrice: number;
   subtotal: number;
@@ -174,8 +174,6 @@ export const RETURN_ORDER_TYPE_LABELS: Record<ReturnOrderType, string> = {
 export const RETURN_PROCESS_TYPE_LABELS: Record<ReturnProcessType, string> = {
   refund: '退款',
   exchange: '换货',
-  repair: '维修',
-  credit: '积分补偿',
 };
 
 // 退货模式标签映射
@@ -187,7 +185,13 @@ export const RETURN_ORDER_MODE_LABELS: Record<ReturnOrderMode, string> = {
 // 退货状态变体映射（用于Badge组件）
 export const RETURN_ORDER_STATUS_VARIANTS: Record<
   ReturnOrderStatus,
-  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info'
 > = {
   draft: 'outline',
   submitted: 'warning',
@@ -249,11 +253,7 @@ export function isValidReturnStatusTransition(
  * 格式化退货金额
  */
 export function formatReturnAmount(amount: number): string {
-  return new Intl.NumberFormat('zh-CN', {
-    style: 'currency',
-    currency: 'CNY',
-    minimumFractionDigits: 2,
-  }).format(amount);
+  return formatCurrency(amount);
 }
 
 /**

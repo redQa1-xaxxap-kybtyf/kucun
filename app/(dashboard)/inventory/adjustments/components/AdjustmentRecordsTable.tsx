@@ -61,7 +61,11 @@ export function AdjustmentRecordsTable({
       );
     }
 
-    return <span className="font-medium text-[hsl(var(--color-text-primary))]">{quantity}</span>;
+    return (
+      <span className="font-medium text-[hsl(var(--color-text-primary))]">
+        {quantity}
+      </span>
+    );
   };
 
   // 格式化产品规格显示（限制11个字符，避免JSON字符串显示）
@@ -96,6 +100,27 @@ export function AdjustmentRecordsTable({
       : specification;
   };
 
+  // 格式化数量显示（X件Y片（共XX片））
+  const formatQuantity = (quantity: number, piecesPerUnit?: number) => {
+    // 数据验证
+    if (!quantity || !piecesPerUnit || piecesPerUnit <= 0) {
+      return `${quantity || 0}片`;
+    }
+
+    const units = Math.floor(quantity / piecesPerUnit);
+    const pieces = quantity % piecesPerUnit;
+
+    if (units === 0) {
+      return `${pieces}片`;
+    }
+
+    if (pieces === 0) {
+      return `${units}件（共${quantity}片）`;
+    }
+
+    return `${units}件${pieces}片（共${quantity}片）`;
+  };
+
   if (isLoading) {
     return <ContentLoading text="加载调整记录..." />;
   }
@@ -118,36 +143,21 @@ export function AdjustmentRecordsTable({
         <Table>
           <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
             <TableRow>
-              <TableHead>
-                产品编码
-              </TableHead>
-              <TableHead>
-                产品名称
-              </TableHead>
-              <TableHead>
-                规格
-              </TableHead>
-              <TableHead>
-                批次号
-              </TableHead>
-              <TableHead>
-                调整数量
-              </TableHead>
-              <TableHead>
-                调整原因
-              </TableHead>
-              <TableHead>
-                操作时间
-              </TableHead>
-              <TableHead>
-                操作
-              </TableHead>
+              <TableHead>产品编码</TableHead>
+              <TableHead>产品名称</TableHead>
+              <TableHead>规格</TableHead>
+              <TableHead>批次号</TableHead>
+              <TableHead>每件片数</TableHead>
+              <TableHead>调整数量</TableHead>
+              <TableHead>调整原因</TableHead>
+              <TableHead>操作时间</TableHead>
+              <TableHead>操作</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {adjustments.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
+                <TableCell colSpan={9} className="h-24 text-center">
                   <div className="text-muted-foreground flex flex-col items-center gap-2">
                     <Package className="h-8 w-8" />
                     <span className="text-sm">暂无调整记录</span>
@@ -173,11 +183,22 @@ export function AdjustmentRecordsTable({
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {adjustment.batchNumber || '-'}
                   </TableCell>
+                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    {adjustment.product?.piecesPerUnit || '-'}
+                  </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
                     <div className="flex flex-col gap-0.5">
                       {formatAdjustQuantity(adjustment.adjustQuantity)}
                       <span className="text-xs text-[hsl(var(--color-text-secondary))]">
-                        {adjustment.beforeQuantity} → {adjustment.afterQuantity}
+                        {formatQuantity(
+                          adjustment.beforeQuantity,
+                          adjustment.product?.piecesPerUnit
+                        )}{' '}
+                        →{' '}
+                        {formatQuantity(
+                          adjustment.afterQuantity,
+                          adjustment.product?.piecesPerUnit
+                        )}
                       </span>
                     </div>
                   </TableCell>

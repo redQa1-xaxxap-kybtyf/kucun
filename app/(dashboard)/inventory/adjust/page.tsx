@@ -1,9 +1,11 @@
 'use client';
 
+import { ArrowLeft, PackagePlus, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import { PageHeader } from '@/components/common/page-header';
 import { InventoryOperationForm } from '@/components/inventory/inventory-operation-form';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -11,7 +13,6 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-import { InventoryAdjustHeader } from './components/InventoryAdjustHeader';
 import { InventoryAdjustTable } from './components/InventoryAdjustTable';
 import { useInventoryAdjustPage } from './hooks/useInventoryAdjustPage';
 
@@ -37,12 +38,35 @@ export default function InventoryAdjustPage() {
   };
 
   return (
-    <div className="mx-auto max-w-none px-4 py-4 sm:px-6 lg:px-8">
-      <div className="space-y-4">
-        {/* 页面标题卡片 */}
-        <InventoryAdjustHeader
-          onBack={handleBack}
-          onNewAdjust={openAdjustDialog}
+    <div className="flex h-full flex-col overflow-auto p-6">
+      <div className="space-y-6">
+        {/* 页面标题 */}
+        <PageHeader
+          title="库存调整"
+          description="查看当前库存状态并进行调整操作"
+          icon={<PackagePlus className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-green))"
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-11 gap-2"
+                onClick={handleBack}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                返回
+              </Button>
+              <Button
+                size="lg"
+                className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                onClick={openAdjustDialog}
+              >
+                <Plus className="h-4 w-4" />
+                新增调整
+              </Button>
+            </>
+          }
         />
 
         {/* 调整对话框 */}
@@ -60,17 +84,20 @@ export default function InventoryAdjustPage() {
         </Dialog>
 
         {/* 当前库存列表 */}
-        <Card className="shadow-md shadow-gray-200/50">
-          <CardHeader className="bg-gradient-to-r from-slate-50 to-gray-50">
-            <CardTitle>当前库存状态</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <InventoryAdjustTable
-              inventoryRecords={inventoryRecords}
-              isLoading={isLoading}
-            />
-          </CardContent>
-        </Card>
+        <div
+          className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+          style={{ boxShadow: 'var(--shadow-medium)' }}
+        >
+          <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
+            <h2 className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+              当前库存状态
+            </h2>
+          </div>
+          <InventoryAdjustTable
+            inventoryRecords={inventoryRecords}
+            isLoading={isLoading}
+          />
+        </div>
       </div>
     </div>
   );

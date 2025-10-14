@@ -26,7 +26,8 @@ export function calculateItemSubtotal(
  */
 export function calculateOrderTotal(items: SalesOrderItemData[]): number {
   return items.reduce((total, item) => {
-    const unitPrice = item.unitPrice || 0;
-    return total + calculateItemSubtotal(item.quantity, unitPrice);
+    const quantity = item.quantity ?? 0;
+    const unitPrice = item.unitPrice ?? 0;
+    return total + calculateItemSubtotal(quantity, unitPrice);
   }, 0);
 }

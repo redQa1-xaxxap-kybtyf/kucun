@@ -50,6 +50,11 @@ interface GestureCallbacks {
 /**
  * 移动端手势Hook
  * 提供滑动、点击、长按、缩放等手势识别功能
+ *
+ * 内存管理优化:
+ * - 组件卸载时自动清理所有定时器
+ * - 组件卸载时自动移除所有事件监听器
+ * - 使用ref存储清理函数，确保正确清理
  */
 export function useMobileGestures(
   callbacks: GestureCallbacks,
@@ -78,6 +83,10 @@ export function useMobileGestures(
 
   const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
   const initialDistanceRef = useRef<number>(0);
+
+  // 存储当前绑定的元素和清理函数
+  const boundElementRef = useRef<HTMLElement | null>(null);
+  const cleanupFnRef = useRef<(() => void) | null>(null);
 
   // 计算两点间距离
   const getDistance = useCallback((touch1: Touch, touch2: Touch) => {
@@ -197,7 +206,9 @@ export function useMobileGestures(
       }
 
       const touchStart = touchStartRef.current;
-      if (!touchStart) return;
+      if (!touchStart) {
+        return;
+      }
 
       const touch = event.changedTouches[0];
       const now = Date.now();
@@ -252,11 +263,32 @@ export function useMobileGestures(
     [callbacks, swipeThreshold, tapDelay, preventDefault, getSwipeDirection]
   );
 
-  // 绑定事件监听器
+  /**
+   * 清理所有事件监听器
+   * SOLID-S: 单一职责 - 专门负责清理资源
+   */
+  const cleanupEventListeners = useCallback(() => {
+    if (cleanupFnRef.current) {
+      cleanupFnRef.current();
+      cleanupFnRef.current = null;
+    }
+    boundElementRef.current = null;
+  }, []);
+
+  /**
+   * 绑定事件监听器
+   * 改进: 自动管理清理函数，防止内存泄漏
+   */
   const bindGestures = useCallback(
     (element: HTMLElement | null) => {
-      if (!element) return;
+      // 清理之前绑定的元素
+      cleanupEventListeners();
 
+      if (!element) {
+        return;
+      }
+
+      // 绑定新的事件监听器
       element.addEventListener('touchstart', handleTouchStart, {
         passive: !preventDefault,
       });
@@ -267,24 +299,52 @@ export function useMobileGestures(
         passive: !preventDefault,
       });
 
-      return () => {
+      // 保存清理函数
+      const cleanup = () => {
         element.removeEventListener('touchstart', handleTouchStart);
         element.removeEventListener('touchmove', handleTouchMove);
         element.removeEventListener('touchend', handleTouchEnd);
       };
+
+      cleanupFnRef.current = cleanup;
+      boundElementRef.current = element;
+
+      // 返回清理函数供手动调用（可选）
+      return cleanup;
     },
-    [handleTouchStart, handleTouchMove, handleTouchEnd, preventDefault]
+    [
+      handleTouchStart,
+      handleTouchMove,
+      handleTouchEnd,
+      preventDefault,
+      cleanupEventListeners,
+    ]
   );
 
-  // 清理函数
-  useEffect(
-    () => () => {
+  /**
+   * 组件卸载时的清理函数
+   * 确保所有资源都被正确释放：
+   * 1. 清理长按定时器
+   * 2. 移除所有事件监听器
+   * 3. 重置所有ref状态
+   */
+  useEffect(() => {
+    return () => {
+      // 清理定时器
       if (longPressTimerRef.current) {
         clearTimeout(longPressTimerRef.current);
+        longPressTimerRef.current = null;
       }
-    },
-    []
-  );
+
+      // 清理事件监听器
+      cleanupEventListeners();
+
+      // 重置状态
+      touchStartRef.current = null;
+      touchEndRef.current = null;
+      initialDistanceRef.current = 0;
+    };
+  }, [cleanupEventListeners]);
 
   return {
     bindGestures,

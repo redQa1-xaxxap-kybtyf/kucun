@@ -193,7 +193,6 @@ export const POST = withAuth(
           payableNumber,
           userId: user.id,
           remainingAmount: data.payableAmount,
-          dueDate: data.dueDate ? new Date(data.dueDate) : undefined,
         },
         include: {
           supplier: {

@@ -10,7 +10,7 @@
 /**
  * 支付状态类型
  */
-export type PaymentStatus = 'unpaid' | 'partial' | 'paid' | 'overdue';
+export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 
 /**
  * 计算支付状态
@@ -32,16 +32,6 @@ export function calculatePaymentStatus(
     return 'paid';
   }
 
-  // 计算订单天数
-  const daysSinceOrder = Math.floor(
-    (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  // 逾期判断
-  if (daysSinceOrder > dueDays) {
-    return 'overdue';
-  }
-
   // 部分支付
   if (paidAmount > 0) {
     return 'partial';
@@ -59,14 +49,11 @@ export function calculatePaymentStatus(
  * @returns 逾期天数（未逾期返回0）
  */
 export function calculateOverdueDays(
-  orderDate: Date,
-  dueDays: number = 30
+  _orderDate: Date,
+  _dueDays: number = 30
 ): number {
-  const daysSinceOrder = Math.floor(
-    (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  return Math.max(0, daysSinceOrder - dueDays);
+  // 逾期概念已移除，固定返回0以兼容旧逻辑
+  return 0;
 }
 
 /**

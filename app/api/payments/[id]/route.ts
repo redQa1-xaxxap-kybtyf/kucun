@@ -4,14 +4,22 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { updatePaymentRecordSchema } from '@/lib/validations/payment';
+import { resolveParams } from '@/lib/api/middleware';
 
 /**
  * GET /api/payments/[id] - 获取单个收款记录详情
  */
 export const GET = withAuth(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (
+    request: NextRequest,
+    context: {
+      params?: Promise<Record<string, string>> | Record<string, string>;
+    }
+  ) => {
+    let paymentId: string | undefined;
     try {
-      const { id } = params;
+      const { id } = await resolveParams(context.params);
+      paymentId = id;
 
       // 查询收款记录
       const payment = await prisma.paymentRecord.findUnique({
@@ -56,7 +64,12 @@ export const GET = withAuth(
         data: payment,
       });
     } catch (error) {
-      logger.error('payments', '获取收款记录详情失败', error, { paymentId: params.id });
+      logger.error(
+        'payments',
+        '获取收款记录详情失败',
+        error,
+        paymentId ? { paymentId } : undefined
+      );
       return NextResponse.json(
         { success: false, error: '获取收款记录详情失败' },
         { status: 500 }
@@ -69,9 +82,16 @@ export const GET = withAuth(
  * PUT /api/payments/[id] - 更新收款记录
  */
 export const PUT = withAuth(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (
+    request: NextRequest,
+    context: {
+      params?: Promise<Record<string, string>> | Record<string, string>;
+    }
+  ) => {
+    let paymentId: string | undefined;
     try {
-      const { id } = params;
+      const { id } = await resolveParams(context.params);
+      paymentId = id;
 
       // 验证收款记录是否存在
       const existingPayment = await prisma.paymentRecord.findUnique({
@@ -146,7 +166,12 @@ export const PUT = withAuth(
         message: '收款记录更新成功',
       });
     } catch (error) {
-      logger.error('payments', '更新收款记录失败', error, { paymentId: params.id });
+      logger.error(
+        'payments',
+        '更新收款记录失败',
+        error,
+        paymentId ? { paymentId } : undefined
+      );
       return NextResponse.json(
         { success: false, error: '更新收款记录失败' },
         { status: 500 }
@@ -159,9 +184,16 @@ export const PUT = withAuth(
  * DELETE /api/payments/[id] - 删除收款记录
  */
 export const DELETE = withAuth(
-  async (request: NextRequest, { params }: { params: { id: string } }) => {
+  async (
+    request: NextRequest,
+    context: {
+      params?: Promise<Record<string, string>> | Record<string, string>;
+    }
+  ) => {
+    let paymentId: string | undefined;
     try {
-      const { id } = params;
+      const { id } = await resolveParams(context.params);
+      paymentId = id;
 
       // 验证收款记录是否存在
       const existingPayment = await prisma.paymentRecord.findUnique({
@@ -194,7 +226,12 @@ export const DELETE = withAuth(
         message: '收款记录删除成功',
       });
     } catch (error) {
-      logger.error('payments', '删除收款记录失败', error, { paymentId: params.id });
+      logger.error(
+        'payments',
+        '删除收款记录失败',
+        error,
+        paymentId ? { paymentId } : undefined
+      );
       return NextResponse.json(
         { success: false, error: '删除收款记录失败' },
         { status: 500 }

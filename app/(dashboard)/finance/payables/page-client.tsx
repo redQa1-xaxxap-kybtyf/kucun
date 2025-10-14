@@ -17,7 +17,11 @@ import type {
 } from '@/lib/types/payable';
 import { PAYABLE_SORT_OPTIONS } from '@/lib/types/payable';
 
-type PayableSortField = 'createdAt' | 'payableAmount' | 'dueDate' | 'remainingAmount';
+type PayableSortField =
+  | 'createdAt'
+  | 'payableAmount'
+  | 'dueDate'
+  | 'remainingAmount';
 
 const PAYABLE_STATUS_VALUES: PayableStatus[] = [
   'pending',
@@ -52,10 +56,10 @@ interface PayablesPageClientProps {
       totalPayables: number;
       totalPaidAmount: number;
       totalRemainingAmount: number;
-      overdueAmount: number;
       pendingCount: number;
-      paidCount: number;
+      partialCount: number;
       overdueCount: number;
+      paidCount: number;
     };
     pagination: {
       page: number;
@@ -139,7 +143,9 @@ export function PayablesPageClient({
   ]);
 
   // 本地状态管理 - 用于即时更新UI
-  const [search, setSearch] = React.useState(normalizedInitialParams.search || '');
+  const [search, setSearch] = React.useState(
+    normalizedInitialParams.search || ''
+  );
   const [status, setStatus] = React.useState<PayableStatus | undefined>(
     normalizedInitialParams.status
   );
@@ -302,7 +308,7 @@ export function PayablesPageClient({
                     应付款管理
                   </h1>
                   <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    管理供应商应付款和付款记录，跟踪付款状态和逾期情况
+                    管理供应商应付款和付款记录，跟踪付款状态和账务动态
                   </p>
                 </div>
               </div>

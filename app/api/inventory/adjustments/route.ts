@@ -119,6 +119,7 @@ type AdjustmentWithRelations = {
     id: string;
     code: string;
     name: string;
+    piecesPerUnit: number;
   };
   variant: {
     id: string;
@@ -220,6 +221,7 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
             name: true,
             specification: true,
             unit: true,
+            piecesPerUnit: true,
           },
         },
         variant: {

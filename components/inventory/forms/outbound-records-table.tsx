@@ -27,6 +27,7 @@ interface OutboundRecord {
   productCode: string;
   productName: string;
   productSpecification?: string;
+  piecesPerUnit: number;
   quantity: number;
   type: OutboundType;
   reason?: string;
@@ -71,6 +72,27 @@ const formatSpecification = (specification?: string) => {
     : specification;
 };
 
+// 格式化数量显示（X件Y片（共XX片））
+const formatQuantity = (quantity: number, piecesPerUnit: number) => {
+  // 数据验证
+  if (!quantity || !piecesPerUnit || piecesPerUnit <= 0) {
+    return `${quantity || 0}片`;
+  }
+
+  const units = Math.floor(quantity / piecesPerUnit);
+  const pieces = quantity % piecesPerUnit;
+
+  if (units === 0) {
+    return `${pieces}片`;
+  }
+
+  if (pieces === 0) {
+    return `${units}件（共${quantity}片）`;
+  }
+
+  return `${units}件${pieces}片（共${quantity}片）`;
+};
+
 export function OutboundRecordsTable({
   records,
   isLoading,
@@ -97,33 +119,20 @@ export function OutboundRecordsTable({
         <Table>
           <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
             <TableRow>
-              <TableHead>
-                产品编码
-              </TableHead>
-              <TableHead>
-                产品名称
-              </TableHead>
-              <TableHead>
-                规格
-              </TableHead>
-              <TableHead>
-                出库数量
-              </TableHead>
-              <TableHead>
-                出库类型
-              </TableHead>
-              <TableHead>
-                出库原因
-              </TableHead>
-              <TableHead>
-                操作时间
-              </TableHead>
+              <TableHead>产品编码</TableHead>
+              <TableHead>产品名称</TableHead>
+              <TableHead>规格</TableHead>
+              <TableHead>每件片数</TableHead>
+              <TableHead>出库数量</TableHead>
+              <TableHead>出库类型</TableHead>
+              <TableHead>出库原因</TableHead>
+              <TableHead>操作时间</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {records.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={7} className="h-24 text-center">
+                <TableCell colSpan={8} className="h-24 text-center">
                   <div className="text-muted-foreground flex flex-col items-center gap-2">
                     <Package className="h-8 w-8" />
                     <span className="text-sm">暂无出库记录</span>
@@ -145,9 +154,13 @@ export function OutboundRecordsTable({
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {formatSpecification(record.productSpecification) || '-'}
                   </TableCell>
+                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    {record.piecesPerUnit || '-'}
+                  </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
-                    <span className="font-medium">{record.quantity}</span>{' '}
-                    片
+                    <span className="font-medium">
+                      {formatQuantity(record.quantity, record.piecesPerUnit)}
+                    </span>
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
                     <Badge
@@ -159,10 +172,10 @@ export function OutboundRecordsTable({
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {record.reason
-                      ? OUTBOUND_REASON_LABELS[record.reason] ?? record.reason
-                      : OUTBOUND_REASON_LABELS[record.type] ??
+                      ? (OUTBOUND_REASON_LABELS[record.reason] ?? record.reason)
+                      : (OUTBOUND_REASON_LABELS[record.type] ??
                         OUTBOUND_TYPE_LABELS[record.type] ??
-                        '-'}
+                        '-')}
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     <div className="flex items-center gap-1 text-[hsl(var(--color-text-secondary))]">

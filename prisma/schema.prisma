@@ -54,6 +54,7 @@ model User {
 model Customer {
   id               String   @id @default(uuid())
   name             String
+  role             String   @default("customer")
   phone            String?
   address          String?
   extendedInfo     String?  @map("extended_info") // JSON格式的客户扩展信息（SQLite存储为文本）
@@ -76,6 +77,7 @@ model Customer {
 
   @@index([name])
   @@index([phone])
+  @@index([role], map: "idx_customers_role")
   @@index([parentCustomerId], map: "idx_customers_parent")
   @@map("customers")
 }
@@ -214,6 +216,7 @@ model SalesOrder {
   userId          String   @map("user_id")
   status          String   @default("draft") // draft, confirmed, shipped, completed, cancelled
   orderType       String   @default("NORMAL") @map("order_type") // NORMAL, TRANSFER
+  transferMode    String   @default("SUPPLIER_ONLY") @map("transfer_mode") // 调货履约模式：SUPPLIER_ONLY, MIXED
   supplierId      String?  @map("supplier_id") // 调货销售时的供应商ID
   costAmount      Float?   @default(0) @map("cost_amount") // 调货销售的成本金额
   profitAmount    Float?   @default(0) @map("profit_amount") // 调货销售的毛利金额
@@ -221,6 +224,7 @@ model SalesOrder {
   additionalFees  Float    @default(0) @map("additional_fees") // 额外费用总额（加工费、运费等）
   totalAmount     Float    @default(0) @map("total_amount") // 订单总额 = 商品总额 + 额外费用
   paidAmount      Float    @default(0) @map("paid_amount") // 已付金额
+  roundingAdjustment Float @default(0) @map("rounding_adjustment") // 抹零金额（可正可负）
   remarks         String?
   shippedAt       DateTime? @map("shipped_at") // 发货时间
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -285,6 +289,8 @@ model SalesOrderItem {
 
   // 调货销售相关字段
   unitCost     Float? @map("unit_cost") // 单位成本价（调货销售时使用）
+  localQuantity    Float   @default(0) @map("local_quantity") // 本地仓发货数量（调货混合模式使用）
+  transferQuantity Float   @default(0) @map("transfer_quantity") // 调货发货数量（调货模式使用）
   costSubtotal Float? @map("cost_subtotal") // 成本小计（调货销售时使用）
   profitAmount Float? @map("profit_amount") // 毛利金额（调货销售时使用）
 
@@ -733,11 +739,11 @@ model ReturnOrderItem {
   colorCode        String?  @map("color_code")
   productionDate   String?  @map("production_date")
   returnQuantity   Float    @map("return_quantity")
+  damagedQuantity  Float    @default(0) @map("damaged_quantity") // 破损数量，不计入退款金额
   originalQuantity Float    @map("original_quantity")
   unitPrice        Float    @map("unit_price")
   subtotal         Float
   reason           String?
-  condition        String   @default("good") // good, damaged, defective
   createdAt        DateTime @default(now()) @map("created_at")
   updatedAt        DateTime @updatedAt @map("updated_at")
 
@@ -804,10 +810,12 @@ model AccountStatement {
   entityId            String    @map("entity_id")
   entityName          String    @map("entity_name")
   entityType          String    @map("entity_type") // customer, supplier
+  partnerRole         String    @default("customer") @map("partner_role")
   totalOrders         Int       @default(0) @map("total_orders")
   totalAmount         Float     @default(0) @map("total_amount")
   paidAmount          Float     @default(0) @map("paid_amount")
   pendingAmount       Float     @default(0) @map("pending_amount")
+  currentBalance      Float     @default(0) @map("current_balance")
   overdueAmount       Float     @default(0) @map("overdue_amount")
   creditLimit         Float     @default(0) @map("credit_limit")
   paymentTerms        String    @default("30天") @map("payment_terms")
@@ -820,7 +828,7 @@ model AccountStatement {
   // 关联关系
   transactions StatementTransaction[]
 
-  @@index([entityId], map: "idx_account_statements_entity")
+  @@unique([entityId], map: "uk_account_statements_entity")
   @@index([entityType], map: "idx_account_statements_type")
   @@index([status], map: "idx_account_statements_status")
   @@index([lastTransactionDate(sort: Desc)], map: "idx_account_statements_last_transaction")
@@ -832,15 +840,21 @@ model AccountStatement {
 model StatementTransaction {
   id              String    @id @default(uuid())
   statementId     String    @map("statement_id")
-  transactionType String    @map("transaction_type") // sale, payment, refund, purchase, payment_out, adjustment
+  transactionType String    @map("transaction_type") // sale, payment_in, payment_out, refund, sales_return, prepayment_in, prepayment_out, adjustment
+  direction       String    @map("direction") // debit, credit
   referenceId     String    @map("reference_id") // 关联的订单、支付或退款ID
   referenceNumber String    @map("reference_number") // 关联的单据号
+  debitAmount     Float     @default(0) @map("debit_amount")
+  creditAmount    Float     @default(0) @map("credit_amount")
   amount          Float
+  beforeBalance   Float     @map("before_balance")
   balance         Float // 交易后余额
+  afterBalance    Float     @map("after_balance")
   description     String
   transactionDate DateTime  @map("transaction_date")
   dueDate         DateTime? @map("due_date")
   status          String    @default("pending") // pending, completed, overdue
+  metadata        String?   @map("metadata") // JSON结构字符串，记录拓展信息
   createdAt       DateTime  @default(now()) @map("created_at")
 
   // 关联关系
@@ -1097,4 +1111,3 @@ model ShippingQuery {
   @@index([queriedAt(sort: Desc)])
   @@map("shipping_queries")
 }
-

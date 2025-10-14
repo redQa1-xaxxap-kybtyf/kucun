@@ -4,7 +4,27 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { productVariantCheckSkuSchema } from '@/lib/validations/product';
+import {
+  productVariantCheckSkuSchema,
+  productVariantBatchCheckSkuSchema,
+} from '@/lib/validations/product';
+
+interface BatchSkuCheckResult {
+  sku: string;
+  available: boolean;
+  conflict: {
+    variantId: string;
+    sku: string;
+    colorCode: string | null;
+    status: string;
+    product: {
+      id: string;
+      code: string;
+      name: string;
+    };
+  } | null;
+  suggestions: string[];
+}
 
 // SKU可用性检查服务
 export const GET = withAuth(async (request: NextRequest) => {
@@ -146,14 +166,15 @@ export const POST = withAuth(async (request: NextRequest) => {
     );
 
     // 检查每个SKU的可用性
-    const results = await Promise.all(
-      skus.map(async item => {
+    const results: BatchSkuCheckResult[] = await Promise.all(
+      skus.map(async (item: { sku: string; excludeId?: string }) => {
         const { sku, excludeId } = item;
         const existingVariant = skuToVariantMap.get(sku);
 
         // 如果存在变体且不是被排除的变体，则不可用
         const available =
-          !existingVariant || (excludeId && existingVariant.id === excludeId);
+          !existingVariant ||
+          (excludeId !== undefined && existingVariant.id === excludeId);
 
         let conflictInfo = null;
         if (!available && existingVariant) {
@@ -177,7 +198,7 @@ export const POST = withAuth(async (request: NextRequest) => {
           available,
           conflict: conflictInfo,
           suggestions: suggestions.slice(0, 3), // 批量检查时每个SKU最多返回3个建议
-        };
+        } satisfies BatchSkuCheckResult;
       })
     );
 

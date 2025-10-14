@@ -23,7 +23,6 @@ export const GET = withAuth(async (request: NextRequest) => {
       totalPayablesResult,
       totalPaidAmountResult,
       totalRemainingAmountResult,
-      overdueAmountResult,
       statusCounts,
       thisMonthPayablesResult,
       thisMonthPaymentsResult,
@@ -61,16 +60,6 @@ export const GET = withAuth(async (request: NextRequest) => {
           status: {
             not: 'cancelled',
           },
-        },
-      }),
-
-      // 逾期金额
-      prisma.payableRecord.aggregate({
-        _sum: {
-          remainingAmount: true,
-        },
-        where: {
-          status: 'overdue',
         },
       }),
 
@@ -133,10 +122,8 @@ export const GET = withAuth(async (request: NextRequest) => {
       totalPaidAmount: totalPaidAmountResult._sum.paidAmount || 0,
       totalRemainingAmount:
         totalRemainingAmountResult._sum.remainingAmount || 0,
-      overdueAmount: overdueAmountResult._sum.remainingAmount || 0,
       pendingCount: statusCountMap.pending || 0,
       paidCount: statusCountMap.paid || 0,
-      overdueCount: statusCountMap.overdue || 0,
       thisMonthPayables: thisMonthPayablesResult._sum.payableAmount || 0,
       thisMonthPayments: thisMonthPaymentsResult._sum.paymentAmount || 0,
     };

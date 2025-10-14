@@ -1,7 +1,8 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  Ban,
   CheckCircle,
   Download,
   Edit,
@@ -10,6 +11,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
@@ -23,6 +25,17 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Separator } from '@/components/ui/separator';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -71,11 +84,11 @@ interface ReturnOrderDetail {
     colorCode?: string;
     productionDate?: string;
     returnQuantity: number;
+    damagedQuantity: number;
     originalQuantity: number;
     unitPrice: number;
     subtotal: number;
     reason?: string;
-    condition: 'good' | 'damaged' | 'defective';
     product: {
       id: string;
       code: string;
@@ -111,6 +124,9 @@ export function ReturnOrderDetailPageClient({
   id,
 }: ReturnOrderDetailPageClientProps) {
   const router = useRouter();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [showCancelDialog, setShowCancelDialog] = useState(false);
 
   const {
     data: order,
@@ -120,6 +136,47 @@ export function ReturnOrderDetailPageClient({
     queryKey: queryKeys.returnOrders.detail(id),
     queryFn: () => fetchReturnOrderDetail(id),
     enabled: !!id,
+  });
+
+  // 取消退货订单
+  const cancelMutation = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(`/api/return-orders/${id}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          status: 'cancelled',
+          idempotencyKey: crypto.randomUUID(),
+          remarks: '用户取消退货订单',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || '取消退货订单失败');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: '取消成功',
+        description: '退货订单已取消',
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.returnOrders.detail(id),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.returnOrders.all });
+      setShowCancelDialog(false);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '取消失败',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
   });
 
   if (isLoading) {
@@ -223,6 +280,17 @@ export function ReturnOrderDetailPageClient({
                         拒绝退货
                       </DropdownMenuItem>
                     </>
+                  )}
+                  {['draft', 'submitted', 'approved', 'processing'].includes(
+                    order.status
+                  ) && (
+                    <DropdownMenuItem
+                      className="text-destructive"
+                      onClick={() => setShowCancelDialog(true)}
+                    >
+                      <Ban className="mr-2 h-4 w-4" />
+                      取消退货
+                    </DropdownMenuItem>
                   )}
                   <DropdownMenuItem>复制订单</DropdownMenuItem>
                   <DropdownMenuItem>发送邮件</DropdownMenuItem>
@@ -402,10 +470,10 @@ export function ReturnOrderDetailPageClient({
                         退货数量
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                        单价
+                        破损数量
                       </th>
                       <th className="px-4 py-3 text-center text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
-                        商品状态
+                        单价
                       </th>
                       <th className="px-4 py-3 text-right text-xs font-medium text-[hsl(var(--color-text-tertiary))]">
                         小计
@@ -476,25 +544,10 @@ export function ReturnOrderDetailPageClient({
                           </span>
                         </td>
                         <td className="px-4 py-3 text-center text-sm text-[hsl(var(--color-text-secondary))]">
-                          {formatCurrency(item.unitPrice)}
+                          {item.damagedQuantity || 0}
                         </td>
-                        <td className="px-4 py-3 text-center">
-                          <Badge
-                            variant={
-                              item.condition === 'good'
-                                ? 'success'
-                                : item.condition === 'damaged'
-                                  ? 'warning'
-                                  : 'destructive'
-                            }
-                            className="text-xs"
-                          >
-                            {item.condition === 'good'
-                              ? '完好'
-                              : item.condition === 'damaged'
-                                ? '损坏'
-                                : '缺陷'}
-                          </Badge>
+                        <td className="px-4 py-3 text-center text-sm text-[hsl(var(--color-text-secondary))]">
+                          {formatCurrency(item.unitPrice)}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <p className="font-semibold text-[hsl(var(--color-text-primary))]">
@@ -636,6 +689,39 @@ export function ReturnOrderDetailPageClient({
           )}
         </div>
       </div>
+
+      {/* 取消确认对话框 */}
+      <AlertDialog open={showCancelDialog} onOpenChange={setShowCancelDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认取消退货订单</AlertDialogTitle>
+            <AlertDialogDescription>
+              您确定要取消退货订单 <strong>{order.returnNumber}</strong> 吗？
+              <br />
+              <br />
+              取消后：
+              <ul className="mt-2 list-inside list-disc space-y-1">
+                <li>该退货订单将被标记为已取消状态</li>
+                <li>已取消的订单不会影响往来账单余额</li>
+                <li>订单记录仍会保留在系统中用于审计追踪</li>
+                <li>此操作不可撤销</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelMutation.isPending}>
+              我再想想
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => cancelMutation.mutate()}
+              disabled={cancelMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelMutation.isPending ? '取消中...' : '确认取消'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

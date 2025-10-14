@@ -2,13 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import {
-  ArrowLeft,
-  Loader2,
-  Package,
-  Save,
-  Trash2,
-} from 'lucide-react';
+import { ArrowLeft, Loader2, Package, Save, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
@@ -106,16 +100,16 @@ export function ERPReturnOrderForm({
                 salesOrderItemId: item.salesOrderItemId,
                 productId: item.productId,
                 returnQuantity: item.returnQuantity,
+                damagedQuantity: item.damagedQuantity || 0,
                 originalQuantity: item.originalQuantity,
                 unitPrice: item.unitPrice,
                 subtotal: item.subtotal,
-                condition: item.condition,
                 reason: item.reason,
               })) || [],
           },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove, replace } = useFieldArray({
     control: form.control,
     name: 'items',
   });
@@ -145,7 +139,9 @@ export function ERPReturnOrderForm({
   });
 
   // 确保数据始终是数组类型
-  const customers = Array.isArray(customersData?.data) ? customersData.data : [];
+  const customers = Array.isArray(customersData?.data)
+    ? customersData.data
+    : [];
   const salesOrders = Array.isArray(salesOrdersData?.data)
     ? salesOrdersData.data
     : [];
@@ -156,9 +152,10 @@ export function ERPReturnOrderForm({
     if (watchedSalesOrderId && watchedSalesOrderId !== selectedSalesOrderId) {
       setSelectedSalesOrderId(watchedSalesOrderId);
       // 清空现有明细
-      form.setValue('items', []);
+      replace([]);
+      setProductInfoMap({});
     }
-  }, [watchedSalesOrderId, selectedSalesOrderId, form]);
+  }, [watchedSalesOrderId, selectedSalesOrderId, replace]);
 
   // 获取可退货明细
   const { data: returnableItemsData, isLoading: isLoadingItems } =
@@ -186,9 +183,6 @@ export function ERPReturnOrderForm({
       returnableItemsData?.data?.returnableItems &&
       returnableItemsData.data.returnableItems.length > 0
     ) {
-      // 清空现有明细
-      form.setValue('items', []);
-
       // 构建产品信息映射
       const newProductInfoMap: Record<
         string,
@@ -211,16 +205,20 @@ export function ERPReturnOrderForm({
         colorCode: item.colorCode || undefined,
         productionDate: item.productionDate || undefined,
         returnQuantity: 0, // 默认退货数量为0，用户需要手动填写
+        damagedQuantity: 0,
         originalQuantity: item.availableQuantity,
         unitPrice: item.unitPrice,
         subtotal: 0,
         reason: '',
-        condition: 'good' as const,
       }));
 
-      form.setValue('items', formItems);
+      replace(formItems);
+      setProductInfoMap(newProductInfoMap);
+    } else if (returnableItemsData?.data?.returnableItems?.length === 0) {
+      replace([]);
+      setProductInfoMap({});
     }
-  }, [returnableItemsData, form]);
+  }, [returnableItemsData, replace]);
 
   // Mutations
   const createMutation = useCreateReturnOrder({
@@ -270,10 +268,10 @@ export function ERPReturnOrderForm({
       salesOrderItemId: salesOrderItem.id,
       productId: salesOrderItem.productId,
       returnQuantity: 1,
+      damagedQuantity: 0,
       originalQuantity: salesOrderItem.quantity,
       unitPrice: salesOrderItem.unitPrice,
       subtotal: salesOrderItem.unitPrice,
-      condition: 'good' as const,
     };
     append(newItem);
   };
@@ -402,9 +400,10 @@ export function ERPReturnOrderForm({
                         field.onChange(value);
                         // 切换模式时清空订单选择和明细
                         form.setValue('salesOrderId', '');
-                        form.setValue('items', []);
+                        replace([]);
                         setSelectedSalesOrderId('');
                         setSelectedCustomerId('');
+                        setProductInfoMap({});
                       }}
                       defaultValue={field.value}
                     >
@@ -445,14 +444,16 @@ export function ERPReturnOrderForm({
                         form.setValue('customerId', customerId);
                         // 清空之前选择的订单
                         form.setValue('salesOrderId', '');
-                        form.setValue('items', []);
+                        replace([]);
+                        setProductInfoMap({});
                       }}
                       onValueChange={(salesOrderId, salesOrder) => {
                         setSelectedSalesOrderId(salesOrderId);
                         form.setValue('salesOrderId', salesOrderId);
                         form.setValue('customerId', salesOrder.customerId);
                         // 清空现有明细
-                        form.setValue('items', []);
+                        replace([]);
+                        setProductInfoMap({});
                         toast({
                           title: '已选择销售订单',
                           description: `订单号：${salesOrder.orderNumber}`,
@@ -479,7 +480,8 @@ export function ERPReturnOrderForm({
                     onValueChange={value => {
                       setSelectedCustomerId(value);
                       form.setValue('customerId', value);
-                      form.setValue('items', []);
+                      replace([]);
+                      setProductInfoMap({});
                     }}
                     value={selectedCustomerId}
                   >
@@ -622,10 +624,10 @@ export function ERPReturnOrderForm({
                         colorCode: item.colorCode,
                         productionDate: item.productionDate,
                         returnQuantity: item.returnQuantity,
+                        damagedQuantity: item.damagedQuantity || 0,
                         originalQuantity: item.originalQuantity,
                         unitPrice: item.unitPrice,
                         subtotal: item.subtotal,
-                        condition: item.condition,
                         reason: item.reason,
                       };
                       append(newItem);
@@ -647,7 +649,7 @@ export function ERPReturnOrderForm({
             {/* 单订单模式：显示加载状态 */}
             {form.watch('returnMode') === 'single_order' && isLoadingItems && (
               <div className="flex items-center justify-center gap-2 py-8">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
                 <span className="text-muted-foreground text-xs">
                   加载销售订单明细中...
                 </span>
@@ -672,9 +674,9 @@ export function ERPReturnOrderForm({
                       )}
                       <TableHead className="h-8 px-2">原始数量</TableHead>
                       <TableHead className="h-8 px-2">退货数量</TableHead>
+                      <TableHead className="h-8 px-2">破损数量</TableHead>
                       <TableHead className="h-8 px-2">单价</TableHead>
                       <TableHead className="h-8 px-2">小计</TableHead>
-                      <TableHead className="h-8 px-2">商品状态</TableHead>
                       <TableHead className="h-8 px-2 text-center">
                         操作
                       </TableHead>
@@ -716,8 +718,8 @@ export function ERPReturnOrderForm({
                         {form.watch('returnMode') === 'multi_order' && (
                           <TableCell className="h-8 px-2">
                             <span className="text-muted-foreground font-mono text-xs">
-                              {productInfoMap[field.productId]?.salesOrderNumber ||
-                                '-'}
+                              {productInfoMap[field.productId]
+                                ?.salesOrderNumber || '-'}
                             </span>
                           </TableCell>
                         )}
@@ -756,6 +758,25 @@ export function ERPReturnOrderForm({
                         <TableCell className="h-8 px-2">
                           <FormField
                             control={form.control}
+                            name={`items.${index}.damagedQuantity`}
+                            render={({ field }) => (
+                              <Input
+                                type="number"
+                                min="0"
+                                step="0.01"
+                                placeholder="0"
+                                className="h-6 w-16 text-xs"
+                                {...field}
+                                onChange={e => {
+                                  field.onChange(Number(e.target.value) || 0);
+                                }}
+                              />
+                            )}
+                          />
+                        </TableCell>
+                        <TableCell className="h-8 px-2">
+                          <FormField
+                            control={form.control}
                             name={`items.${index}.unitPrice`}
                             render={({ field }) => (
                               <Input
@@ -778,39 +799,6 @@ export function ERPReturnOrderForm({
                               .watch(`items.${index}.subtotal`)
                               ?.toFixed(2) || '0.00'}
                           </span>
-                        </TableCell>
-                        <TableCell className="h-8 px-2">
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.condition`}
-                            render={({ field }) => (
-                              <Select
-                                onValueChange={field.onChange}
-                                defaultValue={field.value}
-                              >
-                                <SelectTrigger className="h-6 w-20 text-xs">
-                                  <SelectValue />
-                                </SelectTrigger>
-                                <SelectContent>
-                                  <SelectItem value="good" className="text-xs">
-                                    完好
-                                  </SelectItem>
-                                  <SelectItem
-                                    value="damaged"
-                                    className="text-xs"
-                                  >
-                                    损坏
-                                  </SelectItem>
-                                  <SelectItem
-                                    value="defective"
-                                    className="text-xs"
-                                  >
-                                    缺陷
-                                  </SelectItem>
-                                </SelectContent>
-                              </Select>
-                            )}
-                          />
                         </TableCell>
                         <TableCell className="h-8 px-2">
                           <Button

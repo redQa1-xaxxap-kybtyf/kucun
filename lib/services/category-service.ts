@@ -75,10 +75,11 @@ async function getCategoryDepth(categoryId: string): Promise<number> {
   let currentId: string | null = categoryId;
 
   while (currentId) {
-    const category = await prisma.category.findUnique({
-      where: { id: currentId },
-      select: { parentId: true },
-    });
+    const category: { parentId: string | null } | null =
+      await prisma.category.findUnique({
+        where: { id: currentId },
+        select: { parentId: true },
+      });
 
     if (!category) {
       break;
@@ -112,7 +113,9 @@ async function validateCategoryDepth(parentId?: string): Promise<void> {
   const parentDepth = await getCategoryDepth(parentId);
 
   if (parentDepth >= MAX_DEPTH) {
-    throw new Error(`分类层级不能超过${MAX_DEPTH}级，当前父分类已是第${parentDepth}级`);
+    throw new Error(
+      `分类层级不能超过${MAX_DEPTH}级，当前父分类已是第${parentDepth}级`
+    );
   }
 }
 
@@ -430,8 +433,11 @@ export async function updateCategory(
 
   // 3. 检查名称唯一性（同一父分类下名称唯一）
   // 如果名称或父分类发生变化，需要检查
-  const nameChanged = updateData.name && updateData.name !== existingCategory.name;
-  const parentChanged = updateData.parentId !== undefined && updateData.parentId !== existingCategory.parentId;
+  const nameChanged =
+    updateData.name && updateData.name !== existingCategory.name;
+  const parentChanged =
+    updateData.parentId !== undefined &&
+    updateData.parentId !== existingCategory.parentId;
 
   if (nameChanged || parentChanged) {
     // 确定最终的名称和父分类ID

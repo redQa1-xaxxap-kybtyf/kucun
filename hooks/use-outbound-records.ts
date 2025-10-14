@@ -23,6 +23,7 @@ interface OutboundRecord {
   productCode: string;
   productName: string;
   productSpecification?: string;
+  piecesPerUnit: number;
   quantity: number;
   type: OutboundType;
   reason?: string;
@@ -81,9 +82,8 @@ export function useOutboundRecords(
   );
 
   const defaultParamsRef = React.useRef(mergedInitial);
-  const [queryParams, setQueryParams] = React.useState<OutboundRecordQueryParams>(
-    mergedInitial
-  );
+  const [queryParams, setQueryParams] =
+    React.useState<OutboundRecordQueryParams>(mergedInitial);
 
   React.useEffect(() => {
     const next = normalizeQueryParams({ ...mergedInitial });
@@ -152,7 +152,8 @@ export function useOutboundRecords(
 
     setQueryParams(prev => ({
       ...prev,
-      [key]: normalized as OutboundRecordQueryParams[keyof OutboundRecordQueryParams],
+      [key]:
+        normalized as OutboundRecordQueryParams[keyof OutboundRecordQueryParams],
       page: 1,
     }));
   };
@@ -166,4 +167,3 @@ export function useOutboundRecords(
     updateFilter,
   };
 }
-

@@ -99,6 +99,8 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
     } = validatedData;
 
     // 如果有状态变更,使用幂等性包装器
+    const operationUserId = existingOrder.userId;
+
     if (status && status !== existingOrder.status) {
       const { updateFactoryShipmentStatus } = await import(
         '@/lib/api/handlers/factory-shipment-status'
@@ -108,7 +110,7 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         idempotencyKey,
         'factory_shipment_status_change',
         id,
-        userId,
+        operationUserId,
         {
           status,
           remarks,

@@ -23,6 +23,7 @@ export type Permission =
   | 'finance:manage' // 管理财务数据（包括应收应付、收退款）
   | 'finance:export' // 导出财务报表
   | 'finance:approve' // 审批财务单据
+  | 'finance:refund:process' // 处理退款流程
   // 客户权限
   | 'customers:view' // 查看客户信息
   | 'customers:create' // 创建客户
@@ -100,6 +101,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'finance:manage',
     'finance:export',
     'finance:approve',
+    'finance:refund:process',
     // 客户
     'customers:view',
     'customers:create',
@@ -228,6 +230,7 @@ const ROLE_PERMISSIONS: Record<Role, Permission[]> = {
     'finance:manage',
     'finance:export',
     'finance:approve',
+    'finance:refund:process',
     // 客户（只读）
     'customers:view',
     // 产品（只读）

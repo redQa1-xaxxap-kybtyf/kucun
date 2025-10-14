@@ -240,7 +240,7 @@ export function DashboardLayoutClient({
           />
         )}
 
-        <div className="flex flex-1 overflow-hidden">
+        <div className="flex flex-1">
           {/* 桌面端侧边栏 - 固定位置，独立滚动 */}
           {showSidebar && !isMobile && sidebarSettings.isOpen && (
             <SidebarClient
@@ -258,9 +258,9 @@ export function DashboardLayoutClient({
             />
           )}
 
-          {/* 主内容区域 - 使用 flex 布局，不滚动 */}
+          {/* 主内容区域 - 允许滚动 */}
           <main
-            className={cn('flex flex-1 flex-col overflow-hidden')}
+            className={cn('flex flex-1 flex-col overflow-y-auto')}
             onTouchStart={isMobile ? onTouchStart : undefined}
             onTouchMove={isMobile ? onTouchMove : undefined}
             onTouchEnd={isMobile ? onTouchEnd : undefined}
@@ -277,10 +277,8 @@ export function DashboardLayoutClient({
               </div>
             )}
 
-            {/* 主要内容区域 - 传递高度给子组件，让子组件控制滚动 */}
-            <div className="flex flex-1 flex-col overflow-hidden">
-              {children}
-            </div>
+            {/* 主要内容区域 */}
+            <div className="flex flex-1 flex-col">{children}</div>
           </main>
         </div>
       </div>

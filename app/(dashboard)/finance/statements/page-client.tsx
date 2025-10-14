@@ -14,15 +14,16 @@ import { Button } from '@/components/ui/button';
 interface AccountStatement {
   id: string;
   name: string;
-  type: 'customer' | 'supplier';
+  type: 'customer' | 'supplier' | 'partner';
+  partnerRole: 'customer' | 'supplier' | 'both';
+  status: 'active' | 'settled' | 'suspended';
   totalOrders: number;
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
-  overdueAmount: number;
-  creditLimit: number;
-  paymentTerms: string;
+  currentBalance: number;
   lastTransactionDate: string | null;
+  lastPaymentDate: string | null;
 }
 
 interface StatementsQueryParams {
@@ -37,7 +38,7 @@ interface StatementsQueryParams {
 interface StatementsPageClientProps {
   initialData: {
     statements: AccountStatement[];
-    statistics: {
+    summary: {
       totalReceivable: number;
       totalPayable: number;
       totalCustomers: number;
@@ -46,6 +47,7 @@ interface StatementsPageClientProps {
     pagination: {
       page: number;
       limit: number;
+      pageSize?: number;
       total: number;
       totalPages: number;
     };
@@ -66,7 +68,7 @@ export function StatementsPageClient({
 
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');
-  const [type, setType] = React.useState(initialParams.type || 'customer');
+  const [type, setType] = React.useState(initialParams.type || 'all');
   const [sortBy, setSortBy] = React.useState(
     initialParams.sortBy || 'totalAmount'
   );
@@ -111,7 +113,7 @@ export function StatementsPageClient({
       debouncedUpdateURL(value, {
         ...initialParams,
         search: value,
-        type,
+        type: type === 'all' ? undefined : type,
         sortBy,
         sortOrder,
         page: 1,
@@ -126,7 +128,7 @@ export function StatementsPageClient({
       const newFilters = { ...initialParams, [key]: value, page: 1 };
 
       if (key === 'type') {
-        setType(value || 'customer');
+        setType(value || 'all');
       } else if (key === 'sortBy') {
         setSortBy(value || 'totalAmount');
       } else if (key === 'sortOrder') {
@@ -193,7 +195,7 @@ export function StatementsPageClient({
         {/* 页面标题 */}
         <PageHeader
           title="往来账单"
-          description="管理客户和供应商的综合账务往来"
+          description="统一查看业务伙伴账本流水"
           icon={<FileText className="h-6 w-6 text-white" />}
           iconBgColor="hsl(var(--color-purple))"
           actions={

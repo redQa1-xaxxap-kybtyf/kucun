@@ -15,17 +15,12 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * 格式化货币
+ * 格式化货币（默认显示人民币符号）
  * @param amount 金额
- * @param currency 货币符号，默认为 ¥
  * @param precision 小数位数，默认为 2
  */
-export function formatCurrency(
-  amount: number,
-  currency: string = '¥',
-  precision: number = 2
-): string {
-  return internalFormatCurrency(amount, currency, precision);
+export function formatCurrency(amount: number, precision: number = 2): string {
+  return internalFormatCurrency(amount, precision);
 }
 
 /**

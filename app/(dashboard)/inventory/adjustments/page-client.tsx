@@ -1,9 +1,12 @@
 'use client';
 
+import { ArrowLeft, Edit, FileText } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 
+import { PageHeader } from '@/components/common/page-header';
 import { InventoryOperationForm } from '@/components/inventory/inventory-operation-form';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -14,7 +17,6 @@ import {
 import { AdjustmentDetailDialog } from './components/AdjustmentDetailDialog';
 import { AdjustmentRecordsFilters } from './components/AdjustmentRecordsFilters';
 import { AdjustmentRecordsTable } from './components/AdjustmentRecordsTable';
-import { AdjustmentRecordsToolbar } from './components/AdjustmentRecordsToolbar';
 import { useAdjustmentRecords } from './hooks/useAdjustmentRecords';
 import type { AdjustmentQueryParams } from '@/lib/types/inventory';
 
@@ -71,9 +73,32 @@ export function AdjustmentRecordsPageClient({
     return (
       <div className="flex h-full flex-col overflow-auto p-6">
         <div className="space-y-6">
-          <AdjustmentRecordsToolbar
-            onGoBack={handleGoBack}
-            onAdjust={handleOpenAdjust}
+          <PageHeader
+            title="调整记录"
+            description="查看和管理库存调整记录，跟踪库存变动历史"
+            icon={<FileText className="h-6 w-6 text-white" />}
+            iconBgColor="hsl(var(--color-orange))"
+            actions={
+              <>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="h-11 gap-2"
+                  onClick={handleGoBack}
+                >
+                  <ArrowLeft className="h-4 w-4" />
+                  返回
+                </Button>
+                <Button
+                  size="lg"
+                  className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                  onClick={handleOpenAdjust}
+                >
+                  <Edit className="h-4 w-4" />
+                  新增调整
+                </Button>
+              </>
+            }
           />
           <div
             className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-error-light))] p-6 text-center"
@@ -91,10 +116,33 @@ export function AdjustmentRecordsPageClient({
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
-        {/* 页面标题卡片 */}
-        <AdjustmentRecordsToolbar
-          onGoBack={handleGoBack}
-          onAdjust={handleOpenAdjust}
+        {/* 页面标题 */}
+        <PageHeader
+          title="调整记录"
+          description="查看和管理库存调整记录，跟踪库存变动历史"
+          icon={<FileText className="h-6 w-6 text-white" />}
+          iconBgColor="hsl(var(--color-orange))"
+          actions={
+            <>
+              <Button
+                variant="outline"
+                size="lg"
+                className="h-11 gap-2"
+                onClick={handleGoBack}
+              >
+                <ArrowLeft className="h-4 w-4" />
+                返回
+              </Button>
+              <Button
+                size="lg"
+                className="h-11 gap-2 shadow-[var(--shadow-light)] transition-transform hover:-translate-y-0.5 hover:shadow-[var(--shadow-medium)]"
+                onClick={handleOpenAdjust}
+              >
+                <Edit className="h-4 w-4" />
+                新增调整
+              </Button>
+            </>
+          }
         />
 
         {/* 筛选条件 */}
@@ -105,13 +153,11 @@ export function AdjustmentRecordsPageClient({
         />
 
         {/* 调整记录表格 */}
-        <div className="flex-1 overflow-hidden">
-          <AdjustmentRecordsTable
-            adjustments={adjustments}
-            isLoading={isLoading}
-            onViewDetail={viewDetail}
-          />
-        </div>
+        <AdjustmentRecordsTable
+          adjustments={adjustments}
+          isLoading={isLoading}
+          onViewDetail={viewDetail}
+        />
 
         {/* 调整对话框 */}
         <Dialog open={showAdjustDialog} onOpenChange={setShowAdjustDialog}>
@@ -141,6 +187,3 @@ export function AdjustmentRecordsPageClient({
     </div>
   );
 }
-
-
-

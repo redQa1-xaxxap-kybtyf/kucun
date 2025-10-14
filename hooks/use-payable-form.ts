@@ -65,13 +65,8 @@ export function usePayableForm({
     defaultValues:
       isEdit && actualPayableData
         ? {
-            id: actualPayableData.id,
             payableAmount: actualPayableData.payableAmount,
-            dueDate: actualPayableData.dueDate
-              ? new Date(actualPayableData.dueDate).toISOString().split('T')[0]
-              : undefined,
             status: actualPayableData.status,
-            paymentTerms: actualPayableData.paymentTerms || '',
             description: actualPayableData.description || '',
             remarks: actualPayableData.remarks || '',
           }
@@ -81,8 +76,6 @@ export function usePayableForm({
             sourceId: undefined,
             sourceNumber: undefined,
             payableAmount: 0,
-            dueDate: undefined,
-            paymentTerms: '',
             description: '',
             remarks: '',
           },
@@ -153,10 +146,9 @@ export function usePayableForm({
 
     try {
       if (isEdit && (payableId || actualPayableData?.id)) {
-        const { id, ...updateData } = data as UpdateFormData;
         await updateMutation.mutateAsync({
           id: payableId || actualPayableData?.id || '',
-          data: updateData,
+          data: data as UpdatePayableRecordData,
         });
       } else {
         await createMutation.mutateAsync(data as CreatePayableRecordData);

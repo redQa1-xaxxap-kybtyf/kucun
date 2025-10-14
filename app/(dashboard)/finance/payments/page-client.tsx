@@ -10,6 +10,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PaymentsClient } from '@/components/finance/payments-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import type { PaymentStatus } from '@/lib/types/payment';
 
 interface PaymentRecord {
   id: string;
@@ -17,7 +18,7 @@ interface PaymentRecord {
   paymentAmount: number;
   paymentMethod: string;
   paymentDate: string;
-  status: string;
+  status: PaymentStatus;
   remarks?: string;
   receiptNumber?: string;
   customer: {
@@ -45,7 +46,7 @@ interface PaymentsQueryParams {
   page: number;
   limit: number;
   search?: string;
-  status?: string;
+  status?: PaymentStatus;
   paymentMethod?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
@@ -83,7 +84,9 @@ export function PaymentsPageClient({
 
   // 本地状态管理 - 用于即时更新UI
   const [search, setSearch] = React.useState(initialParams.search || '');
-  const [status, setStatus] = React.useState(initialParams.status);
+  const [status, setStatus] = React.useState<PaymentStatus | undefined>(
+    initialParams.status
+  );
   const [paymentMethod, setPaymentMethod] = React.useState(
     initialParams.paymentMethod
   );
@@ -154,43 +157,60 @@ export function PaymentsPageClient({
   // 筛选处理
   const handleFilter = React.useCallback(
     (key: string, value: string | undefined) => {
-      const newFilters = { ...initialParams, [key]: value, page: 1 };
+      let nextStatus = status;
+      let nextPaymentMethod = paymentMethod;
+      let nextSortBy = sortBy;
+      let nextSortOrder = sortOrder;
 
       if (key === 'status') {
-        setStatus(value);
+        nextStatus =
+          value && value !== 'all' ? (value as PaymentStatus) : undefined;
+        setStatus(nextStatus);
       } else if (key === 'paymentMethod') {
+        nextPaymentMethod = value;
         setPaymentMethod(value);
       } else if (key === 'sortBy') {
-        setSortBy(value || 'createdAt');
+        nextSortBy = value || 'createdAt';
+        setSortBy(nextSortBy);
       } else if (key === 'sortOrder') {
-        setSortOrder((value as 'asc' | 'desc') || 'desc');
+        nextSortOrder = (value as 'asc' | 'desc') || 'desc';
+        setSortOrder(nextSortOrder);
       }
+
+      const nextFilters: PaymentsQueryParams = {
+        ...initialParams,
+        page: 1,
+        status: nextStatus,
+        paymentMethod: nextPaymentMethod,
+        sortBy: nextSortBy,
+        sortOrder: nextSortOrder,
+      };
 
       startTransition(() => {
         const params = new URLSearchParams();
         if (search) {
           params.set('search', search);
         }
-        if (newFilters.status) {
-          params.set('status', newFilters.status);
+        if (nextFilters.status) {
+          params.set('status', nextFilters.status);
         }
-        if (newFilters.paymentMethod) {
-          params.set('paymentMethod', newFilters.paymentMethod);
+        if (nextFilters.paymentMethod) {
+          params.set('paymentMethod', nextFilters.paymentMethod);
         }
-        if (newFilters.sortBy) {
-          params.set('sortBy', newFilters.sortBy);
+        if (nextFilters.sortBy) {
+          params.set('sortBy', nextFilters.sortBy);
         }
-        if (newFilters.sortOrder) {
-          params.set('sortOrder', newFilters.sortOrder);
+        if (nextFilters.sortOrder) {
+          params.set('sortOrder', nextFilters.sortOrder);
         }
-        if (newFilters.limit) {
-          params.set('limit', newFilters.limit.toString());
+        if (nextFilters.limit) {
+          params.set('limit', nextFilters.limit.toString());
         }
 
         router.push(`/finance/payments?${params.toString()}`);
       });
     },
-    [router, search, initialParams]
+    [router, search, initialParams, status, paymentMethod, sortBy, sortOrder]
   );
 
   // 分页处理

@@ -1,6 +1,13 @@
 'use client';
 
-import { Check, ChevronsUpDown, Package, Plus, Search } from 'lucide-react';
+import {
+  Check,
+  ChevronsUpDown,
+  Loader2,
+  Package,
+  Plus,
+  Search,
+} from 'lucide-react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +26,8 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { ProductDataUtils } from '@/lib/utils/product-data';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 import { AddTemporaryProductDialog } from './add-temporary-product-dialog';
 
@@ -29,6 +38,7 @@ interface ProductWithInventory {
   specification?: string | null;
   unit: string;
   piecesPerUnit?: number | null;
+  status?: string;
   inventory?: {
     totalInventory: number;
     availableInventory: number;
@@ -54,7 +64,9 @@ interface SmartProductSearchProps {
   placeholder?: string;
   disabled?: boolean;
   className?: string;
-  allowTemporaryProducts?: boolean; // 是否允许添加临时产品
+  allowTemporaryProducts?: boolean;
+  onSearchChange?: (query: string) => void;
+  isSearching?: boolean;
 }
 
 /**
@@ -71,56 +83,91 @@ export function SmartProductSearch({
   disabled = false,
   className,
   allowTemporaryProducts = false,
+  onSearchChange,
+  isSearching = false,
 }: SmartProductSearchProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
   const [showAddDialog, setShowAddDialog] = React.useState(false);
 
-  // 获取选中的产品
+  React.useEffect(() => {
+    if (!open) {
+      setSearchValue('');
+      onSearchChange?.('');
+    }
+  }, [open, onSearchChange]);
+
+  const handleSearchValueChange = React.useCallback(
+    (value: string) => {
+      setSearchValue(value);
+      onSearchChange?.(value);
+    },
+    [onSearchChange]
+  );
+
   const selectedProduct = products.find(product => product.id === value);
 
-  // 过滤产品列表
+  const formatSpecification = React.useCallback(
+    (spec?: string | null, { truncateTo }: { truncateTo?: number } = {}) => {
+      const formatted =
+        ProductDataUtils.formatter.formatSpecification(spec ?? '') || '';
+      const sanitized = formatted.trim();
+      if (
+        !sanitized ||
+        sanitized === '-' ||
+        sanitized.toLowerCase() === '规格详情'
+      ) {
+        return '';
+      }
+      if (truncateTo && sanitized.length > truncateTo) {
+        return `${sanitized.slice(0, truncateTo)}...`;
+      }
+      return sanitized;
+    },
+    []
+  );
+
   const filteredProducts = React.useMemo(() => {
     if (!searchValue) {
       return products;
     }
 
     const searchLower = searchValue.toLowerCase();
-    return products.filter(
-      product =>
+    return products.filter(product => {
+      const specForSearch =
+        formatSpecification(product.specification)?.toLowerCase() || '';
+      return (
         product.name.toLowerCase().includes(searchLower) ||
         product.code.toLowerCase().includes(searchLower) ||
-        (product.specification &&
-          product.specification.toLowerCase().includes(searchLower))
-    );
-  }, [products, searchValue]);
+        specForSearch.includes(searchLower)
+      );
+    });
+  }, [formatSpecification, products, searchValue]);
 
-  // 处理批次选择
   const handleBatchSelect = (
     productId: string,
     batchNumber: string,
     e: React.MouseEvent
   ) => {
-    e.stopPropagation(); // 阻止事件冒泡，避免触发产品选择
+    e.stopPropagation();
     onBatchSelect?.(productId, batchNumber);
     setOpen(false);
     setSearchValue('');
+    onSearchChange?.('');
   };
 
-  // 处理产品选择（用于没有批次的产品）
   const handleProductSelect = (productId: string) => {
     onValueChange?.(productId);
     setOpen(false);
     setSearchValue('');
+    onSearchChange?.('');
   };
 
-  // 处理添加临时产品
   const handleAddTemporaryProduct = () => {
     setShowAddDialog(true);
     setOpen(false);
   };
 
-  // 处理临时产品添加完成
   const handleTemporaryProductAdded = (productData: {
     name: string;
     specification?: string;
@@ -130,7 +177,13 @@ export function SmartProductSearch({
     onTemporaryProductAdd?.(productData);
     setShowAddDialog(false);
     setSearchValue('');
+    onSearchChange?.('');
   };
+
+  const selectedSpecification = formatSpecification(
+    selectedProduct?.specification,
+    { truncateTo: 40 }
+  );
 
   return (
     <>
@@ -149,16 +202,28 @@ export function SmartProductSearch({
           >
             <div className="flex min-w-0 flex-1 items-center gap-2">
               <Search className="h-4 w-4 shrink-0" />
-              <span className="truncate">
+              <span className="flex min-w-0 flex-col">
                 {selectedProduct ? (
-                  <span className="flex items-center gap-2">
-                    <span className="font-medium">{selectedProduct.name}</span>
-                    {selectedProduct.code && (
-                      <Badge variant="secondary" className="text-[11px] font-mono">
-                        {selectedProduct.code}
-                      </Badge>
+                  <>
+                    <span className="flex items-center gap-2 truncate">
+                      <span className="font-medium">
+                        {selectedProduct.name}
+                      </span>
+                      {selectedProduct.code && (
+                        <Badge
+                          variant="secondary"
+                          className="font-mono text-[11px]"
+                        >
+                          {selectedProduct.code}
+                        </Badge>
+                      )}
+                    </span>
+                    {selectedSpecification && (
+                      <span className="text-muted-foreground truncate text-xs">
+                        规格：{selectedSpecification}
+                      </span>
                     )}
-                  </span>
+                  </>
                 ) : (
                   placeholder
                 )}
@@ -167,116 +232,160 @@ export function SmartProductSearch({
             <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[600px] p-0" align="start">
+        <PopoverContent className="w-[620px] p-0" align="start">
           <Command>
             <CommandInput
               placeholder="输入商品名称、编码或规格搜索..."
               value={searchValue}
-              onValueChange={setSearchValue}
+              onValueChange={handleSearchValueChange}
               className="h-10"
             />
             <CommandList className="max-h-[400px]">
+              {isSearching && (
+                <div className="text-muted-foreground flex items-center justify-center gap-2 py-3 text-xs">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  正在搜索...
+                </div>
+              )}
               {filteredProducts.length > 0 ? (
                 <CommandGroup>
-                  {filteredProducts.map(product => (
-                    <CommandItem
-                      key={product.id}
-                      value={product.id}
-                      onSelect={() => handleProductSelect(product.id)}
-                      className="flex items-start justify-between gap-4 p-4"
-                    >
-                      <div className="flex min-w-0 flex-1 items-start gap-3">
-                        <Check
-                          className={cn(
-                            'h-4 w-4 shrink-0',
-                            value === product.id ? 'opacity-100' : 'opacity-0'
-                          )}
-                        />
-                        <Package className="text-muted-foreground h-5 w-5 shrink-0" />
-                        <div className="min-w-0 flex-1 space-y-1">
-                          {/* 第一行：产品名称和编码 */}
-                          <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-900">
-                              {product.name}
-                            </span>
-                            <Badge variant="secondary" className="text-xs font-mono">
-                              {product.code}
-                            </Badge>
-                          </div>
-
-                          {/* 第二行：规格信息 */}
-                          {product.specification && (
-                            <div className="text-sm text-gray-600">
-                              规格：{product.specification}
+                  {filteredProducts.map(product => {
+                    const specDisplay = formatSpecification(
+                      product.specification
+                    );
+                    const piecesPerUnit = product.piecesPerUnit ?? 0;
+                    const availableDisplay = formatPieceSummary(
+                      product.inventory?.availableInventory ?? 0,
+                      piecesPerUnit,
+                      {
+                        fallbackUnit: '片',
+                        zeroDisplay: '0片',
+                      }
+                    );
+                    const totalDisplay = formatPieceSummary(
+                      product.inventory?.totalInventory ?? 0,
+                      piecesPerUnit,
+                      {
+                        fallbackUnit: '片',
+                        zeroDisplay: '0片',
+                      }
+                    );
+                    return (
+                      <CommandItem
+                        key={product.id}
+                        value={product.id}
+                        onSelect={() => handleProductSelect(product.id)}
+                        className="flex items-start justify-between gap-4 p-4"
+                      >
+                        <div className="flex min-w-0 flex-1 items-start gap-3">
+                          <Check
+                            className={cn(
+                              'h-4 w-4 shrink-0',
+                              value === product.id ? 'opacity-100' : 'opacity-0'
+                            )}
+                          />
+                          <Package className="text-muted-foreground h-5 w-5 shrink-0" />
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="font-semibold text-gray-900">
+                                {product.name}
+                              </span>
+                              {product.code && (
+                                <Badge
+                                  variant="secondary"
+                                  className="font-mono text-xs"
+                                >
+                                  {product.code}
+                                </Badge>
+                              )}
+                              {product.status === 'inactive' && (
+                                <Badge variant="secondary" className="text-xs">
+                                  停用
+                                </Badge>
+                              )}
                             </div>
-                          )}
-
-                          {/* 第三行：批次信息（可点击选择） */}
-                          {product.inventory?.batches &&
-                            product.inventory.batches.length > 0 && (
-                              <div className="space-y-1">
-                                <div className="text-xs font-medium text-gray-600">
-                                  点击批次进行选择：
-                                </div>
-                                <div className="flex flex-wrap gap-2">
-                                  {product.inventory.batches.map((batch, idx) => (
-                                    <button
-                                      key={`${product.id}-${batch.batchNumber}-${idx}`}
-                                      type="button"
-                                      onClick={e =>
-                                        handleBatchSelect(
-                                          product.id,
-                                          batch.batchNumber,
-                                          e
-                                        )
-                                      }
-                                      className="flex items-center gap-1.5 rounded-md border-2 border-blue-200 bg-blue-50 px-3 py-1.5 text-xs transition-all hover:border-blue-400 hover:bg-blue-100 hover:shadow-md active:scale-95"
-                                    >
-                                      <span className="font-mono font-semibold text-blue-700">
-                                        {batch.batchNumber}
-                                      </span>
-                                      <span className="text-gray-400">|</span>
-                                      <span className="font-medium text-green-600">
-                                        {batch.quantity} 片
-                                      </span>
-                                    </button>
-                                  ))}
-                                </div>
+                            {specDisplay && (
+                              <div className="text-sm text-gray-600">
+                                规格：{specDisplay}
                               </div>
                             )}
-                        </div>
-                      </div>
-
-                      {/* 右侧：库存信息 */}
-                      {product.inventory && (
-                        <div className="shrink-0 space-y-1 text-right">
-                          <div className="rounded-md bg-green-50 px-3 py-1">
-                            <div className="text-xs text-gray-600">可用库存</div>
-                            <div className="text-lg font-bold text-green-600">
-                              {product.inventory.availableInventory}
-                            </div>
-                            <div className="text-xs text-gray-500">片</div>
+                            {product.inventory?.batches &&
+                              product.inventory.batches.length > 0 && (
+                                <div className="space-y-1">
+                                  <div className="text-xs font-medium text-gray-600">
+                                    点击批次进行选择：
+                                  </div>
+                                  <div className="flex flex-wrap gap-2">
+                                    {product.inventory.batches.map(
+                                      (batch, idx) => (
+                                        <button
+                                          key={`${product.id}-${batch.batchNumber}-${idx}`}
+                                          type="button"
+                                          onClick={e =>
+                                            handleBatchSelect(
+                                              product.id,
+                                              batch.batchNumber,
+                                              e
+                                            )
+                                          }
+                                          className="flex items-center gap-1.5 rounded-md border-2 border-blue-200 bg-blue-50 px-3 py-1.5 text-xs transition-all hover:border-blue-400 hover:bg-blue-100 hover:shadow-md active:scale-95"
+                                        >
+                                          <span className="font-mono font-semibold text-blue-700">
+                                            {batch.batchNumber}
+                                          </span>
+                                          <span className="text-gray-400">
+                                            |
+                                          </span>
+                                          <span className="font-medium text-green-600">
+                                            {formatPieceSummary(
+                                              batch.quantity,
+                                              piecesPerUnit,
+                                              {
+                                                fallbackUnit: '片',
+                                                zeroDisplay: '0片',
+                                              }
+                                            )}
+                                          </span>
+                                        </button>
+                                      )
+                                    )}
+                                  </div>
+                                </div>
+                              )}
                           </div>
-                          {product.inventory.totalInventory !==
-                            product.inventory.availableInventory && (
-                            <div className="text-xs text-gray-500">
-                              总量 {product.inventory.totalInventory} 片
-                            </div>
-                          )}
                         </div>
-                      )}
-                    </CommandItem>
-                  ))}
+
+                        {product.inventory && (
+                          <div className="shrink-0 space-y-1 text-right">
+                            <div className="rounded-md bg-green-50 px-3 py-1">
+                              <div className="text-xs text-gray-600">
+                                可用库存
+                              </div>
+                              <div className="text-sm font-semibold text-green-600">
+                                {availableDisplay}
+                              </div>
+                            </div>
+                            {product.inventory.totalInventory !==
+                              product.inventory.availableInventory && (
+                              <div className="text-xs text-gray-500">
+                                总量 {totalDisplay}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </CommandItem>
+                    );
+                  })}
                 </CommandGroup>
               ) : (
                 <CommandEmpty className="py-6 text-center">
                   <div className="space-y-3">
                     <div className="text-muted-foreground">
-                      {searchValue ? (
-                        <>未找到匹配的商品 &ldquo;{searchValue}&rdquo;</>
-                      ) : (
-                        '请输入关键词搜索商品'
-                      )}
+                      {isSearching
+                        ? '正在搜索商品...'
+                        : searchValue
+                          ? `未找到匹配的商品 "${searchValue}"`
+                          : '请输入关键词搜索商品'}
                     </div>
                     {allowTemporaryProducts && searchValue && (
                       <Button
@@ -297,7 +406,6 @@ export function SmartProductSearch({
         </PopoverContent>
       </Popover>
 
-      {/* 添加临时产品对话框 */}
       <AddTemporaryProductDialog
         open={showAddDialog}
         onOpenChange={setShowAddDialog}

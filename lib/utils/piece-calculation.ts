@@ -135,6 +135,70 @@ export function formatInventoryQuantity(
 }
 
 /**
+ * 以“总片数为主、件数为辅”的格式化显示
+ * 解决仅显示件数时易被误解为片数不足的问题
+ */
+export interface PieceSummaryOptions {
+  /** 前缀文本，例如“总计” */
+  prefix?: string;
+  /** 当缺少每件片数时使用的单位标签，默认显示“片” */
+  fallbackUnit?: string;
+  /** 自定义0值显示文本 */
+  zeroDisplay?: string;
+  /** 是否显示近似的件数/组合信息 */
+  includeApprox?: boolean;
+}
+
+export function formatPieceSummary(
+  totalPieces: number,
+  piecesPerUnit: number,
+  options: PieceSummaryOptions = {}
+): string {
+  const {
+    prefix = '',
+    fallbackUnit = '片',
+    zeroDisplay,
+    includeApprox = true,
+  } = options;
+
+  const normalizedUnit =
+    typeof fallbackUnit === 'string' && fallbackUnit.trim().length > 0
+      ? fallbackUnit.trim()
+      : '';
+  const unitPart =
+    normalizedUnit.length === 0
+      ? ''
+      : normalizedUnit === '片'
+        ? '片'
+        : ` ${normalizedUnit}`;
+
+  const buildZeroDisplay = () => {
+    if (zeroDisplay !== null && zeroDisplay !== undefined) {
+      return zeroDisplay;
+    }
+    const fallbackZero = `${prefix}${0}${unitPart}`.trim() || '0';
+    return fallbackZero;
+  };
+
+  if (!Number.isFinite(totalPieces) || totalPieces <= 0) {
+    return buildZeroDisplay();
+  }
+
+  if (!Number.isInteger(piecesPerUnit) || piecesPerUnit <= 0) {
+    return `${prefix}${totalPieces}${unitPart}`.trim();
+  }
+
+  const result = calculatePieceDisplay(totalPieces, piecesPerUnit);
+  const baseText = `${prefix}${totalPieces}片`;
+
+  if (!includeApprox || result.displayText === `${totalPieces}片`) {
+    return baseText;
+  }
+
+  return `${baseText} (约${result.displayText})`;
+}
+
+/**
  * 解析用户输入的数量字符串
  * 支持格式：
  * - "100" -> 100片

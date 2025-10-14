@@ -1,20 +1,26 @@
 // 往来账单类型定义
 // 定义客户和供应商的综合账务往来数据结构
 
-// 账单类型枚举
-export type StatementType = 'customer' | 'supplier';
+// 账单类型枚举（用于前端筛选）
+export type StatementType = 'customer' | 'supplier' | 'partner';
+
+// 伙伴角色（存储在伙伴、账单中）
+export type PartnerRole = 'customer' | 'supplier' | 'both';
 
 // 交易类型枚举
 export type TransactionType =
   | 'sale'
-  | 'payment'
+  | 'sales_return'
+  | 'payment_in'
+  | 'payment_out'
+  | 'prepayment_in'
+  | 'prepayment_out'
   | 'refund'
   | 'purchase'
-  | 'payment_out'
   | 'adjustment';
 
 // 账单状态枚举
-export type StatementStatus = 'active' | 'settled' | 'overdue' | 'suspended';
+export type StatementStatus = 'active' | 'settled' | 'suspended';
 
 // 往来账单基础数据
 export interface AccountStatement {
@@ -22,13 +28,15 @@ export interface AccountStatement {
   entityId: string; // 客户或供应商ID
   entityName: string;
   entityType: StatementType;
+  partnerRole: PartnerRole;
   totalOrders: number;
   totalAmount: number;
   paidAmount: number;
   pendingAmount: number;
-  overdueAmount: number;
-  creditLimit: number;
-  paymentTerms: string; // 付款条件，如"30天"
+  currentBalance: number;
+  creditLimit?: number;
+  overdueAmount?: number;
+  paymentTerms?: string;
   status: StatementStatus;
   lastTransactionDate?: Date | string; // 支持Date对象和ISO字符串
   lastPaymentDate?: Date | string;
@@ -46,6 +54,12 @@ export interface AccountStatementDetail extends AccountStatement {
     extendedInfo?: string;
   };
   transactions: StatementTransaction[];
+  transactionsPagination?: {
+    page: number;
+    pageSize: number;
+    total: number;
+    totalPages: number;
+  };
   summary: {
     currentMonthAmount: number;
     lastMonthAmount: number;
@@ -60,14 +74,19 @@ export interface StatementTransaction {
   id: string;
   statementId: string;
   transactionType: TransactionType;
+  direction: 'debit' | 'credit';
   referenceId: string; // 关联的订单、支付或退款ID
   referenceNumber: string; // 关联的单据号
+  debitAmount: number;
+  creditAmount: number;
   amount: number;
+  beforeBalance: number;
   balance: number; // 交易后余额
+  afterBalance: number;
   description: string;
   transactionDate: Date | string; // 支持Date对象和ISO字符串
-  dueDate?: Date | string;
-  status: 'pending' | 'completed' | 'overdue';
+  status: 'pending' | 'completed';
+  metadata?: Record<string, unknown> | null;
   createdAt: Date | string;
 }
 
@@ -78,18 +97,14 @@ export interface StatementQuery {
   search?: string;
   entityType?: StatementType;
   status?: StatementStatus;
-  creditLimitMin?: number;
-  creditLimitMax?: number;
   pendingAmountMin?: number;
   pendingAmountMax?: number;
-  overdueOnly?: boolean;
   startDate?: string;
   endDate?: string;
   sortBy?:
     | 'entityName'
     | 'totalAmount'
     | 'pendingAmount'
-    | 'overdueAmount'
     | 'lastTransactionDate';
   sortOrder?: 'asc' | 'desc';
 }
@@ -101,7 +116,7 @@ export interface TransactionQuery {
   transactionType?: TransactionType;
   startDate?: string;
   endDate?: string;
-  status?: 'pending' | 'completed' | 'overdue';
+  status?: 'pending' | 'completed';
   sortBy?: 'transactionDate' | 'amount';
   sortOrder?: 'asc' | 'desc';
 }
@@ -112,16 +127,12 @@ export interface StatementStatistics {
     totalCustomers: number;
     activeCustomers: number;
     totalReceivable: number;
-    totalOverdue: number;
-    averageCreditLimit: number;
     averagePaymentDays: number;
   };
   supplierStats: {
     totalSuppliers: number;
     activeSuppliers: number;
     totalPayable: number;
-    totalOverdue: number;
-    averageCreditLimit: number;
     averagePaymentDays: number;
   };
   monthlyTrends: {
@@ -171,12 +182,18 @@ export interface StatementResponse {
 export interface StatementListResponse {
   success: boolean;
   data: {
-    statements: AccountStatementDetail[];
+    statements: AccountStatement[];
     pagination: {
       page: number;
-      pageSize: number;
+      limit: number;
       total: number;
       totalPages: number;
+    };
+    summary: {
+      totalCustomers: number;
+      totalSuppliers: number;
+      totalReceivable: number;
+      totalPayable: number;
     };
   };
   error?: string;
@@ -232,13 +249,6 @@ export const DEFAULT_STATEMENT_STATUSES: StatementStatusConfig[] = [
     isActive: true,
   },
   {
-    status: 'overdue',
-    label: '逾期',
-    description: '存在逾期账款',
-    color: 'red',
-    isActive: true,
-  },
-  {
     status: 'suspended',
     label: '暂停',
     description: '账户已暂停',
@@ -252,7 +262,7 @@ export interface TransactionTypeConfig {
   type: TransactionType;
   label: string;
   description: string;
-  isDebit: boolean; // 是否为借方
+  isDebit: boolean; // 是否为增加应收/减少应付
   isActive: boolean;
 }
 
@@ -266,10 +276,38 @@ export const DEFAULT_TRANSACTION_TYPES: TransactionTypeConfig[] = [
     isActive: true,
   },
   {
-    type: 'payment',
+    type: 'sales_return',
+    label: '销售退货',
+    description: '销售退货单',
+    isDebit: false,
+    isActive: true,
+  },
+  {
+    type: 'payment_in',
     label: '收款',
     description: '客户付款',
     isDebit: false,
+    isActive: true,
+  },
+  {
+    type: 'payment_out',
+    label: '付款',
+    description: '付款给伙伴',
+    isDebit: true,
+    isActive: true,
+  },
+  {
+    type: 'prepayment_in',
+    label: '预收款',
+    description: '收到预付款',
+    isDebit: false,
+    isActive: true,
+  },
+  {
+    type: 'prepayment_out',
+    label: '预付款',
+    description: '支付预付款',
+    isDebit: true,
     isActive: true,
   },
   {
@@ -287,13 +325,6 @@ export const DEFAULT_TRANSACTION_TYPES: TransactionTypeConfig[] = [
     isActive: true,
   },
   {
-    type: 'payment_out',
-    label: '付款',
-    description: '付款给供应商',
-    isDebit: true,
-    isActive: true,
-  },
-  {
     type: 'adjustment',
     label: '调整',
     description: '账务调整',
@@ -308,10 +339,8 @@ export interface StatementUtils {
   formatStatementStatus: (status: StatementStatus) => string;
   formatTransactionType: (type: TransactionType) => string;
   calculatePaymentRate: (totalAmount: number, paidAmount: number) => number;
-  calculateOverdueDays: (dueDate: string) => number;
   calculateAging: (transactions: StatementTransaction[]) => AgingAnalysis;
   getStatementStatusColor: (status: StatementStatus) => string;
   getTransactionTypeIcon: (type: TransactionType) => string;
   generateStatementNumber: () => string;
-  validateCreditLimit: (amount: number, creditLimit: number) => boolean;
 }

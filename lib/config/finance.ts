@@ -54,10 +54,9 @@ export const ENTITY_TYPES = {
 
 // 账单状态枚举
 export const STATEMENT_STATUSES = {
-  PENDING: 'pending',
+  ACTIVE: 'active',
   SETTLED: 'settled',
-  OVERDUE: 'overdue',
-  CANCELLED: 'cancelled',
+  SUSPENDED: 'suspended',
 } as const;
 
 // 支付方式中文标签映射
@@ -107,10 +106,9 @@ export const ENTITY_TYPE_LABELS = {
 
 // 账单状态中文标签映射
 export const STATEMENT_STATUS_LABELS = {
-  [STATEMENT_STATUSES.PENDING]: '待处理',
+  [STATEMENT_STATUSES.ACTIVE]: '正常',
   [STATEMENT_STATUSES.SETTLED]: '已结清',
-  [STATEMENT_STATUSES.OVERDUE]: '逾期',
-  [STATEMENT_STATUSES.CANCELLED]: '已取消',
+  [STATEMENT_STATUSES.SUSPENDED]: '已暂停',
 } as const;
 
 // 交易类型枚举
@@ -130,7 +128,6 @@ export type TransactionType =
 export const TRANSACTION_STATUSES = {
   PENDING: 'pending',
   COMPLETED: 'completed',
-  OVERDUE: 'overdue',
 } as const;
 
 export type TransactionStatus =
@@ -150,14 +147,13 @@ export const TRANSACTION_TYPE_LABELS = {
 export const TRANSACTION_STATUS_LABELS = {
   [TRANSACTION_STATUSES.PENDING]: '待处理',
   [TRANSACTION_STATUSES.COMPLETED]: '已完成',
-  [TRANSACTION_STATUSES.OVERDUE]: '逾期',
 } as const;
 
 // 应收账款状态枚举
 export const RECEIVABLE_STATUSES = {
-  PENDING: 'pending',
+  UNPAID: 'unpaid',
+  PARTIAL: 'partial',
   PAID: 'paid',
-  OVERDUE: 'overdue',
 } as const;
 
 export type ReceivableStatus =
@@ -167,9 +163,6 @@ export type ReceivableStatus =
 export const FINANCE_CONFIG = {
   // 默认付款期限（天）
   DEFAULT_PAYMENT_TERMS: 30,
-
-  // 逾期天数阈值
-  OVERDUE_THRESHOLD_DAYS: 30,
 
   // 默认信用额度 - 已迁移到环境配置
   get DEFAULT_CREDIT_LIMIT() {

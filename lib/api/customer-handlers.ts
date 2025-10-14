@@ -415,7 +415,17 @@ export async function getCustomerList(params: CustomerQueryParams) {
           select: {
             id: true,
             totalAmount: true,
+            status: true,
             createdAt: true,
+          },
+          orderBy: {
+            createdAt: 'asc', // 按创建时间升序，方便计算首次下单时间
+          },
+        },
+        returnOrders: {
+          select: {
+            id: true,
+            status: true,
           },
         },
       },
@@ -429,12 +439,40 @@ export async function getCustomerList(params: CustomerQueryParams) {
   // 转换数据格式
   const transformedCustomers: Customer[] = customers.map(customer => {
     const extendedInfo = parseExtendedInfo(customer.extendedInfo || undefined);
-    const totalOrders = customer.salesOrders.length;
-    const totalAmount = customer.salesOrders.reduce(
+
+    // 实际交易次数：已完成的订单数（排除已取消的订单）
+    const completedOrders = customer.salesOrders.filter(
+      order => order.status !== 'cancelled' && order.status !== 'draft'
+    );
+    const transactionCount = completedOrders.length;
+
+    // 累计销售金额
+    const totalAmount = completedOrders.reduce(
       (sum, order) => sum + order.totalAmount,
       0
     );
-    const lastOrderDate = customer.salesOrders[0]?.createdAt.toISOString();
+
+    // 最后下单时间（所有订单中最新的）
+    const lastOrderDate =
+      customer.salesOrders.length > 0
+        ? customer.salesOrders[
+            customer.salesOrders.length - 1
+          ]?.createdAt.toISOString()
+        : undefined;
+
+    // 合作天数：从首次下单到当前的天数
+    let cooperationDays: number | undefined;
+    if (customer.salesOrders.length > 0) {
+      const firstOrderDate = customer.salesOrders[0].createdAt;
+      const now = new Date();
+      const diffTime = Math.abs(now.getTime() - firstOrderDate.getTime());
+      cooperationDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+
+    // 退货次数：所有退货订单数（排除已取消的）
+    const returnOrderCount = customer.returnOrders.filter(
+      order => order.status !== 'cancelled'
+    ).length;
 
     return {
       id: customer.id,
@@ -446,9 +484,12 @@ export async function getCustomerList(params: CustomerQueryParams) {
       createdAt: customer.createdAt.toISOString(),
       updatedAt: customer.updatedAt.toISOString(),
       parentCustomer: customer.parentCustomer || undefined,
-      totalOrders,
+      totalOrders: customer.salesOrders.length,
       totalAmount,
       lastOrderDate,
+      transactionCount,
+      cooperationDays,
+      returnOrderCount,
     };
   });
 

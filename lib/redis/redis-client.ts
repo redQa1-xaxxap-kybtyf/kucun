@@ -100,7 +100,11 @@ function cleanExpiredMemoryCache(): void {
 // 定期清理过期缓存
 // 使用 unref() 防止此定时器阻止 Node.js 进程退出
 const cleanupInterval = setInterval(cleanExpiredMemoryCache, 60000); // 每分钟清理一次
-cleanupInterval.unref();
+type MaybeUnrefTimer = { unref?: () => void };
+const maybeUnrefTimer = cleanupInterval as unknown as MaybeUnrefTimer;
+if (typeof maybeUnrefTimer.unref === 'function') {
+  maybeUnrefTimer.unref();
+}
 
 function createClient(url: string): Redis {
   const client = new Redis(url, {

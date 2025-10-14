@@ -1,7 +1,7 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { Edit, Eye, MoreHorizontal, TrendingDown } from 'lucide-react';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { Ban, Edit, Eye, MoreHorizontal, TrendingDown } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useState } from 'react';
@@ -12,6 +12,17 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -37,6 +48,7 @@ import {
   RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { formatCurrency } from '@/lib/utils';
 
 interface ERPReturnOrderListProps {
   initialParams?: ReturnOrderQueryParams;
@@ -64,6 +76,8 @@ export function ERPReturnOrderList({
   onDelete,
 }: ERPReturnOrderListProps) {
   const router = useRouter();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   // 查询参数状态
   const [queryParams, setQueryParams] = useState<ReturnOrderQueryParams>(
@@ -74,6 +88,10 @@ export function ERPReturnOrderList({
       sortOrder: 'desc',
     }
   );
+
+  // 取消对话框状态
+  const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
+  const [orderToCancel, setOrderToCancel] = useState<ReturnOrder | null>(null);
 
   // 获取退货订单数据
   const {
@@ -87,7 +105,10 @@ export function ERPReturnOrderList({
       const response = await fetch(
         `/api/return-orders?${new URLSearchParams(
           Object.entries(queryParams)
-            .filter(([_, value]) => value !== undefined && value !== null && value !== '')
+            .filter(
+              ([_, value]) =>
+                value !== undefined && value !== null && value !== ''
+            )
             .map(([key, value]) => [key, String(value)])
         ).toString()}`
       );
@@ -119,6 +140,59 @@ export function ERPReturnOrderList({
   // 如果API失败，使用模拟数据
   const displayData = error ? mockData : queryData;
 
+  // 取消退货订单mutation
+  const cancelMutation = useMutation({
+    mutationFn: async (orderId: string) => {
+      const response = await fetch(`/api/return-orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          status: 'cancelled',
+          idempotencyKey: crypto.randomUUID(),
+          remarks: '从列表取消退货订单',
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || '取消退货订单失败');
+      }
+
+      return response.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: '取消成功',
+        description: '退货订单已取消',
+      });
+      // 刷新列表
+      queryClient.invalidateQueries({ queryKey: queryKeys.returnOrders.all });
+      setCancelDialogOpen(false);
+      setOrderToCancel(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: '取消失败',
+        description: error.message,
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // 处理取消操作
+  const handleCancel = React.useCallback((returnOrder: ReturnOrder) => {
+    setOrderToCancel(returnOrder);
+    setCancelDialogOpen(true);
+  }, []);
+
+  // 确认取消
+  const confirmCancel = React.useCallback(() => {
+    if (orderToCancel) {
+      cancelMutation.mutate(orderToCancel.id);
+    }
+  }, [orderToCancel, cancelMutation]);
+
   // 处理搜索
   const handleSearch = React.useCallback(
     (search: string) => {
@@ -144,9 +218,9 @@ export function ERPReturnOrderList({
         if (key === 'status') {
           setQueryParams(prev => ({
             ...prev,
-            status: (value === 'all' || !value
-              ? undefined
-              : value) as ReturnOrderStatus | undefined,
+            status: (value === 'all' || !value ? undefined : value) as
+              | ReturnOrderStatus
+              | undefined,
             page: 1,
           }));
         } else if (key === 'sortBy') {
@@ -196,13 +270,6 @@ export function ERPReturnOrderList({
   };
 
   // 格式化金额
-  const formatAmount = (amount: number) =>
-    new Intl.NumberFormat('zh-CN', {
-      style: 'currency',
-      currency: 'CNY',
-      minimumFractionDigits: 2,
-    }).format(amount);
-
   // 格式化日期
   const formatDate = (dateString: string) =>
     new Date(dateString).toLocaleDateString('zh-CN', {
@@ -279,7 +346,10 @@ export function ERPReturnOrderList({
       </Card>
 
       {/* 数据表格 */}
-      <div className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]" style={{ boxShadow: 'var(--shadow-medium)' }}>
+      <div
+        className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+        style={{ boxShadow: 'var(--shadow-medium)' }}
+      >
         <Table>
           <TableHeader>
             <TableRow>
@@ -339,22 +409,25 @@ export function ERPReturnOrderList({
                           ? returnOrder.refundAmount
                           : returnOrder.totalAmount;
                       const hasAdjustment =
-                        Math.abs(actualAmount - returnOrder.totalAmount) > 0.005;
+                        Math.abs(actualAmount - returnOrder.totalAmount) >
+                        0.005;
                       const hasRemaining =
                         typeof returnOrder.remainingAmount === 'number' &&
                         returnOrder.remainingAmount > 0.005;
 
                       return (
                         <div className="flex flex-col items-end gap-0.5">
-                          <span>{formatAmount(actualAmount)}</span>
+                          <span>{formatCurrency(actualAmount)}</span>
                           {hasAdjustment && (
                             <span className="text-muted-foreground text-xs">
-                              原退货金额 {formatAmount(returnOrder.totalAmount)}
+                              原退货金额{' '}
+                              {formatCurrency(returnOrder.totalAmount)}
                             </span>
                           )}
                           {hasRemaining && (
-                            <span className="text-[hsl(var(--color-warning))] text-xs">
-                              待处理 {formatAmount(returnOrder.remainingAmount!)}
+                            <span className="text-xs text-[hsl(var(--color-warning))]">
+                              待处理{' '}
+                              {formatCurrency(returnOrder.remainingAmount!)}
                             </span>
                           )}
                         </div>
@@ -390,15 +463,36 @@ export function ERPReturnOrderList({
                           <Eye className="mr-2 h-4 w-4" />
                           查看详情
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={e => {
-                            e.stopPropagation();
-                            handleEdit(returnOrder);
-                          }}
-                        >
-                          <Edit className="mr-2 h-4 w-4" />
-                          编辑
-                        </DropdownMenuItem>
+                        {['draft', 'submitted'].includes(
+                          returnOrder.status
+                        ) && (
+                          <DropdownMenuItem
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleEdit(returnOrder);
+                            }}
+                          >
+                            <Edit className="mr-2 h-4 w-4" />
+                            编辑
+                          </DropdownMenuItem>
+                        )}
+                        {[
+                          'draft',
+                          'submitted',
+                          'approved',
+                          'processing',
+                        ].includes(returnOrder.status) && (
+                          <DropdownMenuItem
+                            className="text-destructive"
+                            onClick={e => {
+                              e.stopPropagation();
+                              handleCancel(returnOrder);
+                            }}
+                          >
+                            <Ban className="mr-2 h-4 w-4" />
+                            取消退货
+                          </DropdownMenuItem>
+                        )}
                         {onDelete && (
                           <DropdownMenuItem
                             className="text-red-600"
@@ -421,17 +515,52 @@ export function ERPReturnOrderList({
         </Table>
 
         {/* 分页组件 */}
-        {displayData?.data.pagination && displayData.data.pagination.total > 0 && (
-          <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-            <Pagination
-              pagination={displayData.data.pagination}
-              onPageChange={onPageChange || (() => {})}
-              showRange
-              showTotal
-            />
-          </div>
-        )}
+        {displayData?.data.pagination &&
+          displayData.data.pagination.total > 0 && (
+            <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+              <Pagination
+                pagination={displayData.data.pagination}
+                onPageChange={onPageChange || (() => {})}
+                showRange
+                showTotal
+              />
+            </div>
+          )}
       </div>
+
+      {/* 取消确认对话框 */}
+      <AlertDialog open={cancelDialogOpen} onOpenChange={setCancelDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>确认取消退货订单</AlertDialogTitle>
+            <AlertDialogDescription>
+              您确定要取消退货订单{' '}
+              <strong>{orderToCancel?.returnNumber}</strong> 吗？
+              <br />
+              <br />
+              取消后：
+              <ul className="mt-2 list-inside list-disc space-y-1">
+                <li>该退货订单将被标记为已取消状态</li>
+                <li>已取消的订单不会影响往来账单余额</li>
+                <li>订单记录仍会保留在系统中用于审计追踪</li>
+                <li>此操作不可撤销</li>
+              </ul>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={cancelMutation.isPending}>
+              我再想想
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmCancel}
+              disabled={cancelMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {cancelMutation.isPending ? '取消中...' : '确认取消'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

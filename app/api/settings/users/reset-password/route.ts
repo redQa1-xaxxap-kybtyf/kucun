@@ -12,15 +12,17 @@ import { env } from '@/lib/env';
 import { ResetPasswordSchema } from '@/lib/validations/settings';
 
 // POST - 重置用户密码
-export const POST = withAuth(async (request: NextRequest, { user }) => {
+export const POST = withAuth(async (request: NextRequest, context) => {
   try {
+    const authUser = context.user;
+
     // 权限检查 - 只有管理员可以重置密码
-    const user = await prisma.user.findUnique({
-      where: { id: user.id },
+    const currentUser = await prisma.user.findUnique({
+      where: { id: authUser.id },
       select: { role: true },
     });
 
-    if (user?.role !== 'admin') {
+    if (currentUser?.role !== 'admin') {
       return NextResponse.json(
         { success: false, error: '权限不足，只有管理员可以重置用户密码' },
         { status: 403 }

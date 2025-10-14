@@ -1,4 +1,4 @@
-import { type NextRequest, NextResponse } from 'next/server';
+﻿import { type NextRequest, NextResponse } from 'next/server';
 
 import { ApiError } from '@/lib/api/errors';
 import { withAuth } from '@/lib/auth/api-helpers';
@@ -10,7 +10,6 @@ import {
 } from '@/lib/services/sales-order-service';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { updateOrderStatusSchema } from '@/lib/validations/sales-order';
-
 
 // 获取单个销售订单信息
 export const GET = withAuth(
@@ -26,6 +25,10 @@ export const GET = withAuth(
         userId: true,
         status: true,
         orderType: true,
+        transferMode: true,
+        itemsAmount: true,
+        additionalFees: true,
+        roundingAdjustment: true,
         supplierId: true,
         costAmount: true,
         profitAmount: true,
@@ -95,6 +98,15 @@ export const GET = withAuth(
             id: 'asc',
           },
         },
+        feeItems: {
+          select: {
+            id: true,
+            feeType: true,
+            feeName: true,
+            feeAmount: true,
+            remarks: true,
+          },
+        },
         payments: {
           select: {
             id: true,
@@ -108,6 +120,22 @@ export const GET = withAuth(
           },
           orderBy: {
             paymentDate: 'desc',
+          },
+        },
+        returnOrders: {
+          where: {
+            status: {
+              not: 'cancelled',
+            },
+          },
+          select: {
+            id: true,
+            returnNumber: true,
+            status: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
           },
         },
       },
@@ -124,10 +152,19 @@ export const GET = withAuth(
 
     const remainingAmount = Number(salesOrder.totalAmount) - paidAmount;
 
+    const { returnOrders, ...rest } = salesOrder;
+
     return NextResponse.json({
       success: true,
       data: {
-        ...salesOrder,
+        ...rest,
+        hasReturnOrder: returnOrders.length > 0,
+        returnOrders: returnOrders.map(order => ({
+          id: order.id,
+          returnNumber: order.returnNumber,
+          status: order.status,
+          createdAt: order.createdAt.toISOString(),
+        })),
         paymentRecords: salesOrder.payments,
         paidAmount,
         remainingAmount,
@@ -241,7 +278,13 @@ export const PUT = withAuth(
       userId,
       { status, remarks },
       async () =>
-        await updateSalesOrderStatus(id, status, existingOrder.status, remarks, userId)
+        await updateSalesOrderStatus(
+          id,
+          status,
+          existingOrder.status,
+          remarks,
+          userId
+        )
     );
 
     // 如果涉及库存变更,清除缓存
@@ -280,6 +323,22 @@ export const PUT = withAuth(
         customerId: true,
         userId: true,
         status: true,
+        returnOrders: {
+          where: {
+            status: {
+              not: 'cancelled',
+            },
+          },
+          select: {
+            id: true,
+            returnNumber: true,
+            status: true,
+            createdAt: true,
+          },
+          orderBy: {
+            createdAt: 'desc',
+          },
+        },
         totalAmount: true,
         remarks: true,
         createdAt: true,
@@ -333,6 +392,13 @@ export const PUT = withAuth(
       customerId: fullOrder.customerId,
       userId: fullOrder.userId,
       status: fullOrder.status,
+      hasReturnOrder: fullOrder.returnOrders.length > 0,
+      returnOrders: fullOrder.returnOrders.map(order => ({
+        id: order.id,
+        returnNumber: order.returnNumber,
+        status: order.status,
+        createdAt: order.createdAt.toISOString(),
+      })),
       totalAmount: fullOrder.totalAmount,
       remarks: fullOrder.remarks,
       customer: fullOrder.customer,
@@ -410,6 +476,9 @@ export const PATCH = withAuth(
         id: true,
         status: true,
         orderNumber: true,
+        orderType: true,
+        transferMode: true,
+        supplierId: true,
       },
     });
 
@@ -431,23 +500,55 @@ export const PATCH = withAuth(
       );
     }
 
-    // 计算订单金额
-    let totalAmount = 0;
+    const orderType =
+      updateData.orderType ?? existingOrder.orderType ?? 'NORMAL';
+    const transferMode =
+      orderType === 'TRANSFER'
+        ? (updateData.transferMode ??
+          existingOrder.transferMode ??
+          'SUPPLIER_ONLY')
+        : 'SUPPLIER_ONLY';
+
+    let itemsAmount = 0;
     let costAmount = 0;
-    let profitAmount = 0;
 
     if (updateData.items && updateData.items.length > 0) {
       for (const item of updateData.items) {
-        const itemQuantity = item.quantity ?? 0;
-        const itemUnitPrice = item.unitPrice ?? 0;
-        const itemSubtotal = itemQuantity * itemUnitPrice;
-        const itemCost = (item.unitCost || 0) * itemQuantity;
+        const quantity = item.quantity ?? 0;
+        const unitPrice = item.unitPrice ?? 0;
+        const subtotal =
+          item.subtotal ?? Math.round(quantity * unitPrice * 100) / 100;
 
-        totalAmount += itemSubtotal;
+        itemsAmount += subtotal;
+
+        const effectiveTransferQuantity =
+          orderType === 'TRANSFER' && transferMode === 'MIXED'
+            ? (item.transferQuantity ?? 0)
+            : quantity;
+
+        const unitCost = item.unitCost ?? 0;
+        const itemCost = unitCost * effectiveTransferQuantity;
+
         costAmount += itemCost;
-        profitAmount += itemSubtotal - itemCost;
       }
     }
+
+    itemsAmount = Math.round(itemsAmount * 100) / 100;
+    costAmount = Math.round(costAmount * 100) / 100;
+
+    const rawAdditionalFees =
+      updateData.feeItems?.reduce((sum, fee) => sum + fee.feeAmount, 0) ?? 0;
+    const additionalFees = Math.round(rawAdditionalFees * 100) / 100;
+    const roundingAdjustment =
+      Math.round((updateData.roundingAdjustment ?? 0) * 100) / 100;
+
+    const totalAmount =
+      Math.round((itemsAmount + additionalFees + roundingAdjustment) * 100) /
+      100;
+    const profitAmount =
+      orderType === 'TRANSFER'
+        ? Math.round((itemsAmount - costAmount) * 100) / 100
+        : 0;
 
     // 使用事务更新订单
     const updatedOrder = await prisma.$transaction(async tx => {
@@ -455,41 +556,106 @@ export const PATCH = withAuth(
       await tx.salesOrderItem.deleteMany({
         where: { salesOrderId: id },
       });
+      await tx.salesOrderFeeItem.deleteMany({
+        where: { salesOrderId: id },
+      });
 
       // 更新订单主表
       return await tx.salesOrder.update({
         where: { id },
         data: {
-          customerId: updateData.customerId,
+          customerId: updateData.customerId ?? undefined,
           status: updateData.status || 'draft',
-          orderType: updateData.orderType,
-          supplierId: updateData.supplierId || null,
-          costAmount: updateData.orderType === 'TRANSFER' ? costAmount : null,
-          profitAmount: updateData.orderType === 'TRANSFER' ? profitAmount : null,
+          orderType,
+          transferMode,
+          supplierId:
+            orderType === 'TRANSFER'
+              ? updateData.supplierId === undefined
+                ? (existingOrder.supplierId ?? null)
+                : updateData.supplierId || null
+              : null,
+          costAmount: orderType === 'TRANSFER' ? costAmount : null,
+          profitAmount: orderType === 'TRANSFER' ? profitAmount : null,
+          itemsAmount,
+          additionalFees,
+          roundingAdjustment,
           totalAmount,
           remarks: updateData.remarks || null,
           items: updateData.items
             ? {
-                create: updateData.items.map(item => ({
-                  productId: item.productId,
-                  productCode: item.productCode,
-                  batchNumber: item.batchNumber,
-                  colorCode: item.colorCode,
-                  productionDate: item.productionDate,
-                  quantity: item.quantity ?? 0,
-                  unitPrice: item.unitPrice ?? 0,
-                  subtotal: (item.quantity ?? 0) * (item.unitPrice ?? 0),
-                  unitCost: item.unitCost,
-                  isManualProduct: item.isManualProduct,
-                  manualProductName: item.manualProductName,
-                  manualSpecification: item.manualSpecification,
-                  manualWeight: item.manualWeight,
-                  manualUnit: item.manualUnit,
-                  displayUnit: item.displayUnit,
-                  displayQuantity: item.displayQuantity,
-                  piecesPerUnit: item.piecesPerUnit,
-                  specification: item.specification,
-                  remarks: item.remarks,
+                create: updateData.items.map(item => {
+                  const quantity = item.quantity ?? 0;
+                  const unitPrice = item.unitPrice ?? 0;
+                  const subtotal =
+                    item.subtotal ??
+                    Math.round(quantity * unitPrice * 100) / 100;
+
+                  const localQuantity =
+                    orderType === 'TRANSFER'
+                      ? transferMode === 'MIXED'
+                        ? (item.localQuantity ?? 0)
+                        : 0
+                      : quantity;
+                  const transferQuantity =
+                    orderType === 'TRANSFER'
+                      ? transferMode === 'MIXED'
+                        ? (item.transferQuantity ?? 0)
+                        : quantity
+                      : 0;
+
+                  const effectiveCostQuantity =
+                    orderType === 'TRANSFER'
+                      ? transferMode === 'MIXED'
+                        ? (item.transferQuantity ?? 0)
+                        : quantity
+                      : 0;
+
+                  const unitCost =
+                    item.unitCost === undefined ? undefined : item.unitCost;
+                  const costSubtotal =
+                    unitCost !== undefined && orderType === 'TRANSFER'
+                      ? Math.round(unitCost * effectiveCostQuantity * 100) / 100
+                      : undefined;
+                  const profitSubtotal =
+                    orderType === 'TRANSFER' && costSubtotal !== undefined
+                      ? Math.round((subtotal - costSubtotal) * 100) / 100
+                      : undefined;
+
+                  return {
+                    productId: item.productId,
+                    productCode: item.productCode,
+                    batchNumber: item.batchNumber,
+                    colorCode: item.colorCode,
+                    productionDate: item.productionDate,
+                    quantity,
+                    unitPrice,
+                    subtotal,
+                    unitCost,
+                    localQuantity,
+                    transferQuantity,
+                    costSubtotal,
+                    profitAmount: profitSubtotal,
+                    isManualProduct: item.isManualProduct,
+                    manualProductName: item.manualProductName,
+                    manualSpecification: item.manualSpecification,
+                    manualWeight: item.manualWeight,
+                    manualUnit: item.manualUnit,
+                    displayUnit: item.displayUnit,
+                    displayQuantity: item.displayQuantity ?? quantity,
+                    piecesPerUnit: item.piecesPerUnit ?? null,
+                    specification: item.specification,
+                    remarks: item.remarks,
+                  };
+                }),
+              }
+            : undefined,
+          feeItems: updateData.feeItems
+            ? {
+                create: updateData.feeItems.map(fee => ({
+                  feeType: fee.feeType,
+                  feeName: fee.feeName,
+                  feeAmount: fee.feeAmount,
+                  remarks: fee.remarks ?? null,
                 })),
               }
             : undefined,
@@ -501,13 +667,33 @@ export const PATCH = withAuth(
           userId: true,
           status: true,
           orderType: true,
+          transferMode: true,
           supplierId: true,
+          itemsAmount: true,
+          additionalFees: true,
+          roundingAdjustment: true,
           costAmount: true,
           profitAmount: true,
           totalAmount: true,
           remarks: true,
           createdAt: true,
           updatedAt: true,
+          returnOrders: {
+            where: {
+              status: {
+                not: 'cancelled',
+              },
+            },
+            select: {
+              id: true,
+              returnNumber: true,
+              status: true,
+              createdAt: true,
+            },
+            orderBy: {
+              createdAt: 'desc',
+            },
+          },
           customer: {
             select: {
               id: true,
@@ -542,6 +728,10 @@ export const PATCH = withAuth(
               unitPrice: true,
               subtotal: true,
               unitCost: true,
+              localQuantity: true,
+              transferQuantity: true,
+              costSubtotal: true,
+              profitAmount: true,
               isManualProduct: true,
               manualProductName: true,
               manualSpecification: true,
@@ -564,14 +754,86 @@ export const PATCH = withAuth(
               },
             },
           },
+          feeItems: {
+            select: {
+              id: true,
+              feeType: true,
+              feeName: true,
+              feeAmount: true,
+              remarks: true,
+            },
+          },
         },
+      });
+    });
+
+    const { returnOrders, ...rest } = updatedOrder;
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        ...rest,
+        hasReturnOrder: returnOrders.length > 0,
+        returnOrders: returnOrders.map(order => ({
+          id: order.id,
+          returnNumber: order.returnNumber,
+          status: order.status,
+          createdAt: order.createdAt.toISOString(),
+        })),
+      },
+      message: '销售订单更新成功',
+    });
+  },
+  { permissions: ['orders:edit'] }
+);
+
+// 删除销售订单（仅支持已取消的订单）
+export const DELETE = withAuth(
+  async (_request: NextRequest, { params }) => {
+    const { id } = await (params as Promise<{ id: string }>);
+
+    const existingOrder = await prisma.salesOrder.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+      },
+    });
+
+    if (!existingOrder) {
+      return NextResponse.json(
+        { success: false, error: '销售订单不存在' },
+        { status: 404 }
+      );
+    }
+
+    if (existingOrder.status !== 'cancelled') {
+      return NextResponse.json(
+        {
+          success: false,
+          error: '只有已取消的销售订单才能删除',
+        },
+        { status: 400 }
+      );
+    }
+
+    await prisma.$transaction(async tx => {
+      await tx.salesOrderItem.deleteMany({
+        where: { salesOrderId: id },
+      });
+      await tx.salesOrderFeeItem.deleteMany({
+        where: { salesOrderId: id },
+      });
+      await tx.salesOrder.delete({
+        where: { id },
       });
     });
 
     return NextResponse.json({
       success: true,
-      data: updatedOrder,
-      message: '销售订单更新成功',
+      data: { id },
+      message: `销售订单 ${existingOrder.orderNumber} 已删除`,
     });
   },
   { permissions: ['orders:edit'] }

@@ -36,10 +36,12 @@ export const revalidate = 0; // 禁用 ISR
 export default async function InventoryPage({
   searchParams,
 }: {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const params = await searchParams;
+
   const getParam = (key: string) => {
-    const value = searchParams[key];
+    const value = params[key];
     return Array.isArray(value) ? value[0] : value;
   };
 
@@ -119,10 +121,7 @@ export default async function InventoryPage({
     data: formattedData,
   };
 
-  queryClient.setQueryData(
-    inventoryQueryKeys.list(queryParams),
-    inventoryData
-  );
+  queryClient.setQueryData(inventoryQueryKeys.list(queryParams), inventoryData);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

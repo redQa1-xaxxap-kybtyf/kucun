@@ -3,7 +3,12 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { productVariantBatchCreateSchema } from '@/lib/validations/product';
+import {
+  productVariantBatchCreateSchema,
+  productVariantBatchOperationSchema,
+  productVariantBatchCheckSkuSchema,
+  productVariantBatchGenerateSkuSchema,
+} from '@/lib/validations/product';
 
 // 批量创建产品变体
 export const POST = withAuth(async (request: NextRequest) => {
@@ -246,7 +251,10 @@ async function handleBatchOperation(body: unknown) {
           });
         });
 
-        results = variantIds.map(id => ({ id, operation: 'deleted' }));
+        results = variantIds.map((variantId: string) => ({
+          id: variantId,
+          operation: 'deleted',
+        }));
         break;
 
       case 'activate':
@@ -255,7 +263,10 @@ async function handleBatchOperation(body: unknown) {
           data: { status: 'active' },
         });
 
-        results = variantIds.map(id => ({ id, operation: 'activated' }));
+        results = variantIds.map((variantId: string) => ({
+          id: variantId,
+          operation: 'activated',
+        }));
         break;
 
       case 'deactivate':
@@ -264,7 +275,10 @@ async function handleBatchOperation(body: unknown) {
           data: { status: 'inactive' },
         });
 
-        results = variantIds.map(id => ({ id, operation: 'deactivated' }));
+        results = variantIds.map((variantId: string) => ({
+          id: variantId,
+          operation: 'deactivated',
+        }));
         break;
 
       default:

@@ -74,8 +74,8 @@ export interface ApprovalEvent extends BaseEvent {
  * 财务事件
  */
 export interface FinanceEvent extends BaseEvent {
-  type: 'finance:payment' | 'finance:refund' | 'finance:overdue';
-  action: 'created' | 'confirmed' | 'cancelled' | 'overdue';
+  type: 'finance:payment' | 'finance:refund';
+  action: 'created' | 'confirmed' | 'cancelled';
   recordType: 'payment' | 'paymentOut' | 'refund';
   recordId: string;
   recordNumber: string;

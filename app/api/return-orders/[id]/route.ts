@@ -177,11 +177,11 @@ export const PUT = withAuth(
             colorCode: item.colorCode,
             productionDate: item.productionDate,
             returnQuantity: item.returnQuantity,
+            damagedQuantity: item.damagedQuantity || 0,
             originalQuantity: item.originalQuantity,
             unitPrice: item.unitPrice,
             subtotal: item.subtotal,
             reason: item.reason,
-            condition: item.condition,
           })),
         });
 

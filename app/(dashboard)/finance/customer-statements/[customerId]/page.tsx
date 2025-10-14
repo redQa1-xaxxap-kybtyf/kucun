@@ -21,7 +21,10 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useCustomerStatementDetail } from '@/lib/api/customer-statements';
-import { CUSTOMER_STATEMENT_TRANSACTION_TYPES } from '@/lib/types/customer-statement';
+import {
+  CUSTOMER_STATEMENT_TRANSACTION_TYPES,
+  type CustomerStatementTransaction,
+} from '@/lib/types/customer-statement';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 const DEFAULT_RANGE_DAYS = 30;
@@ -35,7 +38,10 @@ export default function CustomerStatementDetailPage() {
 
   const today = new Date();
   const defaultEndDate = format(today, 'yyyy-MM-dd');
-  const defaultStartDate = format(subDays(today, DEFAULT_RANGE_DAYS), 'yyyy-MM-dd');
+  const defaultStartDate = format(
+    subDays(today, DEFAULT_RANGE_DAYS),
+    'yyyy-MM-dd'
+  );
 
   const queryStart = searchParams.get('startDate') ?? defaultStartDate;
   const queryEnd = searchParams.get('endDate') ?? defaultEndDate;
@@ -102,6 +108,7 @@ export default function CustomerStatementDetailPage() {
     new Date(dateRange.startDate).getTime() <=
       new Date(dateRange.endDate).getTime();
 
+  // ✅ 修复: 将所有 hooks 移到条件判断之前，遵循 React Hooks 规则
   const typeLabelMap = useMemo(() => {
     return CUSTOMER_STATEMENT_TRANSACTION_TYPES.reduce(
       (acc, item) => {
@@ -127,6 +134,112 @@ export default function CustomerStatementDetailPage() {
     }
   );
 
+  const refundSummary = useMemo(() => {
+    const receivables = statementDetail?.summary?.receivables;
+    if (receivables) {
+      const totalReturnAmount = Number(receivables.salesReturnAmount ?? 0);
+      const totalRefundProcessed = Number(
+        receivables.refundProcessed ?? receivables.refundPaid ?? 0
+      );
+      const pendingRefundAmount =
+        receivables.refundPending !== undefined
+          ? Number(receivables.refundPending)
+          : Math.max(0, totalReturnAmount - totalRefundProcessed);
+
+      return {
+        totalReturnAmount,
+        totalRefundPaid: totalRefundProcessed,
+        pendingRefundAmount,
+      };
+    }
+
+    if (!statementDetail?.transactions) {
+      return {
+        totalReturnAmount: 0,
+        totalRefundPaid: 0,
+        pendingRefundAmount: 0,
+      };
+    }
+
+    return statementDetail.transactions.reduce<{
+      totalReturnAmount: number;
+      totalRefundPaid: number;
+      pendingRefundAmount: number;
+    }>(
+      (acc, transaction) => {
+        if (transaction.transactionType === 'sales_return') {
+          acc.totalReturnAmount += Number(transaction.creditAmount || 0);
+        }
+
+        if (transaction.transactionType === 'refund_out') {
+          acc.totalRefundPaid += Number(transaction.debitAmount || 0);
+        }
+
+        acc.pendingRefundAmount = Math.max(
+          0,
+          acc.totalReturnAmount - acc.totalRefundPaid
+        );
+
+        return acc;
+      },
+      {
+        totalReturnAmount: 0,
+        totalRefundPaid: 0,
+        pendingRefundAmount: 0,
+      }
+    );
+  }, [statementDetail?.summary?.receivables, statementDetail?.transactions]);
+
+  const receivableOverview = useMemo(() => {
+    const receivables = statementDetail?.summary?.receivables;
+    if (!receivables) {
+      return {
+        totalGenerated: 0,
+        totalReceived: 0,
+      };
+    }
+
+    const salesAmount = Number(receivables.salesAmount ?? 0);
+    const salesReturnAmount = Number(receivables.salesReturnAmount ?? 0);
+    const refundPaid = Number(receivables.refundPaid ?? 0);
+    const paymentReceived = Number(receivables.paymentReceived ?? 0);
+    const prepaymentReceived = Number(receivables.prepaymentReceived ?? 0);
+
+    const totalGenerated = salesAmount - salesReturnAmount - refundPaid;
+    const totalReceived = paymentReceived + prepaymentReceived;
+
+    return {
+      totalGenerated,
+      totalReceived,
+    };
+  }, [statementDetail?.summary?.receivables]);
+
+  const payableOverview = useMemo(() => {
+    const payables = statementDetail?.summary?.payables;
+    if (!payables) {
+      return {
+        totalGenerated: 0,
+        totalPaid: 0,
+      };
+    }
+
+    const purchaseAmount = Number(payables.purchaseAmount ?? 0);
+    const purchaseReturnAmount = Number(payables.purchaseReturnAmount ?? 0);
+    const refundReceived = Number(payables.refundReceived ?? 0);
+    const paymentPaid = Number(payables.paymentPaid ?? 0);
+    const prepaymentPaid = Number(payables.prepaymentPaid ?? 0);
+
+    const totalGenerated =
+      purchaseAmount - purchaseReturnAmount - refundReceived;
+    const totalPaid = paymentPaid + prepaymentPaid;
+
+    return {
+      totalGenerated,
+      totalPaid,
+    };
+  }, [statementDetail?.summary?.payables]);
+
+  // ✅ 所有 hooks 调用完毕，现在可以安全地进行条件渲染
   if (!customerId) {
     return (
       <ErrorMessage
@@ -177,9 +290,7 @@ export default function CustomerStatementDetailPage() {
         <ErrorMessage
           title="加载失败"
           message={
-            error instanceof Error
-              ? error.message
-              : '获取对账单详情时发生错误'
+            error instanceof Error ? error.message : '获取对账单详情时发生错误'
           }
           onRetry={() => refetch()}
         />
@@ -244,7 +355,7 @@ export default function CustomerStatementDetailPage() {
         <CardContent>
           <div className="flex flex-col gap-4 md:flex-row md:items-end">
             <div className="flex flex-1 flex-col gap-2 md:max-w-xs">
-              <label className="text-sm font-medium text-muted-foreground">
+              <label className="text-muted-foreground text-sm font-medium">
                 开始日期
               </label>
               <Input
@@ -260,7 +371,7 @@ export default function CustomerStatementDetailPage() {
               />
             </div>
             <div className="flex flex-1 flex-col gap-2 md:max-w-xs">
-              <label className="text-sm font-medium text-muted-foreground">
+              <label className="text-muted-foreground text-sm font-medium">
                 结束日期
               </label>
               <Input
@@ -304,7 +415,7 @@ export default function CustomerStatementDetailPage() {
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Card>
           <CardHeader className="space-y-1">
             <CardTitle className="text-sm font-medium">期初余额</CardTitle>
@@ -320,15 +431,36 @@ export default function CustomerStatementDetailPage() {
         </Card>
         <Card>
           <CardHeader className="space-y-1">
+            <CardTitle className="text-sm font-medium">应退金额</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-semibold text-[hsl(var(--color-warning))]">
+              {formatCurrency(refundSummary.pendingRefundAmount)}
+            </div>
+            <p className="text-muted-foreground mt-1 text-xs">
+              退货合计：{formatCurrency(refundSummary.totalReturnAmount)}
+              ，已退款：
+              {formatCurrency(refundSummary.totalRefundPaid)}
+            </p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="space-y-1">
             <CardTitle className="text-sm font-medium">应收余额</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-semibold text-[hsl(var(--color-success))]">
               {formatCurrency(summary.receivables.receivableBalance)}
             </div>
+            <p className="text-muted-foreground mt-1 text-xs">
+              应收合计：{formatCurrency(receivableOverview.totalGenerated)}
+              ，已收：
+              {formatCurrency(receivableOverview.totalReceived)}
+            </p>
             {summary.receivables.prepaymentReceived > 0 && (
               <p className="text-muted-foreground mt-1 text-xs">
-                含预收款：{formatCurrency(summary.receivables.prepaymentReceived)}
+                含预收款：
+                {formatCurrency(summary.receivables.prepaymentReceived)}
               </p>
             )}
           </CardContent>
@@ -341,6 +473,10 @@ export default function CustomerStatementDetailPage() {
             <div className="text-2xl font-semibold text-[hsl(var(--color-error))]">
               {formatCurrency(summary.payables.payableBalance)}
             </div>
+            <p className="text-muted-foreground mt-1 text-xs">
+              应付合计：{formatCurrency(payableOverview.totalGenerated)}，已付：
+              {formatCurrency(payableOverview.totalPaid)}
+            </p>
             {summary.payables.prepaymentPaid > 0 && (
               <p className="text-muted-foreground mt-1 text-xs">
                 含预付款：{formatCurrency(summary.payables.prepaymentPaid)}
@@ -369,7 +505,7 @@ export default function CustomerStatementDetailPage() {
         </CardHeader>
         <CardContent>
           {transactions.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground">
+            <div className="text-muted-foreground py-8 text-center">
               该时间段内暂无交易记录。
             </div>
           ) : (
@@ -381,54 +517,56 @@ export default function CustomerStatementDetailPage() {
                     <TableHead className="min-w-[120px]">类型</TableHead>
                     <TableHead className="min-w-[160px]">单据号</TableHead>
                     <TableHead>描述</TableHead>
-                    <TableHead className="text-right min-w-[120px]">
-                      借方金额
+                    <TableHead className="min-w-[120px] text-right">
+                      增加应收金额
                     </TableHead>
-                    <TableHead className="text-right min-w-[120px]">
-                      贷方金额
+                    <TableHead className="min-w-[120px] text-right">
+                      减少应收金额
                     </TableHead>
-                    <TableHead className="text-right min-w-[140px]">
+                    <TableHead className="min-w-[140px] text-right">
                       余额
                     </TableHead>
                     <TableHead className="min-w-[100px]">状态</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {transactions.map(transaction => (
-                    <TableRow key={transaction.id}>
-                      <TableCell>
-                        {formatDate(transaction.transactionDate, 'datetime')}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline">
-                          {typeLabelMap[transaction.transactionType] ??
-                            transaction.transactionType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{transaction.referenceNumber}</TableCell>
-                      <TableCell>{transaction.description}</TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(transaction.debitAmount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(transaction.creditAmount)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {formatCurrency(transaction.balance)}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="secondary">
-                          {transaction.status === 'confirmed'
-                            ? '已确认'
-                            : transaction.status === 'pending'
-                              ? '待确认'
-                              : transaction.status === 'cancelled'
-                                ? '已取消'
-                                : transaction.status}
-                        </Badge>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {transactions.map(
+                    (transaction: CustomerStatementTransaction) => (
+                      <TableRow key={transaction.id}>
+                        <TableCell>
+                          {formatDate(transaction.transactionDate, 'datetime')}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline">
+                            {typeLabelMap[transaction.transactionType] ??
+                              transaction.transactionType}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{transaction.referenceNumber}</TableCell>
+                        <TableCell>{transaction.description}</TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(transaction.debitAmount)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(transaction.creditAmount)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {formatCurrency(transaction.balance)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary">
+                            {transaction.status === 'confirmed'
+                              ? '已确认'
+                              : transaction.status === 'pending'
+                                ? '待确认'
+                                : transaction.status === 'cancelled'
+                                  ? '已取消'
+                                  : transaction.status}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    )
+                  )}
                 </TableBody>
               </Table>
             </div>

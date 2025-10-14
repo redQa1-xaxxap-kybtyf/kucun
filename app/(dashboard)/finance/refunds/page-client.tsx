@@ -7,38 +7,13 @@ import * as React from 'react';
 import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
-import { RefundsClient } from '@/components/finance/refunds-client';
+import {
+  RefundsClient,
+  type RefundRecordFromServer,
+} from '@/components/finance/refunds-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type {
-  RefundMethod,
-  RefundStatus,
-  RefundType,
-} from '@/lib/types/refund';
-
-interface RefundRecord {
-  id: string;
-  refundNumber: string;
-  returnOrderId: string | null;
-  salesOrderId: string;
-  customerId: string;
-  userId: string;
-  refundType: RefundType;
-  refundMethod: RefundMethod;
-  refundAmount: number;
-  processedAmount: number;
-  remainingAmount: number;
-  refundDate: string;
-  processedDate: string | null;
-  status: RefundStatus;
-  reason: string;
-  remarks: string | null;
-  bankInfo: string | null;
-  receiptNumber: string | null;
-  returnOrderNumber: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+import type { RefundStatus } from '@/lib/types/refund';
 
 interface RefundsQueryParams {
   page: number;
@@ -51,7 +26,7 @@ interface RefundsQueryParams {
 
 interface RefundsPageClientProps {
   initialData: {
-    refunds: RefundRecord[];
+    refunds: RefundRecordFromServer[];
     statistics: {
       totalRefundable: number;
       totalProcessed: number;

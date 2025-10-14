@@ -9,16 +9,16 @@ import type { User } from './user';
 // 销售订单状态枚举
 export type SalesOrderStatus =
   | 'draft'
-  | 'pending'
   | 'confirmed'
-  | 'processing'
   | 'shipped'
-  | 'delivered'
   | 'completed'
   | 'cancelled';
 
 // 销售订单类型枚举
 export type SalesOrderType = 'NORMAL' | 'TRANSFER';
+
+// 调货履约模式
+export type TransferFulfillmentMode = 'SUPPLIER_ONLY' | 'MIXED';
 
 // 销售订单明细类型
 export interface SalesOrderItem {
@@ -37,6 +37,8 @@ export interface SalesOrderItem {
   unitCost?: number; // 单位成本价（调货销售时使用）
   costSubtotal?: number; // 成本小计（调货销售时使用）
   profitAmount?: number; // 毛利金额（调货销售时使用）
+  localQuantity?: number; // 本地仓发货数量
+  transferQuantity?: number; // 调货发货数量
 
   // 手动输入商品信息（调货销售时使用）
   isManualProduct?: boolean; // 是否为手动输入的商品
@@ -64,12 +66,15 @@ export interface SalesOrder {
   userId: string;
   status: SalesOrderStatus;
   orderType: SalesOrderType;
+  transferMode: TransferFulfillmentMode;
   supplierId?: string;
   costAmount?: number;
   profitAmount?: number;
   itemsAmount?: number; // 商品总额
   additionalFees?: number; // 额外费用总额
+  roundingAdjustment?: number; // 抹零金额
   totalAmount: number; // 总金额 = itemsAmount + additionalFees
+  hasReturnOrder?: boolean;
   remarks?: string;
   shippedAt?: string;
   createdAt: string;
@@ -89,6 +94,12 @@ export interface SalesOrder {
   };
   items?: SalesOrderItem[];
   feeItems?: SalesOrderFeeItem[]; // 费用项列表
+  returnOrders?: Array<{
+    id: string;
+    returnNumber: string;
+    status: string;
+    createdAt: string;
+  }>;
 }
 
 // API 查询参数类型
@@ -131,8 +142,10 @@ export interface SalesOrderCreateInput {
   customerId: string;
   status?: SalesOrderStatus;
   orderType?: SalesOrderType;
+  transferMode?: TransferFulfillmentMode;
   supplierId?: string;
   costAmount?: number;
+  roundingAdjustment?: number;
   remarks?: string;
   items: SalesOrderItemCreateInput[];
   feeItems?: SalesOrderFeeItem[];
@@ -144,8 +157,10 @@ export interface SalesOrderUpdateInput {
   customerId?: string;
   status?: SalesOrderStatus;
   orderType?: SalesOrderType;
+  transferMode?: TransferFulfillmentMode;
   supplierId?: string;
   costAmount?: number;
+  roundingAdjustment?: number;
   remarks?: string;
   items?: SalesOrderItemUpdateInput[];
   feeItems?: SalesOrderFeeItem[];
@@ -163,6 +178,8 @@ export interface SalesOrderItemCreateInput {
 
   // 调货销售相关字段
   unitCost?: number; // 单位成本价（调货销售时使用）
+  localQuantity?: number; // 本地仓发货数量（调货混合模式使用）
+  transferQuantity?: number; // 调货发货数量
 
   // 手动输入商品信息（调货销售时使用）
   isManualProduct?: boolean; // 是否为手动输入的商品
@@ -192,6 +209,8 @@ export interface SalesOrderItemUpdateInput {
 
   // 调货销售相关字段
   unitCost?: number; // 单位成本价（调货销售时使用）
+  localQuantity?: number; // 本地仓发货数量（调货混合模式使用）
+  transferQuantity?: number; // 调货发货数量
 
   // 手动输入商品信息（调货销售时使用）
   isManualProduct?: boolean; // 是否为手动输入的商品
@@ -225,11 +244,8 @@ export interface SalesOrderStats {
 // 显示标签映射
 export const SALES_ORDER_STATUS_LABELS: Record<SalesOrderStatus, string> = {
   draft: '草稿',
-  pending: '待处理',
   confirmed: '已确认',
-  processing: '处理中',
   shipped: '已发货',
-  delivered: '已送达',
   completed: '已完成',
   cancelled: '已取消',
 };
@@ -245,11 +261,8 @@ export const SALES_ORDER_STATUS_VARIANTS: Record<
   | 'info'
 > = {
   draft: 'outline',
-  pending: 'warning',
   confirmed: 'default',
-  processing: 'info',
   shipped: 'info',
-  delivered: 'success',
   completed: 'success',
   cancelled: 'destructive',
 };
@@ -259,12 +272,9 @@ export const SALES_ORDER_STATUS_TRANSITIONS: Record<
   SalesOrderStatus,
   SalesOrderStatus[]
 > = {
-  draft: ['pending', 'confirmed', 'cancelled'],
-  pending: ['confirmed', 'cancelled'],
-  confirmed: ['processing', 'shipped', 'cancelled'],
-  processing: ['shipped', 'cancelled'],
-  shipped: ['delivered', 'cancelled'],
-  delivered: ['completed', 'cancelled'],
+  draft: ['confirmed', 'cancelled'],
+  confirmed: ['shipped', 'completed', 'cancelled'],
+  shipped: ['completed', 'cancelled'],
   completed: [], // 已完成不能转换到其他状态
   cancelled: [], // 已取消不能转换到其他状态
 };
@@ -284,6 +294,8 @@ export const SALES_ORDER_FIELD_LABELS = {
   customer: '客户',
   user: '销售员',
   status: '订单状态',
+  transferMode: '调货履约模式',
+  roundingAdjustment: '抹零金额',
   totalAmount: '订单金额',
   remarks: '备注信息',
   items: '订单明细',
@@ -295,6 +307,11 @@ export const SALES_ORDER_FIELD_LABELS = {
   createdAt: '创建时间',
   updatedAt: '更新时间',
 } as const;
+
+export const TRANSFER_MODE_LABELS: Record<TransferFulfillmentMode, string> = {
+  SUPPLIER_ONLY: '全部外部调货',
+  MIXED: '本地 + 调货混合',
+};
 
 // 瓷砖行业特有的色号选项（示例）
 export const COMMON_COLOR_CODES = [
@@ -331,11 +348,8 @@ export const canTransitionToStatus = (
 export const getStatusColor = (status: SalesOrderStatus): string => {
   const colors: Record<SalesOrderStatus, string> = {
     draft: 'text-[hsl(var(--color-text-secondary))]',
-    pending: 'text-[hsl(var(--color-warning))]',
     confirmed: 'text-[hsl(var(--color-primary))]',
-    processing: 'text-[hsl(var(--color-purple))]',
     shipped: 'text-[hsl(var(--color-info))]',
-    delivered: 'text-[hsl(var(--color-success))]',
     completed: 'text-[hsl(var(--color-success))]',
     cancelled: 'text-[hsl(var(--color-error))]',
   };
@@ -346,11 +360,8 @@ export const getStatusColor = (status: SalesOrderStatus): string => {
 export const getStatusBgColor = (status: SalesOrderStatus): string => {
   const colors: Record<SalesOrderStatus, string> = {
     draft: 'bg-[hsl(var(--color-bg-tertiary))]',
-    pending: 'bg-[hsl(var(--color-warning-light))]',
     confirmed: 'bg-[hsl(var(--color-primary-light))]',
-    processing: 'bg-[hsl(var(--color-purple-light))]',
     shipped: 'bg-[hsl(var(--color-info-light))]',
-    delivered: 'bg-[hsl(var(--color-success-light))]',
     completed: 'bg-[hsl(var(--color-success-light))]',
     cancelled: 'bg-[hsl(var(--color-error-light))]',
   };

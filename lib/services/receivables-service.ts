@@ -13,7 +13,7 @@ import { prisma } from '@/lib/db';
 
 // ==================== 类型定义 ====================
 
-export type PaymentStatus = 'unpaid' | 'partial' | 'paid' | 'overdue';
+export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
 
 export interface ReceivableItem {
   id: string;
@@ -25,16 +25,13 @@ export interface ReceivableItem {
   totalAmount: number;
   paidAmount: number;
   remainingAmount: number;
-  paymentStatus: 'unpaid' | 'partial' | 'paid' | 'overdue';
-  overdueDays: number;
+  paymentStatus: 'unpaid' | 'partial' | 'paid';
   lastPaymentDate?: string;
 }
 
 export interface ReceivableSummary {
   totalReceivable: number; // 总应收金额
-  totalOverdue: number; // 逾期总金额
   receivableCount: number; // 应收笔数
-  overdueCount: number; // 逾期笔数
   paidCount: number; // 已付清笔数
   unpaidCount: number; // 未付款笔数
   partialCount: number; // 部分付款笔数
@@ -45,7 +42,7 @@ export interface ReceivablesQueryParams {
   limit?: number;
   search?: string;
   customerId?: string;
-  paymentStatus?: 'unpaid' | 'partial' | 'paid' | 'overdue';
+  paymentStatus?: 'unpaid' | 'partial' | 'paid';
   startDate?: string;
   endDate?: string;
   sortBy?: string;
@@ -73,19 +70,11 @@ function calculatePaymentStatus(
   totalAmount: number,
   orderDate: Date,
   paymentDeadlineDays = 30
-): 'unpaid' | 'partial' | 'paid' | 'overdue' {
+): 'unpaid' | 'partial' | 'paid' {
   const paidRatio = paidAmount / totalAmount;
 
   if (paidRatio >= 0.9999) {
     return 'paid';
-  }
-
-  const daysSinceOrder = Math.floor(
-    (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  if (daysSinceOrder > paymentDeadlineDays && paidRatio < 0.9999) {
-    return 'overdue';
   }
 
   if (paidAmount > 0) {
@@ -99,14 +88,11 @@ function calculatePaymentStatus(
  * 计算逾期天数
  */
 function calculateOverdueDays(
-  orderDate: Date,
-  paymentDeadlineDays = 30
+  _orderDate: Date,
+  _paymentDeadlineDays = 30
 ): number {
-  const daysSinceOrder = Math.floor(
-    (Date.now() - orderDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  return Math.max(0, daysSinceOrder - paymentDeadlineDays);
+  // 逾期概念已移除，兼容旧调用固定返回0
+  return 0;
 }
 
 /**
@@ -217,8 +203,6 @@ function transformToReceivable(order: {
     paidAmount,
     remainingAmount,
     paymentStatus,
-    overdueDays:
-      paymentStatus === 'overdue' ? calculateOverdueDays(order.createdAt) : 0,
     lastPaymentDate: lastPayment
       ? lastPayment.paymentDate.toISOString().split('T')[0]
       : undefined,
@@ -233,11 +217,6 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
     (acc, item) => {
       acc.totalReceivable += item.remainingAmount;
 
-      if (item.paymentStatus === 'overdue') {
-        acc.totalOverdue += item.remainingAmount;
-        acc.overdueCount++;
-      }
-
       switch (item.paymentStatus) {
         case 'paid':
           acc.paidCount++;
@@ -250,18 +229,13 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
           acc.partialCount++;
           acc.receivableCount++;
           break;
-        case 'overdue':
-          acc.receivableCount++;
-          break;
       }
 
       return acc;
     },
     {
       totalReceivable: 0,
-      totalOverdue: 0,
       receivableCount: 0,
-      overdueCount: 0,
       paidCount: 0,
       unpaidCount: 0,
       partialCount: 0,

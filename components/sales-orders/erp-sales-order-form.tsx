@@ -5,7 +5,12 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Plus, Save, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
-import { useFieldArray, useForm } from 'react-hook-form';
+import {
+  useFieldArray,
+  useForm,
+  type FieldErrors,
+  type Path,
+} from 'react-hook-form';
 
 import { BatchSelector } from '@/components/sales-orders/batch-selector';
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
@@ -66,6 +71,7 @@ import {
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
+  type SalesOrderUpdateFormData as UpdateSalesOrderFormData,
 } from '@/lib/validations/sales-order';
 
 const UNIT_MAPPING: Record<string, string> = {
@@ -93,7 +99,7 @@ const UNIT_MAPPING: Record<string, string> = {
 interface ERPSalesOrderFormProps {
   mode?: 'create' | 'edit';
   orderId?: string;
-  initialData?: any; // 编辑模式的初始数据
+  initialData?: Record<string, unknown>; // 编辑模式的初始数据
   onSuccess?: (order: { id: string; orderNumber?: string }) => void;
   onCancel?: () => void;
 }
@@ -255,6 +261,116 @@ export function ERPSalesOrderForm({
     control: form.control,
     name: 'items',
   });
+
+  const findFirstError = React.useCallback(
+    (
+      errors:
+        | FieldErrors<CreateSalesOrderData>
+        | FieldErrors<UpdateSalesOrderFormData>
+    ): { path: string; message: string } | null => {
+      const traverse = (
+        value: unknown,
+        currentPath: string
+      ): { path: string; message: string } | null => {
+        if (!value) {
+          return null;
+        }
+
+        if (
+          typeof value === 'object' &&
+          value !== null &&
+          'message' in (value as Record<string, unknown>)
+        ) {
+          const message = String(
+            (value as { message?: unknown }).message ?? ''
+          ).trim();
+          if (message) {
+            return { path: currentPath, message };
+          }
+        }
+
+        if (Array.isArray(value)) {
+          for (let index = 0; index < value.length; index += 1) {
+            const result = traverse(
+              value[index],
+              currentPath ? `${currentPath}.${index}` : String(index)
+            );
+            if (result) {
+              return result;
+            }
+          }
+        } else if (typeof value === 'object' && value !== null) {
+          for (const [key, child] of Object.entries(
+            value as Record<string, unknown>
+          )) {
+            const nextPath = currentPath ? `${currentPath}.${key}` : key;
+            const result = traverse(child, nextPath);
+            if (result) {
+              return result;
+            }
+          }
+        }
+
+        return null;
+      };
+
+      return traverse(errors, '');
+    },
+    []
+  );
+
+  const validateOrderItems = React.useCallback(
+    (
+      items: Array<
+        | CreateSalesOrderData['items'][number]
+        | UpdateSalesOrderFormData['items'][number]
+      >
+    ): { valid: true } | { valid: false; message: string; path: string } => {
+      for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        const manual = Boolean(item.isManualProduct);
+        const manualName = item.manualProductName?.trim() ?? '';
+        const productId = item.productId?.trim() ?? '';
+        const quantity = Number(item.quantity);
+        const unitPrice = Number(item.unitPrice);
+
+        if (manual) {
+          if (!manualName) {
+            return {
+              valid: false,
+              message: `第 ${index + 1} 行：临时商品必须填写名称`,
+              path: `items.${index}.manualProductName`,
+            };
+          }
+        } else if (!productId) {
+          return {
+            valid: false,
+            message: `第 ${index + 1} 行：请选择商品`,
+            path: `items.${index}.productId`,
+          };
+        }
+
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+          return {
+            valid: false,
+            message: `第 ${index + 1} 行：数量必须大于 0`,
+            path: `items.${index}.displayQuantity`,
+          };
+        }
+
+        if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+          return {
+            valid: false,
+            message: `第 ${index + 1} 行：单价必须大于 0`,
+            path: `items.${index}.unitPrice`,
+          };
+        }
+      }
+
+      return { valid: true };
+    },
+    []
+  );
 
   // 监听客户ID变化
   const selectedCustomerId = form.watch('customerId');
@@ -440,14 +556,14 @@ export function ERPSalesOrderForm({
       productCode: '',
       specification: '',
       unit: '',
-      displayUnit: '片',
+      displayUnit: '片' as const,
       displayQuantity: 1,
       quantity: 1,
       unitPrice: 0,
       unitCost: undefined,
       piecesPerUnit: undefined,
       remarks: '',
-    } as any);
+    });
   };
 
   // 自动生成订单号状态
@@ -476,13 +592,10 @@ export function ERPSalesOrderForm({
       return;
     }
 
-    const orderKey = [
-      initialData.id,
-      initialData.orderNumber,
-      initialData.updatedAt,
-    ]
-      .filter(Boolean)
-      .join('__') || 'unknown-order';
+    const orderKey =
+      [initialData.id, initialData.orderNumber, initialData.updatedAt]
+        .filter(Boolean)
+        .join('__') || 'unknown-order';
 
     if (initializedOrderRef.current === orderKey) {
       return;
@@ -496,36 +609,49 @@ export function ERPSalesOrderForm({
       status: initialData.status,
       orderType: initialData.orderType,
       supplierId: initialData.supplierId || '',
-        costAmount: initialData.costAmount ?? undefined,
-        remarks: initialData.remarks || '',
-        items:
-          initialData.items?.map((item: any) => ({
-            productId: item.productId || '',
-            productCode: item.productCode || item.product?.code || '',
-            batchNumber: item.batchNumber || '',
-            colorCode: item.colorCode || '',
-            productionDate: item.productionDate || '',
-            specification:
-              item.specification || item.product?.specification || '',
-            unit:
-              UNIT_MAPPING[item.product?.unit?.toLowerCase() || ''] ||
-              item.product?.unit ||
-              '',
-            displayUnit: (item.displayUnit || '片') as '片' | '件',
-            displayQuantity:
-              item.displayQuantity ?? item.quantity,
-            quantity: item.quantity,
-            unitPrice: item.unitPrice,
-            piecesPerUnit:
-              item.piecesPerUnit ?? item.product?.piecesPerUnit ?? undefined,
-            remarks: item.remarks || '',
-            subtotal: item.subtotal,
-            unitCost: item.unitCost ?? undefined,
-            isManualProduct: item.isManualProduct || false,
-            manualProductName: item.manualProductName || '',
-            manualSpecification: item.manualSpecification || '',
-          manualWeight: item.manualWeight ?? undefined,
-          manualUnit: item.manualUnit || '',
+      costAmount: initialData.costAmount ?? undefined,
+      remarks: initialData.remarks || '',
+      items:
+        initialData.items?.map((item: Record<string, unknown>) => ({
+          productId: (item.productId as string) || '',
+          productCode:
+            (item.productCode as string) ||
+            ((item.product as Record<string, unknown>)?.code as string) ||
+            '',
+          batchNumber: (item.batchNumber as string) || '',
+          colorCode: (item.colorCode as string) || '',
+          productionDate: (item.productionDate as string) || '',
+          specification:
+            (item.specification as string) ||
+            ((item.product as Record<string, unknown>)
+              ?.specification as string) ||
+            '',
+          unit:
+            UNIT_MAPPING[
+              (
+                (item.product as Record<string, unknown>)?.unit as string
+              )?.toLowerCase() || ''
+            ] ||
+            ((item.product as Record<string, unknown>)?.unit as string) ||
+            '',
+          displayUnit: ((item.displayUnit as string) || '片') as '片' | '件',
+          displayQuantity:
+            (item.displayQuantity as number) ?? (item.quantity as number),
+          quantity: item.quantity as number,
+          unitPrice: item.unitPrice as number,
+          piecesPerUnit:
+            (item.piecesPerUnit as number) ??
+            ((item.product as Record<string, unknown>)
+              ?.piecesPerUnit as number) ??
+            undefined,
+          remarks: (item.remarks as string) || '',
+          subtotal: item.subtotal as number,
+          unitCost: (item.unitCost as number) ?? undefined,
+          isManualProduct: (item.isManualProduct as boolean) || false,
+          manualProductName: (item.manualProductName as string) || '',
+          manualSpecification: (item.manualSpecification as string) || '',
+          manualWeight: (item.manualWeight as number) ?? undefined,
+          manualUnit: (item.manualUnit as string) || '',
         })) || [],
     });
   }, [form, mode, initialData]);
@@ -573,6 +699,23 @@ export function ERPSalesOrderForm({
 
   // 提交表单
   const onSubmit = (data: CreateSalesOrderData) => {
+    const validation = validateOrderItems(data.items || []);
+    if (!validation.valid) {
+      try {
+        form.setFocus(validation.path as Path<CreateSalesOrderData>);
+      } catch (error) {
+        // eslint-disable-next-line no-console
+        console.debug('Failed to focus field', validation.path, error);
+      }
+
+      toast({
+        variant: 'destructive',
+        title: '请完善订单明细',
+        description: validation.message,
+      });
+      return;
+    }
+
     if (mode === 'edit' && orderId) {
       // 编辑模式：更新现有订单
       const apiData = transformFormDataToUpdateInput(orderId, data);
@@ -587,14 +730,59 @@ export function ERPSalesOrderForm({
 
   const submitWithStatus = React.useCallback(
     (status: SalesOrderStatus) => {
+      const snapshot = form.getValues();
+      const preCheck = validateOrderItems(snapshot.items || []);
+      if (!preCheck.valid) {
+        try {
+          form.setFocus(preCheck.path as Path<CreateSalesOrderData>);
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.debug('Failed to focus field', preCheck.path, error);
+        }
+
+        toast({
+          variant: 'destructive',
+          title: '请完善订单明细',
+          description: preCheck.message,
+        });
+        return;
+      }
+
       // 使用 as unknown as 双重类型转换，因为 CreateSalesOrderData 的 status 类型可能比 SalesOrderStatus 窄
-      form.setValue('status', status as unknown as 'draft' | 'confirmed' | 'shipped' | 'completed' | 'cancelled', {
-        shouldDirty: true,
-        shouldValidate: false,
-      });
-      form.handleSubmit(onSubmit)();
+      form.setValue(
+        'status',
+        status as unknown as
+          | 'draft'
+          | 'confirmed'
+          | 'shipped'
+          | 'completed'
+          | 'cancelled',
+        {
+          shouldDirty: true,
+          shouldValidate: false,
+        }
+      );
+      void form.handleSubmit(onSubmit, errors => {
+        const firstError = findFirstError(errors);
+
+        if (firstError?.path) {
+          try {
+            form.setFocus(firstError.path as Path<CreateSalesOrderData>);
+          } catch (error) {
+            // eslint-disable-next-line no-console
+            console.debug('Failed to focus field', firstError.path, error);
+          }
+        }
+
+        toast({
+          variant: 'destructive',
+          title: '请检查订单信息',
+          description:
+            firstError?.message || '部分字段填写不完整，请检查后再试',
+        });
+      })();
     },
-    [form, onSubmit]
+    [findFirstError, form, onSubmit, toast, validateOrderItems]
   );
 
   return (
@@ -615,14 +803,16 @@ export function ERPSalesOrderForm({
                     订单号
                   </Label>
                   <div className="flex items-center gap-2">
-                    <div className="bg-blue-50 flex-1 rounded-md border border-blue-200 px-3 py-2 font-mono text-sm font-medium text-blue-700">
+                    <div className="flex-1 rounded-md border border-blue-200 bg-blue-50 px-3 py-2 font-mono text-sm font-medium text-blue-700">
                       {mode === 'edit'
                         ? form.watch('orderNumber') || initialData?.orderNumber
                         : autoOrderNumber || '正在生成...'}
                     </div>
                   </div>
                   <p className="text-xs text-gray-500">
-                    {mode === 'edit' ? '编辑现有订单' : '系统将自动生成唯一订单号'}
+                    {mode === 'edit'
+                      ? '编辑现有订单'
+                      : '系统将自动生成唯一订单号'}
                   </p>
                 </div>
 
@@ -631,7 +821,7 @@ export function ERPSalesOrderForm({
                   <Label className="text-sm font-medium text-gray-700">
                     创建日期
                   </Label>
-                  <div className="bg-gray-50 rounded-md border px-3 py-2 text-sm text-gray-700">
+                  <div className="rounded-md border bg-gray-50 px-3 py-2 text-sm text-gray-700">
                     {creationDisplayDate.toLocaleDateString('zh-CN', {
                       year: 'numeric',
                       month: 'long',
@@ -739,7 +929,10 @@ export function ERPSalesOrderForm({
                             </FormControl>
                             <SelectContent>
                               {suppliersData?.data?.map(supplier => (
-                                <SelectItem key={supplier.id} value={supplier.id}>
+                                <SelectItem
+                                  key={supplier.id}
+                                  value={supplier.id}
+                                >
                                   <div className="flex items-center gap-2">
                                     <span className="text-sm">
                                       {supplier.name}
@@ -789,12 +982,9 @@ export function ERPSalesOrderForm({
                         </FormItem>
                       )}
                     />
-
-
                   </div>
                 </div>
               )}
-
             </div>
           </div>
 
@@ -878,7 +1068,11 @@ export function ERPSalesOrderForm({
                             form.setValue(`items.${idx}.remarks`, '');
 
                             // 自动填充历史价格（基于产品编码匹配）
-                            if (selectedCustomerId && priceHistoryData?.data && product.code) {
+                            if (
+                              selectedCustomerId &&
+                              priceHistoryData?.data &&
+                              product.code
+                            ) {
                               const latestPrice = getLatestPrice(
                                 priceHistoryData.data,
                                 product.code,
@@ -926,13 +1120,12 @@ export function ERPSalesOrderForm({
                 <div className="flex items-center justify-between rounded border bg-green-50/50 px-3 py-2">
                   <span className="text-muted-foreground text-xs">总数量</span>
                   <span className="text-sm font-semibold text-green-600">
-                    {watchedItems.reduce(
-                      (sum, item) => sum + (item.quantity || 0),
-                      0
-                    ).toLocaleString('zh-CN', {
-                      minimumFractionDigits: 0,
-                      maximumFractionDigits: 0,
-                    })}{' '}
+                    {watchedItems
+                      .reduce((sum, item) => sum + (item.quantity || 0), 0)
+                      .toLocaleString('zh-CN', {
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                      })}{' '}
                     片
                   </span>
                 </div>
@@ -958,7 +1151,9 @@ export function ERPSalesOrderForm({
                 {/* 调货销售财务汇总 */}
                 {form.watch('orderType') === 'TRANSFER' && (
                   <div className="flex items-center justify-between rounded border bg-blue-50/50 px-3 py-2">
-                    <span className="text-muted-foreground text-xs">总成本</span>
+                    <span className="text-muted-foreground text-xs">
+                      总成本
+                    </span>
                     <span className="text-sm font-semibold text-blue-600">
                       ¥
                       {(() => {

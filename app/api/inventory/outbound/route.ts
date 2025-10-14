@@ -71,6 +71,7 @@ type OutboundRecordWithProduct = {
     code: string;
     name: string;
     specification: string | null;
+    piecesPerUnit: number;
   };
 };
 
@@ -85,6 +86,7 @@ function formatOutboundRecord(record: OutboundRecordWithProduct) {
     productCode: record.product.code,
     productName: record.product.name,
     productSpecification: record.product.specification,
+    piecesPerUnit: record.product.piecesPerUnit,
     quantity: record.quantity,
     type: record.reason,
     reason: record.notes || undefined,
@@ -134,6 +136,7 @@ export const GET = withAuth(
                 code: true,
                 name: true,
                 specification: true,
+                piecesPerUnit: true,
               },
             },
           },
