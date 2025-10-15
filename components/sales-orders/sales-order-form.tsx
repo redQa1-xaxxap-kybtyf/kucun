@@ -194,7 +194,7 @@ export function SalesOrderForm({
         await createMutation.mutateAsync(createData as SalesOrderCreateInput);
       }
     } catch (error) {
-      // 错误已在 mutation 的 onError 中处理
+      console.error('[SalesOrderForm] 销售订单提交失败', error);
     }
   };
 

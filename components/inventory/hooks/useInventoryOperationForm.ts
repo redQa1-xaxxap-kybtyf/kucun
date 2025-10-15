@@ -224,7 +224,7 @@ export function useInventoryOperationForm({
           break;
       }
     } catch (error) {
-      // 错误已在mutation的onError中处理
+      console.error('[useInventoryOperationForm] 库存操作提交失败', error);
     }
   };
 

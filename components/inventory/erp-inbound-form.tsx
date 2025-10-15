@@ -77,8 +77,8 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
 
     try {
       await handleFormSubmit();
-    } catch (_) {
-      // 表单校验失败时 handleSubmit 会抛出异常，此处吞掉即可
+    } catch (error) {
+      console.error('[ERPInboundForm] 表单提交失败', error);
     }
   };
 
@@ -120,10 +120,7 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
         <div className="overflow-hidden rounded-lg border bg-white shadow-md">
           <div className="p-6">
             <Form {...form}>
-              <form
-                onSubmit={handleFormSubmit}
-                className="space-y-6"
-              >
+              <form onSubmit={handleFormSubmit} className="space-y-6">
                 {/* 产品选择区域 */}
                 <div className="rounded-md border border-blue-200 bg-blue-50/50 p-4">
                   <InboundProductSection
@@ -155,6 +152,3 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     </div>
   );
 }
-
-
-

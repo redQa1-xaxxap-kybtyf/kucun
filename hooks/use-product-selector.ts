@@ -54,7 +54,7 @@ export function useProductSelector(
     try {
       onChange(product.value, product);
     } catch (error) {
-      // 静默处理错误，避免console输出
+      console.error('[useProductSelector] 产品选择回调执行失败', error);
     }
 
     setOpen(false);

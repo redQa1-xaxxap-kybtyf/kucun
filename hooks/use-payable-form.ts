@@ -154,7 +154,7 @@ export function usePayableForm({
         await createMutation.mutateAsync(data as CreatePayableRecordData);
       }
     } catch (error) {
-      // 错误已在mutation的onError中处理
+      console.error('[usePayableForm] 提交应付单失败', error);
     }
   };
 

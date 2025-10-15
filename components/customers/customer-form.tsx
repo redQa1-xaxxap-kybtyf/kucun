@@ -173,7 +173,7 @@ export function CustomerForm({
         await createMutation.mutateAsync(processedData as CustomerCreateInput);
       }
     } catch (error) {
-      // 错误已在 mutation 的 onError 中处理
+      console.error('[CustomerForm] 客户信息提交失败', error);
     }
   };
 

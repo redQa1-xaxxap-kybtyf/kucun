@@ -78,7 +78,8 @@ export const AddressSelector = React.forwardRef<
           const data = await getProvinces();
           setProvinces(data);
         } catch (error) {
-          // 加载省份数据失败，保持空数组状态
+          console.error('[AddressSelector] 加载省份数据失败', error);
+          setProvinces([]);
         } finally {
           setLoading(false);
         }
@@ -105,7 +106,7 @@ export const AddressSelector = React.forwardRef<
             setAvailableCities([]);
           }
         } catch (error) {
-          // 加载城市数据失败，保持空数组状态
+          console.error('[AddressSelector] 加载城市数据失败', error);
           setAvailableCities([]);
         }
       };
@@ -132,7 +133,7 @@ export const AddressSelector = React.forwardRef<
             setAvailableDistricts([]);
           }
         } catch (error) {
-          // 加载区县数据失败，保持空数组状态
+          console.error('[AddressSelector] 加载区县数据失败', error);
           setAvailableDistricts([]);
         }
       };
