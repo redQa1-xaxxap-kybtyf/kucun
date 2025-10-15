@@ -8,27 +8,29 @@ import {
   getInboundRecords,
   parseInboundQueryParams,
   updateInventoryQuantity,
-  validateUserSession,
 } from '@/lib/api/inbound-handlers';
 import { withErrorHandling } from '@/lib/api/middleware';
+import { withAuth } from '@/lib/auth/api-helpers';
+import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
 import { getLongTransactionOptions } from '@/lib/db/transaction-options';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { createInboundSchema } from '@/lib/validations/inbound';
 
 // GET /api/inventory/inbound - 获取入库记录列表
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  // 验证用户身份
-  await validateUserSession();
+export const GET = withAuth(
+  async (request: NextRequest) =>
+    withErrorHandling(async () => {
+      // 解析查询参数
+      const { searchParams } = request.nextUrl;
+      const queryData = parseInboundQueryParams(searchParams);
 
-  // 解析查询参数
-  const { searchParams } = request.nextUrl;
-  const queryData = parseInboundQueryParams(searchParams);
-
-  // 获取入库记录列表
-  const response = await getInboundRecords(queryData);
-  return NextResponse.json(response);
-});
+      // 获取入库记录列表
+      const response = await getInboundRecords(queryData);
+      return NextResponse.json(response);
+    })(request),
+  { permissions: ['inventory:view'] }
+);
 
 /**
  * 生成批次号
@@ -120,50 +122,56 @@ async function executeInboundTransaction(
 }
 
 // POST /api/inventory/inbound - 创建入库记录
-export const POST = withErrorHandling(async (request: NextRequest) => {
-  // 验证用户身份
-  const session = await validateUserSession();
-
-  // 解析请求体
-  const body = await request.json();
-  const validatedData = createInboundSchema.parse(body);
-
-  const { idempotencyKey, productId } = validatedData;
-
-  // 使用幂等性包装器执行入库操作
-  const inboundRecord = await withIdempotency(
-    idempotencyKey,
-    'inbound',
-    productId,
-    session.user.id,
-    validatedData,
-    async () => {
-      // 处理批次号：如果没有提供批次号，自动生成
-      const finalBatchNumber = await generateBatchNumber(
-        validatedData.productId,
-        validatedData.batchNumber
-      );
-
-      // 使用事务确保数据一致性
-      return await executeInboundTransaction(
-        validatedData,
-        session.user.id,
-        finalBatchNumber
-      );
+export const POST = withAuth(
+  async (
+    request: NextRequest,
+    context: {
+      user: AuthUser;
     }
-  );
+  ) =>
+    withErrorHandling(async () => {
+      // 解析请求体
+      const body = await request.json();
+      const validatedData = createInboundSchema.parse(body);
 
-  // 修复：添加缓存失效调用
-  const [{ invalidateInventoryCache }, { revalidateProducts }] =
-    await Promise.all([
-      import('@/lib/cache/inventory-cache'),
-      import('@/lib/cache'),
-    ]);
-  await invalidateInventoryCache(validatedData.productId);
-  await revalidateProducts(validatedData.productId);
+      const { idempotencyKey, productId } = validatedData;
 
-  return NextResponse.json({
-    success: true,
-    data: inboundRecord,
-  });
-});
+      // 使用幂等性包装器执行入库操作
+      const inboundRecord = await withIdempotency(
+        idempotencyKey,
+        'inbound',
+        productId,
+        context.user.id,
+        validatedData,
+        async () => {
+          // 处理批次号：如果没有提供批次号，自动生成
+          const finalBatchNumber = await generateBatchNumber(
+            validatedData.productId,
+            validatedData.batchNumber
+          );
+
+          // 使用事务确保数据一致性
+          return await executeInboundTransaction(
+            validatedData,
+            context.user.id,
+            finalBatchNumber
+          );
+        }
+      );
+
+      // 修复：添加缓存失效调用
+      const [{ invalidateInventoryCache }, { revalidateProducts }] =
+        await Promise.all([
+          import('@/lib/cache/inventory-cache'),
+          import('@/lib/cache'),
+        ]);
+      await invalidateInventoryCache(validatedData.productId);
+      await revalidateProducts(validatedData.productId);
+
+      return NextResponse.json({
+        success: true,
+        data: inboundRecord,
+      });
+    })(request),
+  { permissions: ['inventory:inbound'] }
+);
