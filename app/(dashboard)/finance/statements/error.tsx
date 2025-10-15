@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logger } from '@/lib/logger';
+import { logClientError } from '@/lib/logger/client';
 
 /**
  * 往来账单页面错误边界
@@ -21,8 +21,9 @@ export default function StatementsError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.error('finance-statements', '往来账单页面错误', error, {
+    logClientError('finance-statements', '往来账单页面错误', error, {
       digest: error.digest,
+      stack: error.stack,
     });
   }, [error]);
 

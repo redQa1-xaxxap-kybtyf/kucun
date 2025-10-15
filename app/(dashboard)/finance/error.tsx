@@ -5,7 +5,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logger } from '@/lib/logger';
+import { logClientError } from '@/lib/logger/client';
 
 /**
  * 财务模块错误边界
@@ -24,9 +24,9 @@ export default function FinanceError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // 记录错误到监控服务
-    logger.error('finance', '财务模块错误', error, {
+    logClientError('finance', '财务模块错误', error, {
       digest: error.digest,
+      stack: error.stack,
     });
   }, [error]);
 

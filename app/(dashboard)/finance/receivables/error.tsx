@@ -6,7 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { logger } from '@/lib/logger';
+import { logClientError } from '@/lib/logger/client';
 
 /**
  * 应收货款页面错误边界
@@ -21,8 +21,9 @@ export default function ReceivablesError({
   reset: () => void;
 }) {
   useEffect(() => {
-    logger.error('finance-receivables', '应收货款页面错误', error, {
+    logClientError('finance-receivables', '应收货款页面错误', error, {
       digest: error.digest,
+      stack: error.stack,
     });
   }, [error]);
 

@@ -1,12 +1,14 @@
-/**
- * 系统日志记录工具
- * 严格遵循全栈项目统一约定规范
- */
-
 import { prisma } from '@/lib/db';
+import { getIpLocation } from '@/lib/services/ip-location';
 import type { SystemLogLevel, SystemLogType } from '@/lib/types/settings';
 
-export { logger } from './logger/index';
+import {
+  warn as logWarn,
+  error as baseLogError,
+  logger as baseLogger,
+} from './logger/index';
+
+export { baseLogger as logger };
 
 interface LogParams {
   type: SystemLogType;
@@ -32,11 +34,18 @@ export async function logSystemEvent(params: LogParams): Promise<void> {
         select: { id: true },
       });
       if (!userExists) {
-        console.warn(
+        logWarn(
+          'logger',
           `日志记录：用户ID ${params.userId} 不存在，将记录为系统操作`
         );
         validUserId = null;
       }
+    }
+
+    // 获取IP地理位置信息（异步非阻塞）
+    let ipLocation = null;
+    if (params.ipAddress) {
+      ipLocation = await getIpLocation(params.ipAddress);
     }
 
     await prisma.systemLog.create({
@@ -49,10 +58,15 @@ export async function logSystemEvent(params: LogParams): Promise<void> {
         ipAddress: params.ipAddress,
         userAgent: params.userAgent,
         metadata: params.metadata ? JSON.stringify(params.metadata) : null,
+        // IP地理位置信息
+        ipCountry: ipLocation?.country,
+        ipProvince: ipLocation?.province,
+        ipCity: ipLocation?.city,
+        ipLocation: ipLocation?.fullLocation,
       },
     });
   } catch (error) {
-    console.error('记录系统日志失败:', error);
+    baseLogError('logger', '记录系统日志失败', error);
     // 日志记录失败不应该影响主要业务流程
   }
 }

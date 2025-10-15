@@ -1,9 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw } from 'lucide-react';
-import { logger } from '@/lib/logger';
+import { useEffect } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { logClientError } from '@/lib/logger/client';
 
 /**
  * 库存模块错误边界
@@ -19,9 +20,9 @@ export default function InventoryError({
   reset: () => void;
 }) {
   useEffect(() => {
-    // 记录错误到错误监控服务
-    logger.error('inventory', '库存模块错误', error, {
+    logClientError('inventory', '库存模块错误', error, {
       digest: error.digest,
+      stack: error.stack,
     });
   }, [error]);
 

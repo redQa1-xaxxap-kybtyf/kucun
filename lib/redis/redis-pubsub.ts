@@ -1,354 +1,303 @@
 /**
- * Redis Pub/Sub 模块
- * 用于实现分布式缓存失效通知和实时消息传递
- * 遵循 Redis 8.0.3 最佳实践
+ * Redis Pub/Sub helper built on top of the shared redis client.
+ * Provides simple helpers for channel and pattern subscriptions with
+ * automatic connection lifecycle management.
  */
 
 import type Redis from 'ioredis';
 
 import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
+
 import { redis } from './redis-client';
 
-/**
- * 订阅回调函数类型
- */
 export type SubscribeCallback = (message: string, channel: string) => void;
-
-/**
- * 模式订阅回调函数类型
- */
 export type PSubscribeCallback = (
   message: string,
   channel: string,
   pattern: string
 ) => void;
 
-/**
- * 订阅者管理器
- * 维护所有订阅连接和回调函数
- */
+interface ChannelSubscriber {
+  client: Redis;
+  handler: (channel: string, message: string) => void;
+}
+
+interface PatternSubscriber {
+  client: Redis;
+  handler: (pattern: string, channel: string, message: string) => void;
+}
+
 class SubscriberManager {
-  private subscribers: Map<string, Redis> = new Map();
-  private callbacks: Map<string, Set<SubscribeCallback>> = new Map();
-  private patternCallbacks: Map<string, Set<PSubscribeCallback>> = new Map();
+  private channelSubscribers = new Map<string, ChannelSubscriber>();
+  private channelCallbacks = new Map<string, Set<SubscribeCallback>>();
 
-  /**
-   * 获取或创建订阅者连接
-   * 每个频道使用独立的连接，避免阻塞
-   */
-  private getOrCreateSubscriber(channel: string): Redis {
-    let subscriber = this.subscribers.get(channel);
+  private patternSubscribers = new Map<string, PatternSubscriber>();
+  private patternCallbacks = new Map<string, Set<PSubscribeCallback>>();
 
-    if (!subscriber) {
-      // 使用 duplicate() 创建独立连接
-      subscriber = redis.getClient().duplicate();
+  private createClient(context: { channel?: string; pattern?: string }): Redis {
+    const client = redis.getClient().duplicate();
 
-      // 错误处理
-      subscriber.on('error', (err: unknown) => {
-        if (env.NODE_ENV === 'development') {
-          console.error(
-            `[Redis Pub/Sub] Subscriber error for ${channel}:`,
-            err
-          );
-        }
-      });
-
-      // 重连处理
-      subscriber.on('reconnecting', () => {
-        if (env.NODE_ENV === 'development') {
-          console.log(
-            `[Redis Pub/Sub] Reconnecting subscriber for ${channel}...`
-          );
-        }
-      });
-
-      // 连接成功
-      subscriber.on('connect', () => {
-        if (env.NODE_ENV === 'development') {
-          console.log(`[Redis Pub/Sub] Subscriber connected for ${channel}`);
-        }
-      });
-
-      this.subscribers.set(channel, subscriber);
-    }
-
-    return subscriber;
-  }
-
-  /**
-   * 订阅指定频道
-   * @param channel - 频道名称
-   * @param callback - 消息回调函数
-   */
-  async subscribe(channel: string, callback: SubscribeCallback): Promise<void> {
-    try {
-      // 获取或创建订阅者
-      const subscriber = this.getOrCreateSubscriber(channel);
-
-      // 添加回调函数
-      if (!this.callbacks.has(channel)) {
-        this.callbacks.set(channel, new Set());
-      }
-      this.callbacks.get(channel)!.add(callback);
-
-      // 如果是第一次订阅，设置消息监听器
-      if (this.callbacks.get(channel)!.size === 1) {
-        subscriber.on('message', (ch: string, message: string) => {
-          if (ch === channel) {
-            const callbacks = this.callbacks.get(channel);
-            if (callbacks) {
-              callbacks.forEach(cb => {
-                try {
-                  cb(message, channel);
-                } catch (error) {
-                  console.error(
-                    `[Redis Pub/Sub] Callback error for ${channel}:`,
-                    error
-                  );
-                }
-              });
-            }
-          }
-        });
-
-        // 订阅频道
-        await subscriber.subscribe(channel);
-
-        if (env.NODE_ENV === 'development') {
-          console.log(`[Redis Pub/Sub] Subscribed to channel: ${channel}`);
-        }
-      }
-    } catch (error) {
-      console.error(
-        `[Redis Pub/Sub] Failed to subscribe to ${channel}:`,
-        error
+    client.on('error', (error: unknown) => {
+      logger.error(
+        'redis-pubsub',
+        'Subscriber connection error',
+        error,
+        undefined,
+        context
       );
-      throw error;
-    }
+    });
+
+    client.on('reconnecting', () => {
+      if (env.NODE_ENV !== 'test') {
+        logger.warn(
+          'redis-pubsub',
+          'Subscriber reconnecting',
+          undefined,
+          context
+        );
+      }
+    });
+
+    client.on('connect', () => {
+      if (env.NODE_ENV !== 'production') {
+        logger.info('redis-pubsub', 'Subscriber connected', undefined, context);
+      }
+    });
+
+    return client;
   }
 
-  /**
-   * 取消订阅指定频道
-   * @param channel - 频道名称
-   * @param callback - 可选的回调函数，如果提供则只移除该回调
-   */
+  async subscribe(channel: string, callback: SubscribeCallback): Promise<void> {
+    const callbacks = this.channelCallbacks.get(channel) ?? new Set();
+    callbacks.add(callback);
+    this.channelCallbacks.set(channel, callbacks);
+
+    if (this.channelSubscribers.has(channel)) {
+      return;
+    }
+
+    const client = this.createClient({ channel });
+
+    const handler = (ch: string, message: string) => {
+      if (ch !== channel) {
+        return;
+      }
+
+      const registered = this.channelCallbacks.get(channel);
+      if (!registered) {
+        return;
+      }
+
+      for (const cb of registered) {
+        try {
+          cb(message, channel);
+        } catch (error) {
+          logger.error(
+            'redis-pubsub',
+            'Subscriber callback error',
+            error,
+            undefined,
+            { channel }
+          );
+        }
+      }
+    };
+
+    client.on('message', handler);
+
+    await client.subscribe(channel);
+
+    this.channelSubscribers.set(channel, { client, handler });
+  }
+
   async unsubscribe(
     channel: string,
     callback?: SubscribeCallback
   ): Promise<void> {
-    try {
-      const callbacks = this.callbacks.get(channel);
-      if (!callbacks) {
-        return; // 没有订阅该频道
-      }
-
-      if (callback) {
-        // 只移除指定的回调
-        callbacks.delete(callback);
-      } else {
-        // 移除所有回调
-        callbacks.clear();
-      }
-
-      // 如果没有回调了，取消订阅
-      if (callbacks.size === 0) {
-        const subscriber = this.subscribers.get(channel);
-        if (subscriber) {
-          await subscriber.unsubscribe(channel);
-          await subscriber.quit();
-          this.subscribers.delete(channel);
-          this.callbacks.delete(channel);
-
-          if (env.NODE_ENV === 'development') {
-            console.log(
-              `[Redis Pub/Sub] Unsubscribed from channel: ${channel}`
-            );
-          }
-        }
-      }
-    } catch (error) {
-      console.error(
-        `[Redis Pub/Sub] Failed to unsubscribe from ${channel}:`,
-        error
-      );
-      throw error;
+    const callbacks = this.channelCallbacks.get(channel);
+    if (!callbacks) {
+      return;
     }
+
+    if (callback) {
+      callbacks.delete(callback);
+    } else {
+      callbacks.clear();
+    }
+
+    if (callbacks.size > 0) {
+      return;
+    }
+
+    const subscriber = this.channelSubscribers.get(channel);
+    if (!subscriber) {
+      return;
+    }
+
+    try {
+      await subscriber.client.unsubscribe(channel);
+    } catch (error) {
+      logger.error(
+        'redis-pubsub',
+        'Failed to unsubscribe channel',
+        error,
+        undefined,
+        { channel }
+      );
+    }
+
+    subscriber.client.removeListener('message', subscriber.handler);
+    subscriber.client.disconnect();
+
+    this.channelSubscribers.delete(channel);
+    this.channelCallbacks.delete(channel);
   }
 
-  /**
-   * 模式订阅（支持通配符）
-   * @param pattern - 频道模式（如 'cache:*'）
-   * @param callback - 消息回调函数
-   */
   async psubscribe(
     pattern: string,
     callback: PSubscribeCallback
   ): Promise<void> {
-    try {
-      // 获取或创建订阅者
-      const subscriber = this.getOrCreateSubscriber(`pattern:${pattern}`);
+    const callbacks = this.patternCallbacks.get(pattern) ?? new Set();
+    callbacks.add(callback);
+    this.patternCallbacks.set(pattern, callbacks);
 
-      // 添加回调函数
-      if (!this.patternCallbacks.has(pattern)) {
-        this.patternCallbacks.set(pattern, new Set());
+    if (this.patternSubscribers.has(pattern)) {
+      return;
+    }
+
+    const client = this.createClient({ pattern });
+
+    const handler = (pat: string, channel: string, message: string) => {
+      if (pat !== pattern) {
+        return;
       }
-      this.patternCallbacks.get(pattern)!.add(callback);
 
-      // 如果是第一次订阅，设置消息监听器
-      if (this.patternCallbacks.get(pattern)!.size === 1) {
-        subscriber.on(
-          'pmessage',
-          (pat: string, ch: string, message: string) => {
-            if (pat === pattern) {
-              const callbacks = this.patternCallbacks.get(pattern);
-              if (callbacks) {
-                callbacks.forEach(cb => {
-                  try {
-                    cb(message, ch, pattern);
-                  } catch (error) {
-                    console.error(
-                      `[Redis Pub/Sub] Pattern callback error for ${pattern}:`,
-                      error
-                    );
-                  }
-                });
-              }
-            }
-          }
-        );
+      const registered = this.patternCallbacks.get(pattern);
+      if (!registered) {
+        return;
+      }
 
-        // 订阅模式
-        await subscriber.psubscribe(pattern);
-
-        if (env.NODE_ENV === 'development') {
-          console.log(`[Redis Pub/Sub] Subscribed to pattern: ${pattern}`);
+      for (const cb of registered) {
+        try {
+          cb(message, channel, pattern);
+        } catch (error) {
+          logger.error(
+            'redis-pubsub',
+            'Pattern subscriber callback error',
+            error,
+            undefined,
+            { pattern, channel }
+          );
         }
       }
-    } catch (error) {
-      console.error(
-        `[Redis Pub/Sub] Failed to psubscribe to ${pattern}:`,
-        error
-      );
-      throw error;
-    }
+    };
+
+    client.on('pmessage', handler);
+
+    await client.psubscribe(pattern);
+
+    this.patternSubscribers.set(pattern, { client, handler });
   }
 
-  /**
-   * 取消模式订阅
-   * @param pattern - 频道模式
-   * @param callback - 可选的回调函数
-   */
   async punsubscribe(
     pattern: string,
     callback?: PSubscribeCallback
   ): Promise<void> {
-    try {
-      const callbacks = this.patternCallbacks.get(pattern);
-      if (!callbacks) {
-        return;
-      }
-
-      if (callback) {
-        callbacks.delete(callback);
-      } else {
-        callbacks.clear();
-      }
-
-      if (callbacks.size === 0) {
-        const subscriber = this.subscribers.get(`pattern:${pattern}`);
-        if (subscriber) {
-          await subscriber.punsubscribe(pattern);
-          await subscriber.quit();
-          this.subscribers.delete(`pattern:${pattern}`);
-          this.patternCallbacks.delete(pattern);
-
-          if (env.NODE_ENV === 'development') {
-            console.log(
-              `[Redis Pub/Sub] Unsubscribed from pattern: ${pattern}`
-            );
-          }
-        }
-      }
-    } catch (error) {
-      console.error(
-        `[Redis Pub/Sub] Failed to punsubscribe from ${pattern}:`,
-        error
-      );
-      throw error;
+    const callbacks = this.patternCallbacks.get(pattern);
+    if (!callbacks) {
+      return;
     }
+
+    if (callback) {
+      callbacks.delete(callback);
+    } else {
+      callbacks.clear();
+    }
+
+    if (callbacks.size > 0) {
+      return;
+    }
+
+    const subscriber = this.patternSubscribers.get(pattern);
+    if (!subscriber) {
+      return;
+    }
+
+    try {
+      await subscriber.client.punsubscribe(pattern);
+    } catch (error) {
+      logger.error(
+        'redis-pubsub',
+        'Failed to unsubscribe pattern',
+        error,
+        undefined,
+        { pattern }
+      );
+    }
+
+    subscriber.client.removeListener('pmessage', subscriber.handler);
+    subscriber.client.disconnect();
+
+    this.patternSubscribers.delete(pattern);
+    this.patternCallbacks.delete(pattern);
   }
 
-  /**
-   * 清理所有订阅
-   */
   async cleanup(): Promise<void> {
-    const promises: Promise<void>[] = [];
+    const channelClients = Array.from(this.channelSubscribers.values());
+    const patternClients = Array.from(this.patternSubscribers.values());
 
-    for (const [channel, subscriber] of this.subscribers.entries()) {
-      promises.push(
-        subscriber
-          .quit()
-          .then(() => {
-            // 成功退出
-          })
-          .catch(err => {
-            console.error(
-              `[Redis Pub/Sub] Failed to quit subscriber for ${channel}:`,
-              err
-            );
-          })
-      );
-    }
+    await Promise.all(
+      channelClients.map(async ({ client }) => {
+        try {
+          await client.quit();
+        } catch (error) {
+          logger.error('redis-pubsub', 'Failed to quit channel client', error);
+        }
+      })
+    );
 
-    await Promise.all(promises);
+    await Promise.all(
+      patternClients.map(async ({ client }) => {
+        try {
+          await client.quit();
+        } catch (error) {
+          logger.error('redis-pubsub', 'Failed to quit pattern client', error);
+        }
+      })
+    );
 
-    this.subscribers.clear();
-    this.callbacks.clear();
+    this.channelSubscribers.clear();
+    this.channelCallbacks.clear();
+    this.patternSubscribers.clear();
     this.patternCallbacks.clear();
-
-    if (env.NODE_ENV === 'development') {
-      console.log('[Redis Pub/Sub] All subscribers cleaned up');
-    }
   }
 }
 
-// 全局订阅者管理器实例
 const subscriberManager = new SubscriberManager();
 
-/**
- * 发布消息到指定频道
- * @param channel - 频道名称
- * @param message - 消息内容（字符串或对象）
- * @returns 接收到消息的订阅者数量
- */
 export async function publish(
   channel: string,
   message: string | object
 ): Promise<number> {
+  const payload =
+    typeof message === 'string' ? message : JSON.stringify(message);
+
   try {
-    const payload =
-      typeof message === 'string' ? message : JSON.stringify(message);
-    const client = redis.getClient();
-    const count = await client.publish(channel, payload);
-
-    if (env.NODE_ENV === 'development') {
-      console.log(
-        `[Redis Pub/Sub] Published to ${channel}, ${count} subscribers received`
-      );
-    }
-
+    const count = await redis.getClient().publish(channel, payload);
     return count;
   } catch (error) {
-    console.error(`[Redis Pub/Sub] Failed to publish to ${channel}:`, error);
+    logger.error(
+      'redis-pubsub',
+      `Failed to publish to ${channel}`,
+      error,
+      undefined,
+      { channel }
+    );
     throw error;
   }
 }
 
-/**
- * 订阅指定频道
- * @param channel - 频道名称
- * @param callback - 消息回调函数
- */
 export async function subscribe(
   channel: string,
   callback: SubscribeCallback
@@ -356,11 +305,6 @@ export async function subscribe(
   return subscriberManager.subscribe(channel, callback);
 }
 
-/**
- * 取消订阅指定频道
- * @param channel - 频道名称
- * @param callback - 可选的回调函数
- */
 export async function unsubscribe(
   channel: string,
   callback?: SubscribeCallback
@@ -368,11 +312,6 @@ export async function unsubscribe(
   return subscriberManager.unsubscribe(channel, callback);
 }
 
-/**
- * 模式订阅（支持通配符）
- * @param pattern - 频道模式（如 'cache:*'）
- * @param callback - 消息回调函数
- */
 export async function psubscribe(
   pattern: string,
   callback: PSubscribeCallback
@@ -380,11 +319,6 @@ export async function psubscribe(
   return subscriberManager.psubscribe(pattern, callback);
 }
 
-/**
- * 取消模式订阅
- * @param pattern - 频道模式
- * @param callback - 可选的回调函数
- */
 export async function punsubscribe(
   pattern: string,
   callback?: PSubscribeCallback
@@ -392,19 +326,19 @@ export async function punsubscribe(
   return subscriberManager.punsubscribe(pattern, callback);
 }
 
-/**
- * 清理所有订阅（用于应用关闭时）
- */
 export async function cleanup(): Promise<void> {
   return subscriberManager.cleanup();
 }
 
-// 监听进程退出事件，清理订阅
 if (typeof process !== 'undefined') {
   process.on('SIGTERM', () => {
-    cleanup().catch(console.error);
+    cleanup().catch(error => {
+      logger.error('redis-pubsub', 'Cleanup failed during SIGTERM', error);
+    });
   });
   process.on('SIGINT', () => {
-    cleanup().catch(console.error);
+    cleanup().catch(error => {
+      logger.error('redis-pubsub', 'Cleanup failed during SIGINT', error);
+    });
   });
 }

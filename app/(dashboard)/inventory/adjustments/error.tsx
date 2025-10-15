@@ -1,10 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
-import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { logger } from '@/lib/logger';
+import { useEffect } from 'react';
+
+import { Button } from '@/components/ui/button';
+import { logClientError } from '@/lib/logger/client';
 
 /**
  * 库存调整记录错误边界
@@ -19,8 +20,9 @@ export default function AdjustmentRecordsError({
   const router = useRouter();
 
   useEffect(() => {
-    logger.error('inventory-adjustments', '库存调整记录错误', error, {
+    logClientError('inventory-adjustments', '库存调整记录错误', error, {
       digest: error.digest,
+      stack: error.stack,
     });
   }, [error]);
 
