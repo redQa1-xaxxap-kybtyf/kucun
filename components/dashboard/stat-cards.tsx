@@ -18,9 +18,9 @@ import {
 import Link from 'next/link';
 import * as React from 'react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { ContentLoading } from '@/components/common/loading';
 import { dashboardUtils } from '@/lib/api/dashboard';
 import type { BusinessOverview, StatCard } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';
@@ -112,91 +112,94 @@ const StatCard = React.forwardRef<HTMLDivElement, StatCardProps>(
       );
     }
 
-    const CardWrapper = href ? Link : 'div';
-    const cardProps = href ? { href } : {};
-
-    return (
-      <CardWrapper {...cardProps}>
-        <Card
-          className={cn(
-            'group relative overflow-hidden transition-all duration-300',
-            href &&
-              'cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-black/5',
-            className
-          )}
-          ref={ref}
-          {...props}
-        >
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="space-y-2">
-                <p className="text-muted-foreground text-sm font-medium">
-                  {title}
+    // 卡片内容
+    const cardContent = (
+      <Card
+        className={cn(
+          'group relative overflow-hidden transition-all duration-300',
+          href &&
+            'cursor-pointer hover:scale-[1.02] hover:shadow-lg hover:shadow-black/5',
+          className
+        )}
+        ref={ref}
+        {...props}
+      >
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <p className="text-muted-foreground text-sm font-medium">
+                {title}
+              </p>
+              <div className="flex items-baseline space-x-2">
+                <p className="text-2xl font-bold tracking-tight">
+                  {typeof value === 'number'
+                    ? dashboardUtils.formatNumber(value)
+                    : value}
                 </p>
-                <div className="flex items-baseline space-x-2">
-                  <p className="text-2xl font-bold tracking-tight">
-                    {typeof value === 'number'
-                      ? dashboardUtils.formatNumber(value)
-                      : value}
-                  </p>
-                  {change && (
-                    <div className="flex items-center space-x-1">
-                      {change.type === 'increase' && (
-                        <TrendingUp className="h-4 w-4 text-[hsl(var(--color-success))]" />
-                      )}
-                      {change.type === 'decrease' && (
-                        <TrendingDown className="h-4 w-4 text-[hsl(var(--color-error))]" />
-                      )}
-                      {change.type === 'neutral' && (
-                        <Minus className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
-                      )}
-                      <Badge
-                        variant={
-                          change.type === 'increase'
-                            ? 'success'
-                            : change.type === 'decrease'
-                              ? 'destructive'
-                              : 'outline'
-                        }
-                        className={cn(
-                          'text-xs font-medium',
-                          change.type === 'neutral' &&
-                            'border-[hsl(var(--color-border-secondary))] text-[hsl(var(--color-text-secondary))]'
-                        )}
-                      >
-                        {dashboardUtils.formatPercentage(change.value)}
-                      </Badge>
-                    </div>
-                  )}
-                </div>
                 {change && (
-                  <p className="text-muted-foreground text-xs">
-                    较{change.period}
-                  </p>
+                  <div className="flex items-center space-x-1">
+                    {change.type === 'increase' && (
+                      <TrendingUp className="h-4 w-4 text-[hsl(var(--color-success))]" />
+                    )}
+                    {change.type === 'decrease' && (
+                      <TrendingDown className="h-4 w-4 text-[hsl(var(--color-error))]" />
+                    )}
+                    {change.type === 'neutral' && (
+                      <Minus className="h-4 w-4 text-[hsl(var(--color-text-tertiary))]" />
+                    )}
+                    <Badge
+                      variant={
+                        change.type === 'increase'
+                          ? 'success'
+                          : change.type === 'decrease'
+                            ? 'destructive'
+                            : 'outline'
+                      }
+                      className={cn(
+                        'text-xs font-medium',
+                        change.type === 'neutral' &&
+                          'border-[hsl(var(--color-border-secondary))] text-[hsl(var(--color-text-secondary))]'
+                      )}
+                    >
+                      {dashboardUtils.formatPercentage(change.value)}
+                    </Badge>
+                  </div>
                 )}
               </div>
-
-              <div
-                className={cn(
-                  'flex h-14 w-14 items-center justify-center rounded-xl border-2 shadow-sm transition-transform duration-300 group-hover:scale-110',
-                  colorClasses.bg,
-                  colorClasses.border
-                )}
-              >
-                <IconComponent className={cn('h-7 w-7', colorClasses.icon)} />
-              </div>
+              {change && (
+                <p className="text-muted-foreground text-xs">
+                  较{change.period}
+                </p>
+              )}
             </div>
 
-            {href && (
-              <div className="text-muted-foreground group-hover:text-foreground mt-4 flex items-center text-sm transition-colors">
-                <span>查看详情</span>
-                <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-1" />
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      </CardWrapper>
+            <div
+              className={cn(
+                'flex h-14 w-14 items-center justify-center rounded-xl border-2 shadow-sm transition-transform duration-300 group-hover:scale-110',
+                colorClasses.bg,
+                colorClasses.border
+              )}
+            >
+              <IconComponent className={cn('h-7 w-7', colorClasses.icon)} />
+            </div>
+          </div>
+
+          {href && (
+            <div className="text-muted-foreground group-hover:text-foreground mt-4 flex items-center text-sm transition-colors">
+              <span>查看详情</span>
+              <ArrowRight className="ml-1 h-3 w-3 transition-transform group-hover:translate-x-1" />
+            </div>
+          )}
+        </CardContent>
+      </Card>
     );
+
+    // 根据 href 决定是否包裹 Link
+    if (href) {
+      return <Link href={href}>{cardContent}</Link>;
+    }
+
+    return cardContent;
   }
 );
 

@@ -10,11 +10,11 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ContentLoading } from '@/components/common/loading';
-import { formatCurrency } from '@/lib/utils';
 import type { DashboardSalesOrderSummary } from '@/lib/types/dashboard';
+import { formatCurrency } from '@/lib/utils';
 
 interface RecentOrdersProps {
   orders: DashboardSalesOrderSummary[];
@@ -27,8 +27,16 @@ const statusConfig = {
     label: '草稿',
     variant: 'secondary' as const,
   },
+  pending: {
+    label: '待处理',
+    variant: 'warning' as const,
+  },
   confirmed: {
     label: '已确认',
+    variant: 'info' as const,
+  },
+  processing: {
+    label: '处理中',
     variant: 'info' as const,
   },
   shipped: {

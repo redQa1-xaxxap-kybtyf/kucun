@@ -1,7 +1,12 @@
 // 仪表盘API客户端
 // 基于TanStack Query的仪表盘数据获取和管理
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseQueryOptions,
+} from '@tanstack/react-query';
 
 import { dashboardConfig } from '@/lib/env';
 import type {
@@ -256,11 +261,18 @@ export const useDashboardData = (filters: DashboardFilters) =>
     refetchInterval: dashboardConfig.refetchInterval,
   });
 
-export const useBusinessOverview = (timeRange: TimeRange) =>
+export const useBusinessOverview = (
+  timeRange: TimeRange,
+  options?: Omit<
+    UseQueryOptions<BusinessOverview, Error>,
+    'queryKey' | 'queryFn'
+  >
+) =>
   useQuery({
     queryKey: dashboardQueryKeys.overview(),
     queryFn: () => dashboardApi.getBusinessOverview(timeRange),
     staleTime: dashboardConfig.staleTime,
+    ...options,
   });
 
 export const useInventoryAlerts = () =>

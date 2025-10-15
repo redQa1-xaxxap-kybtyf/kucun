@@ -12,11 +12,11 @@ import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
 import { Header } from './Header';
 import { MobileNav } from './MobileNav';
-import { SidebarClient } from './SidebarClient';
 import {
   bottomNavigationItems,
   navigationItems,
 } from './sidebar-navigation-config';
+import { SidebarClient } from './SidebarClient';
 
 interface DashboardLayoutProps {
   /** 子组件 */
@@ -48,24 +48,13 @@ export function DashboardLayout({
   // 在客户端根据用户角色过滤导航项
   const userRole = session?.user?.role as UserRole | undefined;
   const accessibleNavItems = React.useMemo(
-    () =>
-      userRole
-        ? getAccessibleNavItems(
-            navigationItems as Array<{ requiredRoles?: UserRole[] }>,
-            userRole
-          )
-        : [],
+    () => (userRole ? getAccessibleNavItems(navigationItems, userRole) : []),
     [userRole]
   );
 
   const accessibleBottomNavItems = React.useMemo(
     () =>
-      userRole
-        ? getAccessibleNavItems(
-            bottomNavigationItems as Array<{ requiredRoles?: UserRole[] }>,
-            userRole
-          )
-        : [],
+      userRole ? getAccessibleNavItems(bottomNavigationItems, userRole) : [],
     [userRole]
   );
 
