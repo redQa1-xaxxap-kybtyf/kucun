@@ -311,7 +311,7 @@ function formatProduct(product: {
     weight: product.weight ?? undefined,
     thickness: product.thickness ?? undefined,
     status: product.status as ProductStatus,
-    categoryId: product.categoryId ?? undefined,
+    categoryId: product.categoryId ?? null,
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
     category: product.category
@@ -320,7 +320,7 @@ function formatProduct(product: {
           name: product.category.name,
           code: product.category.code,
         }
-      : undefined,
+      : null,
     variants:
       product.variants?.map((variant: ProductVariantWithRelations) => ({
         id: variant.id,

@@ -110,9 +110,9 @@ export interface Product {
   /** 产品状态 */
   status: ProductStatus;
   /** 所属分类ID */
-  categoryId?: string;
+  categoryId?: string | null;
   /** 所属分类信息（关联查询时包含） */
-  category?: ProductCategory;
+  category?: ProductCategory | null;
   /** 产品缩略图URL */
   thumbnailUrl?: string;
   /** 产品图片数组 */
@@ -269,7 +269,13 @@ export const PRODUCT_STATUS_OPTIONS = [
 // 产品状态颜色映射（用于Badge组件）
 export const PRODUCT_STATUS_VARIANTS: Record<
   string,
-  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info'
 > = {
   active: 'success',
   inactive: 'secondary',
