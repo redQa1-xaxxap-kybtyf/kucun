@@ -18,6 +18,24 @@ const RETURN_ALLOWED_SALES_ORDER_STATUSES: ReadonlyArray<SalesOrderStatus> = [
   'completed',
 ];
 
+const SALES_ORDER_WITH_ITEMS_INCLUDE = {
+  items: {
+    include: {
+      product: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  },
+  customer: true,
+} satisfies Prisma.SalesOrderInclude;
+
+type SalesOrderWithItems = Prisma.SalesOrderGetPayload<{
+  include: typeof SALES_ORDER_WITH_ITEMS_INCLUDE;
+}>;
+
 /**
  * GET /api/return-orders - 获取退货订单列表
  */
@@ -207,8 +225,7 @@ export const POST = withAuth(
       const data = validationResult.data;
 
       // 根据退货模式进行不同的验证逻辑
-      let salesOrder: Awaited<ReturnType<typeof prisma.salesOrder.findUnique>> =
-        null;
+      let salesOrder: SalesOrderWithItems | null = null;
       const salesOrderItemsMap = new Map<
         string,
         Awaited<ReturnType<typeof prisma.salesOrderItem.findFirst>>
@@ -225,19 +242,7 @@ export const POST = withAuth(
 
         salesOrder = await prisma.salesOrder.findUnique({
           where: { id: data.salesOrderId.trim() },
-          include: {
-            items: {
-              include: {
-                product: {
-                  select: {
-                    id: true,
-                    name: true,
-                  },
-                },
-              },
-            },
-            customer: true,
-          },
+          include: SALES_ORDER_WITH_ITEMS_INCLUDE,
         });
 
         if (!salesOrder) {
