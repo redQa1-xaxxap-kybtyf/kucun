@@ -8,6 +8,7 @@ import { revalidateProducts, publishDataUpdate } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { paginationConfig, productConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { toProductResponse } from '@/lib/utils/product-transforms';
 import { productCreateSchema } from '@/lib/validations/product';
 
 /**
@@ -169,55 +170,13 @@ export const POST = withAuth(
       }
     });
 
-    // 转换数据格式
-    // ✅ 类型安全的 JSON 解析（避免 as string 断言）
-    let parsedImages: unknown[] = [];
-    if (product.images) {
-      try {
-        const parsed = JSON.parse(
-          typeof product.images === 'string'
-            ? product.images
-            : String(product.images)
-        );
-        parsedImages = Array.isArray(parsed) ? parsed : [];
-      } catch (error: unknown) {
-        logger.warn('products', '解析产品图片失败，使用空数组作为兜底', {
-          productId: product.id,
-          error: error instanceof Error ? error.message : String(error),
-        });
-        parsedImages = [];
-      }
-    }
-
+    // 使用统一的转换工具处理产品数据
     // 显式类型断言以访问 category 字段
     const productWithCategory = product as typeof product & {
       category: { id: string; name: string; code: string } | null;
     };
 
-    const formattedProduct = {
-      id: productWithCategory.id,
-      code: productWithCategory.code,
-      name: productWithCategory.name,
-      specification: productWithCategory.specification,
-      description: productWithCategory.description,
-      unit: productWithCategory.unit,
-      piecesPerUnit: productWithCategory.piecesPerUnit,
-      weight: productWithCategory.weight,
-      thickness: productWithCategory.thickness,
-      status: productWithCategory.status,
-      categoryId: productWithCategory.categoryId,
-      thumbnailUrl: productWithCategory.thumbnailUrl,
-      images: parsedImages,
-      category: productWithCategory.category
-        ? {
-            id: productWithCategory.category.id,
-            name: productWithCategory.category.name,
-            code: productWithCategory.category.code,
-          }
-        : null,
-      createdAt: productWithCategory.createdAt,
-      updatedAt: productWithCategory.updatedAt,
-    };
+    const formattedProduct = toProductResponse(productWithCategory);
 
     // 使用新的统一缓存失效系统
     await revalidateProducts(); // 自动级联失效相关缓存

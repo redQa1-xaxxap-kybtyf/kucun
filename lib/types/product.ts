@@ -136,6 +136,25 @@ export interface Product {
   statistics?: ProductStatistics;
 }
 
+/**
+ * 带分类信息的产品类型
+ * 用于需要确保category存在的场景
+ */
+export interface ProductWithCategory extends Product {
+  category: ProductCategory;
+}
+
+/**
+ * 带关联数据的产品类型
+ * 用于包含所有可选关联数据的场景
+ */
+export interface ProductWithRelations extends Product {
+  category?: ProductCategory | null;
+  variants?: ProductVariant[];
+  inventory?: ProductInventory;
+  statistics?: ProductStatistics;
+}
+
 // 产品变体类型定义
 export interface ProductVariant {
   id: string;
