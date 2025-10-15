@@ -1,8 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
-import { getProductsForServer } from '@/lib/api/products-server';
 import type { ProductListQueryParams } from '@/lib/api/products';
+import { getProductsForServer } from '@/lib/api/products-server';
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
 import { revalidateProducts, publishDataUpdate } from '@/lib/cache';
 import { prisma } from '@/lib/db';
@@ -135,12 +135,12 @@ export const POST = withAuth(
         return await tx.product.create({
           data: {
             code,
-            name,
+            name: name || code, // 如果name为空,使用code作为name
             specification,
             description,
             unit: 'piece', // 默认单位为"件"
             thickness,
-            categoryId: processedCategoryId,
+            categoryId: processedCategoryId ?? null,
             thumbnailUrl,
             images: images ? JSON.stringify(images) : null,
             status: 'active',
@@ -180,42 +180,43 @@ export const POST = withAuth(
             : String(product.images)
         );
         parsedImages = Array.isArray(parsed) ? parsed : [];
-      } catch (error) {
-        logger.warn(
-          'products',
-          '解析产品图片失败，使用空数组作为兜底',
-          error instanceof Error ? error : undefined,
-          {
-            productId: product.id,
-          }
-        );
+      } catch (error: unknown) {
+        logger.warn('products', '解析产品图片失败，使用空数组作为兜底', {
+          productId: product.id,
+          error: error instanceof Error ? error.message : String(error),
+        });
         parsedImages = [];
       }
     }
 
+    // 显式类型断言以访问 category 字段
+    const productWithCategory = product as typeof product & {
+      category: { id: string; name: string; code: string } | null;
+    };
+
     const formattedProduct = {
-      id: product.id,
-      code: product.code,
-      name: product.name,
-      specification: product.specification,
-      description: product.description,
-      unit: product.unit,
-      piecesPerUnit: product.piecesPerUnit,
-      weight: product.weight,
-      thickness: product.thickness,
-      status: product.status,
-      categoryId: product.categoryId,
-      thumbnailUrl: product.thumbnailUrl,
+      id: productWithCategory.id,
+      code: productWithCategory.code,
+      name: productWithCategory.name,
+      specification: productWithCategory.specification,
+      description: productWithCategory.description,
+      unit: productWithCategory.unit,
+      piecesPerUnit: productWithCategory.piecesPerUnit,
+      weight: productWithCategory.weight,
+      thickness: productWithCategory.thickness,
+      status: productWithCategory.status,
+      categoryId: productWithCategory.categoryId,
+      thumbnailUrl: productWithCategory.thumbnailUrl,
       images: parsedImages,
-      category: product.category
+      category: productWithCategory.category
         ? {
-            id: product.category.id,
-            name: product.category.name,
-            code: product.category.code,
+            id: productWithCategory.category.id,
+            name: productWithCategory.category.name,
+            code: productWithCategory.category.code,
           }
         : null,
-      createdAt: product.createdAt,
-      updatedAt: product.updatedAt,
+      createdAt: productWithCategory.createdAt,
+      updatedAt: productWithCategory.updatedAt,
     };
 
     // 使用新的统一缓存失效系统
