@@ -10,7 +10,6 @@ import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -30,24 +29,16 @@ import { formatDateTimeCN } from '@/lib/utils/datetime';
 
 interface CategoryListProps {
   categories: Category[];
-  selectedCategoryIds: string[];
   updatingStatusId: string | null;
-  onSelectCategory: (categoryId: string, checked: boolean) => void;
-  onSelectAll: (checked: boolean) => void;
   onToggleStatus: (category: Category) => void;
   onDeleteCategory: (categoryId: string, categoryName: string) => void;
-  totalCount: number;
 }
 
 export function CategoryList({
   categories,
-  selectedCategoryIds,
   updatingStatusId,
-  onSelectCategory,
-  onSelectAll,
   onToggleStatus,
   onDeleteCategory,
-  totalCount,
 }: CategoryListProps) {
   const router = useRouter();
 
@@ -73,15 +64,6 @@ export function CategoryList({
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-12">
-              <Checkbox
-                checked={
-                  totalCount > 0 && selectedCategoryIds.length === totalCount
-                }
-                onCheckedChange={onSelectAll}
-                aria-label="全选分类"
-              />
-            </TableHead>
             <TableHead>分类名称</TableHead>
             <TableHead>产品数量</TableHead>
             <TableHead>状态</TableHead>
@@ -95,15 +77,6 @@ export function CategoryList({
               key={category.id}
               className="transition-colors hover:bg-blue-50/50"
             >
-              <TableCell>
-                <Checkbox
-                  checked={selectedCategoryIds.includes(category.id)}
-                  onCheckedChange={checked =>
-                    onSelectCategory(category.id, checked as boolean)
-                  }
-                  aria-label={`选择分类 ${category.name}`}
-                />
-              </TableCell>
               <TableCell className="font-medium text-gray-900">
                 <div className="flex items-center gap-2">
                   {/* 层级缩进指示器 */}

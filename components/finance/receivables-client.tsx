@@ -19,6 +19,26 @@ import type {
   ReceivablesResult,
 } from '@/lib/services/receivables-service';
 
+const CHANGE_TOLERANCE = 0.05;
+
+function formatCollectionRateChange(change: number): string {
+  if (Math.abs(change) < CHANGE_TOLERANCE) {
+    return '较上月持平';
+  }
+
+  const value = Math.abs(change).toFixed(1);
+  return change > 0 ? `较上月提升 ${value}%` : `较上月下降 ${value}%`;
+}
+
+function formatAccountPeriodChange(change: number): string {
+  if (Math.abs(change) < CHANGE_TOLERANCE) {
+    return '较上月持平';
+  }
+
+  const value = Math.abs(change).toFixed(1);
+  return change < 0 ? `较上月减少 ${value}天` : `较上月增加 ${value}天`;
+}
+
 interface ReceivablesQueryParams {
   page: number;
   limit: number;
@@ -162,6 +182,11 @@ export function ReceivablesClient({
   );
 
   const currentData = data?.data || initialData;
+  const collectionRate = currentData.summary?.collectionRate ?? 0;
+  const collectionRateChange = currentData.summary?.collectionRateChange ?? 0;
+  const averageAccountPeriod = currentData.summary?.averageAccountPeriod ?? 0;
+  const averageAccountPeriodChange =
+    currentData.summary?.averageAccountPeriodChange ?? 0;
 
   return (
     <div className="space-y-6">
@@ -189,9 +214,11 @@ export function ReceivablesClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
-              {(currentData.summary?.collectionRate || 0).toFixed(1)}%
+              {collectionRate.toFixed(1)}%
             </div>
-            <p className="text-muted-foreground text-xs">较上月提升 5%</p>
+            <p className="text-muted-foreground text-xs">
+              {formatCollectionRateChange(collectionRateChange)}
+            </p>
           </CardContent>
         </Card>
 
@@ -202,9 +229,11 @@ export function ReceivablesClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--color-purple))]">
-              {currentData.summary?.averageAccountPeriod || 0}天
+              {averageAccountPeriod.toFixed(1)}天
             </div>
-            <p className="text-muted-foreground text-xs">较上月减少 3天</p>
+            <p className="text-muted-foreground text-xs">
+              {formatAccountPeriodChange(averageAccountPeriodChange)}
+            </p>
           </CardContent>
         </Card>
       </div>

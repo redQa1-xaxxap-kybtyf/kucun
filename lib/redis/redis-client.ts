@@ -172,7 +172,7 @@ function createClient(url: string): Redis {
   client.on('connect', () => {
     isRedisAvailable = true;
     lastRedisCheckTime = Date.now();
-    if (env.NODE_ENV === 'development') {
+    if (env.NODE_ENV === 'development' && process.env.NODE_ENV !== 'test') {
       // eslint-disable-next-line no-console
       console.log('[Redis] connected');
     }
@@ -184,6 +184,7 @@ function createClient(url: string): Redis {
     const now = Date.now();
     if (
       env.NODE_ENV === 'development' &&
+      process.env.NODE_ENV !== 'test' &&
       now - lastReconnectLogTime > ERROR_LOG_INTERVAL
     ) {
       // eslint-disable-next-line no-console
@@ -220,7 +221,7 @@ let rrIndex = 0;
 
 // 修复: 添加优雅关闭函数
 function gracefulShutdown(): void {
-  if (env.NODE_ENV === 'development') {
+  if (env.NODE_ENV === 'development' && process.env.NODE_ENV !== 'test') {
     // eslint-disable-next-line no-console
     console.log('[Redis] Gracefully shutting down connection pool...');
   }

@@ -5,23 +5,13 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { FolderTree, Loader2, Plus, Trash2 } from 'lucide-react';
+import { FolderTree, Plus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-interface CategoryPageHeaderProps {
-  selectedCategoryIds: string[];
-  onBatchDelete: () => void;
-  isBatchDeleting: boolean;
-}
-
-export function CategoryPageHeader({
-  selectedCategoryIds,
-  onBatchDelete,
-  isBatchDeleting,
-}: CategoryPageHeaderProps) {
+export function CategoryPageHeader() {
   const router = useRouter();
 
   return (
@@ -36,47 +26,17 @@ export function CategoryPageHeader({
               <h1 className="text-2xl font-bold tracking-tight text-gray-900">
                 分类管理
               </h1>
-              <p className="text-sm text-gray-600">
-                管理产品分类和层级结构
-                {selectedCategoryIds.length > 0 && (
-                  <span className="ml-2 font-medium text-blue-600">
-                    · 已选择 {selectedCategoryIds.length} 个分类
-                  </span>
-                )}
-              </p>
+              <p className="text-sm text-gray-600">管理产品分类和层级结构</p>
             </div>
           </div>
-          <div className="flex gap-2">
-            {selectedCategoryIds.length > 0 && (
-              <Button
-                variant="destructive"
-                size="lg"
-                onClick={onBatchDelete}
-                disabled={isBatchDeleting}
-                className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-              >
-                {isBatchDeleting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    删除中...
-                  </>
-                ) : (
-                  <>
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    批量删除 ({selectedCategoryIds.length})
-                  </>
-                )}
-              </Button>
-            )}
-            <Button
-              size="lg"
-              onClick={() => router.push('/categories/create')}
-              className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-            >
-              <Plus className="mr-2 h-4 w-4" />
-              新建分类
-            </Button>
-          </div>
+          <Button
+            size="lg"
+            onClick={() => router.push('/categories/create')}
+            className="h-11 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            新建分类
+          </Button>
         </div>
       </CardContent>
     </Card>

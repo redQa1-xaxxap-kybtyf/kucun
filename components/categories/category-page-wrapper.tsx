@@ -24,17 +24,12 @@ export function CategoryPageWrapper({
     isLoading,
     error,
     queryParams,
-    selectedCategoryIds,
     deleteDialog,
-    batchDeleteDialog,
     updatingStatusId,
     setQueryParams,
-    setSelectedCategoryIds,
     setDeleteDialog,
-    setBatchDeleteDialog,
     setUpdatingStatusId,
     deleteMutation,
-    batchDeleteMutation,
     statusMutation,
   } = useCategories(initialData, initialParams);
 
@@ -47,24 +42,15 @@ export function CategoryPageWrapper({
     handlePageChange,
     handleDeleteCategory,
     confirmDelete,
-    handleSelectCategory,
-    handleSelectAll,
-    handleBatchDelete,
-    confirmBatchDelete,
     toggleCategoryStatus,
   } = useCategoryActions({
     queryParams,
     setQueryParams,
-    selectedCategoryIds,
-    setSelectedCategoryIds,
     deleteDialog,
     setDeleteDialog,
-    setBatchDeleteDialog,
     setUpdatingStatusId,
     statusMutation,
     deleteMutation,
-    batchDeleteMutation,
-    categories,
   });
 
   return (
@@ -74,23 +60,15 @@ export function CategoryPageWrapper({
       categories={categories}
       pagination={pagination}
       queryParams={queryParams}
-      selectedCategoryIds={selectedCategoryIds}
       deleteDialog={deleteDialog}
-      batchDeleteDialog={batchDeleteDialog}
       updatingStatusId={updatingStatusId}
       deleteMutation={deleteMutation}
-      batchDeleteMutation={batchDeleteMutation}
       setDeleteDialog={setDeleteDialog}
-      setBatchDeleteDialog={setBatchDeleteDialog}
       handleSearch={handleSearch}
       handleFilter={handleFilter}
       handlePageChange={handlePageChange}
       handleDeleteCategory={handleDeleteCategory}
       confirmDelete={confirmDelete}
-      handleSelectCategory={handleSelectCategory}
-      handleSelectAll={handleSelectAll}
-      handleBatchDelete={handleBatchDelete}
-      confirmBatchDelete={confirmBatchDelete}
       toggleCategoryStatus={toggleCategoryStatus}
     />
   );

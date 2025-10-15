@@ -14,6 +14,7 @@ import type { Product } from '@/lib/types/product';
 import { ProductDataUtils } from '@/lib/utils/product-data';
 
 import { SmartProductSearch } from './smart-product-search';
+import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 
 interface IntelligentProductInputProps<
   TFieldValues extends Record<string, unknown> = Record<string, unknown>,
@@ -159,12 +160,18 @@ export function IntelligentProductInput<
           product.specification ?? ''
         ) as unknown as PathValue<TFieldValues, Path<TFieldValues>>
       );
+
+      // 将英文单位转换为中文
+      const unitLabel =
+        product.unit && product.unit in PRODUCT_UNIT_LABELS
+          ? PRODUCT_UNIT_LABELS[
+              product.unit as keyof typeof PRODUCT_UNIT_LABELS
+            ]
+          : product.unit || '件';
+
       form.setValue(
         `items.${index}.unit` as unknown as Path<TFieldValues>,
-        (product.unit || '') as unknown as PathValue<
-          TFieldValues,
-          Path<TFieldValues>
-        >
+        unitLabel as unknown as PathValue<TFieldValues, Path<TFieldValues>>
       );
       form.setValue(
         `items.${index}.piecesPerUnit` as unknown as Path<TFieldValues>,

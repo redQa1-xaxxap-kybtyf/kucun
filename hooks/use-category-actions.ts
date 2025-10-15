@@ -9,23 +9,12 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import React from 'react';
 import type { UseMutationResult } from '@tanstack/react-query';
 
-import type {
-  BatchDeleteCategoriesInput,
-  BatchDeleteResult,
-  Category,
-  CategoryQueryParams,
-} from '@/lib/api/categories';
-import type { ApiResponse } from '@/lib/types/api';
+import type { Category, CategoryQueryParams } from '@/lib/api/categories';
 
 interface DeleteDialogState {
   open: boolean;
   categoryId: string | null;
   categoryName: string;
-}
-
-interface BatchDeleteDialogState {
-  open: boolean;
-  categories: Category[];
 }
 
 type UpdateStatusVariables = {
@@ -138,43 +127,26 @@ function areCategoryQueryParamsEqual(
 interface UseCategoryActionsProps {
   queryParams: CategoryQueryParams;
   setQueryParams: React.Dispatch<React.SetStateAction<CategoryQueryParams>>;
-  selectedCategoryIds: string[];
-  setSelectedCategoryIds: React.Dispatch<React.SetStateAction<string[]>>;
   deleteDialog: DeleteDialogState;
   setDeleteDialog: React.Dispatch<React.SetStateAction<DeleteDialogState>>;
-  setBatchDeleteDialog: React.Dispatch<
-    React.SetStateAction<BatchDeleteDialogState>
-  >;
   setUpdatingStatusId: React.Dispatch<React.SetStateAction<string | null>>;
   statusMutation: UseMutationResult<
-    ApiResponse<Category>,
+    unknown,
     Error,
     UpdateStatusVariables,
     unknown
   >;
-  deleteMutation: UseMutationResult<ApiResponse<void>, Error, string, unknown>;
-  batchDeleteMutation: UseMutationResult<
-    BatchDeleteResult,
-    Error,
-    BatchDeleteCategoriesInput,
-    unknown
-  >;
-  categories: Category[];
+  deleteMutation: UseMutationResult<unknown, Error, string, unknown>;
 }
 
 export function useCategoryActions({
   queryParams,
   setQueryParams,
-  selectedCategoryIds,
-  setSelectedCategoryIds,
   deleteDialog,
   setDeleteDialog,
-  setBatchDeleteDialog,
   setUpdatingStatusId,
   statusMutation,
   deleteMutation,
-  batchDeleteMutation,
-  categories,
 }: UseCategoryActionsProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -290,39 +262,6 @@ export function useCategoryActions({
     }
   }, [deleteDialog.categoryId, deleteMutation]);
 
-  const handleSelectCategory = React.useCallback(
-    (categoryId: string, checked: boolean) => {
-      setSelectedCategoryIds(prevIds =>
-        checked
-          ? [...prevIds, categoryId]
-          : prevIds.filter(id => id !== categoryId)
-      );
-    },
-    [setSelectedCategoryIds]
-  );
-
-  const handleSelectAll = React.useCallback(
-    (checked: boolean) => {
-      setSelectedCategoryIds(
-        checked ? categories.map(category => category.id) : []
-      );
-    },
-    [categories, setSelectedCategoryIds]
-  );
-
-  const handleBatchDelete = React.useCallback(() => {
-    const selectedCategories = categories.filter(category =>
-      selectedCategoryIds.includes(category.id)
-    );
-    setBatchDeleteDialog({ open: true, categories: selectedCategories });
-  }, [categories, selectedCategoryIds, setBatchDeleteDialog]);
-
-  const confirmBatchDelete = React.useCallback(() => {
-    if (selectedCategoryIds.length > 0) {
-      batchDeleteMutation.mutate({ categoryIds: selectedCategoryIds });
-    }
-  }, [selectedCategoryIds, batchDeleteMutation]);
-
   const toggleCategoryStatus = React.useCallback(
     (category: Category) => {
       setUpdatingStatusId(category.id);
@@ -339,10 +278,6 @@ export function useCategoryActions({
     handlePageChange,
     handleDeleteCategory,
     confirmDelete,
-    handleSelectCategory,
-    handleSelectAll,
-    handleBatchDelete,
-    confirmBatchDelete,
     toggleCategoryStatus,
   };
 }

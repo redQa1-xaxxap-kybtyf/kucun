@@ -10,6 +10,7 @@ import { AmountInfoSection } from '@/components/factory-shipments/form-sections/
 import { BasicInfoSection } from '@/components/factory-shipments/form-sections/basic-info-section';
 import { ItemListSection } from '@/components/factory-shipments/form-sections/item-list-section';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { Form } from '@/components/ui/form';
 import { useToast } from '@/components/ui/use-toast';
 import { useCustomerPriceHistory } from '@/hooks/use-price-history';
@@ -220,7 +221,7 @@ export function FactoryShipmentOrderForm({
             unitPrice: 0,
             displayName: '',
             specification: '',
-            unit: 'piece',
+            unit: '件',
             remarks: '',
           },
         ],
@@ -275,21 +276,32 @@ export function FactoryShipmentOrderForm({
         <AmountInfoSection form={form} />
 
         {/* 操作按钮 */}
-        <div className="flex items-center justify-between gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={onCancel}
-            disabled={isLoading}
-          >
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            返回
-          </Button>
-          <Button type="submit" disabled={isLoading}>
-            <Save className="mr-2 h-4 w-4" />
-            {isLoading ? '保存中...' : isEditing ? '更新订单' : '创建订单'}
-          </Button>
-        </div>
+        <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-primary))] shadow-md">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between gap-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                onClick={onCancel}
+                disabled={isLoading}
+                className="min-w-[120px] shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
+              >
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                返回
+              </Button>
+              <Button
+                type="submit"
+                size="lg"
+                disabled={isLoading}
+                className="min-w-[160px] shadow-md transition-all duration-200 hover:scale-[1.02] hover:shadow-lg"
+              >
+                <Save className="mr-2 h-4 w-4" />
+                {isLoading ? '保存中...' : isEditing ? '更新订单' : '创建订单'}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       </form>
     </Form>
   );

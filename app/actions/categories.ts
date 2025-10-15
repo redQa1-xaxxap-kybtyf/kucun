@@ -65,7 +65,9 @@ const updateCategoryStatusSchema = z.object({
 const CATEGORY_CODE_SANITIZE_REGEX = /[^a-zA-Z0-9]/g;
 
 function generateCategoryCode(name: string): string {
-  const cleanName = name.replace(CATEGORY_CODE_SANITIZE_REGEX, '').toUpperCase();
+  const cleanName = name
+    .replace(CATEGORY_CODE_SANITIZE_REGEX, '')
+    .toUpperCase();
   const base = cleanName || 'CATEGORY';
   return `${base}-${Date.now().toString(36).toUpperCase()}`;
 }
@@ -146,7 +148,10 @@ export async function createCategory(
   } catch (error) {
     console.error('创建分类失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues?.[0]?.message ?? '数据验证失败' };
+      return {
+        success: false,
+        error: error.issues?.[0]?.message ?? '数据验证失败',
+      };
     }
     return { success: false, error: '创建分类失败' };
   }
@@ -227,7 +232,9 @@ export async function updateCategory(
           const nextParent = await prisma.category.findUnique({
             where: { id: currentParent.parentId },
           });
-          if (!nextParent) {break;}
+          if (!nextParent) {
+            break;
+          }
           currentParent = nextParent;
         }
       }
@@ -267,7 +274,10 @@ export async function updateCategory(
   } catch (error) {
     console.error('更新分类失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues?.[0]?.message ?? '数据验证失败' };
+      return {
+        success: false,
+        error: error.issues?.[0]?.message ?? '数据验证失败',
+      };
     }
     return { success: false, error: '更新分类失败' };
   }
@@ -336,7 +346,10 @@ export async function updateCategoryStatus(
   } catch (error) {
     console.error('更新分类状态失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues?.[0]?.message ?? '数据验证失败' };
+      return {
+        success: false,
+        error: error.issues?.[0]?.message ?? '数据验证失败',
+      };
     }
     return { success: false, error: '更新分类状态失败' };
   }
@@ -460,65 +473,5 @@ export async function batchUpdateCategoryStatus(
   } catch (error) {
     console.error('批量更新分类状态失败:', error);
     return { success: false, error: '批量更新分类状态失败' };
-  }
-}
-
-/**
- * 批量删除分类
- */
-export async function batchDeleteCategories(
-  formData: FormData
-): Promise<ActionResult> {
-  try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
-      return { success: false, error: '未授权操作' };
-    }
-
-    const categoryIds = JSON.parse(
-      formData.get('categoryIds') as string
-    ) as string[];
-
-    if (!categoryIds || categoryIds.length === 0) {
-      return { success: false, error: '未选择分类' };
-    }
-
-    await prisma.$transaction(async tx => {
-      // 检查所有分类
-      const categories = await tx.category.findMany({
-        where: { id: { in: categoryIds } },
-        include: {
-          children: true,
-          products: true,
-        },
-      });
-
-      for (const category of categories) {
-        if (category.children.length > 0) {
-          throw new Error(`分类 "${category.name}" 下有子分类，无法批量删除`);
-        }
-
-        if (category.products.length > 0) {
-          throw new Error(
-            `分类 "${category.name}" 下有 ${category.products.length} 个产品，无法批量删除`
-          );
-        }
-      }
-
-      // 删除所有分类
-      await tx.category.deleteMany({
-        where: { id: { in: categoryIds } },
-      });
-    });
-
-    revalidatePath('/categories');
-
-    return { success: true };
-  } catch (error) {
-    console.error('批量删除分类失败:', error);
-    return {
-      success: false,
-      error: error instanceof Error ? error.message : '批量删除分类失败',
-    };
   }
 }

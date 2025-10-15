@@ -20,11 +20,6 @@ interface DeleteDialogState {
   categoryName: string;
 }
 
-interface BatchDeleteDialogState {
-  open: boolean;
-  categories: Category[];
-}
-
 interface CategoryPageContentProps {
   isLoading: boolean;
   error: Error | null;
@@ -36,22 +31,13 @@ interface CategoryPageContentProps {
     totalPages: number;
   };
   queryParams: CategoryQueryParams;
-  selectedCategoryIds: string[];
   deleteDialog: DeleteDialogState;
-  batchDeleteDialog: BatchDeleteDialogState;
   updatingStatusId: string | null;
   deleteMutation: {
     mutate: (id: string) => void;
     isPending: boolean;
   };
-  batchDeleteMutation: {
-    mutate: (input: { categoryIds: string[] }) => void;
-    isPending: boolean;
-  };
   setDeleteDialog: React.Dispatch<React.SetStateAction<DeleteDialogState>>;
-  setBatchDeleteDialog: React.Dispatch<
-    React.SetStateAction<BatchDeleteDialogState>
-  >;
   handleSearch: (value: string) => void;
   handleFilter: <K extends keyof CategoryQueryParams>(
     key: K,
@@ -60,10 +46,6 @@ interface CategoryPageContentProps {
   handlePageChange: (page: number) => void;
   handleDeleteCategory: (categoryId: string, categoryName: string) => void;
   confirmDelete: () => void;
-  handleSelectCategory: (categoryId: string, checked: boolean) => void;
-  handleSelectAll: (checked: boolean) => void;
-  handleBatchDelete: () => void;
-  confirmBatchDelete: () => void;
   toggleCategoryStatus: (category: Category) => void;
 }
 
@@ -73,23 +55,15 @@ export function CategoryPageContent({
   categories,
   pagination,
   queryParams,
-  selectedCategoryIds,
   deleteDialog,
-  batchDeleteDialog,
   updatingStatusId,
   deleteMutation,
-  batchDeleteMutation,
   setDeleteDialog,
-  setBatchDeleteDialog,
   handleSearch,
   handleFilter,
   handlePageChange,
   handleDeleteCategory,
   confirmDelete,
-  handleSelectCategory,
-  handleSelectAll,
-  handleBatchDelete,
-  confirmBatchDelete,
   toggleCategoryStatus,
 }: CategoryPageContentProps) {
   // 加载状态
@@ -119,11 +93,7 @@ export function CategoryPageContent({
   return (
     <div className="flex h-full flex-col p-6">
       <div className="space-y-6">
-        <CategoryPageHeader
-          selectedCategoryIds={selectedCategoryIds}
-          onBatchDelete={handleBatchDelete}
-          isBatchDeleting={batchDeleteMutation.isPending}
-        />
+        <CategoryPageHeader />
 
         <CategorySearchFilters
           queryParams={queryParams}
@@ -133,13 +103,9 @@ export function CategoryPageContent({
 
         <CategoryList
           categories={categories}
-          selectedCategoryIds={selectedCategoryIds}
           updatingStatusId={updatingStatusId}
-          onSelectCategory={handleSelectCategory}
-          onSelectAll={handleSelectAll}
           onToggleStatus={toggleCategoryStatus}
           onDeleteCategory={handleDeleteCategory}
-          totalCount={categories.length}
         />
 
         {pagination && (
@@ -153,13 +119,9 @@ export function CategoryPageContent({
 
         <CategoryDeleteDialogs
           deleteDialog={deleteDialog}
-          batchDeleteDialog={batchDeleteDialog}
           isDeleting={deleteMutation.isPending}
-          isBatchDeleting={batchDeleteMutation.isPending}
           onDeleteDialogChange={setDeleteDialog}
-          onBatchDeleteDialogChange={setBatchDeleteDialog}
           onConfirmDelete={confirmDelete}
-          onConfirmBatchDelete={confirmBatchDelete}
         />
       </div>
     </div>

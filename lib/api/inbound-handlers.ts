@@ -57,18 +57,30 @@ interface InboundRecordWithRelations {
   } | null;
 }
 
+let lastSequenceTimestamp = 0;
+let sequenceCounter = 0;
+
 /**
  * 生成入库记录编号
+ * 通过时间戳 + 递增序号的组合，保证在同一毫秒内生成的编号仍然唯一。
  */
 export function generateInboundRecordNumber(): string {
   const now = new Date();
+  const currentTimestamp = now.getTime();
+
+  if (currentTimestamp === lastSequenceTimestamp) {
+    sequenceCounter = (sequenceCounter + 1) % 1000;
+  } else {
+    lastSequenceTimestamp = currentTimestamp;
+    sequenceCounter = 0;
+  }
+
   const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
   const timeStr = now.toTimeString().slice(0, 8).replace(/:/g, '');
   const millisecondStr = now.getMilliseconds().toString().padStart(3, '0');
-  const random = Math.floor(Math.random() * 1000)
-    .toString()
-    .padStart(3, '0');
-  return `IN${dateStr}${timeStr}${millisecondStr}${random}`;
+  const sequenceStr = sequenceCounter.toString().padStart(3, '0');
+
+  return `IN${dateStr}${timeStr}${millisecondStr}${sequenceStr}`;
 }
 
 /**

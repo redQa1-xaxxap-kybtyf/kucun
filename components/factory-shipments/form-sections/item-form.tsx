@@ -49,10 +49,17 @@ export function ItemForm({
   const { toast } = useToast();
 
   return (
-    <Card className="border-dashed">
-      <CardContent className="pt-4">
-        <div className="mb-4 flex items-start justify-between">
-          <h4 className="text-sm font-medium">商品 {index + 1}</h4>
+    <Card className="border-2 border-dashed border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]/30 shadow-sm transition-all duration-200 hover:border-[hsl(var(--color-primary))]/40 hover:shadow-md">
+      <CardContent className="p-5">
+        <div className="mb-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[hsl(var(--color-primary))]/10 text-[hsl(var(--color-primary))]">
+              <span className="text-sm font-bold">{index + 1}</span>
+            </div>
+            <h4 className="text-base font-semibold text-[hsl(var(--color-text-primary))]">
+              商品 {index + 1}
+            </h4>
+          </div>
           {canRemove && (
             <Button
               type="button"
@@ -60,42 +67,43 @@ export function ItemForm({
               size="sm"
               onClick={onRemove}
               title="删除商品"
+              className="h-8 w-8 rounded-lg text-[hsl(var(--color-error))] transition-all duration-200 hover:bg-[hsl(var(--color-error))]/10 hover:text-[hsl(var(--color-error))]"
             >
               <Minus className="h-4 w-4" />
             </Button>
           )}
         </div>
 
-        <div className="space-y-4">
-          {/* 第一行：商品和供应商 */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {/* 商品选择 */}
-            <div>
-              <IntelligentProductInput
-                form={form}
-                index={index}
-                products={products}
-                onProductChange={product => {
-                  if (product && selectedCustomerId && product.code) {
-                    // 自动填充客户历史价格（基于产品编码匹配）
-                    const customerPrice = getLatestPrice(
-                      customerPriceHistoryData?.data,
-                      product.code,
-                      'FACTORY'
-                    );
-                    if (customerPrice !== undefined) {
-                      form.setValue(`items.${index}.unitPrice`, customerPrice);
-                      toast({
-                        title: '已自动填充客户历史价格',
-                        description: `产品编码 "${product.code}" 的上次厂家发货价格：¥${customerPrice.toFixed(2)}`,
-                        duration: 2000,
-                      });
-                    }
+        <div className="space-y-5">
+          {/* 第一行：商品搜索（全宽） */}
+          <div className="w-full">
+            <IntelligentProductInput
+              form={form}
+              index={index}
+              products={products}
+              onProductChange={product => {
+                if (product && selectedCustomerId && product.code) {
+                  // 自动填充客户历史价格（基于产品编码匹配）
+                  const customerPrice = getLatestPrice(
+                    customerPriceHistoryData?.data,
+                    product.code,
+                    'FACTORY'
+                  );
+                  if (customerPrice !== undefined) {
+                    form.setValue(`items.${index}.unitPrice`, customerPrice);
+                    toast({
+                      title: '已自动填充客户历史价格',
+                      description: `产品编码 "${product.code}" 的上次厂家发货价格：¥${customerPrice.toFixed(2)}`,
+                      duration: 2000,
+                    });
                   }
-                }}
-              />
-            </div>
+                }
+              }}
+            />
+          </div>
 
+          {/* 第二行：供应商、规格、重量 */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {/* 供应商选择（带价格自动填充） */}
             <FormField
               control={form.control}
@@ -109,9 +117,62 @@ export function ItemForm({
                 />
               )}
             />
+
+            {/* 规格 */}
+            <FormField
+              control={form.control}
+              name={`items.${index}.specification`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                    规格
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      placeholder="请输入规格"
+                      className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* 重量 */}
+            <FormField
+              control={form.control}
+              name={`items.${index}.weight`}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                    重量（kg）
+                  </FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="请输入重量"
+                      className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
+                      {...field}
+                      value={field.value ?? ''}
+                      onChange={e =>
+                        field.onChange(
+                          e.target.value
+                            ? parseFloat(e.target.value)
+                            : undefined
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
-          {/* 第二行：数量、单价、单位 */}
+          {/* 第三行：数量、单价、单位 */}
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
             {/* 数量 */}
             <FormField
@@ -119,8 +180,9 @@ export function ItemForm({
               name={`items.${index}.quantity`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    数量 <span className="text-[hsl(var(--color-error))]">*</span>
+                  <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                    数量{' '}
+                    <span className="text-[hsl(var(--color-error))]">*</span>
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -128,6 +190,7 @@ export function ItemForm({
                       step="0.01"
                       min="0"
                       placeholder="请输入数量"
+                      className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
                       {...field}
                       onChange={e =>
                         field.onChange(
@@ -147,8 +210,9 @@ export function ItemForm({
               name={`items.${index}.unitPrice`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    单价（¥） <span className="text-[hsl(var(--color-error))]">*</span>
+                  <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                    单价（¥）{' '}
+                    <span className="text-[hsl(var(--color-error))]">*</span>
                   </FormLabel>
                   <FormControl>
                     <Input
@@ -156,6 +220,7 @@ export function ItemForm({
                       step="0.01"
                       min="0"
                       placeholder="请输入单价"
+                      className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
                       {...field}
                       onChange={e =>
                         field.onChange(
@@ -175,57 +240,15 @@ export function ItemForm({
               name={`items.${index}.unit`}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>
-                    单位 <span className="text-[hsl(var(--color-error))]">*</span>
+                  <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                    单位{' '}
+                    <span className="text-[hsl(var(--color-error))]">*</span>
                   </FormLabel>
                   <FormControl>
-                    <Input placeholder="如：件、箱、吨" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          </div>
-
-          {/* 第三行：规格、重量 */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            {/* 规格 */}
-            <FormField
-              control={form.control}
-              name={`items.${index}.specification`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>规格</FormLabel>
-                  <FormControl>
-                    <Input placeholder="请输入规格" {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            {/* 重量 */}
-            <FormField
-              control={form.control}
-              name={`items.${index}.weight`}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>重量（kg）</FormLabel>
-                  <FormControl>
                     <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="请输入重量"
+                      placeholder="如：件、箱、吨"
+                      className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
                       {...field}
-                      value={field.value ?? ''}
-                      onChange={e =>
-                        field.onChange(
-                          e.target.value
-                            ? parseFloat(e.target.value)
-                            : undefined
-                        )
-                      }
                     />
                   </FormControl>
                   <FormMessage />
@@ -240,11 +263,13 @@ export function ItemForm({
             name={`items.${index}.remarks`}
             render={({ field }) => (
               <FormItem>
-                <FormLabel>备注</FormLabel>
+                <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                  备注
+                </FormLabel>
                 <FormControl>
                   <Textarea
                     placeholder="请输入备注信息"
-                    className="resize-none"
+                    className="resize-none transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
                     rows={2}
                     {...field}
                   />

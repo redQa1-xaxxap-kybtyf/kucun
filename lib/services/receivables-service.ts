@@ -8,6 +8,13 @@
  */
 
 import type { Prisma } from '@prisma/client';
+import {
+  differenceInCalendarDays,
+  endOfMonth,
+  parseISO,
+  startOfMonth,
+  subMonths,
+} from 'date-fns';
 
 import { prisma } from '@/lib/db';
 
@@ -35,6 +42,10 @@ export interface ReceivableSummary {
   paidCount: number; // 已付清笔数
   unpaidCount: number; // 未付款笔数
   partialCount: number; // 部分付款笔数
+  collectionRate: number; // 当前月收款率
+  collectionRateChange: number; // 较上月收款率变化（百分点）
+  averageAccountPeriod: number; // 当前月平均账期（天）
+  averageAccountPeriodChange: number; // 较上月平均账期变化（天）
 }
 
 export interface ReceivablesQueryParams {
@@ -204,7 +215,7 @@ function transformToReceivable(order: {
     remainingAmount,
     paymentStatus,
     lastPaymentDate: lastPayment
-      ? lastPayment.paymentDate.toISOString().split('T')[0]
+      ? lastPayment.paymentDate.toISOString()
       : undefined,
   };
 }
@@ -213,7 +224,13 @@ function transformToReceivable(order: {
  * 计算应收账款汇总统计
  */
 function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
-  return receivables.reduce(
+  const now = new Date();
+  const currentMonthStart = startOfMonth(now);
+  const currentMonthEnd = endOfMonth(now);
+  const previousMonthStart = subMonths(currentMonthStart, 1);
+  const previousMonthEnd = endOfMonth(previousMonthStart);
+
+  const totals = receivables.reduce(
     (acc, item) => {
       acc.totalReceivable += item.remainingAmount;
 
@@ -231,6 +248,39 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
           break;
       }
 
+      const orderDate = safeParseDate(item.orderDate);
+      const lastPaymentDate = item.lastPaymentDate
+        ? safeParseDate(item.lastPaymentDate)
+        : undefined;
+      const effectiveEndDate =
+        item.paymentStatus === 'paid' && lastPaymentDate
+          ? lastPaymentDate
+          : now;
+      const accountPeriodDays = Math.max(
+        differenceInCalendarDays(effectiveEndDate, orderDate),
+        0
+      );
+
+      if (
+        orderDate.getTime() >= currentMonthStart.getTime() &&
+        orderDate.getTime() <= currentMonthEnd.getTime()
+      ) {
+        acc.currentMonth.totalAmount += item.totalAmount;
+        acc.currentMonth.paidAmount += item.paidAmount;
+        acc.currentMonth.accountPeriodSum += accountPeriodDays;
+        acc.currentMonth.count += 1;
+      }
+
+      if (
+        orderDate.getTime() >= previousMonthStart.getTime() &&
+        orderDate.getTime() <= previousMonthEnd.getTime()
+      ) {
+        acc.previousMonth.totalAmount += item.totalAmount;
+        acc.previousMonth.paidAmount += item.paidAmount;
+        acc.previousMonth.accountPeriodSum += accountPeriodDays;
+        acc.previousMonth.count += 1;
+      }
+
       return acc;
     },
     {
@@ -239,8 +289,71 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
       paidCount: 0,
       unpaidCount: 0,
       partialCount: 0,
+      currentMonth: {
+        totalAmount: 0,
+        paidAmount: 0,
+        accountPeriodSum: 0,
+        count: 0,
+      },
+      previousMonth: {
+        totalAmount: 0,
+        paidAmount: 0,
+        accountPeriodSum: 0,
+        count: 0,
+      },
     }
   );
+
+  const currentCollectionRate =
+    totals.currentMonth.totalAmount === 0
+      ? 0
+      : (totals.currentMonth.paidAmount / totals.currentMonth.totalAmount) *
+        100;
+  const previousCollectionRate =
+    totals.previousMonth.totalAmount === 0
+      ? 0
+      : (totals.previousMonth.paidAmount / totals.previousMonth.totalAmount) *
+        100;
+
+  const currentAverageAccountPeriod =
+    totals.currentMonth.count === 0
+      ? 0
+      : totals.currentMonth.accountPeriodSum / totals.currentMonth.count;
+  const previousAverageAccountPeriod =
+    totals.previousMonth.count === 0
+      ? 0
+      : totals.previousMonth.accountPeriodSum / totals.previousMonth.count;
+
+  return {
+    totalReceivable: totals.totalReceivable,
+    receivableCount: totals.receivableCount,
+    paidCount: totals.paidCount,
+    unpaidCount: totals.unpaidCount,
+    partialCount: totals.partialCount,
+    collectionRate: currentCollectionRate,
+    collectionRateChange: currentCollectionRate - previousCollectionRate,
+    averageAccountPeriod: currentAverageAccountPeriod,
+    averageAccountPeriodChange:
+      currentAverageAccountPeriod - previousAverageAccountPeriod,
+  };
+}
+
+function safeParseDate(value: string): Date {
+  if (!value) {
+    return new Date();
+  }
+
+  const parsed = parseISO(value);
+  if (!Number.isNaN(parsed.getTime())) {
+    return parsed;
+  }
+
+  const fallback = new Date(value);
+  if (!Number.isNaN(fallback.getTime())) {
+    return fallback;
+  }
+
+  return new Date();
 }
 
 // ==================== 公共服务函数 ====================

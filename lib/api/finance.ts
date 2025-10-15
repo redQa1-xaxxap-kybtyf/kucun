@@ -16,6 +16,7 @@ import type {
   RefundStatistics,
   UpdateRefundRecordData,
 } from '@/lib/types/refund';
+import type { ProcessRefundInput } from '@/lib/validations/refund';
 import type {
   AccountStatementDetail,
   AgingAnalysis,
@@ -46,15 +47,6 @@ interface ReconciliationQuery {
   startDate: string;
   endDate: string;
   includeTransactions?: boolean;
-}
-
-// 退款处理数据
-interface ProcessRefundData {
-  action: 'approve' | 'reject';
-  reason?: string;
-  refundMethod?: string;
-  refundAccount?: string;
-  notes?: string;
 }
 
 // API基础URL
@@ -222,7 +214,7 @@ export const financeApi = {
 
   processRefund: async (
     id: string,
-    data: ProcessRefundData
+    data: ProcessRefundInput
   ): Promise<RefundRecord> => {
     const response = await fetch(`${API_BASE}/refunds/${id}/process`, {
       method: 'POST',
@@ -463,7 +455,7 @@ export const useProcessRefund = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: ProcessRefundData }) =>
+    mutationFn: ({ id, data }: { id: string; data: ProcessRefundInput }) =>
       financeApi.processRefund(id, data),
     onSuccess: (_, { id }) => {
       queryClient.invalidateQueries({

@@ -120,7 +120,8 @@
       "Bash(curl -s \"http://localhost:3000/api/products?limit=1\")",
       "Bash(xargs -I {} sh -c 'dir=$(dirname \"\"\"\"{}\"\"\"\"); if [ -f \"\"\"\"$dir/page-client.tsx\"\"\"\" ]; then echo \"\"\"\"$dir\"\"\"\"; fi')",
       "Bash(du:*)",
-      "Bash(git fsck:*)"
+      "Bash(git fsck:*)",
+      "Bash(del check-unit.ts)"
     ],
     "deny": [],
     "ask": []

@@ -9,7 +9,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 
 import {
-  batchDeleteCategories,
   deleteCategory,
   getCategories,
   updateCategoryStatus,
@@ -24,11 +23,6 @@ interface DeleteDialogState {
   open: boolean;
   categoryId: string | null;
   categoryName: string;
-}
-
-interface BatchDeleteDialogState {
-  open: boolean;
-  categories: Category[];
 }
 
 export function useCategories(
@@ -48,21 +42,11 @@ export function useCategories(
     }
   );
 
-  const [selectedCategoryIds, setSelectedCategoryIds] = React.useState<
-    string[]
-  >([]);
-
   const [deleteDialog, setDeleteDialog] = React.useState<DeleteDialogState>({
     open: false,
     categoryId: null,
     categoryName: '',
   });
-
-  const [batchDeleteDialog, setBatchDeleteDialog] =
-    React.useState<BatchDeleteDialogState>({
-      open: false,
-      categories: [],
-    });
 
   const [updatingStatusId, setUpdatingStatusId] = React.useState<string | null>(
     null
@@ -83,7 +67,6 @@ export function useCategories(
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
       setDeleteDialog({ open: false, categoryId: null, categoryName: '' });
-      setSelectedCategoryIds([]);
       showSuccess('删除成功', {
         description: '分类删除成功！相关数据已清理完毕。',
       });
@@ -91,23 +74,6 @@ export function useCategories(
     onError: (error: Error) => {
       showError('删除失败', {
         description: error.message || '删除分类时发生错误，请重试。',
-      });
-    },
-  });
-
-  const batchDeleteMutation = useMutation({
-    mutationFn: batchDeleteCategories,
-    onSuccess: (_, deletedIds) => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
-      setBatchDeleteDialog({ open: false, categories: [] });
-      setSelectedCategoryIds([]);
-      showSuccess('批量删除成功', {
-        description: `成功删除 ${deletedIds.categoryIds.length} 个分类！`,
-      });
-    },
-    onError: (error: Error) => {
-      showError('批量删除失败', {
-        description: error.message || '批量删除分类时发生错误，请重试。',
       });
     },
   });
@@ -141,21 +107,16 @@ export function useCategories(
     isLoading,
     error,
     queryParams,
-    selectedCategoryIds,
     deleteDialog,
-    batchDeleteDialog,
     updatingStatusId,
 
     // 状态设置
     setQueryParams,
-    setSelectedCategoryIds,
     setDeleteDialog,
-    setBatchDeleteDialog,
     setUpdatingStatusId,
 
     // 变更操作
     deleteMutation,
-    batchDeleteMutation,
     statusMutation,
   };
 }

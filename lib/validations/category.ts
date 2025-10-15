@@ -80,16 +80,6 @@ export const CategoryQuerySchema = z.object({
 });
 
 /**
- * 批量删除分类验证
- */
-export const BatchDeleteCategoriesSchema = z.object({
-  categoryIds: z
-    .array(z.string().min(1, '分类ID不能为空'))
-    .min(1, '至少需要选择一个分类')
-    .max(100, '一次最多只能删除100个分类'),
-});
-
-/**
  * 分类状态更新验证
  */
 export const categoryStatusUpdateSchema = z.object({
@@ -105,9 +95,6 @@ export const categoryStatusUpdateSchema = z.object({
 export type CreateCategoryData = z.infer<typeof CreateCategorySchema>;
 export type UpdateCategoryData = z.infer<typeof UpdateCategorySchema>;
 export type CategoryQueryParams = z.infer<typeof CategoryQuerySchema>;
-export type BatchDeleteCategoriesData = z.infer<
-  typeof BatchDeleteCategoriesSchema
->;
 export type CategoryStatusUpdateInput = z.infer<
   typeof categoryStatusUpdateSchema
 >;

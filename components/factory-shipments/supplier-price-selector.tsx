@@ -81,16 +81,18 @@ export function SupplierPriceSelector({
 
   return (
     <FormItem>
-      <FormLabel className="text-xs font-medium">供应商 *</FormLabel>
+      <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+        供应商 <span className="text-[hsl(var(--color-error))]">*</span>
+      </FormLabel>
       <FormControl>
         <SupplierSelector
           value={value}
           onValueChange={onChange}
-          placeholder="选择供应商"
-          className="h-8 text-xs"
+          placeholder="请选择供应商"
+          className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
         />
       </FormControl>
-      <FormMessage className="text-xs" />
+      <FormMessage />
     </FormItem>
   );
 }

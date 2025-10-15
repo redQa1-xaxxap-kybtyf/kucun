@@ -52,26 +52,36 @@ export function ItemListSection({
   };
 
   return (
-    <Card>
-      <CardHeader>
+    <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
+      <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-primary))]">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <Package className="h-5 w-5" />
-            商品明细
+          <CardTitle className="flex items-center gap-3 text-lg">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))] shadow-sm">
+              <Package className="h-5 w-5" />
+            </div>
+            <div>
+              <span className="font-semibold text-[hsl(var(--color-text-primary))]">
+                商品明细
+              </span>
+              <p className="text-xs font-normal text-[hsl(var(--color-text-secondary))]">
+                共 {fields.length} 个商品
+              </p>
+            </div>
           </CardTitle>
           <Button
             type="button"
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={handleAddItem}
+            className="shadow-sm transition-all duration-200 hover:scale-[1.02] hover:shadow-md"
           >
             <Plus className="mr-2 h-4 w-4" />
             添加商品
           </Button>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="space-y-4">
+      <CardContent className="p-6">
+        <div className="space-y-5">
           {fields.map((field, index) => (
             <ItemForm
               key={field.id}

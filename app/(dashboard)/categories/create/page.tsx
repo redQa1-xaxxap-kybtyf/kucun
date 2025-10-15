@@ -221,7 +221,9 @@ export default function CreateCategoryPage() {
                               <SelectItem key={category.id} value={category.id}>
                                 <div className="flex items-center gap-2">
                                   {category.parent ? (
-                                    <span className="ml-4 text-gray-400">↳</span>
+                                    <span className="ml-4 text-gray-400">
+                                      ↳
+                                    </span>
                                   ) : (
                                     <span className="text-green-600">📁</span>
                                   )}
@@ -237,12 +239,10 @@ export default function CreateCategoryPage() {
                           </SelectContent>
                         </Select>
                         <FormDescription>
-                          <div className="flex flex-col gap-1">
-                            <span>选择父级分类以创建层级结构（最多支持3级）</span>
-                            <span className="text-xs text-blue-600">
-                              💡 提示：不同父分类下可以有相同名称的子分类
-                            </span>
-                          </div>
+                          选择父级分类以创建层级结构（最多支持3级）
+                          <span className="mt-1 block text-xs text-blue-600">
+                            💡 提示：不同父分类下可以有相同名称的子分类
+                          </span>
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
