@@ -16,6 +16,23 @@ export const fetchCache = 'force-no-store';
 export const runtime = 'nodejs';
 export const revalidate = 0;
 
+function isPaymentStatus(value: string): value is PaymentStatus {
+  return (
+    value === 'pending' ||
+    value === 'confirmed' ||
+    value === 'cancelled' ||
+    value === 'applied'
+  );
+}
+
+function parsePaymentStatus(value?: string): PaymentStatus | undefined {
+  if (!value) {
+    return undefined;
+  }
+
+  return isPaymentStatus(value) ? value : undefined;
+}
+
 /**
  * 服务器端获取收款数据
  */
@@ -32,7 +49,7 @@ async function getPaymentsData(searchParams: {
   const limit = parseInt(searchParams.limit || '20', 10);
   const skip = (page - 1) * limit;
   const search = searchParams.search || '';
-  const status = searchParams.status;
+  const status = parsePaymentStatus(searchParams.status);
   const paymentMethod = searchParams.paymentMethod;
   const sortBy = searchParams.sortBy || 'createdAt';
   const sortOrder = searchParams.sortOrder || 'desc';
@@ -222,7 +239,7 @@ export default async function PaymentsPage({
     page: parseInt(params.page || '1', 10),
     limit: parseInt(params.limit || '20', 10),
     search: params.search,
-    status: params.status,
+    status: parsePaymentStatus(params.status),
     paymentMethod: params.paymentMethod,
     sortBy: params.sortBy || 'createdAt',
     sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
