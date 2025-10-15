@@ -149,14 +149,6 @@ export const productSearchSchema = z.object({
   sortOrder: z.enum(['asc', 'desc']).default('desc'),
 });
 
-// 批量删除产品验证
-export const batchDeleteProductsSchema = z.object({
-  productIds: z
-    .array(z.string().min(1, '产品ID不能为空'))
-    .min(1, '至少需要选择一个产品')
-    .max(100, '一次最多只能删除100个产品'),
-});
-
 // 产品查询参数验证
 export const productQuerySchema = z.object({
   page: z.number().int().min(1).default(1),
@@ -307,7 +299,6 @@ export const productVariantBatchGenerateSkuSchema = z.object({
 export type ProductCreateFormData = z.infer<typeof productCreateSchema>;
 export type ProductUpdateFormData = z.infer<typeof productUpdateSchema>;
 export type ProductSearchFormData = z.infer<typeof productSearchSchema>;
-export type BatchDeleteProductsData = z.infer<typeof batchDeleteProductsSchema>;
 export type ProductQueryParams = z.infer<typeof productQuerySchema>;
 export type ProductVariantQueryParams = z.infer<
   typeof productVariantQuerySchema

@@ -5,12 +5,7 @@
 
 import { queryKeys } from '@/lib/queryKeys';
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
-import type {
-  BatchDeleteProductsInput,
-  BatchDeleteResult,
-  Product,
-  ProductQueryParams,
-} from '@/lib/types/product';
+import type { Product, ProductQueryParams } from '@/lib/types/product';
 import type {
   ProductCreateFormData,
   ProductUpdateFormData,
@@ -236,38 +231,6 @@ export async function deleteProduct(id: string): Promise<void> {
   if (!data.success) {
     throw new Error(data.error || '删除产品失败');
   }
-}
-
-/**
- * 批量删除产品
- */
-export async function batchDeleteProducts(
-  input: BatchDeleteProductsInput
-): Promise<BatchDeleteResult> {
-  const response = await fetch(`${API_BASE}/batch`, {
-    method: 'DELETE',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    credentials: 'include', // 包含cookies以传递会话信息
-    body: JSON.stringify(input),
-  });
-
-  if (!response.ok) {
-    throw new Error(`批量删除产品失败: ${response.statusText}`);
-  }
-
-  const data: ApiResponse<BatchDeleteResult> = await response.json();
-
-  if (!data.success) {
-    throw new Error(data.error || '批量删除产品失败');
-  }
-
-  if (!data.data) {
-    throw new Error('服务器返回数据为空');
-  }
-
-  return data.data;
 }
 
 // 导出类型以供其他模块使用

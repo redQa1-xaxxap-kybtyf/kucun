@@ -219,24 +219,6 @@ export interface ProductErrorResponse {
   details?: string[];
 }
 
-// 批量删除相关类型
-export interface BatchDeleteProductsInput {
-  productIds: string[];
-}
-
-export interface BatchDeleteResult {
-  success: boolean;
-  deletedCount: number;
-  failedCount: number;
-  failedProducts?: {
-    id: string;
-    code: string;
-    name: string;
-    reason: string;
-  }[];
-  message: string;
-}
-
 // 新增类型定义以匹配页面需求
 export type CreateProductData = ProductCreateInput;
 // UpdateProductData 现在从 lib/validations/product.ts 导入，遵循唯一真理源原则
