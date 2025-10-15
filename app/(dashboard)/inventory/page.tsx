@@ -13,6 +13,7 @@ import {
 } from '@/lib/api/inventory-query-builder';
 import { paginationConfig } from '@/lib/env';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
+
 import { InventoryPageClient } from './page-client';
 
 /**
@@ -96,14 +97,14 @@ export default async function InventoryPage({
     }),
   ]);
 
-  // 转换分类数据格式
+  // 转换分类数据格式（API返回的已经是ISO字符串格式）
   const categoryOptions = categoriesResult.data.map(cat => ({
     id: cat.id,
     name: cat.name,
     code: cat.code,
     status: cat.status,
-    createdAt: cat.createdAt.toISOString(),
-    updatedAt: cat.updatedAt.toISOString(),
+    createdAt: cat.createdAt,
+    updatedAt: cat.updatedAt,
     sortOrder: cat.sortOrder,
   }));
 
