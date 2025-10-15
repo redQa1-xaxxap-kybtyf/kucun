@@ -4,31 +4,16 @@
  * 遵循 Next.js 15 官方最佳实践：使用 React.cache() 避免重复查询
  */
 
-import { cache } from 'react';
 import { type Prisma } from '@prisma/client';
+import { cache } from 'react';
 
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
-import type { CategoryStatus } from '@/lib/validations/category';
-import type { CategoryQueryParams } from '@/lib/validations/category';
-
-export interface CategoryWithCounts {
-  id: string;
-  name: string;
-  code: string;
-  description: string | null;
-  parentId: string | null;
-  sortOrder: number;
-  status: CategoryStatus;
-  createdAt: Date;
-  updatedAt: Date;
-  productCount: number;
-  parent?: {
-    id: string;
-    name: string;
-    code: string;
-  } | null;
-}
+import type {
+  Category,
+  CategoryQueryParams,
+} from '@/lib/types/category-unified';
+import { toCategoryList, toCategory } from '@/lib/utils/category-transforms';
 
 /**
  * 服务端获取分类列表
@@ -38,7 +23,7 @@ export const getCategoriesServer = cache(
   async (
     params: Partial<CategoryQueryParams> = {}
   ): Promise<{
-    data: CategoryWithCounts[];
+    data: Category[];
     pagination: {
       page: number;
       limit: number;
@@ -97,23 +82,11 @@ export const getCategoriesServer = cache(
       prisma.category.count({ where }),
     ]);
 
-    // 转换为带计数的分类
-    const categoriesWithCounts: CategoryWithCounts[] = categories.map(cat => ({
-      id: cat.id,
-      name: cat.name,
-      code: cat.code,
-      description: cat.description,
-      parentId: cat.parentId,
-      sortOrder: cat.sortOrder,
-      status: cat.status,
-      createdAt: cat.createdAt,
-      updatedAt: cat.updatedAt,
-      productCount: cat._count.products,
-      parent: cat.parent,
-    }));
+    // 转换为带计数的分类 - 使用统一的转换函数
+    const transformedCategories = toCategoryList(categories);
 
     return {
-      data: categoriesWithCounts,
+      data: transformedCategories,
       pagination: {
         page,
         limit,
@@ -129,7 +102,7 @@ export const getCategoriesServer = cache(
  * 使用 React.cache() 包装确保同一渲染周期内不会重复查询
  */
 export const getCategoryServer = cache(
-  async (id: string): Promise<CategoryWithCounts | null> => {
+  async (id: string): Promise<Category | null> => {
     const category = await prisma.category.findUnique({
       where: { id },
       include: {
@@ -146,19 +119,6 @@ export const getCategoryServer = cache(
       return null;
     }
 
-    return {
-      id: category.id,
-      name: category.name,
-      code: category.code,
-      description: category.description,
-      parentId: category.parentId,
-      sortOrder: category.sortOrder,
-      status: category.status,
-      createdAt: category.createdAt,
-      updatedAt: category.updatedAt,
-      productCount: category._count.products,
-      parent: category.parent,
-    };
+    return toCategory(category);
   }
 );
-

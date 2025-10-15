@@ -1,60 +1,27 @@
 ﻿/**
  * 分类相关的API客户端函数
  * 严格遵循全栈项目统一约定规范
+ *
+ * 类型定义已迁移到 lib/types/category-unified.ts
  */
 
 import type { ApiResponse, PaginatedResponse } from '@/lib/types/api';
-import type { CategoryStatus } from '@/lib/validations/category';
+import type {
+  Category,
+  CategorySummary,
+  CategoryQueryParams,
+  CreateCategoryData,
+  UpdateCategoryData,
+} from '@/lib/types/category-unified';
 
-// 简化的分类信息（用于关联数据）
-export interface CategorySummary {
-  id: string;
-  name: string;
-  code: string;
-}
-
-// 分类类型定义
-export interface Category {
-  id: string;
-  name: string;
-  code: string;
-  description?: string | null;
-  parentId?: string | null;
-  sortOrder: number;
-  status: CategoryStatus;
-  createdAt: string;
-  updatedAt: string;
-
-  // 关联数据
-  parent?: CategorySummary | null;
-  children?: CategorySummary[];
-  productCount?: number;
-}
-
-// 分类查询参数
-export interface CategoryQueryParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  parentId?: string | null;
-  status?: CategoryStatus | 'all';
-  sortBy?: 'name' | 'code' | 'sortOrder' | 'createdAt' | 'updatedAt';
-  sortOrder?: 'asc' | 'desc';
-}
-
-// 创建分类数据
-export interface CreateCategoryData {
-  name: string;
-  description?: string | null;
-  parentId?: string | null;
-  sortOrder?: number;
-}
-
-// 更新分类数据
-export interface UpdateCategoryData extends Partial<CreateCategoryData> {
-  id: string;
-  status?: CategoryStatus;
-}
+// 重新导出类型以保持向后兼容
+export type {
+  Category,
+  CategorySummary,
+  CategoryQueryParams,
+  CreateCategoryData,
+  UpdateCategoryData,
+};
 
 /**
  * 获取 API 基础 URL

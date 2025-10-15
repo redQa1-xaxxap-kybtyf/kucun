@@ -1,4 +1,15 @@
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
+
 import { CategoryPageWrapper } from '@/components/categories/category-page-wrapper';
+import {
+  categoryQueryKeys,
+  type Category,
+  type CategoryQueryParams,
+} from '@/lib/api/categories';
 import { getCategoriesServer } from '@/lib/api/categories-server';
 
 /**
@@ -40,29 +51,60 @@ export default async function CategoriesPage({
       | 'updatedAt') || 'createdAt';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
 
-  // 直接获取初始数据（统一模式：避免 HydrationBoundary）
-  const initialData = await getCategoriesServer({
+  const normalizedSearch =
+    typeof search === 'string' && search.trim().length > 0
+      ? search.trim()
+      : undefined;
+
+  const baseQueryParams: Omit<CategoryQueryParams, 'parentId'> & {
+    parentId?: string;
+  } = {
     page,
     limit,
-    search,
+    search: normalizedSearch,
     status,
     sortBy,
     sortOrder,
+  };
+
+  const queryParams: CategoryQueryParams = {
+    ...baseQueryParams,
+  };
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydrateQuery: () => true,
+      },
+    },
   });
 
-  const serializedData = {
-    data: initialData.data.map(category => ({
-      ...category,
-      createdAt: category.createdAt.toISOString(),
-      updatedAt: category.updatedAt.toISOString(),
-    })),
+  const initialData = await getCategoriesServer({
+    ...queryParams,
+    parentId: queryParams.parentId ?? undefined,
+    search: normalizedSearch,
+  });
+
+  const serializedData: {
+    data: Category[];
+    pagination: typeof initialData.pagination;
+  } = {
+    data: initialData.data,
     pagination: initialData.pagination,
   };
 
+  const queryKey = categoryQueryKeys.list(baseQueryParams);
+
+  queryClient.setQueryData(queryKey, serializedData);
+
   return (
-    <CategoryPageWrapper
-      initialData={serializedData}
-      initialParams={{ page, limit, search, status, sortBy, sortOrder }}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <CategoryPageWrapper
+        initialParams={{
+          ...queryParams,
+          search,
+        }}
+      />
+    </HydrationBoundary>
   );
 }

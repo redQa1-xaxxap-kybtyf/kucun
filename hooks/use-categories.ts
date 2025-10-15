@@ -9,13 +9,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import React from 'react';
 
 import {
+  categoryQueryKeys,
   deleteCategory,
   getCategories,
   updateCategoryStatus,
   type Category,
   type CategoryQueryParams,
 } from '@/lib/api/categories';
-import { queryKeys } from '@/lib/queryKeys';
 import type { PaginatedResponse } from '@/lib/types/api';
 import { showError, showSuccess } from '@/lib/utils/toast-helper';
 
@@ -25,10 +25,7 @@ interface DeleteDialogState {
   categoryName: string;
 }
 
-export function useCategories(
-  initialData?: PaginatedResponse<Category>,
-  initialParams?: CategoryQueryParams
-) {
+export function useCategories(initialParams?: CategoryQueryParams) {
   const queryClient = useQueryClient();
 
   const [queryParams, setQueryParams] = React.useState<CategoryQueryParams>(
@@ -52,20 +49,18 @@ export function useCategories(
     null
   );
 
-  const { data, isLoading, error } = useQuery({
-    queryKey: queryKeys.categories.list(queryParams),
+  const { data, isLoading, error } = useQuery<PaginatedResponse<Category>>({
+    queryKey: categoryQueryKeys.list({
+      ...queryParams,
+      parentId: queryParams.parentId ?? undefined,
+    }),
     queryFn: () => getCategories(queryParams),
-    initialData, // 使用服务端预取的数据
-    staleTime: 0, // 数据立即过期，确保能及时刷新
-    refetchOnMount: true, // 重新挂载时刷新数据
-    refetchOnWindowFocus: false,
-    placeholderData: previousData => previousData, // 保持上一次数据
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteCategory,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
+      queryClient.invalidateQueries({ queryKey: categoryQueryKeys.all });
       setDeleteDialog({ open: false, categoryId: null, categoryName: '' });
       showSuccess('删除成功', {
         description: '分类删除成功！相关数据已清理完毕。',
@@ -87,7 +82,7 @@ export function useCategories(
       status: 'active' | 'inactive';
     }) => updateCategoryStatus(id, status),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.categories.all });
+      queryClient.invalidateQueries({ queryKey: categoryQueryKeys.all });
       setUpdatingStatusId(null);
       showSuccess('状态更新成功', {
         description: '分类状态已更新！',

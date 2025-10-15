@@ -4,9 +4,12 @@
  */
 
 import { NextResponse, type NextRequest } from 'next/server';
-import { z } from 'zod';
 
 import { type Category } from '@/lib/api/categories';
+import { ApiError } from '@/lib/api/errors';
+import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
+import { withAuth } from '@/lib/auth/api-helpers';
+import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
 import type { ApiResponse } from '@/lib/types/api';
 import { categoryStatusUpdateSchema } from '@/lib/validations/category';
@@ -14,132 +17,97 @@ import { categoryStatusUpdateSchema } from '@/lib/validations/category';
 /**
  * PATCH /api/categories/[id]/status - 更新分类状态
  */
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  try {
-    const { id } = await params;
-    const body = await request.json();
-
-    // 验证ID格式
-    if (!id || typeof id !== 'string') {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '无效的分类ID',
-        },
-        { status: 400 }
-      );
+export const PATCH = withAuth(
+  async (
+    request: NextRequest,
+    context: {
+      user: AuthUser;
+      params?: Promise<Record<string, string>> | Record<string, string>;
     }
+  ) =>
+    withErrorHandling(async (req, ctx) => {
+      const { id } = await resolveParams(ctx.params);
+      const body = await req.json();
 
-    // 验证请求数据
-    const validatedData = categoryStatusUpdateSchema.parse(body);
+      // 验证ID格式
+      if (!id || typeof id !== 'string') {
+        throw ApiError.badRequest('无效的分类ID');
+      }
 
-    // 检查分类是否存在
-    const existingCategory = await prisma.category.findUnique({
-      where: { id },
-    });
+      // 验证请求数据（Zod 错误会自动处理）
+      const validatedData = categoryStatusUpdateSchema.parse(body);
 
-    if (!existingCategory) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '分类不存在',
+      // 检查分类是否存在
+      const existingCategory = await prisma.category.findUnique({
+        where: { id },
+      });
+
+      if (!existingCategory) {
+        throw ApiError.notFound('分类');
+      }
+
+      // 如果要禁用分类，检查是否有启用的子分类
+      if (validatedData.status === 'inactive') {
+        const activeChildren = await prisma.category.findMany({
+          where: {
+            parentId: id,
+            status: 'active',
+          },
+        });
+
+        if (activeChildren.length > 0) {
+          throw ApiError.badRequest('该分类下还有启用的子分类，请先禁用子分类');
+        }
+      }
+
+      // 更新分类状态
+      const updatedCategory = await prisma.category.update({
+        where: { id },
+        data: {
+          status: validatedData.status,
         },
-        { status: 404 }
-      );
-    }
-
-    // 如果要禁用分类，检查是否有启用的子分类
-    if (validatedData.status === 'inactive') {
-      const activeChildren = await prisma.category.findMany({
-        where: {
-          parentId: id,
-          status: 'active',
+        include: {
+          parent: true,
+          children: true,
+          _count: {
+            select: {
+              products: true,
+            },
+          },
         },
       });
 
-      if (activeChildren.length > 0) {
-        return NextResponse.json(
-          {
-            success: false,
-            error: '该分类下还有启用的子分类，请先禁用子分类',
-          },
-          { status: 400 }
-        );
-      }
-    }
+      // 转换数据格式
+      const transformedCategory = {
+        id: updatedCategory.id,
+        name: updatedCategory.name,
+        code: updatedCategory.code,
+        parentId: updatedCategory.parentId || undefined,
+        sortOrder: updatedCategory.sortOrder,
+        status: updatedCategory.status as 'active' | 'inactive',
+        createdAt: updatedCategory.createdAt.toISOString(),
+        updatedAt: updatedCategory.updatedAt.toISOString(),
+        parent: updatedCategory.parent
+          ? {
+              id: updatedCategory.parent.id,
+              name: updatedCategory.parent.name,
+              code: updatedCategory.parent.code,
+            }
+          : undefined,
+        children: updatedCategory.children.map(child => ({
+          id: child.id,
+          name: child.name,
+          code: child.code,
+        })),
+        productCount: updatedCategory._count.products,
+      };
 
-    // 更新分类状态
-    const updatedCategory = await prisma.category.update({
-      where: { id },
-      data: {
-        status: validatedData.status,
-      },
-      include: {
-        parent: true,
-        children: true,
-        _count: {
-          select: {
-            products: true,
-          },
-        },
-      },
-    });
+      const response: ApiResponse<Category> = {
+        success: true,
+        data: transformedCategory,
+      };
 
-    // 转换数据格式
-    const transformedCategory = {
-      id: updatedCategory.id,
-      name: updatedCategory.name,
-      code: updatedCategory.code,
-
-      parentId: updatedCategory.parentId || undefined,
-      sortOrder: updatedCategory.sortOrder,
-      status: updatedCategory.status as 'active' | 'inactive',
-      createdAt: updatedCategory.createdAt.toISOString(),
-      updatedAt: updatedCategory.updatedAt.toISOString(),
-      parent: updatedCategory.parent
-        ? {
-            id: updatedCategory.parent.id,
-            name: updatedCategory.parent.name,
-            code: updatedCategory.parent.code,
-          }
-        : undefined,
-      children: updatedCategory.children.map(child => ({
-        id: child.id,
-        name: child.name,
-        code: child.code,
-      })),
-      productCount: updatedCategory._count.products,
-    };
-
-    const response: ApiResponse<Category> = {
-      success: true,
-      data: transformedCategory,
-    };
-
-    return NextResponse.json(response);
-  } catch (error) {
-    console.error('更新分类状态失败:', error);
-
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '数据验证失败',
-          details: error.issues,
-        },
-        { status: 400 }
-      );
-    }
-
-    return NextResponse.json(
-      {
-        success: false,
-        error: '服务器内部错误',
-      },
-      { status: 500 }
-    );
-  }
-}
+      return NextResponse.json(response);
+    })(request, context),
+  { permissions: ['categories:edit'] }
+);

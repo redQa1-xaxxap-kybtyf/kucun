@@ -5,9 +5,13 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { useRouter, useSearchParams } from 'next/navigation';
-import React from 'react';
 import type { UseMutationResult } from '@tanstack/react-query';
+import {
+  useRouter,
+  useSearchParams,
+  type ReadonlyURLSearchParams,
+} from 'next/navigation';
+import React from 'react';
 
 import type { Category, CategoryQueryParams } from '@/lib/api/categories';
 

@@ -3,11 +3,9 @@
 import { CategoryPageContent } from '@/components/categories/category-page-content';
 import { useCategories } from '@/hooks/use-categories';
 import { useCategoryActions } from '@/hooks/use-category-actions';
-import type { Category, CategoryQueryParams } from '@/lib/api/categories';
-import type { PaginatedResponse } from '@/lib/types/api';
+import type { CategoryQueryParams } from '@/lib/api/categories';
 
 interface CategoryPageWrapperProps {
-  initialData?: PaginatedResponse<Category>;
   initialParams?: CategoryQueryParams;
 }
 
@@ -16,7 +14,6 @@ interface CategoryPageWrapperProps {
  * 处理客户端交互和状态管理
  */
 export function CategoryPageWrapper({
-  initialData,
   initialParams,
 }: CategoryPageWrapperProps) {
   const {
@@ -31,7 +28,7 @@ export function CategoryPageWrapper({
     setUpdatingStatusId,
     deleteMutation,
     statusMutation,
-  } = useCategories(initialData, initialParams);
+  } = useCategories(initialParams);
 
   const categories = data?.data || [];
   const pagination = data?.pagination;

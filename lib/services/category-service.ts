@@ -10,58 +10,15 @@
 import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
+import type {
+  Category,
+  CategoryQueryParams,
+  CategoryListResult,
+  CreateCategoryParams,
+  UpdateCategoryParams,
+} from '@/lib/types/category-unified';
 import { generateCategoryCode } from '@/lib/utils/category-code-generator';
-
-// ==================== 类型定义 ====================
-
-export interface CategoryItem {
-  id: string;
-  name: string;
-  code: string;
-  parentId?: string;
-  sortOrder: number;
-  status: 'active' | 'inactive';
-  createdAt: string;
-  updatedAt: string;
-  parent?: {
-    id: string;
-    name: string;
-    code: string;
-  };
-  children: Array<{
-    id: string;
-    name: string;
-    code: string;
-  }>;
-  productCount: number;
-}
-
-export interface CategoryQueryParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-  parentId?: string;
-  status?: 'active' | 'inactive' | 'all';
-}
-
-export interface CategoryListResult {
-  categories: CategoryItem[];
-  pagination: {
-    page: number;
-    limit: number;
-    total: number;
-    totalPages: number;
-  };
-}
-
-export interface CreateCategoryParams {
-  name: string;
-  code?: string;
-  parentId?: string;
-  sortOrder?: number;
-}
+import { toCategory, toCategoryList } from '@/lib/utils/category-transforms';
 
 // ==================== 辅助函数 ====================
 
@@ -102,7 +59,7 @@ async function getCategoryDepth(categoryId: string): Promise<number> {
  * @param parentId - 父分类ID
  * @throws Error 如果超过层级限制
  */
-async function validateCategoryDepth(parentId?: string): Promise<void> {
+async function validateCategoryDepth(parentId?: string | null): Promise<void> {
   const MAX_DEPTH = 3;
 
   if (!parentId) {
@@ -151,56 +108,8 @@ function buildWhereConditions(params: {
   return where;
 }
 
-/**
- * 转换分类数据格式
- */
-function transformCategory(category: {
-  id: string;
-  name: string;
-  code: string;
-  parentId: string | null;
-  sortOrder: number;
-  status: string;
-  createdAt: Date;
-  updatedAt: Date;
-  parent?: {
-    id: string;
-    name: string;
-    code: string;
-  } | null;
-  children: Array<{
-    id: string;
-    name: string;
-    code: string;
-  }>;
-  _count: {
-    products: number;
-  };
-}): CategoryItem {
-  return {
-    id: category.id,
-    name: category.name,
-    code: category.code,
-    parentId: category.parentId || undefined,
-    sortOrder: category.sortOrder,
-    status: category.status as 'active' | 'inactive',
-    createdAt: category.createdAt.toISOString(),
-    updatedAt: category.updatedAt.toISOString(),
-    parent: category.parent
-      ? {
-          id: category.parent.id,
-          name: category.parent.name,
-          code: category.parent.code,
-        }
-      : undefined,
-    children: category.children.map(child => ({
-      id: child.id,
-      name: child.name,
-      code: child.code,
-    })),
-    productCount: category._count.products,
-  };
-}
+// transformCategory 函数已移至 lib/utils/category-transforms.ts
+// 使用统一的 toCategory 函数代替
 
 // ==================== 公共服务函数 ====================
 
@@ -237,6 +146,7 @@ export async function getCategories(
         id: true,
         name: true,
         code: true,
+        description: true,
         parentId: true,
         sortOrder: true,
         status: true,
@@ -270,8 +180,8 @@ export async function getCategories(
     prisma.category.count({ where }),
   ]);
 
-  // 转换数据格式
-  const transformedCategories = categories.map(transformCategory);
+  // 转换数据格式 - 使用统一的转换函数
+  const transformedCategories = toCategoryList(categories);
 
   // 计算分页信息
   const totalPages = Math.ceil(total / limit);
@@ -292,7 +202,7 @@ export async function getCategories(
  */
 export async function createCategory(
   params: CreateCategoryParams
-): Promise<CategoryItem> {
+): Promise<Category> {
   // 1. 检查层级限制
   await validateCategoryDepth(params.parentId);
 
@@ -353,16 +263,14 @@ export async function createCategory(
     },
   });
 
-  // 转换数据格式
-  return transformCategory(category);
+  // 转换数据格式 - 使用统一的转换函数
+  return toCategory(category);
 }
 
 /**
  * 获取单个分类详情
  */
-export async function getCategoryById(
-  id: string
-): Promise<CategoryItem | null> {
+export async function getCategoryById(id: string): Promise<Category | null> {
   const category = await prisma.category.findUnique({
     where: { id },
     include: {
@@ -380,22 +288,15 @@ export async function getCategoryById(
     return null;
   }
 
-  return transformCategory(category);
+  return toCategory(category);
 }
 
 /**
  * 更新分类
  */
-export interface UpdateCategoryParams {
-  id: string;
-  name?: string;
-  parentId?: string;
-  sortOrder?: number;
-}
-
 export async function updateCategory(
   params: UpdateCategoryParams
-): Promise<CategoryItem> {
+): Promise<Category> {
   const { id, ...updateData } = params;
 
   // 1. 检查分类是否存在
@@ -480,5 +381,5 @@ export async function updateCategory(
     },
   });
 
-  return transformCategory(updatedCategory);
+  return toCategory(updatedCategory);
 }

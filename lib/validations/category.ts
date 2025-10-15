@@ -68,13 +68,14 @@ export const UpdateCategorySchema = z.object({
  * 分类查询参数验证
  */
 export const CategoryQuerySchema = z.object({
-  page: z.number().int().min(1).default(1),
-  limit: z.number().int().min(1).max(100).default(20),
+  page: z.number().int().min(1).optional().default(1),
+  limit: z.number().int().min(1).max(100).optional().default(20),
   search: z.string().optional(),
   sortBy: z
     .enum(['name', 'code', 'createdAt', 'updatedAt', 'sortOrder'])
+    .optional()
     .default('createdAt'),
-  sortOrder: z.enum(['asc', 'desc']).default('desc'),
+  sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
   parentId: z.string().optional(),
   status: z.enum(['active', 'inactive', 'all']).optional(),
 });
