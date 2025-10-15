@@ -1,7 +1,47 @@
-import { PrismaClient } from '@prisma/client';
-import type { Prisma } from '@prisma/client';
+import { PrismaClient, type Prisma } from '@prisma/client';
 
 import { env } from './env';
+
+type LogContext = Record<string, unknown> | undefined;
+
+let loggerModule: typeof import('@/lib/logger') | null = null;
+async function getLogger() {
+  if (!loggerModule) {
+    loggerModule = await import('@/lib/logger');
+  }
+  return loggerModule.logger;
+}
+
+async function logDatabaseInfo(message: string, context?: LogContext) {
+  try {
+    const logger = await getLogger();
+    logger.info('database', message, context);
+  } catch {
+    // ignore logging failures to avoid impacting primary flow
+  }
+}
+
+async function logDatabaseWarn(message: string, context?: LogContext) {
+  try {
+    const logger = await getLogger();
+    logger.warn('database', message, context);
+  } catch {
+    // ignore
+  }
+}
+
+async function logDatabaseError(
+  message: string,
+  error?: unknown,
+  context?: LogContext
+) {
+  try {
+    const logger = await getLogger();
+    logger.error('database', message, error, context);
+  } catch {
+    // ignore
+  }
+}
 
 // 全局 Prisma 客户端实例
 const globalForPrisma = globalThis as unknown as {
@@ -52,15 +92,12 @@ if (typeof window === 'undefined' && prisma) {
 
     // 记录超过100ms的查询（优化前：1000ms）
     if (duration > 100) {
-      console.warn(
-        `[Prisma] Slow query detected: ${params.model}.${params.action} took ${duration}ms`,
+      void logDatabaseWarn(
+        `[Prisma] 慢查询: ${params.model}.${params.action} 用时 ${duration}ms`,
         {
           model: params.model,
           action: params.action,
-          args: params.args
-            ? JSON.stringify(params.args).substring(0, 200)
-            : 'N/A', // 限制日志长度
-          duration: `${duration}ms`,
+          duration,
         }
       );
     }
@@ -73,10 +110,10 @@ if (typeof window === 'undefined' && prisma) {
 export async function testDatabaseConnection() {
   try {
     await prisma.$connect();
-    console.log('✅ 数据库连接成功');
+    await logDatabaseInfo('数据库连接成功');
     return true;
   } catch (error) {
-    console.error('❌ 数据库连接失败:', error);
+    await logDatabaseError('数据库连接失败', error);
     return false;
   }
 }
@@ -85,9 +122,9 @@ export async function testDatabaseConnection() {
 export async function disconnectDatabase() {
   try {
     await prisma.$disconnect();
-    console.log('✅ 数据库连接已关闭');
+    await logDatabaseInfo('数据库连接已关闭');
   } catch (error) {
-    console.error('❌ 关闭数据库连接时出错:', error);
+    await logDatabaseError('关闭数据库连接时出错', error);
   }
 }
 
@@ -150,7 +187,7 @@ export async function getDatabaseStats() {
       inventory: inventoryCount,
     };
   } catch (error) {
-    console.error('获取数据库统计信息失败:', error);
+    await logDatabaseError('获取数据库统计信息失败', error);
     return null;
   }
 }
@@ -159,9 +196,9 @@ export async function getDatabaseStats() {
 export async function cleanupExpiredData() {
   try {
     // 这里可以添加清理逻辑，比如删除过期的草稿订单等
-    console.log('数据清理完成');
+    await logDatabaseInfo('数据清理完成');
   } catch (error) {
-    console.error('数据清理失败:', error);
+    await logDatabaseError('数据清理失败', error);
   }
 }
 

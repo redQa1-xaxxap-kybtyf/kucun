@@ -6,6 +6,19 @@
 import type Redis from 'ioredis';
 
 import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
+
+function serializeError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: env.NODE_ENV === 'development' ? error.stack : undefined,
+    };
+  }
+
+  return { message: String(error) };
+}
 
 /**
  * 速率限制存储接口
@@ -64,8 +77,9 @@ export class RedisRateLimitStorage implements RateLimitStorage {
       return Array(count).fill(0);
     } catch (error) {
       if (env.NODE_ENV === 'development') {
-        console.error(
-          '[RedisRateLimitStorage] getRequestsInWindow 错误:',
+        logger.error(
+          'rate-limit',
+          'RedisRateLimitStorage.getRequestsInWindow 失败',
           error
         );
       }
@@ -93,7 +107,11 @@ export class RedisRateLimitStorage implements RateLimitStorage {
       await pipeline.exec();
     } catch (error) {
       if (env.NODE_ENV === 'development') {
-        console.error('[RedisRateLimitStorage] addRequest 错误:', error);
+        logger.error(
+          'rate-limit',
+          'RedisRateLimitStorage.addRequest 失败',
+          error
+        );
       }
       throw error;
     }
@@ -109,7 +127,7 @@ export class RedisRateLimitStorage implements RateLimitStorage {
       await this.redis.zremrangebyscore(key, '-inf', before);
     } catch (error) {
       if (env.NODE_ENV === 'development') {
-        console.error('[RedisRateLimitStorage] cleanup 错误:', error);
+        logger.error('rate-limit', 'RedisRateLimitStorage.cleanup 失败', error);
       }
       // 清理失败不抛出错误，避免影响主流程
     }
@@ -259,9 +277,11 @@ export function createRateLimitStorage(redisClient?: Redis): RateLimitStorage {
       return new RedisRateLimitStorage(redisClient);
     } catch (error) {
       if (env.NODE_ENV === 'development') {
-        console.warn(
-          '[RateLimit] Redis 存储初始化失败，降级到内存存储:',
-          error
+        logger.warn(
+          'rate-limit',
+          'Redis 存储初始化失败，降级到内存存储',
+          undefined,
+          { error: serializeError(error) }
         );
       }
     }
@@ -269,7 +289,7 @@ export function createRateLimitStorage(redisClient?: Redis): RateLimitStorage {
 
   // 降级到内存存储
   if (env.NODE_ENV === 'development') {
-    console.log('[RateLimit] 使用内存存储（适合开发环境）');
+    logger.info('rate-limit', '使用内存存储（适合开发环境）');
   }
 
   return new MemoryRateLimitStorage();

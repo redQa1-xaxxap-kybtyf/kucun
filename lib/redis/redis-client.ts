@@ -1,6 +1,21 @@
 import Redis from 'ioredis';
 
 import { env, redisConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
+
+function serializeError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: env.NODE_ENV === 'development' ? error.stack : undefined,
+    };
+  }
+
+  return {
+    message: String(error),
+  };
+}
 
 /**
  * 事务回调函数类型
@@ -164,7 +179,7 @@ function createClient(url: string): Redis {
       env.NODE_ENV === 'development' &&
       now - lastErrorTime > ERROR_LOG_INTERVAL
     ) {
-      console.error('[Redis] error:', err);
+      logger.error('redis-client', 'Redis error', err);
       lastErrorTime = now;
     }
   });
@@ -173,8 +188,7 @@ function createClient(url: string): Redis {
     isRedisAvailable = true;
     lastRedisCheckTime = Date.now();
     if (env.NODE_ENV === 'development' && process.env.NODE_ENV !== 'test') {
-      // eslint-disable-next-line no-console
-      console.log('[Redis] connected');
+      logger.info('redis-client', 'Redis connected');
     }
   });
 
@@ -187,8 +201,7 @@ function createClient(url: string): Redis {
       process.env.NODE_ENV !== 'test' &&
       now - lastReconnectLogTime > ERROR_LOG_INTERVAL
     ) {
-      // eslint-disable-next-line no-console
-      console.log('[Redis] reconnecting...');
+      logger.info('redis-client', 'Redis reconnecting');
       lastReconnectLogTime = now;
     }
   });
@@ -222,8 +235,10 @@ let rrIndex = 0;
 // 修复: 添加优雅关闭函数
 function gracefulShutdown(): void {
   if (env.NODE_ENV === 'development' && process.env.NODE_ENV !== 'test') {
-    // eslint-disable-next-line no-console
-    console.log('[Redis] Gracefully shutting down connection pool...');
+    logger.info(
+      'redis-client',
+      'Gracefully shutting down Redis connection pool'
+    );
   }
   pool.forEach(client => {
     client.disconnect();
@@ -313,7 +328,7 @@ export const redis: RedisClientWrapper = {
       return await client.ping();
     } catch (error) {
       if (env.NODE_ENV === 'development') {
-        console.error('[Redis] ping failed:', error);
+        logger.error('redis-client', 'Redis ping failed', error);
       }
       throw error;
     }
@@ -339,9 +354,11 @@ export const redis: RedisClientWrapper = {
         lastSuccessfulOperation = Date.now();
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-          console.warn(
-            '[Redis] getJson failed, falling back to memory:',
-            error
+          logger.warn(
+            'redis-client',
+            'getJson failed, falling back to memory cache',
+            undefined,
+            { error: serializeError(error) }
           );
         }
       }
@@ -399,9 +416,11 @@ export const redis: RedisClientWrapper = {
         return result;
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-          console.warn(
-            '[Redis] setJson failed, using memory cache only:',
-            error
+          logger.warn(
+            'redis-client',
+            'setJson failed, using memory cache only',
+            undefined,
+            { error: serializeError(error) }
           );
         }
       }
@@ -425,7 +444,9 @@ export const redis: RedisClientWrapper = {
         return result;
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-          console.warn('[Redis] del failed:', error);
+          logger.warn('redis-client', 'del failed', undefined, {
+            error: serializeError(error),
+          });
         }
       }
     }
@@ -467,7 +488,9 @@ export const redis: RedisClientWrapper = {
         } while (cursor !== '0');
       } catch (error) {
         if (env.NODE_ENV === 'development') {
-          console.warn('[Redis] scanDel failed:', error);
+          logger.warn('redis-client', 'scanDel failed', undefined, {
+            error: serializeError(error),
+          });
         }
       }
     }
@@ -507,7 +530,7 @@ export const redis: RedisClientWrapper = {
       return result;
     } catch (error) {
       if (env.NODE_ENV === 'development') {
-        console.error('[Redis] Transaction failed:', error);
+        logger.error('redis-client', 'Redis transaction failed', error);
       }
       throw error;
     }

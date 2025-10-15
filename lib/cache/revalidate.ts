@@ -11,6 +11,7 @@
 
 import { revalidatePath, revalidateTag } from 'next/cache';
 
+import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 import { publish, subscribe } from '@/lib/redis/redis-pubsub';
 
@@ -81,7 +82,12 @@ export async function revalidateCache(
       await cascadeInvalidate(tag);
     }
   } catch (error) {
-    console.error(`[Cache] Failed to revalidate cache for tag: ${tag}`, error);
+    logger.error(
+      'cache-revalidate',
+      `Failed to revalidate cache for tag: ${tag}`,
+      error,
+      { tag }
+    );
     // 不抛出错误，避免阻塞业务逻辑
   }
 }
@@ -121,7 +127,12 @@ export async function revalidateCachePath(
   try {
     revalidatePath(path, type);
   } catch (error) {
-    console.error(`[Cache] Failed to revalidate path: ${path}`, error);
+    logger.error(
+      'cache-revalidate',
+      `Failed to revalidate path: ${path}`,
+      error,
+      { path }
+    );
   }
 }
 
@@ -256,7 +267,10 @@ async function cascadeInvalidate(tag: string): Promise<void> {
             )
           );
         } catch (error) {
-          console.error('[缓存级联] 延迟失效执行失败:', error);
+          logger.error('cache-revalidate', '延迟失效执行失败', error, {
+            tag,
+            relatedTags,
+          });
           // 不抛出错误，避免影响后台任务
         }
       }, 1000);
@@ -283,21 +297,17 @@ export async function subscribeCacheInvalidation(): Promise<void> {
         // 只失效本地 Next.js 缓存，不再广播（避免循环）
         revalidateTag(tag);
 
-        console.log(`[Cache] Invalidated cache for tag: ${tag}`);
+        logger.debug('cache-revalidate', '接收到缓存失效通知', { tag });
       } catch (error) {
-        console.error(
-          '[Cache] Failed to process cache invalidation message:',
-          error
-        );
+        logger.error('cache-revalidate', '处理缓存失效消息失败', error, {
+          message,
+        });
       }
     });
 
-    console.log('[Cache] Subscribed to cache invalidation channel');
+    logger.info('cache-revalidate', '已订阅缓存失效频道');
   } catch (error) {
-    console.error(
-      '[Cache] Failed to subscribe to cache invalidation channel:',
-      error
-    );
+    logger.error('cache-revalidate', '订阅缓存失效频道失败', error);
   }
 }
 

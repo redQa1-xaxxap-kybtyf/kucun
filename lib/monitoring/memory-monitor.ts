@@ -3,6 +3,7 @@
  * 用于监控Node.js应用的内存使用情况
  */
 
+import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 
 interface MemoryStats {
@@ -87,8 +88,9 @@ function checkAlerts(stats: MemoryStats): void {
 
   // 输出告警
   if (alerts.length > 0) {
-    console.warn('[Memory Monitor] ALERTS:');
-    alerts.forEach(alert => console.warn(`  ${alert}`));
+    logger.warn('memory-monitor', 'Memory usage alerts triggered', undefined, {
+      alerts,
+    });
   }
 }
 
@@ -137,32 +139,32 @@ export function startMemoryMonitor(
   // 仅在生产环境或显式启用时运行
   if (process.env.NODE_ENV !== 'production' && !config?.enabled) {
     if (process.env.DEBUG) {
-      // eslint-disable-next-line no-console
-      console.log('[Memory Monitor] Disabled in development mode');
+      logger.debug(
+        'memory-monitor',
+        'Memory monitor disabled in development mode'
+      );
     }
     return;
   }
 
   if (process.env.DEBUG) {
-    // eslint-disable-next-line no-console
-    console.log(
-      `[Memory Monitor] Starting with interval: ${intervalMs}ms, alerts enabled: ${alertConfig.enabled}`
-    );
+    logger.debug('memory-monitor', 'Starting memory monitor', {
+      intervalMs,
+      alertsEnabled: alertConfig.enabled,
+    });
   }
 
   // 立即执行一次
   const stats = getMemoryStats();
   if (process.env.DEBUG) {
-    // eslint-disable-next-line no-console
-    console.log(`[Memory Monitor] ${formatMemoryStats(stats)}`);
+    logger.debug('memory-monitor', formatMemoryStats(stats));
   }
 
   // 定期监控
   monitorInterval = setInterval(() => {
     const stats = getMemoryStats();
     if (process.env.DEBUG) {
-      // eslint-disable-next-line no-console
-      console.log(`[Memory Monitor] ${formatMemoryStats(stats)}`);
+      logger.debug('memory-monitor', formatMemoryStats(stats));
     }
     checkAlerts(stats);
   }, intervalMs);
@@ -179,8 +181,7 @@ export function stopMemoryMonitor(): void {
     clearInterval(monitorInterval);
     monitorInterval = null;
     if (process.env.DEBUG) {
-      // eslint-disable-next-line no-console
-      console.log('[Memory Monitor] Stopped');
+      logger.debug('memory-monitor', 'Memory monitor stopped');
     }
   }
 }
@@ -191,8 +192,9 @@ export function stopMemoryMonitor(): void {
 export function updateAlertConfig(config: Partial<MemoryAlertConfig>): void {
   alertConfig = { ...alertConfig, ...config };
   if (process.env.DEBUG) {
-    // eslint-disable-next-line no-console
-    console.log('[Memory Monitor] Alert config updated:', alertConfig);
+    logger.debug('memory-monitor', 'Alert config updated', {
+      config: alertConfig,
+    });
   }
 }
 
@@ -209,21 +211,20 @@ export function getAlertConfig(): MemoryAlertConfig {
 export function triggerGC(): void {
   if (global.gc) {
     if (process.env.DEBUG) {
-      // eslint-disable-next-line no-console
-      console.log('[Memory Monitor] Triggering manual GC...');
+      logger.debug('memory-monitor', 'Triggering manual GC');
     }
     const beforeStats = getMemoryStats();
     global.gc();
     const afterStats = getMemoryStats();
     if (process.env.DEBUG) {
-      // eslint-disable-next-line no-console
-      console.log(
-        `[Memory Monitor] GC complete. Heap freed: ${Math.round(beforeStats.heapUsedMB - afterStats.heapUsedMB)} MB`
-      );
+      logger.debug('memory-monitor', 'Manual GC complete', {
+        freedMb: Math.round(beforeStats.heapUsedMB - afterStats.heapUsedMB),
+      });
     }
   } else {
-    console.warn(
-      '[Memory Monitor] Manual GC not available. Run with --expose-gc flag.'
+    logger.warn(
+      'memory-monitor',
+      'Manual GC not available. Run with --expose-gc flag.'
     );
   }
 }
@@ -319,8 +320,10 @@ if (typeof process !== 'undefined' && typeof global !== 'undefined') {
     });
 
     if (process.env.DEBUG) {
-      // eslint-disable-next-line no-console
-      console.log('[Memory Monitor] Process cleanup listeners registered');
+      logger.debug(
+        'memory-monitor',
+        'Process cleanup listeners registered for memory monitor'
+      );
     }
   }
 }

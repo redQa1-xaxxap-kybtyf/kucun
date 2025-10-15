@@ -4,6 +4,7 @@
  * 遵循全栈项目统一约定规范
  */
 
+import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 
 // 登录日志类型
@@ -46,7 +47,7 @@ export async function createLoginLog(log: LoginLog): Promise<void> {
     // 由于当前数据库模型中没有这个表,我们先记录到控制台
     // 后续可以通过 Prisma 迁移添加这个表
 
-    console.log('[登录日志]', {
+    logger.info('login-log-service', '记录登录日志', {
       type: log.type,
       username: log.username,
       userId: log.userId,
@@ -69,7 +70,7 @@ export async function createLoginLog(log: LoginLog): Promise<void> {
     //   },
     // });
   } catch (error) {
-    console.error('[登录日志] 记录失败:', error);
+    logger.error('login-log-service', '记录登录日志失败', error);
   }
 }
 
@@ -282,7 +283,10 @@ export async function getRecentLoginLogs(
   //   take: limit,
   // });
 
-  console.log(`[登录日志] 查询用户 ${username} 的最近 ${limit} 条登录记录`);
+  logger.info('login-log-service', '查询最近登录记录', {
+    username,
+    limit,
+  });
   return [];
 }
 
@@ -303,9 +307,10 @@ export async function detectAnomalousLogin(
   // 3. 检查是否在黑名单 IP 中
   // 4. 检查设备指纹是否变化
 
-  console.log(
-    `[安全审计] 检测用户 ${username} 从 IP ${clientIp} 的登录是否异常`
-  );
+  logger.info('login-log-service', '执行登录异常检测', {
+    username,
+    clientIp,
+  });
 
   return {
     isAnomalous: false,

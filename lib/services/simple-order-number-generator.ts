@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/db';
 import { factoryShipmentConfig, salesOrderConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 
 /**
  * 简化版订单号生成服务
@@ -117,9 +118,10 @@ export async function generateSalesOrderNumber(): Promise<string> {
         const backoffDelay = attempt * 25; // 指数退避
         const totalDelay = baseDelay + randomDelay + backoffDelay;
 
-        console.log(
-          `订单号生成冲突，第${attempt}次重试，等待${Math.round(totalDelay)}ms...`
-        );
+        logger.warn('order-number', '订单号生成冲突，准备重试', undefined, {
+          attempt,
+          delayMs: Math.round(totalDelay),
+        });
         await new Promise(resolve => setTimeout(resolve, totalDelay));
         continue;
       }
@@ -293,9 +295,16 @@ export async function generateFactoryShipmentNumber(): Promise<string> {
         const backoffDelay = attempt * 25;
         const totalDelay = baseDelay + randomDelay + backoffDelay;
 
-        console.log(
-          `厂家发货订单号生成冲突,第${attempt}次重试,等待${Math.round(totalDelay)}ms...`
+        logger.warn(
+          'order-number',
+          '厂家发货订单号生成冲突，准备重试',
+          undefined,
+          {
+            attempt,
+            delayMs: Math.round(totalDelay),
+          }
         );
+
         await new Promise(resolve => setTimeout(resolve, totalDelay));
         continue;
       }
@@ -401,9 +410,11 @@ export async function generateReturnOrderNumber(): Promise<string> {
         const backoffDelay = attempt * 25;
         const totalDelay = baseDelay + randomDelay + backoffDelay;
 
-        console.log(
-          `退货单号生成冲突,第${attempt}次重试,等待${Math.round(totalDelay)}ms...`
-        );
+        logger.warn('order-number', '退货单号生成冲突，准备重试', undefined, {
+          attempt,
+          delayMs: Math.round(totalDelay),
+        });
+
         await new Promise(resolve => setTimeout(resolve, totalDelay));
         continue;
       }
@@ -509,9 +520,11 @@ export async function generateRefundNumber(): Promise<string> {
         const backoffDelay = attempt * 25;
         const totalDelay = baseDelay + randomDelay + backoffDelay;
 
-        console.log(
-          `退款单号生成冲突,第${attempt}次重试,等待${Math.round(totalDelay)}ms...`
-        );
+        logger.warn('order-number', '退款单号生成冲突，准备重试', undefined, {
+          attempt,
+          delayMs: Math.round(totalDelay),
+        });
+
         await new Promise(resolve => setTimeout(resolve, totalDelay));
         continue;
       }

@@ -8,7 +8,9 @@
  * 3. 跨进程事件广播
  */
 
+import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
+
 import { RedisCachePrefix } from './tags';
 
 /**
@@ -94,7 +96,12 @@ export async function publishEvent(
   try {
     await redis.getClient().publish(channel, JSON.stringify(event));
   } catch (error) {
-    console.error(`[PubSub] Failed to publish event to ${channel}:`, error);
+    logger.error(
+      'cache-pubsub',
+      `Failed to publish event to ${channel}`,
+      error,
+      { channel }
+    );
   }
 }
 
@@ -109,10 +116,12 @@ export function subscribeChannel(
 
   subscriber.subscribe(channel, err => {
     if (err) {
-      console.error(`[PubSub] Failed to subscribe to ${channel}:`, err);
+      logger.error('cache-pubsub', `Failed to subscribe to ${channel}`, err, {
+        channel,
+      });
       return;
     }
-    console.log(`[PubSub] Subscribed to channel: ${channel}`);
+    logger.info('cache-pubsub', 'Subscribed to channel', { channel });
   });
 
   subscriber.on('message', async (ch, message) => {
@@ -124,9 +133,11 @@ export function subscribeChannel(
       const event = JSON.parse(message) as PubSubEvent;
       await handler(event);
     } catch (error) {
-      console.error(
-        `[PubSub] Failed to process message from ${channel}:`,
-        error
+      logger.error(
+        'cache-pubsub',
+        `Failed to process message from ${channel}`,
+        error,
+        { channel, message }
       );
     }
   });
@@ -149,10 +160,12 @@ export function subscribeChannels(
 
   subscriber.subscribe(...channels, err => {
     if (err) {
-      console.error('[PubSub] Failed to subscribe to channels:', err);
+      logger.error('cache-pubsub', 'Failed to subscribe to channels', err, {
+        channels,
+      });
       return;
     }
-    console.log('[PubSub] Subscribed to channels:', channels);
+    logger.info('cache-pubsub', 'Subscribed to channels', { channels });
   });
 
   subscriber.on('message', async (channel, message) => {
@@ -165,9 +178,11 @@ export function subscribeChannels(
       const event = JSON.parse(message) as PubSubEvent;
       await handler(event);
     } catch (error) {
-      console.error(
-        `[PubSub] Failed to process message from ${channel}:`,
-        error
+      logger.error(
+        'cache-pubsub',
+        `Failed to process message from ${channel}`,
+        error,
+        { channel, message }
       );
     }
   });

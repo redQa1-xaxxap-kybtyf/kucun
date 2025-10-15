@@ -1,6 +1,21 @@
 import crypto from 'crypto';
 
 import { env, storageConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
+
+function serializeError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: env.NODE_ENV === 'development' ? error.stack : undefined,
+    };
+  }
+
+  return {
+    message: String(error),
+  };
+}
 
 // 使用 STORAGE_ENCRYPTION_KEY 作为加密密钥（确保32字节）
 // 与 API 路由保持一致
@@ -22,7 +37,7 @@ export function encrypt(text: string): string {
     // 返回格式: iv:encrypted
     return `${iv.toString('hex')}:${encrypted}`;
   } catch (error) {
-    console.error('加密失败:', error);
+    logger.error('encryption', '数据加密失败', error);
     throw new Error('数据加密失败');
   }
 }
@@ -53,10 +68,12 @@ export function decrypt(encryptedText: string): string {
           let decrypted = decipher.update(encrypted, 'hex', 'utf8');
           decrypted += decipher.final('utf8');
 
-          console.log('使用新格式解密成功');
+          logger.debug('encryption', '使用新格式解密成功');
           return decrypted;
         } catch (error) {
-          console.warn('新格式解密失败:', error);
+          logger.warn('encryption', '新格式解密失败', undefined, {
+            error: serializeError(error),
+          });
           // 新格式解密失败,可能是明文,直接返回
           return encryptedText;
         }
@@ -64,10 +81,10 @@ export function decrypt(encryptedText: string): string {
     }
 
     // 如果不是新格式,可能是明文,直接返回
-    console.warn('未检测到加密格式,返回原文(可能是明文)');
+    logger.warn('encryption', '未检测到加密格式,返回原文(可能是明文)');
     return encryptedText;
   } catch (error) {
-    console.error('解密失败:', error);
+    logger.error('encryption', '解密失败', error);
     // 解密失败时返回原文（可能是未加密的数据）
     return encryptedText;
   }
@@ -109,7 +126,7 @@ export function simpleEncrypt(text: string): string {
     encrypted += cipher.final('hex');
     return encrypted;
   } catch (error) {
-    console.error('简单加密失败:', error);
+    logger.error('encryption', '简单加密失败', error);
     return text; // 如果加密失败，返回原文
   }
 }
@@ -124,7 +141,7 @@ export function simpleDecrypt(encryptedText: string): string {
     decrypted += decipher.final('utf8');
     return decrypted;
   } catch (error) {
-    console.error('简单解密失败:', error);
+    logger.error('encryption', '简单解密失败', error);
     return encryptedText; // 如果解密失败，返回原文
   }
 }

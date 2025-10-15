@@ -3,6 +3,8 @@
  * 展示如何在关键业务场景中使用事务保证数据一致性
  */
 
+import { logger } from '@/lib/logger';
+
 import { redis } from './redis-client';
 
 /**
@@ -53,15 +55,21 @@ export async function deductInventoryAtomic(
     const currentQty = parseInt((currentQtyResult[1] as string) || '0');
     if (currentQty < quantity) {
       // 库存不足，需要回滚（实际应用中可能需要更复杂的处理）
-      console.warn(
-        `[Inventory] Insufficient stock for ${inventoryKey}: ${currentQty} < ${quantity}`
-      );
+      logger.warn('redis-transaction', '库存不足，无法扣减', undefined, {
+        inventoryKey,
+        currentQty,
+        requested: quantity,
+      });
       return false;
     }
 
     return deductResult[0] === null; // 成功时 error 为 null
   } catch (error) {
-    console.error('[Inventory] Failed to deduct inventory:', error);
+    logger.error('redis-transaction', '原子扣减库存失败', error, undefined, {
+      productId,
+      variantId,
+      quantity,
+    });
     return false;
   }
 }
@@ -108,7 +116,11 @@ export async function processPaymentAtomic(
       results.every(([err]: [Error | null, unknown]) => err === null)
     );
   } catch (error) {
-    console.error('[Payment] Failed to process payment:', error);
+    logger.error('redis-transaction', '处理订单支付失败', error, undefined, {
+      orderId,
+      customerId,
+      amount,
+    });
     return false;
   }
 }
@@ -147,7 +159,10 @@ export async function updateCountersAtomic(
       results.every(([err]: [Error | null, unknown]) => err === null)
     );
   } catch (error) {
-    console.error('[Stats] Failed to update counters:', error);
+    logger.error('redis-transaction', '更新计数器失败', error, undefined, {
+      entityType,
+      entityId,
+    });
     return false;
   }
 }
@@ -184,9 +199,11 @@ export async function deductInventoryWithOptimisticLock(
       // 3. 检查库存是否足够
       if (currentQty < quantity) {
         await client.unwatch();
-        console.warn(
-          `[Inventory] Insufficient stock: ${currentQty} < ${quantity}`
-        );
+        logger.warn('redis-transaction', '库存不足', undefined, {
+          productId,
+          currentQty,
+          requested: quantity,
+        });
         return false;
       }
 
@@ -202,25 +219,33 @@ export async function deductInventoryWithOptimisticLock(
       if (results === null) {
         // 事务被中断（其他客户端修改了库存），重试
         retries++;
-        console.log(
-          `[Inventory] Transaction aborted, retrying... (${retries}/${maxRetries})`
-        );
+        logger.info('redis-transaction', '库存事务被中断，准备重试', {
+          productId,
+          retries,
+          maxRetries,
+        });
         continue;
       }
 
       // 成功
       return true;
     } catch (error) {
-      console.error(
-        '[Inventory] Failed to deduct inventory with optimistic lock:',
-        error
+      logger.error(
+        'redis-transaction',
+        '乐观锁扣减库存失败',
+        error,
+        undefined,
+        { productId, retries }
       );
       retries++;
     }
   }
 
   // 超过最大重试次数
-  console.error('[Inventory] Max retries exceeded');
+  logger.error('redis-transaction', '乐观锁扣减库存重试次数耗尽', undefined, {
+    productId,
+    maxRetries,
+  });
   return false;
 }
 
@@ -258,7 +283,9 @@ export async function batchUpdateInventory(
     ).length;
     return successCount / 2; // 每个更新有2个命令
   } catch (error) {
-    console.error('[Inventory] Failed to batch update inventory:', error);
+    logger.error('redis-transaction', '批量更新库存失败', error, undefined, {
+      updatesCount: updates.length,
+    });
     return 0;
   }
 }

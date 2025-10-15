@@ -1,4 +1,6 @@
 import type { Browser, ElementHandle, Page } from 'puppeteer-core';
+
+import { logger } from '@/lib/logger';
 import type { ExtractSelectors } from '@/lib/types/shipping';
 import { sanitizeSelectorInput } from '@/lib/utils/selector-normalizer';
 
@@ -118,11 +120,11 @@ export class PuppeteerService {
 
       // 超过空闲时间阈值，自动关闭浏览器
       if (idleTime > this.IDLE_TIMEOUT_MS && this.browser) {
-        console.log(
-          `[Puppeteer] 浏览器空闲超过${this.IDLE_TIMEOUT_MS / 1000}秒，自动关闭`
-        );
+        logger.info('puppeteer-service', '浏览器空闲超时，执行自动关闭', {
+          idleSeconds: Math.round(idleTime / 1000),
+        });
         this.closeBrowser().catch(err => {
-          console.error('[Puppeteer] 自动关闭浏览器失败:', err);
+          logger.error('puppeteer-service', '自动关闭浏览器失败', err);
         });
       }
     }, this.CLEANUP_CHECK_INTERVAL_MS);
@@ -324,7 +326,7 @@ export class PuppeteerService {
       try {
         await this.browser.close();
       } catch (error) {
-        console.error('[Puppeteer] 关闭浏览器时出错:', error);
+        logger.error('puppeteer-service', '关闭浏览器时出错', error);
       } finally {
         this.browser = null;
       }
@@ -350,12 +352,14 @@ if (typeof process !== 'undefined' && !global.__puppeteerShutdownRegistered) {
   global.__puppeteerShutdownRegistered = true;
 
   const gracefulShutdown = async (signal: string): Promise<void> => {
-    console.log(`[Puppeteer] 收到 ${signal} 信号，正在关闭浏览器...`);
+    logger.info('puppeteer-service', '收到进程信号，准备关闭浏览器', {
+      signal,
+    });
     try {
       await PuppeteerService.closeBrowser();
-      console.log('[Puppeteer] 浏览器已关闭');
+      logger.info('puppeteer-service', '浏览器已关闭');
     } catch (error) {
-      console.error('[Puppeteer] 关闭浏览器失败:', error);
+      logger.error('puppeteer-service', '关闭浏览器失败', error);
     }
   };
 

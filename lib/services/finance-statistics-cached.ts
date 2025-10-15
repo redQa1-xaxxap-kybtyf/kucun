@@ -10,16 +10,27 @@
  * 4. 性能提升: 减少80%的数据库查询负载
  */
 
-import { financeConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
-import type {
-  FinanceSummary,
-  StatementQueryParams,
-} from './finance-statistics';
+
 import {
   getStatementsList as getStatementsListOriginal,
   getFinanceSummary as getFinanceSummaryOriginal,
+  type FinanceSummary,
+  type StatementQueryParams,
 } from './finance-statistics';
+
+function serializeError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+    };
+  }
+
+  return { message: String(error) };
+}
 
 // 重新导出类型
 export type { StatementQueryParams, FinanceSummary };
@@ -87,7 +98,10 @@ async function withCache<T>(
     }
   } catch (error) {
     // Redis读取失败，记录日志但不阻塞
-    console.warn(`[财务缓存] Redis读取失败: ${cacheKey}`, error);
+    logger.warn('finance-cache', 'Redis读取失败', undefined, {
+      cacheKey,
+      error: serializeError(error),
+    });
   }
 
   // 2. 缓存未命中，执行原始查询
@@ -95,7 +109,10 @@ async function withCache<T>(
 
   // 3. 写入缓存（异步，不阻塞返回）
   redis.setJson(cacheKey, result, ttl).catch(error => {
-    console.warn(`[财务缓存] Redis写入失败: ${cacheKey}`, error);
+    logger.warn('finance-cache', 'Redis写入失败', undefined, {
+      cacheKey,
+      error: serializeError(error),
+    });
   });
 
   return result;
@@ -157,9 +174,11 @@ export async function getFinanceSummary(): Promise<FinanceSummary> {
 export async function invalidateStatementsCache(): Promise<void> {
   try {
     await redis.scanDel(`${CACHE_PREFIX.STATEMENTS}*`);
-    console.log('[财务缓存] 往来账单缓存已失效');
+    logger.info('finance-cache', '往来账单缓存已失效');
   } catch (error) {
-    console.warn('[财务缓存] 缓存失效失败', error);
+    logger.warn('finance-cache', '往来账单缓存失效失败', undefined, {
+      error: serializeError(error),
+    });
   }
 }
 
@@ -172,9 +191,11 @@ export async function invalidateStatementsCache(): Promise<void> {
 export async function invalidateFinanceSummaryCache(): Promise<void> {
   try {
     await redis.scanDel(`${CACHE_PREFIX.SUMMARY}*`);
-    console.log('[财务缓存] 财务汇总缓存已失效');
+    logger.info('finance-cache', '财务汇总缓存已失效');
   } catch (error) {
-    console.warn('[财务缓存] 缓存失效失败', error);
+    logger.warn('finance-cache', '财务汇总缓存失效失败', undefined, {
+      error: serializeError(error),
+    });
   }
 }
 
@@ -193,9 +214,11 @@ export async function invalidateAllFinanceCache(): Promise<void> {
       redis.scanDel(`${CACHE_PREFIX.CUSTOMER}*`),
       redis.scanDel(`${CACHE_PREFIX.SUPPLIER}*`),
     ]);
-    console.log('[财务缓存] 所有财务缓存已失效');
+    logger.info('finance-cache', '所有财务缓存已失效');
   } catch (error) {
-    console.warn('[财务缓存] 缓存失效失败', error);
+    logger.warn('finance-cache', '缓存失效失败', undefined, {
+      error: serializeError(error),
+    });
   }
 }
 

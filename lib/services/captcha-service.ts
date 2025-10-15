@@ -11,8 +11,8 @@
 import crypto from 'crypto';
 
 import { getRandomTTL } from '@/lib/cache/cache';
-import { redis } from '@/lib/redis/redis-client';
 import { logger } from '@/lib/logger';
+import { redis } from '@/lib/redis/redis-client';
 
 // 验证码配置
 export const CAPTCHA_CONFIG = {
@@ -136,9 +136,13 @@ export async function createCaptchaSession(
   const captchaText = generateCaptchaText();
   const sessionId = generateSessionId();
 
-  console.log(
-    `[验证码生成] SessionID: ${sessionId}, 格式: ${sessionId.length}字符, 是否UUID: ${/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(sessionId)}`
-  );
+  logger.debug('captcha-service', 'Captcha session generated', {
+    sessionId,
+    isUuid:
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        sessionId
+      ),
+  });
 
   const expiresAt = new Date(
     Date.now() + CAPTCHA_CONFIG.expireMinutes * 60 * 1000

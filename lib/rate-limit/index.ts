@@ -4,11 +4,26 @@
  */
 
 import { env } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis';
 
-import { getRateLimitConfig, RateLimitType } from './config';
-import { createRateLimiter, RateLimiter } from './rate-limiter';
-import { createRateLimitStorage, RateLimitStorage } from './storage';
+import { getRateLimitConfig, type RateLimitType } from './config';
+import { createRateLimiter, type RateLimiter } from './rate-limiter';
+import { createRateLimitStorage, type RateLimitStorage } from './storage';
+
+function serializeError(error: unknown) {
+  if (error instanceof Error) {
+    return {
+      name: error.name,
+      message: error.message,
+      stack: env.NODE_ENV === 'development' ? error.stack : undefined,
+    };
+  }
+
+  return {
+    message: String(error),
+  };
+}
 
 /**
  * 速率限制器实例缓存
@@ -38,12 +53,14 @@ function getStorage(): RateLimitStorage {
     storageInstance = createRateLimitStorage(redisClient);
 
     if (env.NODE_ENV === 'development') {
-      console.log('[RateLimit] 已初始化 Redis 存储适配器');
+      logger.info('rate-limit', '已初始化 Redis 存储适配器');
     }
   } catch (error) {
     // Redis 不可用，降级到内存存储
     if (env.NODE_ENV === 'development') {
-      console.warn('[RateLimit] Redis 不可用，使用内存存储:', error);
+      logger.warn('rate-limit', 'Redis 不可用，使用内存存储', undefined, {
+        error: serializeError(error),
+      });
     }
     storageInstance = createRateLimitStorage();
   }
@@ -75,7 +92,7 @@ export function getRateLimiter(type: RateLimitType): RateLimiter {
   rateLimiterCache.set(type, limiter);
 
   if (env.NODE_ENV === 'development') {
-    console.log(`[RateLimit] 已创建速率限制器: ${type}`, {
+    logger.info('rate-limit', `已创建速率限制器: ${type}`, {
       maxRequests: config.maxRequests,
       windowMs: config.windowMs,
     });
@@ -93,7 +110,7 @@ export function resetRateLimiters(): void {
   storageInstance = null;
 
   if (env.NODE_ENV === 'development') {
-    console.log('[RateLimit] 已重置所有速率限制器');
+    logger.info('rate-limit', '已重置所有速率限制器');
   }
 }
 

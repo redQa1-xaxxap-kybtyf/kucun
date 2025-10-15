@@ -3,8 +3,9 @@
  * 在应用启动时调用，设置 Pub/Sub 订阅和缓存清理任务
  */
 
-import type { PubSubEvent } from './pubsub';
-import { PubSubChannels, subscribeChannels } from './pubsub';
+import { logger } from '@/lib/logger';
+
+import { PubSubChannels, subscribeChannels, type PubSubEvent } from './pubsub';
 import { subscribeCacheInvalidation } from './revalidate';
 
 // 用于 WebSocket 通知的全局事件发射器
@@ -42,7 +43,7 @@ export function initializeCacheSystem(): void {
     }
   );
 
-  console.log('[Cache] Cache system initialized');
+  logger.info('cache-init', 'Cache system initialized');
 }
 
 /**
@@ -53,7 +54,9 @@ async function handleDataUpdate(event: PubSubEvent): Promise<void> {
     return;
   }
 
-  console.log('[Cache] Data update event:', event);
+  logger.debug('cache-init', 'Data update event received', {
+    event,
+  });
 
   // 转发到 WebSocket 客户端
   if (wsEventEmitter) {
@@ -71,7 +74,9 @@ async function handleInventoryChange(event: PubSubEvent): Promise<void> {
     return;
   }
 
-  console.log('[Cache] Inventory change event:', event);
+  logger.debug('cache-init', 'Inventory change event received', {
+    event,
+  });
 
   // 转发到 WebSocket 客户端
   if (wsEventEmitter) {
@@ -89,7 +94,9 @@ async function handleOrderStatusChange(event: PubSubEvent): Promise<void> {
     return;
   }
 
-  console.log('[Cache] Order status change event:', event);
+  logger.debug('cache-init', 'Order status change event received', {
+    event,
+  });
 
   // 转发到 WebSocket 客户端
   if (wsEventEmitter) {
@@ -105,7 +112,9 @@ async function handleFinanceChange(event: PubSubEvent): Promise<void> {
     return;
   }
 
-  console.log('[Cache] Finance change event:', event);
+  logger.debug('cache-init', 'Finance change event received', {
+    event,
+  });
 
   // 转发到 WebSocket 客户端
   if (wsEventEmitter) {

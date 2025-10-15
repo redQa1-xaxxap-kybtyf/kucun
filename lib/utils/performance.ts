@@ -6,6 +6,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { logger as consoleLogger } from '@/lib/utils/console-logger';
+
 /**
  * 性能指标类型
  */
@@ -252,8 +254,10 @@ export function usePerformanceMonitor(componentName: string) {
 
       // 在开发环境下输出性能警告
       if (process.env.NODE_ENV === 'development' && renderTime > 16) {
-        console.warn(
-          `${componentName} 渲染时间过长: ${renderTime.toFixed(2)}ms`
+        const duration = Number(renderTime.toFixed(2));
+        consoleLogger.warn(
+          'performance',
+          `${componentName} 渲染时间过长: ${duration}ms`
         );
       }
     }
@@ -418,7 +422,10 @@ export const performanceUtils = {
       const end = performance.now();
 
       if (name && process.env.NODE_ENV === 'development') {
-        console.log(`${name} 执行时间: ${(end - start).toFixed(2)}ms`);
+        consoleLogger.debug(
+          'performance',
+          `${name} 执行时间: ${(end - start).toFixed(2)}ms`
+        );
       }
 
       return result;
