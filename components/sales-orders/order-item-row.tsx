@@ -37,7 +37,11 @@ interface OrderItemRowProps {
   unitMapping: Record<string, string>;
 }
 
-export function OrderItemRow({
+/**
+ * 订单商品明细行组件
+ * 使用 React.memo 优化性能，减少不必要的重新渲染
+ */
+export const OrderItemRow = React.memo<OrderItemRowProps>(function OrderItemRow({
   index,
   products,
   onRemove,
@@ -45,7 +49,7 @@ export function OrderItemRow({
   orderType,
   transferMode,
   unitMapping,
-}: OrderItemRowProps) {
+}) {
   const form = useFormContext();
 
   // 使用 useWatch 监听字段变化
@@ -672,4 +676,4 @@ export function OrderItemRow({
       </TableCell>
     </TableRow>
   );
-}
+});

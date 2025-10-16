@@ -16,7 +16,7 @@ import * as React from 'react';
 
 import { FactoryShipments } from '@/components/dashboard/factory-shipments';
 import { RecentOrders } from '@/components/dashboard/recent-orders';
-import { StatCardsGrid } from '@/components/dashboard/stat-cards';
+import { StatCardsGrid } from '@/components/dashboard/stat-cards-enhanced';
 import { Button } from '@/components/ui/button';
 import {
   Select,

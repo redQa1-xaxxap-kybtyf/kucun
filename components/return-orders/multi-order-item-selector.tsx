@@ -7,6 +7,7 @@ import { useState } from 'react';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import { useSalesOrderReturnableItems } from '@/lib/api/return-orders';
 import type { ReturnableItem } from '@/lib/services/sales-order-service';
+import type { ReturnOrderItem } from '@/lib/types/return-order';
 import { Button } from '@/components/ui/button';
 import {
   Collapsible,
@@ -22,36 +23,36 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { type SalesOrder } from '@/lib/types/sales-order';
+import type { SalesOrder } from '@/lib/types/sales-order';
 
 interface MultiOrderItemSelectorProps {
   customerId: string;
-  onItemSelect: (item: {
-    salesOrderItemId: string;
-    productId: string;
-    colorCode?: string;
-    productionDate?: string;
-    returnQuantity: number;
-    originalQuantity: number;
-    unitPrice: number;
-    subtotal: number;
-    reason?: string;
-    condition: 'good' | 'damaged' | 'defective';
-    productInfo: {
-      name: string;
-      code: string;
-      unit: string;
-      specification: string | null;
-    };
-    salesOrderNumber: string;
-  }) => void;
-  selectedItems: string[]; // 已选择的 salesOrderItemId 列表
+  onItemSelect: (
+    item: Pick<
+      ReturnOrderItem,
+      | 'salesOrderItemId'
+      | 'productId'
+      | 'colorCode'
+      | 'productionDate'
+      | 'returnQuantity'
+      | 'originalQuantity'
+      | 'unitPrice'
+      | 'subtotal'
+      | 'reason'
+      | 'condition'
+    > & {
+      productInfo: {
+        name: string;
+        code: string;
+        unit: string;
+        specification: string | null;
+      };
+      salesOrderNumber: string;
+    }
+  ) => void;
+  selectedItems: string[];
 }
 
-/**
- * 多订单退货商品选择器
- * 显示客户的所有可退货销售订单，并允许从中选择商品
- */
 export function MultiOrderItemSelector({
   customerId,
   onItemSelect,
@@ -59,14 +60,11 @@ export function MultiOrderItemSelector({
 }: MultiOrderItemSelectorProps) {
   const [expandedOrders, setExpandedOrders] = useState<Set<string>>(new Set());
 
-  // 获取客户的所有销售订单
   const { data: salesOrdersData, isLoading: isLoadingOrders } = useQuery({
     queryKey: salesOrderQueryKeys.list({
       page: 1,
       limit: 100,
       customerId,
-      // 只获取已发货和已完成的订单，这些订单才能退货
-      status: undefined,
     }),
     queryFn: () =>
       getSalesOrders({
@@ -74,22 +72,23 @@ export function MultiOrderItemSelector({
         limit: 100,
         customerId,
       }),
-    enabled: !!customerId,
+    enabled: Boolean(customerId),
   });
 
   const salesOrders = Array.isArray(salesOrdersData?.data)
     ? salesOrdersData.data
     : [];
 
-  // 切换订单展开/折叠
   const toggleOrder = (orderId: string) => {
-    const newExpanded = new Set(expandedOrders);
-    if (newExpanded.has(orderId)) {
-      newExpanded.delete(orderId);
-    } else {
-      newExpanded.add(orderId);
-    }
-    setExpandedOrders(newExpanded);
+    setExpandedOrders(prev => {
+      const next = new Set(prev);
+      if (next.has(orderId)) {
+        next.delete(orderId);
+      } else {
+        next.add(orderId);
+      }
+      return next;
+    });
   };
 
   if (isLoadingOrders) {
@@ -129,25 +128,7 @@ interface SalesOrderSectionProps {
   order: SalesOrder;
   isExpanded: boolean;
   onToggle: () => void;
-  onItemSelect: (item: {
-    salesOrderItemId: string;
-    productId: string;
-    colorCode?: string;
-    productionDate?: string;
-    returnQuantity: number;
-    originalQuantity: number;
-    unitPrice: number;
-    subtotal: number;
-    reason?: string;
-    condition: 'good' | 'damaged' | 'defective';
-    productInfo: {
-      name: string;
-      code: string;
-      unit: string;
-      specification: string | null;
-    };
-    salesOrderNumber: string;
-  }) => void;
+  onItemSelect: MultiOrderItemSelectorProps['onItemSelect'];
   selectedItems: string[];
 }
 
@@ -160,16 +141,13 @@ function SalesOrderSection({
 }: SalesOrderSectionProps) {
   const [quantities, setQuantities] = useState<Record<string, number>>({});
 
-  // 获取订单的可退货明细
   const { data: returnableItemsData, isLoading: isLoadingItems } =
     useSalesOrderReturnableItems(order.id, {
       enabled: isExpanded,
     });
 
-  const returnableItems =
-    returnableItemsData?.data?.returnableItems || [];
+  const returnableItems = returnableItemsData?.data?.returnableItems ?? [];
 
-  // 处理选择商品
   const handleSelectItem = (item: ReturnableItem) => {
     const quantity = quantities[item.salesOrderItemId] || 1;
     const subtotal = quantity * item.unitPrice;
@@ -177,8 +155,8 @@ function SalesOrderSection({
     onItemSelect({
       salesOrderItemId: item.salesOrderItemId,
       productId: item.productId,
-      colorCode: item.colorCode || undefined,
-      productionDate: item.productionDate || undefined,
+      colorCode: item.colorCode ?? undefined,
+      productionDate: item.productionDate ?? undefined,
       returnQuantity: quantity,
       originalQuantity: item.availableQuantity,
       unitPrice: item.unitPrice,
@@ -200,7 +178,9 @@ function SalesOrderSection({
           >
             <div className="flex items-center gap-2">
               <ChevronDown
-                className={`h-4 w-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                className={`h-4 w-4 transition-transform ${
+                  isExpanded ? 'rotate-180' : ''
+                }`}
               />
               <span className="font-mono font-medium text-blue-600">
                 {order.orderNumber}
@@ -240,9 +220,7 @@ function SalesOrderSection({
                     <TableHead className="h-8 px-2">可退数量</TableHead>
                     <TableHead className="h-8 px-2">单价</TableHead>
                     <TableHead className="h-8 px-2">退货数量</TableHead>
-                    <TableHead className="h-8 px-2 text-center">
-                      操作
-                    </TableHead>
+                    <TableHead className="h-8 px-2 text-center">操作</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -284,13 +262,16 @@ function SalesOrderSection({
                             max={item.availableQuantity}
                             value={quantities[item.salesOrderItemId] || 1}
                             onChange={e => {
-                              const value = Math.min(
-                                Math.max(1, Number(e.target.value)),
-                                item.availableQuantity
-                              );
+                              const parsed = Number(e.target.value);
+                              const safeValue = Number.isFinite(parsed)
+                                ? Math.min(
+                                    Math.max(1, parsed),
+                                    item.availableQuantity
+                                  )
+                                : 1;
                               setQuantities(prev => ({
                                 ...prev,
-                                [item.salesOrderItemId]: value,
+                                [item.salesOrderItemId]: safeValue,
                               }));
                             }}
                             className="h-6 w-16 text-xs"

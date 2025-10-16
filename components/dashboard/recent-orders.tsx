@@ -43,6 +43,10 @@ const statusConfig = {
     label: '已发货',
     variant: 'purple' as const,
   },
+  delivered: {
+    label: '已送达',
+    variant: 'info' as const,
+  },
   completed: {
     label: '已完成',
     variant: 'success' as const,

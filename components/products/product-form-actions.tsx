@@ -1,7 +1,8 @@
 'use client';
 
-import { ArrowLeft, Loader2, Save } from 'lucide-react';
+import { ArrowLeft, Save } from 'lucide-react';
 
+import { InlineLoading } from '@/components/common/loading';
 import { Button } from '@/components/ui/button';
 
 interface ProductFormActionsProps {
@@ -33,7 +34,7 @@ export function ProductFormActions({
       <Button type="submit" disabled={isLoading}>
         {isLoading ? (
           <>
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            <InlineLoading size="sm" className="mr-2" />
             {loadingText}
           </>
         ) : (

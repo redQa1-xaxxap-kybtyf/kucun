@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus, Trash2 } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -30,12 +30,14 @@ interface FeeItemsInputProps {
 /**
  * 销售订单费用项输入组件
  * 支持添加加工费、运费等额外费用
+ * 使用 React.memo 优化性能
  */
-export function FeeItemsInput({
-  feeItems,
-  onChange,
-  disabled = false,
-}: FeeItemsInputProps) {
+export const FeeItemsInput = React.memo<FeeItemsInputProps>(
+  function FeeItemsInput({
+    feeItems,
+    onChange,
+    disabled = false,
+  }) {
   const sanitizeFeeItems = (items: SalesOrderFeeItem[]): SalesOrderFeeItem[] =>
     items.map((item, index, array) => {
       const trimmedName = item.feeName?.trim() ?? '';
@@ -244,4 +246,4 @@ export function FeeItemsInput({
       )}
     </div>
   );
-}
+});

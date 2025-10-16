@@ -933,6 +933,13 @@ model SystemLog {
   ipAddress   String?  @map("ip_address")
   userAgent   String?  @map("user_agent")
   metadata    String? // JSON格式的额外信息
+
+  // IP地理位置信息字段
+  ipCountry   String?  @map("ip_country") // 国家
+  ipProvince  String?  @map("ip_province") // 省份/州
+  ipCity      String?  @map("ip_city") // 城市
+  ipLocation  String?  @map("ip_location") // 完整位置字符串 "国家 省份 城市"
+
   createdAt   DateTime @default(now()) @map("created_at")
 
   // 关联关系

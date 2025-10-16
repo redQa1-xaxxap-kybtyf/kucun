@@ -82,15 +82,12 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
           categoryOptions={categoryOptions}
           onSearch={handleSearch}
           onFilter={handleFilter}
-          onInbound={handleInbound}
-          onOutbound={handleOutbound}
-          onAdjust={() => handleAdjust()}
         />
 
         {/* 操作栏 */}
         <div className="flex items-center justify-between">
           <InventoryListActions
-            selectedCount={selectedIds.length}
+            selectedCount={selectedIds.size}
             onInbound={handleInbound}
             onOutbound={handleOutbound}
             onAdjust={() => handleAdjust()}

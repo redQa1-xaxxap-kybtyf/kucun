@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { SupplierSelector } from '@/components/sales-orders/supplier-selector';
@@ -31,13 +31,16 @@ interface SupplierPriceSelectorProps {
  * 1. 选择供应商
  * 2. 自动查询供应商的产品历史价格
  * 3. 自动填充价格到表单
+ *
+ * 使用 React.memo 优化性能
  */
-export function SupplierPriceSelector({
-  form,
-  index,
-  value,
-  onChange,
-}: SupplierPriceSelectorProps) {
+export const SupplierPriceSelector = React.memo<SupplierPriceSelectorProps>(
+  function SupplierPriceSelector({
+    form,
+    index,
+    value,
+    onChange,
+  }) {
   const { toast } = useToast();
 
   // 获取当前行的产品ID
@@ -95,4 +98,4 @@ export function SupplierPriceSelector({
       <FormMessage />
     </FormItem>
   );
-}
+});

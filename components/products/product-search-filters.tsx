@@ -12,18 +12,20 @@ import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import type { Category } from '@/lib/types/category';
+import type { ProductStatus } from '@/lib/types/product';
+import { PRODUCT_STATUS_OPTIONS } from '@/lib/config/product';
 
 interface ProductSearchFiltersProps {
   searchValue: string;
   categoryId?: string;
-  status?: 'active' | 'inactive';
+  status?: ProductStatus;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
   categories: Category[];
   onSearchChange: (value: string) => void;
   onFilterChange: (filters: {
     categoryId?: string;
-    status?: 'active' | 'inactive';
+    status?: ProductStatus;
   }) => void;
   onSortChange: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   onClearFilters: () => void;
@@ -48,7 +50,7 @@ export function ProductSearchFilters({
     if (key === 'status') {
       onFilterChange({
         categoryId,
-        status: value as 'active' | 'inactive' | undefined,
+        status: value as ProductStatus | undefined,
       });
     } else if (key === 'categoryId') {
       onFilterChange({ categoryId: value, status });
@@ -70,10 +72,10 @@ export function ProductSearchFilters({
   ];
 
   // 状态选项
-  const statusOptions = [
-    { label: '启用', value: 'active' },
-    { label: '停用', value: 'inactive' },
-  ];
+  const statusOptions = PRODUCT_STATUS_OPTIONS.map(option => ({
+    label: option.label,
+    value: option.value,
+  }));
 
   return (
     <Card

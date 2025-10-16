@@ -13,11 +13,23 @@ async function main() {
   try {
     // 按照依赖关系顺序删除数据
     console.log('1️⃣ 清空财务相关数据...');
+    await prisma.statementTransaction.deleteMany();
+    console.log('   ✅ 已清空账单交易');
+
+    await prisma.accountStatement.deleteMany();
+    console.log('   ✅ 已清空往来账单');
+
     await prisma.refundRecord.deleteMany();
     console.log('   ✅ 已清空退款记录');
 
     await prisma.paymentRecord.deleteMany();
     console.log('   ✅ 已清空付款记录');
+
+    await prisma.paymentOutRecord.deleteMany();
+    console.log('   ✅ 已清空应付款付款记录');
+
+    await prisma.payableRecord.deleteMany();
+    console.log('   ✅ 已清空应付款记录');
 
     console.log('\n2️⃣ 清空订单相关数据...');
     await prisma.returnOrderItem.deleteMany();
@@ -34,6 +46,9 @@ async function main() {
 
     await prisma.salesOrderItem.deleteMany();
     console.log('   ✅ 已清空销售订单明细');
+
+    await prisma.salesOrderFeeItem.deleteMany();
+    console.log('   ✅ 已清空销售订单费用');
 
     await prisma.salesOrder.deleteMany();
     console.log('   ✅ 已清空销售订单');
@@ -52,6 +67,15 @@ async function main() {
     console.log('   ✅ 已清空库存');
 
     console.log('\n4️⃣ 清空产品相关数据...');
+    await prisma.batchSpecification.deleteMany();
+    console.log('   ✅ 已清空批次规格');
+
+    await prisma.customerProductPrice.deleteMany();
+    console.log('   ✅ 已清空客户产品价格');
+
+    await prisma.supplierProductPrice.deleteMany();
+    console.log('   ✅ 已清空供应商产品价格');
+
     await prisma.productVariant.deleteMany();
     console.log('   ✅ 已清空产品规格');
 

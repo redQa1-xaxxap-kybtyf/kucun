@@ -204,12 +204,16 @@ async function collectPayableRecordEvents(): Promise<LedgerEvent[]> {
       status: true,
     },
     where: {
-      supplierId: { not: null },
       payableAmount: { gt: 0 },
     },
   });
 
-  return payables.map(payable => ({
+  const validPayables = payables.filter(
+    (payable): payable is typeof payable & { supplierId: string } =>
+      typeof payable.supplierId === 'string' && payable.supplierId.length > 0
+  );
+
+  return validPayables.map(payable => ({
     partnerId: payable.supplierId,
     partnerRole: 'supplier' as PartnerRole,
     entityType: 'supplier' as StatementType,

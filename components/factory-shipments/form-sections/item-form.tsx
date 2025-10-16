@@ -1,6 +1,7 @@
 'use client';
 
 import { Minus } from 'lucide-react';
+import React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { SupplierPriceSelector } from '@/components/factory-shipments/supplier-price-selector';
@@ -36,8 +37,9 @@ interface ItemFormProps {
 /**
  * 厂家发货订单商品明细表单
  * 单个商品的表单项
+ * 使用 React.memo 优化性能，避免不必要的重新渲染
  */
-export function ItemForm({
+export const ItemForm = React.memo<ItemFormProps>(function ItemForm({
   form,
   index,
   products,
@@ -45,7 +47,7 @@ export function ItemForm({
   onRemove,
   selectedCustomerId,
   customerPriceHistoryData,
-}: ItemFormProps) {
+}) {
   const { toast } = useToast();
 
   return (
@@ -282,4 +284,4 @@ export function ItemForm({
       </CardContent>
     </Card>
   );
-}
+});

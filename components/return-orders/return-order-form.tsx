@@ -149,21 +149,16 @@ export function ReturnOrderForm({
   });
 
   // 添加退货明细
-  const addReturnItem = (salesOrderItem: {
-    id: string;
-    productId: string;
-    quantity: number;
-    unitPrice: number;
-    product: { name: string; code: string; unit: string };
-  }) => {
+  const addReturnItem = (salesOrderItem: ReturnableItem) => {
     const newItem = {
-      salesOrderItemId: salesOrderItem.id,
+      salesOrderItemId: salesOrderItem.salesOrderItemId,
       productId: salesOrderItem.productId,
       returnQuantity: 1,
       damagedQuantity: 0,
-      originalQuantity: salesOrderItem.quantity,
+      originalQuantity: salesOrderItem.originalQuantity,
       unitPrice: salesOrderItem.unitPrice,
       subtotal: salesOrderItem.unitPrice,
+      condition: 'good' as const,
     };
     append(newItem);
   };
@@ -415,16 +410,18 @@ export function ReturnOrderForm({
                           {returnableItemsData.data.returnableItems.map(
                             (item: ReturnableItem) => (
                               <div
-                                key={item.id}
+                                key={item.salesOrderItemId}
                                 className="flex items-center justify-between rounded-lg border p-3"
                               >
                                 <div className="flex-1">
                                   <div className="font-medium">
-                                    {item.product?.name}
+                                    {item.product.name}
                                   </div>
                                   <div className="text-muted-foreground text-sm">
-                                    数量: {item.quantity} {item.product?.unit} |
-                                    单价: {formatReturnAmount(item.unitPrice)}
+                                    数量: {item.originalQuantity}{' '}
+                                    {item.product.unit} | 可退:{' '}
+                                    {item.availableQuantity} | 单价:{' '}
+                                    {formatReturnAmount(item.unitPrice)}
                                   </div>
                                 </div>
                                 <Button
@@ -433,7 +430,9 @@ export function ReturnOrderForm({
                                   size="sm"
                                   onClick={() => addReturnItem(item)}
                                   disabled={fields.some(
-                                    field => field.salesOrderItemId === item.id
+                                    field =>
+                                      field.salesOrderItemId ===
+                                      item.salesOrderItemId
                                   )}
                                 >
                                   <Plus className="mr-1 h-4 w-4" />

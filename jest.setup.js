@@ -3,8 +3,18 @@
  * 在所有测试运行前执行
  */
 
+/**
+ * Jest全局设置文件
+ * 在所有测试运行前执行
+ */
+
 // 导入jest-dom扩展匹配器
 import '@testing-library/jest-dom';
+
+// Mock encoding 模块（Next.js response-cache 依赖）
+jest.mock('encoding', () => ({
+  convert: () => undefined,
+}));
 
 // 设置环境变量
 process.env.NODE_ENV = 'test';
@@ -92,6 +102,16 @@ jest.setTimeout(10000);
 // 清理函数
 afterEach(() => {
   jest.clearAllMocks();
+  // 清理所有定时器
+  jest.clearAllTimers();
+});
+
+// 在所有测试后清理
+afterAll(() => {
+  // 确保关闭所有打开的连接
+  jest.restoreAllMocks();
+  // 清理所有定时器
+  jest.clearAllTimers();
 });
 
 // Mock @faker-js/faker to avoid ES module issues
@@ -128,15 +148,3 @@ jest.mock('@faker-js/faker', () => ({
     },
   },
 }));
-
-// Polyfill TransformStream 用于 Node 环境下的浏览器 API 依赖
-if (typeof globalThis.TransformStream === 'undefined') {
-  class MockTransformStream {
-    constructor() {
-      this.readable = { locked: false };
-      this.writable = { locked: false };
-    }
-  }
-
-  globalThis.TransformStream = MockTransformStream;
-}

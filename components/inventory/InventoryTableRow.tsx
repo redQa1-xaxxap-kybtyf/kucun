@@ -6,11 +6,17 @@
 
 'use client';
 
-import { Eye } from 'lucide-react';
+import { Eye, MoreHorizontal } from 'lucide-react';
 import * as React from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { TableCell, TableRow } from '@/components/ui/table';
 import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
@@ -192,22 +198,27 @@ export const InventoryTableRow = React.memo<InventoryTableRowProps>(
         <TableCell>{stockBadge}</TableCell>
         <TableCell>{formattedDate}</TableCell>
         <TableCell>
-          <div className="flex items-center gap-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className={`h-6 w-6 p-0 ${item.batchNumber ? '' : 'cursor-not-allowed opacity-60'}`}
-              onClick={handleAdjust}
-              disabled={!item.batchNumber}
-              title={
-                item.batchNumber
-                  ? '查看库存变动详情'
-                  : '暂无批次信息，无法查看详情'
-              }
-            >
-              <Eye className="h-3 w-3" />
-            </Button>
-          </div>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+              >
+                <span className="sr-only">打开菜单</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem
+                onClick={handleAdjust}
+                disabled={!item.batchNumber}
+              >
+                <Eye className="mr-2 h-4 w-4" />
+                查看库存变动详情
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </TableCell>
       </TableRow>
     );

@@ -289,21 +289,35 @@ export function IntelligentProductInput<
       control={form.control}
       name={`items.${index}.productId` as unknown as Path<TFieldValues>}
       rules={{
-        validate: (value: string | undefined) => {
-          const isManual = form.getValues(
+        validate: (value: unknown) => {
+          const isManualRaw = form.getValues(
             `items.${index}.isManualProduct` as unknown as Path<TFieldValues>
-          ) as unknown as boolean;
-          const manualName = form.getValues(
+          );
+          const isManual = Boolean(isManualRaw as unknown as boolean);
+          const manualNameRaw = form.getValues(
             `items.${index}.manualProductName` as unknown as Path<TFieldValues>
-          ) as unknown as string | undefined;
+          );
+          const manualName =
+            typeof manualNameRaw === 'string'
+              ? manualNameRaw.trim()
+              : manualNameRaw != null
+                ? String(manualNameRaw).trim()
+                : '';
 
           if (isManual) {
-            return manualName && manualName.trim().length > 0
+            return manualName.length > 0
               ? true
               : '手动输入商品必须填写商品名称';
           }
 
-          return value && String(value).trim().length > 0 ? true : '请选择商品';
+          const selected =
+            typeof value === 'string'
+              ? value.trim()
+              : value != null
+                ? String(value).trim()
+                : '';
+
+          return selected.length > 0 ? true : '请选择商品';
         },
       }}
       render={({ field }) => (

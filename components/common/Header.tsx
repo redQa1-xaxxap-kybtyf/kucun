@@ -74,7 +74,7 @@ function HeaderComponent({
   const {
     notifications,
     unreadCount,
-    isLoading: notificationsLoading,
+    loadingState: notificationsLoadingState,
     markAsRead,
     markAllAsRead,
   } = usePollingNotifications();
@@ -249,9 +249,15 @@ function HeaderComponent({
                   <div
                     className={cn(
                       'h-2 w-2 rounded-full',
-                      !notificationsLoading ? 'bg-green-500' : 'bg-gray-400'
+                      !notificationsLoadingState.isLoading
+                        ? 'bg-green-500'
+                        : 'bg-gray-400'
                     )}
-                    title={!notificationsLoading ? '轮询正常' : '加载中...'}
+                    title={
+                      !notificationsLoadingState.isLoading
+                        ? '轮询正常'
+                        : '加载中...'
+                    }
                   />
                 </div>
                 {unreadCount > 0 && (

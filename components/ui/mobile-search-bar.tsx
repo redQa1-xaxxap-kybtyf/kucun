@@ -50,6 +50,13 @@ export interface SearchState {
   };
 }
 
+type FilterValue =
+  | string
+  | number
+  | boolean
+  | Array<string | number>
+  | undefined;
+
 export interface MobileSearchBarProps {
   value: SearchState;
   onChange: (value: SearchState) => void;
@@ -107,10 +114,7 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
     };
 
     // 处理筛选器变化
-    const handleFilterChange = (
-      key: string,
-      filterValue: string | number | boolean | undefined
-    ) => {
+    const handleFilterChange = (key: string, filterValue: FilterValue) => {
       const newFilters = { ...value.filters };
       if (
         filterValue === undefined ||
@@ -220,61 +224,134 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
                 </SheetHeader>
 
                 <div className="mt-6 space-y-4">
-                  {filterOptions.map(filter => (
-                    <div key={filter.key} className="space-y-2">
-                      <label className="text-sm font-medium">
-                        {filter.label}
-                      </label>
+                  {filterOptions.map(filter => {
+                    const rawFilterValue = value.filters[filter.key];
+                    const stringValue =
+                      rawFilterValue === undefined || rawFilterValue === null
+                        ? ''
+                        : String(rawFilterValue);
 
-                      {filter.type === 'select' && (
-                        <Select
-                          value={value.filters[filter.key] || ''}
-                          onValueChange={val =>
-                            handleFilterChange(filter.key, val)
-                          }
-                        >
-                          <SelectTrigger>
-                            <SelectValue
-                              placeholder={
-                                filter.placeholder || `选择${filter.label}`
+                    return (
+                      <div key={filter.key} className="space-y-2">
+                        <label className="text-sm font-medium">
+                          {filter.label}
+                        </label>
+
+                        {filter.type === 'select' && (
+                          <Select
+                            value={stringValue}
+                            onValueChange={val =>
+                              handleFilterChange(filter.key, val || undefined)
+                            }
+                          >
+                            <SelectTrigger>
+                              <SelectValue
+                                placeholder={
+                                  filter.placeholder || `选择${filter.label}`
+                                }
+                              />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {filter.options?.map(option => (
+                                <SelectItem
+                                  key={option.value}
+                                  value={option.value}
+                                >
+                                  {option.label}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+
+                        {filter.type === 'number' && (
+                          <Input
+                            type="number"
+                            placeholder={filter.placeholder}
+                            value={stringValue}
+                            onChange={e => {
+                              const next = e.target.value.trim();
+                              handleFilterChange(
+                                filter.key,
+                                next === '' ? undefined : Number(next)
+                              );
+                            }}
+                          />
+                        )}
+
+                        {filter.type === 'date' && (
+                          <Input
+                            type="date"
+                            value={stringValue}
+                            onChange={e =>
+                              handleFilterChange(filter.key, e.target.value)
+                            }
+                          />
+                        )}
+
+                        {filter.type === 'daterange' && (
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <Input
+                              type="date"
+                              value={
+                                Array.isArray(rawFilterValue) &&
+                                rawFilterValue[0]
+                                  ? String(rawFilterValue[0])
+                                  : ''
                               }
+                              onChange={e => {
+                                const current = Array.isArray(rawFilterValue)
+                                  ? [...rawFilterValue]
+                                  : ['', ''];
+                                current[0] = e.target.value;
+                                handleFilterChange(
+                                  filter.key,
+                                  current.every(item => !item)
+                                    ? undefined
+                                    : current
+                                );
+                              }}
                             />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {filter.options?.map(option => (
-                              <SelectItem
-                                key={option.value}
-                                value={option.value}
-                              >
-                                {option.label}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      )}
+                            <Input
+                              type="date"
+                              value={
+                                Array.isArray(rawFilterValue) &&
+                                rawFilterValue[1]
+                                  ? String(rawFilterValue[1])
+                                  : ''
+                              }
+                              onChange={e => {
+                                const current = Array.isArray(rawFilterValue)
+                                  ? [...rawFilterValue]
+                                  : ['', ''];
+                                current[1] = e.target.value;
+                                handleFilterChange(
+                                  filter.key,
+                                  current.every(item => !item)
+                                    ? undefined
+                                    : current
+                                );
+                              }}
+                            />
+                          </div>
+                        )}
 
-                      {filter.type === 'number' && (
-                        <Input
-                          type="number"
-                          placeholder={filter.placeholder}
-                          value={value.filters[filter.key] || ''}
-                          onChange={e =>
-                            handleFilterChange(filter.key, e.target.value)
-                          }
-                        />
-                      )}
-
-                      {filter.type === 'date' && (
-                        <Input
-                          type="date"
-                          value={value.filters[filter.key] || ''}
-                          onChange={e =>
-                            handleFilterChange(filter.key, e.target.value)
-                          }
-                        />
-                      )}
-                    </div>
-                  ))}
+                        {filter.type === 'multiselect' && (
+                          <Input
+                            placeholder={filter.placeholder}
+                            value={stringValue}
+                            onChange={e => {
+                              const next = e.target.value.split(',').map(str => str.trim()).filter(Boolean);
+                              handleFilterChange(
+                                filter.key,
+                                next.length ? next : undefined
+                              );
+                            }}
+                          />
+                        )}
+                      </div>
+                    );
+                  })}
 
                   {/* 筛选器操作按钮 */}
                   <div className="flex gap-2 pt-4">
@@ -375,7 +452,11 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
         {activeFilterCount > 0 && (
           <div className="flex flex-wrap gap-2">
             {Object.entries(value.filters).map(([key, filterValue]) => {
-              if (!filterValue) {
+              if (
+                filterValue === undefined ||
+                filterValue === null ||
+                (typeof filterValue === 'string' && filterValue.trim() === '')
+              ) {
                 return null;
               }
 
@@ -384,12 +465,20 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
                 return null;
               }
 
-              let displayValue = filterValue;
+              let displayValue: React.ReactNode;
               if (filter.type === 'select' && filter.options) {
                 const option = filter.options.find(
-                  opt => opt.value === filterValue
+                  opt => opt.value === String(filterValue)
                 );
-                displayValue = option?.label || filterValue;
+                displayValue = option?.label ?? String(filterValue);
+              } else if (Array.isArray(filterValue)) {
+                displayValue = filterValue
+                  .map(item => String(item))
+                  .join(', ');
+              } else if (typeof filterValue === 'boolean') {
+                displayValue = filterValue ? '是' : '否';
+              } else {
+                displayValue = String(filterValue);
               }
 
               return (

@@ -193,11 +193,15 @@ export function ContentLoading({ text }: { text?: string }) {
 export function InlineLoading({
   text,
   size = 'sm',
+  className,
 }: {
   text?: string;
   size?: LoadingSize;
+  className?: string;
 }) {
-  return <Loading variant="inline" size={size} text={text} />;
+  return (
+    <Loading variant="inline" size={size} text={text} className={className} />
+  );
 }
 
 /**

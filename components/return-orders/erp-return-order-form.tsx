@@ -1,16 +1,15 @@
+/* eslint-disable max-lines-per-function, max-lines */
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Package, Save, Trash2 } from 'lucide-react';
+import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { CustomerSalesOrderSelector } from '@/components/return-orders/customer-sales-order-selector';
-import { MultiOrderItemSelector } from '@/components/return-orders/multi-order-item-selector';
-import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
-import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
+import { ReturnItemsSection, type ReturnOrderSelectableItem, type ReturnOrderProductInfo } from '@/components/return-orders/erp-return-order-form/ReturnItemsSection';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -20,7 +19,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import {
   Select,
   SelectContent,
@@ -28,21 +26,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
+import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import {
   useCreateReturnOrder,
   useSalesOrderReturnableItems,
   useUpdateReturnOrder,
 } from '@/lib/api/return-orders';
+import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import {
   type ReturnOrder,
   RETURN_ORDER_TYPE_LABELS,
@@ -147,6 +139,8 @@ export function ERPReturnOrderForm({
     : [];
 
   // 监听销售订单变化
+  
+  const returnMode = returnMode;
   const watchedSalesOrderId = form.watch('salesOrderId');
   useEffect(() => {
     if (watchedSalesOrderId && watchedSalesOrderId !== selectedSalesOrderId) {
@@ -165,16 +159,7 @@ export function ERPReturnOrderForm({
 
   // 保存产品信息的状态，用于显示
   const [productInfoMap, setProductInfoMap] = useState<
-    Record<
-      string,
-      {
-        name: string;
-        code: string;
-        unit: string;
-        specification: string | null;
-        salesOrderNumber?: string; // 多订单模式下记录来源订单号
-      }
-    >
+    Record<string, ReturnOrderProductInfo>
   >({});
 
   // 当可退货明细加载完成后，自动填充到表单
@@ -184,17 +169,14 @@ export function ERPReturnOrderForm({
       returnableItemsData.data.returnableItems.length > 0
     ) {
       // 构建产品信息映射
-      const newProductInfoMap: Record<
-        string,
-        {
-          name: string;
-          code: string;
-          unit: string;
-          specification: string | null;
-        }
-      > = {};
+      const newProductInfoMap: Record<string, ReturnOrderProductInfo> = {};
       returnableItemsData.data.returnableItems.forEach(item => {
-        newProductInfoMap[item.productId] = item.product;
+        newProductInfoMap[item.productId] = {
+          name: item.product.name,
+          code: item.product.code,
+          unit: item.product.unit,
+          specification: item.product.specification ?? null,
+        };
       });
       setProductInfoMap(newProductInfoMap);
 
@@ -210,6 +192,7 @@ export function ERPReturnOrderForm({
         unitPrice: item.unitPrice,
         subtotal: 0,
         reason: '',
+        condition: 'good' as const, // 默认状态为良好
       }));
 
       replace(formItems);
@@ -257,25 +240,6 @@ export function ERPReturnOrderForm({
     },
   });
 
-  // 添加退货明细
-  const _addReturnItem = (salesOrderItem: {
-    id: string;
-    productId: string;
-    quantity: number;
-    unitPrice: number;
-  }) => {
-    const newItem = {
-      salesOrderItemId: salesOrderItem.id,
-      productId: salesOrderItem.productId,
-      returnQuantity: 1,
-      damagedQuantity: 0,
-      originalQuantity: salesOrderItem.quantity,
-      unitPrice: salesOrderItem.unitPrice,
-      subtotal: salesOrderItem.unitPrice,
-    };
-    append(newItem);
-  };
-
   // 计算明细小计
   const calculateSubtotal = (index: number) => {
     const quantity = form.watch(`items.${index}.returnQuantity`);
@@ -289,6 +253,48 @@ export function ERPReturnOrderForm({
     const items = form.watch('items');
     return items?.reduce((total, item) => total + (item.subtotal || 0), 0) || 0;
   };
+
+  const handleAddEmptyItem = useCallback(() => {
+    append({
+      salesOrderItemId: '',
+      productId: '',
+      colorCode: undefined,
+      productionDate: undefined,
+      returnQuantity: 1,
+      damagedQuantity: 0,
+      originalQuantity: 1,
+      unitPrice: 0,
+      subtotal: 0,
+      reason: '',
+      condition: 'good',
+    });
+  }, [append]);
+
+  const handleMultiOrderItemSelect = useCallback(
+    (item: ReturnOrderSelectableItem) => {
+      append({
+        salesOrderItemId: item.salesOrderItemId,
+        productId: item.productId,
+        colorCode: item.colorCode || undefined,
+        productionDate: item.productionDate || undefined,
+        returnQuantity: item.returnQuantity,
+        damagedQuantity: item.damagedQuantity ?? 0,
+        originalQuantity: item.originalQuantity,
+        unitPrice: item.unitPrice,
+        subtotal: item.subtotal ?? item.returnQuantity * item.unitPrice,
+        reason: item.reason || '',
+        condition: item.condition,
+      });
+      setProductInfoMap(prev => ({
+        ...prev,
+        [item.productId]: {
+          ...item.productInfo,
+          salesOrderNumber: item.salesOrderNumber,
+        },
+      }));
+    },
+    [append, setProductInfoMap]
+  );
 
   // 表单提交
   const onSubmit = (
@@ -430,7 +436,7 @@ export function ERPReturnOrderForm({
                   </FormItem>
                 )}
               />
-              {form.watch('returnMode') === 'single_order' && (
+              {returnMode === 'single_order' && (
                 <FormItem>
                   <FormLabel className="text-xs">关联销售订单 *</FormLabel>
                   <FormControl>
@@ -473,7 +479,7 @@ export function ERPReturnOrderForm({
                   )}
                 </FormItem>
               )}
-              {form.watch('returnMode') === 'multi_order' && (
+              {returnMode === 'multi_order' && (
                 <FormItem>
                   <FormLabel className="text-xs">客户选择 *</FormLabel>
                   <Select
@@ -597,227 +603,20 @@ export function ERPReturnOrderForm({
             </div>
           </div>
 
-          {/* 退货明细 */}
-          <div className="bg-muted/5 border-b px-3 py-2">
-            <div className="flex items-center justify-between">
-              <div className="text-muted-foreground text-xs">退货明细</div>
-              <div className="text-muted-foreground text-xs">
-                总金额: ¥{calculateTotal().toFixed(2)}
-              </div>
-            </div>
-          </div>
-          <div className="px-3 py-3">
-            {/* 多订单模式：显示商品选择器 */}
-            {form.watch('returnMode') === 'multi_order' &&
-              selectedCustomerId && (
-                <div className="mb-4">
-                  <div className="mb-2 text-xs font-medium">
-                    从销售订单中选择退货商品
-                  </div>
-                  <MultiOrderItemSelector
-                    customerId={selectedCustomerId}
-                    onItemSelect={item => {
-                      // 添加到表单明细
-                      const newItem = {
-                        salesOrderItemId: item.salesOrderItemId,
-                        productId: item.productId,
-                        colorCode: item.colorCode,
-                        productionDate: item.productionDate,
-                        returnQuantity: item.returnQuantity,
-                        damagedQuantity: item.damagedQuantity || 0,
-                        originalQuantity: item.originalQuantity,
-                        unitPrice: item.unitPrice,
-                        subtotal: item.subtotal,
-                        reason: item.reason,
-                      };
-                      append(newItem);
-
-                      // 记录产品信息和来源订单号
-                      setProductInfoMap(prev => ({
-                        ...prev,
-                        [item.productId]: {
-                          ...item.productInfo,
-                          salesOrderNumber: item.salesOrderNumber,
-                        },
-                      }));
-                    }}
-                    selectedItems={fields.map(f => f.salesOrderItemId)}
-                  />
-                </div>
-              )}
-
-            {/* 单订单模式：显示加载状态 */}
-            {form.watch('returnMode') === 'single_order' && isLoadingItems && (
-              <div className="flex items-center justify-center gap-2 py-8">
-                <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
-                <span className="text-muted-foreground text-xs">
-                  加载销售订单明细中...
-                </span>
-              </div>
-            )}
-
-            {/* 空状态提示 */}
-            {fields.length === 0 ? (
-              <div className="text-muted-foreground py-8 text-center text-xs">
-                {form.watch('returnMode') === 'single_order'
-                  ? '暂无退货明细，请先选择销售订单'
-                  : '暂无退货明细，请从上方选择要退货的商品'}
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="text-xs">
-                      <TableHead className="h-8 px-2">产品</TableHead>
-                      {form.watch('returnMode') === 'multi_order' && (
-                        <TableHead className="h-8 px-2">来源订单</TableHead>
-                      )}
-                      <TableHead className="h-8 px-2">原始数量</TableHead>
-                      <TableHead className="h-8 px-2">退货数量</TableHead>
-                      <TableHead className="h-8 px-2">破损数量</TableHead>
-                      <TableHead className="h-8 px-2">单价</TableHead>
-                      <TableHead className="h-8 px-2">小计</TableHead>
-                      <TableHead className="h-8 px-2 text-center">
-                        操作
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {fields.map((field, index) => (
-                      <TableRow key={field.id} className="text-xs">
-                        <TableCell className="h-8 px-2">
-                          <div className="flex flex-col gap-0.5">
-                            <div className="flex items-center gap-1">
-                              <Package className="text-muted-foreground h-3 w-3" />
-                              <span className="font-medium">
-                                {productInfoMap[field.productId]?.name ||
-                                  `产品 ${index + 1}`}
-                              </span>
-                            </div>
-                            {productInfoMap[field.productId] && (
-                              <div className="text-muted-foreground flex gap-2 text-xs">
-                                <span>
-                                  {productInfoMap[field.productId].code}
-                                </span>
-                                {productInfoMap[field.productId]
-                                  .specification && (
-                                  <span>
-                                    {
-                                      productInfoMap[field.productId]
-                                        .specification
-                                    }
-                                  </span>
-                                )}
-                                {field.colorCode && (
-                                  <span>颜色: {field.colorCode}</span>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        {form.watch('returnMode') === 'multi_order' && (
-                          <TableCell className="h-8 px-2">
-                            <span className="text-muted-foreground font-mono text-xs">
-                              {productInfoMap[field.productId]
-                                ?.salesOrderNumber || '-'}
-                            </span>
-                          </TableCell>
-                        )}
-                        <TableCell className="h-8 px-2">
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.originalQuantity`}
-                            render={({ field }) => (
-                              <Input
-                                type="number"
-                                className="h-6 w-20 text-xs"
-                                readOnly
-                                {...field}
-                              />
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell className="h-8 px-2">
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.returnQuantity`}
-                            render={({ field }) => (
-                              <Input
-                                type="number"
-                                min="1"
-                                className="h-6 w-16 text-xs"
-                                {...field}
-                                onChange={e => {
-                                  field.onChange(Number(e.target.value));
-                                  calculateSubtotal(index);
-                                }}
-                              />
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell className="h-8 px-2">
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.damagedQuantity`}
-                            render={({ field }) => (
-                              <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                placeholder="0"
-                                className="h-6 w-16 text-xs"
-                                {...field}
-                                onChange={e => {
-                                  field.onChange(Number(e.target.value) || 0);
-                                }}
-                              />
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell className="h-8 px-2">
-                          <FormField
-                            control={form.control}
-                            name={`items.${index}.unitPrice`}
-                            render={({ field }) => (
-                              <Input
-                                type="number"
-                                step="0.01"
-                                className="h-6 w-20 text-xs"
-                                {...field}
-                                onChange={e => {
-                                  field.onChange(Number(e.target.value));
-                                  calculateSubtotal(index);
-                                }}
-                              />
-                            )}
-                          />
-                        </TableCell>
-                        <TableCell className="h-8 px-2">
-                          <span className="font-mono text-xs">
-                            ¥
-                            {form
-                              .watch(`items.${index}.subtotal`)
-                              ?.toFixed(2) || '0.00'}
-                          </span>
-                        </TableCell>
-                        <TableCell className="h-8 px-2">
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="sm"
-                            className="h-6 w-6 p-0"
-                            onClick={() => remove(index)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </div>
+          <ReturnItemsSection
+            form={form}
+            fields={fields}
+            onRemove={remove}
+            onAddItem={handleAddEmptyItem}
+            onSelectSalesOrderItem={handleMultiOrderItemSelect}
+            isSubmitting={isLoading}
+            isLoadingItems={isLoadingItems}
+            selectedCustomerId={selectedCustomerId}
+            returnMode={returnMode}
+            productInfoMap={productInfoMap}
+            calculateSubtotal={calculateSubtotal}
+            calculateTotal={calculateTotal}
+          />
 
           {/* 备注信息 */}
           <div className="bg-muted/5 border-b px-3 py-2">

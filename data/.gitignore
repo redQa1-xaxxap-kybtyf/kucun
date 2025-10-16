@@ -1,0 +1,8 @@
+# 忽略 GeoLite2 数据库文件（约70MB，不应提交到仓库）
+*.mmdb
+*.tar.gz
+GeoLite2-*
+
+# 保留 README 说明文件
+!README.md
+!.gitignore
