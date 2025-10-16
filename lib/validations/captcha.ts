@@ -71,13 +71,8 @@ export type VerifyCaptchaInput = z.infer<typeof verifyCaptchaSchema>;
 export type CaptchaConfigInput = z.infer<typeof captchaConfigSchema>;
 
 // 验证工具函数
-export const validateCaptchaFormat = (captcha: string): boolean => {
-  return (
-    /^[a-zA-Z0-9]+$/.test(captcha) &&
-    captcha.length >= 4 &&
-    captcha.length <= 10
-  );
-};
+export const validateCaptchaFormat = (captcha: string): boolean =>
+  /^[a-zA-Z0-9]+$/.test(captcha) && captcha.length >= 4 && captcha.length <= 10;
 
 export const validateSessionId = (sessionId: string): boolean => {
   // UUID v4 格式验证

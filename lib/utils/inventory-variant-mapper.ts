@@ -4,8 +4,9 @@
  * 映射到库存表的variantId和batchNumber字段
  */
 
-import { prisma } from '@/lib/db';
 import type { Prisma } from '@prisma/client';
+
+import { prisma } from '@/lib/db';
 
 /**
  * 库存查询条件构建器

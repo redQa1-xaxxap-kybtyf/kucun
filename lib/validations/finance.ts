@@ -226,6 +226,4 @@ export const validateAmountRange = (
   amount: number,
   minAmount = -999999999,
   maxAmount = 999999999
-): boolean => {
-  return amount >= minAmount && amount <= maxAmount;
-};
+): boolean => amount >= minAmount && amount <= maxAmount;

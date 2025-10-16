@@ -1,31 +1,31 @@
 // 收款管理类型定义
 // 定义收款记录、应收账款等相关数据结构
 
-import type { z } from 'zod';
-
 import type {
-  paymentMethodSchema,
-  paymentStatusSchema,
-  paymentTypeSchema,
-  type AccountsReceivableQueryInput,
-  type BatchPaymentOperationInput,
-  type CreatePaymentRecordInput,
-  type PaymentConfirmationInput,
-  type PaymentRecordQueryInput,
-  type PaymentStatisticsQueryInput,
-  type UpdatePaymentRecordInput,
+  AccountsReceivableQueryInput,
+  BatchPaymentOperationInput,
+  CreatePaymentRecordInput,
+  PaymentConfirmationInput,
+  PaymentMethod,
+  PaymentRecordQueryInput,
+  PaymentStatisticsQueryInput,
+  PaymentStatus,
+  PaymentType,
+  UpdatePaymentRecordInput,
 } from '@/lib/validations/payment';
 
-// 收款方式、状态、类型枚举（从 Zod Schema 推导，保持单一真理源）
-export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
-export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
-export type PaymentType = z.infer<typeof paymentTypeSchema>;
+// 收款方式、状态、类型枚举（与验证规则保持同步）
+export type {
+  PaymentMethod,
+  PaymentStatus,
+  PaymentType,
+} from '@/lib/validations/payment';
 
-// 收款记录基础数据
 export interface PaymentRecord {
   id: string;
   paymentNumber: string;
   salesOrderId: string | null;
+  factoryShipmentOrderId?: string | null;
   customerId: string;
   userId: string;
   paymentType: PaymentType;
@@ -50,6 +50,11 @@ export interface PaymentRecordDetail extends PaymentRecord {
     totalAmount: number;
     status: string;
   };
+  factoryShipmentOrder?: {
+    id: string;
+    orderNumber: string;
+    status: string;
+  } | null;
   customer: {
     id: string;
     name: string;

@@ -3,17 +3,16 @@
  * 包含API查询参数、响应格式和分页信息
  */
 
-import { paginationConfig } from '@/lib/env';
+import { paginationConfig } from '../env';
 
 import type { Inventory } from './inventory-core';
-
 import type {
   InboundRecord,
   InboundType,
   OutboundRecord,
   OutboundType,
 } from './inventory-operations';
-
+import { INVENTORY_THRESHOLDS } from './inventory-status';
 // API 查询参数类型
 export interface InventoryQueryParams {
   page?: number;
@@ -189,7 +188,6 @@ export const DEFAULT_PAGE_SIZE = paginationConfig.defaultPageSize;
 export const PAGE_SIZE_OPTIONS = [10, 20, 50, 100] as const;
 
 // 库存预警阈值 - 使用统一的阈值配置
-import { INVENTORY_THRESHOLDS } from './inventory-status';
 export { INVENTORY_THRESHOLDS };
 export const DEFAULT_MIN_QUANTITY = INVENTORY_THRESHOLDS.DEFAULT_MIN_QUANTITY;
 export const CRITICAL_MIN_QUANTITY = INVENTORY_THRESHOLDS.CRITICAL_MIN_QUANTITY;

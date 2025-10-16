@@ -1,8 +1,12 @@
 import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
-import type { PaymentOutMethod, PaymentOutRecordDetail, PaymentOutStatus } from '@/lib/types/payable';
-import { PAYMENT_OUT_SORT_OPTIONS } from '@/lib/types/payable';
+import {
+  PAYMENT_OUT_SORT_OPTIONS,
+  type PaymentOutMethod,
+  type PaymentOutRecordDetail,
+  type PaymentOutStatus,
+} from '@/lib/types/payable';
 
 type PaymentOutSortField = 'createdAt' | 'paymentAmount' | 'paymentDate';
 
@@ -123,28 +127,30 @@ async function getPaymentsOutData(searchParams: {
     recordCount: allPayments.length,
   };
 
-  const normalizedPayments: PaymentOutRecordDetail[] = payments.map(payment => ({
-    id: payment.id,
-    paymentNumber: payment.paymentNumber,
-    payableRecordId: payment.payableRecordId ?? undefined,
-    supplierId: payment.supplierId,
-    userId: payment.userId,
-    paymentMethod: (payment.paymentMethod ?? 'other') as PaymentOutMethod,
-    paymentAmount: Number(payment.paymentAmount),
-    paymentDate: payment.paymentDate,
-    status: (payment.status ?? 'pending') as PaymentOutStatus,
-    remarks: payment.remarks ?? undefined,
-    voucherNumber: payment.voucherNumber ?? undefined,
-    bankInfo: payment.bankInfo ?? undefined,
-    createdAt: payment.createdAt,
-    updatedAt: payment.updatedAt,
-    payableRecord: payment.payableRecord ?? undefined,
-    supplier: {
-      ...payment.supplier,
-      phone: payment.supplier.phone ?? undefined,
-    },
-    user: payment.user,
-  }));
+  const normalizedPayments: PaymentOutRecordDetail[] = payments.map(
+    payment => ({
+      id: payment.id,
+      paymentNumber: payment.paymentNumber,
+      payableRecordId: payment.payableRecordId ?? undefined,
+      supplierId: payment.supplierId,
+      userId: payment.userId,
+      paymentMethod: (payment.paymentMethod ?? 'other') as PaymentOutMethod,
+      paymentAmount: Number(payment.paymentAmount),
+      paymentDate: payment.paymentDate,
+      status: (payment.status ?? 'pending') as PaymentOutStatus,
+      remarks: payment.remarks ?? undefined,
+      voucherNumber: payment.voucherNumber ?? undefined,
+      bankInfo: payment.bankInfo ?? undefined,
+      createdAt: payment.createdAt,
+      updatedAt: payment.updatedAt,
+      payableRecord: payment.payableRecord ?? undefined,
+      supplier: {
+        ...payment.supplier,
+        phone: payment.supplier.phone ?? undefined,
+      },
+      user: payment.user,
+    })
+  );
 
   return {
     payments: normalizedPayments,
@@ -183,14 +189,23 @@ export default async function PaymentsOutPage({
     search: params.search || '',
     status: ((): PaymentOutStatus | undefined => {
       const value = params.status;
-      const statuses: PaymentOutStatus[] = ['pending', 'confirmed', 'cancelled'];
+      const statuses: PaymentOutStatus[] = [
+        'pending',
+        'confirmed',
+        'cancelled',
+      ];
       return value && statuses.includes(value as PaymentOutStatus)
         ? (value as PaymentOutStatus)
         : undefined;
     })(),
     paymentMethod: ((): PaymentOutMethod | undefined => {
       const value = params.paymentMethod;
-      const methods: PaymentOutMethod[] = ['cash', 'bank_transfer', 'check', 'other'];
+      const methods: PaymentOutMethod[] = [
+        'cash',
+        'bank_transfer',
+        'check',
+        'other',
+      ];
       return value && methods.includes(value as PaymentOutMethod)
         ? (value as PaymentOutMethod)
         : undefined;
@@ -212,5 +227,3 @@ export default async function PaymentsOutPage({
     />
   );
 }
-
-

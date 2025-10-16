@@ -22,12 +22,12 @@ import { ErrorMessage } from '@/components/ui/error-message';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency } from '@/lib/utils';
-import { getErrorMessage } from '@/lib/utils/error-handler';
 import {
   getCommonStatusBadgeVariant,
   getReturnOrderStatusBadgeVariant,
   getSalesOrderStatusBadgeVariant,
 } from '@/lib/utils/badge-helpers';
+import { getErrorMessage } from '@/lib/utils/error-handler';
 
 interface CustomerExtendedInfo {
   contactPerson?: string;

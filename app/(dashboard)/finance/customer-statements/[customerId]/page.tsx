@@ -1,10 +1,10 @@
 'use client';
 
+import { format, subDays } from 'date-fns';
 import { ArrowLeft, RefreshCw } from 'lucide-react';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
-import { format, subDays } from 'date-fns';
+import { useEffect, useMemo, useState } from 'react';
 
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
@@ -109,15 +109,17 @@ export default function CustomerStatementDetailPage() {
       new Date(dateRange.endDate).getTime();
 
   // ✅ 修复: 将所有 hooks 移到条件判断之前，遵循 React Hooks 规则
-  const typeLabelMap = useMemo(() => {
-    return CUSTOMER_STATEMENT_TRANSACTION_TYPES.reduce(
-      (acc, item) => {
-        acc[item.type] = item.label;
-        return acc;
-      },
-      {} as Record<string, string>
-    );
-  }, []);
+  const typeLabelMap = useMemo(
+    () =>
+      CUSTOMER_STATEMENT_TRANSACTION_TYPES.reduce(
+        (acc, item) => {
+          acc[item.type] = item.label;
+          return acc;
+        },
+        {} as Record<string, string>
+      ),
+    []
+  );
 
   const {
     data: statementDetail,

@@ -30,6 +30,9 @@ export const createPaymentRecordSchema = z
     paymentType: paymentTypeSchema.default('order_payment'),
 
     salesOrderId: z.string({ message: '销售订单ID必须是字符串' }).optional(),
+    factoryShipmentOrderId: z
+      .string({ message: '厂家发货订单ID必须是字符串' })
+      .optional(),
 
     customerId: z
       .string({ message: '客户ID必须是字符串' })
@@ -62,13 +65,17 @@ export const createPaymentRecordSchema = z
   .refine(
     data => {
       // 订单收款时必须提供订单ID
-      if (data.paymentType === 'order_payment' && !data.salesOrderId) {
+      if (
+        data.paymentType === 'order_payment' &&
+        !data.salesOrderId &&
+        !data.factoryShipmentOrderId
+      ) {
         return false;
       }
       return true;
     },
     {
-      message: '订单收款时必须选择销售订单',
+      message: '订单收款时必须关联销售订单或厂家发货单',
       path: ['salesOrderId'],
     }
   )
@@ -83,6 +90,18 @@ export const createPaymentRecordSchema = z
     {
       message: '预收款不应关联销售订单',
       path: ['salesOrderId'],
+    }
+  )
+  .refine(
+    data => {
+      if (data.paymentType === 'prepayment' && data.factoryShipmentOrderId) {
+        return false;
+      }
+      return true;
+    },
+    {
+      message: '预收款不应关联厂家发货订单',
+      path: ['factoryShipmentOrderId'],
     }
   )
   .refine(
@@ -103,6 +122,9 @@ export const createPaymentRecordSchema = z
 export const updatePaymentRecordSchema = z
   .object({
     paymentMethod: paymentMethodSchema.optional(),
+    factoryShipmentOrderId: z
+      .string({ message: '厂家发货订单ID必须是字符串' })
+      .optional(),
 
     paymentAmount: z
       .number({
@@ -153,6 +175,7 @@ export const paymentRecordQuerySchema = z
     limit: z.number().int().positive().max(100).optional().default(10),
     search: z.string().optional(),
     customerId: z.string().optional(),
+    factoryShipmentOrderId: z.string().optional(),
     userId: z.string().optional(),
     paymentMethod: paymentMethodSchema.optional(),
     status: paymentStatusSchema.optional(),
@@ -350,6 +373,9 @@ export type BatchPaymentOperationInput = z.infer<
 export type PaymentStatisticsQueryInput = z.infer<
   typeof paymentStatisticsQuerySchema
 >;
+export type PaymentMethod = z.infer<typeof paymentMethodSchema>;
+export type PaymentStatus = z.infer<typeof paymentStatusSchema>;
+export type PaymentType = z.infer<typeof paymentTypeSchema>;
 
 // 验证工具函数
 export const validatePaymentAmount = (

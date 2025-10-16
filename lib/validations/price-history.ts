@@ -93,16 +93,11 @@ export const batchPriceImportSchema = z
     customerId: z.string().optional(),
     supplierId: z.string().optional(),
   })
-  .refine(
-    data => {
-      // 客户ID和供应商ID必须二选一
-      return Boolean(data.customerId) !== Boolean(data.supplierId);
-    },
-    {
-      message: '必须指定客户ID或供应商ID（且只能指定其中一个）',
-      path: ['customerId'],
-    }
-  );
+  // 客户ID和供应商ID必须二选一
+  .refine(data => Boolean(data.customerId) !== Boolean(data.supplierId), {
+    message: '必须指定客户ID或供应商ID（且只能指定其中一个）',
+    path: ['customerId'],
+  });
 
 // ==================== 导出类型 ====================
 
@@ -125,9 +120,7 @@ export const validatePriceRange = (
   price: number,
   minPrice = 0,
   maxPrice = 999999999
-): boolean => {
-  return price > minPrice && price <= maxPrice;
-};
+): boolean => price > minPrice && price <= maxPrice;
 
 /**
  * 验证价格变动是否在合理范围内（防止误操作）
@@ -136,10 +129,6 @@ export const validatePriceChange = (
   oldPrice: number,
   newPrice: number,
   maxChangePercent = 50
-): boolean => {
-  if (oldPrice === 0) {
-    return true; // 首次设置价格
-  }
-  const changePercent = Math.abs((newPrice - oldPrice) / oldPrice) * 100;
-  return changePercent <= maxChangePercent;
-};
+): boolean =>
+  oldPrice === 0 ||
+  Math.abs((newPrice - oldPrice) / oldPrice) * 100 <= maxChangePercent;

@@ -10,12 +10,12 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PaymentsOutClient } from '@/components/finance/payments-out-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type {
-  PaymentOutMethod,
-  PaymentOutRecordDetail,
-  PaymentOutStatus,
+import {
+  PAYMENT_OUT_SORT_OPTIONS,
+  type PaymentOutMethod,
+  type PaymentOutRecordDetail,
+  type PaymentOutStatus,
 } from '@/lib/types/payable';
-import { PAYMENT_OUT_SORT_OPTIONS } from '@/lib/types/payable';
 
 type PaymentOutSortField = 'createdAt' | 'paymentAmount' | 'paymentDate';
 

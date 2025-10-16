@@ -2,6 +2,7 @@
 // 严格遵循命名约定：数据库 snake_case → API camelCase → 前端 camelCase
 
 import { formatCurrency } from '@/lib/utils';
+
 import type { Customer } from './customer';
 import type { Product } from './product';
 import type { SalesOrder } from './sales-order';

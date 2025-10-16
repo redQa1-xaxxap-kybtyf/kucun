@@ -3,8 +3,9 @@
  * 防止并发处理导致重复退款
  */
 
-import { prisma } from '@/lib/db';
 import type { Prisma } from '@prisma/client';
+
+import { prisma } from '@/lib/db';
 
 /**
  * 退款处理幂等性键生成

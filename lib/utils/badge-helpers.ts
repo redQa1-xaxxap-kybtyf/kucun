@@ -6,19 +6,19 @@
  * 本文件保留仅用于向后兼容
  */
 
-import { SALES_ORDER_STATUS_VARIANTS } from '@/lib/types/sales-order';
-import { RETURN_ORDER_STATUS_VARIANTS } from '@/lib/types/return-order';
 import { FACTORY_SHIPMENT_STATUS_VARIANTS } from '@/lib/types/factory-shipment';
-import { PRODUCT_STATUS_VARIANTS } from '@/lib/types/product';
-import { USER_STATUS_VARIANTS } from '@/lib/types/user';
+import { ADJUSTMENT_STATUS_VARIANTS } from '@/lib/types/inventory-operations';
+import { INVENTORY_STATUS_VARIANTS } from '@/lib/types/inventory-status';
 import {
   PAYABLE_STATUS_VARIANTS,
   PAYMENT_OUT_STATUS_VARIANTS,
 } from '@/lib/types/payable';
 import { PAYMENT_STATUS_VARIANTS } from '@/lib/types/payment';
+import { PRODUCT_STATUS_VARIANTS } from '@/lib/types/product';
 import { REFUND_STATUS_VARIANTS } from '@/lib/types/refund';
-import { ADJUSTMENT_STATUS_VARIANTS } from '@/lib/types/inventory-operations';
-import { INVENTORY_STATUS_VARIANTS } from '@/lib/types/inventory-status';
+import { RETURN_ORDER_STATUS_VARIANTS } from '@/lib/types/return-order';
+import { SALES_ORDER_STATUS_VARIANTS } from '@/lib/types/sales-order';
+import { USER_STATUS_VARIANTS } from '@/lib/types/user';
 
 export {
   SALES_ORDER_STATUS_VARIANTS,

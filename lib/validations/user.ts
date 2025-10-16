@@ -270,13 +270,11 @@ export const validatePassword = (
   };
 };
 
-export const validateUsername = (username: string): boolean => {
-  return /^[a-zA-Z0-9_-]{3,50}$/.test(username);
-};
+export const validateUsername = (username: string): boolean =>
+  /^[a-zA-Z0-9_-]{3,50}$/.test(username);
 
-export const validateEmail = (email: string): boolean => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
-};
+export const validateEmail = (email: string): boolean =>
+  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
 // 常量定义
 export const USER_CONSTANTS = {
