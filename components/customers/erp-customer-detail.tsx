@@ -1,3 +1,4 @@
+/* eslint-disable max-lines-per-function */
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
@@ -16,8 +17,7 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { customerQueryKeys, getCustomer } from '@/lib/api/customers';
-import type { Customer } from '@/lib/types/customer';
-import { CUSTOMER_FIELD_LABELS } from '@/lib/types/customer';
+import { CUSTOMER_FIELD_LABELS, type Customer } from '@/lib/types/customer';
 import { parseExtendedInfo } from '@/lib/validations/customer';
 
 interface ERPCustomerDetailProps {
@@ -323,7 +323,9 @@ export function ERPCustomerDetail({
                     className="flex items-center justify-between gap-2"
                   >
                     <span className="text-muted-foreground text-xs">
-                      {CUSTOMER_FIELD_LABELS[key] || key}
+                      {CUSTOMER_FIELD_LABELS[
+                        key as keyof typeof CUSTOMER_FIELD_LABELS
+                      ] || key}
                     </span>
                     <span className="text-xs">
                       {formatExtendedInfoValue(value)}

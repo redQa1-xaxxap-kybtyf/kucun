@@ -1,8 +1,9 @@
+/* eslint-disable max-lines-per-function, max-lines, react-hooks/exhaustive-deps */
 'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Loader2, Plus, Save, Trash2 } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import React from 'react';
 import {
@@ -13,9 +14,8 @@ import {
 } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
-import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
-import { OrderItemRow } from '@/components/sales-orders/order-item-row';
 import { FeeItemsInput } from '@/components/sales-orders/fee-items-input';
+import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -35,18 +35,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import {
-  getLatestPrice,
   useCustomerPriceHistory,
   type PriceType,
 } from '@/hooks/use-price-history';
@@ -59,22 +49,27 @@ import {
 } from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
 import {
-  SALES_ORDER_STATUS_LABELS,
   TRANSFER_MODE_LABELS,
   type SalesOrderStatus,
   type TransferFulfillmentMode,
+  type SalesOrder,
+  type SalesOrderItem,
 } from '@/lib/types/sales-order';
 import type { SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
-import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+import { logger } from '@/lib/utils/console-logger';
 import {
   transformFormDataToCreateInput,
   transformFormDataToUpdateInput,
+  type SalesOrderFormData,
 } from '@/lib/utils/sales-order-transforms';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
   type SalesOrderUpdateFormData as UpdateSalesOrderFormData,
+  type SalesOrderItemFormData,
 } from '@/lib/validations/sales-order';
+
+import { OrderItemsSection } from './erp-sales-order-form/OrderItemsSection';
 
 const UNIT_MAPPING: Record<string, string> = {
   piece: '件',
@@ -101,7 +96,7 @@ const UNIT_MAPPING: Record<string, string> = {
 interface ERPSalesOrderFormProps {
   mode?: 'create' | 'edit';
   orderId?: string;
-  initialData?: Record<string, unknown>; // 编辑模式的初始数据
+  initialData?: SalesOrder;
   onSuccess?: (order: { id: string; orderNumber?: string }) => void;
   onCancel?: () => void;
 }
@@ -220,30 +215,29 @@ export function ERPSalesOrderForm({
     },
   };
 
-  // 生成备注说明
-  const generateRemarksText = (
-    totalPieces: number,
-    piecesPerUnit: number
-  ): string => {
-    if (piecesPerUnit <= 0 || totalPieces <= 0) {
-      return '';
-    }
-
-    try {
-      const result = calculatePieceDisplay(
-        Math.floor(totalPieces),
-        piecesPerUnit
-      );
-      // 只有当不是整件时才生成备注
-      if (result.remainingPieces > 0) {
-        return result.displayText;
-      }
-      return '';
-    } catch (error) {
-      console.error('生成备注失败:', error);
-      return '';
-    }
-  };
+  const mapFormDataForTransform = React.useCallback(
+    (payload: CreateSalesOrderData): SalesOrderFormData => ({
+      customerId: payload.customerId,
+      status: payload.status,
+      orderType: payload.orderType,
+      transferMode: payload.transferMode,
+      supplierId: payload.supplierId,
+      costAmount: payload.costAmount,
+      remarks: payload.remarks ?? '',
+      items: payload.items ?? [],
+      feeItems: (payload.feeItems ?? []).map(fee => ({
+        id: fee.id ?? undefined,
+        feeType: fee.feeType,
+        feeName: fee.feeName,
+        feeAmount: fee.feeAmount,
+        remarks: fee.remarks ?? '',
+      })),
+      roundingAdjustment: payload.roundingAdjustment,
+      usePrepayment: payload.usePrepayment,
+      prepaymentAmount: payload.prepaymentAmount,
+    }),
+    []
+  );
 
   // 表单状态
   const form = useForm<CreateSalesOrderData>({
@@ -262,7 +256,10 @@ export function ERPSalesOrderForm({
     },
   });
 
-  const { fields, append, remove } = useFieldArray({
+  const { fields, append, remove } = useFieldArray<
+    CreateSalesOrderData,
+    'items'
+  >({
     control: form.control,
     name: 'items',
   });
@@ -326,11 +323,11 @@ export function ERPSalesOrderForm({
 
   const validateOrderItems = React.useCallback(
     (
-      items: Array<
-        | CreateSalesOrderData['items'][number]
-        | UpdateSalesOrderFormData['items'][number]
-      >
+      items: SalesOrderItemFormData[]
     ): { valid: true } | { valid: false; message: string; path: string } => {
+      if (items.length === 0) {
+        return { valid: true };
+      }
       const toNumber = (value: unknown, fallback = 0) => {
         const numeric = Number(value);
         return Number.isFinite(numeric) ? numeric : fallback;
@@ -553,37 +550,19 @@ export function ERPSalesOrderForm({
   });
 
   // 计算总金额：始终基于系统数量（片数）和片单价
-  const watchedItems = form.watch('items') || [];
+  const watchedItems = (form.watch('items') ?? []) as SalesOrderItemFormData[];
 
   const inventoryCheckItems = React.useMemo(
     () =>
       watchedItems.map(item => {
-        const rawQuantity =
-          item && typeof item === 'object' && 'quantity' in item
-            ? (item as Record<string, unknown>).quantity
-            : undefined;
-
-        const numericQuantity =
-          typeof rawQuantity === 'number'
-            ? rawQuantity
-            : Number(rawQuantity ?? 0);
-
-        const batchNumber =
-          item &&
-          typeof item === 'object' &&
-          'batchNumber' in item &&
-          typeof (item as Record<string, unknown>).batchNumber === 'string'
-            ? String((item as Record<string, unknown>).batchNumber)
-            : '';
-
-        const productId =
-          item && typeof item === 'object' && 'productId' in item
-            ? String((item as Record<string, unknown>).productId ?? '').trim()
-            : '';
+        const quantity = Number(item.quantity ?? 0);
+        const safeQuantity = Number.isFinite(quantity) ? quantity : 0;
+        const productId = (item.productId ?? '').toString().trim();
+        const batchNumber = item.batchNumber ?? '';
 
         return {
           productId,
-          quantity: Number.isFinite(numericQuantity) ? numericQuantity : 0,
+          quantity: safeQuantity,
           batchNumber,
         };
       }),
@@ -693,6 +672,9 @@ export function ERPSalesOrderForm({
     append({
       productId: '',
       productCode: '',
+      batchNumber: '',
+      colorCode: '',
+      productionDate: '',
       specification: '',
       unit: '',
       displayUnit: '片' as const,
@@ -700,8 +682,16 @@ export function ERPSalesOrderForm({
       quantity: 1,
       unitPrice: 0,
       unitCost: undefined,
+      localQuantity: undefined,
+      transferQuantity: undefined,
       piecesPerUnit: undefined,
+      subtotal: 0,
       remarks: '',
+      isManualProduct: false,
+      manualProductName: '',
+      manualSpecification: '',
+      manualWeight: undefined,
+      manualUnit: '',
     });
   };
 
@@ -742,6 +732,45 @@ export function ERPSalesOrderForm({
 
     initializedOrderRef.current = orderKey;
 
+    const mappedItems: SalesOrderItemFormData[] = (initialData.items ?? []).map(
+      (item: SalesOrderItem) => {
+        const product = item.product;
+        const normalizedUnit =
+          product?.unit && typeof product.unit === 'string'
+            ? (UNIT_MAPPING[
+                product.unit.toLowerCase() as keyof typeof UNIT_MAPPING
+              ] ?? product.unit)
+            : (product?.unit ?? '');
+
+        return {
+          productId: item.productId ?? '',
+          productCode: item.productCode ?? product?.code ?? '',
+          batchNumber: item.batchNumber ?? '',
+          colorCode: item.colorCode ?? '',
+          productionDate: item.productionDate ?? '',
+          specification: item.specification ?? product?.specification ?? '',
+          unit: normalizedUnit,
+          displayUnit: (item.displayUnit as '片' | '件' | null) ?? '片',
+          displayQuantity: item.displayQuantity ?? item.quantity ?? 0,
+          quantity: item.quantity ?? 0,
+          unitPrice: item.unitPrice ?? 0,
+          unitCost: item.unitCost ?? undefined,
+          piecesPerUnit:
+            item.piecesPerUnit ?? product?.piecesPerUnit ?? undefined,
+          remarks: item.remarks ?? '',
+          subtotal:
+            item.subtotal ?? (item.quantity ?? 0) * (item.unitPrice ?? 0),
+          isManualProduct: item.isManualProduct ?? false,
+          manualProductName: item.manualProductName ?? '',
+          manualSpecification: item.manualSpecification ?? '',
+          manualWeight: item.manualWeight ?? undefined,
+          manualUnit: item.manualUnit ?? '',
+          localQuantity: item.localQuantity ?? undefined,
+          transferQuantity: item.transferQuantity ?? undefined,
+        };
+      }
+    );
+
     form.reset({
       orderNumber: initialData.orderNumber,
       customerId: initialData.customerId,
@@ -750,63 +779,18 @@ export function ERPSalesOrderForm({
       transferMode:
         (initialData.transferMode as TransferFulfillmentMode | undefined) ??
         'SUPPLIER_ONLY',
-      supplierId: initialData.supplierId || '',
+      supplierId: initialData.supplierId ?? '',
       costAmount: initialData.costAmount ?? undefined,
-      remarks: initialData.remarks || '',
-      roundingAdjustment:
-        (initialData.roundingAdjustment as number | undefined) ?? undefined,
-      items:
-        initialData.items?.map((item: Record<string, unknown>) => ({
-          productId: (item.productId as string) || '',
-          productCode:
-            (item.productCode as string) ||
-            ((item.product as Record<string, unknown>)?.code as string) ||
-            '',
-          batchNumber: (item.batchNumber as string) || '',
-          colorCode: (item.colorCode as string) || '',
-          productionDate: (item.productionDate as string) || '',
-          specification:
-            (item.specification as string) ||
-            ((item.product as Record<string, unknown>)
-              ?.specification as string) ||
-            '',
-          unit:
-            UNIT_MAPPING[
-              (
-                (item.product as Record<string, unknown>)?.unit as string
-              )?.toLowerCase() || ''
-            ] ||
-            ((item.product as Record<string, unknown>)?.unit as string) ||
-            '',
-          displayUnit: ((item.displayUnit as string) || '片') as '片' | '件',
-          displayQuantity:
-            (item.displayQuantity as number) ?? (item.quantity as number),
-          quantity: item.quantity as number,
-          unitPrice: item.unitPrice as number,
-          piecesPerUnit:
-            (item.piecesPerUnit as number) ??
-            ((item.product as Record<string, unknown>)
-              ?.piecesPerUnit as number) ??
-            undefined,
-          remarks: (item.remarks as string) || '',
-          subtotal: item.subtotal as number,
-          unitCost: (item.unitCost as number) ?? undefined,
-          isManualProduct: (item.isManualProduct as boolean) || false,
-          manualProductName: (item.manualProductName as string) || '',
-          manualSpecification: (item.manualSpecification as string) || '',
-          manualWeight: (item.manualWeight as number) ?? undefined,
-          manualUnit: (item.manualUnit as string) || '',
-          localQuantity: (item.localQuantity as number) ?? undefined,
-          transferQuantity: (item.transferQuantity as number) ?? undefined,
-        })) || [],
+      remarks: initialData.remarks ?? '',
+      roundingAdjustment: initialData.roundingAdjustment ?? undefined,
+      items: mappedItems,
       feeItems: Array.isArray(initialData.feeItems)
-        ? (initialData.feeItems as Array<Record<string, unknown>>).map(fee => ({
-            id: (fee.id as string) || undefined,
-            feeType:
-              (fee.feeType as 'processing' | 'shipping' | 'other') || 'other',
-            feeName: (fee.feeName as string) || '',
-            feeAmount: Number(fee.feeAmount ?? 0),
-            remarks: (fee.remarks as string) || '',
+        ? initialData.feeItems.map(fee => ({
+            id: fee.id ?? undefined,
+            feeType: fee.feeType,
+            feeName: fee.feeName,
+            feeAmount: fee.feeAmount,
+            remarks: fee.remarks ?? '',
           }))
         : [],
     });
@@ -825,7 +809,7 @@ export function ERPSalesOrderForm({
             setAutoOrderNumber(data.data.orderNumber);
           }
         } catch (error) {
-          console.error('自动生成订单号失败:', error);
+          logger.error('sales-orders', '自动生成订单号失败', error);
           // 如果API失败，使用本地生成逻辑作为备用
           const now = new Date();
           const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
@@ -855,13 +839,17 @@ export function ERPSalesOrderForm({
 
   // 提交表单
   const onSubmit = (data: CreateSalesOrderData) => {
-    const validation = validateOrderItems(data.items || []);
+    const validation = validateOrderItems(data.items);
     if (!validation.valid) {
       try {
         form.setFocus(validation.path as Path<CreateSalesOrderData>);
       } catch (error) {
-        // eslint-disable-next-line no-console
-        console.debug('Failed to focus field', validation.path, error);
+        logger.debug(
+          'sales-orders',
+          'Failed to focus validation field',
+          validation.path,
+          error
+        );
       }
 
       toast({
@@ -874,12 +862,15 @@ export function ERPSalesOrderForm({
 
     if (mode === 'edit' && orderId) {
       // 编辑模式：更新现有订单
-      const apiData = transformFormDataToUpdateInput(orderId, data);
+      const formDataForTransform = mapFormDataForTransform(data);
+      const apiData = transformFormDataToUpdateInput(
+        orderId,
+        formDataForTransform
+      );
       updateMutation.mutate(apiData);
     } else {
-      // 创建模式：不传递orderNumber，让后端自动生成
-      const { orderNumber: _orderNumber, ...submitData } = data;
-      const apiData = transformFormDataToCreateInput(submitData);
+      const formDataForTransform = mapFormDataForTransform(data);
+      const apiData = transformFormDataToCreateInput(formDataForTransform);
       createMutation.mutate(apiData);
     }
   };
@@ -887,13 +878,17 @@ export function ERPSalesOrderForm({
   const submitWithStatus = React.useCallback(
     (status: SalesOrderStatus) => {
       const snapshot = form.getValues();
-      const preCheck = validateOrderItems(snapshot.items || []);
+      const preCheck = validateOrderItems(snapshot.items);
       if (!preCheck.valid) {
         try {
           form.setFocus(preCheck.path as Path<CreateSalesOrderData>);
         } catch (error) {
-          // eslint-disable-next-line no-console
-          console.debug('Failed to focus field', preCheck.path, error);
+          logger.debug(
+            'sales-orders',
+            'Failed to focus pre-check field',
+            preCheck.path,
+            error
+          );
         }
 
         toast({
@@ -925,8 +920,12 @@ export function ERPSalesOrderForm({
           try {
             form.setFocus(firstError.path as Path<CreateSalesOrderData>);
           } catch (error) {
-            // eslint-disable-next-line no-console
-            console.debug('Failed to focus field', firstError.path, error);
+            logger.debug(
+              'sales-orders',
+              'Failed to focus first error field',
+              firstError.path,
+              error
+            );
           }
         }
 
@@ -1203,120 +1202,21 @@ export function ERPSalesOrderForm({
             </div>
           </div>
 
-          {/* ERP标准布局：订单明细表格 */}
-          <div className="bg-card rounded border">
-            <div className="bg-muted/30 flex items-center justify-between border-b px-3 py-2">
-              <h3 className="text-sm font-medium">订单明细</h3>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addOrderItem}
-                className="h-6 px-2 text-xs"
-              >
-                <Plus className="mr-1 h-3 w-3" />
-                添加商品
-              </Button>
-            </div>
-
-            {fields.length === 0 ? (
-              <div className="text-muted-foreground py-8 text-center">
-                <p className="text-sm">暂无商品明细</p>
-                <p className="text-xs">
-                  点击&ldquo;添加商品&rdquo;按钮开始添加
-                </p>
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-muted/20">
-                      <TableHead className="h-8 text-xs">商品名称</TableHead>
-                      <TableHead className="h-8 text-xs">产品编码</TableHead>
-                      <TableHead className="h-8 text-xs">每件片数</TableHead>
-                      <TableHead className="h-8 text-xs">批次号</TableHead>
-                      <TableHead className="h-8 text-xs">规格</TableHead>
-                      <TableHead className="h-8 text-xs">单位</TableHead>
-                      <TableHead className="h-8 text-xs">数量</TableHead>
-                      <TableHead className="h-8 text-xs">单价</TableHead>
-                      {orderType === 'TRANSFER' && (
-                        <TableHead className="h-8 text-xs">成本单价</TableHead>
-                      )}
-                      <TableHead className="h-8 text-xs">金额</TableHead>
-                      <TableHead className="h-8 text-xs">备注</TableHead>
-                      <TableHead className="h-8 text-xs">操作</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {fields.map((field, index) => (
-                      <OrderItemRow
-                        key={field.id}
-                        index={index}
-                        products={productsData?.data || []}
-                        onRemove={remove}
-                        onProductChange={(idx, product) => {
-                          if (product) {
-                            // 自动填充产品相关信息
-                            form.setValue(
-                              `items.${idx}.specification`,
-                              product.specification || ''
-                            );
-                            form.setValue(
-                              `items.${idx}.unit`,
-                              UNIT_MAPPING[product.unit?.toLowerCase() || ''] ||
-                                product.unit ||
-                                ''
-                            );
-                            form.setValue(
-                              `items.${idx}.productCode`,
-                              product.code || ''
-                            );
-                            form.setValue(
-                              `items.${idx}.piecesPerUnit`,
-                              product.piecesPerUnit || undefined
-                            );
-                            // 初始化新的单位和数量字段
-                            form.setValue(`items.${idx}.displayUnit`, '片');
-                            form.setValue(`items.${idx}.displayQuantity`, 1);
-                            form.setValue(`items.${idx}.quantity`, 1);
-                            // 清空备注
-                            form.setValue(`items.${idx}.remarks`, '');
-
-                            // 自动填充历史价格（基于产品编码匹配）
-                            if (
-                              selectedCustomerId &&
-                              priceHistoryData?.data &&
-                              product.code
-                            ) {
-                              const latestPrice = getLatestPrice(
-                                priceHistoryData.data,
-                                product.code,
-                                priceType
-                              );
-                              if (latestPrice !== undefined) {
-                                form.setValue(
-                                  `items.${idx}.unitPrice`,
-                                  latestPrice
-                                );
-                                toast({
-                                  title: '已自动填充历史价格',
-                                  description: `产品编码 "${product.code}" 的上次价格：¥${latestPrice}`,
-                                  duration: 2000,
-                                });
-                              }
-                            }
-                          }
-                        }}
-                        orderType={orderType}
-                        transferMode={transferMode}
-                        unitMapping={UNIT_MAPPING}
-                      />
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </div>
+          <OrderItemsSection
+            fields={fields}
+            remove={remove}
+            onAddItem={addOrderItem}
+            isSubmitting={createMutation.isPending || updateMutation.isPending}
+            products={productsData?.data || []}
+            orderType={orderType}
+            transferMode={transferMode}
+            unitMapping={UNIT_MAPPING}
+            form={form}
+            selectedCustomerId={selectedCustomerId}
+            priceHistory={priceHistoryData?.data}
+            priceType={priceType}
+            toast={toast}
+          />
 
           {/* 费用项管理 */}
           <div className="bg-card rounded border">
@@ -1474,7 +1374,7 @@ export function ERPSalesOrderForm({
             <InventoryChecker
               items={inventoryCheckItems}
               products={productsData?.data || []}
-              onInventoryCheck={results => {
+              onInventoryCheck={() => {
                 // 处理库存检查结果
               }}
             />
