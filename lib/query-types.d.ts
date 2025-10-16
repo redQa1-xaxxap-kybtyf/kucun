@@ -28,6 +28,8 @@ type QueryKeyPrefix =
   | 'payments'
   | 'payables'
   | 'payments-out'
+  | 'notifications'
+  | 'customer-statements'
   | 'refunds'
   | 'receivables'
   | 'statements'

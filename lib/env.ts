@@ -84,9 +84,9 @@ const envSchema = z.object({
     .default(0)
     .describe('Redis 数据库索引（0-15）'),
   REDIS_TLS_ENABLED: z
-    .string()
+    .enum(['true', 'false'])
+    .default('false')
     .transform(val => val === 'true')
-    .default(false)
     .describe('是否启用 Redis TLS/SSL 连接'),
   REDIS_CONNECT_TIMEOUT: z
     .string()
@@ -147,6 +147,11 @@ const envSchema = z.object({
     .min(1, '上传目录路径不能为空')
     .default('./public/uploads')
     .describe('文件上传目录'),
+  UPLOAD_FALLBACK_ENABLED: z
+    .enum(['true', 'false'])
+    .default('false')
+    .transform(val => val === 'true')
+    .describe('上传失败时是否启用本地存储兜底'),
 
   // 应用端口配置
   PORT: z
@@ -239,15 +244,15 @@ const envSchema = z.object({
 
   // 产品模块配置
   PRODUCT_LIST_INCLUDE_INVENTORY: z
-    .string()
+    .enum(['true', 'false'])
+    .default('false')
     .transform(val => val === 'true')
-    .default(false)
     .describe('默认是否包含库存统计'),
 
   PRODUCT_LIST_INCLUDE_STATISTICS: z
-    .string()
+    .enum(['true', 'false'])
+    .default('false')
     .transform(val => val === 'true')
-    .default(false)
     .describe('默认是否包含统计信息'),
 
   PRODUCT_CACHE_WITH_INVENTORY_TTL: z
@@ -513,9 +518,9 @@ const envSchema = z.object({
 
   // 速率限制配置
   RATE_LIMIT_ENABLED: z
-    .string()
+    .enum(['true', 'false'])
+    .default('true')
     .transform(val => val === 'true')
-    .default(true)
     .describe('是否启用速率限制'),
 
   RATE_LIMIT_GLOBAL: z
@@ -562,9 +567,9 @@ const envSchema = z.object({
 
   // 性能监控配置
   ENABLE_MEMORY_MONITOR: z
-    .string()
+    .enum(['true', 'false'])
+    .default('false')
     .transform(val => val === 'true')
-    .default(false)
     .describe('是否启用内存监控'),
 
   MONITORING_TOKEN: z
@@ -672,7 +677,7 @@ function validateEnv(): Env {
         ENABLE_MEMORY_MONITOR: false,
         MONITORING_TOKEN: 'dev-token',
       } as Env;
-    } catch (error) {
+    } catch (_error) {
       // 客户端环境变量验证失败时使用默认值
       return {
         DATABASE_URL: '',
@@ -848,6 +853,7 @@ export const wsConfig = {
 export const uploadConfig = {
   maxSize: env.UPLOAD_MAX_SIZE,
   directory: env.UPLOAD_DIR,
+  fallbackEnabled: env.UPLOAD_FALLBACK_ENABLED,
 } as const;
 
 /**

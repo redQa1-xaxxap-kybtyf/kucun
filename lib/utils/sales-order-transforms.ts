@@ -11,8 +11,10 @@ import type {
   SalesOrderUpdateInput,
   TransferFulfillmentMode,
 } from '@/lib/types/sales-order';
-import type { SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
-import { FEE_TYPE_LABELS } from '@/lib/types/sales-order-fee';
+import {
+  FEE_TYPE_LABELS,
+  type SalesOrderFeeItem,
+} from '@/lib/types/sales-order-fee';
 
 /**
  * 表单数据类型 - 包含UI层特有的字段
@@ -200,7 +202,7 @@ export function transformFormItemToCreateInput(
   // 手动输入商品的情况
   if (formItem.isManualProduct) {
     return {
-      productId: formItem.productId?.trim() || undefined, // 手动商品可能没有productId
+      productId: formItem.productId?.trim() || '', // 手动商品可能没有 productId
       productCode: formItem.productCode?.trim() || undefined,
       quantity,
       unitPrice,
@@ -316,7 +318,7 @@ export function transformFormItemToUpdateInput(
   // 手动输入商品的情况
   if (formItem.isManualProduct) {
     return {
-      productId: formItem.productId?.trim() || undefined,
+      productId: formItem.productId?.trim() || '',
       productCode: formItem.productCode?.trim() || undefined,
       quantity,
       unitPrice,

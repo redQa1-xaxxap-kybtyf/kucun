@@ -131,7 +131,7 @@ export async function createTestProducts(categories: Array<{ id: string }>) {
  * 创建测试产品变体
  */
 export async function createTestProductVariants(
-  products: Array<{ id: string }>
+  products: Array<{ id: string; code: string }>
 ) {
   const variants = [];
 
@@ -237,8 +237,8 @@ export async function createTestSuppliers() {
  * 创建测试库存记录
  */
 export async function createTestInventory(
-  products: Array<{ id: string }>,
-  variants: Array<{ id: string; productId: string }>
+  products: Array<{ id: string; code: string }>,
+  variants: Array<{ id: string; productId: string; colorCode: string | null }>
 ) {
   const inventoryRecords = [];
 
@@ -251,7 +251,7 @@ export async function createTestInventory(
         data: {
           productId: product.id,
           variantId: variant.id,
-          batchNumber: `BATCH-${product.code}-${variant.colorCode}-001`,
+          batchNumber: `BATCH-${product.code}-${variant.colorCode ?? 'DEFAULT'}-001`,
           quantity: Math.floor(Math.random() * 100) + 10,
           reservedQuantity: Math.floor(Math.random() * 10),
         },

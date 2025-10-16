@@ -6,11 +6,10 @@
 import type {
   AccountStatement as AccountStatementModel,
   Prisma,
-  StatementTransaction as StatementTransactionModel,
 } from '@prisma/client';
 
-import { prisma } from '@/lib/db';
 import { publishFinanceChange } from '@/lib/cache/pubsub';
+import { prisma } from '@/lib/db';
 import type {
   AccountStatementDetail,
   PartnerRole,
@@ -188,7 +187,7 @@ function serialiseMetadata(
 
   try {
     return JSON.stringify(metadata);
-  } catch (error) {
+  } catch (_error) {
     throw new Error('Failed to serialise transaction metadata');
   }
 }
@@ -201,7 +200,7 @@ function parseMetadata(
   }
   try {
     return JSON.parse(metadata) as Record<string, unknown>;
-  } catch (error) {
+  } catch (_error) {
     return { parseError: 'invalid_metadata', raw: metadata };
   }
 }
@@ -323,19 +322,6 @@ function normaliseStatementStatus(status?: string | null): StatementStatus {
     return status;
   }
   return 'active';
-}
-
-async function resolvePartnerName(partnerId: string): Promise<string> {
-  const partner = await prisma.customer.findUnique({
-    where: { id: partnerId },
-    select: { name: true },
-  });
-
-  if (!partner) {
-    throw new Error(`未找到伙伴信息: ${partnerId}`);
-  }
-
-  return partner.name;
 }
 
 // ==================== 主流程 ====================

@@ -12,6 +12,7 @@ import type {
   CreateBatchSpecificationRequest,
   UpdateBatchSpecificationRequest,
 } from '@/lib/types/batch-specification';
+import type { Product } from '@/lib/types/product';
 import { toISOString } from '@/lib/utils/datetime';
 
 /**
@@ -64,6 +65,11 @@ function formatBatchSpecifications(
       name: string;
       code: string;
       unit: string;
+      specification: string | null;
+      piecesPerUnit: number | null;
+      status: string;
+      createdAt: Date;
+      updatedAt: Date;
     };
   }>
 ): BatchSpecification[] {
@@ -81,15 +87,25 @@ function formatBatchSpecifications(
     ...(spec.product && {
       product: {
         id: spec.product.id,
-        name: spec.product.name,
         code: spec.product.code,
-        unit: spec.product.unit,
-        piecesPerUnit: spec.piecesPerUnit, // 使用批次级别的片数
-        weight: spec.weight || undefined, // 使用批次级别的重量
-        status: 'active',
-        createdAt: '',
-        updatedAt: '',
-      },
+        name: spec.product.name,
+        specification: spec.product.specification ?? undefined,
+        description: undefined,
+        unit: spec.product.unit as Product['unit'],
+        piecesPerUnit: spec.product.piecesPerUnit ?? spec.piecesPerUnit ?? 0,
+        weight: spec.weight ?? undefined,
+        thickness: spec.thickness ?? undefined,
+        status: (spec.product.status ?? 'active') as Product['status'],
+        categoryId: undefined,
+        category: undefined,
+        thumbnailUrl: undefined,
+        images: undefined,
+        createdAt: toISOString(spec.product.createdAt) || '',
+        updatedAt: toISOString(spec.product.updatedAt) || '',
+        variants: undefined,
+        counts: undefined,
+        inventory: undefined,
+      } satisfies Product,
     }),
   }));
 }
@@ -183,6 +199,11 @@ export async function upsertBatchSpecification(
           name: true,
           code: true,
           unit: true,
+          specification: true,
+          piecesPerUnit: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
         },
       },
     },
@@ -209,6 +230,11 @@ export async function getBatchSpecificationById(
           name: true,
           code: true,
           unit: true,
+          specification: true,
+          piecesPerUnit: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
         },
       },
     },
@@ -243,6 +269,11 @@ export async function getBatchSpecificationByProductAndBatch(
           name: true,
           code: true,
           unit: true,
+          specification: true,
+          piecesPerUnit: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
         },
       },
     },
@@ -288,6 +319,11 @@ export async function getBatchSpecifications(queryData: {
             name: true,
             code: true,
             unit: true,
+            specification: true,
+            piecesPerUnit: true,
+            status: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
       },
@@ -338,6 +374,11 @@ export async function updateBatchSpecification(
           name: true,
           code: true,
           unit: true,
+          specification: true,
+          piecesPerUnit: true,
+          status: true,
+          createdAt: true,
+          updatedAt: true,
         },
       },
     },

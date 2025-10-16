@@ -13,10 +13,10 @@ import type {
   RefundRecord,
   RefundRecordDetail,
   RefundRecordQuery,
+  RefundListData,
   RefundStatistics,
   UpdateRefundRecordData,
 } from '@/lib/types/refund';
-import type { ProcessRefundInput } from '@/lib/validations/refund';
 import type {
   AccountStatementDetail,
   AgingAnalysis,
@@ -25,6 +25,7 @@ import type {
   StatementStatistics,
   StatementListResponse,
 } from '@/lib/types/statement';
+import type { ProcessRefundInput } from '@/lib/validations/refund';
 
 // 导入统一的类型定义，遵循唯一真理源原则
 
@@ -127,12 +128,7 @@ export const financeApi = {
   },
 
   // 应退货款相关
-  getRefunds: async (
-    query: RefundRecordQuery
-  ): Promise<{
-    data: RefundRecordDetail[];
-    pagination: PaginationResponse;
-  }> => {
+  getRefunds: async (query: RefundRecordQuery): Promise<RefundListData> => {
     const params = new URLSearchParams();
     Object.entries(query).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== '') {

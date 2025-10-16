@@ -6,15 +6,6 @@
 import { prisma } from '@/lib/db';
 import type { OutboundRecord } from '@/lib/types/inventory';
 
-interface OutboundQueryParams {
-  page: number;
-  limit: number;
-  search?: string;
-  type?: string;
-  startDate?: string;
-  endDate?: string;
-}
-
 type OutboundWhereClause = {
   OR?: Array<{
     recordNumber?: { contains: string };
@@ -182,6 +173,8 @@ export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
             name: true,
             specification: true,
             unit: true,
+            piecesPerUnit: true,
+            weight: true,
           },
         },
         variant: {
@@ -189,12 +182,14 @@ export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
             id: true,
             colorCode: true,
             colorName: true,
+            sku: true,
           },
         },
         operator: {
           select: {
             id: true,
             name: true,
+            email: true,
           },
         },
         customer: {
@@ -233,14 +228,13 @@ export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
 /**
  * 根据出库单号获取详情
  */
-export async function getOutboundRecordByNumber(
-  recordNumber: string
-): Promise<
-  (OutboundRecord & {
-    inventoryBalance?: number;
-    customer?: { id: string; name: string };
-    salesOrder?: { id: string; orderNumber: string };
-  }) | null
+export async function getOutboundRecordByNumber(recordNumber: string): Promise<
+  | (OutboundRecord & {
+      inventoryBalance?: number;
+      customer?: { id: string; name: string };
+      salesOrder?: { id: string; orderNumber: string };
+    })
+  | null
 > {
   if (!recordNumber) {
     return null;
@@ -256,6 +250,8 @@ export async function getOutboundRecordByNumber(
           name: true,
           specification: true,
           unit: true,
+          piecesPerUnit: true,
+          weight: true,
         },
       },
       variant: {
@@ -263,12 +259,14 @@ export async function getOutboundRecordByNumber(
           id: true,
           colorCode: true,
           colorName: true,
+          sku: true,
         },
       },
       operator: {
         select: {
           id: true,
           name: true,
+          email: true,
         },
       },
       customer: {
@@ -314,26 +312,32 @@ export async function getOutboundRecordByNumber(
     remarks: record.notes ?? undefined,
     createdAt: record.createdAt.toISOString(),
     product: record.product
-      ? {
+      ? ({
           id: record.product.id,
           code: record.product.code,
           name: record.product.name,
           specification: record.product.specification ?? undefined,
-          unit: record.product.unit,
-        }
+          unit: record.product.unit as NonNullable<
+            OutboundRecord['product']
+          >['unit'],
+          piecesPerUnit: record.product.piecesPerUnit ?? 0,
+          weight: record.product.weight ?? undefined,
+        } satisfies NonNullable<OutboundRecord['product']>)
       : undefined,
     user: record.operator
-      ? {
+      ? ({
           id: record.operator.id,
           name: record.operator.name ?? '—',
-        }
+          email: record.operator.email ?? undefined,
+        } satisfies NonNullable<OutboundRecord['user']>)
       : undefined,
     variant: record.variant
-      ? {
+      ? ({
           id: record.variant.id,
-          colorCode: record.variant.colorCode,
-          colorName: record.variant.colorName,
-        }
+          colorCode: record.variant.colorCode ?? undefined,
+          colorName: record.variant.colorName ?? undefined,
+          sku: record.variant.sku ?? undefined,
+        } satisfies NonNullable<OutboundRecord['variant']>)
       : undefined,
     customer: record.customer
       ? {

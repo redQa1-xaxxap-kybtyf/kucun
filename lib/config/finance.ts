@@ -34,6 +34,8 @@ export const REFUND_METHODS = {
   CASH: 'cash',
   BANK_TRANSFER: 'bank_transfer',
   ORIGINAL_PAYMENT: 'original_payment',
+  ALIPAY: 'alipay',
+  WECHAT: 'wechat',
   OTHER: 'other',
 } as const;
 
@@ -86,6 +88,8 @@ export const REFUND_METHOD_LABELS = {
   [REFUND_METHODS.CASH]: '现金',
   [REFUND_METHODS.BANK_TRANSFER]: '银行转账',
   [REFUND_METHODS.ORIGINAL_PAYMENT]: '原支付方式',
+  [REFUND_METHODS.ALIPAY]: '支付宝',
+  [REFUND_METHODS.WECHAT]: '微信支付',
   [REFUND_METHODS.OTHER]: '其他',
 } as const;
 

@@ -2,7 +2,15 @@ import { PrismaClient, type Prisma } from '@prisma/client';
 
 import { env } from './env';
 
-type LogContext = Record<string, unknown> | undefined;
+type LogContext = {
+  userId?: string;
+  requestId?: string;
+  ip?: string;
+  userAgent?: string;
+  path?: string;
+  method?: string;
+  [key: string]: string | number | boolean | null | undefined;
+};
 
 let loggerModule: typeof import('@/lib/logger') | null = null;
 async function getLogger() {

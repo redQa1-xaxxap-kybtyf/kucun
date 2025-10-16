@@ -269,7 +269,7 @@ async function cascadeInvalidate(tag: string): Promise<void> {
         } catch (error) {
           logger.error('cache-revalidate', '延迟失效执行失败', error, {
             tag,
-            relatedTags,
+            relatedTags: relatedTags.join(','),
           });
           // 不抛出错误，避免影响后台任务
         }

@@ -4,6 +4,7 @@ import type { z } from 'zod';
 import { invalidateProductCache } from '@/lib/cache/product-cache';
 import type { ProductStatus, ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
+import { parseProductImages } from '@/lib/utils/product-transforms';
 import { productUpdateSchema } from '@/lib/validations/product';
 
 // 定义产品查询结果类型 (保留用于类型推断)
@@ -45,6 +46,9 @@ export async function getProductById(id: string) {
       thickness: true,
       status: true,
       categoryId: true,
+      description: true,
+      thumbnailUrl: true,
+      images: true,
       createdAt: true,
       updatedAt: true,
       category: {
@@ -153,11 +157,34 @@ export async function updateProduct(
   if (validatedData.thickness !== undefined) {
     updateData.thickness = validatedData.thickness;
   }
+  if (validatedData.description !== undefined) {
+    const trimmedDescription = validatedData.description.trim();
+    updateData.description =
+      trimmedDescription.length > 0 ? trimmedDescription : null;
+  }
+  if (validatedData.thumbnailUrl !== undefined) {
+    const trimmedThumbnailUrl = validatedData.thumbnailUrl.trim();
+    updateData.thumbnailUrl =
+      trimmedThumbnailUrl.length > 0 ? trimmedThumbnailUrl : null;
+  }
+  if (validatedData.images !== undefined) {
+    updateData.images =
+      Array.isArray(validatedData.images) && validatedData.images.length > 0
+        ? JSON.stringify(validatedData.images)
+        : null;
+  }
   if (validatedData.categoryId !== undefined) {
+    const rawCategoryId =
+      typeof validatedData.categoryId === 'string'
+        ? validatedData.categoryId.trim()
+        : validatedData.categoryId;
+    const normalizedCategoryId =
+      rawCategoryId && rawCategoryId !== 'uncategorized' ? rawCategoryId : null;
+
     // 使用 Prisma 关系语法更新分类
-    updateData.category = validatedData.categoryId
+    updateData.category = normalizedCategoryId
       ? {
-          connect: { id: validatedData.categoryId },
+          connect: { id: normalizedCategoryId },
         }
       : {
           disconnect: true,
@@ -182,6 +209,9 @@ export async function updateProduct(
       thickness: true,
       status: true,
       categoryId: true,
+      description: true,
+      thumbnailUrl: true,
+      images: true,
       createdAt: true,
       updatedAt: true,
       category: {
@@ -286,6 +316,9 @@ function formatProduct(product: {
   weight?: number | null;
   thickness?: number | null;
   status: string;
+  description?: string | null;
+  thumbnailUrl?: string | null;
+  images?: string | null;
   createdAt: Date;
   updatedAt: Date;
   category?: {
@@ -312,6 +345,9 @@ function formatProduct(product: {
     thickness: product.thickness ?? undefined,
     status: product.status as ProductStatus,
     categoryId: product.categoryId ?? null,
+    description: product.description ?? undefined,
+    thumbnailUrl: product.thumbnailUrl ?? undefined,
+    images: parseProductImages(product.images ?? null, product.id),
     createdAt: product.createdAt.toISOString(),
     updatedAt: product.updatedAt.toISOString(),
     category: product.category

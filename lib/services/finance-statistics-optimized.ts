@@ -4,7 +4,14 @@
  */
 
 import { prisma } from '@/lib/db';
-import type { Prisma } from '@prisma/client';
+
+type SalesOrderWithRelations = {
+  id: string;
+  totalAmount: number;
+  createdAt: Date;
+  payments: { paymentAmount: number }[];
+  refunds: { refundAmount: number }[];
+};
 
 /**
  * 客户对账单汇总信息
@@ -79,31 +86,55 @@ export async function generateCustomerStatementsOptimized(
 
   // 聚合统计
   return customers.map(customer => {
-    const orders = customer.salesOrders;
+    const orders = customer.salesOrders as SalesOrderWithRelations[];
 
     const totalOrders = orders.length;
-    const totalAmount = orders.reduce((sum, o) => sum + o.totalAmount, 0);
-
-    const paidAmount = orders.reduce(
-      (sum, o) =>
-        sum + o.payments.reduce((pSum, p) => pSum + p.paymentAmount, 0),
+    const totalAmount = orders.reduce<number>(
+      (sum, order) => sum + order.totalAmount,
       0
     );
 
-    const refundAmount = orders.reduce(
-      (sum, o) => sum + o.refunds.reduce((rSum, r) => rSum + r.refundAmount, 0),
-      0
-    );
+    const paidAmount = orders.reduce<number>((sum, order) => {
+      const orderPaid = order.payments.reduce<number>(
+        (paymentSum, payment) => paymentSum + payment.paymentAmount,
+        0
+      );
+      return sum + orderPaid;
+    }, 0);
+
+    const refundAmount = orders.reduce<number>((sum, order) => {
+      const orderRefund = order.refunds.reduce<number>(
+        (refundSum, refund) => refundSum + refund.refundAmount,
+        0
+      );
+      return sum + orderRefund;
+    }, 0);
 
     const pendingAmount = Math.max(0, totalAmount - paidAmount - refundAmount);
 
     const lastTransactionDate =
       orders.length > 0
         ? orders
-            .map(o => o.createdAt)
+            .map(order => order.createdAt)
             .sort((a, b) => b.getTime() - a.getTime())[0]
             .toISOString()
         : null;
+
+    const customerWithOptionalFields = customer as typeof customer & {
+      creditLimit?: number | null;
+      paymentTerms?: string | null;
+    };
+
+    const creditLimit =
+      typeof customerWithOptionalFields.creditLimit === 'number'
+        ? customerWithOptionalFields.creditLimit
+        : 50000;
+
+    const paymentTerms =
+      customerWithOptionalFields.paymentTerms &&
+      customerWithOptionalFields.paymentTerms.trim().length > 0
+        ? customerWithOptionalFields.paymentTerms
+        : '30天';
 
     return {
       id: customer.id,
@@ -115,8 +146,8 @@ export async function generateCustomerStatementsOptimized(
       pendingAmount,
       overdueAmount: overdueMap.get(customer.id) || 0,
       lastTransactionDate,
-      creditLimit: customer.creditLimit || 50000,
-      paymentTerms: customer.paymentTerms || '30天',
+      creditLimit,
+      paymentTerms,
     };
   });
 }

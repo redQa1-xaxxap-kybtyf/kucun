@@ -85,9 +85,11 @@ export function normalizeSelector(raw?: string | null): string {
 export function normalizeSelectorGroup<
   T extends { [K in keyof T]: string | undefined },
 >(group: T): { [K in keyof T]: string } {
-  const entries = Object.entries(group).map(([key, value]) => [
-    key,
-    normalizeSelector(value),
-  ]);
+  const entries = (Object.entries(group) as Array<[keyof T, T[keyof T]]>).map(
+    ([key, value]) => [
+      key,
+      normalizeSelector(value as string | null | undefined),
+    ]
+  );
   return Object.fromEntries(entries) as { [K in keyof T]: string };
 }

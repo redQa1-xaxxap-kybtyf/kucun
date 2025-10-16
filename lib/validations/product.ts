@@ -14,6 +14,23 @@ import {
 } from '@/lib/config/product';
 import { paginationConfig } from '@/lib/env';
 
+const isUrlOrPath = (value: string): boolean => {
+  if (!value) {
+    return true;
+  }
+
+  if (value.startsWith('/')) {
+    return true;
+  }
+
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+};
+
 /**
  * 产品基础验证规则
  * 定义了产品各个字段的通用验证逻辑
@@ -82,10 +99,11 @@ const baseValidations = {
     message: '请选择有效的产品状态',
   }),
 
-  /** 缩略图URL验证：可选，必须是有效的URL */
+  /** 缩略图URL验证：可选，支持绝对地址或以 / 开头的相对路径 */
   thumbnailUrl: z
     .string()
-    .url('缩略图URL格式不正确')
+    .trim()
+    .refine(isUrlOrPath, '缩略图URL格式不正确')
     .optional()
     .or(z.literal('')),
 
@@ -93,7 +111,10 @@ const baseValidations = {
   images: z
     .array(
       z.object({
-        url: z.string().url({ error: '图片URL格式不正确' }),
+        url: z
+          .string()
+          .trim()
+          .refine(isUrlOrPath, { message: '图片URL格式不正确' }),
         type: z.enum(['main', 'effect'], {
           message: '图片类型必须是主图或效果图',
         }),

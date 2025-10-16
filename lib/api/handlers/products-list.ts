@@ -7,8 +7,10 @@
 import type { Prisma } from '@prisma/client';
 
 import { getBatchCachedInventorySummary } from '@/lib/cache/inventory-cache';
+import type { ProductStatus, ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { paginationConfig, productConfig } from '@/lib/env';
+import { parseProductImages } from '@/lib/utils/product-transforms';
 
 const DEFAULT_INVENTORY = {
   totalQuantity: 0,
@@ -107,6 +109,9 @@ export function buildProductSelect(includeStatistics: boolean) {
     thickness: true,
     status: true,
     categoryId: true,
+    description: true,
+    thumbnailUrl: true,
+    images: true,
     category: {
       select: {
         id: true,
@@ -189,6 +194,9 @@ export function formatProductList(params: {
     thickness: number | null;
     status: string;
     categoryId: string | null;
+    description: string | null;
+    thumbnailUrl: string | null;
+    images: string | null;
     category: {
       id: string;
       name: string;
@@ -216,17 +224,26 @@ export function formatProductList(params: {
 
     const counts =
       includeStatistics && '_count' in product ? product._count : undefined;
+    const unit = product.unit as ProductUnit;
+    const status = product.status as ProductStatus;
+    const statistics = counts
+      ? {
+          inventoryRecordsCount: counts.inventory,
+          salesOrderItemsCount: counts.salesOrderItems,
+          inboundRecordsCount: counts.inboundRecords,
+        }
+      : undefined;
 
     return {
       id: product.id,
       code: product.code,
       name: product.name,
-      specification: product.specification,
-      unit: product.unit,
+      specification: product.specification ?? undefined,
+      unit,
       piecesPerUnit: product.piecesPerUnit,
-      weight: product.weight,
-      thickness: product.thickness,
-      status: product.status,
+      weight: product.weight ?? undefined,
+      thickness: product.thickness ?? undefined,
+      status,
       categoryId: product.categoryId,
       category: product.category
         ? {
@@ -235,14 +252,11 @@ export function formatProductList(params: {
             code: product.category.code,
           }
         : null,
+      description: product.description ?? undefined,
+      thumbnailUrl: product.thumbnailUrl ?? undefined,
+      images: parseProductImages(product.images ?? null, product.id),
       inventory,
-      statistics: counts
-        ? {
-            inventory: counts.inventory,
-            salesOrderItems: counts.salesOrderItems,
-            inboundRecords: counts.inboundRecords,
-          }
-        : undefined,
+      statistics,
       createdAt:
         product.createdAt instanceof Date
           ? product.createdAt.toISOString()

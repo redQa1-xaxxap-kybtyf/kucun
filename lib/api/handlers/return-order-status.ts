@@ -4,6 +4,8 @@
  * 遵循全局约定规范和唯一真理原则
  */
 
+import type { Prisma } from '@prisma/client';
+
 import { prisma } from '@/lib/db';
 
 /**
@@ -147,7 +149,10 @@ export async function updateReturnOrderStatus(
             ? order.refundAmount
             : Number(order.refundAmount ?? 0));
 
-        if (!Number.isFinite(computedRefundAmount) || computedRefundAmount <= 0) {
+        if (
+          !Number.isFinite(computedRefundAmount) ||
+          computedRefundAmount <= 0
+        ) {
           const aggregated = await tx.returnOrderItem.aggregate({
             where: { returnOrderId: orderId },
             _sum: { subtotal: true },
@@ -155,7 +160,10 @@ export async function updateReturnOrderStatus(
           const aggregatedAmount = Number(aggregated._sum.subtotal ?? 0);
           if (aggregatedAmount > 0) {
             computedRefundAmount = aggregatedAmount;
-          } else if (typeof order.totalAmount === 'number' && order.totalAmount > 0) {
+          } else if (
+            typeof order.totalAmount === 'number' &&
+            order.totalAmount > 0
+          ) {
             computedRefundAmount = order.totalAmount;
           }
         }
@@ -215,25 +223,31 @@ export async function updateReturnOrderStatus(
             );
             const refundNumber = await generateRefundNumber();
 
-            await tx.refundRecord.create({
-              data: {
-                refundNumber,
-                returnOrderId: orderId,
-                returnOrderNumber: order.returnNumber,
-                salesOrderId: order.salesOrderId,
-                customerId: order.customerId,
-                userId,
-                refundType: 'full_refund',
-                refundMethod: 'original_payment',
-                refundAmount: computedRefundAmount,
-                processedAmount: 0,
-                remainingAmount: computedRefundAmount,
-                status: 'pending',
-                refundDate: new Date(),
-                reason: `退货订单 ${order.returnNumber} 自动生成退款`,
-                remarks: `系统自动创建,关联退货订单：${order.returnNumber}`,
-              },
-            });
+            if (!order.salesOrderId) {
+              throw new Error(
+                `退货订单 ${order.returnNumber} 缺少关联的销售订单，无法生成退款记录`
+              );
+            }
+
+            const refundData: Prisma.RefundRecordUncheckedCreateInput = {
+              refundNumber,
+              returnOrderId: orderId,
+              returnOrderNumber: order.returnNumber,
+              customerId: order.customerId,
+              userId,
+              salesOrderId: order.salesOrderId,
+              refundType: 'full_refund',
+              refundMethod: 'original_payment',
+              refundAmount: computedRefundAmount,
+              processedAmount: 0,
+              remainingAmount: computedRefundAmount,
+              status: 'pending',
+              refundDate: new Date(),
+              reason: `退货订单 ${order.returnNumber} 自动生成退款`,
+              remarks: `系统自动创建,关联退货订单：${order.returnNumber}`,
+            };
+
+            await tx.refundRecord.create({ data: refundData });
 
             refundCreated = true;
           }
@@ -245,7 +259,7 @@ export async function updateReturnOrderStatus(
           id: order.id,
           returnNumber: order.returnNumber,
           status: order.status,
-          remarks: order.remarks,
+          remarks: order.remarks ?? undefined,
         },
         refundCreated,
       };

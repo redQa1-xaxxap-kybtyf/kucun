@@ -3,7 +3,7 @@
 
 import type { z } from 'zod';
 
-import {
+import type {
   paymentMethodSchema,
   paymentStatusSchema,
   paymentTypeSchema,
@@ -39,6 +39,7 @@ export interface PaymentRecord {
   bankInfo?: string;
   createdAt: Date | string;
   updatedAt: Date | string;
+  [key: string]: unknown;
 }
 
 // 收款记录详情（包含关联数据）
@@ -77,6 +78,7 @@ export interface AccountsReceivable {
   orderDate: Date | string; // 支持Date对象和ISO字符串
   dueDate?: Date | string;
   lastPaymentDate?: Date | string;
+  [key: string]: unknown;
 }
 
 // 收款统计数据

@@ -210,18 +210,17 @@ function buildStatementWhere(params: {
       break;
   }
 
-  if (params.search) {
+  const searchTerm = params.search?.trim();
+  if (searchTerm) {
     where.OR = [
       {
         entityName: {
-          contains: params.search,
-          mode: 'insensitive',
+          contains: searchTerm,
         },
       },
       {
         entityId: {
-          contains: params.search,
-          mode: 'insensitive',
+          contains: searchTerm,
         },
       },
     ];
@@ -399,7 +398,6 @@ export async function getStatementsList(params: StatementQueryParams): Promise<{
     pagination: {
       page,
       limit,
-      pageSize: limit,
       total,
       totalPages: total > 0 ? Math.ceil(total / limit) : 1,
     },

@@ -4,7 +4,6 @@
  */
 
 import { prisma } from '@/lib/db';
-import type { AdjustmentQueryParams } from '@/lib/types/inventory-operations';
 import { inventoryAdjustmentsQuerySchema } from '@/lib/validations/inventory-queries';
 
 /**

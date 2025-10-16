@@ -34,8 +34,17 @@ export interface InboundRecord {
   createdAt: string;
 
   // 关联数据（可选）
-  product?: Product;
-  user?: User;
+  product?: Pick<
+    Product,
+    | 'id'
+    | 'name'
+    | 'code'
+    | 'unit'
+    | 'specification'
+    | 'piecesPerUnit'
+    | 'weight'
+  >;
+  user?: Pick<User, 'id' | 'name' | 'email'>;
 }
 
 // 出库记录类型
@@ -60,9 +69,21 @@ export interface OutboundRecord {
   inventoryBalance?: number;
 
   // 关联数据（可选）
-  product?: Product;
-  user?: User;
-  variant?: import('./product').ProductVariant;
+  product?: Pick<
+    Product,
+    | 'id'
+    | 'name'
+    | 'code'
+    | 'unit'
+    | 'specification'
+    | 'piecesPerUnit'
+    | 'weight'
+  >;
+  user?: Pick<User, 'id' | 'name' | 'email'>;
+  variant?: Pick<
+    import('./product').ProductVariant,
+    'id' | 'colorCode' | 'colorName' | 'sku'
+  >;
   customer?: {
     id: string;
     name: string;
@@ -231,10 +252,22 @@ export interface InventoryAdjustment {
   inventoryBalance?: number;
 
   // 关联数据（可选）
-  product?: Product;
-  variant?: import('./product').ProductVariant;
-  operator?: User;
-  approver?: User;
+  product?: Pick<
+    Product,
+    | 'id'
+    | 'name'
+    | 'code'
+    | 'unit'
+    | 'specification'
+    | 'piecesPerUnit'
+    | 'weight'
+  >;
+  variant?: Pick<
+    import('./product').ProductVariant,
+    'id' | 'colorCode' | 'colorName' | 'sku'
+  >;
+  operator?: Pick<User, 'id' | 'name' | 'email'>;
+  approver?: Pick<User, 'id' | 'name' | 'email'>;
 }
 
 // 库存调整记录查询参数

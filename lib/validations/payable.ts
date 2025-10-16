@@ -45,6 +45,11 @@ export const createPayableRecordSchema = z.object({
     .number()
     .positive('应付金额必须大于0')
     .max(999999999, '应付金额不能超过999,999,999'),
+  dueDate: z
+    .string()
+    .optional()
+    .refine(date => !date || !isNaN(Date.parse(date)), '请输入有效的到期日期'),
+  paymentTerms: z.string().max(100, '付款条件不能超过100字符').optional(),
   description: z.string().max(500, '描述不能超过500字符').optional(),
   remarks: z.string().max(1000, '备注不能超过1000字符').optional(),
 });
@@ -57,6 +62,11 @@ export const updatePayableRecordSchema = z.object({
     .max(999999999, '应付金额不能超过999,999,999')
     .optional(),
   status: payableStatusSchema.optional(),
+  dueDate: z
+    .string()
+    .optional()
+    .refine(date => !date || !isNaN(Date.parse(date)), '请输入有效的到期日期'),
+  paymentTerms: z.string().max(100, '付款条件不能超过100字符').optional(),
   description: z.string().max(500, '描述不能超过500字符').optional(),
   remarks: z.string().max(1000, '备注不能超过1000字符').optional(),
 });

@@ -20,6 +20,7 @@ export interface FormattedInventory {
   unitCost?: number;
   updatedAt: string;
   batchPiecesPerUnit?: number;
+  weight?: number; // 产��重量(kg) - 优先使用批次级重量，回退到产品默认重量
   product: {
     id: string;
     code: string;
@@ -43,17 +44,20 @@ export interface FormattedInventory {
 export function formatInventoryRecord(
   record: InventoryQueryResult
 ): FormattedInventory {
+  const quantity = record.quantity;
+  const reservedQuantity = record.reservedQuantity;
   return {
     id: record.id,
     productId: record.productId,
     batchNumber: record.batchNumber ?? undefined,
-    quantity: record.quantity,
-    reservedQuantity: record.reservedQuantity,
-    availableQuantity: record.quantity - record.reservedQuantity,
+    quantity,
+    reservedQuantity,
+    availableQuantity: Math.max(quantity - reservedQuantity, 0),
     location: record.location ?? undefined,
     unitCost: record.unitCost ?? undefined,
     updatedAt: record.updatedAt.toISOString(),
     batchPiecesPerUnit: record.batch_piecesPerUnit ?? undefined,
+    weight: record.batch_weight ?? record.product_weight ?? undefined, // 优先使用批次级重量
     product: {
       id: record.product_id,
       code: record.product_code,

@@ -175,7 +175,8 @@ const QiniuDomainSchema = z
       return true;
     },
     { message: '端口号必须在 1-65535 范围内' }
-  );
+  )
+  .transform(value => value.replace(/\/+$/, '')); // 自动去除末尾斜杠
 
 const QiniuAccessKeyFormSchema = z
   .union([QiniuAccessKeySchema, z.literal('')])

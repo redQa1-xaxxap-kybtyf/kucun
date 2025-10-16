@@ -46,7 +46,9 @@ export interface PayableRecord {
   payableAmount: number;
   paidAmount: number;
   remainingAmount: number;
+  dueDate?: Date | string;
   status: PayableStatus;
+  paymentTerms: string;
   description?: string;
   remarks?: string;
   createdAt: Date | string;

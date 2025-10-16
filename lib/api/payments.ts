@@ -494,7 +494,7 @@ export const paymentUtils = {
   formatAmount: (amount: number): string => formatCurrencyValue(amount),
 
   formatPaymentMethod: (method: PaymentMethod): string => {
-    const methodMap = {
+    const methodMap: Record<PaymentMethod, string> = {
       cash: '现金',
       bank_transfer: '银行转账',
       check: '支票',
@@ -539,7 +539,7 @@ export const paymentUtils = {
   },
 
   getPaymentMethodIcon: (method: PaymentMethod): string => {
-    const iconMap = {
+    const iconMap: Record<PaymentMethod, string> = {
       cash: '💵',
       bank_transfer: '🏦',
       check: '📝',

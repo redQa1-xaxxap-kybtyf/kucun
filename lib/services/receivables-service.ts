@@ -8,13 +8,7 @@
  */
 
 import type { Prisma } from '@prisma/client';
-import {
-  differenceInCalendarDays,
-  endOfMonth,
-  parseISO,
-  startOfMonth,
-  subMonths,
-} from 'date-fns';
+import { endOfMonth, parseISO, startOfMonth, subMonths } from 'date-fns';
 
 import { prisma } from '@/lib/db';
 
@@ -43,9 +37,7 @@ export interface ReceivableSummary {
   unpaidCount: number; // 未付款笔数
   partialCount: number; // 部分付款笔数
   collectionRate: number; // 当前月收款率
-  collectionRateChange: number; // 较上月收款率变化（百分点）
-  averageAccountPeriod: number; // 当前月平均账期（天）
-  averageAccountPeriodChange: number; // 较上月平均账期变化（天）
+  collectionRateChange: number; // 较上月收款率变化(百分点)
 }
 
 export interface ReceivablesQueryParams {
@@ -79,8 +71,8 @@ export interface ReceivablesResult {
 function calculatePaymentStatus(
   paidAmount: number,
   totalAmount: number,
-  orderDate: Date,
-  paymentDeadlineDays = 30
+  _orderDate: Date,
+  _paymentDeadlineDays = 30
 ): 'unpaid' | 'partial' | 'paid' {
   const paidRatio = paidAmount / totalAmount;
 
@@ -93,17 +85,6 @@ function calculatePaymentStatus(
   }
 
   return 'unpaid';
-}
-
-/**
- * 计算逾期天数
- */
-function calculateOverdueDays(
-  _orderDate: Date,
-  _paymentDeadlineDays = 30
-): number {
-  // 逾期概念已移除，兼容旧调用固定返回0
-  return 0;
 }
 
 /**
@@ -249,17 +230,6 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
       }
 
       const orderDate = safeParseDate(item.orderDate);
-      const lastPaymentDate = item.lastPaymentDate
-        ? safeParseDate(item.lastPaymentDate)
-        : undefined;
-      const effectiveEndDate =
-        item.paymentStatus === 'paid' && lastPaymentDate
-          ? lastPaymentDate
-          : now;
-      const accountPeriodDays = Math.max(
-        differenceInCalendarDays(effectiveEndDate, orderDate),
-        0
-      );
 
       if (
         orderDate.getTime() >= currentMonthStart.getTime() &&
@@ -267,7 +237,6 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
       ) {
         acc.currentMonth.totalAmount += item.totalAmount;
         acc.currentMonth.paidAmount += item.paidAmount;
-        acc.currentMonth.accountPeriodSum += accountPeriodDays;
         acc.currentMonth.count += 1;
       }
 
@@ -277,7 +246,6 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
       ) {
         acc.previousMonth.totalAmount += item.totalAmount;
         acc.previousMonth.paidAmount += item.paidAmount;
-        acc.previousMonth.accountPeriodSum += accountPeriodDays;
         acc.previousMonth.count += 1;
       }
 
@@ -292,13 +260,11 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
       currentMonth: {
         totalAmount: 0,
         paidAmount: 0,
-        accountPeriodSum: 0,
         count: 0,
       },
       previousMonth: {
         totalAmount: 0,
         paidAmount: 0,
-        accountPeriodSum: 0,
         count: 0,
       },
     }
@@ -315,15 +281,6 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
       : (totals.previousMonth.paidAmount / totals.previousMonth.totalAmount) *
         100;
 
-  const currentAverageAccountPeriod =
-    totals.currentMonth.count === 0
-      ? 0
-      : totals.currentMonth.accountPeriodSum / totals.currentMonth.count;
-  const previousAverageAccountPeriod =
-    totals.previousMonth.count === 0
-      ? 0
-      : totals.previousMonth.accountPeriodSum / totals.previousMonth.count;
-
   return {
     totalReceivable: totals.totalReceivable,
     receivableCount: totals.receivableCount,
@@ -332,9 +289,6 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
     partialCount: totals.partialCount,
     collectionRate: currentCollectionRate,
     collectionRateChange: currentCollectionRate - previousCollectionRate,
-    averageAccountPeriod: currentAverageAccountPeriod,
-    averageAccountPeriodChange:
-      currentAverageAccountPeriod - previousAverageAccountPeriod,
   };
 }
 

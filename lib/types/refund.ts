@@ -6,6 +6,8 @@ export type RefundMethod =
   | 'cash'
   | 'bank_transfer'
   | 'original_payment'
+  | 'alipay'
+  | 'wechat'
   | 'other';
 
 // 退款状态枚举
@@ -67,6 +69,52 @@ export interface RefundRecordDetail extends RefundRecord {
     id: string;
     name: string;
   };
+}
+
+// 退款记录列表项（序列化形式，包含常用关联数据）
+export interface RefundRecordListItem {
+  id: string;
+  refundNumber: string;
+  returnOrderId: string | null;
+  salesOrderId: string;
+  customerId: string;
+  userId: string;
+  refundType: RefundType;
+  refundMethod: RefundMethod;
+  refundAmount: number;
+  processedAmount: number;
+  remainingAmount: number;
+  refundDate: string;
+  processedDate: string | null;
+  status: RefundStatus;
+  reason: string | null;
+  remarks: string | null;
+  bankInfo: string | null;
+  receiptNumber: string | null;
+  returnOrderNumber: string | null;
+  createdAt: string;
+  updatedAt: string;
+  customer: {
+    id: string;
+    name: string;
+    phone: string | null;
+  } | null;
+  salesOrder: {
+    id: string;
+    orderNumber: string;
+    totalAmount: number;
+    status?: string;
+  } | null;
+  returnOrder: {
+    id: string;
+    returnOrderNumber: string;
+    totalAmount: number;
+    status?: string;
+  } | null;
+  user: {
+    id: string;
+    name: string;
+  } | null;
 }
 
 // 退款记录创建数据
@@ -172,6 +220,41 @@ export interface RefundRecordListResponse {
   error?: string;
 }
 
+// 退款列表查询参数（支持 SSR + React Query）
+export interface RefundListQueryParams {
+  page: number;
+  limit: number;
+  search?: string;
+  status?: RefundStatus;
+  sortBy?: 'refundDate' | 'refundAmount' | 'createdAt' | 'updatedAt';
+  sortOrder?: 'asc' | 'desc';
+}
+
+// 退款列表统计数据（用于列表视图）
+export interface RefundListStatistics {
+  totalRefundable: number;
+  totalProcessed: number;
+  totalRemaining: number;
+  pendingCount: number;
+  processingCount: number;
+  completedCount: number;
+}
+
+// 退款列表分页信息
+export interface RefundListPagination {
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+}
+
+// 退款列表页面数据
+export interface RefundListData {
+  refunds: RefundRecordListItem[];
+  statistics: RefundListStatistics;
+  pagination: RefundListPagination;
+}
+
 export interface RefundStatisticsResponse {
   success: boolean;
   data: RefundStatistics;
@@ -219,13 +302,31 @@ export const DEFAULT_REFUND_METHODS: RefundMethodConfig[] = [
     sortOrder: 3,
   },
   {
+    method: 'alipay',
+    label: '支付宝',
+    description: '退回至支付宝账户',
+    requiresBankInfo: false,
+    requiresReceiptNumber: true,
+    isActive: true,
+    sortOrder: 4,
+  },
+  {
+    method: 'wechat',
+    label: '微信支付',
+    description: '退回至微信支付账户',
+    requiresBankInfo: false,
+    requiresReceiptNumber: true,
+    isActive: true,
+    sortOrder: 5,
+  },
+  {
     method: 'other',
     label: '其他方式',
     description: '其他退款方式',
     requiresBankInfo: false,
     requiresReceiptNumber: false,
     isActive: true,
-    sortOrder: 4,
+    sortOrder: 6,
   },
 ];
 

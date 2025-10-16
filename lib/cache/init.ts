@@ -55,7 +55,8 @@ async function handleDataUpdate(event: PubSubEvent): Promise<void> {
   }
 
   logger.debug('cache-init', 'Data update event received', {
-    event,
+    type: event.type,
+    raw: JSON.stringify(event),
   });
 
   // 转发到 WebSocket 客户端
@@ -75,7 +76,8 @@ async function handleInventoryChange(event: PubSubEvent): Promise<void> {
   }
 
   logger.debug('cache-init', 'Inventory change event received', {
-    event,
+    type: event.type,
+    raw: JSON.stringify(event),
   });
 
   // 转发到 WebSocket 客户端
@@ -95,7 +97,8 @@ async function handleOrderStatusChange(event: PubSubEvent): Promise<void> {
   }
 
   logger.debug('cache-init', 'Order status change event received', {
-    event,
+    type: event.type,
+    raw: JSON.stringify(event),
   });
 
   // 转发到 WebSocket 客户端
@@ -113,7 +116,8 @@ async function handleFinanceChange(event: PubSubEvent): Promise<void> {
   }
 
   logger.debug('cache-init', 'Finance change event received', {
-    event,
+    type: event.type,
+    raw: JSON.stringify(event),
   });
 
   // 转发到 WebSocket 客户端

@@ -39,7 +39,7 @@ async function getQiniuConfig(): Promise<QiniuConfig | null> {
     const now = Date.now();
 
     // 检查缓存是否有效
-    if (cachedConfig && (now - cacheTimestamp) < CACHE_TTL) {
+    if (cachedConfig && now - cacheTimestamp < CACHE_TTL) {
       logger.debug('qiniu', 'Using cached Qiniu config');
       return cachedConfig;
     }
@@ -67,13 +67,17 @@ async function getQiniuConfig(): Promise<QiniuConfig | null> {
         case 'qiniu_access_key':
           if (setting.value) {
             config.accessKey = decrypt(setting.value);
-            logger.debug('qiniu', 'AccessKey decrypted', { length: config.accessKey.length });
+            logger.debug('qiniu', 'AccessKey decrypted', {
+              length: config.accessKey.length,
+            });
           }
           break;
         case 'qiniu_secret_key':
           if (setting.value) {
             config.secretKey = decrypt(setting.value);
-            logger.debug('qiniu', 'SecretKey decrypted', { length: config.secretKey.length });
+            logger.debug('qiniu', 'SecretKey decrypted', {
+              length: config.secretKey.length,
+            });
           }
           break;
         case 'qiniu_bucket':
@@ -249,7 +253,9 @@ export async function uploadToQiniu(
           }
 
           if (respInfo.statusCode === 200) {
-            const url = `${config.domain}/${key}`;
+            // 确保domain末尾没有斜杠，避免双斜杠问题
+            const domain = config.domain.replace(/\/+$/, '');
+            const url = `${domain}/${key}`;
             logger.info('qiniu', 'Upload successful', { key, url });
             resolve({
               success: true,
@@ -257,13 +263,19 @@ export async function uploadToQiniu(
               key,
             });
           } else {
+            const bodyError =
+              respBody && typeof respBody === 'object' && 'error' in respBody
+                ? String(respBody.error)
+                : null;
             logger.error('qiniu', 'Upload failed', undefined, {
               statusCode: respInfo.statusCode,
               body: respBody,
             });
             resolve({
               success: false,
-              error: `上传失败: HTTP ${respInfo.statusCode}`,
+              error: bodyError
+                ? `上传失败: ${bodyError} (HTTP ${respInfo.statusCode})`
+                : `上传失败: HTTP ${respInfo.statusCode}`,
             });
           }
         }
@@ -374,13 +386,17 @@ export async function testQiniuConnection(): Promise<{
               message: '七牛云连接测试成功',
             });
           } else if (respInfo.statusCode === 401) {
-            logger.error('qiniu', 'Authentication failed', undefined, { statusCode: 401 });
+            logger.error('qiniu', 'Authentication failed', undefined, {
+              statusCode: 401,
+            });
             resolve({
               success: false,
               message: '连接失败: Access Key 或 Secret Key 不正确',
             });
           } else if (respInfo.statusCode === 631) {
-            logger.error('qiniu', 'Bucket not found', undefined, { statusCode: 631 });
+            logger.error('qiniu', 'Bucket not found', undefined, {
+              statusCode: 631,
+            });
             resolve({
               success: false,
               message: '连接失败: 存储空间不存在',

@@ -63,11 +63,11 @@ export async function getSalesOrders(params: SalesOrderQueryParams) {
     where.createdAt = {};
     if (startDate) {
       // 开始日期：当天的00:00:00
-      where.createdAt.gte = new Date(startDate + 'T00:00:00');
+      where.createdAt.gte = new Date(`${startDate}T00:00:00`);
     }
     if (endDate) {
       // 结束日期：当天的23:59:59
-      where.createdAt.lte = new Date(endDate + 'T23:59:59');
+      where.createdAt.lte = new Date(`${endDate}T23:59:59`);
     }
   }
 
@@ -612,14 +612,9 @@ export async function createSalesOrder(
             batchNumber?: string | null
           ) => `${productId}::${normalizeBatchNumber(batchNumber)}`;
 
-          const inventoryByKey = new Map<
-            string,
-            (typeof inventories)[number]
-          >();
-          const inventoryByProduct = new Map<
-            string,
-            Array<(typeof inventories)[number]>
-          >();
+          type InventoryRecord = (typeof inventories)[number];
+          const inventoryByKey = new Map<string, InventoryRecord>();
+          const inventoryByProduct = new Map<string, InventoryRecord[]>();
 
           for (const inv of inventories) {
             const key = buildInventoryKey(inv.productId, inv.batchNumber);
@@ -748,9 +743,9 @@ export async function createSalesOrder(
           transferMode,
           costAmount,
           profitAmount,
-          itemsAmount: itemsAmount,
+          itemsAmount,
           additionalFees,
-          roundingAdjustment: roundingAdjustment,
+          roundingAdjustment,
           totalAmount: orderTotal,
           remarks: validatedData.remarks,
           items: {
@@ -914,9 +909,8 @@ export async function createSalesOrder(
             await tx.customerProductPrice.create({
               data: record,
             });
-          } catch (error) {
+          } catch (_error) {
             // 忽略重复记录错误（唯一索引冲突）
-            console.debug('价格记录已存在，跳过');
           }
         }
       }
@@ -960,7 +954,7 @@ export async function createSalesOrder(
         const prepaymentResult = await applyPrepaymentToOrder(
           tx,
           validatedData.customerId,
-          totalAmount,
+          salesOrder.totalAmount,
           validatedData.prepaymentAmount ?? undefined
         );
 

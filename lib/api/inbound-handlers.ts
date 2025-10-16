@@ -7,9 +7,10 @@ import type { Prisma, PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
+import type { ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
-import type { InboundListResponse } from '@/lib/types/inbound';
+import type { InboundListResponse, InboundReason } from '@/lib/types/inbound';
 import { toISOString } from '@/lib/utils/datetime';
 import { cleanRemarks, inboundQuerySchema } from '@/lib/validations/inbound';
 
@@ -23,7 +24,7 @@ interface InboundRecordWithRelations {
   productId: string;
   variantId: string | null;
   quantity: number;
-  reason: string;
+  reason: InboundReason;
   remarks: string | null;
   userId: string;
   batchNumber: string | null;
@@ -43,14 +44,17 @@ interface InboundRecordWithRelations {
   user: {
     id: string;
     name: string;
+    email: string | null;
   };
   variant?: {
     id: string;
-    colorCode: string;
+    colorCode: string | null;
     colorName: string | null;
+    sku: string | null;
   } | null;
   batchSpecification?: {
     id: string;
+    batchNumber: string | null;
     piecesPerUnit: number;
     weight: number | null;
     thickness: number | null;
@@ -226,15 +230,15 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
     id: record.id,
     recordNumber: record.recordNumber,
     productId: record.productId,
-    variantId: record.variantId || undefined,
+    variantId: record.variantId ?? undefined,
     quantity: record.quantity,
     reason: record.reason,
-    remarks: record.remarks || '',
+    remarks: record.remarks ?? undefined,
     userId: record.userId,
-    batchNumber: record.batchNumber || '',
-    colorCode: record.variant?.colorCode || '',
-    unitCost: record.unitCost || 0,
-    totalCost: record.totalCost || 0,
+    batchNumber: record.batchNumber ?? undefined,
+    colorCode: record.variant?.colorCode ?? undefined,
+    unitCost: record.unitCost ?? undefined,
+    totalCost: record.totalCost ?? undefined,
     createdAt: toISOString(record.createdAt) || '',
     updatedAt: toISOString(record.updatedAt) || '',
 
@@ -243,36 +247,54 @@ function formatInboundRecords(records: InboundRecordWithRelations[]) {
       id: record.product.id,
       name: record.product.name,
       code: record.product.code,
-      unit: record.product.unit,
+      specification: record.product.specification || undefined,
+      unit: record.product.unit as ProductUnit,
       // 优先使用批次级规格参数，回退到产品默认参数
       piecesPerUnit:
-        record.batchSpecification?.piecesPerUnit ||
-        record.product.piecesPerUnit ||
+        record.batchSpecification?.piecesPerUnit ??
+        record.product.piecesPerUnit ??
         1,
-      weight: record.batchSpecification?.weight || record.product.weight || 0,
+      weight:
+        record.batchSpecification?.weight ?? record.product.weight ?? undefined,
     },
 
     // 批次规格参数信息（如果存在）
-    batchSpecification: record.batchSpecification
-      ? {
-          id: record.batchSpecification.id,
-          piecesPerUnit: record.batchSpecification.piecesPerUnit,
-          weight: record.batchSpecification.weight,
-          thickness: record.batchSpecification.thickness,
-        }
-      : undefined,
+    batchSpecification:
+      record.batchSpecification && record.batchSpecification.batchNumber
+        ? {
+            id: record.batchSpecification.id,
+            batchNumber: record.batchSpecification.batchNumber,
+            piecesPerUnit:
+              record.batchSpecification.piecesPerUnit ??
+              record.product.piecesPerUnit ??
+              1,
+            weight: record.batchSpecification.weight ?? undefined,
+            thickness: record.batchSpecification.thickness ?? undefined,
+          }
+        : undefined,
+
+    variant:
+      record.variant && record.variant.colorCode && record.variant.sku
+        ? {
+            id: record.variant.id,
+            colorCode: record.variant.colorCode,
+            colorName: record.variant.colorName ?? undefined,
+            sku: record.variant.sku,
+          }
+        : undefined,
 
     // 嵌套的用户对象（前端组件期望的结构）
     user: {
       id: record.user.id,
-      name: record.user.name,
+      name: record.user.name ?? '',
+      email: record.user.email ?? '',
     },
 
     // 保持向后兼容的扁平化字段
     productName: record.product.name,
     productSku: record.product.code, // 使用 code 字段而不是 sku
-    productUnit: record.product.unit,
-    userName: record.user.name || '',
+    productUnit: record.product.unit as ProductUnit,
+    userName: record.user.name ?? '',
   }));
 }
 
@@ -321,11 +343,13 @@ export async function getInboundRecords(queryData: {
             id: true,
             colorCode: true,
             colorName: true,
+            sku: true,
           },
         },
         batchSpecification: {
           select: {
             id: true,
+            batchNumber: true,
             piecesPerUnit: true, // 批次级每单位片数
             weight: true, // 批次级重量
             thickness: true, // 批次级厚度
@@ -335,6 +359,7 @@ export async function getInboundRecords(queryData: {
           select: {
             id: true,
             name: true,
+            email: true,
           },
         },
       },
@@ -512,7 +537,7 @@ export async function createInboundRecord(
       id: inboundRecord.product.id,
       name: inboundRecord.product.name,
       code: inboundRecord.product.code,
-      unit: inboundRecord.product.unit,
+      unit: inboundRecord.product.unit as ProductUnit,
     },
 
     // 嵌套的用户对象（前端组件期望的结构）
@@ -524,7 +549,7 @@ export async function createInboundRecord(
     // 保持向后兼容的扁平化字段
     productName: inboundRecord.product.name,
     productSku: inboundRecord.product.code, // 使用 code 字段而不是 sku
-    productUnit: inboundRecord.product.unit,
+    productUnit: inboundRecord.product.unit as ProductUnit,
     userName: inboundRecord.user.name || '',
   };
 }

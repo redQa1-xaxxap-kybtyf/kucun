@@ -19,6 +19,59 @@ import {
   processExtendedInfo,
 } from '@/lib/validations/customer';
 
+type PrismaCustomerBase = {
+  id: string;
+  name: string;
+  phone: string | null;
+  address: string | null;
+  extendedInfo: string | null;
+  parentCustomerId: string | null;
+  createdAt: Date;
+  updatedAt: Date;
+};
+
+type CustomerOrderSummary = {
+  id: string;
+  orderNumber: string;
+  totalAmount: number;
+  paidAmount: number;
+  status: string;
+  createdAt: string;
+};
+
+type CustomerReturnSummary = {
+  id: string;
+  returnNumber: string;
+  totalAmount: number;
+  status: string;
+  createdAt: string;
+};
+
+type CustomerDetailResult = Customer & {
+  salesOrders: CustomerOrderSummary[];
+  returnOrders: CustomerReturnSummary[];
+  _count: {
+    salesOrders: number;
+    returnOrders: number;
+  };
+  totalOrders: number;
+  totalAmount: number;
+  lastOrderDate?: string;
+};
+
+function mapCustomerBase(customer: PrismaCustomerBase): Customer {
+  return {
+    id: customer.id,
+    name: customer.name,
+    phone: customer.phone || undefined,
+    address: customer.address || undefined,
+    extendedInfo: customer.extendedInfo || undefined,
+    parentCustomerId: customer.parentCustomerId || undefined,
+    createdAt: customer.createdAt.toISOString(),
+    updatedAt: customer.updatedAt.toISOString(),
+  };
+}
+
 /**
  * 验证用户会话
  * @throws {Error} 当用户未登录时抛出错误
@@ -42,7 +95,9 @@ export async function validateUserSession(): Promise<void> {
  * @returns 客户详情信息
  * @throws {Error} 当客户不存在时抛出错误
  */
-export async function getCustomerDetail(id: string): Promise<Customer> {
+export async function getCustomerDetail(
+  id: string
+): Promise<CustomerDetailResult> {
   // 优化: 使用 select 替代 include,明确指定所有需要的字段
   const customer = await prisma.customer.findUnique({
     where: { id },
@@ -60,6 +115,12 @@ export async function getCustomerDetail(id: string): Promise<Customer> {
         select: {
           id: true,
           name: true,
+          phone: true,
+          address: true,
+          extendedInfo: true,
+          parentCustomerId: true,
+          createdAt: true,
+          updatedAt: true,
         },
       },
       // 子客户列表
@@ -68,6 +129,11 @@ export async function getCustomerDetail(id: string): Promise<Customer> {
           id: true,
           name: true,
           createdAt: true,
+          updatedAt: true,
+          phone: true,
+          address: true,
+          extendedInfo: true,
+          parentCustomerId: true,
         },
         orderBy: {
           createdAt: 'desc',
@@ -128,27 +194,36 @@ export async function getCustomerDetail(id: string): Promise<Customer> {
   const lastOrderDate = customer.salesOrders[0]?.createdAt.toISOString();
 
   // 转换订单数据，将 Date 转换为 string
-  const salesOrders = customer.salesOrders.map(order => ({
-    ...order,
-    createdAt: order.createdAt.toISOString(),
-  }));
+  const salesOrders: CustomerOrderSummary[] = customer.salesOrders.map(
+    order => ({
+      ...order,
+      createdAt: order.createdAt.toISOString(),
+    })
+  );
 
-  const returnOrders = customer.returnOrders.map(order => ({
-    ...order,
-    createdAt: order.createdAt.toISOString(),
-  }));
+  const returnOrders: CustomerReturnSummary[] = customer.returnOrders.map(
+    order => ({
+      ...order,
+      createdAt: order.createdAt.toISOString(),
+    })
+  );
 
-  return {
-    id: customer.id,
-    name: customer.name,
-    phone: customer.phone || undefined,
-    address: customer.address || undefined,
+  const baseCustomer = mapCustomerBase(customer);
+  const parentCustomer = customer.parentCustomer
+    ? mapCustomerBase(customer.parentCustomer as PrismaCustomerBase)
+    : undefined;
+  const childCustomers =
+    customer.childCustomers.length > 0
+      ? customer.childCustomers.map(child =>
+          mapCustomerBase(child as PrismaCustomerBase)
+        )
+      : undefined;
+
+  const detail: CustomerDetailResult = {
+    ...baseCustomer,
     extendedInfo: JSON.stringify(extendedInfo),
-    parentCustomerId: customer.parentCustomerId || undefined,
-    createdAt: customer.createdAt.toISOString(),
-    updatedAt: customer.updatedAt.toISOString(),
-    parentCustomer: customer.parentCustomer || undefined,
-    childCustomers: customer.childCustomers || undefined,
+    parentCustomer,
+    childCustomers,
     salesOrders,
     returnOrders,
     _count: customer._count,
@@ -156,6 +231,8 @@ export async function getCustomerDetail(id: string): Promise<Customer> {
     totalAmount,
     lastOrderDate,
   };
+
+  return detail;
 }
 
 /**
@@ -183,21 +260,25 @@ export async function createCustomer(
         select: {
           id: true,
           name: true,
+          phone: true,
+          address: true,
+          extendedInfo: true,
+          parentCustomerId: true,
+          createdAt: true,
+          updatedAt: true,
         },
       },
     },
   });
 
+  const baseCustomer = mapCustomerBase(customer);
+  const parentCustomer = customer.parentCustomer
+    ? mapCustomerBase(customer.parentCustomer as PrismaCustomerBase)
+    : undefined;
+
   return {
-    id: customer.id,
-    name: customer.name,
-    phone: customer.phone || undefined,
-    address: customer.address || undefined,
-    extendedInfo: customer.extendedInfo || undefined,
-    parentCustomerId: customer.parentCustomerId || undefined,
-    createdAt: customer.createdAt.toISOString(),
-    updatedAt: customer.updatedAt.toISOString(),
-    parentCustomer: customer.parentCustomer || undefined,
+    ...baseCustomer,
+    parentCustomer,
   };
 }
 
@@ -250,21 +331,25 @@ export async function updateCustomer(
         select: {
           id: true,
           name: true,
+          phone: true,
+          address: true,
+          extendedInfo: true,
+          parentCustomerId: true,
+          createdAt: true,
+          updatedAt: true,
         },
       },
     },
   });
 
+  const baseCustomer = mapCustomerBase(customer);
+  const parentCustomer = customer.parentCustomer
+    ? mapCustomerBase(customer.parentCustomer as PrismaCustomerBase)
+    : undefined;
+
   return {
-    id: customer.id,
-    name: customer.name,
-    phone: customer.phone || undefined,
-    address: customer.address || undefined,
-    extendedInfo: customer.extendedInfo || undefined,
-    parentCustomerId: customer.parentCustomerId || undefined,
-    createdAt: customer.createdAt.toISOString(),
-    updatedAt: customer.updatedAt.toISOString(),
-    parentCustomer: customer.parentCustomer || undefined,
+    ...baseCustomer,
+    parentCustomer,
   };
 }
 
@@ -404,6 +489,12 @@ export async function getCustomerList(params: CustomerQueryParams) {
           select: {
             id: true,
             name: true,
+            phone: true,
+            address: true,
+            extendedInfo: true,
+            parentCustomerId: true,
+            createdAt: true,
+            updatedAt: true,
           },
         },
         childCustomers: {
@@ -474,16 +565,15 @@ export async function getCustomerList(params: CustomerQueryParams) {
       order => order.status !== 'cancelled'
     ).length;
 
+    const baseCustomer = mapCustomerBase(customer);
+    const parentCustomer = customer.parentCustomer
+      ? mapCustomerBase(customer.parentCustomer as PrismaCustomerBase)
+      : undefined;
+
     return {
-      id: customer.id,
-      name: customer.name,
-      phone: customer.phone || undefined,
-      address: customer.address || undefined,
+      ...baseCustomer,
       extendedInfo: JSON.stringify(extendedInfo),
-      parentCustomerId: customer.parentCustomerId || undefined,
-      createdAt: customer.createdAt.toISOString(),
-      updatedAt: customer.updatedAt.toISOString(),
-      parentCustomer: customer.parentCustomer || undefined,
+      parentCustomer,
       totalOrders: customer.salesOrders.length,
       totalAmount,
       lastOrderDate,

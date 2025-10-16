@@ -48,6 +48,7 @@ type MovementSource =
           name: string;
           unit: string;
           specification: string | null;
+          piecesPerUnit: number;
         };
         variant: {
           id: string;
@@ -79,6 +80,7 @@ type MovementSource =
           name: string;
           unit: string;
           specification: string | null;
+          piecesPerUnit: number;
         };
         variant: {
           id: string;
@@ -95,6 +97,35 @@ type MovementSource =
         } | null;
       };
     };
+
+type MovementProduct = NonNullable<InventoryMovementEntry['product']>;
+
+function toMovementProduct(
+  product:
+    | {
+        id: string;
+        code: string;
+        name: string;
+        unit: string;
+        specification: string | null;
+        piecesPerUnit: number | null;
+      }
+    | null
+    | undefined
+): MovementProduct | undefined {
+  if (!product) {
+    return undefined;
+  }
+
+  return {
+    id: product.id,
+    code: product.code,
+    name: product.name,
+    unit: product.unit as MovementProduct['unit'],
+    specification: product.specification ?? undefined,
+    piecesPerUnit: product.piecesPerUnit ?? 0,
+  };
+}
 
 function buildGroupKey(productId: string, variantId?: string | null) {
   return `${productId}::${variantId ?? 'default'}`;
@@ -134,14 +165,7 @@ function mapSourcesToEntries(
 
   sources.forEach(source => {
     const { kind, data } = source;
-    const productInfo = {
-      id: data.product.id,
-      code: data.product.code,
-      name: data.product.name,
-      unit: data.product.unit,
-      specification: data.product.specification ?? undefined,
-      piecesPerUnit: data.product.piecesPerUnit,
-    };
+    const productInfo = toMovementProduct(data.product)!;
 
     const variantInfo = data.variant
       ? {
@@ -162,7 +186,7 @@ function mapSourcesToEntries(
       recordNumber:
         kind === 'adjustment'
           ? data.adjustmentNumber
-          : data.recordNumber ?? data.id,
+          : (data.recordNumber ?? data.id),
       type: kind,
       productId: data.productId,
       variantId: data.variantId ?? undefined,
@@ -171,16 +195,16 @@ function mapSourcesToEntries(
       createdAt: data.createdAt.toISOString(),
       remarks:
         kind === 'inbound'
-          ? data.remarks ?? undefined
+          ? (data.remarks ?? undefined)
           : kind === 'outbound'
-            ? data.notes ?? undefined
-            : data.notes ?? undefined,
+            ? (data.notes ?? undefined)
+            : (data.notes ?? undefined),
       reason:
         kind === 'inbound'
           ? data.reason
           : kind === 'outbound'
-            ? data.reason ?? undefined
-            : data.reason ?? undefined,
+            ? (data.reason ?? undefined)
+            : (data.reason ?? undefined),
       operator:
         kind === 'inbound'
           ? data.user
@@ -232,7 +256,8 @@ function mapSourcesToEntries(
     group.currentQuantity = currentQuantity;
 
     const sortedDescending = group.movements.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+      (a, b) =>
+        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
     );
 
     let runningBalance =
@@ -241,7 +266,10 @@ function mapSourcesToEntries(
         : undefined;
 
     sortedDescending.forEach(entry => {
-      if (entry.type === 'adjustment' && entry.afterQuantitySnapshot !== undefined) {
+      if (
+        entry.type === 'adjustment' &&
+        entry.afterQuantitySnapshot !== undefined
+      ) {
         runningBalance = entry.afterQuantitySnapshot;
       } else if (runningBalance === undefined) {
         if (entry.quantityChange !== 0) {
@@ -257,10 +285,11 @@ function mapSourcesToEntries(
       const balanceAfter =
         entry.type === 'adjustment' && entry.afterQuantitySnapshot !== undefined
           ? entry.afterQuantitySnapshot
-          : runningBalance ?? 0;
+          : (runningBalance ?? 0);
 
       const balanceBefore =
-        entry.type === 'adjustment' && entry.beforeQuantitySnapshot !== undefined
+        entry.type === 'adjustment' &&
+        entry.beforeQuantitySnapshot !== undefined
           ? entry.beforeQuantitySnapshot
           : balanceAfter - entry.quantityChange;
 
@@ -314,7 +343,7 @@ export async function getBatchHistoryByNumber(
   let targetVariantId: string | null | undefined = options?.variantId;
   const focusInventoryId = options?.inventoryId;
 
-  let targetInventory = focusInventoryId
+  const targetInventory = focusInventoryId
     ? await prisma.inventory.findUnique({
         where: { id: focusInventoryId },
         select: {
@@ -353,7 +382,7 @@ export async function getBatchHistoryByNumber(
         inventoryId: focusInventoryId,
         productId: targetProductId,
         variantId:
-          targetVariantId !== undefined ? targetVariantId ?? null : undefined,
+          targetVariantId !== undefined ? (targetVariantId ?? null) : undefined,
       },
     };
   }
@@ -374,17 +403,7 @@ export async function getBatchHistoryByNumber(
           batchNumber: targetInventory.batchNumber,
           quantity: targetInventory.quantity,
           reservedQuantity: targetInventory.reservedQuantity,
-          product: targetInventory.product
-            ? {
-                id: targetInventory.product.id,
-                name: targetInventory.product.name,
-                code: targetInventory.product.code,
-                unit: targetInventory.product.unit,
-                specification:
-                  targetInventory.product.specification ?? undefined,
-                piecesPerUnit: targetInventory.product.piecesPerUnit,
-              }
-            : undefined,
+          product: toMovementProduct(targetInventory.product),
           variant: targetInventory.variant
             ? {
                 id: targetInventory.variant.id,
@@ -403,7 +422,7 @@ export async function getBatchHistoryByNumber(
         inventoryId: focusInventoryId,
         productId: targetProductId,
         variantId:
-          targetVariantId !== undefined ? targetVariantId ?? null : undefined,
+          targetVariantId !== undefined ? (targetVariantId ?? null) : undefined,
       },
       targetInventory: mappedTargetInventory,
     };
@@ -583,7 +602,9 @@ export async function getBatchHistoryByNumber(
     [
       ...inbounds.map(data => ({ kind: 'inbound', data }) as MovementSource),
       ...outbounds.map(data => ({ kind: 'outbound', data }) as MovementSource),
-      ...adjustments.map(data => ({ kind: 'adjustment', data }) as MovementSource),
+      ...adjustments.map(
+        data => ({ kind: 'adjustment', data }) as MovementSource
+      ),
     ],
     inventoryMap
   );
@@ -627,8 +648,7 @@ export async function getBatchHistoryByNumber(
     filteredBy: {
       inventoryId: focusInventoryId,
       productId: targetProductId,
-      variantId:
-        variantFilterDefined ? targetVariantId ?? null : undefined,
+      variantId: variantFilterDefined ? (targetVariantId ?? null) : undefined,
     },
     targetInventory: mappedTargetInventory,
   };

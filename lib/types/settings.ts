@@ -234,6 +234,11 @@ export interface SystemLog {
   ipAddress?: string | null;
   userAgent?: string | null;
   metadata?: Record<string, unknown> | null;
+  // IP地理位置信息
+  ipCountry?: string | null;
+  ipProvince?: string | null;
+  ipCity?: string | null;
+  ipLocation?: string | null;
   createdAt: string;
 }
 

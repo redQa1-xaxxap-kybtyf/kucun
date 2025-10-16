@@ -332,8 +332,13 @@ export const categoryKeys = {
   all: ['categories'] as const,
 
   lists: () => [...categoryKeys.all, 'list'] as const,
-  list: (filters?: BaseFilters & { status?: string; exclude?: string }) =>
-    [...categoryKeys.lists(), filters] as const,
+  list: (
+    filters?: BaseFilters & {
+      status?: string;
+      parentId?: string | null;
+      exclude?: string;
+    }
+  ) => [...categoryKeys.lists(), filters] as const,
 
   details: () => [...categoryKeys.all, 'detail'] as const,
   detail: (id: string) => [...categoryKeys.details(), id] as const,

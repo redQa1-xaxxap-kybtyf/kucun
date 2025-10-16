@@ -61,10 +61,29 @@ export interface InboundRecord {
   updatedAt: string;
 
   // 关联数据（可选，根据查询需要包含）
-  product?: Product;
-  variant?: import('./product').ProductVariant;
-  user?: User;
-  batchSpecification?: import('./batch-specification').BatchSpecification;
+  product?: Pick<
+    Product,
+    | 'id'
+    | 'name'
+    | 'code'
+    | 'specification'
+    | 'unit'
+    | 'piecesPerUnit'
+    | 'weight'
+  >;
+  variant?: Pick<
+    import('./product').ProductVariant,
+    'id' | 'colorCode' | 'colorName' | 'sku'
+  >;
+  user?: Pick<User, 'id' | 'name' | 'email'>;
+  batchSpecification?: Pick<
+    import('./batch-specification').BatchSpecification,
+    'id' | 'piecesPerUnit' | 'weight' | 'thickness' | 'batchNumber'
+  >;
+  productName?: string;
+  productSku?: string;
+  productUnit?: string;
+  userName?: string;
 }
 
 // 创建入库记录的请求数据

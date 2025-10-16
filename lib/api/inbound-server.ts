@@ -20,12 +20,11 @@ export async function getInboundRecordsServer(searchParams: URLSearchParams) {
  * 根据入库单号获取详情
  * @param recordNumber 入库记录编号
  */
-export async function getInboundRecordByNumber(
-  recordNumber: string
-): Promise<
-  (InboundRecord & {
-    inventoryBalance?: number;
-  }) | null
+export async function getInboundRecordByNumber(recordNumber: string): Promise<
+  | (InboundRecord & {
+      inventoryBalance?: number;
+    })
+  | null
 > {
   if (!recordNumber) {
     return null;
@@ -42,6 +41,7 @@ export async function getInboundRecordByNumber(
           unit: true,
           specification: true,
           piecesPerUnit: true,
+          weight: true,
         },
       },
       variant: {
@@ -49,12 +49,14 @@ export async function getInboundRecordByNumber(
           id: true,
           colorCode: true,
           colorName: true,
+          sku: true,
         },
       },
       user: {
         select: {
           id: true,
           name: true,
+          email: true,
         },
       },
       batchSpecification: {
@@ -105,29 +107,34 @@ export async function getInboundRecordByNumber(
           id: record.product.id,
           code: record.product.code,
           name: record.product.name,
-          unit: record.product.unit,
+          unit: record.product.unit as NonNullable<
+            InboundRecord['product']
+          >['unit'],
           specification: record.product.specification ?? undefined,
-          piecesPerUnit: record.product.piecesPerUnit,
+          piecesPerUnit: record.product.piecesPerUnit ?? 0,
+          weight: record.product.weight ?? undefined,
         }
       : undefined,
     variant: record.variant
       ? {
           id: record.variant.id,
-          colorCode: record.variant.colorCode,
-          colorName: record.variant.colorName,
+          colorCode: record.variant.colorCode ?? undefined,
+          colorName: record.variant.colorName ?? undefined,
+          sku: record.variant.sku ?? undefined,
         }
       : undefined,
     user: record.user
       ? {
           id: record.user.id,
           name: record.user.name ?? '—',
+          email: record.user.email ?? undefined,
         }
       : undefined,
     batchSpecification: record.batchSpecification
       ? {
           id: record.batchSpecification.id,
-          batchNumber: record.batchSpecification.batchNumber,
-          piecesPerUnit: record.batchSpecification.piecesPerUnit,
+          batchNumber: record.batchSpecification.batchNumber ?? undefined,
+          piecesPerUnit: record.batchSpecification.piecesPerUnit ?? undefined,
           weight: record.batchSpecification.weight ?? undefined,
           thickness: record.batchSpecification.thickness ?? undefined,
         }

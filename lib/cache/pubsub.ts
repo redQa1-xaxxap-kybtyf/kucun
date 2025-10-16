@@ -161,11 +161,13 @@ export function subscribeChannels(
   subscriber.subscribe(...channels, err => {
     if (err) {
       logger.error('cache-pubsub', 'Failed to subscribe to channels', err, {
-        channels,
+        channels: channels.join(','),
       });
       return;
     }
-    logger.info('cache-pubsub', 'Subscribed to channels', { channels });
+    logger.info('cache-pubsub', 'Subscribed to channels', {
+      channels: channels.join(','),
+    });
   });
 
   subscriber.on('message', async (channel, message) => {

@@ -193,7 +193,7 @@ export function updateAlertConfig(config: Partial<MemoryAlertConfig>): void {
   alertConfig = { ...alertConfig, ...config };
   if (process.env.DEBUG) {
     logger.debug('memory-monitor', 'Alert config updated', {
-      config: alertConfig,
+      config: JSON.stringify(alertConfig),
     });
   }
 }
