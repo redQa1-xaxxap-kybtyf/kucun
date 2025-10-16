@@ -2,10 +2,12 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import React, { useCallback } from 'react';
+import React, { useCallback, useMemo } from 'react';
 
 import { queryKeys } from '@/lib/queryKeys';
 import type { NotificationItem } from '@/lib/types/layout';
+import type { NotificationsQueryData } from '@/lib/types/notifications';
+import { resolveAsyncState } from '@/lib/utils/async-state';
 
 /**
  * 通知轮询 Hook
@@ -23,12 +25,12 @@ import type { NotificationItem } from '@/lib/types/layout';
  * - 避免在渲染期间设置状态，消除双重渲染问题
  */
 export function usePollingNotifications() {
-  const { data: session, status } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const queryClient = useQueryClient();
 
   // 🚀 性能优化：只有在完全认证且有 userId 时才启用
   const isFullyAuthenticated =
-    status === 'authenticated' &&
+    sessionStatus === 'authenticated' &&
     !!session?.user?.id &&
     session.user.id.length > 0;
 
@@ -51,16 +53,31 @@ export function usePollingNotifications() {
       setIsReady(false);
       hasInitializedRef.current = false;
     }
+
+    return undefined;
   }, [isFullyAuthenticated]);
+
+  const notificationsQueryKey = useMemo<
+    ReturnType<typeof queryKeys.notifications.list>
+  >(() => queryKeys.notifications.list(session?.user?.id), [session?.user?.id]);
 
   // 轮询通知接口（每60秒）
   const {
     data: notificationsData,
     isLoading,
+    isError,
+    error,
+    isSuccess,
     refetch,
-  } = useQuery({
+    status,
+  } = useQuery<
+    NotificationsQueryData,
+    Error,
+    NotificationsQueryData,
+    ReturnType<typeof queryKeys.notifications.list>
+  >({
     // 🚀 最佳实践：将 userId 包含在 queryKey 中，确保登录前后查询隔离
-    queryKey: queryKeys.notifications.list(session?.user?.id),
+    queryKey: notificationsQueryKey,
     queryFn: async () => {
       // 🚀 双重检查：确保 session 仍然有效
       if (!session?.user?.id) {
@@ -75,10 +92,7 @@ export function usePollingNotifications() {
         }
         throw new Error('Failed to fetch notifications');
       }
-      return response.json() as Promise<{
-        notifications: NotificationItem[];
-        unreadCount: number;
-      }>;
+      return response.json() as Promise<NotificationsQueryData>;
     },
     // 🚀 性能优化：使用 isReady 状态，确保 cookie 完全同步后再发起请求
     enabled: isReady,
@@ -92,15 +106,48 @@ export function usePollingNotifications() {
     retry: false,
   });
 
+  const loadingState = resolveAsyncState({
+    isLoading,
+    isError,
+    isSuccess,
+  });
+
+  const normalizedNotifications = useMemo<NotificationItem[]>(() => {
+    if (!notificationsData?.notifications) {
+      return [];
+    }
+
+    return notificationsData.notifications.map(notification => {
+      const rawCreatedAt = notification.createdAt;
+      const parsedDate =
+        rawCreatedAt instanceof Date
+          ? rawCreatedAt
+          : rawCreatedAt
+            ? new Date(rawCreatedAt)
+            : undefined;
+
+      const createdAt =
+        parsedDate && !Number.isNaN(parsedDate.getTime())
+          ? parsedDate
+          : new Date();
+
+      return {
+        ...notification,
+        href: notification.href ?? undefined,
+        createdAt,
+      };
+    });
+  }, [notificationsData]);
+
   // 标记为已读 - 使用乐观更新
   const markAsRead = useCallback(
     async (notificationId: string) => {
       try {
         // 乐观更新：立即更新 UI
-        queryClient.setQueryData<{
-          notifications: NotificationItem[];
-          unreadCount: number;
-        }>(queryKeys.notifications.list(), old => {
+        queryClient.setQueryData<
+          NotificationsQueryData,
+          ReturnType<typeof queryKeys.notifications.list>
+        >(notificationsQueryKey, old => {
           if (!old) {
             return old;
           }
@@ -125,22 +172,25 @@ export function usePollingNotifications() {
         refetch();
       }
     },
-    [queryClient, refetch]
+    [notificationsQueryKey, queryClient, refetch]
   );
 
   // 全部标记为已读 - 使用乐观更新
   const markAllAsRead = useCallback(async () => {
     try {
       // 乐观更新：立即更新 UI
-      queryClient.setQueryData<{
-        notifications: NotificationItem[];
-        unreadCount: number;
-      }>(queryKeys.notifications.list(), old => {
+      queryClient.setQueryData<
+        NotificationsQueryData,
+        ReturnType<typeof queryKeys.notifications.list>
+      >(notificationsQueryKey, old => {
         if (!old) {
           return old;
         }
         return {
-          notifications: old.notifications.map(n => ({ ...n, isRead: true })),
+          notifications: old.notifications.map(n => ({
+            ...n,
+            isRead: true,
+          })),
           unreadCount: 0,
         };
       });
@@ -157,17 +207,17 @@ export function usePollingNotifications() {
       // 失败时回滚
       refetch();
     }
-  }, [queryClient, refetch]);
+  }, [notificationsQueryKey, queryClient, refetch]);
 
   // 清除通知 - 使用乐观更新
   const clearNotification = useCallback(
     async (notificationId: string) => {
       try {
         // 乐观更新：立即更新 UI
-        queryClient.setQueryData<{
-          notifications: NotificationItem[];
-          unreadCount: number;
-        }>(queryKeys.notifications.list(), old => {
+        queryClient.setQueryData<
+          NotificationsQueryData,
+          ReturnType<typeof queryKeys.notifications.list>
+        >(notificationsQueryKey, old => {
           if (!old) {
             return old;
           }
@@ -197,14 +247,18 @@ export function usePollingNotifications() {
         refetch();
       }
     },
-    [queryClient, refetch]
+    [notificationsQueryKey, queryClient, refetch]
   );
 
   return {
-    // 直接返回 TanStack Query 的数据，避免本地状态同步
-    notifications: notificationsData?.notifications ?? [],
+    // 返回已经标准化的数据结构，确保 createdAt 始终为 Date
+    notifications: normalizedNotifications,
     unreadCount: notificationsData?.unreadCount ?? 0,
-    isLoading,
+    loadingState,
+    isLoading: loadingState.isLoading,
+    isError: loadingState.isError,
+    status,
+    error,
     markAsRead,
     markAllAsRead,
     clearNotification,

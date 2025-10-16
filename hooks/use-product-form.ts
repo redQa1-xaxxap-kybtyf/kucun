@@ -12,6 +12,7 @@ import {
   updateProduct,
 } from '@/lib/api/products';
 import { type Product } from '@/lib/types/product';
+import { combineAsyncStates } from '@/lib/utils/async-state';
 import { ProductDataUtils } from '@/lib/utils/product-data';
 import { showError, showSuccess } from '@/lib/utils/toast-helper';
 import {
@@ -161,8 +162,24 @@ export function useProductForm({
     },
   });
 
-  const isLoading =
-    createMutation.isPending || updateMutation.isPending || isLoadingProduct;
+  const loadingState = combineAsyncStates([
+    {
+      isLoading: createMutation.isPending,
+      isError: createMutation.isError,
+      isSuccess: createMutation.isSuccess,
+    },
+    {
+      isLoading: updateMutation.isPending,
+      isError: updateMutation.isError,
+      isSuccess: updateMutation.isSuccess,
+    },
+    {
+      isLoading: isLoadingProduct,
+      isSuccess: !isLoadingProduct && !!actualProductData,
+    },
+  ]);
+
+  const isLoading = loadingState.isLoading;
 
   const onSubmit = async (
     data: ProductCreateFormData | ProductUpdateFormData
@@ -337,6 +354,7 @@ export function useProductForm({
     form,
     isEdit,
     isLoading,
+    loadingState,
     submitError,
     onSubmit,
     handleCancel,

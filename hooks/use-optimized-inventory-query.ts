@@ -120,24 +120,24 @@ export function useOptimizedInventoryQuery({
 
   // ✅ 提供便捷的预取方法，供组件使用
   const prefetchNextPage = useCallback(() => {
-    const pagination = query.data?.pagination;
+    const pagination = query.data?.data?.pagination;
     if (!pagination) return;
 
     const { page, totalPages } = pagination;
     if (page < totalPages) {
       prefetchPage({ ...params, page: page + 1 });
     }
-  }, [query.data?.pagination, params, prefetchPage]);
+  }, [query.data?.data?.pagination, params, prefetchPage]);
 
   const prefetchPrevPage = useCallback(() => {
-    const pagination = query.data?.pagination;
+    const pagination = query.data?.data?.pagination;
     if (!pagination) return;
 
     const { page } = pagination;
     if (page > 1) {
       prefetchPage({ ...params, page: page - 1 });
     }
-  }, [query.data?.pagination, params, prefetchPage]);
+  }, [query.data?.data?.pagination, params, prefetchPage]);
 
   // 缓存优化工具
   const cacheUtils = useMemo(

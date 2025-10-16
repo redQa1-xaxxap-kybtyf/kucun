@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import type { z } from 'zod';
 
 import { payablesApi, payableQueryKeys } from '@/lib/api/payables';
 import type {
@@ -12,12 +13,12 @@ import type {
   PayableRecordDetail,
   UpdatePayableRecordData,
 } from '@/lib/types/payable';
+import { combineAsyncStates } from '@/lib/utils/async-state';
 import { showError, showSuccess } from '@/lib/utils/toast-helper';
 import {
   createPayableRecordSchema,
   updatePayableRecordSchema,
 } from '@/lib/validations/payable';
-import type { z } from 'zod';
 
 interface UsePayableFormProps {
   mode: 'create' | 'edit';
@@ -86,7 +87,9 @@ export function usePayableForm({
     mutationFn: (data: CreatePayableRecordData) =>
       payablesApi.createPayableRecord(data),
     onSuccess: async data => {
-      showSuccess('创建成功', `应付款单号 "${data.payableNumber}" 创建成功！`);
+      showSuccess('创建成功', {
+        description: `应付款单号 "${data.payableNumber}" 创建成功！`,
+      });
 
       // 失效应付款列表缓存
       await queryClient.invalidateQueries({
@@ -103,7 +106,7 @@ export function usePayableForm({
     onError: (error: Error) => {
       const errorMessage = error.message || '创建应付款失败';
       setSubmitError(errorMessage);
-      showError('创建失败', errorMessage);
+      showError('创建失败', { description: errorMessage });
     },
   });
 
@@ -112,7 +115,9 @@ export function usePayableForm({
     mutationFn: ({ id, data }: { id: string; data: UpdatePayableRecordData }) =>
       payablesApi.updatePayableRecord(id, data),
     onSuccess: async data => {
-      showSuccess('更新成功', `应付款单号 "${data.payableNumber}" 更新成功！`);
+      showSuccess('更新成功', {
+        description: `应付款单号 "${data.payableNumber}" 更新成功！`,
+      });
 
       // 失效相关缓存
       await Promise.all([
@@ -135,11 +140,24 @@ export function usePayableForm({
     onError: (error: Error) => {
       const errorMessage = error.message || '更新应付款失败';
       setSubmitError(errorMessage);
-      showError('更新失败', errorMessage);
+      showError('更新失败', { description: errorMessage });
     },
   });
 
-  const isLoading = createMutation.isPending || updateMutation.isPending;
+  const loadingState = combineAsyncStates([
+    {
+      isLoading: createMutation.isPending,
+      isError: createMutation.isError,
+      isSuccess: createMutation.isSuccess,
+    },
+    {
+      isLoading: updateMutation.isPending,
+      isError: updateMutation.isError,
+      isSuccess: updateMutation.isSuccess,
+    },
+  ]);
+
+  const isLoading = loadingState.isLoading;
 
   const onSubmit = async (data: CreateFormData | UpdateFormData) => {
     setSubmitError('');
@@ -169,6 +187,7 @@ export function usePayableForm({
   return {
     form,
     isEdit,
+    loadingState,
     isLoading,
     submitError,
     onSubmit,
