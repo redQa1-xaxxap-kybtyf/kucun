@@ -1,8 +1,15 @@
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
 import type { Metadata } from 'next';
 
 import { SuppliersPageClient } from '@/components/suppliers/suppliers-page-client';
+import { supplierQueryKeys } from '@/lib/api/suppliers';
 import { paginationConfig } from '@/lib/env';
 import { getSuppliers } from '@/lib/services/supplier-service';
+import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
 
 export const metadata: Metadata = {
   title: '供应商管理',
@@ -40,23 +47,71 @@ export default async function SuppliersPage({
   const search = (params.search as string) || '';
   const status =
     (params.status as 'active' | 'inactive' | undefined) || undefined;
-  const sortBy = (params.sortBy as string) || 'createdAt';
+  const allowedSortFields: SupplierQueryParams['sortBy'][] = [
+    'name',
+    'createdAt',
+    'updatedAt',
+  ];
+  const sortByParam = (params.sortBy as string) || 'createdAt';
+  const normalizedSortBy: SupplierQueryParams['sortBy'] =
+    allowedSortFields.includes(sortByParam as SupplierQueryParams['sortBy'])
+      ? (sortByParam as SupplierQueryParams['sortBy'])
+      : 'createdAt';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
 
-  // 服务器端获取初始数据
-  const initialData = await getSuppliers({
+  const queryParams: SupplierQueryParams = {
     page,
     limit,
-    search,
+    search: search || undefined,
     status: status === undefined ? undefined : status,
-    sortBy,
+    sortBy: normalizedSortBy,
     sortOrder,
+  };
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydrateQuery: () => true,
+      },
+    },
   });
 
+  const initialData = await getSuppliers({
+    page: queryParams.page ?? 1,
+    limit: queryParams.limit ?? paginationConfig.defaultPageSize,
+    search: queryParams.search ?? '',
+    status: queryParams.status,
+    sortBy: queryParams.sortBy ?? 'createdAt',
+    sortOrder: queryParams.sortOrder ?? 'desc',
+  });
+
+  const serializedData = {
+    data: initialData.suppliers.map<Supplier>(supplier => ({
+      id: supplier.id,
+      name: supplier.name,
+      phone: supplier.phone ?? undefined,
+      address: supplier.address ?? undefined,
+      status: supplier.status as Supplier['status'],
+      createdAt: supplier.createdAt.toISOString(),
+      updatedAt: supplier.updatedAt.toISOString(),
+    })),
+    pagination: initialData.pagination,
+  };
+
+  queryClient.setQueryData(supplierQueryKeys.list(queryParams), serializedData);
+
   return (
-    <SuppliersPageClient
-      initialData={initialData}
-      initialParams={{ page, limit, search, status, sortBy, sortOrder }}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <SuppliersPageClient
+        initialParams={{
+          page,
+          limit,
+          search: search || undefined,
+          status,
+          sortBy: normalizedSortBy,
+          sortOrder,
+        }}
+      />
+    </HydrationBoundary>
   );
 }

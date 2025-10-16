@@ -12,6 +12,10 @@ import { prisma } from '@/lib/db';
 import type {
   PayableRecordDetail,
   PayableRecordListResponse,
+  PayableSourceType,
+  PayableStatus,
+  PaymentOutMethod,
+  PaymentOutStatus,
 } from '@/lib/types/payable';
 import { generatePayableNumber } from '@/lib/utils/payment-number-generator';
 import {
@@ -32,7 +36,7 @@ export const GET = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        '查询参数验证失败: ' + validationResult.error.issues[0]?.message,
+        `查询参数验证失败: ${validationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -114,9 +118,18 @@ export const GET = withAuth(
             select: {
               id: true,
               paymentNumber: true,
+              payableRecordId: true,
+              supplierId: true,
+              userId: true,
               paymentAmount: true,
               paymentDate: true,
               paymentMethod: true,
+              status: true,
+              remarks: true,
+              voucherNumber: true,
+              bankInfo: true,
+              createdAt: true,
+              updatedAt: true,
             },
             orderBy: {
               paymentDate: 'desc',
@@ -132,8 +145,40 @@ export const GET = withAuth(
       prisma.payableRecord.count({ where }),
     ]);
 
+    const toUndefined = <T>(value: T | null): T | undefined =>
+      value === null ? undefined : value;
+
+    const formattedPayables: PayableRecordDetail[] = payables.map(payable => ({
+      ...payable,
+      sourceType: payable.sourceType as PayableSourceType,
+      status: payable.status as PayableStatus,
+      sourceId: toUndefined(payable.sourceId),
+      sourceNumber: toUndefined(payable.sourceNumber),
+      description: toUndefined(payable.description),
+      remarks: toUndefined(payable.remarks),
+      dueDate: toUndefined(payable.dueDate),
+      supplier: {
+        ...payable.supplier,
+        phone: toUndefined(payable.supplier.phone),
+        address: toUndefined(payable.supplier.address),
+      },
+      user: {
+        ...payable.user,
+        email: payable.user.email ?? '',
+      },
+      paymentOutRecords: payable.paymentOutRecords.map(record => ({
+        ...record,
+        paymentMethod: record.paymentMethod as PaymentOutMethod,
+        status: record.status as PaymentOutStatus,
+        payableRecordId: toUndefined(record.payableRecordId),
+        remarks: toUndefined(record.remarks),
+        voucherNumber: toUndefined(record.voucherNumber),
+        bankInfo: toUndefined(record.bankInfo),
+      })),
+    }));
+
     const response: PayableRecordListResponse = {
-      data: payables as PayableRecordDetail[],
+      data: formattedPayables,
       pagination: {
         page,
         limit,
@@ -159,7 +204,7 @@ export const POST = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        '数据验证失败: ' + validationResult.error.issues[0]?.message,
+        `数据验证失败: ${validationResult.error.issues[0]?.message}`,
         400
       );
     }

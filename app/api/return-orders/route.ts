@@ -7,11 +7,11 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { paginationConfig } from '@/lib/env';
+import type { SalesOrderStatus } from '@/lib/types/sales-order';
 import {
   createReturnOrderSchema,
   returnOrderQuerySchema,
 } from '@/lib/validations/return-order';
-import type { SalesOrderStatus } from '@/lib/types/sales-order';
 
 const RETURN_ALLOWED_SALES_ORDER_STATUSES: ReadonlyArray<SalesOrderStatus> = [
   'shipped',
@@ -35,6 +35,8 @@ const SALES_ORDER_WITH_ITEMS_INCLUDE = {
 type SalesOrderWithItems = Prisma.SalesOrderGetPayload<{
   include: typeof SALES_ORDER_WITH_ITEMS_INCLUDE;
 }>;
+
+type SalesOrderItemWithProduct = SalesOrderWithItems['items'][number];
 
 /**
  * GET /api/return-orders - 获取退货订单列表
@@ -226,10 +228,7 @@ export const POST = withAuth(
 
       // 根据退货模式进行不同的验证逻辑
       let salesOrder: SalesOrderWithItems | null = null;
-      const salesOrderItemsMap = new Map<
-        string,
-        Awaited<ReturnType<typeof prisma.salesOrderItem.findFirst>>
-      >();
+      const salesOrderItemsMap = new Map<string, SalesOrderItemWithProduct>();
 
       if (data.returnMode === 'single_order') {
         // 单订单模式：验证指定的销售订单
@@ -417,7 +416,12 @@ export const POST = withAuth(
 
             // 验证退货数量
             if (returnItem.returnQuantity > remainingQuantity) {
-              const productName = salesOrderItem.product?.name || '未知产品';
+              const productName =
+                (
+                  salesOrderItem as {
+                    product?: { name?: string | null };
+                  }
+                ).product?.name || '未知产品';
               throw new Error(
                 `产品 ${productName} 退货数量超过可退数量。` +
                   `已购买: ${salesOrderItem.quantity}, 已退货: ${alreadyReturnedQuantity}, ` +

@@ -1,11 +1,15 @@
+import { randomUUID } from 'crypto';
+import { promises as fs } from 'fs';
+import path from 'path';
+
 import { type NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { z } from 'zod';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { uploadConfig } from '@/lib/env';
-import { uploadToQiniu } from '@/lib/services/qiniu-upload';
 import { logger } from '@/lib/logger';
+import { uploadToQiniu } from '@/lib/services/qiniu-upload';
 
 // 声明使用 Node.js 运行时（sharp 和 Buffer 需要 Node.js 环境）
 export const runtime = 'nodejs';
@@ -23,6 +27,83 @@ const SUPPORTED_IMAGE_TYPES = [
   'image/webp',
   'image/gif',
 ] as const;
+
+interface LocalUploadResult {
+  success: boolean;
+  url?: string;
+  key?: string;
+  error?: string;
+}
+
+function resolveFileExtension(fileName: string, mimeType: string): string {
+  const extFromName = path.extname(fileName)?.toLowerCase();
+  if (extFromName) {
+    return extFromName;
+  }
+
+  const mimeMap: Record<string, string> = {
+    'image/jpeg': '.jpg',
+    'image/jpg': '.jpg',
+    'image/png': '.png',
+    'image/webp': '.webp',
+    'image/gif': '.gif',
+  };
+
+  return mimeMap[mimeType] ?? '.jpg';
+}
+
+async function saveFileLocally(
+  buffer: Buffer,
+  fileName: string,
+  mimeType: string,
+  type: string
+): Promise<LocalUploadResult> {
+  try {
+    const safeType = type || 'product';
+    const baseDir = path.resolve(process.cwd(), uploadConfig.directory);
+    const targetDir = path.join(baseDir, safeType);
+
+    await fs.mkdir(targetDir, { recursive: true });
+
+    const ext = resolveFileExtension(fileName, mimeType);
+    const safeFileName = `${Date.now()}-${randomUUID()}${ext}`;
+    const absolutePath = path.join(targetDir, safeFileName);
+
+    await fs.writeFile(absolutePath, buffer);
+
+    const publicDir = path.resolve(process.cwd(), 'public');
+    let urlPath: string;
+    if (absolutePath.startsWith(publicDir)) {
+      urlPath = `/${path
+        .relative(publicDir, absolutePath)
+        .split(path.sep)
+        .join('/')}`;
+    } else {
+      // 如果上传目录不在 public 内，仍然返回相对路径，前端需自行处理
+      urlPath = `/${path
+        .relative(process.cwd(), absolutePath)
+        .split(path.sep)
+        .join('/')}`;
+    }
+
+    logger.info('upload', '文件已保存到本地目录', undefined, {
+      path: absolutePath,
+      url: urlPath,
+    });
+
+    return {
+      success: true,
+      url: urlPath,
+      key: `local://${safeType}/${safeFileName}`,
+    };
+  } catch (error) {
+    logger.error('upload', '本地保存文件失败', error);
+    return {
+      success: false,
+      error: '文件上传失败（本地保存错误）',
+    };
+  }
+}
 
 export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
@@ -137,10 +218,55 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     const uploadResult = await uploadToQiniu(buffer, file.name, type);
 
     if (!uploadResult.success) {
+      logger.error('upload', '上传至七牛云失败', undefined, {
+        cloudError: uploadResult.error,
+      });
+
+      if (uploadConfig.fallbackEnabled) {
+        const fallbackResult = await saveFileLocally(
+          buffer,
+          file.name,
+          file.type,
+          type
+        );
+
+        if (!fallbackResult.success || !fallbackResult.url) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                uploadResult.error ||
+                fallbackResult.error ||
+                '上传失败，请联系管理员检查存储配置',
+            },
+            { status: 500 }
+          );
+        }
+
+        return NextResponse.json({
+          success: true,
+          data: {
+            fileName: fallbackResult.key?.split('/').pop() || file.name,
+            originalName: file.name,
+            size: file.size,
+            type: file.type,
+            url: fallbackResult.url,
+            key: fallbackResult.key,
+            uploadedAt: new Date().toISOString(),
+            uploadedBy: user.id,
+            storage: 'local',
+          },
+          message:
+            '文件已保存到本地存储，建议尽快修复云存储配置（七牛云上传失败）',
+        });
+      }
+
       return NextResponse.json(
         {
           success: false,
-          error: uploadResult.error || '上传失败',
+          error:
+            uploadResult.error ||
+            '上传失败，请联系管理员检查存储配置（七牛云）',
         },
         { status: 500 }
       );
@@ -158,6 +284,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
         key: uploadResult.key,
         uploadedAt: new Date().toISOString(),
         uploadedBy: user.id,
+        storage: 'qiniu',
       },
       message: '文件上传成功',
     });

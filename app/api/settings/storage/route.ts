@@ -21,6 +21,10 @@ import { QiniuStorageConfigSchema } from '@/lib/validations/settings';
 const ENCRYPTION_KEY = storageConfig.encryptionKey;
 const ALGORITHM = 'aes-256-cbc';
 
+function isEncryptionKeyValid(key: string | undefined): key is string {
+  return typeof key === 'string' && key.length >= 32;
+}
+
 /**
  * 加密敏感信息
  */
@@ -76,6 +80,17 @@ function decrypt(text: string): string {
 export const GET = withAuth(
   async (): Promise<NextResponse<SettingsApiResponse<QiniuStorageConfig>>> => {
     try {
+      if (!isEncryptionKeyValid(ENCRYPTION_KEY)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              '未配置存储加密密钥 (STORAGE_ENCRYPTION_KEY)，无法读取七牛云配置。请在环境变量中设置至少32位的密钥后重启服务。',
+          },
+          { status: 500 }
+        );
+      }
+
       // 获取七牛云配置
       const settings = await prisma.systemSetting.findMany({
         where: {
@@ -149,9 +164,23 @@ export const PUT = withAuth(
     { user }
   ): Promise<NextResponse<SettingsApiResponse<{ message: string }>>> => {
     try {
+      if (!isEncryptionKeyValid(ENCRYPTION_KEY)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              '未配置存储加密密钥 (STORAGE_ENCRYPTION_KEY)，无法保存七牛云配置。请在环境变量中设置至少32位的密钥后重启服务。',
+          },
+          { status: 500 }
+        );
+      }
+
       // 解析请求体
       const body = await request.json();
       const validatedData = QiniuStorageConfigSchema.parse(body);
+
+      // 规范化domain：去除末尾的斜杠
+      const normalizedDomain = validatedData.domain.replace(/\/+$/, '');
 
       // 准备配置数据
       const configData = [
@@ -178,10 +207,10 @@ export const PUT = withAuth(
         },
         {
           key: 'qiniu_domain',
-          value: validatedData.domain,
+          value: normalizedDomain,
           category: 'storage',
           dataType: 'string',
-          description: '七牛云访问域名',
+          description: '七牛云访问域名（已自动规范化）',
         },
         {
           key: 'qiniu_region',
@@ -223,7 +252,7 @@ export const PUT = withAuth(
         requestInfo.userAgent,
         {
           bucket: validatedData.bucket,
-          domain: validatedData.domain,
+          domain: normalizedDomain,
           region: validatedData.region,
           // 不记录敏感信息
         }

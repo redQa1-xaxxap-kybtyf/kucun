@@ -1,9 +1,17 @@
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
 import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
-import { logger } from '@/lib/logger';
 import { paginationConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
+import { financeKeys } from '@/lib/queryKeys';
 import type {
+  RefundListData,
+  RefundListQueryParams,
   RefundMethod,
   RefundStatus,
   RefundType,
@@ -86,7 +94,7 @@ async function getRefundsData(searchParams: {
   }
 
   // 查询退款记录 - 包含关联数据
-  const [refundsData, total] = await Promise.all([
+  const [refundsData, total, statisticsSource] = await Promise.all([
     prisma.refundRecord.findMany({
       where: whereConditions,
       orderBy: {
@@ -107,6 +115,7 @@ async function getRefundsData(searchParams: {
             id: true,
             orderNumber: true,
             totalAmount: true,
+            status: true,
           },
         },
         returnOrder: {
@@ -126,42 +135,19 @@ async function getRefundsData(searchParams: {
       },
     }),
     prisma.refundRecord.count({ where: whereConditions }),
+    prisma.refundRecord.findMany({
+      where: whereConditions,
+      select: {
+        refundAmount: true,
+        processedAmount: true,
+        remainingAmount: true,
+        status: true,
+      },
+    }),
   ]);
 
-  // 计算统计数据（使用相同的筛选条件）
-  const allRefunds = await prisma.refundRecord.findMany({
-    where: whereConditions,
-    select: {
-      refundAmount: true,
-      processedAmount: true,
-      remainingAmount: true,
-      status: true,
-    },
-  });
-
-  const totalRefundable = allRefunds.reduce(
-    (sum, r) => sum + r.refundAmount,
-    0
-  );
-  const totalProcessed = allRefunds.reduce(
-    (sum, r) => sum + r.processedAmount,
-    0
-  );
-  const totalRemaining = allRefunds.reduce(
-    (sum, r) => sum + r.remainingAmount,
-    0
-  );
-
-  const pendingCount = allRefunds.filter(r => r.status === 'pending').length;
-  const processingCount = allRefunds.filter(
-    r => r.status === 'processing'
-  ).length;
-  const completedCount = allRefunds.filter(
-    r => r.status === 'completed'
-  ).length;
-
   // 序列化退款记录，包含关联数据
-  const refunds = refundsData.map(refund => ({
+  const refunds: RefundListData['refunds'] = refundsData.map(refund => ({
     id: refund.id,
     refundNumber: refund.refundNumber,
     returnOrderId: refund.returnOrderId,
@@ -178,20 +164,19 @@ async function getRefundsData(searchParams: {
       ? refund.processedDate.toISOString()
       : null,
     status: refund.status as RefundStatus,
-    reason: refund.reason,
-    remarks: refund.remarks,
-    bankInfo: refund.bankInfo,
-    receiptNumber: refund.receiptNumber,
+    reason: refund.reason ?? null,
+    remarks: refund.remarks ?? null,
+    bankInfo: refund.bankInfo ?? null,
+    receiptNumber: refund.receiptNumber ?? null,
     returnOrderNumber:
       refund.returnOrder?.returnNumber ?? refund.returnOrderNumber,
     createdAt: refund.createdAt.toISOString(),
     updatedAt: refund.updatedAt.toISOString(),
-    // 关联数据
     customer: refund.customer
       ? {
           id: refund.customer.id,
           name: refund.customer.name,
-          phone: refund.customer.phone,
+          phone: refund.customer.phone ?? null,
         }
       : null,
     salesOrder: refund.salesOrder
@@ -199,6 +184,7 @@ async function getRefundsData(searchParams: {
           id: refund.salesOrder.id,
           orderNumber: refund.salesOrder.orderNumber,
           totalAmount: Number(refund.salesOrder.totalAmount),
+          status: refund.salesOrder.status ?? undefined,
         }
       : null,
     returnOrder: refund.returnOrder
@@ -217,23 +203,37 @@ async function getRefundsData(searchParams: {
       : null,
   }));
 
-  return {
-    refunds,
-    statistics: {
-      totalRefundable,
-      totalProcessed,
-      totalRemaining,
-      pendingCount,
-      processingCount,
-      completedCount,
-    },
-    pagination: {
-      page,
-      limit,
-      total,
-      totalPages: Math.ceil(total / limit),
-    },
+  const statistics: RefundListData['statistics'] = {
+    totalRefundable: statisticsSource.reduce(
+      (sum, record) => sum + Number(record.refundAmount ?? 0),
+      0
+    ),
+    totalProcessed: statisticsSource.reduce(
+      (sum, record) => sum + Number(record.processedAmount ?? 0),
+      0
+    ),
+    totalRemaining: statisticsSource.reduce(
+      (sum, record) => sum + Number(record.remainingAmount ?? 0),
+      0
+    ),
+    pendingCount: statisticsSource.filter(record => record.status === 'pending')
+      .length,
+    processingCount: statisticsSource.filter(
+      record => record.status === 'processing'
+    ).length,
+    completedCount: statisticsSource.filter(
+      record => record.status === 'completed'
+    ).length,
   };
+
+  const pagination: RefundListData['pagination'] = {
+    page,
+    limit,
+    total,
+    totalPages: Math.ceil(total / limit),
+  };
+
+  return { refunds, statistics, pagination };
 }
 
 /**
@@ -253,7 +253,7 @@ export default async function RefundsPage({
   }>;
 }) {
   const params = await searchParams;
-  const initialData = await getRefundsData(params);
+  const refundsData = await getRefundsData(params);
 
   const sanitizedParams = {
     page: params.page ? Number.parseInt(params.page, 10) : undefined,
@@ -279,16 +279,30 @@ export default async function RefundsPage({
     );
   }
 
-  const queryParams = {
+  const queryParams: RefundListQueryParams = {
     page: validatedParams.page ?? 1,
     limit: validatedParams.limit ?? paginationConfig.defaultPageSize,
     search: validatedParams.search,
     status: validatedParams.status,
-    sortBy: validatedParams.sortBy ?? 'refundDate',
+    sortBy:
+      (validatedParams.sortBy as RefundListQueryParams['sortBy']) ??
+      'refundDate',
     sortOrder: (validatedParams.sortOrder as 'asc' | 'desc') ?? 'desc',
   };
 
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydrateQuery: () => true,
+      },
+    },
+  });
+
+  queryClient.setQueryData(financeKeys.refundsList(queryParams), refundsData);
+
   return (
-    <RefundsPageClient initialData={initialData} initialParams={queryParams} />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <RefundsPageClient initialParams={queryParams} />
+    </HydrationBoundary>
   );
 }

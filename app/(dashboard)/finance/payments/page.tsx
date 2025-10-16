@@ -1,7 +1,17 @@
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
 import type { Metadata } from 'next';
 
+import { paymentQueryKeys } from '@/lib/api/payments';
 import { prisma } from '@/lib/db';
-import type { PaymentStatus } from '@/lib/types/payment';
+import type {
+  PaymentMethod,
+  PaymentRecordQuery,
+  PaymentStatus,
+} from '@/lib/types/payment';
 
 import { PaymentsPageClient } from './page-client';
 
@@ -235,17 +245,78 @@ export default async function PaymentsPage({
   const params = await searchParams;
   const initialData = await getPaymentsData(params);
 
-  const queryParams = {
+  const allowedPaymentMethods: PaymentMethod[] = [
+    'cash',
+    'bank_transfer',
+    'check',
+    'other',
+  ];
+
+  const allowedSortFields = [
+    'createdAt',
+    'paymentAmount',
+    'paymentDate',
+  ] as const;
+  type PaymentSortField = (typeof allowedSortFields)[number];
+
+  const paymentMethod =
+    typeof params.paymentMethod === 'string' &&
+    allowedPaymentMethods.includes(params.paymentMethod as PaymentMethod)
+      ? (params.paymentMethod as PaymentMethod)
+      : undefined;
+
+  const sortByParam = params.sortBy || 'createdAt';
+  const sortBy: PaymentSortField = allowedSortFields.includes(
+    sortByParam as PaymentSortField
+  )
+    ? (sortByParam as PaymentSortField)
+    : 'createdAt';
+
+  const queryParams: PaymentRecordQuery = {
     page: parseInt(params.page || '1', 10),
+    pageSize: parseInt(params.limit || '20', 10),
     limit: parseInt(params.limit || '20', 10),
-    search: params.search,
+    search:
+      typeof params.search === 'string' && params.search.trim().length > 0
+        ? params.search.trim()
+        : undefined,
     status: parsePaymentStatus(params.status),
-    paymentMethod: params.paymentMethod,
-    sortBy: params.sortBy || 'createdAt',
+    paymentMethod,
+    sortBy,
     sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
   };
 
+  const clientParams = {
+    page: queryParams.page,
+    limit: queryParams.pageSize ?? queryParams.limit ?? 20,
+    search: params.search || '',
+    status: parsePaymentStatus(params.status),
+    paymentMethod: params.paymentMethod,
+    sortBy,
+    sortOrder: queryParams.sortOrder,
+  };
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydrateQuery: () => true,
+      },
+    },
+  });
+
+  queryClient.setQueryData(paymentQueryKeys.list(queryParams), {
+    records: initialData.payments,
+    total: initialData.pagination.total,
+    page: initialData.pagination.page,
+    pageSize: initialData.pagination.limit,
+  });
+
   return (
-    <PaymentsPageClient initialData={initialData} initialParams={queryParams} />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <PaymentsPageClient
+        initialData={initialData}
+        initialParams={clientParams}
+      />
+    </HydrationBoundary>
   );
 }

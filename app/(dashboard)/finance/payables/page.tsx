@@ -1,8 +1,17 @@
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
 import type { Metadata } from 'next';
 
+import { payableQueryKeys } from '@/lib/api/payables';
 import { prisma } from '@/lib/db';
-import type { PayableSourceType, PayableStatus } from '@/lib/types/payable';
-import { PAYABLE_SORT_OPTIONS } from '@/lib/types/payable';
+import {
+  PAYABLE_SORT_OPTIONS,
+  type PayableSourceType,
+  type PayableStatus,
+} from '@/lib/types/payable';
 
 type PayableSortField =
   | 'createdAt'
@@ -14,7 +23,7 @@ import { PayablesPageClient } from './page-client';
 
 export const metadata: Metadata = {
   title: '应付款管理 - 财务管理',
-  description: '管理供应商应付款和付款记录，跟踪付款状态和逾期情况',
+  description: '管理供应商应付款和付款记录，跟踪付款状态',
 };
 
 // ✅ Next.js 15 Route Segment Config
@@ -177,14 +186,16 @@ export default async function PayablesPage({
   const queryParams = {
     page: parseInt(params.page || '1', 10),
     limit: parseInt(params.limit || '20', 10),
-    search: params.search || '',
+    search:
+      typeof params.search === 'string' && params.search.trim().length > 0
+        ? params.search.trim()
+        : undefined,
     status: ((): PayableStatus | undefined => {
       const value = params.status;
       const statuses: PayableStatus[] = [
         'pending',
         'partial',
         'paid',
-        'overdue',
         'cancelled',
       ];
       return value && statuses.includes(value as PayableStatus)
@@ -214,7 +225,25 @@ export default async function PayablesPage({
     sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
   };
 
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydrateQuery: () => true,
+      },
+    },
+  });
+
+  queryClient.setQueryData(payableQueryKeys.list(queryParams), {
+    data: initialData.payables,
+    pagination: initialData.pagination,
+  });
+
   return (
-    <PayablesPageClient initialData={initialData} initialParams={queryParams} />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <PayablesPageClient
+        initialParams={queryParams}
+        initialStatistics={initialData.statistics}
+      />
+    </HydrationBoundary>
   );
 }

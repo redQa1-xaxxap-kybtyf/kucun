@@ -1,5 +1,14 @@
+import {
+  HydrationBoundary,
+  QueryClient,
+  dehydrate,
+} from '@tanstack/react-query';
+
 import { getCustomerList } from '@/lib/api/customer-handlers';
+import { queryKeys } from '@/lib/api/query-keys';
 import { paginationConfig } from '@/lib/env';
+import type { CustomerQueryParams } from '@/lib/types/customer';
+
 import { CustomersPageClient } from './page-client';
 
 /**
@@ -29,19 +38,37 @@ export default async function CustomersPage({
       | 'returnOrderCount') || 'createdAt';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
 
-  // 服务器端获取初始数据
-  const initialData = await getCustomerList({
+  const queryParams: CustomerQueryParams = {
     page,
     limit,
-    search,
+    search: search || undefined,
     sortBy,
     sortOrder,
+  };
+
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      dehydrate: {
+        shouldDehydrateQuery: () => true,
+      },
+    },
   });
 
+  const initialData = await getCustomerList(queryParams);
+
+  queryClient.setQueryData(queryKeys.customers.list(queryParams), initialData);
+
   return (
-    <CustomersPageClient
-      initialData={initialData}
-      initialParams={{ page, limit, search, sortBy, sortOrder }}
-    />
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <CustomersPageClient
+        initialParams={{
+          page,
+          limit,
+          search: search || undefined,
+          sortBy,
+          sortOrder,
+        }}
+      />
+    </HydrationBoundary>
   );
 }

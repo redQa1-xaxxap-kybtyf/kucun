@@ -1,14 +1,16 @@
 import type { Metadata } from 'next';
 
 import { paginationConfig } from '@/lib/env';
-import type { PaymentStatus } from '@/lib/services/receivables-service';
-import { getReceivables } from '@/lib/services/receivables-service';
+import {
+  getReceivables,
+  type PaymentStatus,
+} from '@/lib/services/receivables-service';
 
 import { ReceivablesPageClient } from './page-client';
 
 export const metadata: Metadata = {
   title: '应收货款管理 - 财务管理',
-  description: '管理销售订单产生的应收账款，跟踪收款状态和逾期情况',
+  description: '管理销售订单产生的应收账款，跟踪收款状态',
 };
 
 // ✅ Next.js 15 Route Segment Config

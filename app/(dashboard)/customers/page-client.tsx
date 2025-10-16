@@ -4,7 +4,6 @@ import { Download, Plus, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
@@ -13,6 +12,7 @@ import { CustomerDetailDialog } from '@/components/customers/customer-detail-dia
 import { CustomerSearchFilters } from '@/components/customers/customer-search-filters';
 import { ERPCustomerList } from '@/components/customers/erp-customer-list';
 import { Button } from '@/components/ui/button';
+import { useCustomersQuery } from '@/hooks/use-customers-query';
 import {
   CUSTOMER_SORT_OPTIONS,
   type Customer,
@@ -20,15 +20,6 @@ import {
 } from '@/lib/types/customer';
 
 interface CustomersPageClientProps {
-  initialData: {
-    data: Customer[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
-  };
   initialParams: CustomerQueryParams;
 }
 
@@ -39,7 +30,6 @@ interface CustomersPageClientProps {
  * 参考供应商页面实现，使用URL参数管理搜索状态
  */
 export function CustomersPageClient({
-  initialData,
   initialParams,
 }: CustomersPageClientProps) {
   const router = useRouter();
@@ -65,6 +55,40 @@ export function CustomersPageClient({
   >(null);
   const [selectedCustomer, setSelectedCustomer] =
     React.useState<Customer | null>(null);
+
+  React.useEffect(() => {
+    setSearch(initialParams.search || '');
+    if (initialParams.sortBy && isSortField(initialParams.sortBy)) {
+      setSortBy(initialParams.sortBy);
+    } else {
+      setSortBy('createdAt');
+    }
+    setSortOrder(initialParams.sortOrder === 'asc' ? 'asc' : 'desc');
+  }, [initialParams]);
+
+  const queryParams = React.useMemo(() => {
+    const normalizedSearch =
+      typeof initialParams.search === 'string' && initialParams.search.trim()
+        ? initialParams.search.trim()
+        : undefined;
+
+    return {
+      page: initialParams.page ?? 1,
+      limit: initialParams.limit ?? 10,
+      search: normalizedSearch,
+      sortBy: initialParams.sortBy ?? 'createdAt',
+      sortOrder: initialParams.sortOrder ?? 'desc',
+      parentCustomerId: initialParams.parentCustomerId,
+      customerType: initialParams.customerType,
+      level: initialParams.level,
+      region: initialParams.region,
+    } satisfies CustomerQueryParams;
+  }, [initialParams]);
+
+  const { data, isLoading, isError, error } = useCustomersQuery(queryParams);
+
+  const customers = data?.data ?? [];
+  const pagination = data?.pagination;
 
   // 防抖更新URL - 避免每次输入都触发导航
   // 参考Next.js官方最佳实践: https://nextjs.org/learn/dashboard-app/adding-search-and-pagination
@@ -189,21 +213,22 @@ export function CustomersPageClient({
       </div>
 
       {/* 客户列表 */}
+      {isError && (
+        <div className="border-destructive/50 bg-destructive/5 text-destructive mb-4 rounded border px-4 py-3 text-sm">
+          加载客户列表失败：
+          {error instanceof Error ? error.message : '发生未知错误'}
+        </div>
+      )}
+
       <div className="flex-1">
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">加载中...</div>
-            </div>
-          }
-        >
-          <ERPCustomerList
-            initialData={initialData}
-            onViewDetail={handleViewDetail}
-            onDelete={handleDelete}
-            onPageChange={handlePageChange}
-          />
-        </Suspense>
+        <ERPCustomerList
+          customers={customers}
+          pagination={pagination}
+          isLoading={isLoading}
+          onViewDetail={handleViewDetail}
+          onDelete={handleDelete}
+          onPageChange={handlePageChange}
+        />
       </div>
 
       {/* 对话框组件 */}

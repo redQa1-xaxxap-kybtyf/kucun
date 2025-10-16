@@ -4,55 +4,29 @@ import { Download, Plus, TrendingDown } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
-import {
-  RefundsClient,
-  type RefundRecordFromServer,
-} from '@/components/finance/refunds-client';
+import { RefundsClient } from '@/components/finance/refunds-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type { RefundStatus } from '@/lib/types/refund';
+import { useRefundsQuery } from '@/hooks/use-refunds-query';
+import type {
+  RefundListData,
+  RefundListQueryParams,
+  RefundStatus,
+} from '@/lib/types/refund';
 
-interface RefundsQueryParams {
-  page: number;
-  limit: number;
-  search?: string;
-  status?: RefundStatus;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
+type RefundsQueryParams = RefundListQueryParams;
 
 interface RefundsPageClientProps {
-  initialData: {
-    refunds: RefundRecordFromServer[];
-    statistics: {
-      totalRefundable: number;
-      totalProcessed: number;
-      totalRemaining: number;
-      pendingCount: number;
-      processingCount: number;
-      completedCount: number;
-    };
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
-  };
-  initialParams: RefundsQueryParams;
+  initialParams: RefundListQueryParams;
 }
 
 /**
  * 退款记录页面客户端组件
  * 负责用户交互和状态管理
  */
-export function RefundsPageClient({
-  initialData,
-  initialParams,
-}: RefundsPageClientProps) {
+export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   const router = useRouter();
   const [, startTransition] = React.useTransition();
 
@@ -72,6 +46,35 @@ export function RefundsPageClient({
     setSortBy(initialParams.sortBy || 'refundDate');
     setSortOrder(initialParams.sortOrder || 'desc');
   }, [initialParams]);
+
+  const { data, isLoading, error } = useRefundsQuery({
+    params: initialParams,
+  });
+
+  const resolvedData = React.useMemo<RefundListData>(
+    () => ({
+      refunds: data?.refunds ?? [],
+      statistics: data?.statistics ?? {
+        totalRefundable: 0,
+        totalProcessed: 0,
+        totalRemaining: 0,
+        pendingCount: 0,
+        processingCount: 0,
+        completedCount: 0,
+      },
+      pagination: data?.pagination ?? {
+        page: initialParams.page,
+        limit: initialParams.limit,
+        total: 0,
+        totalPages: 1,
+      },
+    }),
+    [data, initialParams.limit, initialParams.page]
+  );
+
+  const pagination = resolvedData.pagination;
+  const loadError =
+    error instanceof Error ? error.message : error ? String(error) : null;
 
   // 防抖更新URL - 避免每次输入都触发导航
   const debouncedUpdateURL = useDebouncedCallback(
@@ -127,7 +130,9 @@ export function RefundsPageClient({
       if (key === 'status') {
         setStatus(value as RefundStatus | undefined);
       } else if (key === 'sortBy') {
-        setSortBy(value || 'refundDate');
+        const nextSortBy =
+          (value as RefundListQueryParams['sortBy']) || 'refundDate';
+        setSortBy(nextSortBy);
       } else if (key === 'sortOrder') {
         setSortOrder((value as 'asc' | 'desc') || 'desc');
       }
@@ -176,14 +181,14 @@ export function RefundsPageClient({
         if (page > 1) {
           params.set('page', page.toString());
         }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
+        if (pagination.limit) {
+          params.set('limit', pagination.limit.toString());
         }
 
         router.push(`/finance/refunds?${params.toString()}`);
       });
     },
-    [router, search, status, sortBy, sortOrder, initialParams.limit]
+    [router, search, status, sortBy, sortOrder, pagination.limit]
   );
 
   return (
@@ -234,21 +239,15 @@ export function RefundsPageClient({
         </Card>
 
         {/* 客户端交互组件 */}
-        <Suspense
-          fallback={
-            <div className="flex items-center justify-center py-12">
-              <div className="text-muted-foreground">加载中...</div>
-            </div>
-          }
-        >
-          <RefundsClient
-            initialData={initialData}
-            initialParams={initialParams}
-            onSearch={handleSearch}
-            onFilter={handleFilter}
-            onPageChange={handlePageChange}
-          />
-        </Suspense>
+        <RefundsClient
+          data={resolvedData}
+          initialParams={initialParams}
+          isLoading={isLoading}
+          errorMessage={loadError}
+          onSearch={handleSearch}
+          onFilter={handleFilter}
+          onPageChange={handlePageChange}
+        />
       </div>
     </div>
   );

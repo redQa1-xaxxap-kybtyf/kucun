@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { getServerSession } from 'next-auth';
 
+import ChunkLoadRecovery from '@/components/providers/chunkload-recovery';
 import QueryProvider from '@/components/providers/query-provider';
 import AuthSessionProvider from '@/components/providers/session-provider';
 import { Toaster } from '@/components/ui/toaster';
@@ -28,6 +29,7 @@ export default async function RootLayout({
       <body className={inter.className}>
         <AuthSessionProvider session={session}>
           <QueryProvider>
+            <ChunkLoadRecovery />
             <div className="bg-background min-h-screen">{children}</div>
             <Toaster />
           </QueryProvider>

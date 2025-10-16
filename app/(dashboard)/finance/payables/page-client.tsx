@@ -10,12 +10,11 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PayablesClient } from '@/components/finance/payables-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import type {
-  PayableRecordDetail,
-  PayableSourceType,
-  PayableStatus,
+import {
+  PAYABLE_SORT_OPTIONS,
+  type PayableSourceType,
+  type PayableStatus,
 } from '@/lib/types/payable';
-import { PAYABLE_SORT_OPTIONS } from '@/lib/types/payable';
 
 type PayableSortField =
   | 'createdAt'
@@ -27,7 +26,6 @@ const PAYABLE_STATUS_VALUES: PayableStatus[] = [
   'pending',
   'partial',
   'paid',
-  'overdue',
   'cancelled',
 ];
 
@@ -50,25 +48,16 @@ interface PayablesQueryParams {
 }
 
 interface PayablesPageClientProps {
-  initialData: {
-    payables: PayableRecordDetail[];
-    statistics: {
-      totalPayables: number;
-      totalPaidAmount: number;
-      totalRemainingAmount: number;
-      pendingCount: number;
-      partialCount: number;
-      overdueCount: number;
-      paidCount: number;
-    };
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
-  };
   initialParams: PayablesQueryParams;
+  initialStatistics: {
+    totalPayables: number;
+    totalPaidAmount: number;
+    totalRemainingAmount: number;
+    pendingCount: number;
+    partialCount: number;
+    overdueCount: number;
+    paidCount: number;
+  };
 }
 
 /**
@@ -76,8 +65,8 @@ interface PayablesPageClientProps {
  * 负责用户交互和状态管理
  */
 export function PayablesPageClient({
-  initialData,
   initialParams,
+  initialStatistics,
 }: PayablesPageClientProps) {
   const router = useRouter();
   const [, startTransition] = React.useTransition();
@@ -348,7 +337,7 @@ export function PayablesPageClient({
           }
         >
           <PayablesClient
-            initialData={initialData}
+            initialStatistics={initialStatistics}
             initialParams={normalizedInitialParams}
             onSearch={handleSearch}
             onFilter={handleFilter}

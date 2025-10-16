@@ -6,10 +6,12 @@ import { useRouter } from 'next/navigation';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { formatCurrency } from '@/lib/utils/format';
 interface StatementHeaderProps {
   name: string;
   type: 'customer' | 'supplier' | 'partner';
   status: 'active' | 'settled' | 'suspended';
+  currentBalance: number;
 }
 
 const TYPE_LABEL_MAP: Record<StatementHeaderProps['type'], string> = {
@@ -27,7 +29,12 @@ const STATUS_BADGE_MAP: Record<
   suspended: { label: '已暂停', variant: 'destructive' },
 };
 
-export function StatementHeader({ name, type, status }: StatementHeaderProps) {
+export function StatementHeader({
+  name,
+  type,
+  status,
+  currentBalance,
+}: StatementHeaderProps) {
   const router = useRouter();
 
   const statusInfo = STATUS_BADGE_MAP[status] ?? STATUS_BADGE_MAP.active;
@@ -52,6 +59,25 @@ export function StatementHeader({ name, type, status }: StatementHeaderProps) {
                 <Badge variant="outline">{TYPE_LABEL_MAP[type]}</Badge>
                 <Badge variant={statusInfo.variant}>{statusInfo.label}</Badge>
               </div>
+              <p className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                当前余额：
+                <span
+                  className={`font-semibold ${
+                    currentBalance > 0
+                      ? 'text-[hsl(var(--color-warning))]'
+                      : currentBalance < 0
+                        ? 'text-[hsl(var(--color-error))]'
+                        : 'text-[hsl(var(--color-success))]'
+                  }`}
+                >
+                  {formatCurrency(Math.abs(currentBalance))}
+                  {currentBalance > 0
+                    ? '（应收）'
+                    : currentBalance < 0
+                      ? '（应付）'
+                      : '（已结清）'}
+                </span>
+              </p>
             </div>
           </div>
           <div className="flex items-center gap-2">

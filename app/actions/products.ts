@@ -31,6 +31,23 @@ export type ActionResult<T = unknown> = {
 // Zod 验证模式
 // ============================================
 
+function isValidUrlOrPath(value: string): boolean {
+  if (!value) {
+    return true;
+  }
+
+  if (value.startsWith('/')) {
+    return true;
+  }
+
+  try {
+    new URL(value);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 const createProductSchema = z.object({
   code: z.string().min(1, '产品编码不能为空'),
   name: z.string().min(1, '产品名称不能为空'),
@@ -41,7 +58,11 @@ const createProductSchema = z.object({
   piecesPerUnit: z.number().int().positive('每件片数必须为正整数').optional(),
   weight: z.number().nonnegative('重量不能为负').optional(),
   thickness: z.number().nonnegative('厚度不能为负').optional(),
-  thumbnailUrl: z.string().url('缩略图地址格式不正确').optional(),
+  thumbnailUrl: z
+    .string()
+    .trim()
+    .refine(isValidUrlOrPath, '缩略图地址格式不正确')
+    .optional(),
   status: z.enum(['active', 'inactive']).default('active'),
 });
 
@@ -115,7 +136,10 @@ export async function createProduct(
   } catch (error) {
     console.error('创建产品失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues[0]?.message ?? '输入数据格式不正确' };
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? '输入数据格式不正确',
+      };
     }
     return { success: false, error: '创建产品失败' };
   }
@@ -197,7 +221,10 @@ export async function updateProduct(
   } catch (error) {
     console.error('更新产品失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues[0]?.message ?? '输入数据格式不正确' };
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? '输入数据格式不正确',
+      };
     }
     return { success: false, error: '更新产品失败' };
   }
@@ -234,7 +261,10 @@ export async function updateProductStatus(
   } catch (error) {
     console.error('更新产品状态失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues[0]?.message ?? '输入数据格式不正确' };
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? '输入数据格式不正确',
+      };
     }
     return { success: false, error: '更新产品状态失败' };
   }

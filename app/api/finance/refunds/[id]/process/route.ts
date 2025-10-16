@@ -2,8 +2,8 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
-import { logger } from '@/lib/logger';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import {
   processRefundWithLock,
   validateRefundProcessable,
@@ -13,17 +13,27 @@ import { processRefundSchema } from '@/lib/validations/refund';
 export const POST = withAuth(
   async (
     request: NextRequest,
-    { params, user }: { params: { id: string }; user: AuthUser }
+    context: {
+      params?: Promise<Record<string, string>> | Record<string, string>;
+      user: AuthUser;
+    }
   ) => {
+    const { user, params } = context;
     let refundId: string | undefined;
     try {
       const body = await request.json();
       const validatedData = processRefundSchema.parse(body);
 
-      refundId = params.id;
+      const resolvedParams = params ? await Promise.resolve(params) : {};
+      refundId = resolvedParams.id;
+      if (!refundId) {
+        return NextResponse.json({ error: '缺少退款记录ID' }, { status: 400 });
+      }
 
       // 先验证退款是否可以处理
-      const validation = await validateRefundProcessable(refundId);
+      const targetRefundId = refundId as string;
+
+      const validation = await validateRefundProcessable(targetRefundId);
       if (!validation.valid) {
         return NextResponse.json(
           {
@@ -36,7 +46,7 @@ export const POST = withAuth(
       // 使用幂等性锁处理退款
       const result = await prisma.$transaction(async tx => {
         const processResult = await processRefundWithLock(
-          refundId,
+          targetRefundId,
           validatedData.processedAmount,
           validatedData.status,
           user.id,
@@ -50,7 +60,7 @@ export const POST = withAuth(
 
         // 更新处理日期和备注
         const updatedRefund = await tx.refundRecord.update({
-          where: { id: refundId },
+          where: { id: targetRefundId },
           data: {
             processedDate: new Date(validatedData.processedDate),
             remarks: validatedData.remarks,

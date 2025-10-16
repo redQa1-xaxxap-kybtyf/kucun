@@ -12,63 +12,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { queryKeys } from '@/lib/queryKeys';
+import type { SalesOrder } from '@/lib/types/sales-order';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 
-interface SalesOrderDetail {
-  id: string;
-  orderNumber: string;
-  customerId: string;
-  userId: string;
-  supplierId?: string;
-  status: string;
-  orderType: string;
-  totalAmount: number;
-  costAmount: number;
-  profitAmount: number;
-  remarks?: string;
-  createdAt: string;
-  updatedAt: string;
-  customer: {
-    id: string;
-    name: string;
-    phone?: string;
-  };
-  user: {
-    id: string;
-    name: string;
-  };
-  supplier?: {
-    id: string;
-    name: string;
-  };
-  items: Array<{
-    id: string;
-    productId: string;
-    productCode?: string;
-    batchNumber?: string;
-    colorCode?: string;
-    productionDate?: string;
-    quantity: number;
-    unitPrice: number;
-    subtotal: number;
-    unitCost?: number;
-    costSubtotal?: number;
-    profitAmount?: number;
-    isManualProduct: boolean;
-    manualProductName?: string;
-    manualSpecification?: string;
-    manualWeight?: number;
-    manualUnit?: string;
-    product?: {
-      id: string;
-      code: string;
-      name: string;
-      specification?: string;
-      unit: string;
-      piecesPerUnit?: number;
-    };
-  }>;
-}
+type SalesOrderDetail = SalesOrder;
 
 async function fetchSalesOrderDetail(id: string): Promise<SalesOrderDetail> {
   const response = await fetch(`/api/sales-orders/${id}`, {

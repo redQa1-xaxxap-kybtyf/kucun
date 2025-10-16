@@ -3,8 +3,8 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import { getServerSession } from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
@@ -96,6 +96,10 @@ function transformLogsForResponse(
     ipAddress: string | null;
     userAgent: string | null;
     metadata: string | null;
+    ipCountry: string | null;
+    ipProvince: string | null;
+    ipCity: string | null;
+    ipLocation: string | null;
     createdAt: Date;
   }>
 ): SystemLog[] {
@@ -110,6 +114,10 @@ function transformLogsForResponse(
     ipAddress: log.ipAddress,
     userAgent: log.userAgent,
     metadata: log.metadata ? JSON.parse(log.metadata) : null,
+    ipCountry: log.ipCountry,
+    ipProvince: log.ipProvince,
+    ipCity: log.ipCity,
+    ipLocation: log.ipLocation,
     createdAt: log.createdAt.toISOString(),
   }));
 }

@@ -185,7 +185,7 @@ export function ReceivablesPageClient({
                     应收货款管理
                   </h1>
                   <p className="text-sm text-[hsl(var(--color-text-secondary))]">
-                    管理销售订单产生的应收账款，跟踪收款状态和逾期情况
+                    管理销售订单产生的应收账款，跟踪收款状态
                   </p>
                 </div>
               </div>

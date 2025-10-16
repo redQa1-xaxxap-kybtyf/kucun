@@ -1,7 +1,6 @@
-import Link from 'next/link';
 import { ActivitySquare, ArrowLeft, Clock, PackageSearch } from 'lucide-react';
+import Link from 'next/link';
 
-import { getBatchHistoryByNumber } from '@/lib/api/batch-history-server';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,10 +12,14 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { InventoryMovementEntry } from '@/lib/types/inventory';
-import { OUTBOUND_REASON_LABELS } from '@/lib/types/inventory';
+import { getBatchHistoryByNumber } from '@/lib/api/batch-history-server';
+import {
+  OUTBOUND_REASON_LABELS,
+  type InventoryMovementEntry,
+} from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
 import { formatNumber } from '@/lib/utils/format';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 export const dynamic = 'force-dynamic';
 export const fetchCache = 'force-no-store';
@@ -64,7 +67,7 @@ export default async function BatchHistoryPage({
         : variantParamRaw;
 
   const history = await getBatchHistoryByNumber(batchNumber, {
-    inventoryId: inventoryId,
+    inventoryId,
     productId: productIdParam,
     variantId: variantParam,
   });
@@ -345,6 +348,21 @@ export default async function BatchHistoryPage({
                     {history.groups.flatMap(group =>
                       group.movements.map(entry => {
                         const meta = MOVEMENT_META[entry.type];
+                        const piecesPerUnit = entry.product?.piecesPerUnit || 0;
+                        const absChange = Math.abs(entry.quantityChange);
+                        const changePrefix =
+                          entry.quantityChange > 0
+                            ? '+'
+                            : entry.quantityChange < 0
+                              ? '-'
+                              : '';
+                        const changeDisplay =
+                          piecesPerUnit > 0
+                            ? formatPieceSummary(absChange, piecesPerUnit, {
+                                fallbackUnit: '片',
+                              })
+                            : `${formatNumber(absChange)}片`;
+
                         return (
                           <TableRow
                             key={`${entry.type}-${entry.id}-${entry.createdAt}`}
@@ -364,16 +382,29 @@ export default async function BatchHistoryPage({
                               </code>
                             </TableCell>
                             <TableCell className="px-4 py-3 text-right font-semibold text-gray-900">
-                              {formatChange(entry.quantityChange)} 片
+                              {changePrefix}
+                              {changeDisplay}
                             </TableCell>
                             <TableCell className="px-4 py-3 text-right text-gray-700">
                               {entry.balanceBefore !== undefined
-                                ? `${formatNumber(entry.balanceBefore)} 片`
+                                ? piecesPerUnit > 0
+                                  ? formatPieceSummary(
+                                      entry.balanceBefore,
+                                      piecesPerUnit,
+                                      { fallbackUnit: '片' }
+                                    )
+                                  : `${formatNumber(entry.balanceBefore)}片`
                                 : '—'}
                             </TableCell>
                             <TableCell className="px-4 py-3 text-right text-gray-700">
                               {entry.balanceAfter !== undefined
-                                ? `${formatNumber(entry.balanceAfter)} 片`
+                                ? piecesPerUnit > 0
+                                  ? formatPieceSummary(
+                                      entry.balanceAfter,
+                                      piecesPerUnit,
+                                      { fallbackUnit: '片' }
+                                    )
+                                  : `${formatNumber(entry.balanceAfter)}片`
                                 : '—'}
                             </TableCell>
                             <TableCell className="px-4 py-3 text-sm text-gray-700">

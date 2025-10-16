@@ -10,9 +10,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Separator } from '@/components/ui/separator';
-import { getReceivableStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency, formatDate } from '@/lib/utils';
+import { getReceivableStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 
 interface ReceivableDetail {
@@ -60,7 +60,6 @@ const RECEIVABLE_STATUS_LABELS = {
   pending: '待收款',
   partial: '部分收款',
   received: '已收款',
-  overdue: '逾期',
   cancelled: '已取消',
 };
 
@@ -120,9 +119,6 @@ export default function ReceivableDetailPage() {
     );
   }
 
-  const isOverdue =
-    new Date(receivable.dueDate) < new Date() &&
-    receivable.status !== 'received';
   const paymentProgress =
     receivable.receivableAmount > 0
       ? (receivable.receivedAmount / receivable.receivableAmount) * 100
@@ -175,7 +171,6 @@ export default function ReceivableDetailPage() {
                           receivable.status as keyof typeof RECEIVABLE_STATUS_LABELS
                         ] || receivable.status}
                       </Badge>
-                      {isOverdue && <Badge variant="destructive">逾期</Badge>}
                     </div>
                   </div>
                   <div>
@@ -225,13 +220,7 @@ export default function ReceivableDetailPage() {
                     </label>
                     <div className="mt-1 flex items-center space-x-2">
                       <Calendar className="text-muted-foreground h-4 w-4" />
-                      <span
-                        className={
-                          isOverdue ? 'text-[hsl(var(--color-error))]' : ''
-                        }
-                      >
-                        {formatDate(receivable.dueDate)}
-                      </span>
+                      <span>{formatDate(receivable.dueDate)}</span>
                     </div>
                   </div>
                   <div>

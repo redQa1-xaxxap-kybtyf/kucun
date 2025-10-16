@@ -8,10 +8,11 @@ import { Suspense } from 'react';
 import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
 import { ERPInventoryList } from '@/components/inventory/erp-inventory-list';
 import { InventoryListSkeleton } from '@/components/inventory/inventory-list-skeleton';
+import { Button } from '@/components/ui/button';
 import { useOptimizedInventoryQuery } from '@/hooks/use-optimized-inventory-query';
+import { paginationConfig } from '@/lib/env';
 import type { CategoryOption } from '@/lib/types/category';
 import type {
   InventoryListResponse,
@@ -137,15 +138,39 @@ export function InventoryPageClient({
         data?: InventoryListResponse['data']['inventories'];
         pagination?: InventoryListResponse['data']['pagination'];
       };
+      const resolvedLimit =
+        typeof initialParams.limit === 'number' && initialParams.limit > 0
+          ? initialParams.limit
+          : limit > 0
+            ? limit
+            : paginationConfig.defaultPageSize;
+      const resolvedPage =
+        typeof initialParams.page === 'number' && initialParams.page > 0
+          ? initialParams.page
+          : 1;
+      const fallbackTotal = Array.isArray(legacy.data) ? legacy.data.length : 0;
+      const fallbackTotalPages = Math.max(
+        1,
+        Math.ceil(fallbackTotal / resolvedLimit)
+      );
+      const normalizedPagination =
+        legacy.pagination && legacy.pagination.totalPages >= 1
+          ? legacy.pagination
+          : {
+              page: resolvedPage,
+              limit: resolvedLimit,
+              total: fallbackTotal,
+              totalPages: fallbackTotalPages,
+            };
 
       return {
         inventories: Array.isArray(legacy.data) ? legacy.data : [],
-        pagination: legacy.pagination,
+        pagination: normalizedPagination,
       };
     }
 
     return undefined;
-  }, [data]);
+  }, [data, initialParams.limit, initialParams.page, limit]);
 
   const inventories = normalizedData?.inventories ?? [];
   const pagination = normalizedData?.pagination;

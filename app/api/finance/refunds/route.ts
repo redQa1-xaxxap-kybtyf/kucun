@@ -26,13 +26,12 @@ export const GET = withAuth(
   async (request: NextRequest) => {
     // 解析并验证查询参数
     const { searchParams } = new URL(request.url);
+    const pageParam = searchParams.get('page');
+    const limitParam =
+      searchParams.get('limit') ?? searchParams.get('pageSize');
     const queryParams = {
-      page: searchParams.get('page')
-        ? parseInt(searchParams.get('page')!, 10)
-        : undefined,
-      pageSize: searchParams.get('pageSize')
-        ? parseInt(searchParams.get('pageSize')!, 10)
-        : undefined,
+      page: pageParam ? Number.parseInt(pageParam, 10) : undefined,
+      limit: limitParam ? Number.parseInt(limitParam, 10) : undefined,
       search: searchParams.get('search') || undefined,
       status: searchParams.get('status') || undefined,
       customerId: searchParams.get('customerId') || undefined,
@@ -50,7 +49,7 @@ export const GET = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        '查询参数验证失败: ' + validationResult.error.issues[0]?.message,
+        `查询参数验证失败: ${validationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -66,7 +65,7 @@ export const GET = withAuth(
       refundType,
       startDate,
       endDate,
-      sortBy = 'createdAt',
+      sortBy = 'refundDate',
       sortOrder = 'desc',
     } = validationResult.data;
 
@@ -129,7 +128,7 @@ export const GET = withAuth(
     const skip = (page - 1) * limit;
 
     // 使用真实数据库查询退款记录
-    const [refunds, total] = await Promise.all([
+    const [refunds, total, allRefunds] = await Promise.all([
       prisma.refundRecord.findMany({
         where,
         include: {
@@ -148,6 +147,14 @@ export const GET = withAuth(
               status: true,
             },
           },
+          returnOrder: {
+            select: {
+              id: true,
+              returnNumber: true,
+              totalAmount: true,
+              status: true,
+            },
+          },
           user: {
             select: {
               id: true,
@@ -160,6 +167,15 @@ export const GET = withAuth(
         take: limit,
       }),
       prisma.refundRecord.count({ where }),
+      prisma.refundRecord.findMany({
+        where,
+        select: {
+          refundAmount: true,
+          processedAmount: true,
+          remainingAmount: true,
+          status: true,
+        },
+      }),
     ]);
 
     // 格式化退款记录数据
@@ -167,16 +183,17 @@ export const GET = withAuth(
       id: refund.id,
       refundNumber: refund.refundNumber,
       returnOrderId: refund.returnOrderId,
-      returnOrderNumber: refund.returnOrderNumber,
+      returnOrderNumber:
+        refund.returnOrder?.returnNumber || refund.returnOrderNumber,
       salesOrderId: refund.salesOrderId,
       salesOrderNumber: refund.salesOrder?.orderNumber || '',
       customerId: refund.customerId,
       customerName: refund.customer?.name || '',
       refundType: refund.refundType,
       refundMethod: refund.refundMethod,
-      refundAmount: refund.refundAmount,
-      processedAmount: refund.processedAmount,
-      remainingAmount: refund.remainingAmount,
+      refundAmount: Number(refund.refundAmount),
+      processedAmount: Number(refund.processedAmount),
+      remainingAmount: Number(refund.remainingAmount),
       status: refund.status,
       refundDate: refund.refundDate.toISOString().split('T')[0],
       processedDate: refund.processedDate?.toISOString().split('T')[0] || null,
@@ -186,13 +203,59 @@ export const GET = withAuth(
       receiptNumber: refund.receiptNumber,
       createdAt: refund.createdAt.toISOString(),
       updatedAt: refund.updatedAt.toISOString(),
-      customer: refund.customer,
-      salesOrder: refund.salesOrder,
+      customer: refund.customer
+        ? {
+            ...refund.customer,
+          }
+        : null,
+      salesOrder: refund.salesOrder
+        ? {
+            ...refund.salesOrder,
+            totalAmount: Number(refund.salesOrder.totalAmount),
+          }
+        : null,
+      returnOrder: refund.returnOrder
+        ? {
+            id: refund.returnOrder.id,
+            returnOrderNumber: refund.returnOrder.returnNumber,
+            totalAmount: Number(refund.returnOrder.totalAmount ?? 0),
+            status: refund.returnOrder.status ?? undefined,
+          }
+        : null,
       user: refund.user,
     }));
 
+    // 统计数据
+    const totalRefundable = allRefunds.reduce(
+      (sum, r) => sum + Number(r.refundAmount ?? 0),
+      0
+    );
+    const totalProcessed = allRefunds.reduce(
+      (sum, r) => sum + Number(r.processedAmount ?? 0),
+      0
+    );
+    const totalRemaining = allRefunds.reduce(
+      (sum, r) => sum + Number(r.remainingAmount ?? 0),
+      0
+    );
+    const pendingCount = allRefunds.filter(r => r.status === 'pending').length;
+    const processingCount = allRefunds.filter(
+      r => r.status === 'processing'
+    ).length;
+    const completedCount = allRefunds.filter(
+      r => r.status === 'completed'
+    ).length;
+
     return successResponse({
       refunds: formattedRefunds,
+      statistics: {
+        totalRefundable,
+        totalProcessed,
+        totalRemaining,
+        pendingCount,
+        processingCount,
+        completedCount,
+      },
       pagination: {
         page,
         limit,
