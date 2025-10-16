@@ -8,6 +8,7 @@
 import { Eye, Package } from 'lucide-react';
 import * as React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -20,8 +21,8 @@ import {
 } from '@/components/ui/table';
 import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
-import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
+import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryGroupedTableProps {
   data: Inventory[];
@@ -119,27 +120,14 @@ function formatSpecification(spec: string | null | undefined): string {
   return spec.length > 11 ? `${spec.slice(0, 11)}...` : spec;
 }
 
-function EmptyState() {
-  return (
-    <TableRow>
-      <TableCell colSpan={11} className="h-32 text-center">
-        <div className="text-muted-foreground flex flex-col items-center gap-2">
-          <Package className="h-8 w-8" />
-          <span className="text-sm">暂无库存数据</span>
-        </div>
-      </TableCell>
-    </TableRow>
-  );
-}
-
 export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
   ({
     data,
-    selectedIds,
-    isAllSelected,
-    canSelectAll,
-    onSelectAll,
-    onSelectRow,
+    selectedIds: _selectedIds,
+    isAllSelected: _isAllSelected,
+    canSelectAll: _canSelectAll,
+    onSelectAll: _onSelectAll,
+    onSelectRow: _onSelectRow,
     onAdjust,
   }) => {
     const groups = React.useMemo(() => groupByProduct(data), [data]);
@@ -152,6 +140,7 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
             <TableHead>产品名称</TableHead>
             <TableHead>规格</TableHead>
             <TableHead>包装信息</TableHead>
+            <TableHead>重量(kg)</TableHead>
             <TableHead>批次号</TableHead>
             <TableHead>库存数量</TableHead>
             <TableHead>预留数量</TableHead>
@@ -163,9 +152,17 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
         </TableHeader>
         <TableBody>
           {data.length === 0 ? (
-            <EmptyState />
+            <TableRow>
+              <TableCell colSpan={12} className="p-8">
+                <EmptyState
+                  title="暂无库存数据"
+                  icon={<Package className="text-muted-foreground h-6 w-6" />}
+                  compact
+                />
+              </TableCell>
+            </TableRow>
           ) : (
-            groups.map((group, groupIndex) =>
+            groups.map(group =>
               group.items.map((item, index) => {
                 const isFirstInGroup = index === 0;
 
@@ -289,6 +286,28 @@ export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
                           {packaging}
                           <span className="ml-0.5 text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
                             片/件
+                          </span>
+                        </span>
+                      ) : (
+                        <span className="text-[hsl(var(--color-text-tertiary))]">
+                          -
+                        </span>
+                      )}
+                    </TableCell>
+
+                    {/* 重量 */}
+                    <TableCell
+                      className={`${
+                        isFirstInGroup
+                          ? 'font-medium text-[hsl(var(--color-text-primary))]'
+                          : 'text-[hsl(var(--color-text-secondary))]'
+                      }`}
+                    >
+                      {item.weight ? (
+                        <span className="font-semibold">
+                          {item.weight.toFixed(2)}
+                          <span className="ml-0.5 text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
+                            kg
                           </span>
                         </span>
                       ) : (

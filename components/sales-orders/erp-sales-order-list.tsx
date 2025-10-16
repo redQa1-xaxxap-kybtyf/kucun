@@ -12,8 +12,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import * as React from 'react';
-import { useToast } from '@/components/ui/use-toast';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import {
   AlertDialog,
@@ -43,6 +43,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useToast } from '@/components/ui/use-toast';
 import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
 import {
   SALES_ORDER_STATUS_LABELS,
@@ -449,8 +450,6 @@ export function ERPSalesOrderList({
   const getPaymentStatusBadge = (order: SalesOrder) => {
     const paidAmount = order.paidAmount || 0;
     const remainingAmount = order.remainingAmount || 0;
-    const totalAmount = order.totalAmount || 0;
-
     // 未发货的订单不显示收款状态
     if (order.status !== 'shipped' && order.status !== 'completed') {
       return (
@@ -506,14 +505,6 @@ export function ERPSalesOrderList({
       </Badge>
     );
   };
-
-  // 格式化日期（只显示日期）
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
 
   // 格式化日期时间（显示日期和时分）
   const formatDateTime = (date: string) => {
@@ -688,7 +679,7 @@ export function ERPSalesOrderList({
                 </TableRow>
               ))
             ) : data?.data && data.data.length > 0 ? (
-              data.data.map((order, index) => (
+              data.data.map(order => (
                 <TableRow
                   key={order.id}
                   className="cursor-pointer"
@@ -860,11 +851,8 @@ export function ERPSalesOrderList({
               ))
             ) : (
               <TableRow>
-                <TableCell
-                  colSpan={10}
-                  className="text-muted-foreground h-20 text-center text-xs"
-                >
-                  暂无数据
+                <TableCell colSpan={10} className="p-8">
+                  <EmptyState title="暂无销售订单数据" compact />
                 </TableCell>
               </TableRow>
             )}

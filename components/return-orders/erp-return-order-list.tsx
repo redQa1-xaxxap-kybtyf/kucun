@@ -6,13 +6,9 @@ import { useRouter } from 'next/navigation';
 import * as React from 'react';
 import { useState } from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Pagination } from '@/components/ui/pagination';
-import { useToast } from '@/components/ui/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,12 +19,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
   TableBody,
@@ -37,6 +37,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useToast } from '@/components/ui/use-toast';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import {
@@ -47,8 +48,8 @@ import {
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
-import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { formatCurrency } from '@/lib/utils';
+import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
 interface ERPReturnOrderListProps {
   initialParams?: ReturnOrderQueryParams;
@@ -98,7 +99,7 @@ export function ERPReturnOrderList({
     data: queryData,
     isLoading,
     error,
-    refetch,
+    refetch: _refetch,
   } = useQuery({
     queryKey: queryKeys.returnOrders.list(queryParams),
     queryFn: async () => {
@@ -279,9 +280,8 @@ export function ERPReturnOrderList({
     });
 
   // 获取状态颜色（使用统一的 badge-helpers）
-  const getStatusColor = (status: string) => {
-    return getReturnOrderStatusBadgeVariant(status);
-  };
+  const getStatusColor = (status: string) =>
+    getReturnOrderStatusBadgeVariant(status);
 
   // 如果有真实数据错误且没有模拟数据，显示错误
   if (error && !displayData) {
@@ -373,11 +373,14 @@ export function ERPReturnOrderList({
               </TableRow>
             ) : displayData?.data.returnOrders.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={9}
-                  className="text-muted-foreground h-16 text-center text-xs"
-                >
-                  暂无退货订单数据
+                <TableCell colSpan={9} className="p-8">
+                  <EmptyState
+                    title="暂无退货订单数据"
+                    action={
+                      <Button onClick={handleCreateNew}>新建退货单</Button>
+                    }
+                    compact
+                  />
                 </TableCell>
               </TableRow>
             ) : (

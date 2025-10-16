@@ -12,6 +12,7 @@ import {
 import Link from 'next/link';
 import * as React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,10 +25,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { formatCurrency } from '@/lib/utils/format';
-import type { PaymentStatus } from '@/lib/types/payment';
-import { useConfirmPayment } from '@/lib/api/payments';
 import { useToast } from '@/components/ui/use-toast';
+import { useConfirmPayment } from '@/lib/api/payments';
+import type { PaymentStatus } from '@/lib/types/payment';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface PaymentRecord {
   id: string;
@@ -328,10 +329,11 @@ export function PaymentsClient({
 
           {/* 收款记录列表 */}
           {payments.length === 0 ? (
-            <div className="py-12 text-center">
-              <Receipt className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-              <p className="text-muted-foreground">暂无收款记录</p>
-            </div>
+            <EmptyState
+              icon={<Receipt className="text-muted-foreground h-8 w-8" />}
+              title="暂无收款记录"
+              compact
+            />
           ) : (
             <div className="space-y-4">
               {payments.map(payment => {

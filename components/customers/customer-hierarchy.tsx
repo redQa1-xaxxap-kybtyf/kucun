@@ -11,9 +11,11 @@ import {
   User,
 } from 'lucide-react';
 import { useState } from 'react';
-import { type Control, useController } from 'react-hook-form';
+import { type Control, type FieldPath, useController } from 'react-hook-form';
 
 // UI Components
+import { EmptyState } from '@/components/common/empty-state';
+import { InlineLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -31,7 +33,6 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { InlineLoading } from '@/components/common/loading';
 // API and Types
 import { searchCustomers } from '@/lib/api/customers';
 import { queryKeys } from '@/lib/queryKeys';
@@ -131,7 +132,8 @@ export function CustomerHierarchyTree({
         <div
           className={cn(
             'flex cursor-pointer items-center rounded-md border border-transparent px-3 py-2 transition-colors hover:bg-[hsl(var(--color-primary-light))]',
-            isSelected && 'border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))]'
+            isSelected &&
+              'border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))]'
           )}
           style={{ paddingLeft: `${12 + node.level * 20}px` }}
           onClick={() => onSelectCustomer?.(node)}
@@ -242,10 +244,11 @@ export function CustomerHierarchyTree({
 
   if (treeData.length === 0) {
     return (
-      <div className="text-muted-foreground py-8 text-center">
-        <Building2 className="mx-auto mb-4 h-12 w-12 opacity-50" />
-        <p>暂无客户数据</p>
-      </div>
+      <EmptyState
+        icon={<Building2 className="text-muted-foreground h-8 w-8" />}
+        title="暂无客户数据"
+        compact
+      />
     );
   }
 
@@ -263,7 +266,7 @@ interface CustomerSelectorProps<
   TFieldValues extends Record<string, unknown> = Record<string, unknown>,
 > {
   control: Control<TFieldValues>;
-  name: string;
+  name: FieldPath<TFieldValues>;
   label?: string;
   placeholder?: string;
   disabled?: boolean;
@@ -290,6 +293,10 @@ export function CustomerSelector<
     control,
     name,
   });
+  const fieldValue = (field.value ?? '') as string;
+  const handleFieldChange = (value: string) => {
+    field.onChange(value as typeof field.value);
+  };
 
   // 搜索客户
   const { data: searchResults, isLoading } = useQuery({
@@ -301,19 +308,19 @@ export function CustomerSelector<
 
   // 获取选中的客户信息
   const { data: selectedCustomer } = useQuery({
-    queryKey: queryKeys.customers.detail(field.value || ''),
+    queryKey: queryKeys.customers.detail(fieldValue || ''),
     queryFn: async () => {
-      if (!field.value) {
+      if (!fieldValue) {
         return null;
       }
-      const response = await fetch(`/api/customers/${field.value}`);
+      const response = await fetch(`/api/customers/${fieldValue}`);
       if (!response.ok) {
         return null;
       }
       const result = await response.json();
       return result.data;
     },
-    enabled: !!field.value,
+    enabled: Boolean(fieldValue),
   });
 
   const customers = searchResults || [];
@@ -388,7 +395,7 @@ export function CustomerSelector<
                   <CommandItem
                     value=""
                     onSelect={() => {
-                      field.onChange('');
+                      handleFieldChange('');
                       setOpen(false);
                     }}
                   >
@@ -403,13 +410,13 @@ export function CustomerSelector<
                       key={customer.id}
                       value={customer.id}
                       onSelect={() => {
-                        field.onChange(customer.id);
+                        handleFieldChange(customer.id);
                         setOpen(false);
                       }}
                     >
                       <Check
                         className={`mr-2 h-4 w-4 ${
-                          field.value === customer.id
+                          fieldValue === customer.id
                             ? 'opacity-100'
                             : 'opacity-0'
                         }`}

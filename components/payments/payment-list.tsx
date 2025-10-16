@@ -18,6 +18,7 @@ import {
 import Link from 'next/link';
 import * as React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,7 +32,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { MobileDataTable } from '@/components/ui/mobile-data-table';
+import {
+  MobileDataTable,
+  type ColumnDef,
+} from '@/components/ui/mobile-data-table';
 import {
   Select,
   SelectContent,
@@ -118,16 +122,29 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
 
     // 处理排序
     const handleSort = (sortBy: string, sortOrder: 'asc' | 'desc') => {
-      onQueryChange({ sortBy, sortOrder });
+      const allowedSortFields: Array<PaymentRecordQuery['sortBy']> = [
+        'paymentDate',
+        'paymentAmount',
+        'createdAt',
+      ];
+      const safeSortBy = allowedSortFields.includes(
+        sortBy as PaymentRecordQuery['sortBy']
+      )
+        ? (sortBy as PaymentRecordQuery['sortBy'])
+        : undefined;
+      onQueryChange({
+        sortBy: safeSortBy,
+        sortOrder,
+      });
     };
 
     // 桌面端表格列定义
-    const columns = [
+    const columns: Array<ColumnDef<PaymentRecordDetail>> = [
       {
         key: 'paymentNumber',
         title: '收款单号',
         width: '120px',
-        render: (payment: PaymentRecordDetail) => (
+        render: (_value, payment) => (
           <div className="font-medium">{payment.paymentNumber}</div>
         ),
       },
@@ -135,7 +152,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         key: 'salesOrder',
         title: '销售订单',
         width: '120px',
-        render: (payment: PaymentRecordDetail) => (
+        render: (_value, payment) => (
           <Link
             href={`/sales-orders/${payment.salesOrder.id}`}
             prefetch={false}
@@ -149,7 +166,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         key: 'customer',
         title: '客户',
         width: '150px',
-        render: (payment: PaymentRecordDetail) => (
+        render: (_value, payment) => (
           <div>
             <div className="font-medium">{payment.customer.name}</div>
             {payment.customer.phone && (
@@ -164,7 +181,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         key: 'paymentMethod',
         title: '收款方式',
         width: '100px',
-        render: (payment: PaymentRecordDetail) => (
+        render: (_value, payment) => (
           <div className="flex items-center space-x-2">
             <span>
               {paymentUtils.getPaymentMethodIcon(payment.paymentMethod)}
@@ -180,7 +197,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         title: '收款金额',
         width: '120px',
         align: 'right' as const,
-        render: (payment: PaymentRecordDetail) => (
+        render: (_value, payment) => (
           <div className="font-medium text-green-600">
             {paymentUtils.formatAmount(payment.paymentAmount)}
           </div>
@@ -190,17 +207,20 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         key: 'paymentDate',
         title: '收款日期',
         width: '100px',
-        render: (payment: PaymentRecordDetail) => (
-          <div className="text-sm">
-            {format(new Date(payment.paymentDate), 'yyyy-MM-dd')}
-          </div>
-        ),
+        render: (value: unknown) =>
+          value ? (
+            <div className="text-sm">
+              {format(new Date(value as string), 'yyyy-MM-dd')}
+            </div>
+          ) : (
+            '-'
+          ),
       },
       {
         key: 'status',
         title: '状态',
         width: '80px',
-        render: (payment: PaymentRecordDetail) => (
+        render: (_value, payment) => (
           <Badge
             variant="outline"
             className={cn(
@@ -216,7 +236,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         key: 'user',
         title: '操作人',
         width: '100px',
-        render: (payment: PaymentRecordDetail) => (
+        render: (_value, payment) => (
           <div className="text-sm">{payment.user.name}</div>
         ),
       },
@@ -224,7 +244,7 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         key: 'actions',
         title: '操作',
         width: '80px',
-        render: (payment: PaymentRecordDetail) => (
+        render: (_value, payment) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -274,104 +294,109 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
     ];
 
     // 移动端卡片渲染
-    const renderMobileCard = (payment: PaymentRecordDetail) => (
-      <Card key={payment.id} className="mb-4">
-        <CardContent className="p-4">
-          <div className="mb-3 flex items-start justify-between">
-            <div>
-              <div className="text-sm font-medium">{payment.paymentNumber}</div>
-              <div className="text-muted-foreground mt-1 text-xs">
-                {format(new Date(payment.paymentDate), 'yyyy-MM-dd HH:mm')}
+    const renderMobileCard = (payment: PaymentRecordDetail) => {
+      const methodLabel = paymentUtils.formatPaymentMethod(
+        payment.paymentMethod
+      );
+      return (
+        <Card key={payment.id} className="mb-4">
+          <CardContent className="p-4">
+            <div className="mb-3 flex items-start justify-between">
+              <div>
+                <div className="text-sm font-medium">
+                  {payment.paymentNumber}
+                </div>
+                <div className="text-muted-foreground mt-1 text-xs">
+                  {format(new Date(payment.paymentDate), 'yyyy-MM-dd HH:mm')}
+                </div>
+              </div>
+              <Badge
+                variant="outline"
+                className={cn(
+                  `text-${paymentUtils.getPaymentStatusColor(payment.status)}-600`,
+                  `border-${paymentUtils.getPaymentStatusColor(payment.status)}-200`
+                )}
+              >
+                {paymentUtils.formatPaymentStatus(payment.status)}
+              </Badge>
+            </div>
+
+            <div className="space-y-2 text-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">销售订单:</span>
+                <Link
+                  href={`/sales-orders/${payment.salesOrder.id}`}
+                  className="text-blue-600 hover:text-blue-800"
+                >
+                  {payment.salesOrder.orderNumber}
+                </Link>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">客户:</span>
+                <span className="font-medium">{payment.customer.name}</span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">收款方式:</span>
+                <div className="flex items-center space-x-1">
+                  <span>
+                    {paymentUtils.getPaymentMethodIcon(payment.paymentMethod)}
+                  </span>
+                  <span>{methodLabel}</span>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">收款金额:</span>
+                <span className="font-medium text-green-600">
+                  {paymentUtils.formatAmount(payment.paymentAmount)}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between">
+                <span className="text-muted-foreground">操作人:</span>
+                <span>{payment.user.name}</span>
               </div>
             </div>
-            <Badge
-              variant="outline"
-              className={cn(
-                `text-${paymentUtils.getPaymentStatusColor(payment.status)}-600`,
-                `border-${paymentUtils.getPaymentStatusColor(payment.status)}-200`
+
+            {/* 移动端操作按钮 */}
+            <div className="mt-4 flex items-center justify-end space-x-2 border-t pt-3">
+              {onView && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onView(payment)}
+                >
+                  <Eye className="mr-1 h-3 w-3" />
+                  查看
+                </Button>
               )}
-            >
-              {paymentUtils.formatPaymentStatus(payment.status)}
-            </Badge>
-          </div>
-
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">销售订单:</span>
-              <Link
-                href={`/sales-orders/${payment.salesOrder.id}`}
-                className="text-blue-600 hover:text-blue-800"
-              >
-                {payment.salesOrder.orderNumber}
-              </Link>
+              {onEdit && payment.status === 'pending' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onEdit(payment)}
+                >
+                  <Edit className="mr-1 h-3 w-3" />
+                  编辑
+                </Button>
+              )}
+              {onConfirm && payment.status === 'pending' && (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() => onConfirm(payment)}
+                >
+                  <Check className="mr-1 h-3 w-3" />
+                  确认
+                </Button>
+              )}
             </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">客户:</span>
-              <span className="font-medium">{payment.customer.name}</span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">收款方式:</span>
-              <div className="flex items-center space-x-1">
-                <span>
-                  {paymentUtils.getPaymentMethodIcon(payment.paymentMethod)}
-                </span>
-                <span>
-                  {paymentUtils.formatPaymentMethod(payment.paymentMethod)}
-                </span>
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">收款金额:</span>
-              <span className="font-medium text-green-600">
-                {paymentUtils.formatAmount(payment.paymentAmount)}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between">
-              <span className="text-muted-foreground">操作人:</span>
-              <span>{payment.user.name}</span>
-            </div>
-          </div>
-
-          {/* 移动端操作按钮 */}
-          <div className="mt-4 flex items-center justify-end space-x-2 border-t pt-3">
-            {onView && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onView(payment)}
-              >
-                <Eye className="mr-1 h-3 w-3" />
-                查看
-              </Button>
-            )}
-            {onEdit && payment.status === 'pending' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onEdit(payment)}
-              >
-                <Edit className="mr-1 h-3 w-3" />
-                编辑
-              </Button>
-            )}
-            {onConfirm && payment.status === 'pending' && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => onConfirm(payment)}
-              >
-                <Check className="mr-1 h-3 w-3" />
-                确认
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    );
+          </CardContent>
+        </Card>
+      );
+    };
 
     if (loading) {
       return <PaymentListSkeleton />;
@@ -402,14 +427,14 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
                 <Select
                   value={query.paymentMethod || ''}
                   onValueChange={value =>
-                    handleFilter('paymentMethod', value || undefined)
+                    handleFilter('paymentMethod', value ? value : undefined)
                   }
                 >
                   <SelectTrigger className="w-32">
                     <SelectValue placeholder="收款方式" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">全部方式</SelectItem>
+                    <SelectItem value="">全部方式</SelectItem>
                     {DEFAULT_PAYMENT_METHODS.filter(
                       method => method.isActive
                     ).map(method => (
@@ -424,14 +449,14 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
                 <Select
                   value={query.status || ''}
                   onValueChange={value =>
-                    handleFilter('status', value || undefined)
+                    handleFilter('status', value ? value : undefined)
                   }
                 >
                   <SelectTrigger className="w-28">
                     <SelectValue placeholder="状态" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">全部状态</SelectItem>
+                    <SelectItem value="">全部状态</SelectItem>
                     {DEFAULT_PAYMENT_STATUSES.filter(
                       status => status.isActive
                     ).map(status => (
@@ -456,9 +481,12 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
         {/* 数据列表 */}
         {payments.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center">
-              <DollarSign className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-              <p className="text-muted-foreground">暂无收款记录</p>
+            <CardContent className="p-8">
+              <EmptyState
+                icon={<DollarSign className="text-muted-foreground h-8 w-8" />}
+                title="暂无收款记录"
+                compact
+              />
             </CardContent>
           </Card>
         ) : (

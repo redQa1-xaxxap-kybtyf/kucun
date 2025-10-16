@@ -2,12 +2,13 @@
 // 桌面端显示表格，移动端显示卡片列表
 
 import { ChevronRight } from 'lucide-react';
-import * as React from 'react';
+import React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ContentLoading } from '@/components/common/loading';
 import {
   Table,
   TableBody,
@@ -27,9 +28,9 @@ export interface ColumnDef<T> {
   align?: 'left' | 'center' | 'right';
   sortable?: boolean;
   className?: string;
-  mobileHidden?: boolean; // 移动端是否隐藏
-  mobileLabel?: string; // 移动端显示的标签
-  mobilePrimary?: boolean; // 移动端是否为主要信息
+  mobileHidden?: boolean;
+  mobileLabel?: string;
+  mobilePrimary?: boolean;
 }
 
 // 操作按钮接口
@@ -74,6 +75,38 @@ export interface MobileDataTableProps<T> {
   renderMobileCard?: (item: T) => React.ReactNode; // 添加renderMobileCard属性支持
 }
 
+function toDisplayValue(value: unknown): React.ReactNode {
+  if (React.isValidElement(value)) {
+    return value;
+  }
+
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  if (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  ) {
+    return typeof value === 'boolean' ? (value ? '是' : '否') : String(value);
+  }
+
+  if (value instanceof Date) {
+    return value.toLocaleString();
+  }
+
+  if (Array.isArray(value)) {
+    return value.length ? value.map(toDisplayValue).join(', ') : '';
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+}
+
 function MobileDataTable<T extends Record<string, unknown>>({
   data,
   columns,
@@ -96,7 +129,14 @@ function MobileDataTable<T extends Record<string, unknown>>({
     if (typeof rowKey === 'function') {
       return rowKey(record);
     }
-    return record[rowKey] || index.toString();
+    const raw = record[rowKey];
+    if (raw === null || raw === undefined) {
+      return index.toString();
+    }
+    if (typeof raw === 'string') {
+      return raw || index.toString();
+    }
+    return String(raw);
   };
 
   // 处理行点击事件
@@ -115,7 +155,7 @@ function MobileDataTable<T extends Record<string, unknown>>({
     if (column.render) {
       return column.render(value, record, index);
     }
-    return value;
+    return toDisplayValue(value);
   };
 
   // 渲染操作按钮
@@ -162,11 +202,7 @@ function MobileDataTable<T extends Record<string, unknown>>({
   if (!data || data.length === 0) {
     return (
       <div className={cn('', className)}>
-        {empty || (
-          <div className="py-12 text-center">
-            <div className="text-muted-foreground">暂无数据</div>
-          </div>
-        )}
+        {empty || <EmptyState compact className="rounded-lg border" />}
       </div>
     );
   }
@@ -361,20 +397,34 @@ export const createBadgeColumn = <T,>(
   key,
   title,
   render: value =>
-    value ? <Badge variant={badgeVariant}>{value}</Badge> : null,
+    value ? (
+      <Badge variant={badgeVariant}>{toDisplayValue(value)}</Badge>
+    ) : null,
   ...options,
 });
 
 export const createDateColumn = <T,>(
   key: string,
   title: string,
-  format: (date: string | Date) => string = date =>
-    new Date(date).toLocaleDateString(),
+  format: (date: Date) => string = date => date.toLocaleDateString(),
   options?: Partial<ColumnDef<T>>
 ): ColumnDef<T> => ({
   key,
   title,
-  render: value => (value ? format(value) : '-'),
+  render: value => {
+    const date =
+      value instanceof Date
+        ? value
+        : typeof value === 'string' && value
+          ? new Date(value)
+          : null;
+
+    if (!date || Number.isNaN(date.getTime())) {
+      return '-';
+    }
+
+    return format(date);
+  },
   ...options,
 });
 
@@ -388,10 +438,16 @@ export const createNumberColumn = <T,>(
   title,
   align: 'right',
   render: value => {
-    if (value === null || value === undefined) {
+    const numeric =
+      typeof value === 'number'
+        ? value
+        : typeof value === 'string'
+          ? Number(value)
+          : NaN;
+    if (!Number.isFinite(numeric)) {
       return '-';
     }
-    return formatter ? formatter(value) : value.toString();
+    return formatter ? formatter(numeric) : numeric.toLocaleString('zh-CN');
   },
   ...options,
 });

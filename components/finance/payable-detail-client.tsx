@@ -1,12 +1,8 @@
 'use client';
 
 import {
-  AlertCircle,
   ArrowLeft,
   Building2,
-  Calendar,
-  CheckCircle,
-  Clock,
   DollarSign,
   Edit,
   FileText,
@@ -14,16 +10,17 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import type { PayableRecordDetail } from '@/lib/types/payable';
 import {
   PAYABLE_SOURCE_TYPE_LABELS,
   PAYABLE_STATUS_LABELS,
   PAYABLE_STATUS_VARIANTS,
   PAYMENT_OUT_METHOD_LABELS,
+  type PayableRecordDetail,
 } from '@/lib/types/payable';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -37,8 +34,6 @@ interface PayableDetailClientProps {
  */
 export function PayableDetailClient({ payable }: PayableDetailClientProps) {
   const router = useRouter();
-
-  const isOverdue = payable.status === 'overdue';
 
   const paymentProgress =
     payable.payableAmount > 0
@@ -113,12 +108,6 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                     <Badge variant={PAYABLE_STATUS_VARIANTS[payable.status]}>
                       {PAYABLE_STATUS_LABELS[payable.status]}
                     </Badge>
-                    {isOverdue && (
-                      <Badge variant="destructive">
-                        <AlertCircle className="mr-1 h-3 w-3" />
-                        逾期
-                      </Badge>
-                    )}
                   </div>
                 </div>
 
@@ -261,12 +250,13 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                   ))}
                 </div>
               ) : (
-                <div className="py-8 text-center">
-                  <DollarSign className="mx-auto mb-4 h-12 w-12 text-[hsl(var(--color-border-secondary))]" />
-                  <p className="text-sm text-[hsl(var(--color-text-tertiary))]">
-                    暂无付款记录
-                  </p>
-                </div>
+                <EmptyState
+                  icon={
+                    <DollarSign className="h-8 w-8 text-[hsl(var(--color-border-secondary))]" />
+                  }
+                  title="暂无付款记录"
+                  compact
+                />
               )}
             </CardContent>
           </Card>

@@ -3,6 +3,7 @@
 import { BellOff } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { AlertTableRow } from '@/components/inventory/alerts/alert-table-row';
 import { Button } from '@/components/ui/button';
 import {
@@ -35,10 +36,11 @@ export function InventoryAlertTable({
 
   if (alerts.length === 0) {
     return (
-      <div className="text-muted-foreground py-8 text-center">
-        <BellOff className="mx-auto mb-2 h-8 w-8" />
-        <p className="text-sm">暂无库存预警</p>
-      </div>
+      <EmptyState
+        icon={<BellOff className="text-muted-foreground h-6 w-6" />}
+        title="暂无库存预警"
+        compact
+      />
     );
   }
 

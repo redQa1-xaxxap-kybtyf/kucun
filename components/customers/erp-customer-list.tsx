@@ -1,8 +1,9 @@
 'use client';
 
-import { Edit, Eye, MoreHorizontal, Trash2 } from 'lucide-react';
+import { Edit, Eye, Loader2, MoreHorizontal, Trash2 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,6 +12,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Pagination } from '@/components/ui/pagination';
 import {
   Table,
   TableBody,
@@ -19,19 +21,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Pagination } from '@/components/ui/pagination';
 import type { Customer } from '@/lib/types/customer';
 
 interface ERPCustomerListProps {
-  initialData: {
-    data: Customer[];
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+  customers: Customer[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
   };
+  isLoading?: boolean;
   onCreateNew?: () => void;
   onViewDetail?: (customer: Customer) => void;
   onEdit?: (customer: Customer) => void;
@@ -45,7 +45,9 @@ interface ERPCustomerListProps {
  * 简化版本：移除客户端状态管理，依赖服务器端数据
  */
 export function ERPCustomerList({
-  initialData,
+  customers,
+  pagination,
+  isLoading = false,
   onCreateNew,
   onViewDetail,
   onEdit,
@@ -53,10 +55,6 @@ export function ERPCustomerList({
   onPageChange,
 }: ERPCustomerListProps) {
   const router = useRouter();
-
-  // 使用服务器传递的数据
-  const customers = initialData.data || [];
-  const pagination = initialData.pagination;
 
   // 处理创建新客户
   const handleCreateNew = () => {
@@ -144,11 +142,24 @@ export function ERPCustomerList({
           <TableBody>
             {customers.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={9}
-                  className="text-muted-foreground h-10 text-center text-xs"
-                >
-                  暂无客户记录
+                <TableCell colSpan={9} className="p-8">
+                  {isLoading ? (
+                    <EmptyState
+                      title="正在加载客户数据..."
+                      icon={
+                        <Loader2 className="text-muted-foreground h-6 w-6 animate-spin" />
+                      }
+                      compact
+                    />
+                  ) : (
+                    <EmptyState
+                      title="暂无客户记录"
+                      action={
+                        <Button onClick={handleCreateNew}>新建客户</Button>
+                      }
+                      compact
+                    />
+                  )}
                 </TableCell>
               </TableRow>
             ) : (

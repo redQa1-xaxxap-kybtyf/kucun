@@ -16,6 +16,8 @@
 import { MoreHorizontal } from 'lucide-react';
 import * as React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
+import { InlineLoading } from '@/components/common/loading';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -24,7 +26,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { InlineLoading } from '@/components/common/loading';
 import {
   Table,
   TableBody,
@@ -129,6 +130,11 @@ export interface DataTableProps<TData> {
   emptyAction?: React.ReactNode;
 
   /**
+   * 空状态图标
+   */
+  emptyIcon?: React.ReactNode | null;
+
+  /**
    * 获取行的唯一键
    */
   getRowKey: (row: TData) => string;
@@ -179,6 +185,7 @@ export function DataTable<TData>({
   emptyTitle = '暂无数据',
   emptyDescription,
   emptyAction,
+  emptyIcon,
   getRowKey,
 }: DataTableProps<TData>) {
   // 加载状态
@@ -218,17 +225,13 @@ export function DataTable<TData>({
   if (data.length === 0) {
     return (
       <div className="rounded-md border">
-        <div className="flex min-h-[400px] flex-col items-center justify-center gap-4 p-8 text-center">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold">{emptyTitle}</h3>
-            {emptyDescription && (
-              <p className="text-muted-foreground text-sm">
-                {emptyDescription}
-              </p>
-            )}
-          </div>
-          {emptyAction}
-        </div>
+        <EmptyState
+          title={emptyTitle}
+          description={emptyDescription}
+          action={emptyAction}
+          icon={emptyIcon}
+          className="min-h-[400px] px-8"
+        />
       </div>
     );
   }

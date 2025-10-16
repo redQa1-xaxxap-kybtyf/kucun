@@ -12,6 +12,7 @@ import {
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -292,10 +293,11 @@ export function PaymentsOutClient({
           {/* 付款记录列表 */}
           <div className="mt-6 space-y-4">
             {payments.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <DollarSign className="text-muted-foreground mb-4 h-12 w-12" />
-                <p className="text-muted-foreground">暂无付款记录</p>
-              </div>
+              <EmptyState
+                icon={<DollarSign className="text-muted-foreground h-8 w-8" />}
+                title="暂无付款记录"
+                compact
+              />
             ) : (
               payments.map(payment => (
                 <Card
@@ -420,8 +422,12 @@ export function PaymentsOutClient({
           {pagination.totalPages > 1 && (
             <div className="mt-6">
               <Pagination
-                currentPage={pagination.page}
-                totalPages={pagination.totalPages}
+                pagination={{
+                  page: pagination.page,
+                  limit: pagination.limit,
+                  total: pagination.total,
+                  totalPages: pagination.totalPages,
+                }}
                 onPageChange={page => {
                   if (onPageChange) {
                     onPageChange(page);

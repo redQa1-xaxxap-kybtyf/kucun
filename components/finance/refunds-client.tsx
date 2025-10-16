@@ -1,7 +1,5 @@
 'use client';
 
-import * as React from 'react';
-import { useRouter } from 'next/navigation';
 import {
   Calendar,
   CheckCircle,
@@ -10,7 +8,10 @@ import {
   Search,
   TrendingDown,
 } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import * as React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { RefundProcessDialog } from '@/components/finance/refund-process-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -24,85 +25,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import type {
+  RefundListData,
+  RefundListQueryParams,
   RefundMethod,
   RefundStatus,
   RefundType,
 } from '@/lib/types/refund';
 import { formatCurrency } from '@/lib/utils';
 
-/**
- * 服务器组件传递的退款记录类型（日期字段已序列化为 ISO 字符串，包含关联数据）
- */
-export type RefundRecordFromServer = {
-  id: string;
-  refundNumber: string;
-  returnOrderId: string | null;
-  salesOrderId: string;
-  customerId: string;
-  userId: string;
-  refundType: RefundType;
-  refundMethod: RefundMethod;
-  refundAmount: number;
-  processedAmount: number;
-  remainingAmount: number;
-  refundDate: string;
-  processedDate: string | null;
-  status: RefundStatus;
-  reason: string;
-  remarks: string | null;
-  bankInfo: string | null;
-  receiptNumber: string | null;
-  returnOrderNumber: string | null;
-  createdAt: string;
-  updatedAt: string;
-  // 关联数据
-  customer: {
-    id: string;
-    name: string;
-    phone: string | null;
-  } | null;
-  salesOrder: {
-    id: string;
-    orderNumber: string;
-    totalAmount: number;
-  } | null;
-  returnOrder: {
-    id: string;
-    returnOrderNumber: string;
-    totalAmount: number;
-  } | null;
-  user: {
-    id: string;
-    name: string;
-  } | null;
-};
-
 interface RefundsClientProps {
-  initialData: {
-    refunds: RefundRecordFromServer[];
-    statistics: {
-      totalRefundable: number;
-      totalProcessed: number;
-      totalRemaining: number;
-      pendingCount: number;
-      processingCount: number;
-      completedCount: number;
-    };
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
-  };
-  initialParams?: {
-    page: number;
-    limit: number;
-    search?: string;
-    status?: RefundStatus;
-    sortBy?: string;
-    sortOrder?: 'asc' | 'desc';
-  };
+  data: RefundListData;
+  initialParams: RefundListQueryParams;
+  isLoading?: boolean;
+  errorMessage?: string | null;
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
   onPageChange?: (page: number) => void;
@@ -113,8 +48,10 @@ interface RefundsClientProps {
  * 处理搜索、筛选、分页等客户端交互
  */
 export function RefundsClient({
-  initialData,
+  data,
   initialParams,
+  isLoading,
+  errorMessage,
   onSearch,
   onFilter,
   onPageChange,
@@ -124,7 +61,7 @@ export function RefundsClient({
   const [selectedRefundId, setSelectedRefundId] = React.useState<string | null>(
     null
   );
-  const { refunds, statistics, pagination } = initialData;
+  const { refunds, statistics, pagination } = data;
 
   const handleDialogOpenChange = React.useCallback((open: boolean) => {
     setProcessDialogOpen(open);
@@ -169,6 +106,7 @@ export function RefundsClient({
     const methodConfig: Record<RefundMethod, string> = {
       cash: '现金',
       bank_transfer: '银行转账',
+      original_payment: '原路退回',
       alipay: '支付宝',
       wechat: '微信支付',
       other: '其他',
@@ -276,13 +214,13 @@ export function RefundsClient({
                 <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   placeholder="搜索退款单号、退货单号..."
-                  defaultValue={initialParams?.search}
+                  defaultValue={initialParams.search}
                   onChange={e => onSearch?.(e.target.value)}
                   className="pl-9"
                 />
               </div>
               <Select
-                value={initialParams?.status || 'all'}
+                value={initialParams.status ?? 'all'}
                 onValueChange={value =>
                   onFilter?.('status', value === 'all' ? undefined : value)
                 }
@@ -303,11 +241,19 @@ export function RefundsClient({
           </div>
 
           {/* 退款申请列表 */}
+          {errorMessage && (
+            <div className="border-destructive/30 bg-destructive/10 text-destructive mt-4 rounded-md border px-3 py-2 text-sm">
+              加载退款数据失败：{errorMessage}
+            </div>
+          )}
+
           <div className="mt-6 space-y-4">
-            {refunds.length === 0 ? (
-              <div className="py-8 text-center">
-                <p className="text-muted-foreground">暂无退款记录</p>
+            {isLoading && refunds.length === 0 ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="text-muted-foreground">加载中...</div>
               </div>
+            ) : refunds.length === 0 ? (
+              <EmptyState title="暂无退款记录" compact />
             ) : (
               refunds.map(refund => (
                 <Card
@@ -459,9 +405,11 @@ export function RefundsClient({
                             size="sm"
                             onClick={event => {
                               event.stopPropagation();
-                              router.push(
-                                `/sales-orders/${refund.salesOrder.id}`
-                              );
+                              if (refund.salesOrder) {
+                                router.push(
+                                  `/sales-orders/${refund.salesOrder.id}`
+                                );
+                              }
                             }}
                           >
                             查看订单

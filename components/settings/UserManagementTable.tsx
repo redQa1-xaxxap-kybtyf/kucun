@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
 import React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
 import {
   Table,
@@ -65,8 +66,8 @@ export const UserManagementTable: React.FC<UserManagementTableProps> = ({
 
   if (users.length === 0) {
     return (
-      <div className="text-muted-foreground flex h-32 items-center justify-center">
-        暂无用户数据
+      <div className="rounded-md border">
+        <EmptyState title="暂无用户数据" className="min-h-[240px] px-8" />
       </div>
     );
   }

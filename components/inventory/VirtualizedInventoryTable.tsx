@@ -10,6 +10,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { Package } from 'lucide-react';
 import * as React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { InventoryTableRow } from '@/components/inventory/InventoryTableRow';
 import {
   Table,
@@ -86,14 +87,12 @@ const EmptyState = React.memo(() => (
       />
       <TableBody>
         <TableRow>
-          <TableCell
-            colSpan={12}
-            className="text-muted-foreground h-24 text-center"
-          >
-            <div className="flex flex-col items-center gap-2">
-              <Package className="h-8 w-8" />
-              <div>暂无库存数据</div>
-            </div>
+          <TableCell colSpan={12} className="p-8">
+            <EmptyState
+              title="暂无库存数据"
+              icon={<Package className="text-muted-foreground h-6 w-6" />}
+              compact
+            />
           </TableCell>
         </TableRow>
       </TableBody>

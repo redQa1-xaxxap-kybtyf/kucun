@@ -15,6 +15,7 @@
 import { useVirtualizer } from '@tanstack/react-virtual';
 import * as React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import {
   Table,
   TableBody,
@@ -116,11 +117,7 @@ export function VirtualizedTable<T>({
   if (data.length === 0) {
     return (
       <div className="bg-card rounded border">
-        {emptyState || (
-          <div className="text-muted-foreground flex h-64 items-center justify-center text-sm">
-            暂无数据
-          </div>
-        )}
+        {emptyState || <EmptyState className="h-64" compact />}
       </div>
     );
   }

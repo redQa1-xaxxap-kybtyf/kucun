@@ -5,6 +5,7 @@ import { AlertCircle, Calendar } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -12,12 +13,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
-import { formatCurrency } from '@/lib/utils';
-import { formatDateTime } from '@/lib/utils/datetime';
 import type {
   ReceivableItem,
   ReceivablesResult,
 } from '@/lib/services/receivables-service';
+import { formatCurrency } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils/datetime';
 
 const CHANGE_TOLERANCE = 0.05;
 
@@ -28,15 +29,6 @@ function formatCollectionRateChange(change: number): string {
 
   const value = Math.abs(change).toFixed(1);
   return change > 0 ? `较上月提升 ${value}%` : `较上月下降 ${value}%`;
-}
-
-function formatAccountPeriodChange(change: number): string {
-  if (Math.abs(change) < CHANGE_TOLERANCE) {
-    return '较上月持平';
-  }
-
-  const value = Math.abs(change).toFixed(1);
-  return change < 0 ? `较上月减少 ${value}天` : `较上月增加 ${value}天`;
 }
 
 interface ReceivablesQueryParams {
@@ -184,14 +176,11 @@ export function ReceivablesClient({
   const currentData = data?.data || initialData;
   const collectionRate = currentData.summary?.collectionRate ?? 0;
   const collectionRateChange = currentData.summary?.collectionRateChange ?? 0;
-  const averageAccountPeriod = currentData.summary?.averageAccountPeriod ?? 0;
-  const averageAccountPeriodChange =
-    currentData.summary?.averageAccountPeriodChange ?? 0;
 
   return (
     <div className="space-y-6">
       {/* 统计卡片 */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">总应收金额</CardTitle>
@@ -218,21 +207,6 @@ export function ReceivablesClient({
             </div>
             <p className="text-muted-foreground text-xs">
               {formatCollectionRateChange(collectionRateChange)}
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">平均账期</CardTitle>
-            <Calendar className="h-4 w-4 text-[hsl(var(--color-purple))]" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold text-[hsl(var(--color-purple))]">
-              {averageAccountPeriod.toFixed(1)}天
-            </div>
-            <p className="text-muted-foreground text-xs">
-              {formatAccountPeriodChange(averageAccountPeriodChange)}
             </p>
           </CardContent>
         </Card>
@@ -301,9 +275,7 @@ export function ReceivablesClient({
                 </div>
               </div>
             ) : !currentData.receivables?.length ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-muted-foreground">暂无应收账款数据</div>
-              </div>
+              <EmptyState title="暂无应收账款数据" compact />
             ) : (
               currentData.receivables.map((receivable: ReceivableItem) => (
                 <Card

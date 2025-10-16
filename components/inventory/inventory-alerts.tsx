@@ -2,6 +2,7 @@
 
 import { AlertCircle, BellOff, RefreshCw } from 'lucide-react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
 import { InventoryAlertStats } from '@/components/inventory/alerts/inventory-alert-stats';
 import { InventoryAlertTable } from '@/components/inventory/alerts/inventory-alert-table';
@@ -60,11 +61,12 @@ function renderErrorState(
 
 function renderEmptyState() {
   return (
-    <div className="text-muted-foreground py-8 text-center">
-      <BellOff className="mx-auto mb-2 h-12 w-12" />
-      <p className="text-lg font-medium">暂无库存预警</p>
-      <p className="text-sm">所有产品库存状态正常</p>
-    </div>
+    <EmptyState
+      icon={<BellOff className="text-muted-foreground h-8 w-8" />}
+      title="暂无库存预警"
+      description="所有产品库存状态正常"
+      compact
+    />
   );
 }
 

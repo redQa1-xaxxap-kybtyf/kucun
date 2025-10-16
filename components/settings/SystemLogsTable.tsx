@@ -7,6 +7,7 @@
 
 import { ChevronLeft, ChevronRight, Eye, Loader2 } from 'lucide-react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -106,9 +107,14 @@ export const SystemLogsTable = ({
 
   if (logs.length === 0) {
     return (
-      <div className="text-muted-foreground flex h-64 flex-col items-center justify-center">
-        <p>暂无日志记录</p>
-        <p className="text-sm">尝试调整筛选条件或检查系统是否有操作记录</p>
+      <div className="space-y-4">
+        <div className="rounded-md border">
+          <EmptyState
+            title="暂无日志记录"
+            description="尝试调整筛选条件或检查系统是否有操作记录"
+            className="min-h-[256px] px-8"
+          />
+        </div>
       </div>
     );
   }
@@ -126,7 +132,7 @@ export const SystemLogsTable = ({
               <TableHead>操作</TableHead>
               <TableHead>描述</TableHead>
               <TableHead>用户</TableHead>
-              <TableHead>IP地址</TableHead>
+              <TableHead>IP地址 / 位置</TableHead>
               <TableHead className="w-[100px]">操作</TableHead>
             </TableRow>
           </TableHeader>
@@ -170,8 +176,18 @@ export const SystemLogsTable = ({
                     <span className="text-muted-foreground">系统</span>
                   )}
                 </TableCell>
-                <TableCell className="font-mono text-sm">
-                  {log.ipAddress || '-'}
+                <TableCell className="text-sm">
+                  <div className="space-y-1">
+                    <div className="font-mono text-xs text-[hsl(var(--color-text-secondary))]">
+                      {log.ipAddress || '-'}
+                    </div>
+                    {log.ipLocation && (
+                      <div className="flex items-center gap-1 text-xs text-[hsl(var(--color-text-tertiary))]">
+                        <span>📍</span>
+                        <span>{log.ipLocation}</span>
+                      </div>
+                    )}
+                  </div>
                 </TableCell>
                 <TableCell>
                   {onViewDetail && (

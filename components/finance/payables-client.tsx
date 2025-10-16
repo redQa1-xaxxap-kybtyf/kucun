@@ -4,6 +4,7 @@ import { CheckCircle, Clock, DollarSign } from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -37,23 +38,13 @@ const areQueriesEqual = (a: PayableRecordQuery, b: PayableRecordQuery) =>
   a.sortOrder === b.sortOrder;
 
 interface PayablesClientProps {
-  initialData: {
-    payables: PayableRecordDetail[];
-    statistics: {
-      totalPayables: number;
-      totalPaidAmount: number;
-      totalRemainingAmount: number;
-      pendingCount: number;
-      partialCount: number;
-      overdueCount: number;
-      paidCount: number;
-    };
-    pagination: {
-      page: number;
-      limit: number;
-      total: number;
-      totalPages: number;
-    };
+  initialStatistics: {
+    totalPayables: number;
+    totalPaidAmount: number;
+    totalRemainingAmount: number;
+    pendingCount: number;
+    partialCount: number;
+    paidCount: number;
   };
   initialParams?: PayableRecordQuery;
   onSearch?: (value: string) => void;
@@ -66,7 +57,7 @@ interface PayablesClientProps {
  * 处理搜索、筛选、分页等客户端交互
  */
 export function PayablesClient({
-  initialData,
+  initialStatistics,
   initialParams,
   onSearch: externalOnSearch,
   onFilter: externalOnFilter,
@@ -139,21 +130,11 @@ export function PayablesClient({
   }, [derivedQuery]);
 
   // 获取应付款记录列表
-  const { data: payablesData, isLoading: payablesLoading } = usePayableRecords(
-    query,
-    {
-      initialData: {
-        data: initialData.payables,
-        pagination: initialData.pagination,
-      },
-    }
-  );
+  const { data: payablesData, isLoading: payablesLoading } =
+    usePayableRecords(query);
 
-  // 当前数据（使用查询数据或初始数据）
-  const currentData = payablesData || {
-    data: initialData.payables,
-    pagination: initialData.pagination,
-  };
+  const payables = payablesData?.data ?? [];
+  const pagination = payablesData?.pagination;
 
   // 处理搜索
   const handleSearch = React.useCallback(
@@ -253,12 +234,9 @@ export function PayablesClient({
     [externalOnPageChange]
   );
 
-  const statistics = initialData.statistics;
+  const statistics = initialStatistics;
   const totalTrackedCount =
-    statistics.pendingCount +
-    statistics.partialCount +
-    statistics.overdueCount +
-    statistics.paidCount;
+    statistics.pendingCount + statistics.partialCount + statistics.paidCount;
 
   return (
     <div className="space-y-6">
@@ -278,7 +256,7 @@ export function PayablesClient({
             </p>
             <p className="text-muted-foreground text-xs">
               待付款 {statistics.pendingCount} · 部分付款{' '}
-              {statistics.partialCount} · 逾期 {statistics.overdueCount}
+              {statistics.partialCount}
             </p>
           </CardContent>
         </Card>
@@ -337,7 +315,6 @@ export function PayablesClient({
                   { label: '待付款', value: 'pending' },
                   { label: '部分付款', value: 'partial' },
                   { label: '已付款', value: 'paid' },
-                  { label: '已逾期', value: 'overdue' },
                   { label: '已取消', value: 'cancelled' },
                 ],
                 width: 'w-[140px]',
@@ -378,15 +355,14 @@ export function PayablesClient({
               <div className="flex items-center justify-center py-8">
                 <div className="text-muted-foreground">加载中...</div>
               </div>
-            ) : !currentData.data?.length ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="text-center">
-                  <DollarSign className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-                  <p className="text-muted-foreground">暂无应付款记录</p>
-                </div>
-              </div>
+            ) : payables.length === 0 ? (
+              <EmptyState
+                icon={<DollarSign className="text-muted-foreground h-8 w-8" />}
+                title="暂无应付款记录"
+                compact
+              />
             ) : (
-              currentData.data.map((payable: PayableRecordDetail) => (
+              payables.map((payable: PayableRecordDetail) => (
                 <Card
                   key={payable.id}
                   className="transition-shadow hover:shadow-[var(--shadow-medium)]"
@@ -481,7 +457,7 @@ export function PayablesClient({
           {/* 分页 */}
           <div className="mt-6 flex items-center justify-between">
             <p className="text-muted-foreground text-sm">
-              共 {currentData.pagination?.total || 0} 条记录
+              共 {pagination?.total || 0} 条记录
             </p>
             <div className="flex items-center gap-2">
               <Button
@@ -493,15 +469,14 @@ export function PayablesClient({
                 上一页
               </Button>
               <span className="text-muted-foreground text-sm">
-                第 {query.page || 1} / {currentData.pagination?.totalPages || 1}{' '}
-                页
+                第 {query.page || 1} / {pagination?.totalPages || 1} 页
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 disabled={
-                  (query.page || 1) >=
-                    (currentData.pagination?.totalPages || 1) || payablesLoading
+                  (query.page || 1) >= (pagination?.totalPages || 1) ||
+                  payablesLoading
                 }
                 onClick={() => handlePageChange((query.page || 1) + 1)}
               >

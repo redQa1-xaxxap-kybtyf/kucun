@@ -6,12 +6,13 @@
  * 职责：处理用户交互、状态管理、TanStack Query 数据管理
  */
 
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { SupplierPageHeader } from '@/components/suppliers/supplier-page-header';
 import { SupplierSearchFilters } from '@/components/suppliers/supplier-search-filters';
 import {
@@ -42,47 +43,84 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
-import { deleteSupplier, supplierQueryKeys } from '@/lib/api/suppliers';
-import type {
-  SupplierItem,
-  SupplierListResult,
-} from '@/lib/services/supplier-service';
-import { formatSupplierStatus } from '@/lib/utils/supplier-utils';
+import {
+  deleteSupplier,
+  getSuppliers,
+  supplierQueryKeys,
+} from '@/lib/api/suppliers';
+import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
 import { getCommonStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { formatSupplierStatus } from '@/lib/utils/supplier-utils';
 
 interface SuppliersPageClientProps {
-  initialData: SupplierListResult;
   initialParams: {
     page: number;
     limit: number;
-    search: string;
+    search?: string;
     status?: 'active' | 'inactive';
-    sortBy: string;
-    sortOrder: 'asc' | 'desc';
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   };
 }
 
 export function SuppliersPageClient({
-  initialData,
   initialParams,
 }: SuppliersPageClientProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
-  const [isPending, startTransition] = useTransition();
+  const [_isPending, startTransition] = useTransition();
 
   // 本地状态
-  const [search, setSearch] = useState(initialParams.search);
+  const [search, setSearch] = useState(initialParams.search || '');
   const [status, setStatus] = useState<'active' | 'inactive' | undefined>(
     initialParams.status
   );
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [supplierToDelete, setSupplierToDelete] = useState<SupplierItem | null>(
+  const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(
     null
   );
 
-  // 使用服务器传递的初始数据
-  const { suppliers, pagination } = initialData;
+  useEffect(() => {
+    setSearch(initialParams.search || '');
+    setStatus(initialParams.status);
+  }, [initialParams]);
+
+  const queryParams = useMemo(() => {
+    const normalizedSearch =
+      typeof initialParams.search === 'string' && initialParams.search.trim()
+        ? initialParams.search.trim()
+        : undefined;
+
+    const allowedSortFields: SupplierQueryParams['sortBy'][] = [
+      'name',
+      'createdAt',
+      'updatedAt',
+    ];
+
+    const safeSortBy = allowedSortFields.includes(
+      initialParams.sortBy as SupplierQueryParams['sortBy']
+    )
+      ? (initialParams.sortBy as SupplierQueryParams['sortBy'])
+      : 'createdAt';
+
+    return {
+      page: initialParams.page ?? 1,
+      limit: initialParams.limit ?? 20,
+      search: normalizedSearch,
+      status: initialParams.status,
+      sortBy: safeSortBy,
+      sortOrder: initialParams.sortOrder === 'asc' ? 'asc' : 'desc',
+    } satisfies SupplierQueryParams;
+  }, [initialParams]);
+
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: supplierQueryKeys.list(queryParams),
+    queryFn: () => getSuppliers(queryParams),
+  });
+
+  const suppliers = data?.data ?? [];
+  const pagination = data?.pagination;
 
   // 删除供应商
   const deleteMutation = useMutation({
@@ -96,7 +134,6 @@ export function SuppliersPageClient({
       queryClient.invalidateQueries({ queryKey: supplierQueryKeys.lists() });
       setDeleteDialogOpen(false);
       setSupplierToDelete(null);
-      router.refresh();
     },
     onError: error => {
       toast({
@@ -153,7 +190,7 @@ export function SuppliersPageClient({
   };
 
   // 处理删除
-  const handleDelete = (supplier: SupplierItem) => {
+  const handleDelete = (supplier: Supplier) => {
     setSupplierToDelete(supplier);
     setDeleteDialogOpen(true);
   };
@@ -172,6 +209,13 @@ export function SuppliersPageClient({
           onStatusChange={handleStatusChange}
         />
 
+        {isError && (
+          <div className="border-destructive/50 bg-destructive/5 text-destructive rounded border px-4 py-3 text-sm">
+            加载供应商数据失败：
+            {error instanceof Error ? error.message : '发生未知错误'}
+          </div>
+        )}
+
         {/* 供应商列表表格 */}
         <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]">
           <Table>
@@ -186,13 +230,16 @@ export function SuppliersPageClient({
               </TableRow>
             </TableHeader>
             <TableBody>
-              {suppliers.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-muted-foreground py-8 text-center"
-                  >
-                    暂无供应商数据
+                  <TableCell colSpan={6} className="py-8 text-center text-sm">
+                    正在加载供应商数据...
+                  </TableCell>
+                </TableRow>
+              ) : suppliers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="p-8">
+                    <EmptyState title="暂无供应商数据" compact />
                   </TableCell>
                 </TableRow>
               ) : (

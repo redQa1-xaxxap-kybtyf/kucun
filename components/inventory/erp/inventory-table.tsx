@@ -1,18 +1,7 @@
 'use client';
 
-import { Package } from 'lucide-react';
-
-import { InventoryTableRow } from '@/components/inventory/InventoryTableRow';
 import { InventoryGroupedTable } from '@/components/inventory/InventoryGroupedTable';
 import { VirtualizedInventoryTable } from '@/components/inventory/VirtualizedInventoryTable';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import type { Inventory } from '@/lib/types/inventory';
 
 interface InventoryTableProps {
@@ -24,19 +13,6 @@ interface InventoryTableProps {
   onSelectRow: (id: string, checked: boolean) => void;
   onAdjust: (id: string) => void;
   useVirtualization?: boolean;
-}
-
-function EmptyState() {
-  return (
-    <TableRow>
-      <TableCell colSpan={10} className="h-32 text-center">
-        <div className="text-muted-foreground flex flex-col items-center gap-2">
-          <Package className="h-8 w-8" />
-          <span className="text-sm">暂无库存数据</span>
-        </div>
-      </TableCell>
-    </TableRow>
-  );
 }
 
 export function InventoryTable({

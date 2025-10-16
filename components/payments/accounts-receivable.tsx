@@ -5,7 +5,6 @@
 
 import { format } from 'date-fns';
 import {
-  AlertTriangle,
   CheckCircle,
   Clock,
   DollarSign,
@@ -20,6 +19,8 @@ import {
 import Link from 'next/link';
 import * as React from 'react';
 
+import { EmptyState } from '@/components/common/empty-state';
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,7 +33,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { MobileDataTable } from '@/components/ui/mobile-data-table';
+import {
+  MobileDataTable,
+  type ColumnDef,
+} from '@/components/ui/mobile-data-table';
 import { Progress } from '@/components/ui/progress';
 import {
   Select,
@@ -41,7 +45,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ContentLoading } from '@/components/common/loading';
 import { paymentUtils } from '@/lib/api/payments';
 import type {
   AccountsReceivable,
@@ -118,7 +121,10 @@ const AccountsReceivableComponent = React.forwardRef<
 
     // 处理排序
     const handleSort = (sortBy: string, sortOrder: 'asc' | 'desc') => {
-      onQueryChange({ sortBy, sortOrder });
+      onQueryChange({
+        sortBy: sortBy as AccountsReceivableQuery['sortBy'],
+        sortOrder,
+      });
     };
 
     // 获取付款状态配置
@@ -127,18 +133,17 @@ const AccountsReceivableComponent = React.forwardRef<
         unpaid: { label: '未付款', color: 'red', icon: XCircle },
         partial: { label: '部分付款', color: 'yellow', icon: Clock },
         paid: { label: '已付款', color: 'green', icon: CheckCircle },
-        overdue: { label: '已逾期', color: 'red', icon: AlertTriangle },
       };
       return configs[status as keyof typeof configs] || configs.unpaid;
     };
 
     // 桌面端表格列定义
-    const columns = [
+    const columns: Array<ColumnDef<AccountsReceivable>> = [
       {
         key: 'orderNumber',
         title: '销售订单',
         width: '120px',
-        render: (receivable: AccountsReceivable) => (
+        render: (_value, receivable) => (
           <Link
             href={`/sales-orders/${receivable.salesOrderId}`}
             className="font-medium text-blue-600 hover:text-blue-800 hover:underline"
@@ -151,7 +156,7 @@ const AccountsReceivableComponent = React.forwardRef<
         key: 'customerName',
         title: '客户',
         width: '150px',
-        render: (receivable: AccountsReceivable) => (
+        render: (_value, receivable) => (
           <div className="font-medium">{receivable.customerName}</div>
         ),
       },
@@ -160,7 +165,7 @@ const AccountsReceivableComponent = React.forwardRef<
         title: '订单金额',
         width: '120px',
         align: 'right' as const,
-        render: (receivable: AccountsReceivable) => (
+        render: (_value, receivable) => (
           <div className="font-medium">
             {paymentUtils.formatAmount(receivable.totalAmount)}
           </div>
@@ -171,7 +176,7 @@ const AccountsReceivableComponent = React.forwardRef<
         title: '已收金额',
         width: '120px',
         align: 'right' as const,
-        render: (receivable: AccountsReceivable) => (
+        render: (_value, receivable) => (
           <div className="font-medium text-green-600">
             {paymentUtils.formatAmount(receivable.paidAmount)}
           </div>
@@ -182,7 +187,7 @@ const AccountsReceivableComponent = React.forwardRef<
         title: '应收金额',
         width: '120px',
         align: 'right' as const,
-        render: (receivable: AccountsReceivable) => (
+        render: (_value, receivable) => (
           <div className="font-medium text-orange-600">
             {paymentUtils.formatAmount(receivable.remainingAmount)}
           </div>
@@ -192,7 +197,7 @@ const AccountsReceivableComponent = React.forwardRef<
         key: 'paymentProgress',
         title: '收款进度',
         width: '120px',
-        render: (receivable: AccountsReceivable) => {
+        render: (_value, receivable) => {
           const progress = paymentUtils.calculatePaymentRate(
             receivable.totalAmount,
             receivable.paidAmount
@@ -211,7 +216,7 @@ const AccountsReceivableComponent = React.forwardRef<
         key: 'paymentStatus',
         title: '付款状态',
         width: '100px',
-        render: (receivable: AccountsReceivable) => {
+        render: (_value, receivable) => {
           const config = getPaymentStatusConfig(receivable.paymentStatus);
           const IconComponent = config.icon;
           return (
@@ -232,26 +237,9 @@ const AccountsReceivableComponent = React.forwardRef<
         key: 'orderDate',
         title: '订单日期',
         width: '100px',
-        render: (receivable: AccountsReceivable) => (
+        render: (_value, receivable) => (
           <div className="text-sm">
             {format(new Date(receivable.orderDate), 'yyyy-MM-dd')}
-          </div>
-        ),
-      },
-      {
-        key: 'overdueDays',
-        title: '逾期天数',
-        width: '80px',
-        render: (receivable: AccountsReceivable) => (
-          <div
-            className={cn(
-              'text-sm font-medium',
-              receivable.overdueDays && receivable.overdueDays > 0
-                ? 'text-red-600'
-                : 'text-muted-foreground'
-            )}
-          >
-            {receivable.overdueDays || 0}天
           </div>
         ),
       },
@@ -259,7 +247,7 @@ const AccountsReceivableComponent = React.forwardRef<
         key: 'actions',
         title: '操作',
         width: '80px',
-        render: (receivable: AccountsReceivable) => (
+        render: (_value, receivable) => (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="h-8 w-8 p-0">
@@ -362,15 +350,6 @@ const AccountsReceivableComponent = React.forwardRef<
                   {format(new Date(receivable.orderDate), 'yyyy-MM-dd')}
                 </span>
               </div>
-
-              {receivable.overdueDays && receivable.overdueDays > 0 && (
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">逾期天数:</span>
-                  <span className="font-medium text-red-600">
-                    {receivable.overdueDays}天
-                  </span>
-                </div>
-              )}
             </div>
 
             {/* 移动端操作按钮 */}
@@ -504,11 +483,10 @@ const AccountsReceivableComponent = React.forwardRef<
                     <SelectValue placeholder="付款状态" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">全部状态</SelectItem>
+                    <SelectItem value="">全部状态</SelectItem>
                     <SelectItem value="unpaid">未付款</SelectItem>
                     <SelectItem value="partial">部分付款</SelectItem>
                     <SelectItem value="paid">已付款</SelectItem>
-                    <SelectItem value="overdue">已逾期</SelectItem>
                   </SelectContent>
                 </Select>
 
@@ -526,9 +504,12 @@ const AccountsReceivableComponent = React.forwardRef<
         {/* 数据列表 */}
         {receivables.length === 0 ? (
           <Card>
-            <CardContent className="p-8 text-center">
-              <DollarSign className="text-muted-foreground mx-auto mb-4 h-12 w-12" />
-              <p className="text-muted-foreground">暂无应收账款</p>
+            <CardContent className="p-8">
+              <EmptyState
+                icon={<DollarSign className="text-muted-foreground h-8 w-8" />}
+                title="暂无应收账款"
+                compact
+              />
             </CardContent>
           </Card>
         ) : (

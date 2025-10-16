@@ -2,6 +2,7 @@
 
 import { Package, User } from 'lucide-react';
 
+import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -132,11 +133,12 @@ export function OutboundRecordsTable({
           <TableBody>
             {records.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="h-24 text-center">
-                  <div className="text-muted-foreground flex flex-col items-center gap-2">
-                    <Package className="h-8 w-8" />
-                    <span className="text-sm">暂无出库记录</span>
-                  </div>
+                <TableCell colSpan={8} className="p-8">
+                  <EmptyState
+                    title="暂无出库记录"
+                    icon={<Package className="text-muted-foreground h-6 w-6" />}
+                    compact
+                  />
                 </TableCell>
               </TableRow>
             ) : (
