@@ -575,6 +575,7 @@ model PaymentRecord {
   id            String   @id @default(uuid())
   paymentNumber String   @unique @map("payment_number")
   salesOrderId  String?  @map("sales_order_id") // 订单收款时必填,预收款时为空
+  factoryShipmentOrderId String? @map("factory_shipment_order_id")
   customerId    String   @map("customer_id")
   userId        String   @map("user_id")
   paymentType   String   @default("order_payment") @map("payment_type") // order_payment, prepayment
@@ -591,10 +592,12 @@ model PaymentRecord {
 
   // 关联关系
   salesOrder SalesOrder? @relation(fields: [salesOrderId], references: [id])
+  factoryShipmentOrder FactoryShipmentOrder? @relation(fields: [factoryShipmentOrderId], references: [id])
   customer   Customer    @relation(fields: [customerId], references: [id])
   user       User        @relation(fields: [userId], references: [id])
 
   @@index([salesOrderId], map: "idx_payment_records_order")
+  @@index([factoryShipmentOrderId], map: "idx_payment_records_factory_shipment")
   @@index([customerId], map: "idx_payment_records_customer")
   @@index([userId], map: "idx_payment_records_user")
   @@index([status], map: "idx_payment_records_status")
@@ -633,6 +636,7 @@ model FactoryShipmentOrder {
   customer Customer                   @relation(fields: [customerId], references: [id])
   user     User                       @relation(fields: [userId], references: [id])
   items    FactoryShipmentOrderItem[]
+  paymentRecords PaymentRecord[]
 
   @@index([orderNumber])
   @@index([containerNumber])
@@ -656,6 +660,12 @@ model FactoryShipmentOrderItem {
   quantity               Float // 数量
   unitPrice              Float   @map("unit_price") // 单价
   totalPrice             Float   @map("total_price") // 小计金额
+  ownership              String  @default("customer")
+  ownershipRemarks       String? @map("ownership_remarks")
+  customerDeliveryStatus String? @map("customer_delivery_status")
+  selfInboundStatus      String? @map("self_inbound_status")
+  deliveryConfirmedAt    DateTime? @map("delivery_confirmed_at")
+  inboundReceivedAt      DateTime? @map("inbound_received_at")
 
   // 手动输入商品信息（临时商品时使用）
   isManualProduct     Boolean? @map("is_manual_product")

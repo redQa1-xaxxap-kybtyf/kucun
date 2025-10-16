@@ -83,9 +83,11 @@ export function FactoryShipmentOrderForm({
           supplierId: '',
           quantity: 1,
           unitPrice: 0,
+          ownership: 'customer',
           displayName: '',
           specification: '',
           unit: '件',
+          ownershipRemarks: '',
           remarks: '',
         },
       ],
@@ -208,10 +210,12 @@ export function FactoryShipmentOrderForm({
           supplierId: item.supplierId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
+          ownership: item.ownership || 'customer',
           displayName: item.displayName,
           specification: item.specification || '',
           unit: item.unit,
           weight: item.weight,
+          ownershipRemarks: item.ownershipRemarks || '',
           remarks: item.remarks || '',
         })) || [
           {
@@ -219,9 +223,11 @@ export function FactoryShipmentOrderForm({
             supplierId: '',
             quantity: 1,
             unitPrice: 0,
+            ownership: 'customer',
             displayName: '',
             specification: '',
             unit: '件',
+            ownershipRemarks: '',
             remarks: '',
           },
         ],
@@ -239,8 +245,17 @@ export function FactoryShipmentOrderForm({
           const unitPrice = item?.unitPrice || 0;
           return sum + quantity * unitPrice;
         }, 0);
+        const customerAmount = items.reduce((sum, item) => {
+          const ownership = item?.ownership || 'customer';
+          if (ownership !== 'customer') {
+            return sum;
+          }
+          const quantity = item?.quantity || 0;
+          const unitPrice = item?.unitPrice || 0;
+          return sum + quantity * unitPrice;
+        }, 0);
         form.setValue('totalAmount', total);
-        form.setValue('receivableAmount', total);
+        form.setValue('receivableAmount', customerAmount);
       }
     });
     return () => subscription.unsubscribe();
@@ -261,7 +276,11 @@ export function FactoryShipmentOrderForm({
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         {/* 基本信息 */}
-        <BasicInfoSection form={form} customers={customers} />
+        <BasicInfoSection
+          form={form}
+          customers={customers}
+          showStatus={isEditing}
+        />
 
         {/* 商品明细 */}
         <ItemListSection

@@ -121,6 +121,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     return NextResponse.json({
       ...updatedOrder,
       receivableCreated: result.receivableCreated,
+      paymentRecordId: result.paymentRecordId ?? null,
     });
   } catch (error) {
     logger.error('factory-shipments', '更新厂家发货订单状态失败', error, {

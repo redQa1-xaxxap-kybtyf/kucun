@@ -118,6 +118,12 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
               quantity: true,
               unitPrice: true,
               totalPrice: true,
+              ownership: true,
+              ownershipRemarks: true,
+              customerDeliveryStatus: true,
+              selfInboundStatus: true,
+              deliveryConfirmedAt: true,
+              inboundReceivedAt: true,
               isManualProduct: true,
               manualProductName: true,
               manualSpecification: true,
@@ -148,8 +154,24 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
       prisma.factoryShipmentOrder.count({ where }),
     ]);
 
+    const enrichedOrders = orders.map(order => {
+      const customerOwnedAmount = order.items
+        .filter(item => item.ownership === 'customer')
+        .reduce((sum, item) => sum + item.totalPrice, 0);
+      const selfOwnedAmount = order.items
+        .filter(item => item.ownership === 'self')
+        .reduce((sum, item) => sum + item.totalPrice, 0);
+      return {
+        ...order,
+        fulfillmentSummary: {
+          customerOwnedAmount,
+          selfOwnedAmount,
+        },
+      };
+    });
+
     return NextResponse.json({
-      data: orders,
+      data: enrichedOrders,
       total: totalCount,
       page,
       limit,
@@ -242,11 +264,21 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     );
     const orderNumber = await generateFactoryShipmentNumber();
 
-    // 计算订单总金额
-    const calculatedTotalAmount = items.reduce(
-      (sum, item) => sum + item.quantity * item.unitPrice,
-      0
+    // 计算订单金额与归属汇总
+    const amountSummary = items.reduce(
+      (acc, item) => {
+        const lineTotal = item.quantity * item.unitPrice;
+        acc.total += lineTotal;
+        if ((item.ownership || 'customer') === 'customer') {
+          acc.customer += lineTotal;
+        } else {
+          acc.self += lineTotal;
+        }
+        return acc;
+      },
+      { total: 0, customer: 0, self: 0 }
     );
+    const calculatedTotalAmount = amountSummary.total;
 
     // 验证前端传入的金额是否正确
     if (totalAmount && Math.abs(totalAmount - calculatedTotalAmount) > 0.01) {
@@ -260,7 +292,10 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
 
     // 使用服务器计算的金额
     const finalTotalAmount = calculatedTotalAmount;
-    const finalReceivableAmount = receivableAmount || calculatedTotalAmount;
+    const finalReceivableAmount =
+      receivableAmount !== undefined
+        ? receivableAmount
+        : amountSummary.customer;
 
     // 使用事务创建订单并记录价格历史
     const order = await prisma.$transaction(async tx => {
@@ -284,6 +319,18 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               totalPrice: item.quantity * item.unitPrice,
+              ownership: item.ownership || 'customer',
+              ownershipRemarks: item.ownershipRemarks || null,
+              customerDeliveryStatus:
+                item.ownership === 'customer'
+                  ? (item.customerDeliveryStatus ?? 'pending')
+                  : null,
+              selfInboundStatus:
+                item.ownership === 'self'
+                  ? (item.selfInboundStatus ?? 'pending')
+                  : null,
+              deliveryConfirmedAt: null,
+              inboundReceivedAt: null,
               isManualProduct: item.isManualProduct || false,
               manualProductName: item.manualProductName,
               manualSpecification: item.manualSpecification,
@@ -370,7 +417,15 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       return newOrder;
     });
 
-    return NextResponse.json(order, { status: 201 });
+    const responsePayload = {
+      ...order,
+      fulfillmentSummary: {
+        customerOwnedAmount: amountSummary.customer,
+        selfOwnedAmount: amountSummary.self,
+      },
+    };
+
+    return NextResponse.json(responsePayload, { status: 201 });
   } catch (error) {
     logger.error('factory-shipments', '创建厂家发货订单失败', error);
 

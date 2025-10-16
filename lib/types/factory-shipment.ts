@@ -17,6 +17,21 @@ export const FACTORY_SHIPMENT_STATUS = {
 export type FactoryShipmentStatus =
   (typeof FACTORY_SHIPMENT_STATUS)[keyof typeof FACTORY_SHIPMENT_STATUS];
 
+// 发货明细归属：客户货 or 自有货（随柜补货）
+export const FACTORY_SHIPMENT_ITEM_OWNERSHIP = {
+  CUSTOMER: 'customer',
+  SELF: 'self',
+} as const;
+
+export type FactoryShipmentItemOwnership =
+  (typeof FACTORY_SHIPMENT_ITEM_OWNERSHIP)[keyof typeof FACTORY_SHIPMENT_ITEM_OWNERSHIP];
+
+// 客户货交付状态
+export type FactoryShipmentItemDeliveryStatus = 'pending' | 'delivered';
+
+// 自有货入库状态
+export type FactoryShipmentItemInboundStatus = 'pending' | 'received';
+
 // 厂家发货订单状态标签
 export const FACTORY_SHIPMENT_STATUS_LABELS: Record<
   FactoryShipmentStatus,
@@ -36,7 +51,13 @@ export const FACTORY_SHIPMENT_STATUS_LABELS: Record<
 // 厂家发货订单状态变体映射（用于Badge组件）
 export const FACTORY_SHIPMENT_STATUS_VARIANTS: Record<
   FactoryShipmentStatus,
-  'default' | 'secondary' | 'destructive' | 'outline' | 'success' | 'warning' | 'info'
+  | 'default'
+  | 'secondary'
+  | 'destructive'
+  | 'outline'
+  | 'success'
+  | 'warning'
+  | 'info'
 > = {
   [FACTORY_SHIPMENT_STATUS.DRAFT]: 'outline',
   [FACTORY_SHIPMENT_STATUS.PLANNING]: 'secondary',
@@ -58,6 +79,14 @@ export interface FactoryShipmentOrderItem {
   quantity: number;
   unitPrice: number;
   totalPrice: number;
+
+  // 归属信息
+  ownership: FactoryShipmentItemOwnership;
+  customerDeliveryStatus?: FactoryShipmentItemDeliveryStatus;
+  selfInboundStatus?: FactoryShipmentItemInboundStatus;
+  ownershipRemarks?: string;
+  deliveryConfirmedAt?: Date | string | null;
+  inboundReceivedAt?: Date | string | null;
 
   // 手动输入商品信息（临时商品）
   isManualProduct?: boolean;
@@ -101,6 +130,10 @@ export interface FactoryShipmentOrder {
   customerId: string;
   userId: string;
   status: FactoryShipmentStatus;
+  fulfillmentSummary?: {
+    customerOwnedAmount: number;
+    selfOwnedAmount: number;
+  };
   totalAmount: number;
   receivableAmount: number;
   depositAmount: number;
@@ -148,6 +181,10 @@ export interface CreateFactoryShipmentOrderItemData {
   supplierId: string;
   quantity: number;
   unitPrice: number;
+  ownership: FactoryShipmentItemOwnership;
+  customerDeliveryStatus?: FactoryShipmentItemDeliveryStatus;
+  selfInboundStatus?: FactoryShipmentItemInboundStatus;
+  ownershipRemarks?: string;
 
   // 手动输入商品信息（临时商品）
   isManualProduct?: boolean;

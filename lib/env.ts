@@ -329,6 +329,12 @@ const envSchema = z.object({
     .default(1000)
     .describe('厂家发货表单查询限制'),
 
+  LOGISTICS_WEBHOOK_SECRET: z
+    .string()
+    .min(16, 'LOGISTICS_WEBHOOK_SECRET 长度至少为16位')
+    .optional()
+    .describe('物流服务推送的签名密钥'),
+
   // 退货/退款模块配置
   REFUND_ORDER_PREFIX: z
     .string()
@@ -944,6 +950,10 @@ export const dashboardConfig = {
 export const factoryShipmentConfig = {
   orderPrefix: env.FACTORY_SHIPMENT_ORDER_PREFIX,
   queryLimit: env.FACTORY_SHIPMENT_QUERY_LIMIT,
+} as const;
+
+export const logisticsConfig = {
+  webhookSecret: env.LOGISTICS_WEBHOOK_SECRET,
 } as const;
 
 /**

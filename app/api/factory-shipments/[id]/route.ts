@@ -52,7 +52,19 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       return NextResponse.json({ error: '订单不存在' }, { status: 404 });
     }
 
-    return NextResponse.json(order);
+    const responsePayload = {
+      ...order,
+      fulfillmentSummary: {
+        customerOwnedAmount: order.items
+          .filter(item => item.ownership === 'customer')
+          .reduce((sum, item) => sum + item.totalPrice, 0),
+        selfOwnedAmount: order.items
+          .filter(item => item.ownership === 'self')
+          .reduce((sum, item) => sum + item.totalPrice, 0),
+      },
+    };
+
+    return NextResponse.json(responsePayload);
   } catch (error) {
     logger.error('factory-shipments', '获取厂家发货订单详情失败', error, {
       orderId: id,
@@ -221,10 +233,23 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       }
     }
 
-    // 计算订单总金额（如果更新了商品明细）
-    const calculatedTotalAmount = items
-      ? items.reduce((sum, item) => sum + item.quantity * item.unitPrice, 0)
+    // 计算订单金额与归属汇总（如果更新了商品明细）
+    const amountSummary = items
+      ? items.reduce(
+          (acc, item) => {
+            const lineTotal = item.quantity * item.unitPrice;
+            acc.total += lineTotal;
+            if ((item.ownership || 'customer') === 'customer') {
+              acc.customer += lineTotal;
+            } else {
+              acc.self += lineTotal;
+            }
+            return acc;
+          },
+          { total: 0, customer: 0, self: 0 }
+        )
       : undefined;
+    const calculatedTotalAmount = amountSummary?.total;
 
     // 更新厂家发货订单
     const updatedOrder = await prisma.factoryShipmentOrder.update({
@@ -234,7 +259,9 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
         ...(customerId && { customerId }),
         ...(status && { status }),
         ...(totalAmount !== undefined && { totalAmount }),
-        ...(receivableAmount !== undefined && { receivableAmount }),
+        ...(receivableAmount !== undefined
+          ? { receivableAmount }
+          : amountSummary && { receivableAmount: amountSummary.customer }),
         ...(depositAmount !== undefined && { depositAmount }),
         ...(paidAmount !== undefined && { paidAmount }),
         ...(remarks !== undefined && { remarks }),
@@ -255,6 +282,18 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
               quantity: item.quantity,
               unitPrice: item.unitPrice,
               totalPrice: item.quantity * item.unitPrice,
+              ownership: item.ownership || 'customer',
+              ownershipRemarks: item.ownershipRemarks || null,
+              customerDeliveryStatus:
+                item.ownership === 'customer'
+                  ? (item.customerDeliveryStatus ?? 'pending')
+                  : null,
+              selfInboundStatus:
+                item.ownership === 'self'
+                  ? (item.selfInboundStatus ?? 'pending')
+                  : null,
+              deliveryConfirmedAt: null,
+              inboundReceivedAt: null,
               isManualProduct: item.isManualProduct || false,
               manualProductName: item.manualProductName,
               manualSpecification: item.manualSpecification,
@@ -296,7 +335,19 @@ export async function PUT(request: NextRequest, { params }: RouteParams) {
       },
     });
 
-    return NextResponse.json(updatedOrder);
+    const responsePayload = {
+      ...updatedOrder,
+      fulfillmentSummary: {
+        customerOwnedAmount: updatedOrder.items
+          .filter(item => item.ownership === 'customer')
+          .reduce((sum, item) => sum + item.totalPrice, 0),
+        selfOwnedAmount: updatedOrder.items
+          .filter(item => item.ownership === 'self')
+          .reduce((sum, item) => sum + item.totalPrice, 0),
+      },
+    };
+
+    return NextResponse.json(responsePayload);
   } catch (error) {
     logger.error('factory-shipments', '更新厂家发货订单失败', error, {
       orderId: id,

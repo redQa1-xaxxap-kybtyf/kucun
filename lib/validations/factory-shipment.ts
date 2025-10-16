@@ -4,7 +4,10 @@
 import { z } from 'zod';
 
 import { paginationConfig } from '@/lib/env';
-import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
+import {
+  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
+  FACTORY_SHIPMENT_STATUS,
+} from '@/lib/types/factory-shipment';
 
 // 厂家发货订单状态验证
 export const factoryShipmentStatusSchema = z.enum([
@@ -26,6 +29,18 @@ export const factoryShipmentOrderItemSchema = z
     supplierId: z.string().uuid('供应商ID格式不正确'),
     quantity: z.number().positive('数量必须大于0'),
     unitPrice: z.number().min(0, '单价不能为负数'),
+    ownership: z
+      .nativeEnum(FACTORY_SHIPMENT_ITEM_OWNERSHIP, {
+        required_error: '请指定货物归属',
+      })
+      .default(FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER),
+    customerDeliveryStatus: z.enum(['pending', 'delivered']).optional(),
+    selfInboundStatus: z.enum(['pending', 'received']).optional(),
+    ownershipRemarks: z
+      .string()
+      .max(200, '归属备注不能超过200个字符')
+      .optional()
+      .or(z.literal('')),
 
     // 手动输入商品信息（临时商品）
     isManualProduct: z.boolean().optional(),
@@ -81,7 +96,29 @@ export const factoryShipmentOrderItemSchema = z
       message: '手动输入商品必须填写商品名称，库存商品必须选择商品',
       path: ['manualProductName'],
     }
-  );
+  )
+  .superRefine((data, ctx) => {
+    if (
+      data.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER &&
+      data.selfInboundStatus
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['selfInboundStatus'],
+        message: '客户货无需设置自用入库状态',
+      });
+    }
+    if (
+      data.ownership === FACTORY_SHIPMENT_ITEM_OWNERSHIP.SELF &&
+      data.customerDeliveryStatus
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['customerDeliveryStatus'],
+        message: '自用货无需设置客户交付状态',
+      });
+    }
+  });
 
 // 创建厂家发货订单验证（创建时集装箱号码为可选）
 export const createFactoryShipmentOrderSchema = z

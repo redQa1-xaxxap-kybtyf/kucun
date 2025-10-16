@@ -5,7 +5,11 @@
  */
 
 import { prisma } from '@/lib/db';
-import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
+import {
+  FACTORY_SHIPMENT_ITEM_OWNERSHIP,
+  FACTORY_SHIPMENT_STATUS,
+} from '@/lib/types/factory-shipment';
+import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 
 /**
  * 状态流转规则
@@ -69,6 +73,7 @@ export interface OrderStatusUpdateResult {
     remarks?: string | null;
   };
   receivableCreated: boolean;
+  paymentRecordId?: string | null;
 }
 
 /**
@@ -119,18 +124,83 @@ export async function updateFactoryShipmentStatus(
         userId: true,
         receivableAmount: true,
         paidAmount: true,
+        depositAmount: true,
       },
     });
 
     let receivableCreated = false;
+    let paymentRecordId: string | null = null;
 
-    // 如果状态变更为completed,自动创建应收款记录
-    // 注意：当前系统使用 PaymentRecord 来管理应收款，而不是单独的 ReceivableRecord 模型
-    // 这里暂时注释掉自动创建应收款记录的逻辑，等待后续完善
-    if (newStatus === FACTORY_SHIPMENT_STATUS.COMPLETED) {
-      // TODO: 实现自动创建应收款记录的逻辑
-      // 需要确认是否需要单独的 ReceivableRecord 模型，还是使用现有的 PaymentRecord
-      receivableCreated = false;
+    if (
+      newStatus === FACTORY_SHIPMENT_STATUS.DELIVERED ||
+      newStatus === FACTORY_SHIPMENT_STATUS.COMPLETED
+    ) {
+      await tx.factoryShipmentOrderItem.updateMany({
+        where: {
+          factoryShipmentOrderId: orderId,
+          ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
+          customerDeliveryStatus: { not: 'delivered' },
+        },
+        data: {
+          customerDeliveryStatus: 'delivered',
+          deliveryConfirmedAt: data.deliveryDate ?? new Date(),
+        },
+      });
+    }
+
+    if (
+      newStatus === FACTORY_SHIPMENT_STATUS.DELIVERED ||
+      newStatus === FACTORY_SHIPMENT_STATUS.COMPLETED
+    ) {
+      const existingReceivable = await tx.paymentRecord.findFirst({
+        where: {
+          factoryShipmentOrderId: orderId,
+        },
+        select: { id: true },
+      });
+
+      if (!existingReceivable) {
+        const customerTotals = await tx.factoryShipmentOrderItem.aggregate({
+          where: {
+            factoryShipmentOrderId: orderId,
+            ownership: FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER,
+          },
+          _sum: {
+            totalPrice: true,
+          },
+        });
+
+        const customerTotal = customerTotals._sum.totalPrice || 0;
+        const outstandingAmount = Math.max(
+          customerTotal - (order.depositAmount || 0) - (order.paidAmount || 0),
+          0
+        );
+
+        if (outstandingAmount > 0) {
+          const paymentNumber = await generatePaymentNumber(tx);
+          const paymentRecord = await tx.paymentRecord.create({
+            data: {
+              paymentNumber,
+              salesOrderId: null,
+              factoryShipmentOrderId: orderId,
+              customerId: order.customerId,
+              userId: order.userId,
+              paymentType: 'order_payment',
+              paymentMethod: 'other',
+              paymentAmount: outstandingAmount,
+              paymentDate: data.deliveryDate ?? new Date(),
+              status: 'pending',
+              remarks: '系统自动生成应收（厂家直发）',
+            },
+            select: {
+              id: true,
+            },
+          });
+
+          paymentRecordId = paymentRecord.id;
+          receivableCreated = true;
+        }
+      }
     }
 
     return {
@@ -141,6 +211,7 @@ export async function updateFactoryShipmentStatus(
         remarks: order.remarks,
       },
       receivableCreated,
+      paymentRecordId,
     };
   });
 }

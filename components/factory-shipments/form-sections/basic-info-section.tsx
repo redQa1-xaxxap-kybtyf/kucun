@@ -6,45 +6,48 @@ import { CalendarIcon, Truck } from 'lucide-react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import {
   FormControl,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
+  FormDescription,
 } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { FACTORY_SHIPMENT_STATUS_LABELS } from '@/lib/types/factory-shipment';
+  FACTORY_SHIPMENT_STATUS,
+  FACTORY_SHIPMENT_STATUS_LABELS,
+} from '@/lib/types/factory-shipment';
+import type { Customer } from '@/lib/types/models';
 import { cn } from '@/lib/utils';
 import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
-
-import type { Customer } from '@/lib/types/models';
 
 interface BasicInfoSectionProps {
   form: UseFormReturn<CreateFactoryShipmentOrderData>;
   customers: Customer[];
+  showStatus?: boolean;
 }
 
 /**
  * 厂家发货订单基本信息卡片
- * 包含：客户选择、订单状态、计划发货日期
+ * 包含：客户选择、集装箱号、计划发货日期
+ * 订单状态仅在编辑场景展示
  */
-export function BasicInfoSection({ form, customers }: BasicInfoSectionProps) {
+export function BasicInfoSection({
+  form,
+  customers,
+  showStatus = false,
+}: BasicInfoSectionProps) {
   return (
     <Card className="overflow-hidden border-[hsl(var(--color-border-primary))] shadow-md">
       <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-primary))]">
@@ -58,7 +61,7 @@ export function BasicInfoSection({ form, customers }: BasicInfoSectionProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6 p-6">
-        {/* 第一行：客户选择和容器号 */}
+        {/* 第一行：客户选择和集装箱号 */}
         <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
           {/* 客户选择 */}
           <FormField
@@ -82,18 +85,18 @@ export function BasicInfoSection({ form, customers }: BasicInfoSectionProps) {
             )}
           />
 
-          {/* 容器号 */}
+          {/* 集装箱号 */}
           <FormField
             control={form.control}
             name="containerNumber"
             render={({ field }) => (
               <FormItem>
                 <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                  容器号
+                  集装箱号
                 </FormLabel>
                 <FormControl>
                   <Input
-                    placeholder="请输入容器号"
+                    placeholder="请输入集装箱号"
                     className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
                     {...field}
                   />
@@ -104,37 +107,45 @@ export function BasicInfoSection({ form, customers }: BasicInfoSectionProps) {
           />
         </div>
 
-        {/* 第二行：订单状态和计划发货日期 */}
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          {/* 订单状态 */}
-          <FormField
-            control={form.control}
-            name="status"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-                  订单状态
-                </FormLabel>
-                <Select onValueChange={field.onChange} value={field.value}>
+        {/* 第二行：订单状态（编辑时）和计划发货日期 */}
+        <div
+          className={cn(
+            'grid grid-cols-1 gap-5',
+            showStatus && 'md:grid-cols-2'
+          )}
+        >
+          {showStatus && (
+            <FormField
+              control={form.control}
+              name="status"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+                    订单状态
+                  </FormLabel>
                   <FormControl>
-                    <SelectTrigger className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20">
-                      <SelectValue placeholder="选择订单状态" />
-                    </SelectTrigger>
+                    <input type="hidden" {...field} />
                   </FormControl>
-                  <SelectContent>
-                    {Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(
-                      ([status, label]) => (
-                        <SelectItem key={status} value={status}>
-                          {label}
-                        </SelectItem>
-                      )
-                    )}
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  <Badge
+                    variant="outline"
+                    className="inline-flex min-h-10 items-center justify-start rounded-md border border-dashed border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] px-4 text-sm font-medium text-[hsl(var(--color-text-primary))]"
+                  >
+                    {FACTORY_SHIPMENT_STATUS_LABELS[
+                      (field.value ??
+                        FACTORY_SHIPMENT_STATUS.DRAFT) as keyof typeof FACTORY_SHIPMENT_STATUS_LABELS
+                    ] ??
+                      FACTORY_SHIPMENT_STATUS_LABELS[
+                        FACTORY_SHIPMENT_STATUS.DRAFT
+                      ]}
+                  </Badge>
+                  <FormDescription className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    状态由系统流程自动更新，用户无需手动选择
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           {/* 计划发货日期 */}
           <FormField

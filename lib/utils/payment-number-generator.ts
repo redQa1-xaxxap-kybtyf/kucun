@@ -6,19 +6,25 @@
 
 import { prisma } from '@/lib/db';
 
+type PrismaTransactionClient = Parameters<
+  Parameters<typeof prisma.$transaction>[0]
+>[0];
+
 /**
  * 生成收款记录号
  * @returns 收款记录号,格式: SK-YYYYMMDD-XXX
  */
-export async function generatePaymentNumber(): Promise<string> {
+export async function generatePaymentNumber(
+  tx?: PrismaTransactionClient
+): Promise<string> {
   const now = new Date();
   const dateKey = now.toISOString().slice(0, 10).replace(/-/g, ''); // YYYYMMDD
   const prefix = `SK-${dateKey}`;
 
-  // 使用事务确保序号的唯一性
-  const result = await prisma.$transaction(async tx => {
-    // 查找或创建当天的序号记录
-    const sequence = await tx.orderSequence.upsert({
+  const createSequence = async (
+    client: PrismaTransactionClient
+  ): Promise<string> => {
+    const sequence = await client.orderSequence.upsert({
       where: {
         sequenceType_dateKey: {
           sequenceType: 'payment',
@@ -40,7 +46,16 @@ export async function generatePaymentNumber(): Promise<string> {
     // 生成完整的收款记录号
     const sequenceNumber = sequence.currentSequence.toString().padStart(3, '0');
     return `${prefix}-${sequenceNumber}`;
-  });
+  };
+
+  if (tx) {
+    return createSequence(tx);
+  }
+
+  // 使用事务确保序号的唯一性
+  const result = await prisma.$transaction(async transaction =>
+    createSequence(transaction)
+  );
 
   return result;
 }
