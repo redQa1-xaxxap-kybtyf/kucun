@@ -5,6 +5,7 @@ import { ApiError } from '@/lib/api/errors';
 import { invalidateProductCache } from '@/lib/cache/product-cache';
 import type { ProductStatus, ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
+import { deleteFromQiniu, extractQiniuKeysFromUrls } from '@/lib/services/qiniu-upload';
 import { parseProductImages } from '@/lib/utils/product-transforms';
 import { productUpdateSchema } from '@/lib/validations/product';
 
@@ -263,7 +264,10 @@ export async function deleteProduct(id: string) {
   // 检查产品是否存在
   const product = await prisma.product.findUnique({
     where: { id },
-    include: {
+    select: {
+      id: true,
+      thumbnailUrl: true,
+      images: true,
       _count: {
         select: {
           variants: true,
@@ -305,12 +309,33 @@ export async function deleteProduct(id: string) {
     });
   }
 
+  const imageUrls: string[] = [];
+  if (product.thumbnailUrl) {
+    imageUrls.push(product.thumbnailUrl);
+  }
+  if (product.images) {
+    const parsedImages = parseProductImages(product.images, product.id);
+    parsedImages.forEach(image => {
+      if (image.url) {
+        imageUrls.push(image.url);
+      }
+    });
+  }
+
+  const qiniuKeys = imageUrls.length
+    ? await extractQiniuKeysFromUrls(imageUrls)
+    : [];
+
   // 删除产品
   await prisma.product.delete({
     where: { id },
   });
 
   await invalidateProductCache(id);
+
+  if (qiniuKeys.length > 0) {
+    await Promise.all(qiniuKeys.map(key => deleteFromQiniu(key)));
+  }
 
   return { success: true, message: '产品删除成功' };
 }

@@ -141,16 +141,66 @@ export function clearQiniuConfigCache(): void {
 /**
  * 获取七牛云区域配置
  */
-function getQiniuZone(region: string = 'z0'): typeof qiniu.zone.Zone_z0 {
-  const zoneMap: Record<string, typeof qiniu.zone.Zone_z0> = {
+function getQiniuZone(region: string = 'z0'): qiniu.conf.Zone {
+  const zoneMap: Record<string, qiniu.conf.Zone> = {
     z0: qiniu.zone.Zone_z0, // 华东-浙江
     z1: qiniu.zone.Zone_z1, // 华北-河北
     z2: qiniu.zone.Zone_z2, // 华南-广东
     na0: qiniu.zone.Zone_na0, // 北美-洛杉矶
     as0: qiniu.zone.Zone_as0, // 亚太-新加坡
+    'cn-east-1': qiniu.zone.Zone_z0, // 华东-浙江（别名）
+    'cn-north-1': qiniu.zone.Zone_z1, // 华北-河北（别名）
+    'cn-south-1': qiniu.zone.Zone_z2, // 华南-广东（别名）
+    'cn-east-2': (qiniu.zone as unknown as Record<string, qiniu.conf.Zone>)
+      .Zone_cn_east_2 ?? qiniu.zone.Zone_z0, // 华东-安徽
+    'up-cn-east-2': (qiniu.zone as unknown as Record<string, qiniu.conf.Zone>)
+      .Zone_cn_east_2 ?? qiniu.zone.Zone_z0,
   };
 
   return zoneMap[region] || qiniu.zone.Zone_z0;
+}
+
+function deriveQiniuKeyFromUrl(url: string, config: QiniuConfig): string | null {
+  try {
+    const fileUrl = new URL(url);
+    const domainUrl = new URL(config.domain);
+
+    if (fileUrl.host !== domainUrl.host) {
+      return null;
+    }
+
+    const domainPath = domainUrl.pathname.replace(/\/+$/, '') || '/';
+    let filePath = decodeURIComponent(fileUrl.pathname);
+
+    if (domainPath !== '/' && filePath.startsWith(domainPath)) {
+      filePath = filePath.slice(domainPath.length);
+    }
+
+    return filePath.replace(/^\/+/, '') || null;
+  } catch (error) {
+    logger.debug('qiniu', 'Failed to derive key from URL', {
+      url,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return null;
+  }
+}
+
+export async function extractQiniuKeysFromUrls(
+  urls: Array<string | null | undefined>
+): Promise<string[]> {
+  const config = await getQiniuConfig();
+  if (!config) {
+    return [];
+  }
+
+  const keys = urls
+    .map(url => (url ?? '').trim())
+    .filter(Boolean)
+    .map(url => deriveQiniuKeyFromUrl(url, config))
+    .filter((key): key is string => typeof key === 'string' && key.length > 0);
+
+  return Array.from(new Set(keys));
 }
 
 /**

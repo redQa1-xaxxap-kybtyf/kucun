@@ -16,6 +16,7 @@ import type {
   SettingsApiResponse,
 } from '@/lib/types/settings';
 import { QiniuStorageConfigSchema } from '@/lib/validations/settings';
+import { clearQiniuConfigCache } from '@/lib/services/qiniu-upload';
 
 // 使用环境配置的加密密钥
 const ENCRYPTION_KEY = storageConfig.encryptionKey;
@@ -241,6 +242,8 @@ export const PUT = withAuth(
           });
         }
       });
+
+      clearQiniuConfigCache();
 
       // 记录系统设置变更日志
       const requestInfo = extractRequestInfo(request);

@@ -150,7 +150,11 @@ function getRegionDisplayName(region: string): string {
     z2: '华南-广东',
     na0: '北美-洛杉矶',
     as0: '亚太-新加坡',
-    'cn-east-2': '华东-浙江2',
+    'cn-east-1': '华东-浙江',
+    'cn-east-2': '华东-安徽',
+    'up-cn-east-2': '华东-安徽',
+    'cn-north-1': '华北-河北',
+    'cn-south-1': '华南-广东',
   };
 
   return regionMap[region] || region;

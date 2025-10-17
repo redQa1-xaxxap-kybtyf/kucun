@@ -59,6 +59,11 @@ function getQiniuZone(region) {
     z2: qiniu.zone.Zone_z2, // 华南-广东
     na0: qiniu.zone.Zone_na0, // 北美
     as0: qiniu.zone.Zone_as0, // 亚太-新加坡
+    'cn-east-1': qiniu.zone.Zone_z0,
+    'cn-east-2': qiniu.zone.Zone_cn_east_2 || qiniu.zone.Zone_z0,
+    'up-cn-east-2': qiniu.zone.Zone_cn_east_2 || qiniu.zone.Zone_z0,
+    'cn-north-1': qiniu.zone.Zone_z1,
+    'cn-south-1': qiniu.zone.Zone_z2,
   };
   return zoneMap[region] || qiniu.zone.Zone_z0;
 }
