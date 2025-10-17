@@ -25,8 +25,13 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import { useDebouncedSearch } from '@/hooks/use-debounced-search';
 import { cn } from '@/lib/utils';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
+import {
+  chineseToPinyinInitialsUppercase,
+  chineseToPinyinUppercase,
+} from '@/lib/utils/pinyin';
 import { ProductDataUtils } from '@/lib/utils/product-data';
 
 import { AddTemporaryProductDialog } from './add-temporary-product-dialog';
@@ -96,6 +101,8 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
     simple = false,
   } = props;
 
+  const displaySearchValue = searchValue.trim();
+
   return (
     <>
       <Popover open={open} onOpenChange={setOpen}>
@@ -160,9 +167,9 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
             />
             <CommandList className="max-h-[400px]">
               {isSearching && <ProductSearchLoadingIndicator />}
-              {!searchValue ? (
+              {!displaySearchValue ? (
                 <ProductSearchEmptyState
-                  searchValue={searchValue}
+                  searchValue={displaySearchValue}
                   isSearching={isSearching}
                   allowTemporaryProducts={allowTemporaryProducts}
                   onAddTemporaryProduct={handleAddTemporaryProduct}
@@ -171,12 +178,13 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
                 <ProductSearchResults
                   products={filteredProducts}
                   selectedValue={props.value}
+                  searchQuery={displaySearchValue}
                   onSelectProduct={handleProductSelect}
                   onSelectBatch={handleBatchSelect}
                 />
               ) : (
                 <ProductSearchEmptyState
-                  searchValue={searchValue}
+                  searchValue={displaySearchValue}
                   isSearching={isSearching}
                   allowTemporaryProducts={allowTemporaryProducts}
                   onAddTemporaryProduct={handleAddTemporaryProduct}
@@ -205,52 +213,78 @@ function useSmartProductSearchController({
   onSearchChange,
 }: SmartProductSearchProps) {
   const [open, setOpen] = useState(false);
-  const [searchValue, setSearchValue] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
+
+  const {
+    inputValue: searchValue,
+    debouncedValue: debouncedSearchValue,
+    setInputValue: setSearchValue,
+    clearSearch,
+  } = useDebouncedSearch({
+    delay: 250,
+  });
+
+  const searchIndex = useMemo(
+    () => buildProductSearchIndex(products),
+    [products]
+  );
+
+  const filteredProducts = useMemo(() => {
+    const trimmed = searchValue.trim();
+    if (!trimmed) {
+      return [];
+    }
+    return searchProducts(searchIndex.entries, trimmed);
+  }, [searchIndex.entries, searchValue]);
+
+  const selectedProduct = useMemo(() => {
+    if (!value) {
+      return null;
+    }
+    return searchIndex.productMap.get(value) ?? null;
+  }, [searchIndex.productMap, value]);
 
   useEffect(() => {
     if (!open) {
-      setSearchValue('');
-      onSearchChange?.('');
+      if (!showAddDialog) {
+        clearSearch();
+        onSearchChange?.('');
+      }
     }
-  }, [open, onSearchChange]);
+  }, [clearSearch, onSearchChange, open, showAddDialog]);
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    onSearchChange?.(debouncedSearchValue.trim());
+  }, [debouncedSearchValue, onSearchChange, open]);
 
   const handleSearchValueChange = useCallback(
     (nextValue: string) => {
       setSearchValue(nextValue);
-      onSearchChange?.(nextValue);
     },
-    [onSearchChange]
-  );
-
-  const filteredProducts = useMemo(
-    () => filterProducts(products, searchValue),
-    [products, searchValue]
-  );
-
-  const selectedProduct = useMemo(
-    () => products.find(product => product.id === value),
-    [products, value]
+    [setSearchValue]
   );
 
   const handleProductSelect = useCallback(
     (productId: string) => {
       onValueChange?.(productId);
       setOpen(false);
-      setSearchValue('');
+      clearSearch();
       onSearchChange?.('');
     },
-    [onValueChange, onSearchChange]
+    [clearSearch, onSearchChange, onValueChange]
   );
 
   const handleBatchSelect = useCallback(
     (productId: string, batchNumber: string) => {
       onBatchSelect?.(productId, batchNumber);
       setOpen(false);
-      setSearchValue('');
+      clearSearch();
       onSearchChange?.('');
     },
-    [onBatchSelect, onSearchChange]
+    [clearSearch, onBatchSelect, onSearchChange]
   );
 
   const handleAddTemporaryProduct = useCallback(() => {
@@ -267,10 +301,10 @@ function useSmartProductSearchController({
     }) => {
       onTemporaryProductAdd?.(productData);
       setShowAddDialog(false);
-      setSearchValue('');
+      clearSearch();
       onSearchChange?.('');
     },
-    [onTemporaryProductAdd, onSearchChange]
+    [clearSearch, onTemporaryProductAdd, onSearchChange]
   );
 
   const selectedSpecification = useMemo(
@@ -315,15 +349,25 @@ function ProductSearchEmptyState({
   allowTemporaryProducts: boolean;
   onAddTemporaryProduct: () => void;
 }) {
+  const displayValue =
+    searchValue.length > 32 ? `${searchValue.slice(0, 32)}...` : searchValue;
+
   return (
     <CommandEmpty className="py-6 text-center">
       <div className="space-y-3">
         <div className="text-muted-foreground">
-          {isSearching
-            ? '正在搜索商品...'
-            : searchValue
-              ? `未找到匹配的商品 "${searchValue}"`
-              : '请输入关键词搜索商品'}
+          {isSearching ? (
+            '正在搜索商品...'
+          ) : searchValue ? (
+            <span>
+              未找到匹配的商品{' '}
+              <mark className="rounded bg-amber-100 px-1 text-amber-900">
+                {displayValue}
+              </mark>
+            </span>
+          ) : (
+            '请输入关键词搜索商品'
+          )}
         </div>
         {allowTemporaryProducts && searchValue && !isSearching && (
           <Button
@@ -346,12 +390,19 @@ function ProductSearchResults({
   selectedValue,
   onSelectProduct,
   onSelectBatch,
+  searchQuery,
 }: {
   products: ProductWithInventory[];
   selectedValue?: string;
   onSelectProduct: (productId: string) => void;
   onSelectBatch: (productId: string, batchNumber: string) => void;
+  searchQuery: string;
 }) {
+  const highlightTokens = React.useMemo(
+    () => buildHighlightTokens(searchQuery),
+    [searchQuery]
+  );
+
   return (
     <CommandGroup>
       {products.map(product => (
@@ -361,6 +412,7 @@ function ProductSearchResults({
           isSelected={selectedValue === product.id}
           onSelectProduct={onSelectProduct}
           onSelectBatch={onSelectBatch}
+          highlightTokens={highlightTokens}
         />
       ))}
     </CommandGroup>
@@ -373,11 +425,13 @@ const ProductSearchResultItem = React.memo(
     isSelected,
     onSelectProduct,
     onSelectBatch,
+    highlightTokens,
   }: {
     product: ProductWithInventory;
     isSelected: boolean;
     onSelectProduct: (productId: string) => void;
     onSelectBatch: (productId: string, batchNumber: string) => void;
+    highlightTokens: string[];
   }) => {
     const specification = React.useMemo(
       () => formatProductSpecification(product.specification),
@@ -404,6 +458,18 @@ const ProductSearchResultItem = React.memo(
       () => buildProductKeywords(product, specification),
       [product, specification]
     );
+    const highlightedCode = React.useMemo(
+      () => renderHighlightedText(product.code, highlightTokens),
+      [highlightTokens, product.code]
+    );
+    const highlightedName = React.useMemo(
+      () => renderHighlightedText(product.name, highlightTokens),
+      [highlightTokens, product.name]
+    );
+    const highlightedSpecification = React.useMemo(
+      () => renderHighlightedText(specification, highlightTokens),
+      [highlightTokens, specification]
+    );
 
     return (
       <CommandItem
@@ -427,11 +493,11 @@ const ProductSearchResultItem = React.memo(
                   variant="outline"
                   className="border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 px-2.5 py-0.5 font-mono text-xs font-bold text-blue-800 shadow-sm"
                 >
-                  {product.code}
+                  {highlightedCode}
                 </Badge>
               )}
               <span className="font-semibold text-gray-900">
-                {product.name}
+                {highlightedName}
               </span>
               {product.status === 'inactive' && (
                 <Badge variant="secondary" className="text-xs">
@@ -440,7 +506,9 @@ const ProductSearchResultItem = React.memo(
               )}
             </div>
             {specification && (
-              <div className="text-sm text-gray-600">规格：{specification}</div>
+              <div className="text-sm text-gray-600">
+                规格：{highlightedSpecification}
+              </div>
             )}
             {product.inventory?.batches &&
               product.inventory.batches.length > 0 && (
@@ -477,6 +545,8 @@ const ProductSearchResultItem = React.memo(
     );
   }
 );
+
+ProductSearchResultItem.displayName = 'ProductSearchResultItem';
 
 const ProductBatchList = React.memo(
   ({
@@ -519,25 +589,284 @@ const ProductBatchList = React.memo(
   )
 );
 
-function filterProducts(products: ProductWithInventory[], searchValue: string) {
-  if (!searchValue) {
+ProductBatchList.displayName = 'ProductBatchList';
+
+const MAX_SEARCH_RESULTS = 50;
+
+interface ProductSearchIndexEntry {
+  product: ProductWithInventory;
+  normalized: NormalizedSearchFields;
+}
+
+interface NormalizedSearchFields {
+  code: string;
+  codePinyin: string;
+  codeInitials: string;
+  name: string;
+  namePinyin: string;
+  nameInitials: string;
+  specification: string;
+  specificationPinyin: string;
+  specificationInitials: string;
+  id: string;
+  status?: string;
+  availableInventory: number;
+}
+
+interface SearchTokenInfo {
+  original: string;
+  normalized: string;
+  pinyin: string;
+  initials: string;
+}
+
+function buildProductSearchIndex(products: ProductWithInventory[]) {
+  const productMap = new Map<string, ProductWithInventory>();
+  const entries: ProductSearchIndexEntry[] = products.map(product => {
+    productMap.set(product.id, product);
+    const specification = formatProductSpecification(product.specification);
+    return {
+      product,
+      normalized: {
+        code: (product.code || '').toLowerCase(),
+        codePinyin: chineseToPinyinUppercase(product.code || '').toLowerCase(),
+        codeInitials: chineseToPinyinInitialsUppercase(
+          product.code || ''
+        ).toLowerCase(),
+        name: (product.name || '').toLowerCase(),
+        namePinyin: chineseToPinyinUppercase(product.name || '').toLowerCase(),
+        nameInitials: chineseToPinyinInitialsUppercase(
+          product.name || ''
+        ).toLowerCase(),
+        specification: specification.toLowerCase(),
+        specificationPinyin:
+          chineseToPinyinUppercase(specification).toLowerCase(),
+        specificationInitials:
+          chineseToPinyinInitialsUppercase(specification).toLowerCase(),
+        id: product.id.toLowerCase(),
+        status: product.status,
+        availableInventory: product.inventory?.availableInventory ?? 0,
+      },
+    };
+  });
+
+  return {
+    entries,
+    productMap,
+  };
+}
+
+function searchProducts(
+  entries: ProductSearchIndexEntry[],
+  query: string
+): ProductWithInventory[] {
+  const tokens = computeSearchTokens(query);
+  if (tokens.length === 0) {
     return [];
   }
 
-  const keyword = searchValue.toLowerCase();
-  return products.filter(product => {
-    // 先检查 code 和 name（最常用的搜索）
-    if (
-      product.code.toLowerCase().includes(keyword) ||
-      product.name.toLowerCase().includes(keyword)
-    ) {
-      return true;
+  // 提高最小分数阈值，确保只返回真正相关的结果
+  // 最低分数2分可以过滤掉大部分不相关的匹配
+  const MIN_SCORE = 2;
+
+  return entries
+    .map(entry => ({
+      product: entry.product,
+      score: scoreProduct(entry.normalized, tokens),
+      availableInventory: entry.normalized.availableInventory,
+    }))
+    .filter(result => result.score >= MIN_SCORE)
+    .sort((a, b) => {
+      if (b.score !== a.score) {
+        return b.score - a.score;
+      }
+      if (b.availableInventory !== a.availableInventory) {
+        return b.availableInventory - a.availableInventory;
+      }
+      return a.product.name.localeCompare(b.product.name, 'zh-CN');
+    })
+    .slice(0, MAX_SEARCH_RESULTS)
+    .map(item => item.product);
+}
+
+function computeSearchTokens(query: string): SearchTokenInfo[] {
+  return query
+    .split(/\s+/)
+    .map(token => token.trim().toLowerCase())
+    .filter(Boolean)
+    .map(token => {
+      const pinyinValue = chineseToPinyinUppercase(token).toLowerCase();
+      const initialsValue =
+        chineseToPinyinInitialsUppercase(token).toLowerCase();
+      return {
+        original: token,
+        normalized: token,
+        pinyin: pinyinValue !== token ? pinyinValue : '',
+        initials: initialsValue !== token ? initialsValue : '',
+      };
+    });
+}
+
+function scoreProduct(
+  fields: NormalizedSearchFields,
+  tokens: SearchTokenInfo[]
+): number {
+  let score = 0;
+
+  tokens.forEach(token => {
+    // 主要搜索字段：编码和名称（高权重）
+    score += matchText(fields.code, token.normalized, {
+      exact: 18,
+      prefix: 9,
+      contains: 6,
+    });
+    score += matchText(fields.name, token.normalized, {
+      exact: 14,
+      prefix: 7,
+      contains: 4,
+    });
+
+    // 次要搜索字段：规格（中等权重）
+    score += matchText(fields.specification, token.normalized, {
+      exact: 8,
+      prefix: 4,
+      contains: 2,
+    });
+
+    // 移除ID字段匹配 - UUID不应该被搜索
+    // score += matchText(fields.id, token.normalized, { ... });
+
+    if (token.pinyin) {
+      score += matchText(fields.namePinyin, token.pinyin, {
+        exact: 6,
+        prefix: 3,
+        contains: 1.5,
+      });
+      score += matchText(fields.specificationPinyin, token.pinyin, {
+        exact: 4,
+        prefix: 2,
+        contains: 1,
+      });
+      score += matchText(fields.codePinyin, token.pinyin, {
+        exact: 5,
+        prefix: 2.5,
+        contains: 1,
+      });
     }
 
-    // 只有在 code 和 name 都不匹配时才格式化规格进行搜索
-    const specification = formatProductSpecification(product.specification);
-    return specification.toLowerCase().includes(keyword);
+    if (token.initials) {
+      score += matchText(fields.nameInitials, token.initials, {
+        exact: 8,
+        prefix: 4,
+        contains: 2,
+      });
+      score += matchText(fields.specificationInitials, token.initials, {
+        exact: 5,
+        prefix: 2.5,
+        contains: 1,
+      });
+      score += matchText(fields.codeInitials, token.initials, {
+        exact: 5,
+        prefix: 2.5,
+        contains: 1,
+      });
+    }
   });
+
+  if (fields.status === 'active') {
+    score += 0.5;
+  } else if (fields.status === 'inactive') {
+    score -= 0.5;
+  }
+
+  if (fields.availableInventory > 0) {
+    score += Math.min(fields.availableInventory / 100, 1);
+  }
+
+  return score;
+}
+
+interface MatchWeights {
+  exact: number;
+  prefix: number;
+  contains: number;
+}
+
+function matchText(text: string, token: string, weights: MatchWeights) {
+  if (!text || !token) {
+    return 0;
+  }
+
+  if (text === token) {
+    return weights.exact;
+  }
+  if (text.startsWith(token)) {
+    return weights.prefix;
+  }
+  if (text.includes(token)) {
+    return weights.contains;
+  }
+  return 0;
+}
+
+function buildHighlightTokens(query: string): string[] {
+  if (!query) {
+    return [];
+  }
+
+  const tokens = Array.from(
+    new Set(
+      query
+        .split(/\s+/)
+        .map(token => token.trim())
+        .filter(Boolean)
+    )
+  );
+
+  return tokens.sort((a, b) => b.length - a.length);
+}
+
+function renderHighlightedText(
+  text: string | undefined,
+  tokens: string[]
+): React.ReactNode {
+  if (!text || tokens.length === 0) {
+    return text ?? null;
+  }
+
+  const pattern = new RegExp(
+    `(${tokens.map(token => escapeRegExp(token)).join('|')})`,
+    'ig'
+  );
+
+  const segments = text.split(pattern).filter(segment => segment.length > 0);
+
+  return segments.map((segment, index) => {
+    const isMatch = tokens.some(
+      token => segment.toLowerCase() === token.toLowerCase()
+    );
+
+    if (isMatch) {
+      return (
+        <mark
+          key={`highlight-${segment}-${index}`}
+          className="rounded bg-amber-100 px-0.5 text-amber-900"
+        >
+          {segment}
+        </mark>
+      );
+    }
+
+    return (
+      <React.Fragment key={`segment-${segment}-${index}`}>
+        {segment}
+      </React.Fragment>
+    );
+  });
+}
+
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 function formatProductSpecification(spec?: string | null, truncateTo?: number) {
