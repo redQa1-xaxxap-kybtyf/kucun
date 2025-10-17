@@ -8,8 +8,8 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Cloud } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import React from 'react';
 
 import { QiniuStorageForm } from '@/components/settings/QiniuStorageForm';
@@ -74,7 +74,8 @@ export default function StorageSettingsPage() {
     },
     onSuccess: () => {
       toast({ title: '成功', description: '七牛云存储配置保存成功' });
-      queryClient.invalidateQueries({ queryKey: queryKeys.settings.storage() });
+      // 不刷新查询，避免表单被重置
+      // queryClient.invalidateQueries({ queryKey: queryKeys.settings.storage() });
       // 清除测试结果
       setTestResult(null);
       setTestError(null);
