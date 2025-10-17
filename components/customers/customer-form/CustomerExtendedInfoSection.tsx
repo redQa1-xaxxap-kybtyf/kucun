@@ -89,7 +89,10 @@ export function CustomerExtendedInfoSection({
                         type={type}
                         placeholder="请输入"
                         disabled={isLoading}
-                        {...field}
+                        value={(field.value as string) ?? ''}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
                       />
                     </FormControl>
                     <FormMessage />
@@ -168,8 +171,16 @@ export function CustomerExtendedInfoSection({
             />
 
             {[
-              { name: 'extendedInfo.industry', label: '所属行业', placeholder: '如：建材批发' },
-              { name: 'extendedInfo.region', label: '所在区域', placeholder: '如：华南地区' },
+              {
+                name: 'extendedInfo.industry',
+                label: '所属行业',
+                placeholder: '如：建材批发',
+              },
+              {
+                name: 'extendedInfo.region',
+                label: '所在区域',
+                placeholder: '如：华南地区',
+              },
             ].map(({ name, label, placeholder }) => (
               <FormField
                 key={name}
@@ -182,7 +193,10 @@ export function CustomerExtendedInfoSection({
                       <Input
                         placeholder={placeholder}
                         disabled={isLoading}
-                        {...field}
+                        value={(field.value as string) ?? ''}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
                       />
                     </FormControl>
                     <FormMessage />
@@ -243,7 +257,11 @@ export function CustomerExtendedInfoSection({
           <div className="space-y-3">
             <div className="flex flex-wrap gap-2">
               {tags.map(tag => (
-                <Badge key={tag} variant="secondary" className="flex items-center gap-1">
+                <Badge
+                  key={tag}
+                  variant="secondary"
+                  className="flex items-center gap-1"
+                >
                   {tag}
                   <Button
                     type="button"

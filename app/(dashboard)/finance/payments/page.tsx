@@ -171,7 +171,7 @@ async function getPaymentsData(searchParams: {
   const calculateCollectionRate = (
     paymentList: Array<{
       paymentAmount: Prisma.Decimal | number;
-      status: PaymentStatus;
+      status: 'pending' | 'cancelled' | 'confirmed' | 'applied';
     }>
   ) => {
     const monthlyTotal = paymentList.reduce(

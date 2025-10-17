@@ -69,7 +69,7 @@ export function ConfirmArrivalDialog({
           idempotencyKey: crypto.randomUUID(),
           status: FACTORY_SHIPMENT_STATUS.ARRIVED,
           containerNumber,
-          arrivalDate: arrivalDateIso,
+          arrivalDate: new Date(arrivalDateIso),
           remarks: remarks.trim() || undefined,
         },
       });

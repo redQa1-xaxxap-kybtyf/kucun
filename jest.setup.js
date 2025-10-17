@@ -107,11 +107,13 @@ afterEach(() => {
 });
 
 // 在所有测试后清理
-afterAll(() => {
+afterAll(async () => {
   // 确保关闭所有打开的连接
   jest.restoreAllMocks();
   // 清理所有定时器
   jest.clearAllTimers();
+  // 强制清理所有异步操作
+  await new Promise(resolve => setTimeout(resolve, 100));
 });
 
 // Mock @faker-js/faker to avoid ES module issues

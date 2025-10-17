@@ -60,6 +60,10 @@ interface PaymentsPageClientProps {
       confirmedAmount: number;
       pendingAmount: number;
       recordCount: number;
+      collectionRate: number;
+      currentMonthCollectionRate?: number | null;
+      previousMonthCollectionRate?: number | null;
+      collectionRateChange?: number | null;
     };
     pagination: {
       page: number;

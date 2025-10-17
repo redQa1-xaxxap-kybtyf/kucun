@@ -50,12 +50,15 @@ export function EmptyState({
           )}
         >
           {React.isValidElement(resolvedIcon)
-            ? React.cloneElement(resolvedIcon, {
-                className: cn(
-                  'h-6 w-6 text-muted-foreground',
-                  resolvedIcon.props.className
-                ),
-              })
+            ? React.cloneElement(
+                resolvedIcon as React.ReactElement<{ className?: string }>,
+                {
+                  className: cn(
+                    'h-6 w-6 text-muted-foreground',
+                    (resolvedIcon.props as { className?: string }).className
+                  ),
+                }
+              )
             : resolvedIcon}
         </div>
       )}

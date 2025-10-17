@@ -91,6 +91,12 @@ const customJestConfig = {
 
   // 测试超时时间(ms)
   testTimeout: 10000,
+
+  // 强制退出配置 - 解决异步操作未关闭问题
+  forceExit: true,
+
+  // 检测打开的句柄
+  detectOpenHandles: false,
 };
 
 // 导出配置

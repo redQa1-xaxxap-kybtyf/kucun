@@ -4,11 +4,11 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 
-interface RouteParams {
-  params: {
+type RouteParams = {
+  params: Promise<{
     id: string;
-  };
-}
+  }>;
+};
 
 /**
  * 获取单个库存调整记录详情
@@ -16,9 +16,10 @@ interface RouteParams {
  */
 const getInventoryAdjustmentDetail = async (
   request: NextRequest,
-  { params }: RouteParams
+  context: RouteParams
 ) => {
   try {
+    const params = await context.params;
     const { id } = params;
 
     if (!id) {
@@ -111,6 +112,7 @@ const getInventoryAdjustmentDetail = async (
       data: formattedAdjustment,
     });
   } catch (error) {
+    const params = await context.params;
     logger.error('inventory-adjustments', '获取库存调整记录详情失败', error, {
       id: params.id,
     });
