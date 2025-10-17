@@ -3,15 +3,16 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
-import { logger } from '@/lib/logger';
 import { cacheConfig, inventoryConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { inventoryAlertsQuerySchema } from '@/lib/validations/inventory-queries';
 
 /**
  * 库存预警API
  * GET /api/inventory/alerts
  */
-export const GET = withAuth(async (request: NextRequest) => {
+const getInventoryAlertsHandler = withAuth(async (request: NextRequest) => {
   try {
     // 解析并验证查询参数
     const { searchParams } = request.nextUrl;
@@ -303,3 +304,5 @@ export const GET = withAuth(async (request: NextRequest) => {
     );
   }
 });
+
+export const GET = withRateLimit(RateLimitType.READ)(getInventoryAlertsHandler);

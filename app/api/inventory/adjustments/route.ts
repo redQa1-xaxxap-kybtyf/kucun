@@ -3,6 +3,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { ApiError, ApiErrorType } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
 import { prisma } from '@/lib/db';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { inventoryAdjustmentsQuerySchema } from '@/lib/validations/inventory-queries';
 
 /**
@@ -165,108 +166,115 @@ function formatAdjustmentData(adjustment: AdjustmentWithRelations) {
  * 获取库存调整记录列表
  * GET /api/inventory/adjustments
  */
-export const GET = withErrorHandling(async (request: NextRequest) => {
-  // 解析查询参数
-  const { searchParams } = new URL(request.url);
+const getInventoryAdjustmentsHandler = withErrorHandling(
+  async (request: NextRequest) => {
+    // 解析查询参数
+    const { searchParams } = new URL(request.url);
 
-  const rawParams = {
-    page: searchParams.get('page'),
-    limit: searchParams.get('limit'),
-    search: searchParams.get('search'),
-    productId: searchParams.get('productId'),
-    variantId: searchParams.get('variantId'),
-    batchNumber: searchParams.get('batchNumber'),
-    reason: searchParams.get('reason'),
-    status: searchParams.get('status'),
-    operatorId: searchParams.get('operatorId'),
-    startDate: searchParams.get('startDate'),
-    endDate: searchParams.get('endDate'),
-    sortBy: searchParams.get('sortBy'),
-    sortOrder: searchParams.get('sortOrder'),
-  };
+    const rawParams = {
+      page: searchParams.get('page'),
+      limit: searchParams.get('limit'),
+      search: searchParams.get('search'),
+      productId: searchParams.get('productId'),
+      variantId: searchParams.get('variantId'),
+      batchNumber: searchParams.get('batchNumber'),
+      reason: searchParams.get('reason'),
+      status: searchParams.get('status'),
+      operatorId: searchParams.get('operatorId'),
+      startDate: searchParams.get('startDate'),
+      endDate: searchParams.get('endDate'),
+      sortBy: searchParams.get('sortBy'),
+      sortOrder: searchParams.get('sortOrder'),
+    };
 
-  const validationResult = inventoryAdjustmentsQuerySchema.safeParse(rawParams);
+    const validationResult =
+      inventoryAdjustmentsQuerySchema.safeParse(rawParams);
 
-  if (!validationResult.success) {
-    throw new ApiError(
-      ApiErrorType.VALIDATION_ERROR,
-      '查询参数格式不正确',
-      validationResult.error.issues
-    );
+    if (!validationResult.success) {
+      throw new ApiError(
+        ApiErrorType.VALIDATION_ERROR,
+        '查询参数格式不正确',
+        validationResult.error.issues
+      );
+    }
+
+    const {
+      page = 1,
+      limit = 20,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      ...filters
+    } = validationResult.data;
+    const offset = (page - 1) * limit;
+
+    // 构建查询条件和排序
+    const where = buildAdjustmentWhereClause(filters);
+    const orderBy = buildAdjustmentOrderBy(sortBy, sortOrder);
+
+    // 查询数据
+    const [adjustments, total] = await Promise.all([
+      prisma.inventoryAdjustment.findMany({
+        where,
+        include: {
+          product: {
+            select: {
+              id: true,
+              code: true,
+              name: true,
+              specification: true,
+              unit: true,
+              piecesPerUnit: true,
+            },
+          },
+          variant: {
+            select: {
+              id: true,
+              sku: true,
+              colorCode: true,
+              colorName: true,
+            },
+          },
+          operator: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          approver: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+        },
+        orderBy,
+        skip: offset,
+        take: limit,
+      }),
+      prisma.inventoryAdjustment.count({ where }),
+    ]);
+
+    // 格式化数据
+    const formattedAdjustments = adjustments.map(formatAdjustmentData);
+    const totalPages = Math.ceil(total / limit);
+
+    return NextResponse.json({
+      success: true,
+      data: {
+        adjustments: formattedAdjustments,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages,
+        },
+      },
+    });
   }
+);
 
-  const {
-    page = 1,
-    limit = 20,
-    sortBy = 'createdAt',
-    sortOrder = 'desc',
-    ...filters
-  } = validationResult.data;
-  const offset = (page - 1) * limit;
-
-  // 构建查询条件和排序
-  const where = buildAdjustmentWhereClause(filters);
-  const orderBy = buildAdjustmentOrderBy(sortBy, sortOrder);
-
-  // 查询数据
-  const [adjustments, total] = await Promise.all([
-    prisma.inventoryAdjustment.findMany({
-      where,
-      include: {
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            specification: true,
-            unit: true,
-            piecesPerUnit: true,
-          },
-        },
-        variant: {
-          select: {
-            id: true,
-            sku: true,
-            colorCode: true,
-            colorName: true,
-          },
-        },
-        operator: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        approver: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-      },
-      orderBy,
-      skip: offset,
-      take: limit,
-    }),
-    prisma.inventoryAdjustment.count({ where }),
-  ]);
-
-  // 格式化数据
-  const formattedAdjustments = adjustments.map(formatAdjustmentData);
-  const totalPages = Math.ceil(total / limit);
-
-  return NextResponse.json({
-    success: true,
-    data: {
-      adjustments: formattedAdjustments,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages,
-      },
-    },
-  });
-});
+export const GET = withRateLimit(RateLimitType.READ)(
+  getInventoryAdjustmentsHandler
+);

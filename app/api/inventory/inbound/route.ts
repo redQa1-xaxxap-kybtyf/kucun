@@ -14,11 +14,12 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
 import { getLongTransactionOptions } from '@/lib/db/transaction-options';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { createInboundSchema } from '@/lib/validations/inbound';
 
 // GET /api/inventory/inbound - 获取入库记录列表
-export const GET = withAuth(
+const getInboundRecordsHandler = withAuth(
   async (request: NextRequest) =>
     withErrorHandling(async () => {
       // 解析查询参数
@@ -31,6 +32,8 @@ export const GET = withAuth(
     })(request),
   { permissions: ['inventory:view'] }
 );
+
+export const GET = withRateLimit(RateLimitType.READ)(getInboundRecordsHandler);
 
 /**
  * 生成批次号
@@ -122,7 +125,7 @@ async function executeInboundTransaction(
 }
 
 // POST /api/inventory/inbound - 创建入库记录
-export const POST = withAuth(
+const postInboundRecordHandler = withAuth(
   async (
     request: NextRequest,
     context: {
@@ -174,4 +177,8 @@ export const POST = withAuth(
       });
     })(request),
   { permissions: ['inventory:inbound'] }
+);
+
+export const POST = withRateLimit(RateLimitType.WRITE)(
+  postInboundRecordHandler
 );

@@ -1,12 +1,13 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
-import { withAuth } from '@/lib/auth/api-helpers';
 import { formatPaginatedResponse } from '@/lib/api/inventory-formatter';
 import {
   getInventoryCount,
   getOptimizedInventoryList,
 } from '@/lib/api/inventory-query-builder';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import {
   inventoryAdjustSchema,
   inventoryQuerySchema,
@@ -17,7 +18,7 @@ import {
 // - Server Component 已通过 HydrationBoundary 预取数据（不经过此API）
 // - Client Component 通过 TanStack Query 缓存（staleTime=Infinity）
 // - Redis 低命中率场景下反而增加 20-50ms 延迟
-export const GET = withAuth(
+const getInventoryHandler = withAuth(
   async (request: NextRequest) => {
     const { searchParams } = request.nextUrl;
 
@@ -74,8 +75,10 @@ export const GET = withAuth(
   { permissions: ['inventory:view'] }
 );
 
+export const GET = withRateLimit(RateLimitType.READ)(getInventoryHandler);
+
 // 库存调整（已弃用 - 使用 /api/inventory/adjust 端点）
-export const POST = withAuth(
+const postInventoryHandler = withAuth(
   async (request: NextRequest) => {
     const body = await request.json();
 
@@ -123,3 +126,5 @@ export const POST = withAuth(
   },
   { permissions: ['inventory:adjust'] }
 );
+
+export const POST = withRateLimit(RateLimitType.WRITE)(postInventoryHandler);

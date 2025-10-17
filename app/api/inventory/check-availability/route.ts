@@ -4,6 +4,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { buildCacheKey, getOrSetJSON } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { cacheConfig } from '@/lib/env';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import {
   inventoryAvailabilityCheckSchema,
   type InventoryAvailabilityCheckInput,
@@ -189,24 +190,30 @@ async function checkInventoryAvailability(
  * 库存可用性检查API
  * POST /api/inventory/check-availability
  */
-export const POST = withAuth(async (request: NextRequest) => {
-  const body = await request.json();
+const postInventoryAvailabilityHandler = withAuth(
+  async (request: NextRequest) => {
+    const body = await request.json();
 
-  // 验证请求数据
-  const validatedData = inventoryAvailabilityCheckSchema.parse(body);
+    // 验证请求数据
+    const validatedData = inventoryAvailabilityCheckSchema.parse(body);
 
-  // 构建缓存键
-  const cacheKey = buildCacheKey('inventory:availability', validatedData);
+    // 构建缓存键
+    const cacheKey = buildCacheKey('inventory:availability', validatedData);
 
-  // 从缓存获取或查询数据库
-  const availabilityResult = await getOrSetJSON(
-    cacheKey,
-    async () => await checkInventoryAvailability(validatedData),
-    cacheConfig.inventoryTtl
-  );
+    // 从缓存获取或查询数据库
+    const availabilityResult = await getOrSetJSON(
+      cacheKey,
+      async () => await checkInventoryAvailability(validatedData),
+      cacheConfig.inventoryTtl
+    );
 
-  return NextResponse.json({
-    success: true,
-    data: availabilityResult,
-  });
-});
+    return NextResponse.json({
+      success: true,
+      data: availabilityResult,
+    });
+  }
+);
+
+export const POST = withRateLimit(RateLimitType.WRITE)(
+  postInventoryAvailabilityHandler
+);

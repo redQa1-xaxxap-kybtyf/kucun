@@ -6,6 +6,7 @@ import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { publishInventoryChange } from '@/lib/events';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { generateAdjustmentNumber } from '@/lib/utils/adjustment-number-generator';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { inventoryAdjustSchema } from '@/lib/validations/inventory-operations';
@@ -143,9 +144,9 @@ async function executeAdjustmentTransaction(
  * 库存调整API
  * POST /api/inventory/adjust
  */
-export const POST = withAuth(
-  async (request: NextRequest, { user }) => {
-    return withErrorHandling(async () => {
+const postInventoryAdjustHandler = withAuth(
+  async (request: NextRequest, { user }) =>
+    withErrorHandling(async () => {
       const body = await request.json();
 
       // 验证请求数据
@@ -186,7 +187,10 @@ export const POST = withAuth(
         },
         message: '库存调整成功',
       });
-    })(request, {});
-  },
+    })(request, {}),
   { permissions: ['inventory:adjust'] }
+);
+
+export const POST = withRateLimit(RateLimitType.WRITE)(
+  postInventoryAdjustHandler
 );

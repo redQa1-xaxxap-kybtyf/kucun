@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 
 interface RouteParams {
   params: {
@@ -13,7 +14,10 @@ interface RouteParams {
  * 获取单个库存调整记录详情
  * GET /api/inventory/adjustments/[id]
  */
-export async function GET(request: NextRequest, { params }: RouteParams) {
+const getInventoryAdjustmentDetail = async (
+  request: NextRequest,
+  { params }: RouteParams
+) => {
   try {
     const { id } = params;
 
@@ -119,4 +123,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       { status: 500 }
     );
   }
-}
+};
+
+export const GET = withRateLimit(RateLimitType.READ)(
+  getInventoryAdjustmentDetail
+);

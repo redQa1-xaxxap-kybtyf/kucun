@@ -1,23 +1,19 @@
 // 移动端数据表格组件 - 响应式数据展示
 // 桌面端显示表格，移动端显示卡片列表
 
-import { ChevronRight } from 'lucide-react';
 import React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import { cn } from '@/lib/utils';
+
+import {
+  DesktopTableView,
+  MobileCardList,
+  toDisplayValue,
+  useTableUtilities,
+} from './mobile-data-table-helpers';
 
 // 列定义接口
 export interface ColumnDef<T> {
@@ -57,54 +53,22 @@ export interface MobileDataTableProps<T> {
   empty?: React.ReactNode;
   rowKey?: string | ((record: T) => string);
   onRowClick?: (record: T, index: number) => void;
-  onItemClick?: (record: T) => void; // 添加onItemClick支持
+  onItemClick?: (record: T) => void;
   actions?: ActionButton<T>[];
-  renderActions?: (record: T) => React.ReactNode; // 添加renderActions支持
+  renderActions?: (record: T) => React.ReactNode;
   className?: string;
   cardClassName?: string;
   tableClassName?: string;
   showIndex?: boolean;
   stickyHeader?: boolean;
   maxHeight?: string | number;
-  total?: number; // 添加total属性支持
-  page?: number; // 添加page属性支持
-  pageSize?: number; // 添加pageSize属性支持
-  onPageChange?: (page: number) => void; // 添加onPageChange属性支持
-  onPageSizeChange?: (pageSize: number) => void; // 添加onPageSizeChange属性支持
-  onSort?: (sortBy: string, sortOrder: 'asc' | 'desc') => void; // 添加onSort属性支持
-  renderMobileCard?: (item: T) => React.ReactNode; // 添加renderMobileCard属性支持
-}
-
-function toDisplayValue(value: unknown): React.ReactNode {
-  if (React.isValidElement(value)) {
-    return value;
-  }
-
-  if (value === null || value === undefined) {
-    return '';
-  }
-
-  if (
-    typeof value === 'string' ||
-    typeof value === 'number' ||
-    typeof value === 'boolean'
-  ) {
-    return typeof value === 'boolean' ? (value ? '是' : '否') : String(value);
-  }
-
-  if (value instanceof Date) {
-    return value.toLocaleString();
-  }
-
-  if (Array.isArray(value)) {
-    return value.length ? value.map(toDisplayValue).join(', ') : '';
-  }
-
-  try {
-    return JSON.stringify(value);
-  } catch {
-    return String(value);
-  }
+  total?: number;
+  page?: number;
+  pageSize?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
+  onSort?: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
+  renderMobileCard?: (item: T) => React.ReactNode;
 }
 
 function MobileDataTable<T extends Record<string, unknown>>({
@@ -117,6 +81,7 @@ function MobileDataTable<T extends Record<string, unknown>>({
   onItemClick,
   actions = [],
   renderActions,
+  renderMobileCard,
   className,
   cardClassName,
   tableClassName,
@@ -124,72 +89,14 @@ function MobileDataTable<T extends Record<string, unknown>>({
   stickyHeader = false,
   maxHeight,
 }: MobileDataTableProps<T>) {
-  // 获取行的唯一键
-  const getRowKey = (record: T, index: number): string => {
-    if (typeof rowKey === 'function') {
-      return rowKey(record);
-    }
-    const raw = record[rowKey];
-    if (raw === null || raw === undefined) {
-      return index.toString();
-    }
-    if (typeof raw === 'string') {
-      return raw || index.toString();
-    }
-    return String(raw);
-  };
+  const { getRowKey, handleRowClick, renderCellContent, renderActionButtons } =
+    useTableUtilities({
+      rowKey,
+      actions,
+      onRowClick,
+      onItemClick,
+    });
 
-  // 处理行点击事件
-  const handleRowClick = (record: T, index: number) => {
-    onRowClick?.(record, index);
-    onItemClick?.(record);
-  };
-
-  // 渲染单元格内容
-  const renderCellContent = (
-    column: ColumnDef<T>,
-    record: T,
-    index: number
-  ) => {
-    const value = record[column.key];
-    if (column.render) {
-      return column.render(value, record, index);
-    }
-    return toDisplayValue(value);
-  };
-
-  // 渲染操作按钮
-  const renderActionButtons = (record: T, index: number) => {
-    const visibleActions = actions.filter(action => !action.hidden?.(record));
-    if (visibleActions.length === 0) {
-      return null;
-    }
-
-    return (
-      <div className="flex items-center gap-1">
-        {visibleActions.map(action => {
-          const Icon = action.icon;
-          return (
-            <Button
-              key={action.key}
-              variant={action.variant || 'ghost'}
-              size="sm"
-              onClick={e => {
-                e.stopPropagation();
-                action.onClick(record, index);
-              }}
-              disabled={action.disabled?.(record)}
-              className="h-8 w-8 p-0"
-            >
-              {Icon ? <Icon className="h-4 w-4" /> : action.label}
-            </Button>
-          );
-        })}
-      </div>
-    );
-  };
-
-  // 加载状态
   if (loading) {
     return (
       <div className={cn('space-y-4', className)}>
@@ -198,7 +105,6 @@ function MobileDataTable<T extends Record<string, unknown>>({
     );
   }
 
-  // 空数据状态
   if (!data || data.length === 0) {
     return (
       <div className={cn('', className)}>
@@ -207,178 +113,45 @@ function MobileDataTable<T extends Record<string, unknown>>({
     );
   }
 
+  const hasClickableRow = Boolean(onRowClick || onItemClick);
+
   return (
     <div className={cn('', className)}>
-      {/* 桌面端表格 */}
-      <div className="hidden md:block">
-        <div
-          className={cn(
-            'rounded-lg border',
-            maxHeight && 'overflow-auto',
-            tableClassName
-          )}
-          style={maxHeight ? { maxHeight } : undefined}
-        >
-          <Table>
-            <TableHeader
-              className={cn(stickyHeader && 'bg-background sticky top-0 z-10')}
-            >
-              <TableRow>
-                {showIndex && <TableHead className="w-12">#</TableHead>}
-                {columns.map(column => (
-                  <TableHead
-                    key={column.key}
-                    className={cn(
-                      column.align === 'center' && 'text-center',
-                      column.align === 'right' && 'text-right',
-                      column.className
-                    )}
-                    style={column.width ? { width: column.width } : undefined}
-                  >
-                    {column.title}
-                  </TableHead>
-                ))}
-                {actions.length > 0 && (
-                  <TableHead className="w-20">操作</TableHead>
-                )}
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {data.map((record, index) => (
-                <TableRow
-                  key={getRowKey(record, index)}
-                  className={cn(
-                    (onRowClick || onItemClick) &&
-                      'hover:bg-muted/50 cursor-pointer'
-                  )}
-                  onClick={() => handleRowClick(record, index)}
-                >
-                  {showIndex && (
-                    <TableCell className="text-muted-foreground font-medium">
-                      {index + 1}
-                    </TableCell>
-                  )}
-                  {columns.map(column => (
-                    <TableCell
-                      key={column.key}
-                      className={cn(
-                        column.align === 'center' && 'text-center',
-                        column.align === 'right' && 'text-right',
-                        column.className
-                      )}
-                    >
-                      {renderCellContent(column, record, index)}
-                    </TableCell>
-                  ))}
-                  {actions.length > 0 && (
-                    <TableCell>{renderActionButtons(record, index)}</TableCell>
-                  )}
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      </div>
+      <DesktopTableView
+        data={data}
+        columns={columns}
+        showIndex={showIndex}
+        actions={actions}
+        tableClassName={tableClassName}
+        stickyHeader={stickyHeader}
+        maxHeight={maxHeight}
+        getRowKey={getRowKey}
+        handleRowClick={handleRowClick}
+        renderCellContent={renderCellContent}
+        renderActionButtons={renderActionButtons}
+        hasClickableRow={hasClickableRow}
+      />
 
-      {/* 移动端卡片列表 */}
-      <div className="space-y-3 md:hidden">
-        {data.map((record, index) => {
-          // 分离主要信息和次要信息
-          const primaryColumns = columns.filter(
-            col => col.mobilePrimary && !col.mobileHidden
-          );
-          const secondaryColumns = columns.filter(
-            col => !col.mobilePrimary && !col.mobileHidden
-          );
-
-          return (
-            <Card
-              key={getRowKey(record, index)}
-              className={cn(
-                'transition-colors',
-                (onRowClick || onItemClick) &&
-                  'hover:bg-muted/50 active:bg-muted cursor-pointer',
-                cardClassName
-              )}
-              onClick={() => handleRowClick(record, index)}
-            >
-              <CardContent className="p-4">
-                {/* 主要信息 */}
-                {primaryColumns.length > 0 && (
-                  <div className="mb-3 space-y-2">
-                    {primaryColumns.map(column => (
-                      <div
-                        key={column.key}
-                        className="flex items-start justify-between"
-                      >
-                        <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium">
-                            {renderCellContent(column, record, index)}
-                          </div>
-                          {column.mobileLabel && (
-                            <div className="text-muted-foreground mt-1 text-xs">
-                              {column.mobileLabel}
-                            </div>
-                          )}
-                        </div>
-                        {actions.length > 0 && (
-                          <div className="ml-2 shrink-0">
-                            {renderActionButtons(record, index)}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                {/* 次要信息 */}
-                {secondaryColumns.length > 0 && (
-                  <div className="space-y-2 text-sm">
-                    {secondaryColumns.map(column => {
-                      const content = renderCellContent(column, record, index);
-                      if (!content) {
-                        return null;
-                      }
-
-                      return (
-                        <div
-                          key={column.key}
-                          className="flex items-center justify-between"
-                        >
-                          <span className="text-muted-foreground text-xs">
-                            {column.mobileLabel || column.title}:
-                          </span>
-                          <span className="text-xs font-medium">{content}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-
-                {/* 操作按钮 */}
-                {renderActions && (
-                  <div className="mt-3 flex justify-end">
-                    {renderActions(record)}
-                  </div>
-                )}
-
-                {/* 点击指示器 */}
-                {(onRowClick || onItemClick) && !renderActions && (
-                  <div className="mt-3 flex justify-end">
-                    <ChevronRight className="text-muted-foreground h-4 w-4" />
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+      <MobileCardList
+        data={data}
+        columns={columns}
+        actions={actions}
+        cardClassName={cardClassName}
+        getRowKey={getRowKey}
+        handleRowClick={handleRowClick}
+        renderCellContent={renderCellContent}
+        renderActionButtons={renderActionButtons}
+        onRowClick={onRowClick}
+        onItemClick={onItemClick}
+        renderActions={renderActions}
+        renderMobileCard={renderMobileCard}
+      />
     </div>
   );
 }
 
 // 预设的列类型
-export const createTextColumn = <T,>(
+export const createTextColumn = <T extends unknown>(
   key: string,
   title: string,
   options?: Partial<ColumnDef<T>>
@@ -388,7 +161,7 @@ export const createTextColumn = <T,>(
   ...options,
 });
 
-export const createBadgeColumn = <T,>(
+export const createBadgeColumn = <T extends unknown>(
   key: string,
   title: string,
   badgeVariant: 'default' | 'secondary' | 'destructive' | 'outline' = 'default',
@@ -403,7 +176,7 @@ export const createBadgeColumn = <T,>(
   ...options,
 });
 
-export const createDateColumn = <T,>(
+export const createDateColumn = <T extends unknown>(
   key: string,
   title: string,
   format: (date: Date) => string = date => date.toLocaleDateString(),
@@ -428,7 +201,7 @@ export const createDateColumn = <T,>(
   ...options,
 });
 
-export const createNumberColumn = <T,>(
+export const createNumberColumn = <T extends unknown>(
   key: string,
   title: string,
   formatter?: (value: number) => string,

@@ -111,6 +111,8 @@ const toOptionalNumber = (value: unknown): number | undefined => {
   return undefined;
 };
 
+const QUANTITY_EPSILON = 0.01;
+
 function sanitizeFeeItems(feeItems?: SalesOrderFeeItem[]): SalesOrderFeeItem[] {
   if (!Array.isArray(feeItems)) {
     return [];
@@ -393,120 +395,135 @@ export function calculateOrderTotal(items: SalesOrderFormItem[]): number {
   return Math.round(total * 100) / 100;
 }
 
-/**
- * 验证表单数据是否有效
- * @param formData 表单数据
- * @returns 验证结果
- */
-export function validateFormData(formData: SalesOrderFormData): {
-  valid: boolean;
-  errors: string[];
-} {
-  const errors: string[] = [];
-  const items = Array.isArray(formData.items) ? formData.items : [];
-  const transferMode: TransferFulfillmentMode | undefined =
-    formData.orderType === 'TRANSFER'
-      ? (formData.transferMode ?? 'SUPPLIER_ONLY')
-      : undefined;
-  const epsilon = 0.01;
+function deriveTransferMode(
+  formData: SalesOrderFormData
+): TransferFulfillmentMode | undefined {
+  if (formData.orderType !== 'TRANSFER') {
+    return undefined;
+  }
+  return formData.transferMode ?? 'SUPPLIER_ONLY';
+}
 
-  // 验证客户ID
+function validateCustomer(formData: SalesOrderFormData) {
+  const errors: string[] = [];
+
   if (!formData.customerId?.trim()) {
     errors.push('请选择客户');
   }
 
-  // 验证订单明细
+  return errors;
+}
+
+function validateItems(
+  items: SalesOrderFormItem[],
+  formData: SalesOrderFormData,
+  transferMode?: TransferFulfillmentMode
+) {
+  const errors: string[] = [];
+
   if (items.length === 0) {
     errors.push('至少需要添加一个订单明细');
+    return errors;
   }
 
-  // 验证每个明细项
   items.forEach((item, index) => {
+    const position = index + 1;
+
     if (item.isManualProduct) {
-      // 手动商品必须有商品名称
       if (!item.manualProductName?.trim()) {
-        errors.push(`第${index + 1}个明细项：手动输入商品必须填写商品名称`);
+        errors.push(`第${position}个明细项：手动输入商品必须填写商品名称`);
       }
-    } else {
-      // 普通商品必须有productId
-      if (!item.productId?.trim()) {
-        errors.push(`第${index + 1}个明细项：请选择产品`);
-      }
+    } else if (!item.productId?.trim()) {
+      errors.push(`第${position}个明细项：请选择产品`);
     }
 
-    // 验证数量
     const itemQuantity = toNumberOrDefault(item.quantity, 0);
     if (itemQuantity <= 0) {
-      errors.push(`第${index + 1}个明细项：数量必须大于0`);
+      errors.push(`第${position}个明细项：数量必须大于0`);
     }
 
-    // 验证单价
     if (item.unitPrice === undefined || item.unitPrice < 0) {
-      errors.push(`第${index + 1}个明细项：单价不能为负数`);
+      errors.push(`第${position}个明细项：单价不能为负数`);
     }
 
     if (formData.orderType === 'TRANSFER') {
+      const effectiveMode = transferMode ?? 'SUPPLIER_ONLY';
       const localQuantity = toNumberOrDefault(item.localQuantity, 0);
       const transferQuantity =
-        transferMode === 'MIXED'
+        effectiveMode === 'MIXED'
           ? toNumberOrDefault(item.transferQuantity, 0)
           : toNumberOrDefault(item.transferQuantity, itemQuantity);
 
-      if (transferMode === 'MIXED') {
+      if (effectiveMode === 'MIXED') {
         if (localQuantity < 0) {
-          errors.push(`第${index + 1}个明细项：本地发货数量不能为负数`);
+          errors.push(`第${position}个明细项：本地发货数量不能为负数`);
         }
         if (transferQuantity < 0) {
-          errors.push(`第${index + 1}个明细项：调货数量不能为负数`);
+          errors.push(`第${position}个明细项：调货数量不能为负数`);
         }
         if (
-          Math.abs(localQuantity + transferQuantity - itemQuantity) > epsilon
+          Math.abs(localQuantity + transferQuantity - itemQuantity) >
+          QUANTITY_EPSILON
         ) {
           errors.push(
-            `第${index + 1}个明细项：本地发货数量与调货数量之和必须等于系统数量`
+            `第${position}个明细项：本地发货数量与调货数量之和必须等于系统数量`
           );
         }
       } else {
-        if (Math.abs(localQuantity) > epsilon) {
+        if (Math.abs(localQuantity) > QUANTITY_EPSILON) {
           errors.push(
-            `第${index + 1}个明细项：调货模式下本地发货数量应为0，请检查`
+            `第${position}个明细项：调货模式下本地发货数量应为0，请检查`
           );
         }
-        if (Math.abs(transferQuantity - itemQuantity) > epsilon) {
+        if (Math.abs(transferQuantity - itemQuantity) > QUANTITY_EPSILON) {
           errors.push(
-            `第${index + 1}个明细项：调货模式下调货数量必须等于系统数量`
+            `第${position}个明细项：调货模式下调货数量必须等于系统数量`
           );
         }
       }
 
       const unitCost = toOptionalNumber(item.unitCost);
       if (unitCost !== undefined && unitCost < 0) {
-        errors.push(`第${index + 1}个明细项：成本单价不能为负数`);
+        errors.push(`第${position}个明细项：成本单价不能为负数`);
       }
     }
   });
 
-  // 验证调货销售特殊要求
-  if (formData.orderType === 'TRANSFER') {
-    if (!formData.supplierId?.trim()) {
-      errors.push('调货销售必须选择供应商');
-    }
-    if (!formData.costAmount || formData.costAmount <= 0) {
-      errors.push('调货销售必须填写成本金额');
-    }
-    if (!formData.transferMode) {
-      errors.push('请选择调货履约模式');
-    }
-    if (
-      formData.transferMode &&
-      !['SUPPLIER_ONLY', 'MIXED'].includes(formData.transferMode)
-    ) {
-      errors.push('请选择有效的调货履约模式');
-    }
+  return errors;
+}
+
+function validateTransferRequirements(
+  formData: SalesOrderFormData,
+  transferMode?: TransferFulfillmentMode
+) {
+  if (formData.orderType !== 'TRANSFER') {
+    return [];
   }
 
-  // 验证费用项
-  (formData.feeItems ?? []).forEach((feeItem, index) => {
+  const errors: string[] = [];
+  const allowedModes: TransferFulfillmentMode[] = ['SUPPLIER_ONLY', 'MIXED'];
+
+  if (!formData.supplierId?.trim()) {
+    errors.push('调货销售必须选择供应商');
+  }
+  if (!formData.costAmount || formData.costAmount <= 0) {
+    errors.push('调货销售必须填写成本金额');
+  }
+  if (!formData.transferMode) {
+    errors.push('请选择调货履约模式');
+  } else if (!allowedModes.includes(formData.transferMode)) {
+    errors.push('请选择有效的调货履约模式');
+  } else if (transferMode && !allowedModes.includes(transferMode)) {
+    errors.push('请选择有效的调货履约模式');
+  }
+
+  return errors;
+}
+
+function validateFeeItems(feeItems?: SalesOrderFeeItem[]) {
+  const errors: string[] = [];
+
+  (feeItems ?? []).forEach((feeItem, index) => {
     const trimmedName = feeItem.feeName?.trim() ?? '';
     if (!trimmedName) {
       errors.push(`第${index + 1}个费用项：费用名称不能为空`);
@@ -517,6 +534,28 @@ export function validateFormData(formData: SalesOrderFormData): {
       errors.push(`第${index + 1}个费用项：费用金额不能为负数`);
     }
   });
+
+  return errors;
+}
+
+/**
+ * 验证表单数据是否有效
+ * @param formData 表单数据
+ * @returns 验证结果
+ */
+export function validateFormData(formData: SalesOrderFormData): {
+  valid: boolean;
+  errors: string[];
+} {
+  const items = Array.isArray(formData.items) ? formData.items : [];
+  const transferMode = deriveTransferMode(formData);
+
+  const errors = [
+    ...validateCustomer(formData),
+    ...validateItems(items, formData, transferMode),
+    ...validateTransferRequirements(formData, transferMode),
+    ...validateFeeItems(formData.feeItems),
+  ];
 
   return {
     valid: errors.length === 0,

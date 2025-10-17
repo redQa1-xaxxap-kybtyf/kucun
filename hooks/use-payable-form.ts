@@ -31,58 +31,66 @@ interface UsePayableFormProps {
 type CreateFormData = z.infer<typeof createPayableRecordSchema>;
 type UpdateFormData = z.infer<typeof updatePayableRecordSchema>;
 
-/**
- * 应付款表单Hook
- * 处理应付款创建和编辑的表单逻辑
- */
-export function usePayableForm({
-  mode,
-  payableId,
-  initialData,
-  onSuccess,
-  onCancel,
-}: UsePayableFormProps) {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const [submitError, setSubmitError] = useState('');
-
+function usePayableDetail(
+  mode: UsePayableFormProps['mode'],
+  payableId?: string,
+  initialData?: PayableRecordDetail
+) {
   const isEdit = mode === 'edit';
 
-  // 获取应付款详情（编辑模式）
-  const { data: payableData } = useQuery({
+  const { data } = useQuery({
     queryKey: payableQueryKeys.detail(payableId || ''),
     queryFn: () => payablesApi.getPayableRecord(payableId || ''),
     enabled: isEdit && !!payableId && !initialData,
     staleTime: 5 * 60 * 1000,
   });
 
-  const actualPayableData = initialData || payableData;
+  return { isEdit, payableData: initialData || data };
+}
 
-  // 初始化表单
-  const form = useForm<CreateFormData | UpdateFormData>({
+function usePayableFormInstance(
+  isEdit: boolean,
+  payableData?: PayableRecordDetail
+) {
+  const defaultValues =
+    isEdit && payableData
+      ? {
+          payableAmount: payableData.payableAmount,
+          status: payableData.status,
+          description: payableData.description || '',
+          remarks: payableData.remarks || '',
+        }
+      : {
+          supplierId: '',
+          sourceType: 'other' as const,
+          sourceId: undefined,
+          sourceNumber: undefined,
+          payableAmount: 0,
+          description: '',
+          remarks: '',
+        };
+
+  return useForm<CreateFormData | UpdateFormData>({
     resolver: zodResolver(
       isEdit ? updatePayableRecordSchema : createPayableRecordSchema
     ),
-    defaultValues:
-      isEdit && actualPayableData
-        ? {
-            payableAmount: actualPayableData.payableAmount,
-            status: actualPayableData.status,
-            description: actualPayableData.description || '',
-            remarks: actualPayableData.remarks || '',
-          }
-        : {
-            supplierId: '',
-            sourceType: 'other' as const,
-            sourceId: undefined,
-            sourceNumber: undefined,
-            payableAmount: 0,
-            description: '',
-            remarks: '',
-          },
+    defaultValues,
   });
+}
 
-  // 创建应付款
+interface UsePayableMutationsOptions {
+  queryClient: ReturnType<typeof useQueryClient>;
+  router: ReturnType<typeof useRouter>;
+  setSubmitError: (error: string) => void;
+  onSuccess?: (payable: PayableRecordDetail) => void;
+}
+
+function usePayableMutations({
+  queryClient,
+  router,
+  setSubmitError,
+  onSuccess,
+}: UsePayableMutationsOptions) {
   const createMutation = useMutation({
     mutationFn: (data: CreatePayableRecordData) =>
       payablesApi.createPayableRecord(data),
@@ -91,7 +99,6 @@ export function usePayableForm({
         description: `应付款单号 "${data.payableNumber}" 创建成功！`,
       });
 
-      // 失效应付款列表缓存
       await queryClient.invalidateQueries({
         queryKey: payableQueryKeys.lists(),
         refetchType: 'active',
@@ -110,7 +117,6 @@ export function usePayableForm({
     },
   });
 
-  // 更新应付款
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdatePayableRecordData }) =>
       payablesApi.updatePayableRecord(id, data),
@@ -119,7 +125,6 @@ export function usePayableForm({
         description: `应付款单号 "${data.payableNumber}" 更新成功！`,
       });
 
-      // 失效相关缓存
       await Promise.all([
         queryClient.invalidateQueries({
           queryKey: payableQueryKeys.lists(),
@@ -144,6 +149,37 @@ export function usePayableForm({
     },
   });
 
+  return { createMutation, updateMutation };
+}
+
+/**
+ * 应付款表单Hook
+ * 处理应付款创建和编辑的表单逻辑
+ */
+export function usePayableForm({
+  mode,
+  payableId,
+  initialData,
+  onSuccess,
+  onCancel,
+}: UsePayableFormProps) {
+  const router = useRouter();
+  const queryClient = useQueryClient();
+  const [submitError, setSubmitError] = useState('');
+
+  const { isEdit, payableData } = usePayableDetail(
+    mode,
+    payableId,
+    initialData
+  );
+  const form = usePayableFormInstance(isEdit, payableData);
+  const { createMutation, updateMutation } = usePayableMutations({
+    queryClient,
+    router,
+    setSubmitError,
+    onSuccess,
+  });
+
   const loadingState = combineAsyncStates([
     {
       isLoading: createMutation.isPending,
@@ -163,16 +199,19 @@ export function usePayableForm({
     setSubmitError('');
 
     try {
-      if (isEdit && (payableId || actualPayableData?.id)) {
+      if (isEdit && (payableId || payableData?.id)) {
         await updateMutation.mutateAsync({
-          id: payableId || actualPayableData?.id || '',
+          id: payableId || payableData?.id || '',
           data: data as UpdatePayableRecordData,
         });
       } else {
         await createMutation.mutateAsync(data as CreatePayableRecordData);
       }
     } catch (error) {
-      console.error('[usePayableForm] 提交应付单失败', error);
+      const message =
+        error instanceof Error ? error.message : '提交应付单失败，请稍后重试';
+      setSubmitError(message);
+      showError('提交失败', { description: message });
     }
   };
 
@@ -192,6 +231,6 @@ export function usePayableForm({
     submitError,
     onSubmit,
     handleCancel,
-    payableData: actualPayableData,
+    payableData,
   };
 }

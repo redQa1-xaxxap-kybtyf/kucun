@@ -5,6 +5,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { publishInventoryChange } from '@/lib/events';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { outboundCreateSchema } from '@/lib/validations/inventory-operations';
 
@@ -99,9 +100,9 @@ function formatOutboundRecord(record: OutboundRecordWithProduct) {
  * 获取出库记录列表
  * GET /api/inventory/outbound
  */
-export const GET = withAuth(
-  async (request: NextRequest) => {
-    return withErrorHandling(async () => {
+const getOutboundRecordsHandler = withAuth(
+  async (request: NextRequest) =>
+    withErrorHandling(async () => {
       // 解析查询参数
       const { searchParams } = request.nextUrl;
       const page = parseInt(searchParams.get('page') || '1');
@@ -156,10 +157,11 @@ export const GET = withAuth(
           totalPages: Math.ceil(total / limit),
         },
       });
-    })(request, {});
-  },
+    })(request, {}),
   { permissions: ['inventory:view'] }
 );
+
+export const GET = withRateLimit(RateLimitType.READ)(getOutboundRecordsHandler);
 
 /**
  * 执行出库事务
@@ -282,9 +284,9 @@ async function executeOutboundTransaction(
  * 出库操作API
  * POST /api/inventory/outbound
  */
-export const POST = withAuth(
-  async (request: NextRequest, { user }) => {
-    return withErrorHandling(async () => {
+const postOutboundRecordHandler = withAuth(
+  async (request: NextRequest, { user }) =>
+    withErrorHandling(async () => {
       const body = await request.json();
 
       // 验证请求数据
@@ -324,7 +326,10 @@ export const POST = withAuth(
         data: result?.inventory,
         message: '出库操作成功',
       });
-    })(request, {});
-  },
+    })(request, {}),
   { permissions: ['inventory:outbound'] }
+);
+
+export const POST = withRateLimit(RateLimitType.WRITE)(
+  postOutboundRecordHandler
 );

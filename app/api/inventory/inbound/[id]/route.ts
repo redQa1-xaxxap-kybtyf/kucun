@@ -7,6 +7,7 @@ import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import {
   cleanRemarks,
   formatQuantity,
@@ -15,7 +16,7 @@ import {
 } from '@/lib/validations/inbound';
 
 // GET /api/inventory/inbound/[id] - 获取单个入库记录
-export const GET = withAuth(
+const getInboundRecordHandler = withAuth(
   async (
     request: NextRequest,
     context: {
@@ -80,8 +81,10 @@ export const GET = withAuth(
   { permissions: ['inventory:view'] }
 );
 
+export const GET = withRateLimit(RateLimitType.READ)(getInboundRecordHandler);
+
 // PUT /api/inventory/inbound/[id] - 更新入库记录
-export const PUT = withAuth(
+const putInboundRecordHandler = withAuth(
   async (
     request: NextRequest,
     context: {
@@ -199,8 +202,10 @@ export const PUT = withAuth(
   { permissions: ['inventory:adjust'] }
 );
 
+export const PUT = withRateLimit(RateLimitType.WRITE)(putInboundRecordHandler);
+
 // DELETE /api/inventory/inbound/[id] - 删除入库记录
-export const DELETE = withAuth(
+const deleteInboundRecordHandler = withAuth(
   async (
     request: NextRequest,
     context: {
@@ -248,4 +253,8 @@ export const DELETE = withAuth(
       });
     })(request, context),
   { permissions: ['inventory:adjust'] }
+);
+
+export const DELETE = withRateLimit(RateLimitType.WRITE)(
+  deleteInboundRecordHandler
 );
