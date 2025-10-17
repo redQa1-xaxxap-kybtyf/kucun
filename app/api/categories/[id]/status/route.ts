@@ -78,10 +78,11 @@ export const PATCH = withAuth(
       });
 
       // 转换数据格式
-      const transformedCategory = {
+      const transformedCategory: Category = {
         id: updatedCategory.id,
         name: updatedCategory.name,
         code: updatedCategory.code,
+        description: updatedCategory.description,
         parentId: updatedCategory.parentId || undefined,
         sortOrder: updatedCategory.sortOrder,
         status: updatedCategory.status as 'active' | 'inactive',

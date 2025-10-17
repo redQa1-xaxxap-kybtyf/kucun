@@ -75,6 +75,11 @@ export interface SalesOrder {
   roundingAdjustment?: number; // 抹零金额
   totalAmount: number; // 总金额 = itemsAmount + additionalFees
   hasReturnOrder?: boolean;
+
+  // 预收款字段
+  usePrepayment?: boolean; // 是否使用预收款冲抵
+  prepaymentAmount?: number; // 预收款冲抵金额
+
   remarks?: string;
   shippedAt?: string;
   createdAt: string;
@@ -146,6 +151,8 @@ export interface SalesOrderCreateInput {
   supplierId?: string;
   costAmount?: number;
   roundingAdjustment?: number;
+  usePrepayment?: boolean; // 是否使用预收款冲抵
+  prepaymentAmount?: number; // 预收款冲抵金额
   remarks?: string;
   items: SalesOrderItemCreateInput[];
   feeItems?: SalesOrderFeeItem[];
@@ -161,6 +168,8 @@ export interface SalesOrderUpdateInput {
   supplierId?: string;
   costAmount?: number;
   roundingAdjustment?: number;
+  usePrepayment?: boolean; // 是否使用预收款冲抵
+  prepaymentAmount?: number; // 预收款冲抵金额
   remarks?: string;
   items?: SalesOrderItemUpdateInput[];
   feeItems?: SalesOrderFeeItem[];
@@ -168,16 +177,18 @@ export interface SalesOrderUpdateInput {
 
 // 销售订单明细创建输入类型
 export interface SalesOrderItemCreateInput {
-  productId: string;
+  productId?: string; // 可选：手动输入商品时不需要 productId
   productCode?: string;
   batchNumber?: string;
   colorCode?: string;
   productionDate?: string;
-  quantity: number;
-  unitPrice: number;
+  quantity?: number;
+  unitPrice?: number;
 
   // 调货销售相关字段
   unitCost?: number; // 单位成本价（调货销售时使用）
+  costSubtotal?: number; // 成本小计（调货销售时使用）
+  profitAmount?: number; // 毛利金额（调货销售时使用）
   localQuantity?: number; // 本地仓发货数量（调货混合模式使用）
   transferQuantity?: number; // 调货发货数量
 
@@ -194,12 +205,13 @@ export interface SalesOrderItemCreateInput {
   piecesPerUnit?: number; // 每件片数
   specification?: string; // 规格
   remarks?: string; // 备注
+  subtotal?: number; // 小计金额（quantity * unitPrice）
 }
 
 // 销售订单明细更新输入类型
 export interface SalesOrderItemUpdateInput {
   id?: string; // 新增明细时为空
-  productId: string;
+  productId?: string; // 可选：手动输入商品时不需要 productId
   productCode?: string;
   batchNumber?: string;
   colorCode?: string;
