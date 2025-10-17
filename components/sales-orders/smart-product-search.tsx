@@ -8,7 +8,7 @@ import {
   Plus,
   Search,
 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -117,7 +117,7 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
               <span className="flex min-w-0 flex-col">
                 {selectedProduct ? (
                   simple ? (
-                    <span className="truncate font-mono">
+                    <span className="truncate text-sm text-gray-700">
                       {selectedProduct.code || selectedProduct.name}
                     </span>
                   ) : (
@@ -160,7 +160,14 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
             />
             <CommandList className="max-h-[400px]">
               {isSearching && <ProductSearchLoadingIndicator />}
-              {filteredProducts.length > 0 ? (
+              {!searchValue ? (
+                <ProductSearchEmptyState
+                  searchValue={searchValue}
+                  isSearching={isSearching}
+                  allowTemporaryProducts={allowTemporaryProducts}
+                  onAddTemporaryProduct={handleAddTemporaryProduct}
+                />
+              ) : filteredProducts.length > 0 ? (
                 <ProductSearchResults
                   products={filteredProducts}
                   selectedValue={props.value}
@@ -360,105 +367,129 @@ function ProductSearchResults({
   );
 }
 
-function ProductSearchResultItem({
-  product,
-  isSelected,
-  onSelectProduct,
-  onSelectBatch,
-}: {
-  product: ProductWithInventory;
-  isSelected: boolean;
-  onSelectProduct: (productId: string) => void;
-  onSelectBatch: (productId: string, batchNumber: string) => void;
-}) {
-  const specification = formatProductSpecification(product.specification);
-  const piecesPerUnit = product.piecesPerUnit ?? 0;
-  const availableDisplay = formatInventoryQuantity(
-    product.inventory?.availableInventory ?? 0,
-    piecesPerUnit
-  );
-  const totalDisplay = formatInventoryQuantity(
-    product.inventory?.totalInventory ?? 0,
-    piecesPerUnit
-  );
-  const renderedKeywords = buildProductKeywords(product, specification);
+const ProductSearchResultItem = React.memo(
+  ({
+    product,
+    isSelected,
+    onSelectProduct,
+    onSelectBatch,
+  }: {
+    product: ProductWithInventory;
+    isSelected: boolean;
+    onSelectProduct: (productId: string) => void;
+    onSelectBatch: (productId: string, batchNumber: string) => void;
+  }) => {
+    const specification = React.useMemo(
+      () => formatProductSpecification(product.specification),
+      [product.specification]
+    );
+    const piecesPerUnit = product.piecesPerUnit ?? 0;
+    const availableDisplay = React.useMemo(
+      () =>
+        formatInventoryQuantity(
+          product.inventory?.availableInventory ?? 0,
+          piecesPerUnit
+        ),
+      [product.inventory?.availableInventory, piecesPerUnit]
+    );
+    const totalDisplay = React.useMemo(
+      () =>
+        formatInventoryQuantity(
+          product.inventory?.totalInventory ?? 0,
+          piecesPerUnit
+        ),
+      [product.inventory?.totalInventory, piecesPerUnit]
+    );
+    const renderedKeywords = React.useMemo(
+      () => buildProductKeywords(product, specification),
+      [product, specification]
+    );
 
-  return (
-    <CommandItem
-      value={renderedKeywords.join(' ')}
-      keywords={renderedKeywords}
-      onSelect={() => onSelectProduct(product.id)}
-      className="flex items-start justify-between gap-4 p-4"
-    >
-      <div className="flex min-w-0 flex-1 items-start gap-3">
-        <Check
-          className={cn(
-            'h-4 w-4 shrink-0',
-            isSelected ? 'opacity-100' : 'opacity-0'
-          )}
-        />
-        <Package className="text-muted-foreground h-5 w-5 shrink-0" />
-        <div className="min-w-0 flex-1 space-y-1.5">
-          <div className="flex items-center gap-2">
-            {product.code && (
-              <Badge
-                variant="outline"
-                className="border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 px-2.5 py-0.5 font-mono text-xs font-bold text-blue-800 shadow-sm"
-              >
-                {product.code}
-              </Badge>
+    return (
+      <CommandItem
+        value={renderedKeywords.join(' ')}
+        keywords={renderedKeywords}
+        onSelect={() => onSelectProduct(product.id)}
+        className="flex items-start justify-between gap-4 p-4"
+      >
+        <div className="flex min-w-0 flex-1 items-start gap-3">
+          <Check
+            className={cn(
+              'h-4 w-4 shrink-0',
+              isSelected ? 'opacity-100' : 'opacity-0'
             )}
-            <span className="font-semibold text-gray-900">{product.name}</span>
-            {product.status === 'inactive' && (
-              <Badge variant="secondary" className="text-xs">
-                停用
-              </Badge>
-            )}
-          </div>
-          {specification && (
-            <div className="text-sm text-gray-600">规格：{specification}</div>
-          )}
-          {product.inventory?.batches &&
-            product.inventory.batches.length > 0 && (
-              <ProductBatchList
-                productId={product.id}
-                batches={product.inventory.batches}
-                piecesPerUnit={piecesPerUnit}
-                onSelectBatch={onSelectBatch}
-              />
-            )}
-        </div>
-      </div>
-      {product.inventory && (
-        <div className="shrink-0 space-y-1 text-right">
-          <div className="rounded-md bg-green-50 px-3 py-1">
-            <div className="text-xs text-gray-600">可用库存</div>
-            <div className="text-sm font-semibold text-green-600">
-              {availableDisplay}
+          />
+          <Package className="text-muted-foreground h-5 w-5 shrink-0" />
+          <div className="min-w-0 flex-1 space-y-1.5">
+            <div className="flex items-center gap-2">
+              {product.code && (
+                <Badge
+                  variant="outline"
+                  className="border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 px-2.5 py-0.5 font-mono text-xs font-bold text-blue-800 shadow-sm"
+                >
+                  {product.code}
+                </Badge>
+              )}
+              <span className="font-semibold text-gray-900">
+                {product.name}
+              </span>
+              {product.status === 'inactive' && (
+                <Badge variant="secondary" className="text-xs">
+                  停用
+                </Badge>
+              )}
             </div>
+            {specification && (
+              <div className="text-sm text-gray-600">规格：{specification}</div>
+            )}
+            {product.inventory?.batches &&
+              product.inventory.batches.length > 0 && (
+                <ProductBatchList
+                  productId={product.id}
+                  batches={product.inventory.batches}
+                  piecesPerUnit={piecesPerUnit}
+                  onSelectBatch={onSelectBatch}
+                />
+              )}
           </div>
-          {product.inventory.totalInventory !==
-            product.inventory.availableInventory && (
-            <div className="text-xs text-gray-500">总量 {totalDisplay}</div>
+        </div>
+        <div className="shrink-0 space-y-1 text-right">
+          {product.inventory ? (
+            <>
+              <div className="rounded-md bg-green-50 px-3 py-1">
+                <div className="text-xs text-gray-600">可用库存</div>
+                <div className="text-sm font-semibold text-green-600">
+                  {availableDisplay}
+                </div>
+              </div>
+              {product.inventory.totalInventory !==
+                product.inventory.availableInventory && (
+                <div className="text-xs text-gray-500">总量 {totalDisplay}</div>
+              )}
+            </>
+          ) : (
+            <div className="rounded-md bg-gray-50 px-3 py-1">
+              <div className="text-xs text-gray-500">无库存信息</div>
+            </div>
           )}
         </div>
-      )}
-    </CommandItem>
-  );
-}
+      </CommandItem>
+    );
+  }
+);
 
-function ProductBatchList({
-  productId,
-  batches,
-  piecesPerUnit,
-  onSelectBatch,
-}: {
-  productId: string;
-  batches: Array<{ batchNumber: string; quantity: number }>;
-  piecesPerUnit: number;
-  onSelectBatch: (productId: string, batchNumber: string) => void;
-}) {
-  return (
+const ProductBatchList = React.memo(
+  ({
+    productId,
+    batches,
+    piecesPerUnit,
+    onSelectBatch,
+  }: {
+    productId: string;
+    batches: Array<{ batchNumber: string; quantity: number }>;
+    piecesPerUnit: number;
+    onSelectBatch: (productId: string, batchNumber: string) => void;
+  }) => (
     <div className="space-y-1">
       <div className="text-xs font-medium text-gray-600">
         点击批次进行选择：
@@ -485,24 +516,27 @@ function ProductBatchList({
         ))}
       </div>
     </div>
-  );
-}
+  )
+);
 
 function filterProducts(products: ProductWithInventory[], searchValue: string) {
   if (!searchValue) {
-    return products;
+    return [];
   }
 
   const keyword = searchValue.toLowerCase();
   return products.filter(product => {
-    const specification = formatProductSpecification(product.specification);
-    const specificationLower = specification.toLowerCase();
-
-    return (
-      product.name.toLowerCase().includes(keyword) ||
+    // 先检查 code 和 name（最常用的搜索）
+    if (
       product.code.toLowerCase().includes(keyword) ||
-      specificationLower.includes(keyword)
-    );
+      product.name.toLowerCase().includes(keyword)
+    ) {
+      return true;
+    }
+
+    // 只有在 code 和 name 都不匹配时才格式化规格进行搜索
+    const specification = formatProductSpecification(product.specification);
+    return specification.toLowerCase().includes(keyword);
   });
 }
 
