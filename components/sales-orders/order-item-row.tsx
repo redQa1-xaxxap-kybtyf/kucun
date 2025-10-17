@@ -498,6 +498,7 @@ export const OrderItemRow = React.memo<OrderItemRowProps>(
                     type="number"
                     step="0.01"
                     {...field}
+                    value={field.value ?? ''}
                     className="h-8 text-xs"
                     placeholder="数量"
                     onChange={e => {
