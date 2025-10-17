@@ -646,16 +646,10 @@ export function ERPSalesOrderForm({
       maximumFractionDigits: 2,
     })} 片`;
 
-  // 重量格式化工具函数
+  // 重量格式化工具函数 - 始终以吨为单位显示,保留1位小数
   const formatWeight = (totalKg: number): string => {
-    if (totalKg < 1000) {
-      // 小于1吨：显示为kg，整数显示，四舍五入
-      return `${Math.round(totalKg)}kg`;
-    } else {
-      // 大于等于1吨：显示为吨，保留1位小数，四舍五入
-      const tons = totalKg / 1000;
-      return `${Math.round(tons * 10) / 10}吨`;
-    }
+    const tons = totalKg / 1000;
+    return `${Math.round(tons * 10) / 10}吨`;
   };
 
   // 计算总重量：根据单位和每件片数正确计算
