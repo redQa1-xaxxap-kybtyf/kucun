@@ -9,6 +9,7 @@ import {
   FormItem,
   FormMessage,
 } from '@/components/ui/form';
+import { useDebouncedCallback } from '@/hooks/use-debounced-search';
 import { getProducts } from '@/lib/api/products';
 import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import type { Product } from '@/lib/types/product';
@@ -39,7 +40,6 @@ export function IntelligentProductInput<
   onProductChange,
   onBatchSelect,
 }: IntelligentProductInputProps<TFieldValues>) {
-  const searchTimerRef = React.useRef<NodeJS.Timeout | null>(null);
   const searchAbortControllerRef = React.useRef<AbortController | null>(null);
   const [extraProducts, setExtraProducts] = React.useState<Product[]>([]);
   const [isSearchingProducts, setIsSearchingProducts] = React.useState(false);
@@ -55,62 +55,63 @@ export function IntelligentProductInput<
     return Array.from(map.values());
   }, [products, extraProducts]);
 
-  const handleProductSearch = React.useCallback((query: string) => {
-    if (searchTimerRef.current) {
-      clearTimeout(searchTimerRef.current);
-      searchTimerRef.current = null;
-    }
-
+  // 使用防抖回调优化搜索性能
+  const performSearch = React.useCallback(async (trimmed: string) => {
     if (searchAbortControllerRef.current) {
       searchAbortControllerRef.current.abort();
-      searchAbortControllerRef.current = null;
     }
 
-    const trimmed = query.trim();
-    if (!trimmed) {
-      setIsSearchingProducts(false);
-      return;
-    }
+    const controller = new AbortController();
+    searchAbortControllerRef.current = controller;
+    setIsSearchingProducts(true);
 
-    searchTimerRef.current = setTimeout(async () => {
-      const controller = new AbortController();
-      searchAbortControllerRef.current = controller;
-      setIsSearchingProducts(true);
-      try {
-        const result = await getProducts({
-          search: trimmed,
-          limit: 50,
-          includeInventory: true,
-          includeStatistics: false,
-        });
+    try {
+      const result = await getProducts({
+        search: trimmed,
+        limit: 50,
+        includeInventory: true,
+        includeStatistics: false,
+      });
 
+      if (!controller.signal.aborted) {
         setExtraProducts(prev => {
           const map = new Map<string, Product>();
           prev.forEach(product => map.set(product.id, product));
           result.data.forEach(product => map.set(product.id, product));
           return Array.from(map.values());
         });
-      } catch (error) {
-        const name =
-          (error as { name?: string } | undefined)?.name ??
-          (error instanceof Error ? error.name : undefined);
-        if (name === 'AbortError') {
-          return;
-        }
-      } finally {
-        if (!controller.signal.aborted) {
-          setIsSearchingProducts(false);
-        }
-        searchAbortControllerRef.current = null;
       }
-    }, 250);
+    } catch (error) {
+      const name =
+        (error as { name?: string } | undefined)?.name ??
+        (error instanceof Error ? error.name : undefined);
+      // 忽略 AbortError，这是正常的取消操作
+      if (name === 'AbortError') {
+        return;
+      }
+    } finally {
+      if (!controller.signal.aborted) {
+        setIsSearchingProducts(false);
+      }
+      searchAbortControllerRef.current = null;
+    }
   }, []);
+
+  const handleProductSearch = useDebouncedCallback(
+    (query: string) => {
+      const trimmed = query.trim();
+      if (!trimmed) {
+        setIsSearchingProducts(false);
+        return;
+      }
+      performSearch(trimmed);
+    },
+    300,
+    [performSearch]
+  );
 
   React.useEffect(
     () => () => {
-      if (searchTimerRef.current) {
-        clearTimeout(searchTimerRef.current);
-      }
       if (searchAbortControllerRef.current) {
         searchAbortControllerRef.current.abort();
         searchAbortControllerRef.current = null;
