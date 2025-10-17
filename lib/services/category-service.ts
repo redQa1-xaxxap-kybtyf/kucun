@@ -77,6 +77,45 @@ async function validateCategoryDepth(parentId?: string | null): Promise<void> {
 }
 
 /**
+ * 确保更新父子关系不会导致循环引用
+ */
+async function ensureNoCircularRelationship(
+  categoryId: string,
+  parentId?: string | null
+): Promise<void> {
+  if (!parentId) {
+    return;
+  }
+
+  const visited = new Set<string>();
+  let currentId: string | null | undefined = parentId;
+
+  while (currentId) {
+    if (currentId === categoryId) {
+      throw new Error('不能将分类移动到其自身或子分类下');
+    }
+
+    if (visited.has(currentId)) {
+      break;
+    }
+
+    visited.add(currentId);
+
+    const parentRecord: { parentId: string | null } | null =
+      await prisma.category.findUnique({
+        where: { id: currentId },
+        select: { parentId: true },
+      });
+
+    if (!parentRecord) {
+      break;
+    }
+
+    currentId = parentRecord.parentId;
+  }
+}
+
+/**
  * 构建查询条件
  * 优化: 移除 MySQL 不支持的 mode: 'insensitive',简化状态过滤逻辑
  */
@@ -248,9 +287,10 @@ export async function createCategory(
     data: {
       name: params.name,
       code,
+      description: params.description ?? null,
       parentId: params.parentId,
-      sortOrder: params.sortOrder || 0,
-      status: 'active',
+      sortOrder: params.sortOrder ?? 0,
+      status: params.status === 'inactive' ? 'inactive' : 'active',
     },
     include: {
       parent: true,
@@ -326,8 +366,11 @@ export async function updateCategory(
       if (!parentExists) {
         throw new Error('父级分类不存在');
       }
+    }
 
-      // 检查层级限制
+    await ensureNoCircularRelationship(id, updateData.parentId);
+
+    if (updateData.parentId) {
       await validateCategoryDepth(updateData.parentId);
     }
   }
@@ -363,13 +406,31 @@ export async function updateCategory(
   }
 
   // 4. 更新分类
+  const updatePayload: Prisma.CategoryUncheckedUpdateInput = {};
+
+  if (updateData.name !== undefined) {
+    updatePayload.name = updateData.name;
+  }
+
+  if (updateData.parentId !== undefined) {
+    updatePayload.parentId = updateData.parentId ?? null;
+  }
+
+  if (updateData.sortOrder !== undefined) {
+    updatePayload.sortOrder = updateData.sortOrder;
+  }
+
+  if (updateData.description !== undefined) {
+    updatePayload.description = updateData.description ?? null;
+  }
+
+  if (updateData.status !== undefined) {
+    updatePayload.status = updateData.status;
+  }
+
   const updatedCategory = await prisma.category.update({
     where: { id },
-    data: {
-      name: updateData.name,
-      parentId: updateData.parentId,
-      sortOrder: updateData.sortOrder,
-    },
+    data: updatePayload,
     include: {
       parent: true,
       children: true,

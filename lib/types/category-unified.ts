@@ -122,6 +122,7 @@ export interface CreateCategoryParams {
   description?: string | null;
   parentId?: string | null;
   sortOrder?: number;
+  status?: CategoryStatus;
 }
 
 /**
@@ -134,6 +135,7 @@ export interface UpdateCategoryParams {
   description?: string | null;
   parentId?: string | null;
   sortOrder?: number;
+  status?: CategoryStatus;
 }
 
 // ==================== UI组件类型 ====================

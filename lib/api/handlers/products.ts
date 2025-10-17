@@ -1,33 +1,69 @@
-import type { Prisma } from '@prisma/client';
+import type { Category, Prisma, Product } from '@prisma/client';
 import type { z } from 'zod';
 
+import { ApiError } from '@/lib/api/errors';
 import { invalidateProductCache } from '@/lib/cache/product-cache';
 import type { ProductStatus, ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { parseProductImages } from '@/lib/utils/product-transforms';
 import { productUpdateSchema } from '@/lib/validations/product';
 
-// 定义产品查询结果类型 (保留用于类型推断)
-type _ProductWithRelations = Prisma.ProductGetPayload<{
-  include: {
-    category: true;
-    variants: true;
-  };
+const PRODUCT_WITH_RELATIONS_SELECT = {
+  id: true,
+  code: true,
+  name: true,
+  specification: true,
+  unit: true,
+  piecesPerUnit: true,
+  weight: true,
+  thickness: true,
+  status: true,
+  categoryId: true,
+  description: true,
+  thumbnailUrl: true,
+  images: true,
+  createdAt: true,
+  updatedAt: true,
+  category: {
+    select: {
+      id: true,
+      name: true,
+      code: true,
+    },
+  },
+  variants: {
+    select: {
+      id: true,
+      sku: true,
+      colorCode: true,
+      colorName: true,
+      colorValue: true,
+      status: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  },
+  _count: {
+    select: {
+      variants: true,
+      inventory: true,
+      salesOrderItems: true,
+      inboundRecords: true,
+    },
+  },
+} satisfies Prisma.ProductSelect;
+
+type ProductWithRelations = Prisma.ProductGetPayload<{
+  select: typeof PRODUCT_WITH_RELATIONS_SELECT;
 }>;
 
-// 定义产品变体类型
-type ProductVariantWithRelations = Prisma.ProductVariantGetPayload<{
-  select: {
-    id: true;
-    sku: true;
-    colorCode: true;
-    colorName: true;
-    colorValue: true;
-    status: true;
-    createdAt: true;
-    updatedAt: true;
-  };
-}>;
+type ProductVariantWithRelations =
+  ProductWithRelations['variants'] extends Array<infer Variant>
+    ? Variant
+    : never;
 
 /**
  * 根据ID获取产品详情
@@ -35,53 +71,7 @@ type ProductVariantWithRelations = Prisma.ProductVariantGetPayload<{
 export async function getProductById(id: string) {
   const product = await prisma.product.findUnique({
     where: { id },
-    select: {
-      id: true,
-      code: true,
-      name: true,
-      specification: true,
-      unit: true,
-      piecesPerUnit: true,
-      weight: true,
-      thickness: true,
-      status: true,
-      categoryId: true,
-      description: true,
-      thumbnailUrl: true,
-      images: true,
-      createdAt: true,
-      updatedAt: true,
-      category: {
-        select: {
-          id: true,
-          name: true,
-          code: true,
-        },
-      },
-      variants: {
-        select: {
-          id: true,
-          sku: true,
-          colorCode: true,
-          colorName: true,
-          colorValue: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      },
-      _count: {
-        select: {
-          variants: true,
-          inventory: true,
-          salesOrderItems: true,
-          inboundRecords: true,
-        },
-      },
-    },
+    select: PRODUCT_WITH_RELATIONS_SELECT,
   });
 
   if (!product) {
@@ -98,158 +88,173 @@ export async function updateProduct(
   id: string,
   data: z.infer<typeof productUpdateSchema>
 ) {
-  // 验证数据
   const validatedData = productUpdateSchema.parse(data);
+  const context = await loadProductUpdateContext(id, validatedData);
+  const existingProduct = ensureProductExists(context.existingProduct);
 
-  // ✅ 使用 Promise.all() 并行化查询，从 150ms 降至 50ms (提升 66%)
-  const [existingProduct, category, codeExists] = await Promise.all([
-    // 1. 检查产品是否存在
-    prisma.product.findUnique({ where: { id } }),
-    // 2. 如果更新了分类，验证分类是否存在
-    validatedData.categoryId
-      ? prisma.category.findUnique({ where: { id: validatedData.categoryId } })
-      : Promise.resolve(null),
-    // 3. 如果更新了产品编码，检查新编码是否已被其他产品使用
-    validatedData.code
-      ? prisma.product.findUnique({ where: { code: validatedData.code } })
-      : Promise.resolve(null),
-  ]);
+  validateCategoryChange(validatedData, existingProduct, context.category);
+  validateCodeChange(validatedData, existingProduct, context.codeOwner);
 
-  if (!existingProduct) {
-    throw new Error('产品不存在');
-  }
+  const updateData = buildProductUpdateData(validatedData);
 
-  // 验证分类
-  if (
-    validatedData.categoryId &&
-    validatedData.categoryId !== existingProduct.categoryId
-  ) {
-    if (!category) {
-      throw new Error('指定的分类不存在');
-    }
-  }
-
-  // 验证产品编码
-  if (validatedData.code && validatedData.code !== existingProduct.code) {
-    if (codeExists) {
-      throw new Error('产品编码已被其他产品使用');
-    }
-  }
-
-  // 构建更新数据对象，只包含提供的字段
-  const updateData: Prisma.ProductUpdateInput = {};
-
-  if (validatedData.code !== undefined) {
-    updateData.code = validatedData.code;
-  }
-  if (validatedData.name !== undefined) {
-    updateData.name = validatedData.name;
-  }
-  if (validatedData.specification !== undefined) {
-    updateData.specification = validatedData.specification;
-  }
-  if (validatedData.piecesPerUnit !== undefined) {
-    updateData.piecesPerUnit = validatedData.piecesPerUnit;
-  }
-  if (validatedData.weight !== undefined) {
-    updateData.weight = validatedData.weight;
-  }
-  if (validatedData.thickness !== undefined) {
-    updateData.thickness = validatedData.thickness;
-  }
-  if (validatedData.description !== undefined) {
-    const trimmedDescription = validatedData.description.trim();
-    updateData.description =
-      trimmedDescription.length > 0 ? trimmedDescription : null;
-  }
-  if (validatedData.thumbnailUrl !== undefined) {
-    const trimmedThumbnailUrl = validatedData.thumbnailUrl.trim();
-    updateData.thumbnailUrl =
-      trimmedThumbnailUrl.length > 0 ? trimmedThumbnailUrl : null;
-  }
-  if (validatedData.images !== undefined) {
-    updateData.images =
-      Array.isArray(validatedData.images) && validatedData.images.length > 0
-        ? JSON.stringify(validatedData.images)
-        : null;
-  }
-  if (validatedData.categoryId !== undefined) {
-    const rawCategoryId =
-      typeof validatedData.categoryId === 'string'
-        ? validatedData.categoryId.trim()
-        : validatedData.categoryId;
-    const normalizedCategoryId =
-      rawCategoryId && rawCategoryId !== 'uncategorized' ? rawCategoryId : null;
-
-    // 使用 Prisma 关系语法更新分类
-    updateData.category = normalizedCategoryId
-      ? {
-          connect: { id: normalizedCategoryId },
-        }
-      : {
-          disconnect: true,
-        };
-  }
-  if (validatedData.status !== undefined) {
-    updateData.status = validatedData.status;
-  }
-
-  // 更新产品
   const updatedProduct = await prisma.product.update({
     where: { id },
     data: updateData,
-    select: {
-      id: true,
-      code: true,
-      name: true,
-      specification: true,
-      unit: true,
-      piecesPerUnit: true,
-      weight: true,
-      thickness: true,
-      status: true,
-      categoryId: true,
-      description: true,
-      thumbnailUrl: true,
-      images: true,
-      createdAt: true,
-      updatedAt: true,
-      category: {
-        select: {
-          id: true,
-          name: true,
-          code: true,
-        },
-      },
-      variants: {
-        select: {
-          id: true,
-          sku: true,
-          colorCode: true,
-          colorName: true,
-          colorValue: true,
-          status: true,
-          createdAt: true,
-          updatedAt: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-      },
-      _count: {
-        select: {
-          variants: true,
-          inventory: true,
-          salesOrderItems: true,
-          inboundRecords: true,
-        },
-      },
-    },
+    select: PRODUCT_WITH_RELATIONS_SELECT,
   });
 
   await invalidateProductCache(id);
 
   return formatProduct(updatedProduct);
+}
+
+type ProductUpdateContext = {
+  existingProduct: Product | null;
+  category: Category | null;
+  codeOwner: Product | null;
+};
+
+async function loadProductUpdateContext(
+  id: string,
+  data: z.infer<typeof productUpdateSchema>
+): Promise<ProductUpdateContext> {
+  const normalizedCategoryId = normalizeCategoryIdInput(data.categoryId);
+
+  const [existingProduct, category, codeOwner] = await Promise.all([
+    prisma.product.findUnique({ where: { id } }),
+    normalizedCategoryId
+      ? prisma.category.findUnique({ where: { id: normalizedCategoryId } })
+      : Promise.resolve(null),
+    data.code
+      ? prisma.product.findUnique({ where: { code: data.code } })
+      : Promise.resolve(null),
+  ]);
+
+  return {
+    existingProduct,
+    category,
+    codeOwner,
+  };
+}
+
+function ensureProductExists(product: Product | null): Product {
+  if (!product) {
+    throw ApiError.notFound('产品');
+  }
+
+  return product;
+}
+
+function validateCategoryChange(
+  data: z.infer<typeof productUpdateSchema>,
+  existingProduct: Product,
+  category: Category | null
+): void {
+  if (data.categoryId === undefined) {
+    return;
+  }
+
+  const normalizedCategoryId = normalizeCategoryIdInput(data.categoryId);
+  const currentCategoryId = existingProduct.categoryId ?? null;
+
+  if (
+    normalizedCategoryId &&
+    normalizedCategoryId !== currentCategoryId &&
+    !category
+  ) {
+    throw ApiError.badRequest('指定的分类不存在');
+  }
+}
+
+function validateCodeChange(
+  data: z.infer<typeof productUpdateSchema>,
+  existingProduct: Product,
+  codeOwner: Product | null
+): void {
+  if (
+    data.code !== undefined &&
+    data.code !== existingProduct.code &&
+    codeOwner
+  ) {
+    throw ApiError.badRequest('产品编码已被其他产品使用');
+  }
+}
+
+function buildProductUpdateData(
+  data: z.infer<typeof productUpdateSchema>
+): Prisma.ProductUpdateInput {
+  const updateData: Prisma.ProductUpdateInput = {};
+
+  if (data.code !== undefined) {
+    updateData.code = data.code;
+  }
+  if (data.name !== undefined) {
+    updateData.name = data.name;
+  }
+  if (data.unit !== undefined) {
+    updateData.unit = data.unit;
+  }
+  if (data.specification !== undefined) {
+    updateData.specification = data.specification;
+  }
+  if (data.piecesPerUnit !== undefined) {
+    updateData.piecesPerUnit = data.piecesPerUnit;
+  }
+  if (data.weight !== undefined) {
+    updateData.weight = data.weight;
+  }
+  if (data.thickness !== undefined) {
+    updateData.thickness = data.thickness;
+  }
+  if (data.description !== undefined) {
+    updateData.description = normalizeNullableString(data.description);
+  }
+  if (data.thumbnailUrl !== undefined) {
+    updateData.thumbnailUrl = normalizeNullableString(data.thumbnailUrl);
+  }
+  if (data.images !== undefined) {
+    updateData.images =
+      Array.isArray(data.images) && data.images.length > 0
+        ? JSON.stringify(data.images)
+        : null;
+  }
+  if (data.categoryId !== undefined) {
+    const normalizedCategoryId = normalizeCategoryIdInput(data.categoryId);
+    updateData.category = normalizedCategoryId
+      ? { connect: { id: normalizedCategoryId } }
+      : { disconnect: true };
+  }
+  if (data.status !== undefined) {
+    updateData.status = data.status;
+  }
+
+  return updateData;
+}
+
+function normalizeNullableString(value: string | null | undefined): string | null {
+  if (value === undefined || value === null) {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+function normalizeCategoryIdInput(
+  categoryId: string | null | undefined
+): string | null {
+  if (categoryId === undefined || categoryId === null) {
+    return null;
+  }
+
+  const trimmed =
+    typeof categoryId === 'string' ? categoryId.trim() : categoryId;
+
+  if (!trimmed || trimmed === 'uncategorized') {
+    return null;
+  }
+
+  return trimmed;
 }
 
 /**
@@ -272,7 +277,7 @@ export async function deleteProduct(id: string) {
   });
 
   if (!product) {
-    throw new Error('产品不存在');
+    throw ApiError.notFound('产品');
   }
 
   // 检查是否有关联数据
@@ -282,7 +287,13 @@ export async function deleteProduct(id: string) {
     product._count.inboundRecords > 0;
 
   if (hasRelatedData) {
-    throw new Error('该产品存在关联的库存、销售订单或入库记录，无法删除');
+    throw ApiError.badRequest('该产品存在关联的库存、销售订单或入库记录，无法删除', {
+      counts: {
+        inventory: product._count.inventory,
+        salesOrderItems: product._count.salesOrderItems,
+        inboundRecords: product._count.inboundRecords,
+      },
+    });
   }
 
   // 删除产品变体
@@ -305,35 +316,7 @@ export async function deleteProduct(id: string) {
 /**
  * 格式化产品数据
  */
-function formatProduct(product: {
-  id: string;
-  name: string;
-  code: string;
-  categoryId?: string | null;
-  specification?: string | null;
-  unit: string;
-  piecesPerUnit: number;
-  weight?: number | null;
-  thickness?: number | null;
-  status: string;
-  description?: string | null;
-  thumbnailUrl?: string | null;
-  images?: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-  category?: {
-    id: string;
-    name: string;
-    code: string;
-  } | null;
-  variants?: ProductVariantWithRelations[];
-  _count?: {
-    variants: number;
-    inventory: number;
-    salesOrderItems: number;
-    inboundRecords: number;
-  };
-}) {
+function formatProduct(product: ProductWithRelations) {
   return {
     id: product.id,
     code: product.code,
