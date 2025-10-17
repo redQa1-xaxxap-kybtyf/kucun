@@ -510,6 +510,14 @@ const ProductSearchResultItem = React.memo(
                 规格：{highlightedSpecification}
               </div>
             )}
+            {piecesPerUnit > 0 && (
+              <div className="text-sm text-gray-600">
+                每件片数：
+                <span className="font-medium text-blue-600">
+                  {piecesPerUnit}
+                </span>
+              </div>
+            )}
             {product.inventory?.batches &&
               product.inventory.batches.length > 0 && (
                 <ProductBatchList
