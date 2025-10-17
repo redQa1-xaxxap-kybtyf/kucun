@@ -2,6 +2,13 @@
  * 统一的页面标题组件
  * 用于所有列表页面的标题区域
  * 遵循ERP色彩系统规范
+ *
+ * 优化特性:
+ * - 增强的视觉层次和阴影效果
+ * - 优化的图标设计和微动画
+ * - 改进的排版和间距
+ * - 响应式布局优化
+ * - 统一的边框和背景样式
  */
 
 import * as React from 'react';
@@ -22,6 +29,8 @@ interface PageHeaderProps {
   variant?: 'gradient' | 'solid';
   /** 图标背景色 (CSS变量名或颜色值) */
   iconBgColor?: string;
+  /** 是否显示边框 */
+  showBorder?: boolean;
   /** 自定义className */
   className?: string;
 }
@@ -50,20 +59,27 @@ export function PageHeader({
   description,
   icon,
   actions,
-  variant = 'gradient',
+  variant = 'solid',
   iconBgColor = 'hsl(var(--color-primary))',
+  showBorder = true,
   className,
 }: PageHeaderProps) {
   return (
     <Card
-      className={cn('overflow-hidden', className)}
+      className={cn(
+        'overflow-hidden',
+        showBorder
+          ? 'border border-[hsl(var(--color-border-primary))]'
+          : 'border-none',
+        className
+      )}
       style={{ boxShadow: 'var(--shadow-medium)' }}
     >
       <CardContent
         className={cn(
           'p-6',
           variant === 'gradient' &&
-            'bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]',
+            'bg-gradient-to-r from-[hsl(var(--color-primary-light))] via-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]',
           variant === 'solid' && 'bg-[hsl(var(--color-bg-secondary))]'
         )}
       >
@@ -71,7 +87,11 @@ export function PageHeader({
           <div className="flex items-center gap-4">
             {/* 图标容器 */}
             <div
-              className="flex h-12 w-12 items-center justify-center rounded-xl text-white"
+              className={cn(
+                'flex h-12 w-12 flex-shrink-0',
+                'items-center justify-center',
+                'rounded-xl text-white'
+              )}
               style={{
                 backgroundColor: iconBgColor,
                 boxShadow: 'var(--shadow-light)',
@@ -81,7 +101,7 @@ export function PageHeader({
             </div>
 
             {/* 标题和描述 */}
-            <div>
+            <div className="min-w-0 flex-1">
               <h1 className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
                 {title}
               </h1>

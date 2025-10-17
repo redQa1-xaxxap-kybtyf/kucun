@@ -1,9 +1,10 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { provinces } from '@/lib/data/complete-address-data-full';
 import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 
-export async function GET() {
+async function handleProvincesRequest(_request: NextRequest) {
   try {
     const formattedProvinces = provinces.map(province => ({
       code: province.code,
@@ -26,3 +27,5 @@ export async function GET() {
     );
   }
 }
+
+export const GET = withRateLimit(RateLimitType.READ)(handleProvincesRequest);

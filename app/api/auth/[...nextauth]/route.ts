@@ -1,4 +1,7 @@
 import NextAuth from '@/lib/auth';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 
-export const GET = NextAuth;
-export const POST = NextAuth;
+const authHandler = NextAuth;
+
+export const GET = withRateLimit(RateLimitType.AUTH)(authHandler);
+export const POST = withRateLimit(RateLimitType.AUTH)(authHandler);

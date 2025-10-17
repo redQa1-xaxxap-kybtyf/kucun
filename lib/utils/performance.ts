@@ -72,11 +72,13 @@ export class LRUCache<K, V> {
   }
 
   set(key: K, value: V): void {
-    // 如果已存在，更新值
-    if (this.cache.has(key)) {
-      const item = this.cache.get(key)!;
-      item.value = value;
-      item.timestamp = Date.now();
+    const existingItem = this.cache.get(key);
+    if (existingItem) {
+      existingItem.value = value;
+      existingItem.timestamp = Date.now();
+      existingItem.accessCount += 1;
+      this.cache.delete(key);
+      this.cache.set(key, existingItem);
       return;
     }
 
@@ -181,6 +183,7 @@ export function useMemoizedCallback<T extends (...args: never[]) => unknown>(
   callback: T,
   deps: React.DependencyList
 ): T {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   return useCallback(callback, deps);
 }
 
@@ -362,37 +365,40 @@ export function useBatchUpdate<T>(initialItems: T[], batchSize: number = 50) {
   const [items, setItems] = useState(initialItems);
   const [isProcessing, setIsProcessing] = useState(false);
   const queueRef = useRef<Array<(items: T[]) => T[]>>([]);
+  const isProcessingRef = useRef(false);
+
+  const processBatch = useCallback(() => {
+    const operations = queueRef.current.splice(0, batchSize);
+
+    if (operations.length === 0) {
+      isProcessingRef.current = false;
+      setIsProcessing(false);
+      return;
+    }
+
+    setItems(currentItems =>
+      operations.reduce((acc, op) => op(acc), currentItems)
+    );
+
+    if (queueRef.current.length > 0) {
+      setTimeout(processBatch, 0);
+    } else {
+      isProcessingRef.current = false;
+      setIsProcessing(false);
+    }
+  }, [batchSize, queueRef, setItems, setIsProcessing, isProcessingRef]);
 
   const addToBatch = useCallback(
     (operation: (items: T[]) => T[]) => {
       queueRef.current.push(operation);
 
-      if (!isProcessing) {
+      if (!isProcessingRef.current) {
+        isProcessingRef.current = true;
         setIsProcessing(true);
-
-        // 使用 requestIdleCallback 或 setTimeout 进行批量处理
-        const processBatch = () => {
-          const operations = queueRef.current.splice(0, batchSize);
-
-          if (operations.length > 0) {
-            setItems(currentItems =>
-              operations.reduce((acc, op) => op(acc), currentItems)
-            );
-
-            if (queueRef.current.length > 0) {
-              setTimeout(processBatch, 0);
-            } else {
-              setIsProcessing(false);
-            }
-          } else {
-            setIsProcessing(false);
-          }
-        };
-
         setTimeout(processBatch, 0);
       }
     },
-    [batchSize, isProcessing]
+    [processBatch]
   );
 
   return { items, addToBatch, isProcessing };

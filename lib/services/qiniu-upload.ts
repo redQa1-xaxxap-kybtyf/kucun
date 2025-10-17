@@ -1,3 +1,4 @@
+// cspell:words qiniu Qiniu
 import qiniu from 'qiniu';
 
 import { prisma } from '@/lib/db';

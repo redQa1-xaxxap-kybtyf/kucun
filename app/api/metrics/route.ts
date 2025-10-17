@@ -3,16 +3,17 @@
  * 提供 /api/metrics endpoint 用于 Prometheus 抓取
  */
 
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { logger } from '@/lib/logger';
 import { exportPrometheusMetrics } from '@/lib/logger/metrics';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 
 /**
  * GET /api/metrics
  * 返回 Prometheus 格式的指标数据
  */
-export async function GET() {
+async function handleMetricsRequest(_request: NextRequest) {
   try {
     const metricsText = exportPrometheusMetrics();
 
@@ -33,3 +34,5 @@ export async function GET() {
     });
   }
 }
+
+export const GET = withRateLimit(RateLimitType.READ)(handleMetricsRequest);

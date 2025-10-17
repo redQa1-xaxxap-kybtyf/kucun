@@ -2,8 +2,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { cities } from '@/lib/data/complete-address-data-full';
 import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 
-export async function GET(request: NextRequest) {
+async function handleCitiesRequest(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const provinceCode = searchParams.get('provinceCode');
@@ -43,3 +44,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withRateLimit(RateLimitType.READ)(handleCitiesRequest);

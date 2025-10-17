@@ -9,14 +9,12 @@ import {
   withAuth,
 } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import type {
-  PayableRecordDetail,
-  PayableRecordListResponse,
-  PayableSourceType,
-  PayableStatus,
-  PaymentOutMethod,
-  PaymentOutStatus,
-} from '@/lib/types/payable';
+import { paginationConfig } from '@/lib/env';
+import {
+  fetchPayableRecordList,
+  normalizePayableQuery,
+  sanitizePayableSearchParams,
+} from '@/lib/services/payable-query-service';
 import { generatePayableNumber } from '@/lib/utils/payment-number-generator';
 import {
   createPayableRecordSchema,
@@ -32,7 +30,9 @@ export const GET = withAuth(
     // 解析查询参数
     const searchParams = new URL(request.url).searchParams;
     const queryParams = Object.fromEntries(searchParams.entries());
-    const validationResult = payableRecordQuerySchema.safeParse(queryParams);
+    const sanitizedParams = sanitizePayableSearchParams(queryParams);
+    const validationResult =
+      payableRecordQuerySchema.safeParse(sanitizedParams);
 
     if (!validationResult.success) {
       return errorResponse(
@@ -41,151 +41,12 @@ export const GET = withAuth(
       );
     }
 
-    const {
-      page,
-      limit,
-      search,
-      supplierId,
-      status,
-      sourceType,
-      startDate,
-      endDate,
-      sortBy = 'createdAt',
-      sortOrder = 'desc',
-    } = validationResult.data;
-
-    // 构建查询条件
-    const where: Record<string, unknown> = {};
-
-    if (search) {
-      where.OR = [
-        { payableNumber: { contains: search, mode: 'insensitive' } },
-        { supplier: { name: { contains: search, mode: 'insensitive' } } },
-        { sourceNumber: { contains: search, mode: 'insensitive' } },
-      ];
-    }
-
-    if (supplierId) {
-      where.supplierId = supplierId;
-    }
-
-    if (status) {
-      where.status = status;
-    }
-
-    if (sourceType) {
-      where.sourceType = sourceType;
-    }
-
-    if (startDate || endDate) {
-      const dateFilter: { gte?: Date; lte?: Date } = {};
-      if (startDate) {
-        dateFilter.gte = new Date(startDate);
-      }
-      if (endDate) {
-        dateFilter.lte = new Date(endDate);
-      }
-      where.createdAt = dateFilter;
-    }
-
-    // 计算分页
-    const skip = (page - 1) * limit;
-
-    // 查询应付款记录
-    const [payables, total] = await Promise.all([
-      prisma.payableRecord.findMany({
-        where,
-        include: {
-          supplier: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-              address: true,
-            },
-          },
-          user: {
-            select: {
-              id: true,
-              name: true,
-              email: true,
-            },
-          },
-          paymentOutRecords: {
-            where: {
-              status: 'confirmed',
-            },
-            select: {
-              id: true,
-              paymentNumber: true,
-              payableRecordId: true,
-              supplierId: true,
-              userId: true,
-              paymentAmount: true,
-              paymentDate: true,
-              paymentMethod: true,
-              status: true,
-              remarks: true,
-              voucherNumber: true,
-              bankInfo: true,
-              createdAt: true,
-              updatedAt: true,
-            },
-            orderBy: {
-              paymentDate: 'desc',
-            },
-          },
-        },
-        orderBy: {
-          [sortBy]: sortOrder,
-        },
-        skip,
-        take: limit,
-      }),
-      prisma.payableRecord.count({ where }),
-    ]);
-
-    const toUndefined = <T>(value: T | null): T | undefined =>
-      value === null ? undefined : value;
-
-    const formattedPayables: PayableRecordDetail[] = payables.map(payable => ({
-      ...payable,
-      sourceType: payable.sourceType as PayableSourceType,
-      status: payable.status as PayableStatus,
-      sourceId: toUndefined(payable.sourceId),
-      sourceNumber: toUndefined(payable.sourceNumber),
-      description: toUndefined(payable.description),
-      remarks: toUndefined(payable.remarks),
-      dueDate: toUndefined(payable.dueDate),
-      supplier: {
-        ...payable.supplier,
-        phone: toUndefined(payable.supplier.phone),
-        address: toUndefined(payable.supplier.address),
-      },
-      user: {
-        ...payable.user,
-        email: payable.user.email ?? '',
-      },
-      paymentOutRecords: payable.paymentOutRecords.map(record => ({
-        ...record,
-        paymentMethod: record.paymentMethod as PaymentOutMethod,
-        status: record.status as PaymentOutStatus,
-        payableRecordId: toUndefined(record.payableRecordId),
-        remarks: toUndefined(record.remarks),
-        voucherNumber: toUndefined(record.voucherNumber),
-        bankInfo: toUndefined(record.bankInfo),
-      })),
-    }));
-
-    const response: PayableRecordListResponse = {
-      data: formattedPayables,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    const parsedQuery = validationResult.data;
+    const normalizedQuery = normalizePayableQuery({
+      ...parsedQuery,
+      limit: parsedQuery.limit ?? paginationConfig.defaultPageSize,
+    });
+    const response = await fetchPayableRecordList(normalizedQuery);
 
     return successResponse(response);
   },

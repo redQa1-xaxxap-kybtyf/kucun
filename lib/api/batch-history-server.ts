@@ -5,328 +5,344 @@
 
 import type { Prisma } from '@prisma/client';
 
+import {
+  buildGroupKey,
+  mapSourcesToEntries,
+  toMovementProduct,
+  type MovementSource,
+} from '@/lib/api/batch-history-mapper';
 import { prisma } from '@/lib/db';
 import type {
   BatchHistoryResult,
   BatchMovementGroup,
-  InventoryMovementEntry,
 } from '@/lib/types/inventory';
 
-type MovementSource =
-  | {
-      kind: 'inbound';
-      data: Awaited<
-        ReturnType<typeof prisma.inboundRecord.findMany>
-      >[number] & {
-        product: {
-          id: string;
-          code: string;
-          name: string;
-          unit: string;
-          specification: string | null;
-          piecesPerUnit: number;
-        };
-        variant: {
-          id: string;
-          colorCode: string;
-          colorName: string | null;
-        } | null;
-        user: {
-          id: string;
-          name: string;
-        } | null;
-      };
-    }
-  | {
-      kind: 'outbound';
-      data: Awaited<
-        ReturnType<typeof prisma.outboundRecord.findMany>
-      >[number] & {
-        product: {
-          id: string;
-          code: string;
-          name: string;
-          unit: string;
-          specification: string | null;
-          piecesPerUnit: number;
-        };
-        variant: {
-          id: string;
-          colorCode: string;
-          colorName: string | null;
-        } | null;
-        operator: {
-          id: string;
-          name: string;
-        };
-        customer: {
-          id: string;
-          name: string;
-        } | null;
-        salesOrder: {
-          id: string;
-          orderNumber: string;
-        } | null;
-      };
-    }
-  | {
-      kind: 'adjustment';
-      data: Awaited<
-        ReturnType<typeof prisma.inventoryAdjustment.findMany>
-      >[number] & {
-        product: {
-          id: string;
-          code: string;
-          name: string;
-          unit: string;
-          specification: string | null;
-          piecesPerUnit: number;
-        };
-        variant: {
-          id: string;
-          colorCode: string;
-          colorName: string | null;
-        } | null;
-        operator: {
-          id: string;
-          name: string;
-        };
-        approver: {
-          id: string;
-          name: string;
-        } | null;
-      };
-    };
+type BatchWhereClauses = {
+  inbound: Prisma.InboundRecordWhereInput;
+  outbound: Prisma.OutboundRecordWhereInput;
+  adjustment: Prisma.InventoryAdjustmentWhereInput;
+  inventory: Prisma.InventoryWhereInput;
+};
 
-type MovementProduct = NonNullable<InventoryMovementEntry['product']>;
+type BatchSources = {
+  inbounds: Awaited<ReturnType<typeof fetchInboundRecords>>;
+  outboundRecords: Awaited<ReturnType<typeof fetchOutboundRecords>>;
+  adjustments: Awaited<ReturnType<typeof fetchAdjustmentRecords>>;
+  inventories: Awaited<ReturnType<typeof fetchInventoryRecords>>;
+};
 
-function toMovementProduct(
-  product:
-    | {
-        id: string;
-        code: string;
-        name: string;
-        unit: string;
-        specification: string | null;
-        piecesPerUnit: number | null;
-      }
-    | null
-    | undefined
-): MovementProduct | undefined {
-  if (!product) {
+async function loadTargetInventory(inventoryId?: string) {
+  if (!inventoryId) {
+    return null;
+  }
+
+  return prisma.inventory.findUnique({
+    where: { id: inventoryId },
+    select: {
+      id: true,
+      batchNumber: true,
+      quantity: true,
+      reservedQuantity: true,
+      productId: true,
+      variantId: true,
+      product: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          unit: true,
+          specification: true,
+          piecesPerUnit: true,
+        },
+      },
+      variant: {
+        select: {
+          id: true,
+          colorCode: true,
+          colorName: true,
+        },
+      },
+    },
+  });
+}
+
+type TargetInventoryRecord = Awaited<ReturnType<typeof loadTargetInventory>>;
+
+function buildTargetInventorySummary(
+  record: TargetInventoryRecord | null
+): BatchHistoryResult['targetInventory'] {
+  if (!record) {
     return undefined;
   }
 
   return {
-    id: product.id,
-    code: product.code,
-    name: product.name,
-    unit: product.unit as MovementProduct['unit'],
-    specification: product.specification ?? undefined,
-    piecesPerUnit: product.piecesPerUnit ?? 0,
+    id: record.id,
+    batchNumber: record.batchNumber,
+    quantity: record.quantity,
+    reservedQuantity: record.reservedQuantity,
+    product: toMovementProduct(record.product),
+    variant: record.variant
+      ? {
+          id: record.variant.id,
+          colorCode: record.variant.colorCode,
+          colorName: record.variant.colorName,
+        }
+      : undefined,
   };
 }
 
-function buildGroupKey(productId: string, variantId?: string | null) {
-  return `${productId}::${variantId ?? 'default'}`;
-}
+function buildWhereClauses(
+  batchNumber: string,
+  productId?: string,
+  variantId?: string | null,
+  variantFilterDefined = false,
+  focusInventoryId?: string
+): BatchWhereClauses {
+  const inbound: Prisma.InboundRecordWhereInput = { batchNumber };
+  const outbound: Prisma.OutboundRecordWhereInput = { batchNumber };
+  const adjustment: Prisma.InventoryAdjustmentWhereInput = { batchNumber };
+  const inventory: Prisma.InventoryWhereInput = { batchNumber };
 
-function ensureGroup(
-  groups: Map<string, BatchMovementGroup>,
-  key: string,
-  seed: {
-    product: InventoryMovementEntry['product'];
-    variant?: InventoryMovementEntry['variant'];
-  }
-) {
-  if (!groups.has(key)) {
-    groups.set(key, {
-      key,
-      product: seed.product,
-      variant: seed.variant,
-      currentQuantity: 0,
-      totalInbound: 0,
-      totalOutbound: 0,
-      totalAdjustment: 0,
-      movements: [],
-    });
+  if (productId) {
+    inbound.productId = productId;
+    outbound.productId = productId;
+    adjustment.productId = productId;
+    inventory.productId = productId;
   }
 
-  return groups.get(key)!;
-}
+  if (variantFilterDefined) {
+    inbound.variantId = variantId ?? null;
+    outbound.variantId = variantId ?? null;
+    adjustment.variantId = variantId ?? null;
+    inventory.variantId = variantId ?? null;
+  }
 
-function mapSourcesToEntries(
-  sources: MovementSource[],
-  currentInventoryMap: Map<string, number>
-) {
-  const groups = new Map<string, BatchMovementGroup>();
-  let firstEventAt: string | undefined;
-  let lastEventAt: string | undefined;
-
-  sources.forEach(source => {
-    const { kind, data } = source;
-    const productInfo = toMovementProduct(data.product)!;
-
-    const variantInfo = data.variant
-      ? {
-          id: data.variant.id,
-          colorCode: data.variant.colorCode,
-          colorName: data.variant.colorName,
-        }
-      : undefined;
-
-    const groupKey = buildGroupKey(data.productId, data.variantId);
-    const group = ensureGroup(groups, groupKey, {
-      product: productInfo,
-      variant: variantInfo,
-    });
-
-    const entry: InventoryMovementEntry = {
-      id: data.id,
-      recordNumber:
-        kind === 'adjustment'
-          ? data.adjustmentNumber
-          : (data.recordNumber ?? data.id),
-      type: kind,
-      productId: data.productId,
-      variantId: data.variantId ?? undefined,
-      batchNumber: data.batchNumber ?? undefined,
-      quantityChange: 0,
-      createdAt: data.createdAt.toISOString(),
-      remarks:
-        kind === 'inbound'
-          ? (data.remarks ?? undefined)
-          : kind === 'outbound'
-            ? (data.notes ?? undefined)
-            : (data.notes ?? undefined),
-      reason:
-        kind === 'inbound'
-          ? data.reason
-          : kind === 'outbound'
-            ? (data.reason ?? undefined)
-            : (data.reason ?? undefined),
-      operator:
-        kind === 'inbound'
-          ? data.user
-            ? { id: data.user.id, name: data.user.name ?? '—' }
-            : undefined
-          : kind === 'outbound'
-            ? { id: data.operator.id, name: data.operator.name ?? '—' }
-            : { id: data.operator.id, name: data.operator.name ?? '—' },
-      product: productInfo,
-      variant: variantInfo,
-    };
-
-    if (kind === 'inbound') {
-      const quantity = Number(data.quantity ?? 0);
-      entry.quantityChange = quantity;
-    } else if (kind === 'outbound') {
-      const quantity = Number(data.quantity ?? 0);
-      entry.quantityChange = -Math.abs(quantity);
-      if (data.salesOrder) {
-        entry.referenceNumber = data.salesOrder.orderNumber;
-      }
-    } else {
-      entry.quantityChange = data.adjustQuantity;
-      entry.beforeQuantitySnapshot = data.beforeQuantity;
-      entry.afterQuantitySnapshot = data.afterQuantity;
-    }
-
-    group.movements.push(entry);
-
-    if (entry.quantityChange > 0 && kind === 'inbound') {
-      group.totalInbound += entry.quantityChange;
-    } else if (entry.quantityChange < 0 && kind === 'outbound') {
-      group.totalOutbound += Math.abs(entry.quantityChange);
-    } else if (kind === 'adjustment') {
-      group.totalAdjustment += entry.quantityChange;
-    }
-
-    if (!firstEventAt || entry.createdAt < firstEventAt) {
-      firstEventAt = entry.createdAt;
-    }
-    if (!lastEventAt || entry.createdAt > lastEventAt) {
-      lastEventAt = entry.createdAt;
-    }
-  });
-
-  groups.forEach(group => {
-    const currentQuantity =
-      currentInventoryMap.get(group.key) ?? group.currentQuantity ?? 0;
-    group.currentQuantity = currentQuantity;
-
-    const sortedDescending = group.movements.sort(
-      (a, b) =>
-        new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
-
-    let runningBalance =
-      currentQuantity !== 0 || currentInventoryMap.has(group.key)
-        ? currentQuantity
-        : undefined;
-
-    sortedDescending.forEach(entry => {
-      if (
-        entry.type === 'adjustment' &&
-        entry.afterQuantitySnapshot !== undefined
-      ) {
-        runningBalance = entry.afterQuantitySnapshot;
-      } else if (runningBalance === undefined) {
-        if (entry.quantityChange !== 0) {
-          runningBalance =
-            entry.type === 'outbound'
-              ? Math.abs(entry.quantityChange)
-              : entry.quantityChange;
-        } else {
-          runningBalance = 0;
-        }
-      }
-
-      const balanceAfter =
-        entry.type === 'adjustment' && entry.afterQuantitySnapshot !== undefined
-          ? entry.afterQuantitySnapshot
-          : (runningBalance ?? 0);
-
-      const balanceBefore =
-        entry.type === 'adjustment' &&
-        entry.beforeQuantitySnapshot !== undefined
-          ? entry.beforeQuantitySnapshot
-          : balanceAfter - entry.quantityChange;
-
-      entry.balanceAfter = balanceAfter;
-      entry.balanceBefore = balanceBefore;
-
-      runningBalance = balanceBefore;
-    });
-
-    const latestEntry = sortedDescending[0];
-    const earliestEntry = sortedDescending[sortedDescending.length - 1];
-
-    group.movements = sortedDescending.reverse();
-
-    const openingBalance =
-      earliestEntry?.balanceBefore ??
-      earliestEntry?.balanceAfter ??
-      currentQuantity;
-
-    const closingBalance =
-      latestEntry?.balanceAfter !== undefined
-        ? latestEntry.balanceAfter
-        : currentQuantity;
-
-    group.openingBalance = openingBalance;
-    group.closingBalance = closingBalance;
-    group.netChange =
-      openingBalance !== undefined && closingBalance !== undefined
-        ? closingBalance - openingBalance
-        : undefined;
-  });
+  if (focusInventoryId) {
+    inventory.id = focusInventoryId;
+  }
 
   return {
-    groups: Array.from(groups.values()),
-    firstEventAt,
-    lastEventAt,
+    inbound,
+    outbound,
+    adjustment,
+    inventory,
   };
+}
+
+async function fetchBatchSources(
+  where: BatchWhereClauses
+): Promise<BatchSources> {
+  const [inbounds, outboundRecords, adjustments, inventories] =
+    await Promise.all([
+      fetchInboundRecords(where.inbound),
+      fetchOutboundRecords(where.outbound),
+      fetchAdjustmentRecords(where.adjustment),
+      fetchInventoryRecords(where.inventory),
+    ]);
+
+  return { inbounds, outboundRecords, adjustments, inventories };
+}
+
+function fetchInboundRecords(where: Prisma.InboundRecordWhereInput) {
+  return prisma.inboundRecord.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      product: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          unit: true,
+          specification: true,
+          piecesPerUnit: true,
+        },
+      },
+      variant: {
+        select: {
+          id: true,
+          colorCode: true,
+          colorName: true,
+        },
+      },
+      user: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+}
+
+function fetchOutboundRecords(where: Prisma.OutboundRecordWhereInput) {
+  return prisma.outboundRecord.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      product: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          unit: true,
+          specification: true,
+          piecesPerUnit: true,
+        },
+      },
+      variant: {
+        select: {
+          id: true,
+          colorCode: true,
+          colorName: true,
+        },
+      },
+      operator: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      customer: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      salesOrder: {
+        select: {
+          id: true,
+          orderNumber: true,
+        },
+      },
+    },
+  });
+}
+
+function fetchAdjustmentRecords(where: Prisma.InventoryAdjustmentWhereInput) {
+  return prisma.inventoryAdjustment.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    include: {
+      product: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          unit: true,
+          specification: true,
+          piecesPerUnit: true,
+        },
+      },
+      variant: {
+        select: {
+          id: true,
+          colorCode: true,
+          colorName: true,
+        },
+      },
+      operator: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+      approver: {
+        select: {
+          id: true,
+          name: true,
+        },
+      },
+    },
+  });
+}
+
+function fetchInventoryRecords(where: Prisma.InventoryWhereInput) {
+  return prisma.inventory.findMany({
+    where,
+    select: {
+      productId: true,
+      variantId: true,
+      quantity: true,
+    },
+  });
+}
+
+function convertToMovementSources(
+  sources: Pick<BatchSources, 'inbounds' | 'outboundRecords' | 'adjustments'>
+) {
+  const inboundSources = sources.inbounds.map(
+    data => ({ kind: 'inbound', data }) as MovementSource
+  );
+  const outboundSources = sources.outboundRecords.map(
+    data => ({ kind: 'outbound', data }) as MovementSource
+  );
+  const adjustmentSources = sources.adjustments.map(
+    data => ({ kind: 'adjustment', data }) as MovementSource
+  );
+
+  return [...inboundSources, ...outboundSources, ...adjustmentSources];
+}
+
+function buildInventoryQuantityMap(
+  records: BatchSources['inventories']
+): Map<string, number> {
+  const inventoryMap = new Map<string, number>();
+  records.forEach(record => {
+    const key = buildGroupKey(record.productId, record.variantId);
+    const quantity = Number(record.quantity ?? 0);
+    inventoryMap.set(key, (inventoryMap.get(key) ?? 0) + quantity);
+  });
+  return inventoryMap;
+}
+
+function filterGroupsByTarget(
+  groups: BatchMovementGroup[],
+  productId?: string,
+  variantId?: string | null,
+  variantFilterDefined = false
+) {
+  let filtered = groups;
+
+  if (productId) {
+    filtered = filtered.filter(group => group.product?.id === productId);
+  }
+
+  if (variantFilterDefined) {
+    filtered = filtered.filter(
+      group => (group.variant?.id ?? null) === (variantId ?? null)
+    );
+  }
+
+  return filtered;
+}
+
+function ensureFallbackGroup(
+  groups: BatchMovementGroup[],
+  targetInventory: BatchHistoryResult['targetInventory']
+) {
+  if (groups.length || !targetInventory) {
+    return groups;
+  }
+
+  const fallback: BatchMovementGroup = {
+    key: buildGroupKey(
+      targetInventory.product?.id ?? 'unknown',
+      targetInventory.variant?.id ?? null
+    ),
+    product: targetInventory.product,
+    variant: targetInventory.variant,
+    currentQuantity: targetInventory.quantity,
+    openingBalance: targetInventory.quantity,
+    closingBalance: targetInventory.quantity,
+    netChange: 0,
+    totalInbound: 0,
+    totalOutbound: 0,
+    totalAdjustment: 0,
+    movements: [],
+  };
+
+  return [fallback];
 }
 
 export async function getBatchHistoryByNumber(
@@ -338,41 +354,13 @@ export async function getBatchHistoryByNumber(
   }
 ): Promise<BatchHistoryResult> {
   const normalizedBatch = batchNumber.trim();
+  const focusInventoryId = options?.inventoryId;
+
   let effectiveBatch = normalizedBatch;
   let targetProductId = options?.productId;
   let targetVariantId: string | null | undefined = options?.variantId;
-  const focusInventoryId = options?.inventoryId;
 
-  const targetInventory = focusInventoryId
-    ? await prisma.inventory.findUnique({
-        where: { id: focusInventoryId },
-        select: {
-          id: true,
-          batchNumber: true,
-          quantity: true,
-          reservedQuantity: true,
-          productId: true,
-          variantId: true,
-          product: {
-            select: {
-              id: true,
-              code: true,
-              name: true,
-              unit: true,
-              specification: true,
-              piecesPerUnit: true,
-            },
-          },
-          variant: {
-            select: {
-              id: true,
-              colorCode: true,
-              colorName: true,
-            },
-          },
-        },
-      })
-    : null;
+  const targetInventory = await loadTargetInventory(focusInventoryId);
 
   if (focusInventoryId && !targetInventory) {
     return {
@@ -396,23 +384,7 @@ export async function getBatchHistoryByNumber(
     targetVariantId = targetInventory.variantId ?? null;
   }
 
-  const mappedTargetInventory: BatchHistoryResult['targetInventory'] =
-    targetInventory
-      ? {
-          id: targetInventory.id,
-          batchNumber: targetInventory.batchNumber,
-          quantity: targetInventory.quantity,
-          reservedQuantity: targetInventory.reservedQuantity,
-          product: toMovementProduct(targetInventory.product),
-          variant: targetInventory.variant
-            ? {
-                id: targetInventory.variant.id,
-                colorCode: targetInventory.variant.colorCode,
-                colorName: targetInventory.variant.colorName,
-              }
-            : undefined,
-        }
-      : undefined;
+  const mappedTargetInventory = buildTargetInventorySummary(targetInventory);
 
   if (!effectiveBatch) {
     return {
@@ -430,215 +402,28 @@ export async function getBatchHistoryByNumber(
 
   const variantFilterDefined = targetVariantId !== undefined;
 
-  const inboundWhere: Prisma.InboundRecordWhereInput = {
-    batchNumber: effectiveBatch,
-  };
-  if (targetProductId) {
-    inboundWhere.productId = targetProductId;
-  }
-  if (variantFilterDefined) {
-    inboundWhere.variantId = targetVariantId ?? null;
-  }
+  const whereClauses = buildWhereClauses(
+    effectiveBatch,
+    targetProductId,
+    targetVariantId ?? null,
+    variantFilterDefined,
+    focusInventoryId
+  );
 
-  const outboundWhere: Prisma.OutboundRecordWhereInput = {
-    batchNumber: effectiveBatch,
-  };
-  if (targetProductId) {
-    outboundWhere.productId = targetProductId;
-  }
-  if (variantFilterDefined) {
-    outboundWhere.variantId = targetVariantId ?? null;
-  }
-
-  const adjustmentWhere: Prisma.InventoryAdjustmentWhereInput = {
-    batchNumber: effectiveBatch,
-  };
-  if (targetProductId) {
-    adjustmentWhere.productId = targetProductId;
-  }
-  if (variantFilterDefined) {
-    adjustmentWhere.variantId = targetVariantId ?? null;
-  }
-
-  const inventoryWhere: Prisma.InventoryWhereInput = {
-    batchNumber: effectiveBatch,
-  };
-  if (targetProductId) {
-    inventoryWhere.productId = targetProductId;
-  }
-  if (variantFilterDefined) {
-    inventoryWhere.variantId = targetVariantId ?? null;
-  }
-  if (focusInventoryId) {
-    inventoryWhere.id = focusInventoryId;
-  }
-
-  const [inbounds, outbounds, adjustments, inventories] = await Promise.all([
-    prisma.inboundRecord.findMany({
-      where: inboundWhere,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            unit: true,
-            specification: true,
-            piecesPerUnit: true,
-          },
-        },
-        variant: {
-          select: {
-            id: true,
-            colorCode: true,
-            colorName: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    }),
-    prisma.outboundRecord.findMany({
-      where: outboundWhere,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            unit: true,
-            specification: true,
-            piecesPerUnit: true,
-          },
-        },
-        variant: {
-          select: {
-            id: true,
-            colorCode: true,
-            colorName: true,
-          },
-        },
-        operator: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        customer: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        salesOrder: {
-          select: {
-            id: true,
-            orderNumber: true,
-          },
-        },
-      },
-    }),
-    prisma.inventoryAdjustment.findMany({
-      where: adjustmentWhere,
-      orderBy: { createdAt: 'desc' },
-      include: {
-        product: {
-          select: {
-            id: true,
-            code: true,
-            name: true,
-            unit: true,
-            specification: true,
-            piecesPerUnit: true,
-          },
-        },
-        variant: {
-          select: {
-            id: true,
-            colorCode: true,
-            colorName: true,
-          },
-        },
-        operator: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-        approver: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    }),
-    prisma.inventory.findMany({
-      where: inventoryWhere,
-      select: {
-        productId: true,
-        variantId: true,
-        quantity: true,
-      },
-    }),
-  ]);
-
-  const inventoryMap = new Map<string, number>();
-  inventories.forEach(record => {
-    const key = buildGroupKey(record.productId, record.variantId);
-    inventoryMap.set(
-      key,
-      (inventoryMap.get(key) ?? 0) + Number(record.quantity ?? 0)
-    );
-  });
-
+  const sources = await fetchBatchSources(whereClauses);
+  const inventoryMap = buildInventoryQuantityMap(sources.inventories);
   const mapResult = mapSourcesToEntries(
-    [
-      ...inbounds.map(data => ({ kind: 'inbound', data }) as MovementSource),
-      ...outbounds.map(data => ({ kind: 'outbound', data }) as MovementSource),
-      ...adjustments.map(
-        data => ({ kind: 'adjustment', data }) as MovementSource
-      ),
-    ],
+    convertToMovementSources(sources),
     inventoryMap
   );
 
-  let groups = mapResult.groups;
-  if (targetProductId) {
-    groups = groups.filter(group => group.product?.id === targetProductId);
-  }
-  if (variantFilterDefined) {
-    groups = groups.filter(
-      group => (group.variant?.id ?? null) === (targetVariantId ?? null)
-    );
-  }
-
-  if (groups.length === 0 && mappedTargetInventory) {
-    groups = [
-      {
-        key: buildGroupKey(
-          mappedTargetInventory.product?.id ?? 'unknown',
-          mappedTargetInventory.variant?.id ?? null
-        ),
-        product: mappedTargetInventory.product,
-        variant: mappedTargetInventory.variant,
-        currentQuantity: mappedTargetInventory.quantity,
-        openingBalance: mappedTargetInventory.quantity,
-        closingBalance: mappedTargetInventory.quantity,
-        netChange: 0,
-        totalInbound: 0,
-        totalOutbound: 0,
-        totalAdjustment: 0,
-        movements: [],
-      },
-    ];
-  }
+  let groups = filterGroupsByTarget(
+    mapResult.groups,
+    targetProductId,
+    targetVariantId ?? null,
+    variantFilterDefined
+  );
+  groups = ensureFallbackGroup(groups, mappedTargetInventory);
 
   return {
     batchNumber: effectiveBatch,

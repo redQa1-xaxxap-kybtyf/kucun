@@ -50,7 +50,7 @@ import {
 } from '@/lib/api/suppliers';
 import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
 import { getCommonStatusBadgeVariant } from '@/lib/utils/badge-helpers';
-import { formatSupplierStatus } from '@/lib/utils/supplier-utils';
+import { formatSupplierStatus } from '@/lib/utils/supplier-display';
 
 interface SuppliersPageClientProps {
   initialParams: {

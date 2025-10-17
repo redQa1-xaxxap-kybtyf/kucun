@@ -2,9 +2,10 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { createUser } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { userRegisterSchema } from '@/lib/validations/user';
 
-export async function POST(request: NextRequest) {
+async function handleRegister(request: NextRequest) {
   try {
     const body = await request.json();
 
@@ -58,3 +59,5 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+export const POST = withRateLimit(RateLimitType.AUTH)(handleRegister);

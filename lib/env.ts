@@ -4,6 +4,8 @@
  * 作为环境配置的单一真理源（Single Source of Truth）
  */
 
+/* eslint-disable max-lines */
+
 import { z } from 'zod';
 
 // 环境变量验证 Schema
@@ -593,6 +595,7 @@ export type Env = z.infer<typeof envSchema>;
  * @returns 验证后的环境变量对象
  * @throws 如果环境变量验证失败
  */
+/* eslint-disable max-lines-per-function */
 function validateEnv(): Env {
   // 在客户端环境下，只验证公开的环境变量
   if (typeof window !== 'undefined') {
@@ -779,15 +782,17 @@ function validateEnv(): Env {
         (err: z.ZodIssue) => `${err.path.join('.')}: ${err.message}`
       );
 
+      /* eslint-disable no-console */
       console.error('❌ 环境变量验证失败:');
-
       errorMessages.forEach((msg: string) => console.error(`  - ${msg}`));
+      /* eslint-enable no-console */
 
       throw new Error(`环境变量验证失败:\n${errorMessages.join('\n')}`);
     }
     throw error;
   }
 }
+/* eslint-enable max-lines-per-function */
 
 /**
  * 验证后的环境变量对象
@@ -1142,3 +1147,4 @@ if (isDevelopment) {
     `  - WS端口: ${env.WS_PORT} (客户端: ${env.NEXT_PUBLIC_WS_PORT})`
   );
 }
+/* eslint-enable max-lines */

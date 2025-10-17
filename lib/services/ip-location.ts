@@ -4,10 +4,12 @@
  * 严格遵循全栈项目统一约定规范
  */
 
-import fs from 'fs';
-import path from 'path';
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 
 import maxmind, { type CityResponse, type Reader } from 'maxmind';
+
+import { logger } from '@/lib/logger';
 
 /**
  * IP地理位置信息接口
@@ -28,7 +30,7 @@ export interface IpLocationInfo {
 }
 
 // GeoLite2 数据库路径
-const DB_PATH = path.join(process.cwd(), 'data', 'GeoLite2-City.mmdb');
+const DB_PATH = join(process.cwd(), 'data', 'GeoLite2-City.mmdb');
 
 // 数据库读取器实例（单例模式）
 let cityLookup: Reader<CityResponse> | null = null;
@@ -44,20 +46,22 @@ async function initDatabase(): Promise<Reader<CityResponse> | null> {
 
   try {
     // 检查数据库文件是否存在
-    if (!fs.existsSync(DB_PATH)) {
-      console.warn(
-        `IP定位数据库不存在: ${DB_PATH}\n` +
-          `请运行 npm run download-geoip 下载数据库`
+    if (!existsSync(DB_PATH)) {
+      logger.warn(
+        'ip-location',
+        'IP定位数据库不存在，请运行 npm run download-geoip 下载数据库',
+        undefined,
+        { path: DB_PATH }
       );
       return null;
     }
 
     // 加载数据库
     cityLookup = await maxmind.open<CityResponse>(DB_PATH);
-    console.info('✅ MaxMind GeoLite2 数据库加载成功');
+    logger.info('ip-location', 'MaxMind GeoLite2 数据库加载成功');
     return cityLookup;
   } catch (error) {
-    console.error('❌ MaxMind GeoLite2 数据库加载失败:', error);
+    logger.error('ip-location', 'MaxMind GeoLite2 数据库加载失败', error);
     return null;
   }
 }
@@ -116,7 +120,9 @@ export async function getIpLocation(
 
   // IP格式验证
   if (!isValidIp(trimmedIp)) {
-    console.warn(`无效的IP地址格式: ${trimmedIp}`);
+    logger.warn('ip-location', '无效的IP地址格式', undefined, {
+      ip: trimmedIp,
+    });
     return null;
   }
 
@@ -171,7 +177,9 @@ export async function getIpLocation(
       fullLocation,
     };
   } catch (error) {
-    console.error(`获取IP地理位置失败 (${trimmedIp}):`, error);
+    logger.error('ip-location', `获取IP地理位置失败 (${trimmedIp})`, error, {
+      ip: trimmedIp,
+    });
     return null;
   }
 }

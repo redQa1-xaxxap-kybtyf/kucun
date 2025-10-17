@@ -1,6 +1,7 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { prisma } from '@/lib/db';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { redis } from '@/lib/redis';
 
 /**
@@ -23,7 +24,7 @@ import { redis } from '@/lib/redis';
  *   }
  * }
  */
-export async function GET() {
+async function handleHealthCheck(_request: NextRequest) {
   const timestamp = new Date().toISOString();
   const checks: {
     database: {
@@ -102,3 +103,5 @@ export async function GET() {
 
   return NextResponse.json(response, { status: 200 });
 }
+
+export const GET = withRateLimit(RateLimitType.READ)(handleHealthCheck);

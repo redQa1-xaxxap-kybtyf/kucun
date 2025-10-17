@@ -4,10 +4,11 @@
  * 需要使用 MONITORING_TOKEN 进行身份验证
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { env, monitoringConfig } from '@/lib/env';
 import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { redis } from '@/lib/redis/redis-client';
 
 /**
@@ -16,7 +17,7 @@ import { redis } from '@/lib/redis/redis-client';
  *
  * 需要在请求头中提供 Authorization: Bearer <MONITORING_TOKEN>
  */
-export async function GET(request: NextRequest) {
+async function handleRedisMonitoring(request: NextRequest) {
   try {
     // 1. 身份验证
     const authHeader = request.headers.get('authorization');
@@ -63,6 +64,8 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withRateLimit(RateLimitType.GLOBAL)(handleRedisMonitoring);
 
 /**
  * 收集 Redis 监控数据

@@ -45,13 +45,14 @@ const nextConfig = {
       };
     }
 
-    // 忽略 qiniu 包的依赖问题（仅在客户端构建时）
+    // 客户端构建排除服务器端模块
     if (!isServer) {
       config.resolve.fallback = {
         ...config.resolve.fallback,
         fs: false,
         net: false,
         tls: false,
+        dns: false,
         crypto: false,
         stream: false,
         http: false,
@@ -60,7 +61,13 @@ const nextConfig = {
         'coffee-script': false,
       };
 
-      // 忽略 qiniu 及其依赖的警告
+      // 排除服务器端专用包
+      config.externals = config.externals || [];
+      config.externals.push({
+        ioredis: 'ioredis',
+      });
+
+      // 忽略警告
       config.ignoreWarnings = [
         ...(config.ignoreWarnings || []),
         {
@@ -71,6 +78,9 @@ const nextConfig = {
         },
         {
           module: /node_modules\/qiniu/,
+        },
+        {
+          module: /node_modules\/ioredis/,
         },
         /coffee-script/,
       ];

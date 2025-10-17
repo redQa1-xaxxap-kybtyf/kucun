@@ -2,53 +2,52 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useSession } from 'next-auth/react';
-import React, { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { queryKeys } from '@/lib/queryKeys';
 import type { NotificationItem } from '@/lib/types/layout';
-import type { NotificationsQueryData } from '@/lib/types/notifications';
+import type {
+  NotificationsQueryData,
+  RawNotificationItem,
+} from '@/lib/types/notifications';
 import { resolveAsyncState } from '@/lib/utils/async-state';
 
-/**
- * 通知轮询 Hook
- * 使用轮询替代 WebSocket，实现简单可靠的通知推送
- *
- * 优势：
- * - 更简单：无需维护 WebSocket 连接
- * - 更可靠：HTTP 请求更稳定
- * - 更易调试：标准的 API 请求
- * - 更省资源：无需额外端口和 Redis Pub/Sub
- *
- * 性能优化：
- * - 直接使用 TanStack Query 数据，避免本地状态同步
- * - 使用乐观更新提升用户体验
- * - 避免在渲染期间设置状态，消除双重渲染问题
- */
-export function usePollingNotifications() {
-  const { data: session, status: sessionStatus } = useSession();
-  const queryClient = useQueryClient();
+type NotificationsQueryKey = ReturnType<typeof queryKeys.notifications.list>;
+type CacheUpdater = (
+  old: NotificationsQueryData | undefined
+) => NotificationsQueryData | undefined;
+type AsyncOperation = () => Promise<void>;
 
-  // 🚀 性能优化：只有在完全认证且有 userId 时才启用
+const createNotificationNormalizer =
+  () =>
+  (notifications: RawNotificationItem[]): NotificationItem[] =>
+    notifications.map(notification => ({
+      ...notification,
+      createdAt:
+        notification.createdAt instanceof Date
+          ? notification.createdAt
+          : new Date(notification.createdAt),
+      href: notification.href ?? undefined,
+    }));
+
+function useAuthenticationGuard() {
+  const { data: session, status } = useSession();
   const isFullyAuthenticated =
-    sessionStatus === 'authenticated' &&
+    status === 'authenticated' &&
     !!session?.user?.id &&
     session.user.id.length > 0;
 
-  // 🚀 性能优化：使用 ref 追踪首次加载，避免热重载触发请求
-  const hasInitializedRef = React.useRef(false);
-  const [isReady, setIsReady] = React.useState(false);
+  const hasInitializedRef = useRef(false);
+  const [isReady, setIsReady] = useState(false);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (isFullyAuthenticated) {
-      // 如果是首次认证成功，等待 300ms 确保 cookie 完全同步
       if (!hasInitializedRef.current) {
         hasInitializedRef.current = true;
         const timer = setTimeout(() => setIsReady(true), 300);
         return () => clearTimeout(timer);
-      } else {
-        // 如果已经初始化过（页面刷新等情况），立即启用
-        setIsReady(true);
       }
+      setIsReady(true);
     } else {
       setIsReady(false);
       hasInitializedRef.current = false;
@@ -57,36 +56,103 @@ export function usePollingNotifications() {
     return undefined;
   }, [isFullyAuthenticated]);
 
-  const notificationsQueryKey = useMemo<
-    ReturnType<typeof queryKeys.notifications.list>
-  >(() => queryKeys.notifications.list(session?.user?.id), [session?.user?.id]);
-
-  // 轮询通知接口（每60秒）
-  const {
-    data: notificationsData,
-    isLoading,
-    isError,
-    error,
-    isSuccess,
-    refetch,
+  return {
+    isReady,
+    session,
     status,
-  } = useQuery<
+  };
+}
+
+function createMarkAsReadUpdater(notificationId: string): CacheUpdater {
+  return old => {
+    if (!old) {
+      return old;
+    }
+
+    return {
+      notifications: old.notifications.map(n =>
+        n.id === notificationId ? { ...n, isRead: true } : n
+      ),
+      unreadCount: Math.max(0, old.unreadCount - 1),
+    };
+  };
+}
+
+function createMarkAllAsReadUpdater(): CacheUpdater {
+  return old => {
+    if (!old) {
+      return old;
+    }
+
+    return {
+      notifications: old.notifications.map(n => ({
+        ...n,
+        isRead: true,
+      })),
+      unreadCount: 0,
+    };
+  };
+}
+
+function createClearNotificationUpdater(notificationId: string): CacheUpdater {
+  return old => {
+    if (!old) {
+      return old;
+    }
+
+    const notification = old.notifications.find(n => n.id === notificationId);
+    return {
+      notifications: old.notifications.filter(n => n.id !== notificationId),
+      unreadCount: notification?.isRead
+        ? old.unreadCount
+        : Math.max(0, old.unreadCount - 1),
+    };
+  };
+}
+
+function useOptimisticMutation(
+  queryClient: ReturnType<typeof useQueryClient>,
+  queryKey: NotificationsQueryKey,
+  refetch: () => Promise<unknown>,
+  createUpdater: (notificationId: string) => CacheUpdater,
+  requestFactory: (notificationId: string) => AsyncOperation
+) {
+  return useCallback(
+    async (notificationId: string) => {
+      try {
+        queryClient.setQueryData<NotificationsQueryData>(
+          queryKey,
+          createUpdater(notificationId)
+        );
+        await requestFactory(notificationId)();
+        await refetch();
+      } catch {
+        await refetch();
+      }
+    },
+    [createUpdater, queryClient, queryKey, refetch, requestFactory]
+  );
+}
+
+function useNotificationsQuery(
+  queryKey: NotificationsQueryKey,
+  isReady: boolean,
+  session: ReturnType<typeof useSession>['data']
+) {
+  return useQuery<
     NotificationsQueryData,
     Error,
     NotificationsQueryData,
-    ReturnType<typeof queryKeys.notifications.list>
+    NotificationsQueryKey
   >({
-    // 🚀 最佳实践：将 userId 包含在 queryKey 中，确保登录前后查询隔离
-    queryKey: notificationsQueryKey,
+    queryKey,
     queryFn: async () => {
-      // 🚀 双重检查：确保 session 仍然有效
       if (!session?.user?.id) {
         return { notifications: [], unreadCount: 0 };
       }
 
       const response = await fetch('/api/notifications');
       if (!response.ok) {
-        // 🚀 性能优化：静默处理 401 错误，避免控制台警告
         if (response.status === 401) {
           return { notifications: [], unreadCount: 0 };
         }
@@ -94,17 +160,74 @@ export function usePollingNotifications() {
       }
       return response.json() as Promise<NotificationsQueryData>;
     },
-    // 🚀 性能优化：使用 isReady 状态，确保 cookie 完全同步后再发起请求
     enabled: isReady,
-    // 每60秒轮询一次
     refetchInterval: isReady ? 60 * 1000 : false,
-    // 窗口聚焦时重新获取（仅在已认证时）
     refetchOnWindowFocus: isReady,
-    // 保持数据新鲜5分钟
     staleTime: 5 * 60 * 1000,
-    // 🚀 性能优化：失败时不重试，避免不必要的请求
     retry: false,
   });
+}
+
+function useBulkMutation(
+  queryClient: ReturnType<typeof useQueryClient>,
+  queryKey: NotificationsQueryKey,
+  refetch: () => Promise<unknown>
+) {
+  return useCallback(async () => {
+    try {
+      queryClient.setQueryData<NotificationsQueryData>(
+        queryKey,
+        createMarkAllAsReadUpdater()
+      );
+      await fetch('/api/notifications/read-all', { method: 'POST' });
+      await refetch();
+    } catch {
+      await refetch();
+    }
+  }, [queryClient, queryKey, refetch]);
+}
+
+function useClearMutation(
+  queryClient: ReturnType<typeof useQueryClient>,
+  queryKey: NotificationsQueryKey,
+  refetch: () => Promise<unknown>
+) {
+  return useCallback(
+    async (notificationId: string) => {
+      try {
+        queryClient.setQueryData<NotificationsQueryData>(
+          queryKey,
+          createClearNotificationUpdater(notificationId)
+        );
+        await fetch(`/api/notifications/${notificationId}`, {
+          method: 'DELETE',
+        });
+        await refetch();
+      } catch {
+        await refetch();
+      }
+    },
+    [queryClient, queryKey, refetch]
+  );
+}
+
+export function usePollingNotifications() {
+  const queryClient = useQueryClient();
+  const { isReady, session } = useAuthenticationGuard();
+  const queryKey = useMemo<NotificationsQueryKey>(
+    () => queryKeys.notifications.list(session?.user?.id),
+    [session?.user?.id]
+  );
+
+  const {
+    data: notificationsData,
+    isLoading,
+    isError,
+    error,
+    isSuccess,
+    refetch,
+    status: queryStatus,
+  } = useNotificationsQuery(queryKey, isReady, session);
 
   const loadingState = resolveAsyncState({
     isLoading,
@@ -112,152 +235,46 @@ export function usePollingNotifications() {
     isSuccess,
   });
 
+  const normalizeNotifications = useMemo(
+    () => createNotificationNormalizer(),
+    []
+  );
+
   const normalizedNotifications = useMemo<NotificationItem[]>(() => {
     if (!notificationsData?.notifications) {
       return [];
     }
 
-    return notificationsData.notifications.map(notification => {
-      const rawCreatedAt = notification.createdAt;
-      const parsedDate =
-        rawCreatedAt instanceof Date
-          ? rawCreatedAt
-          : rawCreatedAt
-            ? new Date(rawCreatedAt)
-            : undefined;
+    return normalizeNotifications(notificationsData.notifications);
+  }, [normalizeNotifications, notificationsData]);
 
-      const createdAt =
-        parsedDate && !Number.isNaN(parsedDate.getTime())
-          ? parsedDate
-          : new Date();
-
-      return {
-        ...notification,
-        href: notification.href ?? undefined,
-        createdAt,
-      };
-    });
-  }, [notificationsData]);
-
-  // 标记为已读 - 使用乐观更新
-  const markAsRead = useCallback(
-    async (notificationId: string) => {
-      try {
-        // 乐观更新：立即更新 UI
-        queryClient.setQueryData<
-          NotificationsQueryData,
-          ReturnType<typeof queryKeys.notifications.list>
-        >(notificationsQueryKey, old => {
-          if (!old) {
-            return old;
-          }
-          return {
-            notifications: old.notifications.map(n =>
-              n.id === notificationId ? { ...n, isRead: true } : n
-            ),
-            unreadCount: Math.max(0, old.unreadCount - 1),
-          };
-        });
-
-        // 发送请求到服务器
-        await fetch(`/api/notifications/${notificationId}/read`, {
-          method: 'POST',
-        });
-
-        // 重新获取以确保数据一致性
-        refetch();
-      } catch (error) {
-        console.error('Failed to mark notification as read:', error);
-        // 失败时回滚
-        refetch();
-      }
-    },
-    [notificationsQueryKey, queryClient, refetch]
-  );
-
-  // 全部标记为已读 - 使用乐观更新
-  const markAllAsRead = useCallback(async () => {
-    try {
-      // 乐观更新：立即更新 UI
-      queryClient.setQueryData<
-        NotificationsQueryData,
-        ReturnType<typeof queryKeys.notifications.list>
-      >(notificationsQueryKey, old => {
-        if (!old) {
-          return old;
-        }
-        return {
-          notifications: old.notifications.map(n => ({
-            ...n,
-            isRead: true,
-          })),
-          unreadCount: 0,
-        };
-      });
-
-      // 发送请求到服务器
-      await fetch('/api/notifications/read-all', {
+  const markAsReadRequest = useCallback(
+    (notificationId: string) => async () => {
+      await fetch(`/api/notifications/${notificationId}/read`, {
         method: 'POST',
       });
-
-      // 重新获取以确保数据一致性
-      refetch();
-    } catch (error) {
-      console.error('Failed to mark all as read:', error);
-      // 失败时回滚
-      refetch();
-    }
-  }, [notificationsQueryKey, queryClient, refetch]);
-
-  // 清除通知 - 使用乐观更新
-  const clearNotification = useCallback(
-    async (notificationId: string) => {
-      try {
-        // 乐观更新：立即更新 UI
-        queryClient.setQueryData<
-          NotificationsQueryData,
-          ReturnType<typeof queryKeys.notifications.list>
-        >(notificationsQueryKey, old => {
-          if (!old) {
-            return old;
-          }
-          const notification = old.notifications.find(
-            n => n.id === notificationId
-          );
-          return {
-            notifications: old.notifications.filter(
-              n => n.id !== notificationId
-            ),
-            unreadCount: notification?.isRead
-              ? old.unreadCount
-              : Math.max(0, old.unreadCount - 1),
-          };
-        });
-
-        // 发送请求到服务器
-        await fetch(`/api/notifications/${notificationId}`, {
-          method: 'DELETE',
-        });
-
-        // 重新获取以确保数据一致性
-        refetch();
-      } catch (error) {
-        console.error('Failed to clear notification:', error);
-        // 失败时回滚
-        refetch();
-      }
     },
-    [notificationsQueryKey, queryClient, refetch]
+    []
   );
 
+  const markAsRead = useOptimisticMutation(
+    queryClient,
+    queryKey,
+    refetch,
+    createMarkAsReadUpdater,
+    markAsReadRequest
+  );
+
+  const markAllAsRead = useBulkMutation(queryClient, queryKey, refetch);
+  const clearNotification = useClearMutation(queryClient, queryKey, refetch);
+
   return {
-    // 返回已经标准化的数据结构，确保 createdAt 始终为 Date
     notifications: normalizedNotifications,
     unreadCount: notificationsData?.unreadCount ?? 0,
     loadingState,
     isLoading: loadingState.isLoading,
     isError: loadingState.isError,
-    status,
+    status: queryStatus,
     error,
     markAsRead,
     markAllAsRead,

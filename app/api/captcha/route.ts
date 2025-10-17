@@ -7,17 +7,17 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import {
   createCaptchaSession,
   verifyCaptcha,
 } from '@/lib/services/captcha-service';
 import { verifyCaptchaSchema } from '@/lib/validations/captcha';
-import { logger } from '@/lib/logger';
 
-/**
- * GET - 生成新的验证码
- */
-export async function GET(request: NextRequest): Promise<NextResponse> {
+async function handleCaptchaGeneration(
+  request: NextRequest
+): Promise<NextResponse> {
   try {
     // 获取客户端IP地址
     const clientIp =
@@ -54,11 +54,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   }
 }
 
-/**
- * POST - 验证验证码（用于预验证，可选）
- * 使用 Zod schema 进行参数验证，遵循"唯一真理源"规范
- */
-export async function POST(request: NextRequest): Promise<NextResponse> {
+async function handleCaptchaValidation(
+  request: NextRequest
+): Promise<NextResponse> {
   try {
     const body = await request.json();
     logger.info('captcha', '收到验证请求');
@@ -120,3 +118,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     );
   }
 }
+
+export const GET = withRateLimit(RateLimitType.CAPTCHA)(
+  handleCaptchaGeneration
+);
+export const POST = withRateLimit(RateLimitType.CAPTCHA)(
+  handleCaptchaValidation
+);

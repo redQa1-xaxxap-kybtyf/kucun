@@ -1,5 +1,12 @@
 import { prisma } from '@/lib/db';
 
+import {
+  formatSupplierAddress,
+  formatSupplierPhone,
+  formatSupplierStatus,
+  validateSupplierName,
+} from './supplier-display';
+
 /**
  * 标准化供应商名称
  * 去除前后空格，转换为小写，处理特殊字符
@@ -277,40 +284,9 @@ export function cleanSupplierData(
 /**
  * 格式化供应商状态显示
  */
-export function formatSupplierStatus(status: string): string {
-  switch (status) {
-    case 'active':
-      return '活跃';
-    case 'inactive':
-      return '停用';
-    default:
-      return '未知';
-  }
-}
-
-/**
- * 验证供应商名称（前端预检查）
- */
-export function validateSupplierName(name: string): boolean {
-  return name.length >= 1 && name.length <= 100;
-}
-
-/**
- * 格式化供应商电话显示
- */
-export function formatSupplierPhone(phone?: string): string {
-  if (!phone) {
-    return '-';
-  }
-  return phone;
-}
-
-/**
- * 格式化供应商地址显示
- */
-export function formatSupplierAddress(address?: string): string {
-  if (!address) {
-    return '-';
-  }
-  return address.length > 50 ? `${address.substring(0, 50)}...` : address;
-}
+export {
+  formatSupplierAddress,
+  formatSupplierPhone,
+  formatSupplierStatus,
+  validateSupplierName,
+};

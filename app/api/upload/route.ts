@@ -105,189 +105,241 @@ async function saveFileLocally(
   }
 }
 
-export const POST = withAuth(async (request: NextRequest, { user }) => {
-  try {
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
-    const type = (formData.get('type') as string) || 'product';
+type UploadPayloadResult =
+  | { ok: true; file: File; type: string }
+  | { ok: false; response: NextResponse };
 
-    // 验证上传类型
-    const validationResult = uploadValidation.safeParse({ type });
-    if (!validationResult.success) {
-      return NextResponse.json(
+async function extractUploadPayload(
+  request: NextRequest
+): Promise<UploadPayloadResult> {
+  const formData = await request.formData();
+  const rawFile = formData.get('file');
+  const type = (formData.get('type') as string) || 'product';
+
+  const validationResult = uploadValidation.safeParse({ type });
+  if (!validationResult.success) {
+    return {
+      ok: false,
+      response: NextResponse.json(
         {
           success: false,
           error: '上传类型不正确',
           details: validationResult.error.issues,
         },
         { status: 400 }
-      );
-    }
+      ),
+    };
+  }
 
-    if (!file) {
-      return NextResponse.json(
+  if (!(rawFile instanceof File)) {
+    return {
+      ok: false,
+      response: NextResponse.json(
         { success: false, error: '未选择文件' },
         { status: 400 }
-      );
-    }
+      ),
+    };
+  }
 
-    // 验证文件类型
-    if (
-      !SUPPORTED_IMAGE_TYPES.includes(
-        file.type as (typeof SUPPORTED_IMAGE_TYPES)[number]
-      )
-    ) {
-      return NextResponse.json(
+  const file = rawFile as File;
+
+  if (
+    !SUPPORTED_IMAGE_TYPES.includes(
+      file.type as (typeof SUPPORTED_IMAGE_TYPES)[number]
+    )
+  ) {
+    return {
+      ok: false,
+      response: NextResponse.json(
         {
           success: false,
           error: '不支持的文件格式，请上传 JPG、PNG、WebP 或 GIF 格式的图片',
         },
         { status: 400 }
-      );
-    }
+      ),
+    };
+  }
 
-    // 验证文件大小
-    if (file.size > uploadConfig.maxSize) {
-      return NextResponse.json(
+  if (file.size > uploadConfig.maxSize) {
+    return {
+      ok: false,
+      response: NextResponse.json(
         {
           success: false,
           error: `文件大小不能超过 ${uploadConfig.maxSize / 1024 / 1024}MB`,
         },
         { status: 400 }
-      );
+      ),
+    };
+  }
+
+  return { ok: true, file, type };
+}
+
+async function prepareUploadBuffer(file: File, type: string): Promise<Buffer> {
+  const bytes = await file.arrayBuffer();
+  let buffer = Buffer.from(bytes);
+
+  if (!file.type.startsWith('image/')) {
+    return buffer;
+  }
+
+  try {
+    let sharpInstance = sharp(buffer);
+
+    await sharpInstance.metadata();
+
+    switch (type) {
+      case 'product':
+        sharpInstance = sharpInstance
+          .resize(1200, 1200, {
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .jpeg({ quality: 85 });
+        break;
+      case 'avatar':
+        sharpInstance = sharpInstance
+          .resize(400, 400, {
+            fit: 'cover',
+          })
+          .jpeg({ quality: 90 });
+        break;
+      default:
+        sharpInstance = sharpInstance
+          .resize(1920, 1920, {
+            fit: 'inside',
+            withoutEnlargement: true,
+          })
+          .jpeg({ quality: 80 });
     }
 
-    // 读取文件内容
-    const bytes = await file.arrayBuffer();
-    let buffer = Buffer.from(bytes);
+    const optimizedBuffer = await sharpInstance.toBuffer();
+    buffer = Buffer.from(optimizedBuffer);
 
-    // 如果是图片，使用 sharp 进行优化
-    if (file.type.startsWith('image/')) {
-      try {
-        let sharpInstance = sharp(buffer);
+    logger.info('upload', '图片优化完成', undefined, {
+      fileName: file.name,
+      originalSize: bytes.byteLength,
+      optimizedSize: buffer.length,
+    });
+  } catch (sharpError) {
+    logger.error('upload', '图片优化失败，使用原始文件', sharpError);
+  }
 
-        // 获取图片信息
-        await sharpInstance.metadata();
+  return buffer;
+}
 
-        // 根据上传类型进行不同的优化
-        switch (type) {
-          case 'product':
-            // 产品图片：最大宽度1200px，质量85%
-            sharpInstance = sharpInstance
-              .resize(1200, 1200, {
-                fit: 'inside',
-                withoutEnlargement: true,
-              })
-              .jpeg({ quality: 85 });
-            break;
+interface UploadSuccessOptions {
+  file: File;
+  key?: string;
+  url?: string;
+  storage: 'qiniu' | 'local';
+  userId: string;
+  message: string;
+}
 
-          case 'avatar':
-            // 头像：正方形，最大400px
-            sharpInstance = sharpInstance
-              .resize(400, 400, {
-                fit: 'cover',
-              })
-              .jpeg({ quality: 90 });
-            break;
+function respondWithSuccess({
+  file,
+  key,
+  url,
+  storage,
+  userId,
+  message,
+}: UploadSuccessOptions) {
+  const fileName = key?.split('/').pop() || file.name;
 
-          default:
-            // 默认优化
-            sharpInstance = sharpInstance
-              .resize(1920, 1920, {
-                fit: 'inside',
-                withoutEnlargement: true,
-              })
-              .jpeg({ quality: 80 });
-        }
+  return NextResponse.json({
+    success: true,
+    data: {
+      fileName,
+      originalName: file.name,
+      size: file.size,
+      type: file.type,
+      url,
+      key,
+      uploadedAt: new Date().toISOString(),
+      uploadedBy: userId,
+      storage,
+    },
+    message,
+  });
+}
 
-        const optimizedBuffer = await sharpInstance.toBuffer();
-        buffer = Buffer.from(optimizedBuffer);
+async function handleUploadWithFallback(
+  buffer: Buffer,
+  file: File,
+  type: string,
+  userId: string
+) {
+  const uploadResult = await uploadToQiniu(buffer, file.name, type);
 
-        logger.info('upload', '图片优化完成', undefined, {
-          fileName: file.name,
-          originalSize: bytes.byteLength,
-          optimizedSize: buffer.length,
-        });
-      } catch (sharpError) {
-        logger.error('upload', '图片优化失败，使用原始文件', sharpError);
-        // 如果优化失败，使用原始buffer
-      }
-    }
-
-    // 上传到七牛云
-    const uploadResult = await uploadToQiniu(buffer, file.name, type);
-
-    if (!uploadResult.success) {
-      logger.error('upload', '上传至七牛云失败', undefined, {
-        cloudError: uploadResult.error,
-      });
-
-      if (uploadConfig.fallbackEnabled) {
-        const fallbackResult = await saveFileLocally(
-          buffer,
-          file.name,
-          file.type,
-          type
-        );
-
-        if (!fallbackResult.success || !fallbackResult.url) {
-          return NextResponse.json(
-            {
-              success: false,
-              error:
-                uploadResult.error ||
-                fallbackResult.error ||
-                '上传失败，请联系管理员检查存储配置',
-            },
-            { status: 500 }
-          );
-        }
-
-        return NextResponse.json({
-          success: true,
-          data: {
-            fileName: fallbackResult.key?.split('/').pop() || file.name,
-            originalName: file.name,
-            size: file.size,
-            type: file.type,
-            url: fallbackResult.url,
-            key: fallbackResult.key,
-            uploadedAt: new Date().toISOString(),
-            uploadedBy: user.id,
-            storage: 'local',
-          },
-          message:
-            '文件已保存到本地存储，建议尽快修复云存储配置（七牛云上传失败）',
-        });
-      }
-
-      return NextResponse.json(
-        {
-          success: false,
-          error:
-            uploadResult.error ||
-            '上传失败，请联系管理员检查存储配置（七牛云）',
-        },
-        { status: 500 }
-      );
-    }
-
-    // 返回成功响应
-    return NextResponse.json({
-      success: true,
-      data: {
-        fileName: uploadResult.key?.split('/').pop() || file.name,
-        originalName: file.name,
-        size: file.size,
-        type: file.type,
-        url: uploadResult.url,
-        key: uploadResult.key,
-        uploadedAt: new Date().toISOString(),
-        uploadedBy: user.id,
-        storage: 'qiniu',
-      },
+  if (uploadResult.success) {
+    return respondWithSuccess({
+      file,
+      key: uploadResult.key,
+      url: uploadResult.url,
+      storage: 'qiniu',
+      userId,
       message: '文件上传成功',
     });
+  }
+
+  logger.error('upload', '上传至七牛云失败', undefined, {
+    cloudError: uploadResult.error,
+  });
+
+  if (!uploadConfig.fallbackEnabled) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          uploadResult.error || '上传失败，请联系管理员检查存储配置（七牛云）',
+      },
+      { status: 500 }
+    );
+  }
+
+  const fallbackResult = await saveFileLocally(
+    buffer,
+    file.name,
+    file.type,
+    type
+  );
+
+  if (!fallbackResult.success || !fallbackResult.url) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          uploadResult.error ||
+          fallbackResult.error ||
+          '上传失败，请联系管理员检查存储配置',
+      },
+      { status: 500 }
+    );
+  }
+
+  return respondWithSuccess({
+    file,
+    key: fallbackResult.key,
+    url: fallbackResult.url,
+    storage: 'local',
+    userId,
+    message: '文件已保存到本地存储，建议尽快修复云存储配置（七牛云上传失败）',
+  });
+}
+
+export const POST = withAuth(async (request: NextRequest, { user }) => {
+  try {
+    const payload = await extractUploadPayload(request);
+    if (!payload.ok) {
+      return payload.response;
+    }
+
+    const { file, type } = payload;
+    const buffer = await prepareUploadBuffer(file, type);
+
+    return handleUploadWithFallback(buffer, file, type, user.id);
   } catch (error) {
     logger.error('upload', '文件上传错误', error);
     return NextResponse.json(

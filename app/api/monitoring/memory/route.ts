@@ -3,17 +3,18 @@
  * GET /api/monitoring/memory - 获取内存使用情况
  */
 
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
 import { logger } from '@/lib/logger';
 import {
   generateMemoryReport,
   getMemoryStats,
 } from '@/lib/monitoring/memory-monitor';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+async function handleMemoryMonitoring(request: NextRequest) {
   try {
     // 简单的身份验证（生产环境应使用更安全的方式）
     const authHeader = request.headers.get('authorization');
@@ -53,3 +54,5 @@ export async function GET(request: NextRequest) {
     );
   }
 }
+
+export const GET = withRateLimit(RateLimitType.GLOBAL)(handleMemoryMonitoring);

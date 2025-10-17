@@ -47,180 +47,233 @@ const getStockBadge = (quantity: number, reservedQuantity: number = 0) => {
   );
 };
 
+function useInventoryRowHandlers(
+  item: Inventory,
+  onSelect: (id: string, checked: boolean) => void,
+  onAdjust: (id: string) => void
+) {
+  const handleSelect = React.useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      onSelect(item.id, e.target.checked);
+    },
+    [item.id, onSelect]
+  );
+
+  const handleAdjust = React.useCallback(() => {
+    if (!item.batchNumber) {
+      return;
+    }
+    onAdjust(item.id);
+  }, [item.batchNumber, item.id, onAdjust]);
+
+  return { handleSelect, handleAdjust };
+}
+
+function useInventoryRowData(item: Inventory) {
+  const unitLabel = React.useMemo(() => {
+    if (!item.product?.unit) {
+      return '件';
+    }
+
+    return (
+      PRODUCT_UNIT_LABELS[
+        item.product.unit as keyof typeof PRODUCT_UNIT_LABELS
+      ] || item.product.unit
+    );
+  }, [item.product?.unit]);
+
+  const packaging = React.useMemo(
+    () => item.batchPiecesPerUnit ?? item.product?.piecesPerUnit ?? 0,
+    [item.batchPiecesPerUnit, item.product?.piecesPerUnit]
+  );
+
+  const quantityDisplay = React.useMemo(
+    () =>
+      formatPieceSummary(item.quantity, packaging, {
+        prefix: '总计',
+        fallbackUnit: unitLabel,
+      }),
+    [item.quantity, packaging, unitLabel]
+  );
+
+  const stockBadge = React.useMemo(
+    () => getStockBadge(item.quantity, item.reservedQuantity || 0),
+    [item.quantity, item.reservedQuantity]
+  );
+
+  const formattedSpecification = React.useMemo(() => {
+    const spec = item.product?.specification;
+    if (!spec) {
+      return '-';
+    }
+
+    if (spec.startsWith('{') && spec.endsWith('}')) {
+      try {
+        const parsed = JSON.parse(spec);
+        if (parsed.size) {
+          return parsed.size.length > 11
+            ? `${parsed.size.slice(0, 11)}...`
+            : parsed.size;
+        }
+        return '规格详情...';
+      } catch {
+        return spec.length > 11 ? `${spec.slice(0, 11)}...` : spec;
+      }
+    }
+
+    return spec.length > 11 ? `${spec.slice(0, 11)}...` : spec;
+  }, [item.product?.specification]);
+
+  const reservedDisplay = React.useMemo(() => {
+    const reserved = item.reservedQuantity || 0;
+    if (reserved === 0) {
+      return '0';
+    }
+
+    return formatPieceSummary(reserved, packaging, {
+      fallbackUnit: unitLabel,
+      zeroDisplay: '0',
+    });
+  }, [item.reservedQuantity, packaging, unitLabel]);
+
+  const availableDisplay = React.useMemo(() => {
+    const availableQuantity = item.quantity - (item.reservedQuantity || 0);
+    if (availableQuantity <= 0) {
+      return '0';
+    }
+
+    return formatPieceSummary(availableQuantity, packaging, {
+      fallbackUnit: unitLabel,
+      zeroDisplay: '0',
+    });
+  }, [item.quantity, item.reservedQuantity, packaging, unitLabel]);
+
+  const formattedDate = React.useMemo(
+    () => new Date(item.updatedAt).toLocaleDateString('zh-CN'),
+    [item.updatedAt]
+  );
+
+  return {
+    packaging,
+    quantityDisplay,
+    stockBadge,
+    formattedSpecification,
+    reservedDisplay,
+    availableDisplay,
+    formattedDate,
+  };
+}
+
+interface InventoryRowViewProps {
+  item: Inventory;
+  isSelected: boolean;
+  onSelect: React.ChangeEventHandler<HTMLInputElement>;
+  onAdjust: () => void;
+  style?: React.CSSProperties;
+  className?: string;
+  packaging: number;
+  quantityDisplay: string;
+  reservedDisplay: string;
+  availableDisplay: string;
+  stockBadge: React.ReactNode;
+  formattedSpecification: string;
+  formattedDate: string;
+}
+
+function InventoryRowView({
+  item,
+  isSelected,
+  onSelect,
+  onAdjust,
+  style,
+  className,
+  packaging,
+  quantityDisplay,
+  reservedDisplay,
+  availableDisplay,
+  stockBadge,
+  formattedSpecification,
+  formattedDate,
+}: InventoryRowViewProps) {
+  return (
+    <TableRow
+      className={`text-xs transition-colors hover:bg-blue-50/50 ${className || ''}`}
+      style={style}
+    >
+      <TableCell>
+        <input
+          type="checkbox"
+          checked={isSelected}
+          onChange={onSelect}
+          className="border-input rounded border"
+        />
+      </TableCell>
+      <TableCell className="font-medium text-blue-600">
+        {item.product?.code || '-'}
+      </TableCell>
+      <TableCell className="font-medium">{item.product?.name || '-'}</TableCell>
+      <TableCell>{formattedSpecification}</TableCell>
+      <TableCell className="font-medium">
+        {packaging > 0 ? (
+          <>
+            {packaging}
+            <span className="ml-0.5 text-[10px] font-normal text-[hsl(var(--color-text-tertiary))]">
+              片/件
+            </span>
+          </>
+        ) : (
+          <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
+        )}
+      </TableCell>
+      <TableCell className="font-mono">{item.batchNumber || '-'}</TableCell>
+      <TableCell className="font-medium">{quantityDisplay}</TableCell>
+      <TableCell>{reservedDisplay}</TableCell>
+      <TableCell className="font-medium">{availableDisplay}</TableCell>
+      <TableCell>{stockBadge}</TableCell>
+      <TableCell>{formattedDate}</TableCell>
+      <TableCell>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+              <span className="sr-only">打开菜单</span>
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem onClick={onAdjust} disabled={!item.batchNumber}>
+              <Eye className="mr-2 h-4 w-4" />
+              查看库存变动详情
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      </TableCell>
+    </TableRow>
+  );
+}
+
 /**
  * 库存表格行组件
  * 使用React.memo优化重渲染性能
  */
 export const InventoryTableRow = React.memo<InventoryTableRowProps>(
   ({ item, isSelected, onSelect, onAdjust, style, className }) => {
-    // 优化的事件处理函数
-    const handleSelect = React.useCallback(
-      (e: React.ChangeEvent<HTMLInputElement>) => {
-        onSelect(item.id, e.target.checked);
-      },
-      [item.id, onSelect]
+    const { handleSelect, handleAdjust } = useInventoryRowHandlers(
+      item,
+      onSelect,
+      onAdjust
     );
-
-    const handleAdjust = React.useCallback(() => {
-      if (!item.batchNumber) {
-        return;
-      }
-      onAdjust(item.id);
-    }, [item.batchNumber, item.id, onAdjust]);
-
-    // 使用useMemo优化计算密集型操作
-    const unitLabel = React.useMemo(() => {
-      if (!item.product?.unit) {
-        return '件';
-      }
-      return (
-        PRODUCT_UNIT_LABELS[
-          item.product.unit as keyof typeof PRODUCT_UNIT_LABELS
-        ] || item.product.unit
-      );
-    }, [item.product?.unit]);
-
-    const packaging = React.useMemo(
-      () => item.batchPiecesPerUnit ?? item.product?.piecesPerUnit ?? 0,
-      [item.batchPiecesPerUnit, item.product?.piecesPerUnit]
-    );
-
-    const quantityDisplay = React.useMemo(
-      () =>
-        formatPieceSummary(item.quantity, packaging, {
-          prefix: '总计',
-          fallbackUnit: unitLabel,
-        }),
-      [item.quantity, packaging, unitLabel]
-    );
-
-    const stockBadge = React.useMemo(
-      () => getStockBadge(item.quantity, item.reservedQuantity || 0),
-      [item.quantity, item.reservedQuantity]
-    );
-
-    // 格式化规格显示（限制11个字符，避免JSON字符串显示）
-    const formattedSpecification = React.useMemo(() => {
-      const spec = item.product?.specification;
-      if (!spec) {
-        return '-';
-      }
-
-      // 如果是JSON字符串，尝试解析并提取关键信息
-      if (spec.startsWith('{') && spec.endsWith('}')) {
-        try {
-          const parsed = JSON.parse(spec);
-          // 提取尺寸信息作为主要显示内容
-          if (parsed.size) {
-            return parsed.size.length > 11
-              ? `${parsed.size.slice(0, 11)}...`
-              : parsed.size;
-          }
-          // 如果没有尺寸，显示简化的规格信息
-          return '规格详情...';
-        } catch {
-          // JSON解析失败，截断显示
-          return spec.length > 11 ? `${spec.slice(0, 11)}...` : spec;
-        }
-      }
-
-      // 普通字符串，直接截断
-      return spec.length > 11 ? `${spec.slice(0, 11)}...` : spec;
-    }, [item.product?.specification]);
-
-    const availableQuantity = React.useMemo(
-      () => item.quantity - (item.reservedQuantity || 0),
-      [item.quantity, item.reservedQuantity]
-    );
-
-    const reservedDisplay = React.useMemo(() => {
-      const reserved = item.reservedQuantity || 0;
-      if (reserved === 0) {
-        return '0';
-      }
-      return formatPieceSummary(reserved, packaging, {
-        fallbackUnit: unitLabel,
-        zeroDisplay: '0',
-      });
-    }, [item.reservedQuantity, packaging, unitLabel]);
-
-    const availableDisplay = React.useMemo(() => {
-      if (availableQuantity <= 0) {
-        return '0';
-      }
-      return formatPieceSummary(availableQuantity, packaging, {
-        fallbackUnit: unitLabel,
-        zeroDisplay: '0',
-      });
-    }, [availableQuantity, packaging, unitLabel]);
-
-    const formattedDate = React.useMemo(
-      () => new Date(item.updatedAt).toLocaleDateString('zh-CN'),
-      [item.updatedAt]
-    );
+    const rowData = useInventoryRowData(item);
 
     return (
-      <TableRow
-        className={`text-xs transition-colors hover:bg-blue-50/50 ${className || ''}`}
+      <InventoryRowView
+        item={item}
+        isSelected={isSelected}
+        onSelect={handleSelect}
+        onAdjust={handleAdjust}
         style={style}
-      >
-        <TableCell>
-          <input
-            type="checkbox"
-            checked={isSelected}
-            onChange={handleSelect}
-            className="border-input rounded border"
-          />
-        </TableCell>
-        <TableCell className="font-medium text-blue-600">
-          {item.product?.code || '-'}
-        </TableCell>
-        <TableCell className="font-medium">
-          {item.product?.name || '-'}
-        </TableCell>
-        <TableCell>{formattedSpecification}</TableCell>
-        <TableCell className="font-medium">
-          {packaging > 0 ? (
-            <>
-              {packaging}
-              <span className="ml-0.5 text-[10px] font-normal text-[hsl(var(--color-text-tertiary))]">
-                片/件
-              </span>
-            </>
-          ) : (
-            <span className="text-[hsl(var(--color-text-tertiary))]">-</span>
-          )}
-        </TableCell>
-        <TableCell className="font-mono">{item.batchNumber || '-'}</TableCell>
-        <TableCell className="font-medium">{quantityDisplay}</TableCell>
-        <TableCell>{reservedDisplay}</TableCell>
-        <TableCell className="font-medium">{availableDisplay}</TableCell>
-        <TableCell>{stockBadge}</TableCell>
-        <TableCell>{formattedDate}</TableCell>
-        <TableCell>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 w-8 p-0"
-              >
-                <span className="sr-only">打开菜单</span>
-                <MoreHorizontal className="h-4 w-4" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem
-                onClick={handleAdjust}
-                disabled={!item.batchNumber}
-              >
-                <Eye className="mr-2 h-4 w-4" />
-                查看库存变动详情
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </TableCell>
-      </TableRow>
+        className={className}
+        {...rowData}
+      />
     );
   }
 );

@@ -1,12 +1,12 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 import { PackageSearch, Plus, RefreshCcw, RotateCcw } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
+import { ProductSelector } from '@/components/inventory/product-selector';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -17,6 +17,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -32,9 +33,6 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import { ProductSelector } from '@/components/inventory/product-selector';
-import { BatchSpecificationForm } from './components/BatchSpecificationForm';
-import { BatchSpecificationsTable } from './components/BatchSpecificationsTable';
 import {
   useBatchSpecifications,
   useCreateBatchSpecification,
@@ -48,6 +46,9 @@ import type {
   CreateBatchSpecificationRequest,
 } from '@/lib/types/batch-specification';
 import type { ProductOption } from '@/lib/types/inbound';
+
+import { BatchSpecificationForm } from './components/BatchSpecificationForm';
+import { BatchSpecificationsTable } from './components/BatchSpecificationsTable';
 
 const DEFAULT_PAGE = 1;
 const DEFAULT_LIMIT = 20;
@@ -119,20 +120,6 @@ export function BatchSpecificationPageClient({
     null
   );
 
-  const syncRouter = useCallback(
-    (params: ResolvedParams) => {
-      const searchParams = buildSearchParams(params);
-      const queryString = searchParams.toString();
-      router.replace(
-        queryString ? `/inventory/batch?${queryString}` : '/inventory/batch',
-        {
-          scroll: false,
-        }
-      );
-    },
-    [router]
-  );
-
   const updateParams = useCallback(
     (
       updater:
@@ -153,12 +140,36 @@ export function BatchSpecificationPageClient({
           productId: next.productId?.trim() || undefined,
           batchNumber: next.batchNumber?.trim() || undefined,
         };
-        syncRouter(normalized);
         return normalized;
       });
     },
-    [syncRouter]
+    []
   );
+
+  const initialQueryStringRef = useRef(
+    buildSearchParams(initialParams).toString()
+  );
+  const hasSyncedRef = useRef(false);
+
+  const currentQueryString = useMemo(
+    () => buildSearchParams(queryParams).toString(),
+    [queryParams]
+  );
+
+  useEffect(() => {
+    const targetUrl = currentQueryString
+      ? `/inventory/batch?${currentQueryString}`
+      : '/inventory/batch';
+
+    if (!hasSyncedRef.current) {
+      hasSyncedRef.current = true;
+      if (currentQueryString === initialQueryStringRef.current) {
+        return;
+      }
+    }
+
+    router.replace(targetUrl, { scroll: false });
+  }, [currentQueryString, router]);
 
   const debouncedSearch = useDebouncedCallback((value: string) => {
     const trimmed = value.trim();

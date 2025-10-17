@@ -75,6 +75,10 @@ const customJestConfig = {
           esModuleInterop: true,
           allowSyntheticDefaultImports: true,
         },
+        // 禁用类型检查以避免TS5103错误
+        diagnostics: {
+          ignoreCodes: ['TS151001'],
+        },
       },
     ],
   },
