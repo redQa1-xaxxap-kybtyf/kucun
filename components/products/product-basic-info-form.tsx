@@ -1,6 +1,7 @@
 ﻿'use client';
 
 import { useQuery } from '@tanstack/react-query';
+import React from 'react';
 import type { Control } from 'react-hook-form';
 
 import {
@@ -20,6 +21,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { categoryQueryKeys, getCategories } from '@/lib/api/categories';
+import type { Category } from '@/lib/types/category';
 import { PRODUCT_STATUS_LABELS } from '@/lib/types/product';
 import type {
   ProductCreateFormData,
@@ -34,6 +36,7 @@ interface ProductBasicInfoFormProps {
   control: ProductFormControl;
   isLoading: boolean;
   isCreateMode?: boolean;
+  onCategoryChange?: (categoryId: string, categoryName: string) => void;
 }
 
 function ProductCodeInput({
@@ -100,9 +103,11 @@ function ProductNameInput({
 function ProductCategorySelect({
   control,
   disabled,
+  onCategoryChange,
 }: {
   control: ProductFormControl;
   disabled: boolean;
+  onCategoryChange?: (categoryId: string, categoryName: string) => void;
 }) {
   const { data: categoriesResponse, isLoading: isCategoriesLoading } = useQuery(
     {
@@ -111,7 +116,11 @@ function ProductCategorySelect({
       staleTime: 5 * 60 * 1000,
     }
   );
-  const categoryOptions = categoriesResponse?.data ?? [];
+
+  const categoryOptions = React.useMemo(
+    () => buildCategoryOptions(categoriesResponse?.data ?? []),
+    [categoriesResponse?.data]
+  );
 
   return (
     <FormField
@@ -124,7 +133,17 @@ function ProductCategorySelect({
             <span className="text-destructive">*</span>
           </FormLabel>
           <Select
-            onValueChange={field.onChange}
+            onValueChange={value => {
+              field.onChange(value);
+              if (onCategoryChange && value !== 'uncategorized') {
+                const selectedCategory = categoryOptions.find(
+                  cat => cat.id === value
+                );
+                if (selectedCategory) {
+                  onCategoryChange(value, selectedCategory.name);
+                }
+              }
+            }}
             value={
               field.value === ''
                 ? 'uncategorized'
@@ -142,7 +161,7 @@ function ProductCategorySelect({
               <SelectItem value="uncategorized">无分类</SelectItem>
               {categoryOptions.map(category => (
                 <SelectItem key={category.id} value={category.id}>
-                  {category.name}
+                  <CategoryOptionLabel category={category} />
                 </SelectItem>
               ))}
             </SelectContent>
@@ -160,6 +179,56 @@ function ProductCategorySelect({
         </FormItem>
       )}
     />
+  );
+}
+
+interface CategoryOptionWithDepth extends Category {
+  depth: number;
+}
+
+function buildCategoryOptions(categories: Category[]): CategoryOptionWithDepth[] {
+  if (categories.length === 0) {
+    return [];
+  }
+
+  const byParent = new Map<string | null, Category[]>();
+  categories.forEach(category => {
+    const parentKey = category.parentId ?? null;
+    const bucket = byParent.get(parentKey) ?? [];
+    bucket.push(category);
+    byParent.set(parentKey, bucket);
+  });
+
+  const result: CategoryOptionWithDepth[] = [];
+  const visit = (nodes: Category[], depth: number) => {
+    nodes.forEach(node => {
+      result.push({ ...node, depth });
+      const children = byParent.get(node.id);
+      if (children && children.length > 0) {
+        visit(children, Math.min(depth + 1, 3));
+      }
+    });
+  };
+
+  visit(byParent.get(null) ?? [], 0);
+
+  return result;
+}
+
+function CategoryOptionLabel({ category }: { category: CategoryOptionWithDepth }) {
+  const indent = Math.max(0, category.depth) * 16;
+  const icon = category.depth === 0 ? '📁' : '📂';
+
+  return (
+    <div className="flex items-center" style={{ paddingLeft: `${indent}px` }}>
+      <span className="mr-2 text-gray-400">{icon}</span>
+      <span className={category.depth === 0 ? 'font-medium' : ''}>
+        {category.name}
+      </span>
+      {category.parent && (
+        <span className="ml-2 text-xs text-gray-500">· {category.parent.name}</span>
+      )}
+    </div>
   );
 }
 
@@ -276,12 +345,17 @@ export function ProductBasicInfoForm({
   control,
   isLoading,
   isCreateMode: _isCreateMode = false,
+  onCategoryChange,
 }: ProductBasicInfoFormProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
       <ProductCodeInput control={control} disabled={isLoading} />
       <ProductSpecificationInput control={control} disabled={isLoading} />
-      <ProductCategorySelect control={control} disabled={isLoading} />
+      <ProductCategorySelect
+        control={control}
+        disabled={isLoading}
+        onCategoryChange={onCategoryChange}
+      />
       <ProductNameInput control={control} disabled={isLoading} />
       <ProductThicknessInput control={control} disabled={isLoading} />
       <ProductStatusSelect control={control} disabled={isLoading} />
