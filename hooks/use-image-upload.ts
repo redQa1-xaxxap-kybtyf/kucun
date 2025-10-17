@@ -2,14 +2,8 @@
 
 import { useState } from 'react';
 
+import type { ProductImage } from '@/lib/types/product';
 import { getErrorMessage } from '@/lib/utils/error-handler';
-
-interface ProductImage {
-  url: string;
-  type: 'main' | 'effect';
-  alt?: string;
-  order?: number;
-}
 
 interface UseImageUploadProps {
   maxFiles?: number;
@@ -114,19 +108,39 @@ export function useImageUpload({
     index: number,
     type: 'main' | 'effect'
   ) => {
-    const filteredImages = images.filter(
-      (img, i) => !(img.type === type && i === index)
-    );
+    // 先筛选出该类型的图片列表
+    const typeImages = images.filter(img => img.type === type);
+    // 找到要删除的图片
+    const targetImage = typeImages[index];
+
+    if (!targetImage) {
+      return; // 索引越界保护
+    }
+
+    // 从完整列表中移除该图片
+    const filteredImages = images.filter(img => img !== targetImage);
     onImagesChange(filteredImages);
   };
 
   const updateImageAlt = (
     images: ProductImage[],
     index: number,
-    alt: string
+    alt: string,
+    type: 'main' | 'effect'
   ) => {
-    const updatedImages = [...images];
-    updatedImages[index] = { ...updatedImages[index], alt };
+    // 先筛选出该类型的图片列表
+    const typeImages = images.filter(img => img.type === type);
+    // 找到要更新的图片
+    const targetImage = typeImages[index];
+
+    if (!targetImage) {
+      return; // 索引越界保护
+    }
+
+    // 更新图片的 alt 属性
+    const updatedImages = images.map(img =>
+      img === targetImage ? { ...img, alt } : img
+    );
     onImagesChange(updatedImages);
   };
 

@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useCallback, useRef, useTransition, useEffect } from 'react';
 
-import { paginationConfig } from '@/lib/config/product';
+import { paginationConfig } from '@/lib/env';
 import type { Product, ProductQueryParams } from '@/lib/types/product';
 
 interface DeleteDialogState {

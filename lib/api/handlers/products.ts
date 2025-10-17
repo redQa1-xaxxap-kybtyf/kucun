@@ -191,9 +191,6 @@ function buildProductUpdateData(
   if (data.name !== undefined) {
     updateData.name = data.name;
   }
-  if (data.unit !== undefined) {
-    updateData.unit = data.unit;
-  }
   if (data.specification !== undefined) {
     updateData.specification = data.specification;
   }
@@ -231,7 +228,9 @@ function buildProductUpdateData(
   return updateData;
 }
 
-function normalizeNullableString(value: string | null | undefined): string | null {
+function normalizeNullableString(
+  value: string | null | undefined
+): string | null {
   if (value === undefined || value === null) {
     return null;
   }
@@ -287,13 +286,16 @@ export async function deleteProduct(id: string) {
     product._count.inboundRecords > 0;
 
   if (hasRelatedData) {
-    throw ApiError.badRequest('该产品存在关联的库存、销售订单或入库记录，无法删除', {
-      counts: {
-        inventory: product._count.inventory,
-        salesOrderItems: product._count.salesOrderItems,
-        inboundRecords: product._count.inboundRecords,
-      },
-    });
+    throw ApiError.badRequest(
+      '该产品存在关联的库存、销售订单或入库记录，无法删除',
+      {
+        counts: {
+          inventory: product._count.inventory,
+          salesOrderItems: product._count.salesOrderItems,
+          inboundRecords: product._count.inboundRecords,
+        },
+      }
+    );
   }
 
   // 删除产品变体

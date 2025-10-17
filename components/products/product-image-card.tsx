@@ -8,13 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-
-interface ProductImage {
-  url: string;
-  type: 'main' | 'effect';
-  alt?: string;
-  order?: number;
-}
+import type { ProductImage } from '@/lib/types/product';
 
 interface ProductImageCardProps {
   image: ProductImage;

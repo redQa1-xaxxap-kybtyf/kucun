@@ -8,13 +8,7 @@ import { ProductImageUploadArea } from '@/components/products/product-image-uplo
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useImageUpload } from '@/hooks/use-image-upload';
-
-interface ProductImage {
-  url: string;
-  type: 'main' | 'effect';
-  alt?: string;
-  order?: number;
-}
+import type { ProductImage } from '@/lib/types/product';
 
 interface ProductImageUploadProps {
   thumbnailUrl?: string;
@@ -138,7 +132,9 @@ export function ProductImageUpload({
                     image={image}
                     index={index}
                     onRemove={() => removeImage(images, index, 'main')}
-                    onUpdateAlt={(_, alt) => updateImageAlt(images, index, alt)}
+                    onUpdateAlt={(_, alt) =>
+                      updateImageAlt(images, index, alt, 'main')
+                    }
                     disabled={disabled}
                   />
                 ))}
@@ -170,7 +166,9 @@ export function ProductImageUpload({
                     image={image}
                     index={index}
                     onRemove={() => removeImage(images, index, 'effect')}
-                    onUpdateAlt={(_, alt) => updateImageAlt(images, index, alt)}
+                    onUpdateAlt={(_, alt) =>
+                      updateImageAlt(images, index, alt, 'effect')
+                    }
                     disabled={disabled}
                   />
                 ))}

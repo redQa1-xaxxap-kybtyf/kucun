@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
 import { createDateTimeResponse } from '@/lib/api/datetime-middleware';
+import { ApiError, handlePrismaError } from '@/lib/api/errors';
 import type { ProductListQueryParams } from '@/lib/api/products';
 import { getProductsForServer } from '@/lib/api/products-server';
 import { successResponse, withAuth } from '@/lib/auth/api-helpers';
@@ -123,11 +124,11 @@ export const POST = withAuth(
         });
 
         if (!category) {
-          throw new Error('指定的产品分类不存在');
+          throw ApiError.badRequest('指定的产品分类不存在');
         }
 
         if (category.status !== 'active') {
-          throw new Error('指定的产品分类已被禁用');
+          throw ApiError.badRequest('指定的产品分类已被禁用');
         }
       }
 
@@ -157,16 +158,8 @@ export const POST = withAuth(
           },
         });
       } catch (error: unknown) {
-        // 处理唯一约束冲突错误 (Prisma P2002)
-        if (
-          error &&
-          typeof error === 'object' &&
-          'code' in error &&
-          error.code === 'P2002'
-        ) {
-          throw new Error('产品编码已存在');
-        }
-        throw error;
+        // 使用统一的 Prisma 错误处理
+        throw handlePrismaError(error);
       }
     });
 

@@ -7,7 +7,6 @@
 export const PRODUCT_STATUSES = {
   ACTIVE: 'active',
   INACTIVE: 'inactive',
-  DISCONTINUED: 'discontinued',
 } as const;
 
 export type ProductStatus =
@@ -17,7 +16,6 @@ export type ProductStatus =
 export const PRODUCT_STATUS_LABELS = {
   [PRODUCT_STATUSES.ACTIVE]: '启用',
   [PRODUCT_STATUSES.INACTIVE]: '停用',
-  [PRODUCT_STATUSES.DISCONTINUED]: '已停产',
 } as const;
 
 // 产品单位枚举
@@ -68,10 +66,6 @@ export const PRODUCT_STATUS_OPTIONS = [
     value: PRODUCT_STATUSES.INACTIVE,
     label: PRODUCT_STATUS_LABELS[PRODUCT_STATUSES.INACTIVE],
   },
-  {
-    value: PRODUCT_STATUSES.DISCONTINUED,
-    label: PRODUCT_STATUS_LABELS[PRODUCT_STATUSES.DISCONTINUED],
-  },
 ] as const;
 
 // 产品单位选项（用于下拉框）
@@ -85,10 +79,3 @@ export const PRODUCT_UNIT_OPTIONS = [
     label: PRODUCT_UNIT_LABELS[PRODUCT_UNITS.SHEET],
   },
 ] as const;
-
-// 分页配置
-export const paginationConfig = {
-  defaultPageSize: 20,
-  pageSizeOptions: [10, 20, 50, 100],
-  maxPageSize: 100,
-} as const;
