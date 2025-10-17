@@ -658,7 +658,7 @@ export function ERPSalesOrderForm({
     }
   };
 
-  // 计算总重量：基于系统数量（片数）和产品重量
+  // 计算总重量：根据单位和每件片数正确计算
   const totalWeight = watchedItems.reduce((sum, item) => {
     // 查找对应的产品数据
     const product = productsData?.data?.find(p => p.id === item.productId);
@@ -666,8 +666,16 @@ export function ERPSalesOrderForm({
       return sum;
     }
 
-    // 重量 = 系统数量（片数） × 产品重量
-    return sum + (item.quantity || 0) * product.weight;
+    // product.weight 是每件的重量(kg)
+    // item.quantity 是系统数量(片数)
+    // item.piecesPerUnit 是每件片数
+    const piecesPerUnit = item.piecesPerUnit || product.piecesPerUnit || 1;
+
+    // 计算件数 = 片数 ÷ 每件片数
+    const unitCount = (item.quantity || 0) / piecesPerUnit;
+
+    // 重量 = 件数 × 每件重量
+    return sum + unitCount * product.weight;
   }, 0);
 
   // 添加商品
