@@ -485,10 +485,16 @@ export const OrderItemRow = React.memo<OrderItemRowProps>(
             control={form.control}
             name={`items.${index}.displayQuantity`}
             rules={{
-              required: '数量不能为空',
               validate: value => {
-                const numeric = Number(value) || 0;
-                return numeric > 0 || '数量必须大于 0';
+                // 允许用户输入过程中字段为空,只在失去焦点或提交时验证
+                if (value === undefined || value === null || value === '') {
+                  return '数量不能为空';
+                }
+                const numeric = Number(value);
+                if (isNaN(numeric) || numeric <= 0) {
+                  return '数量必须大于 0';
+                }
+                return true;
               },
             }}
             render={({ field }) => (
@@ -497,14 +503,15 @@ export const OrderItemRow = React.memo<OrderItemRowProps>(
                   <Input
                     type="number"
                     step="0.01"
-                    {...field}
                     value={field.value ?? ''}
                     className="h-8 text-xs"
                     placeholder="数量"
+                    onBlur={field.onBlur}
                     onChange={e => {
-                      const value = e.target.value;
+                      const inputValue = e.target.value;
+                      // 允许清空,只在失去焦点时验证
                       field.onChange(
-                        value === '' ? undefined : parseFloat(value)
+                        inputValue === '' ? '' : parseFloat(inputValue) || ''
                       );
                     }}
                   />
