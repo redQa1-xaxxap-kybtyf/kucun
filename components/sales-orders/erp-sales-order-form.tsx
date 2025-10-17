@@ -243,6 +243,7 @@ export function ERPSalesOrderForm({
   // 表单状态
   const form = useForm<CreateSalesOrderData>({
     resolver: zodResolver(CreateSalesOrderSchema),
+    mode: 'onSubmit',
     defaultValues: {
       customerId: '',
       status: 'draft',

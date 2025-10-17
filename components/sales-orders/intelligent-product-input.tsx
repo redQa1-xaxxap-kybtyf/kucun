@@ -10,11 +10,11 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { getProducts } from '@/lib/api/products';
+import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import type { Product } from '@/lib/types/product';
 import { ProductDataUtils } from '@/lib/utils/product-data';
 
 import { SmartProductSearch } from './smart-product-search';
-import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 
 interface IntelligentProductInputProps<
   TFieldValues extends Record<string, unknown> = Record<string, unknown>,
@@ -300,7 +300,7 @@ export function IntelligentProductInput<
           const manualName =
             typeof manualNameRaw === 'string'
               ? manualNameRaw.trim()
-              : manualNameRaw != null
+              : manualNameRaw !== null && manualNameRaw !== undefined
                 ? String(manualNameRaw).trim()
                 : '';
 
@@ -313,7 +313,7 @@ export function IntelligentProductInput<
           const selected =
             typeof value === 'string'
               ? value.trim()
-              : value != null
+              : value !== null && value !== undefined
                 ? String(value).trim()
                 : '';
 
@@ -354,6 +354,7 @@ export function IntelligentProductInput<
               placeholder="搜索商品或添加临时商品"
               className="h-8 text-xs"
               allowTemporaryProducts={true}
+              simple={true}
             />
           </FormControl>
           <FormMessage className="text-xs" />
