@@ -5,7 +5,10 @@
 
 import type { NextRequest } from 'next/server';
 
+import { logger } from '@/lib/logger';
+
 import { RATE_LIMIT_ENABLED, RateLimitType } from './config';
+
 import { getRateLimiter } from './index';
 
 /**
@@ -87,7 +90,11 @@ export async function checkRateLimit(
     return { limited: false };
   } catch (error) {
     // 发生错误时，为了系统可用性，允许请求通过
-    console.error('[RateLimit] 检查速率限制错误:', error);
+    logger.error(
+      'rate-limit',
+      '检查速率限制错误',
+      error instanceof Error ? error : undefined
+    );
     return { limited: false };
   }
 }
@@ -112,6 +119,7 @@ function createRateLimitResponse(
     [RateLimitType.GLOBAL]: '请求过于频繁，请稍后再试',
     [RateLimitType.AUTH]: '认证请求过于频繁，请稍后再试',
     [RateLimitType.READ]: '读取请求过于频繁，请稍后再试',
+    [RateLimitType.FINANCE_READ]: '财务数据读取请求过于频繁，请稍后再试',
     [RateLimitType.WRITE]: '写入请求过于频繁，请稍后再试',
     [RateLimitType.LOGIN]: '登录尝试次数过多，请稍后再试',
     [RateLimitType.CAPTCHA]: '验证码请求过于频繁，请稍后再试',

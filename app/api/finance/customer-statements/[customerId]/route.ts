@@ -7,6 +7,7 @@ import {
   withAuth,
 } from '@/lib/auth/api-helpers';
 import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { getCustomerStatementDetail } from '@/lib/services/customer-statement-service';
 
 const DEFAULT_RANGE_DAYS = 30;
@@ -26,7 +27,7 @@ function getDefaultDateRange(): { startDate: string; endDate: string } {
   };
 }
 
-function normaliseRange(
+function normalizeRange(
   startDate: string | null,
   endDate: string | null
 ): { startDate: string; endDate: string } {
@@ -63,16 +64,18 @@ function normaliseRange(
   return getDefaultDateRange();
 }
 
-export const GET = withAuth(
+const getCustomerStatementDetailHandler = withAuth(
   async (request: NextRequest, { params }) => {
     try {
-      const { customerId } = await resolveParams(params);
+      const { customerId } = await resolveParams(
+        params as Promise<Record<string, string>> | Record<string, string> | undefined
+      );
       if (!customerId) {
         return errorResponse('缺少客户ID', 400);
       }
 
       const searchParams = new URL(request.url).searchParams;
-      const { startDate, endDate } = normaliseRange(
+  const { startDate, endDate } = normalizeRange(
         searchParams.get('startDate'),
         searchParams.get('endDate')
       );
@@ -96,4 +99,8 @@ export const GET = withAuth(
     }
   },
   { permissions: ['finance:view'] }
+);
+
+export const GET = withRateLimit(RateLimitType.FINANCE_READ)(
+  getCustomerStatementDetailHandler
 );

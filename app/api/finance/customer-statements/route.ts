@@ -6,6 +6,7 @@ import {
   withAuth,
 } from '@/lib/auth/api-helpers';
 import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { getCustomerStatements } from '@/lib/services/customer-statement-service';
 import type { CustomerStatementQuery } from '@/lib/types/customer-statement';
 
@@ -121,7 +122,7 @@ function parseQuery(searchParams: URLSearchParams): CustomerStatementQuery {
   return query;
 }
 
-export const GET = withAuth(
+const getCustomerStatementsHandler = withAuth(
   async (request: NextRequest) => {
     try {
       const searchParams = new URL(request.url).searchParams;
@@ -142,4 +143,8 @@ export const GET = withAuth(
     }
   },
   { permissions: ['finance:view'] }
+);
+
+export const GET = withRateLimit(RateLimitType.FINANCE_READ)(
+  getCustomerStatementsHandler
 );

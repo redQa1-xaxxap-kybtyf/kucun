@@ -1,16 +1,17 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { withAuth } from '@/lib/auth/api-helpers';
-import type { AuthUser } from '@/lib/auth/context';
 import { ApiError } from '@/lib/api/errors';
 import { resolveParams } from '@/lib/api/middleware';
+import { withAuth } from '@/lib/auth/api-helpers';
+import type { AuthUser } from '@/lib/auth/context';
 import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import {
   getPartnerStatementDetail,
   type PartnerStatementDetailOptions,
 } from '@/lib/services/partner-ledger-service';
 
-export const GET = withAuth(
+const getStatementDetailHandler = withAuth(
   async (
     request: NextRequest,
     context: {
@@ -79,5 +80,8 @@ export const GET = withAuth(
         { status: 500 }
       );
     }
-  }
+  },
+  { permissions: ['finance:view'] }
 );
+
+export const GET = withRateLimit(RateLimitType.FINANCE_READ)(getStatementDetailHandler);

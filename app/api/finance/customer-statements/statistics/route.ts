@@ -4,9 +4,10 @@ import {
   withAuth,
 } from '@/lib/auth/api-helpers';
 import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { getCustomerStatementStatistics } from '@/lib/services/customer-statement-service';
 
-export const GET = withAuth(
+const getCustomerStatementStatisticsHandler = withAuth(
   async () => {
     try {
       const statistics = await getCustomerStatementStatistics();
@@ -23,4 +24,8 @@ export const GET = withAuth(
     }
   },
   { permissions: ['finance:view'] }
+);
+
+export const GET = withRateLimit(RateLimitType.FINANCE_READ)(
+  getCustomerStatementStatisticsHandler
 );

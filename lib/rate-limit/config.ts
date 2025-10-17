@@ -13,6 +13,8 @@ export enum RateLimitType {
   AUTH = 'auth',
   /** 读取API限制 - GET 请求 */
   READ = 'read',
+  /** 财务读取API限制 - 财务类敏感 GET 请求 */
+  FINANCE_READ = 'finance_read',
   /** 写入API限制 - POST/PUT/DELETE/PATCH */
   WRITE = 'write',
   /** 登录限制 - 防暴力破解 */
@@ -60,6 +62,12 @@ export const DEFAULT_RATE_LIMIT_CONFIGS: Record<
     windowMs: 60 * 1000, // 1分钟
     keyPrefix: 'rate_limit:read',
     type: RateLimitType.READ,
+  },
+  [RateLimitType.FINANCE_READ]: {
+    maxRequests: parseInt(process.env.RATE_LIMIT_FINANCE_READ || '30', 10),
+    windowMs: 60 * 1000, // 1分钟
+    keyPrefix: 'rate_limit:finance_read',
+    type: RateLimitType.FINANCE_READ,
   },
   [RateLimitType.WRITE]: {
     maxRequests: parseInt(process.env.RATE_LIMIT_WRITE || '30', 10),
