@@ -439,6 +439,37 @@ export function getUserPermissions(user: AuthUser | null): Permission[] {
   return ROLE_PERMISSIONS[user.role as Role] || [];
 }
 
+// ==================== 导航权限辅助函数 ====================
+
+/**
+ * 根据角色过滤导航项
+ * 用于在服务器端过滤侧边栏导航菜单
+ *
+ * @param navItems - 导航项数组
+ * @param role - 用户角色
+ * @returns 用户可访问的导航项
+ *
+ * @example
+ * ```typescript
+ * const accessibleItems = getAccessibleNavItems(allNavItems, 'sales');
+ * ```
+ */
+export function getAccessibleNavItems<T extends { requiredRoles?: Role[] }>(
+  navItems: T[],
+  role: Role | undefined
+): T[] {
+  return navItems.filter(item => {
+    // 如果没有角色要求，所有用户都可以访问
+    if (!item.requiredRoles || item.requiredRoles.length === 0) {
+      return true;
+    }
+
+    // 检查用户角色是否在允许的角色列表中
+    const userRole = role ?? 'sales';
+    return item.requiredRoles.includes(userRole);
+  });
+}
+
 // ==================== 权限中间件工厂 ====================
 
 /**

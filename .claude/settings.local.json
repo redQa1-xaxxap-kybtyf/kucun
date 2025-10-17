@@ -145,7 +145,11 @@
       "mcp__playwright__browser_wait_for",
       "mcp__playwright__browser_close",
       "mcp__playwright__browser_evaluate",
-      "Bash(npx playwright:*)"
+      "Bash(npx playwright:*)",
+      "mcp__serena__write_memory",
+      "mcp__playwright__browser_console_messages",
+      "Bash(xargs cat:*)",
+      "Bash(del scriptsverify-prepayment-fields.js)"
     ],
     "deny": [],
     "ask": []

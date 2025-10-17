@@ -6,8 +6,9 @@ import {
 import type { Metadata } from 'next';
 
 import { getBatchSpecifications } from '@/lib/api/batch-specification-handlers';
-import type { BatchSpecificationQueryParams } from '@/lib/types/batch-specification';
+import { requirePagePermission } from '@/lib/auth/page-permission';
 import { queryKeys } from '@/lib/queryKeys';
+import type { BatchSpecificationQueryParams } from '@/lib/types/batch-specification';
 
 import { BatchSpecificationPageClient } from './page-client';
 
@@ -96,6 +97,9 @@ export default async function BatchSpecificationPage({
 }: {
   searchParams?: Promise<Record<string, string | string[] | undefined>>;
 }) {
+  // ✅ 权限检查：要求用户拥有库存查看权限
+  await requirePagePermission('inventory:view');
+
   const resolvedParams = searchParams ? await searchParams : {};
   const normalizedParams = normalizeParams(resolvedParams);
 

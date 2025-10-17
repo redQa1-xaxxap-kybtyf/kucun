@@ -2,14 +2,13 @@
 
 import { Download, FileText, Users } from 'lucide-react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import * as React from 'react';
 import { Suspense } from 'react';
-import { useDebouncedCallback } from 'use-debounce';
 
 import { PageHeader } from '@/components/common/page-header';
 import { StatementsClient } from '@/components/finance/statements-client';
 import { Button } from '@/components/ui/button';
+
+import { useStatementsFilters } from './hooks/useStatementsFilters';
 
 interface AccountStatement {
   id: string;
@@ -57,137 +56,14 @@ interface StatementsPageClientProps {
 
 /**
  * 往来账单页面客户端组件
- * 负责用户交互和状态管理
+ * 职责：渲染页面布局和协调子组件
  */
 export function StatementsPageClient({
   initialData,
   initialParams,
 }: StatementsPageClientProps) {
-  const router = useRouter();
-  const [, startTransition] = React.useTransition();
-
-  // 本地状态管理 - 用于即时更新UI
-  const [search, setSearch] = React.useState(initialParams.search || '');
-  const [type, setType] = React.useState(initialParams.type || 'all');
-  const [sortBy, setSortBy] = React.useState(
-    initialParams.sortBy || 'totalAmount'
-  );
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
-    initialParams.sortOrder || 'desc'
-  );
-
-  // 防抖更新URL - 避免每次输入都触发导航
-  const debouncedUpdateURL = useDebouncedCallback(
-    (searchValue: string, filters: StatementsQueryParams) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (searchValue) {
-          params.set('search', searchValue);
-        }
-        if (filters.type) {
-          params.set('type', filters.type);
-        }
-        if (filters.sortBy) {
-          params.set('sortBy', filters.sortBy);
-        }
-        if (filters.sortOrder) {
-          params.set('sortOrder', filters.sortOrder);
-        }
-        if (filters.page && filters.page > 1) {
-          params.set('page', filters.page.toString());
-        }
-        if (filters.limit) {
-          params.set('limit', filters.limit.toString());
-        }
-
-        router.push(`/finance/statements?${params.toString()}`);
-      });
-    },
-    300
-  );
-
-  // 搜索处理 - 立即更新本地状态，防抖更新URL
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      setSearch(value);
-      debouncedUpdateURL(value, {
-        ...initialParams,
-        search: value,
-        type: type === 'all' ? undefined : type,
-        sortBy,
-        sortOrder,
-        page: 1,
-      });
-    },
-    [debouncedUpdateURL, initialParams, type, sortBy, sortOrder]
-  );
-
-  // 筛选处理
-  const handleFilter = React.useCallback(
-    (key: string, value: string | undefined) => {
-      const newFilters = { ...initialParams, [key]: value, page: 1 };
-
-      if (key === 'type') {
-        setType(value || 'all');
-      } else if (key === 'sortBy') {
-        setSortBy(value || 'totalAmount');
-      } else if (key === 'sortOrder') {
-        setSortOrder((value as 'asc' | 'desc') || 'desc');
-      }
-
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (newFilters.type) {
-          params.set('type', newFilters.type);
-        }
-        if (newFilters.sortBy) {
-          params.set('sortBy', newFilters.sortBy);
-        }
-        if (newFilters.sortOrder) {
-          params.set('sortOrder', newFilters.sortOrder);
-        }
-        if (newFilters.limit) {
-          params.set('limit', newFilters.limit.toString());
-        }
-
-        router.push(`/finance/statements?${params.toString()}`);
-      });
-    },
-    [router, search, initialParams]
-  );
-
-  // 分页处理
-  const handlePageChange = React.useCallback(
-    (page: number) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (type) {
-          params.set('type', type);
-        }
-        if (sortBy) {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder) {
-          params.set('sortOrder', sortOrder);
-        }
-        if (page > 1) {
-          params.set('page', page.toString());
-        }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
-        }
-
-        router.push(`/finance/statements?${params.toString()}`);
-      });
-    },
-    [router, search, type, sortBy, sortOrder, initialParams.limit]
-  );
+  // 筛选状态管理（已提取到自定义Hook）
+  const { filters, handlers } = useStatementsFilters({ initialParams });
 
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
@@ -236,15 +112,10 @@ export function StatementsPageClient({
           <StatementsClient
             initialData={initialData}
             initialParams={initialParams}
-            filters={{
-              search,
-              type,
-              sortBy,
-              sortOrder,
-            }}
-            onSearch={handleSearch}
-            onFilter={handleFilter}
-            onPageChange={handlePageChange}
+            filters={filters}
+            onSearch={handlers.handleSearch}
+            onFilter={handlers.handleFilter}
+            onPageChange={handlers.handlePageChange}
           />
         </Suspense>
       </div>

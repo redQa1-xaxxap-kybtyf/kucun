@@ -19,10 +19,7 @@ export const GET = withAuth(async () => {
     const cacheKey = buildCacheKey('finance:overview', {});
     const financeOverview = await getOrSetJSON(
       cacheKey,
-      async () => {
-        // 获取财务概览数据(使用服务层函数)
-        return await getFinanceOverview();
-      },
+      async () => getFinanceOverview(), // 获取财务概览数据(使用服务层函数)
       CACHE_STRATEGY.aggregateData.redisTTL, // 10分钟缓存
       {
         enableRandomTTL: true,
@@ -73,10 +70,7 @@ export const POST = withAuth(async (request: NextRequest) => {
     const cacheKey = buildCacheKey('finance:statistics', params);
     const statisticsData = await getOrSetJSON(
       cacheKey,
-      async () => {
-        // 获取财务统计数据(使用服务层函数)
-        return await getFinanceStatistics(params);
-      },
+      async () => getFinanceStatistics(params), // 获取财务统计数据(使用服务层函数)
       CACHE_STRATEGY.aggregateData.redisTTL, // 10分钟缓存
       {
         enableRandomTTL: true,

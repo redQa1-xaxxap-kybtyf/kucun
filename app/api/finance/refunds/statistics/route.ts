@@ -1,10 +1,108 @@
+import type { Prisma } from '@prisma/client';
 import { NextResponse } from 'next/server';
 
-import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 
-export const GET = withAuth(async () => {
+/**
+ * 计算处理率百分比
+ */
+function calculateProcessingRate(processed: number, total: number): number {
+  return total > 0 ? Math.round((processed / total) * 100) : 0;
+}
+
+/**
+ * 构建统计数据结构
+ */
+function buildStatisticsResponse(
+  todayStats: Prisma.GetRefundRecordAggregateType<{
+    _sum: { refundAmount: true; processedAmount: true };
+    _count: true;
+  }>,
+  monthStats: Prisma.GetRefundRecordAggregateType<{
+    _sum: { refundAmount: true; processedAmount: true };
+    _count: true;
+  }>,
+  yearStats: Prisma.GetRefundRecordAggregateType<{
+    _sum: { refundAmount: true; processedAmount: true };
+    _count: true;
+  }>,
+  urgentCount: number,
+  statusStats: Array<{
+    status: string;
+    _count: number;
+    _sum: {
+      refundAmount: number | null;
+      processedAmount: number | null;
+    } | null;
+  }>,
+  recentRefunds: Array<{
+    id: string;
+    refundNumber: string;
+    refundAmount: number;
+    status: string;
+    createdAt: Date;
+    salesOrder: { customer: { name: string } } | null;
+  }>
+) {
+  return {
+    today: {
+      totalAmount: todayStats._sum.refundAmount || 0,
+      processedAmount: todayStats._sum.processedAmount || 0,
+      pendingAmount:
+        (todayStats._sum.refundAmount || 0) -
+        (todayStats._sum.processedAmount || 0),
+      count: todayStats._count,
+      processingRate: calculateProcessingRate(
+        todayStats._sum.processedAmount || 0,
+        todayStats._sum.refundAmount || 0
+      ),
+    },
+    month: {
+      totalAmount: monthStats._sum.refundAmount || 0,
+      processedAmount: monthStats._sum.processedAmount || 0,
+      pendingAmount:
+        (monthStats._sum.refundAmount || 0) -
+        (monthStats._sum.processedAmount || 0),
+      count: monthStats._count,
+      processingRate: calculateProcessingRate(
+        monthStats._sum.processedAmount || 0,
+        monthStats._sum.refundAmount || 0
+      ),
+    },
+    year: {
+      totalAmount: yearStats._sum.refundAmount || 0,
+      processedAmount: yearStats._sum.processedAmount || 0,
+      pendingAmount:
+        (yearStats._sum.refundAmount || 0) -
+        (yearStats._sum.processedAmount || 0),
+      count: yearStats._count,
+      processingRate: calculateProcessingRate(
+        yearStats._sum.processedAmount || 0,
+        yearStats._sum.refundAmount || 0
+      ),
+    },
+    urgent: urgentCount,
+    statusBreakdown: statusStats.map(stat => ({
+      status: stat.status,
+      count: stat._count,
+      totalAmount: stat._sum?.refundAmount || 0,
+      processedAmount: stat._sum?.processedAmount || 0,
+    })),
+    recentRefunds: recentRefunds.map(refund => ({
+      id: refund.id,
+      refundNumber: refund.refundNumber,
+      customerName: refund.salesOrder?.customer?.name || '未知客户',
+      refundAmount: refund.refundAmount,
+      status: refund.status,
+      createdAt: refund.createdAt,
+    })),
+  };
+}
+
+const getRefundStatisticsHandler = withAuth(async () => {
   try {
     const now = new Date();
     const startOfToday = new Date(
@@ -80,66 +178,15 @@ export const GET = withAuth(async () => {
       }),
     ]);
 
-    // 计算处理率
-    const calculateProcessingRate = (processed: number, total: number) =>
-      total > 0 ? Math.round((processed / total) * 100) : 0;
-
-    const statistics = {
-      today: {
-        totalAmount: todayStats._sum.refundAmount || 0,
-        processedAmount: todayStats._sum.processedAmount || 0,
-        // 修复：添加待处理金额字段
-        pendingAmount:
-          (todayStats._sum.refundAmount || 0) -
-          (todayStats._sum.processedAmount || 0),
-        count: todayStats._count,
-        processingRate: calculateProcessingRate(
-          todayStats._sum.processedAmount || 0,
-          todayStats._sum.refundAmount || 0
-        ),
-      },
-      month: {
-        totalAmount: monthStats._sum.refundAmount || 0,
-        processedAmount: monthStats._sum.processedAmount || 0,
-        // 修复：添加待处理金额字段
-        pendingAmount:
-          (monthStats._sum.refundAmount || 0) -
-          (monthStats._sum.processedAmount || 0),
-        count: monthStats._count,
-        processingRate: calculateProcessingRate(
-          monthStats._sum.processedAmount || 0,
-          monthStats._sum.refundAmount || 0
-        ),
-      },
-      year: {
-        totalAmount: yearStats._sum.refundAmount || 0,
-        processedAmount: yearStats._sum.processedAmount || 0,
-        // 修复：添加待处理金额字段
-        pendingAmount:
-          (yearStats._sum.refundAmount || 0) -
-          (yearStats._sum.processedAmount || 0),
-        count: yearStats._count,
-        processingRate: calculateProcessingRate(
-          yearStats._sum.processedAmount || 0,
-          yearStats._sum.refundAmount || 0
-        ),
-      },
-      urgent: urgentCount,
-      statusBreakdown: statusStats.map(stat => ({
-        status: stat.status,
-        count: stat._count,
-        totalAmount: stat._sum.refundAmount || 0,
-        processedAmount: stat._sum.processedAmount || 0,
-      })),
-      recentRefunds: recentRefunds.map(refund => ({
-        id: refund.id,
-        refundNumber: refund.refundNumber,
-        customerName: refund.salesOrder?.customer?.name || '未知客户',
-        refundAmount: refund.refundAmount,
-        status: refund.status,
-        createdAt: refund.createdAt,
-      })),
-    };
+    // 构建统计数据响应
+    const statistics = buildStatisticsResponse(
+      todayStats,
+      monthStats,
+      yearStats,
+      urgentCount,
+      statusStats,
+      recentRefunds
+    );
 
     return NextResponse.json({
       success: true,
@@ -150,3 +197,7 @@ export const GET = withAuth(async () => {
     return NextResponse.json({ error: '获取统计数据失败' }, { status: 500 });
   }
 });
+
+export const GET = withRateLimit(RateLimitType.READ)(
+  getRefundStatisticsHandler
+);

@@ -11,6 +11,7 @@ import {
   getInventoryCount,
   getOptimizedInventoryList,
 } from '@/lib/api/inventory-query-builder';
+import { requirePagePermission } from '@/lib/auth/page-permission';
 import { paginationConfig } from '@/lib/env';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 
@@ -39,6 +40,9 @@ export default async function InventoryPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  // ✅ 权限检查：要求用户拥有库存查看权限
+  await requirePagePermission('inventory:view');
+
   const params = await searchParams;
 
   const getParam = (key: string) => {

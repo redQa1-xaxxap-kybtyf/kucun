@@ -2,15 +2,15 @@ import { getServerSession } from 'next-auth';
 import * as React from 'react';
 
 import { authOptions } from '@/lib/auth';
+import { getAccessibleNavItems } from '@/lib/auth/permissions';
 import type { NavigationItem, SidebarState } from '@/lib/types/layout';
 import type { UserRole } from '@/lib/types/user';
-import { getAccessibleNavItems } from '@/lib/utils/permissions';
 
-import { SidebarClient } from './SidebarClient';
 import {
   bottomNavigationItems,
   navigationItems,
 } from './sidebar-navigation-config';
+import { SidebarClient } from './SidebarClient';
 
 interface SidebarServerProps {
   /** 侧边栏状态 */

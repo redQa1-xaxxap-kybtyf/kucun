@@ -6,6 +6,7 @@ import {
 
 import { adjustmentQueryKeys } from '@/lib/api/adjustments';
 import { getAdjustmentsServer } from '@/lib/api/adjustments-server';
+import { requirePagePermission } from '@/lib/auth/page-permission';
 import type { AdjustmentQueryParams } from '@/lib/types/inventory';
 
 import { AdjustmentRecordsPageClient } from './page-client';
@@ -31,6 +32,9 @@ export default async function AdjustmentRecordsPage({
 }: {
   searchParams: Record<string, string | string[] | undefined>;
 }) {
+  // ✅ 权限检查：要求用户拥有库存查看权限（调整记录是查看性质）
+  await requirePagePermission('inventory:view');
+
   const urlSearchParams = new URLSearchParams();
 
   Object.entries(searchParams).forEach(([key, value]) => {
@@ -120,4 +124,3 @@ export default async function AdjustmentRecordsPage({
     </HydrationBoundary>
   );
 }
-

@@ -1,5 +1,13 @@
 ﻿/**
- * 权限管理工具函数
+ * @deprecated 此文件已弃用，建议使用 @/lib/auth/permissions
+ *
+ * 权限管理工具函数 (旧系统 - 客户端组件使用)
+ *
+ * ⚠️ 迁移指南：
+ * - 服务器组件和API：使用 @/lib/auth/permissions 中的 can(), requirePagePermission() 等
+ * - 客户端组件：暂时继续使用本文件，未来将提供客户端权限Hook
+ * - 导航过滤：使用 @/lib/auth/permissions 中的 getAccessibleNavItems()
+ *
  * 提供基于角色的权限检查功能
  */
 
@@ -297,9 +305,10 @@ export function getAccessibleMenuItems(role: UserRole | undefined) {
 /**
  * 获取用户可访问的导航项（兼容现有代码）
  */
-export function getAccessibleNavItems<
-  T extends { requiredRoles?: UserRole[] }
->(navItems: T[], role: UserRole | undefined): T[] {
+export function getAccessibleNavItems<T extends { requiredRoles?: UserRole[] }>(
+  navItems: T[],
+  role: UserRole | undefined
+): T[] {
   return navItems.filter(item => {
     // 如果没有角色要求，所有用户都可以访问
     if (!item.requiredRoles || item.requiredRoles.length === 0) {
@@ -342,4 +351,3 @@ export function hasRole(
 ): boolean {
   return userRole === requiredRole;
 }
-

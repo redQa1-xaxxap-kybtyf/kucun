@@ -1,0 +1,330 @@
+/**
+ * 销售订单验证规则 - 统一导出
+ * 职责：组合各个验证规则模块，提供完整的订单验证Schema
+ */
+
+import { z } from 'zod';
+
+import { paginationConfig } from '@/lib/env';
+
+import {
+  nullableNumber,
+  salesOrderFeeItemSchema,
+  salesOrderItemSchema,
+  salesOrderStatusSchema,
+  salesOrderTypeSchema,
+  transferFulfillmentModeSchema,
+} from './schemas';
+import {
+  validateItemCombinations,
+  validateManualProductFields,
+  validateRequiredFields,
+} from './validators';
+
+/**
+ * 基础销售订单验证规则
+ */
+const baseSalesOrderSchema = z
+  .object({
+    orderNumber: z
+      .string()
+      .min(1, '订单号不能为空')
+      .max(50, '订单号不能超过50个字符')
+      .optional(), // 订单号可选，由后端自动生成
+
+    customerId: z.string().min(1, '客户ID不能为空'),
+
+    status: salesOrderStatusSchema.default('draft'),
+
+    orderType: salesOrderTypeSchema.default('NORMAL'),
+
+    transferMode: transferFulfillmentModeSchema
+      .optional()
+      .default('SUPPLIER_ONLY'),
+
+    supplierId: z
+      .string()
+      .min(1, '供应商ID不能为空')
+      .optional()
+      .or(z.literal('')),
+
+    costAmount: nullableNumber(
+      z
+        .number()
+        .min(0, '成本金额不能为负数')
+        .max(999999999.99, '成本金额不能超过999,999,999.99')
+        .multipleOf(0.01, '成本金额最多保留2位小数')
+    ),
+
+    roundingAdjustment: nullableNumber(
+      z
+        .number()
+        .min(-999999999.99, '抹零金额不能小于-999,999,999.99')
+        .max(999999999.99, '抹零金额不能超过999,999,999.99')
+        .multipleOf(0.01, '抹零金额最多保留2位小数')
+    ),
+
+    profitAmount: nullableNumber(
+      z
+        .number()
+        .min(0, '毛利金额不能为负数')
+        .max(999999999.99, '毛利金额不能超过999,999,999.99')
+        .multipleOf(0.01, '毛利金额最多保留2位小数')
+    ),
+
+    shippedAt: z
+      .string()
+      .datetime('发货时间格式不正确')
+      .optional()
+      .or(z.literal('')),
+
+    remarks: z
+      .string()
+      .max(1000, '备注不能超过1000个字符')
+      .optional()
+      .or(z.literal('')),
+
+    items: z
+      .array(salesOrderItemSchema)
+      .min(0, '订单明细不能为负')
+      .max(100, '订单明细不能超过100条'),
+
+    feeItems: z.array(salesOrderFeeItemSchema).optional().default([]),
+
+    itemsAmount: z.number().min(0, '商品金额不能为负数').optional(),
+    additionalFees: z.number().min(0, '额外费用不能为负数').optional(),
+    totalAmount: z.number().min(0, '总金额不能为负数').optional(),
+
+    // 预收款相关字段
+    usePrepayment: z.boolean().optional().default(false),
+    prepaymentAmount: nullableNumber(
+      z
+        .number()
+        .min(0, '预收款冲抵金额不能为负数')
+        .max(999999999.99, '预收款冲抵金额不能超过999,999,999.99')
+        .multipleOf(0.01, '预收款冲抵金额最多保留2位小数')
+    ),
+  })
+  .superRefine((data, ctx) => {
+    const status = data.status ?? 'draft';
+
+    if (!Array.isArray(data.items)) {
+      return;
+    }
+
+    validateRequiredFields(
+      data.items,
+      status,
+      data.orderType,
+      data.transferMode,
+      ctx
+    );
+  });
+
+/**
+ * 销售订单创建验证规则
+ */
+export const salesOrderCreateSchema = baseSalesOrderSchema
+  .refine(
+    data => {
+      if (data.status === 'draft') {
+        return true;
+      }
+      return data.items && data.items.length > 0;
+    },
+    {
+      message: '至少需要一个订单项',
+      path: ['items'],
+    }
+  )
+  .refine(
+    data => {
+      if (data.status === 'draft') {
+        return true;
+      }
+      return validateItemCombinations(data.items);
+    },
+    {
+      message: '订单明细中存在重复的产品规格组合',
+      path: ['items'],
+    }
+  )
+  .refine(
+    data => {
+      if (data.status === 'draft') {
+        return true;
+      }
+      if (data.orderType === 'TRANSFER') {
+        return data.supplierId && data.supplierId.trim() !== '';
+      }
+      return true;
+    },
+    {
+      message: '调货销售必须选择供应商',
+      path: ['supplierId'],
+    }
+  )
+  .refine(
+    data => {
+      if (data.status === 'draft') {
+        return true;
+      }
+      if (data.orderType === 'TRANSFER') {
+        return data.costAmount !== undefined && data.costAmount > 0;
+      }
+      return true;
+    },
+    {
+      message: '调货销售必须填写成本金额',
+      path: ['costAmount'],
+    }
+  )
+  .refine(
+    data => validateManualProductFields(data.items, data.status ?? 'draft'),
+    {
+      message: '手动输入商品必须填写商品名称，库存商品必须选择产品',
+      path: ['items'],
+    }
+  );
+
+/**
+ * 销售订单更新验证规则
+ */
+export const salesOrderUpdateSchema = baseSalesOrderSchema
+  .partial()
+  .extend({
+    id: z.string().min(1, 'ID不能为空'),
+  })
+  .refine(
+    data => {
+      if (data.items && data.items.length > 0) {
+        return validateItemCombinations(data.items);
+      }
+      return true;
+    },
+    {
+      message: '订单明细中存在重复的产品规格组合',
+      path: ['items'],
+    }
+  );
+
+/**
+ * 销售订单查询参数验证规则
+ */
+export const salesOrderQuerySchema = z.object({
+  page: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val ? parseInt(val) : 1))
+    .refine(val => val > 0, '页码必须大于0'),
+  limit: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => (val ? parseInt(val) : paginationConfig.defaultPageSize))
+    .refine(
+      val => val > 0 && val <= paginationConfig.maxPageSize,
+      `每页数量必须在1-${paginationConfig.maxPageSize}之间`
+    ),
+  search: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val?.trim() || undefined),
+  sortBy: z
+    .enum(['orderNumber', 'totalAmount', 'createdAt', 'updatedAt', 'status'])
+    .nullable()
+    .optional()
+    .default('createdAt')
+    .transform(val => val ?? 'createdAt'),
+  sortOrder: z
+    .enum(['asc', 'desc'])
+    .nullable()
+    .optional()
+    .default('desc')
+    .transform(val => val ?? 'desc'),
+  status: salesOrderStatusSchema
+    .nullable()
+    .optional()
+    .transform(val => val ?? undefined),
+  customerId: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val ?? undefined),
+  startDate: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || undefined),
+  endDate: z
+    .string()
+    .nullable()
+    .optional()
+    .transform(val => val || undefined),
+});
+
+/**
+ * 批量删除销售订单验证规则
+ */
+export const batchDeleteSalesOrdersSchema = z.object({
+  salesOrderIds: z
+    .array(z.string().min(1, '销售订单ID不能为空'))
+    .min(1, '至少需要选择一个销售订单')
+    .max(100, '一次最多只能删除100个销售订单'),
+});
+
+/**
+ * 订单状态更新验证规则
+ */
+export const updateOrderStatusSchema = z.object({
+  id: z.string().min(1, 'ID不能为空'),
+  idempotencyKey: z
+    .string()
+    .uuid('幂等性键格式不正确')
+    .describe('幂等性键,防止重复操作'),
+  status: salesOrderStatusSchema,
+  remarks: z.string().optional(),
+});
+
+// 重新导出基础schema和类型
+export * from './schemas';
+
+// 导出验证函数（供测试使用）
+export {
+  validateItemCombinations,
+  validateManualProductFields,
+} from './validators';
+
+// 导出类型
+export type SalesOrderCreateFormData = z.infer<typeof salesOrderCreateSchema>;
+export type SalesOrderUpdateFormData = z.infer<typeof salesOrderUpdateSchema>;
+export type SalesOrderQueryFormData = z.infer<typeof salesOrderQuerySchema>;
+export type BatchDeleteSalesOrdersFormData = z.infer<
+  typeof batchDeleteSalesOrdersSchema
+>;
+export type UpdateOrderStatusFormData = z.infer<typeof updateOrderStatusSchema>;
+
+// 兼容性导出（用于测试文件）
+export const CreateSalesOrderSchema = salesOrderCreateSchema;
+
+// 销售订单类型选项（用于UI组件）
+export const SALES_ORDER_TYPE_OPTIONS = [
+  { value: 'NORMAL', label: '普通销售' },
+  { value: 'TRANSFER', label: '调货销售' },
+] as const;
+
+// 默认表单值
+export const salesOrderFormDefaults = {
+  customerId: '',
+  orderType: 'NORMAL' as const,
+  status: 'draft' as const,
+  items: [],
+  remarks: '',
+  totalAmount: 0,
+};
+
+// 兼容性类型导出
+export type SalesOrderItemData = z.infer<typeof salesOrderItemSchema>;
+export type CreateSalesOrderData = SalesOrderCreateFormData;

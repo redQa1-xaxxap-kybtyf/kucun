@@ -225,6 +225,11 @@ model SalesOrder {
   totalAmount     Float    @default(0) @map("total_amount") // 订单总额 = 商品总额 + 额外费用
   paidAmount      Float    @default(0) @map("paid_amount") // 已付金额
   roundingAdjustment Float @default(0) @map("rounding_adjustment") // 抹零金额（可正可负）
+
+  // 预收款字段
+  usePrepayment      Boolean  @default(false) @map("use_prepayment") // 是否使用预收款冲抵
+  prepaymentAmount   Float?   @default(0) @map("prepayment_amount") // 预收款冲抵金额
+
   remarks         String?
   shippedAt       DateTime? @map("shipped_at") // 发货时间
   createdAt       DateTime  @default(now()) @map("created_at")
@@ -247,10 +252,15 @@ model SalesOrder {
   @@index([orderType], map: "idx_sales_orders_order_type")
   @@index([supplierId], map: "idx_sales_orders_supplier")
   @@index([createdAt(sort: Desc)], map: "idx_sales_orders_date")
+  @@index([updatedAt(sort: Desc)], map: "idx_sales_orders_updated")
+  @@index([usePrepayment], map: "idx_sales_orders_prepayment")
   // 复合索引优化：支持常见查询模式
   @@index([customerId, status, createdAt(sort: Desc)], map: "idx_sales_orders_customer_status_date")
   @@index([status, createdAt(sort: Desc)], map: "idx_sales_orders_status_date")
+  @@index([status, updatedAt(sort: Desc)], map: "idx_sales_orders_status_updated")
+  @@index([status, totalAmount(sort: Desc)], map: "idx_sales_orders_status_amount")
   @@index([userId, status, createdAt(sort: Desc)], map: "idx_sales_orders_user_status_date")
+  @@index([customerId, totalAmount(sort: Desc)], map: "idx_sales_orders_customer_amount")
   @@map("sales_orders")
 }
 

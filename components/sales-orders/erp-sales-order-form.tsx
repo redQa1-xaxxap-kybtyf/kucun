@@ -70,6 +70,7 @@ import {
 } from '@/lib/validations/sales-order';
 
 import { OrderItemsSection } from './erp-sales-order-form/OrderItemsSection';
+import { PrepaymentSection } from './erp-sales-order-form/PrepaymentSection';
 
 const UNIT_MAPPING: Record<string, string> = {
   piece: '件',
@@ -682,6 +683,8 @@ export function ERPSalesOrderForm({
       quantity: 1,
       unitPrice: 0,
       unitCost: undefined,
+      costSubtotal: undefined,
+      profitAmount: undefined,
       localQuantity: undefined,
       transferQuantity: undefined,
       piecesPerUnit: undefined,
@@ -755,6 +758,8 @@ export function ERPSalesOrderForm({
           quantity: item.quantity ?? 0,
           unitPrice: item.unitPrice ?? 0,
           unitCost: item.unitCost ?? undefined,
+          costSubtotal: item.costSubtotal ?? undefined,
+          profitAmount: item.profitAmount ?? undefined,
           piecesPerUnit:
             item.piecesPerUnit ?? product?.piecesPerUnit ?? undefined,
           remarks: item.remarks ?? '',
@@ -1238,6 +1243,21 @@ export function ERPSalesOrderForm({
                     shouldValidate: false,
                   })
                 }
+                disabled={createMutation.isPending || updateMutation.isPending}
+              />
+            </div>
+          </div>
+
+          {/* 预收款冲抵 */}
+          <div className="bg-card rounded border">
+            <div className="bg-muted/30 border-b px-3 py-2">
+              <h3 className="text-sm font-medium">预收款冲抵</h3>
+            </div>
+            <div className="p-3">
+              <PrepaymentSection
+                form={form}
+                customerId={form.watch('customerId')}
+                orderTotal={orderTotalWithFees}
                 disabled={createMutation.isPending || updateMutation.isPending}
               />
             </div>

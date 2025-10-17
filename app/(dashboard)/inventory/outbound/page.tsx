@@ -5,6 +5,7 @@ import {
 } from '@tanstack/react-query';
 
 import { getOutboundRecordsServer } from '@/lib/api/outbound-server';
+import { requirePagePermission } from '@/lib/auth/page-permission';
 import { queryKeys } from '@/lib/queryKeys';
 import type { OutboundRecordQueryParams } from '@/lib/types/inventory';
 
@@ -25,6 +26,9 @@ export const revalidate = 0;
 export default async function OutboundRecordsPage(props?: {
   searchParams?: Record<string, string | string[] | undefined>;
 }) {
+  // ✅ 权限检查：要求用户拥有库存查看权限（出库记录是查看性质）
+  await requirePagePermission('inventory:view');
+
   const { searchParams = {} } = props ?? {};
   const urlSearchParams = new URLSearchParams();
 

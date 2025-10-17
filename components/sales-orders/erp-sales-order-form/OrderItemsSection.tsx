@@ -23,18 +23,18 @@ import {
 } from '@/hooks/use-price-history';
 import type { Product } from '@/lib/types/product';
 import type {
-  SalesOrderStatus,
+  SalesOrderType,
   TransferFulfillmentMode,
 } from '@/lib/types/sales-order';
 import type { SalesOrderCreateFormData } from '@/lib/validations/sales-order';
 
 interface OrderItemsSectionProps {
-  fields: FieldArrayWithId<Record<string, unknown>, 'items', 'id'>[];
+  fields: FieldArrayWithId<SalesOrderCreateFormData, 'items', 'id'>[];
   remove: UseFieldArrayRemove;
   onAddItem: () => void;
   isSubmitting: boolean;
   products: Product[];
-  orderType: SalesOrderStatus | undefined;
+  orderType: SalesOrderType | undefined;
   transferMode?: TransferFulfillmentMode;
   unitMapping: Record<string, string>;
   form: UseFormReturn<SalesOrderCreateFormData>;
@@ -84,7 +84,7 @@ function populateProductSelection({
       form.setValue(`items.${index}.unitPrice`, latestPrice);
       toast({
         title: '已自动填充历史价格',
-        description: `产品编码 "${product.code}" 的上次价格：¥${latestPrice}`,
+        // description: `产品编码 "${product.code}" 的上次价格：¥${latestPrice}`,
         duration: 2000,
       });
     }
@@ -177,7 +177,7 @@ export function OrderItemsSection({
                   products={products}
                   onRemove={remove}
                   onProductChange={handleProductChange}
-                  orderType={orderType}
+                  orderType={orderType as 'NORMAL' | 'TRANSFER'}
                   transferMode={transferMode}
                   unitMapping={unitMapping}
                 />

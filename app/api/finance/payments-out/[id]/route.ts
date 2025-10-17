@@ -46,7 +46,9 @@ const getPaymentHandler = withAuth(
   async (request: NextRequest, context) => {
     let paymentId: string | undefined;
     try {
-      const { id } = await resolveParams<PaymentParams>(context.params);
+      const { id } = await resolveParams<PaymentParams>(
+        context.params as Promise<PaymentParams> | PaymentParams | undefined
+      );
       paymentId = id;
 
       const payment = await prisma.paymentOutRecord.findUnique({
@@ -90,7 +92,9 @@ const putPaymentHandler = withAuth(
   async (request: NextRequest, context) => {
     let paymentId: string | undefined;
     try {
-      const { id } = await resolveParams<PaymentParams>(context.params);
+      const { id } = await resolveParams<PaymentParams>(
+        context.params as Promise<PaymentParams> | PaymentParams | undefined
+      );
       paymentId = id;
 
       const body = await request.json();
@@ -208,7 +212,9 @@ const deletePaymentHandler = withAuth(
   async (request: NextRequest, context) => {
     let paymentId: string | undefined;
     try {
-      const { id } = await resolveParams<PaymentParams>(context.params);
+      const { id } = await resolveParams<PaymentParams>(
+        context.params as Promise<PaymentParams> | PaymentParams | undefined
+      );
       paymentId = id;
 
       const existingPayment = await prisma.paymentOutRecord.findUnique({
