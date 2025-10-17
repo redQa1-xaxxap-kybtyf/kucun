@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import * as React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
@@ -63,6 +64,9 @@ interface PaymentsOutClientProps {
       confirmedAmount: number;
       pendingAmount: number;
       recordCount: number;
+      currentMonthConfirmedAmount?: number;
+      previousMonthConfirmedAmount?: number;
+      confirmedAmountChangePercent?: number | null;
     };
     pagination: {
       page: number;
@@ -152,6 +156,28 @@ export function PaymentsOutClient({
   const router = useRouter();
   const { payments, statistics, pagination } = initialData;
 
+  const confirmedAmountChangeLabel = React.useMemo(() => {
+    const change = statistics.confirmedAmountChangePercent;
+    const current = statistics.currentMonthConfirmedAmount ?? 0;
+    const previous = statistics.previousMonthConfirmedAmount ?? 0;
+
+    if (typeof change !== 'number') {
+      return current === 0 && previous === 0 ? '较上月持平' : '暂无上月数据';
+    }
+
+    const TOLERANCE = 0.1;
+    if (Math.abs(change) < TOLERANCE) {
+      return '较上月持平';
+    }
+
+    const value = Math.abs(change).toFixed(1);
+    return change > 0 ? `较上月增长 ${value}%` : `较上月下降 ${value}%`;
+  }, [
+    statistics.confirmedAmountChangePercent,
+    statistics.currentMonthConfirmedAmount,
+    statistics.previousMonthConfirmedAmount,
+  ]);
+
   return (
     <div className="space-y-4">
       {/* 统计卡片 */}
@@ -213,7 +239,9 @@ export function PaymentsOutClient({
             <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
               {formatCurrency(statistics.confirmedAmount)}
             </div>
-            <p className="text-muted-foreground text-xs">较上月增长 8%</p>
+            <p className="text-muted-foreground text-xs">
+              {confirmedAmountChangeLabel}
+            </p>
           </CardContent>
         </Card>
       </div>

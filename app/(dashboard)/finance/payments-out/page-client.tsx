@@ -65,6 +65,9 @@ interface PaymentsOutPageClientProps {
       confirmedAmount: number;
       pendingAmount: number;
       recordCount: number;
+      currentMonthConfirmedAmount?: number;
+      previousMonthConfirmedAmount?: number;
+      confirmedAmountChangePercent?: number | null;
     };
     pagination: {
       page: number;

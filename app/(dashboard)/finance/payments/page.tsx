@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import {
   HydrationBoundary,
   QueryClient,
@@ -65,7 +66,7 @@ async function getPaymentsData(searchParams: {
   const sortOrder = searchParams.sortOrder || 'desc';
 
   // 构建查询条件
-  const whereConditions: Record<string, unknown> = {};
+  const whereConditions: Prisma.PaymentRecordWhereInput = {};
 
   if (search) {
     whereConditions.OR = [
@@ -118,18 +119,105 @@ async function getPaymentsData(searchParams: {
     },
   });
 
-  const statistics = {
-    totalAmount: allPayments.reduce(
-      (sum, p) => sum + Number(p.paymentAmount),
+  const totalAmount = allPayments.reduce(
+    (sum, p) => sum + Number(p.paymentAmount),
+    0
+  );
+  const confirmedAmount = allPayments
+    .filter(p => p.status === 'confirmed' || p.status === 'applied')
+    .reduce((sum, p) => sum + Number(p.paymentAmount), 0);
+  const pendingAmount = allPayments
+    .filter(p => p.status === 'pending')
+    .reduce((sum, p) => sum + Number(p.paymentAmount), 0);
+  const collectionRate =
+    totalAmount > 0 ? (confirmedAmount / totalAmount) * 100 : 0;
+
+  const now = new Date();
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const startOfPreviousMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() - 1,
+    1
+  );
+
+  const currentMonthWhere: Prisma.PaymentRecordWhereInput = {
+    ...whereConditions,
+    paymentDate: {
+      gte: startOfCurrentMonth,
+      lt: startOfNextMonth,
+    },
+  };
+
+  const previousMonthWhere: Prisma.PaymentRecordWhereInput = {
+    ...whereConditions,
+    paymentDate: {
+      gte: startOfPreviousMonth,
+      lt: startOfCurrentMonth,
+    },
+  };
+
+  const [currentMonthPayments, previousMonthPayments] = await Promise.all([
+    prisma.paymentRecord.findMany({
+      where: currentMonthWhere,
+      select: { paymentAmount: true, status: true },
+    }),
+    prisma.paymentRecord.findMany({
+      where: previousMonthWhere,
+      select: { paymentAmount: true, status: true },
+    }),
+  ]);
+
+  const calculateCollectionRate = (
+    paymentList: Array<{
+      paymentAmount: Prisma.Decimal | number;
+      status: PaymentStatus;
+    }>
+  ) => {
+    const monthlyTotal = paymentList.reduce(
+      (sum, payment) => sum + Number(payment.paymentAmount),
       0
-    ),
-    confirmedAmount: allPayments
-      .filter(p => p.status === 'confirmed' || p.status === 'applied')
-      .reduce((sum, p) => sum + Number(p.paymentAmount), 0),
-    pendingAmount: allPayments
-      .filter(p => p.status === 'pending')
-      .reduce((sum, p) => sum + Number(p.paymentAmount), 0),
+    );
+
+    if (monthlyTotal === 0) {
+      return null;
+    }
+
+    const monthlyConfirmed = paymentList.reduce((sum, payment) => {
+      if (payment.status === 'confirmed' || payment.status === 'applied') {
+        return sum + Number(payment.paymentAmount);
+      }
+      return sum;
+    }, 0);
+
+    return (monthlyConfirmed / monthlyTotal) * 100;
+  };
+
+  const formatRate = (rate: number | null) =>
+    rate === null ? null : Number(rate.toFixed(1));
+
+  const currentMonthCollectionRate = formatRate(
+    calculateCollectionRate(currentMonthPayments)
+  );
+  const previousMonthCollectionRate = formatRate(
+    calculateCollectionRate(previousMonthPayments)
+  );
+  const collectionRateChange =
+    currentMonthCollectionRate !== null && previousMonthCollectionRate !== null
+      ? Number(
+          (currentMonthCollectionRate - previousMonthCollectionRate).toFixed(1)
+        )
+      : null;
+
+  const statistics = {
+    totalAmount,
+    confirmedAmount,
+    pendingAmount,
     recordCount: allPayments.length,
+    collectionRate: Number(collectionRate.toFixed(1)),
+    currentMonthCollectionRate,
+    previousMonthCollectionRate,
+    collectionRateChange,
   };
 
   const paymentsWithRelations = payments.filter(

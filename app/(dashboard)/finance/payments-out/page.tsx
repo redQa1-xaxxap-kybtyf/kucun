@@ -1,3 +1,4 @@
+import type { Prisma } from '@prisma/client';
 import type { Metadata } from 'next';
 
 import { prisma } from '@/lib/db';
@@ -48,7 +49,7 @@ async function getPaymentsOutData(searchParams: {
   const sortOrder = searchParams.sortOrder || 'desc';
 
   // 构建查询条件
-  const whereConditions: Record<string, unknown> = {};
+  const whereConditions: Prisma.PaymentOutRecordWhereInput = {};
 
   if (search) {
     whereConditions.OR = [
@@ -113,18 +114,90 @@ async function getPaymentsOutData(searchParams: {
     },
   });
 
+  const totalAmount = allPayments.reduce(
+    (sum, payment) => sum + Number(payment.paymentAmount),
+    0
+  );
+  const confirmedAmount = allPayments
+    .filter(payment => payment.status === 'confirmed')
+    .reduce((sum, payment) => sum + Number(payment.paymentAmount), 0);
+  const pendingAmount = allPayments
+    .filter(payment => payment.status === 'pending')
+    .reduce((sum, payment) => sum + Number(payment.paymentAmount), 0);
+
+  const now = new Date();
+  const startOfCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const startOfNextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+  const startOfPreviousMonth = new Date(
+    now.getFullYear(),
+    now.getMonth() - 1,
+    1
+  );
+
+  const buildMonthlyWhere = (dateRange: {
+    gte: Date;
+    lt: Date;
+  }): Prisma.PaymentOutRecordWhereInput => ({
+    AND: [
+      whereConditions,
+      {
+        paymentDate: dateRange,
+      },
+    ],
+  });
+
+  const [currentMonthPayments, previousMonthPayments] = await Promise.all([
+    prisma.paymentOutRecord.findMany({
+      where: buildMonthlyWhere({
+        gte: startOfCurrentMonth,
+        lt: startOfNextMonth,
+      }),
+      select: { paymentAmount: true, status: true },
+    }),
+    prisma.paymentOutRecord.findMany({
+      where: buildMonthlyWhere({
+        gte: startOfPreviousMonth,
+        lt: startOfCurrentMonth,
+      }),
+      select: { paymentAmount: true, status: true },
+    }),
+  ]);
+
+  const calculateConfirmedSum = (
+    list: Array<{ paymentAmount: Prisma.Decimal | number; status: string }>
+  ) =>
+    list
+      .filter(payment => payment.status === 'confirmed')
+      .reduce((sum, payment) => sum + Number(payment.paymentAmount), 0);
+
+  const currentMonthConfirmedAmount =
+    calculateConfirmedSum(currentMonthPayments);
+  const previousMonthConfirmedAmount = calculateConfirmedSum(
+    previousMonthPayments
+  );
+
+  const confirmedAmountChangePercent =
+    previousMonthConfirmedAmount > 0
+      ? Number(
+          (
+            ((currentMonthConfirmedAmount - previousMonthConfirmedAmount) /
+              previousMonthConfirmedAmount) *
+            100
+          ).toFixed(1)
+        )
+      : null;
+
   const statistics = {
-    totalAmount: allPayments.reduce(
-      (sum, p) => sum + Number(p.paymentAmount),
-      0
-    ),
-    confirmedAmount: allPayments
-      .filter(p => p.status === 'confirmed')
-      .reduce((sum, p) => sum + Number(p.paymentAmount), 0),
-    pendingAmount: allPayments
-      .filter(p => p.status === 'pending')
-      .reduce((sum, p) => sum + Number(p.paymentAmount), 0),
+    totalAmount,
+    confirmedAmount,
+    pendingAmount,
     recordCount: allPayments.length,
+    currentMonthConfirmedAmount: Number(currentMonthConfirmedAmount.toFixed(2)),
+    previousMonthConfirmedAmount:
+      previousMonthConfirmedAmount > 0
+        ? Number(previousMonthConfirmedAmount.toFixed(2))
+        : previousMonthConfirmedAmount,
+    confirmedAmountChangePercent,
   };
 
   const normalizedPayments: PaymentOutRecordDetail[] = payments.map(

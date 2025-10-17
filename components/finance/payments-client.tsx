@@ -68,6 +68,10 @@ interface PaymentsClientProps {
       confirmedAmount: number;
       pendingAmount: number;
       recordCount: number;
+      collectionRate: number;
+      currentMonthCollectionRate?: number | null;
+      previousMonthCollectionRate?: number | null;
+      collectionRateChange?: number | null;
     };
     pagination: {
       page: number;
@@ -144,6 +148,45 @@ export function PaymentsClient({
   const { toast } = useToast();
   const confirmPaymentMutation = useConfirmPayment();
   const [confirmingId, setConfirmingId] = React.useState<string | null>(null);
+
+  const overallCollectionRate =
+    typeof statistics.collectionRate === 'number'
+      ? statistics.collectionRate
+      : statistics.totalAmount > 0
+        ? (statistics.confirmedAmount / statistics.totalAmount) * 100
+        : 0;
+
+  const currentMonthCollectionRate =
+    typeof statistics.currentMonthCollectionRate === 'number'
+      ? statistics.currentMonthCollectionRate
+      : null;
+
+  const hasPreviousMonthData =
+    typeof statistics.previousMonthCollectionRate === 'number';
+
+  const displayedCollectionRate =
+    currentMonthCollectionRate ?? overallCollectionRate;
+
+  const collectionRateChange =
+    typeof statistics.collectionRateChange === 'number'
+      ? statistics.collectionRateChange
+      : null;
+
+  const collectionRateChangeLabel = React.useMemo(() => {
+    if (!hasPreviousMonthData || collectionRateChange === null) {
+      return '暂无上月数据';
+    }
+
+    const TOLERANCE = 0.1;
+    if (Math.abs(collectionRateChange) < TOLERANCE) {
+      return '较上月持平';
+    }
+
+    const value = Math.abs(collectionRateChange).toFixed(1);
+    return collectionRateChange > 0
+      ? `较上月提升 ${value}%`
+      : `较上月下降 ${value}%`;
+  }, [collectionRateChange, hasPreviousMonthData]);
 
   // 处理搜索
   const handleSearch = React.useCallback(
@@ -269,15 +312,11 @@ export function PaymentsClient({
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-[hsl(var(--color-purple))]">
-              {statistics.totalAmount > 0
-                ? (
-                    (statistics.confirmedAmount / statistics.totalAmount) *
-                    100
-                  ).toFixed(1)
-                : 0}
-              %
+              {displayedCollectionRate.toFixed(1)}%
             </div>
-            <p className="text-muted-foreground text-xs">较上月提升 5%</p>
+            <p className="text-muted-foreground text-xs">
+              {collectionRateChangeLabel}
+            </p>
           </CardContent>
         </Card>
       </div>

@@ -3,269 +3,245 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { logger } from '@/lib/logger';
+import { resolveParams } from '@/lib/api/middleware';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
+import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import type { PayableRecordDetail } from '@/lib/types/payable';
 import { updatePayableRecordSchema } from '@/lib/validations/payable';
+
+type PayableParams = { id: string };
+
+const payableInclude = {
+  supplier: {
+    select: {
+      id: true,
+      name: true,
+      phone: true,
+      address: true,
+    },
+  },
+  user: {
+    select: {
+      id: true,
+      name: true,
+      email: true,
+    },
+  },
+  paymentOutRecords: {
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+    orderBy: {
+      paymentDate: 'desc' as const,
+    },
+  },
+};
 
 /**
  * GET /api/finance/payables/[id] - 获取单个应付款记录详情
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  let payableId: string | undefined;
-  try {
-    const { id } = await params;
-    payableId = id;
+const getPayableHandler = withAuth(
+  async (request: NextRequest, context) => {
+    let payableId: string | undefined;
+    try {
+      const { id } = await resolveParams<PayableParams>(context.params);
+      payableId = id;
 
-    // 查询应付款记录
-    const payable = await prisma.payableRecord.findUnique({
-      where: { id },
-      include: {
-        supplier: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            address: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        paymentOutRecords: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-          orderBy: {
-            paymentDate: 'desc',
-          },
-        },
-      },
-    });
+      const payable = await prisma.payableRecord.findUnique({
+        where: { id },
+        include: payableInclude,
+      });
 
-    if (!payable) {
+      if (!payable) {
+        return NextResponse.json(
+          { success: false, error: '应付款记录不存在' },
+          { status: 404 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: payable as PayableRecordDetail,
+      });
+    } catch (error) {
+      logger.error(
+        'finance-payables',
+        '获取应付款记录详情失败',
+        error,
+        payableId ? { payableId } : undefined
+      );
       return NextResponse.json(
-        { success: false, error: '应付款记录不存在' },
-        { status: 404 }
+        { success: false, error: '获取应付款记录详情失败' },
+        { status: 500 }
       );
     }
+  },
+  { permissions: ['finance:view'] }
+);
 
-    return NextResponse.json({
-      success: true,
-      data: payable as PayableRecordDetail,
-    });
-  } catch (error) {
-    logger.error(
-      'finance-payables',
-      '获取应付款记录详情失败',
-      error,
-      payableId ? { payableId } : undefined
-    );
-    return NextResponse.json(
-      { success: false, error: '获取应付款记录详情失败' },
-      { status: 500 }
-    );
-  }
-}
+export const GET = withRateLimit(RateLimitType.READ)(getPayableHandler);
 
 /**
  * PUT /api/finance/payables/[id] - 更新应付款记录
  */
-export async function PUT(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  let payableId: string | undefined;
-  try {
-    const { id } = await params;
-    payableId = id;
+const putPayableHandler = withAuth(
+  async (request: NextRequest, context) => {
+    let payableId: string | undefined;
+    try {
+      const { id } = await resolveParams<PayableParams>(context.params);
+      payableId = id;
 
-    // 解析请求体
-    const body = await request.json();
-    const validationResult = updatePayableRecordSchema.safeParse({
-      ...body,
-      id,
-    });
+      const body = await request.json();
+      const validationResult = updatePayableRecordSchema.safeParse({
+        ...body,
+        id,
+      });
 
-    if (!validationResult.success) {
-      return NextResponse.json(
-        {
-          success: false,
-          error: '数据验证失败',
-          details: validationResult.error.issues,
+      if (!validationResult.success) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: '数据验证失败',
+            details: validationResult.error.issues,
+          },
+          { status: 400 }
+        );
+      }
+
+      const updateData = validationResult.data;
+
+      const existingPayable = await prisma.payableRecord.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          payableAmount: true,
+          paidAmount: true,
+          status: true,
         },
-        { status: 400 }
-      );
-    }
+      });
 
-    const updateData = validationResult.data;
+      if (!existingPayable) {
+        return NextResponse.json(
+          { success: false, error: '应付款记录不存在' },
+          { status: 404 }
+        );
+      }
 
-    // 检查应付款记录是否存在
-    const existingPayable = await prisma.payableRecord.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        payableAmount: true,
-        paidAmount: true,
-        status: true,
-      },
-    });
-
-    if (!existingPayable) {
-      return NextResponse.json(
-        { success: false, error: '应付款记录不存在' },
-        { status: 404 }
-      );
-    }
-
-    // 如果更新应付金额，需要重新计算剩余金额
-    let remainingAmount =
-      existingPayable.payableAmount - existingPayable.paidAmount;
-    if (updateData.payableAmount !== undefined) {
-      remainingAmount = updateData.payableAmount - existingPayable.paidAmount;
-
-      // 检查应付金额不能小于已付金额
-      if (updateData.payableAmount < existingPayable.paidAmount) {
+      if (
+        updateData.payableAmount !== undefined &&
+        updateData.payableAmount < existingPayable.paidAmount
+      ) {
         return NextResponse.json(
           { success: false, error: '应付金额不能小于已付金额' },
           { status: 400 }
         );
       }
+
+      const remainingAmount =
+        updateData.payableAmount !== undefined
+          ? updateData.payableAmount - existingPayable.paidAmount
+          : existingPayable.payableAmount - existingPayable.paidAmount;
+
+      const updatedPayable = await prisma.payableRecord.update({
+        where: { id },
+        data: {
+          ...updateData,
+          ...(updateData.payableAmount !== undefined && { remainingAmount }),
+        },
+        include: payableInclude,
+      });
+
+      return NextResponse.json({
+        success: true,
+        data: updatedPayable as PayableRecordDetail,
+        message: '应付款记录更新成功',
+      });
+    } catch (error) {
+      logger.error(
+        'finance-payables',
+        '更新应付款记录失败',
+        error,
+        payableId ? { payableId } : undefined
+      );
+      return NextResponse.json(
+        { success: false, error: '更新应付款记录失败' },
+        { status: 500 }
+      );
     }
+  },
+  { permissions: ['finance:manage'] }
+);
 
-    // 更新应付款记录
-    const updatedPayable = await prisma.payableRecord.update({
-      where: { id },
-      data: {
-        ...updateData,
-        ...(updateData.payableAmount !== undefined && { remainingAmount }),
-      },
-      include: {
-        supplier: {
-          select: {
-            id: true,
-            name: true,
-            phone: true,
-            address: true,
-          },
-        },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        paymentOutRecords: {
-          include: {
-            user: {
-              select: {
-                id: true,
-                name: true,
-                email: true,
-              },
-            },
-          },
-          orderBy: {
-            paymentDate: 'desc',
-          },
-        },
-      },
-    });
-
-    return NextResponse.json({
-      success: true,
-      data: updatedPayable as PayableRecordDetail,
-      message: '应付款记录更新成功',
-    });
-  } catch (error) {
-    logger.error(
-      'finance-payables',
-      '更新应付款记录失败',
-      error,
-      payableId ? { payableId } : undefined
-    );
-    return NextResponse.json(
-      { success: false, error: '更新应付款记录失败' },
-      { status: 500 }
-    );
-  }
-}
+export const PUT = withRateLimit(RateLimitType.WRITE)(putPayableHandler);
 
 /**
  * DELETE /api/finance/payables/[id] - 删除应付款记录
  */
-export async function DELETE(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
-  let payableId: string | undefined;
-  try {
-    const { id } = await params;
-    payableId = id;
+const deletePayableHandler = withAuth(
+  async (request: NextRequest, context) => {
+    let payableId: string | undefined;
+    try {
+      const { id } = await resolveParams<PayableParams>(context.params);
+      payableId = id;
 
-    // 检查应付款记录是否存在
-    const existingPayable = await prisma.payableRecord.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        paidAmount: true,
-        paymentOutRecords: {
-          select: { id: true },
+      const existingPayable = await prisma.payableRecord.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          paidAmount: true,
+          paymentOutRecords: {
+            select: { id: true },
+          },
         },
-      },
-    });
+      });
 
-    if (!existingPayable) {
+      if (!existingPayable) {
+        return NextResponse.json(
+          { success: false, error: '应付款记录不存在' },
+          { status: 404 }
+        );
+      }
+
+      if (
+        existingPayable.paidAmount > 0 ||
+        existingPayable.paymentOutRecords.length > 0
+      ) {
+        return NextResponse.json(
+          { success: false, error: '已有付款记录的应付款不能删除' },
+          { status: 400 }
+        );
+      }
+
+      await prisma.payableRecord.delete({
+        where: { id },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: '应付款记录删除成功',
+      });
+    } catch (error) {
+      logger.error(
+        'finance-payables',
+        '删除应付款记录失败',
+        error,
+        payableId ? { payableId } : undefined
+      );
       return NextResponse.json(
-        { success: false, error: '应付款记录不存在' },
-        { status: 404 }
+        { success: false, error: '删除应付款记录失败' },
+        { status: 500 }
       );
     }
+  },
+  { permissions: ['finance:manage'] }
+);
 
-    // 检查是否已有付款记录
-    if (
-      existingPayable.paidAmount > 0 ||
-      existingPayable.paymentOutRecords.length > 0
-    ) {
-      return NextResponse.json(
-        { success: false, error: '已有付款记录的应付款不能删除' },
-        { status: 400 }
-      );
-    }
-
-    // 删除应付款记录
-    await prisma.payableRecord.delete({
-      where: { id },
-    });
-
-    return NextResponse.json({
-      success: true,
-      message: '应付款记录删除成功',
-    });
-  } catch (error) {
-    logger.error(
-      'finance-payables',
-      '删除应付款记录失败',
-      error,
-      payableId ? { payableId } : undefined
-    );
-    return NextResponse.json(
-      { success: false, error: '删除应付款记录失败' },
-      { status: 500 }
-    );
-  }
-}
+export const DELETE = withRateLimit(RateLimitType.WRITE)(deletePayableHandler);
