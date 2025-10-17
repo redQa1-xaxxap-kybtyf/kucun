@@ -87,9 +87,9 @@ function buildWhereConditions(params: {
 }): Prisma.CategoryWhereInput {
   const where: Prisma.CategoryWhereInput = {};
 
-  // 状态过滤: 使用简洁的逻辑
-  if (params.status !== 'all') {
-    where.status = params.status || 'active'; // 默认为 'active'
+  // 状态过滤: 默认返回全部，只有明确筛选时才应用
+  if (params.status && params.status !== 'all') {
+    where.status = params.status;
   }
 
   // 搜索条件 (MySQL 默认不区分大小写)
