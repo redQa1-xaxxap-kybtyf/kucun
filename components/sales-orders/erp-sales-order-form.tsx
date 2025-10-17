@@ -472,8 +472,9 @@ export function ERPSalesOrderForm({
   });
 
   const { data: productsData, isLoading: _productsLoading } = useQuery({
-    queryKey: productQueryKeys.list({}),
-    queryFn: () => getProducts({}),
+    queryKey: productQueryKeys.list({ includeInventory: true }),
+    queryFn: () =>
+      getProducts({ includeInventory: true, includeStatistics: false }),
   });
 
   const { data: suppliersData, isLoading: suppliersLoading } = useQuery({
