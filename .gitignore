@@ -107,3 +107,4 @@ jest-output.txt
 *.new.ts
 *.new.jsx
 *.new.js
+patch.diff
