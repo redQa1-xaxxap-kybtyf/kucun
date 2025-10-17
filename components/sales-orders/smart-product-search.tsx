@@ -117,9 +117,8 @@ export function SmartProductSearch(props: SmartProductSearchProps) {
               <span className="flex min-w-0 flex-col">
                 {selectedProduct ? (
                   simple ? (
-                    <span className="truncate">
-                      {selectedProduct.code && `${selectedProduct.code} - `}
-                      {selectedProduct.name}
+                    <span className="truncate font-mono">
+                      {selectedProduct.code || selectedProduct.name}
                     </span>
                   ) : (
                     <>

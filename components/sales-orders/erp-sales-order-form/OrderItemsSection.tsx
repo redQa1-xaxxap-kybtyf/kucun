@@ -153,8 +153,8 @@ export function OrderItemsSection({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/20">
-                <TableHead className="h-8 text-xs">商品名称</TableHead>
                 <TableHead className="h-8 text-xs">产品编码</TableHead>
+                <TableHead className="h-8 text-xs">产品名称</TableHead>
                 <TableHead className="h-8 text-xs">每件片数</TableHead>
                 <TableHead className="h-8 text-xs">批次号</TableHead>
                 <TableHead className="h-8 text-xs">规格</TableHead>
