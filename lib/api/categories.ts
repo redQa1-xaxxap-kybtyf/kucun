@@ -62,10 +62,7 @@ export async function getCategories(
   );
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createApiError(response);
   }
 
   return response.json();
@@ -76,6 +73,7 @@ export async function getCategories(
  */
 export async function getCategoryOptions(): Promise<Category[]> {
   const response = await getCategories({
+    status: 'active',
     limit: 100, // 获取所有分类（最大100个）
     sortBy: 'name',
     sortOrder: 'asc',
@@ -105,10 +103,7 @@ export async function getCategory(id: string): Promise<ApiResponse<Category>> {
   const response = await fetch(`${baseUrl}/api/categories/${id}`);
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createApiError(response);
   }
 
   return response.json();
@@ -134,10 +129,7 @@ export async function createCategory(data: {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createApiError(response);
   }
 
   return response.json();
@@ -166,10 +158,7 @@ export async function updateCategory(data: {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createApiError(response);
   }
 
   return response.json();
@@ -185,10 +174,7 @@ export async function deleteCategory(id: string): Promise<ApiResponse<void>> {
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createApiError(response);
   }
 
   return response.json();
@@ -211,11 +197,58 @@ export async function updateCategoryStatus(
   });
 
   if (!response.ok) {
-    const errorData = await response.json().catch(() => ({}));
-    throw new Error(
-      errorData.error || `HTTP error! status: ${response.status}`
-    );
+    throw await createApiError(response);
   }
 
   return response.json();
+}
+
+/**
+ * 将 API 错误响应转换为 Error 对象
+ */
+async function createApiError(response: Response): Promise<Error> {
+  const fallbackMessage = `HTTP error! status: ${response.status}`;
+
+  try {
+    const errorData = await response.json();
+    const message = extractErrorMessage(errorData, fallbackMessage);
+    return new Error(message);
+  } catch (error) {
+    return new Error(fallbackMessage);
+  }
+}
+
+/**
+ * 提取 API 错误响应中的可读信息
+ */
+function extractErrorMessage(errorData: unknown, fallback: string): string {
+  if (!errorData || typeof errorData !== 'object') {
+    return fallback;
+  }
+
+  const errorObject = errorData as {
+    error?: unknown;
+    message?: unknown;
+  };
+
+  if (typeof errorObject.error === 'string' && errorObject.error.length > 0) {
+    return errorObject.error;
+  }
+
+  if (
+    errorObject.error &&
+    typeof errorObject.error === 'object' &&
+    typeof (errorObject.error as { message?: unknown }).message === 'string'
+  ) {
+    const nestedMessage = (errorObject.error as { message?: string }).message;
+    if (nestedMessage && nestedMessage.length > 0) {
+      return nestedMessage;
+    }
+  }
+
+  if (typeof errorObject.message === 'string' && errorObject.message.length > 0) {
+    return errorObject.message;
+  }
+
+  return fallback;
 }
