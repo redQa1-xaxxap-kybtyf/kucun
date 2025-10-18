@@ -334,11 +334,9 @@ export class TypeAssert {
 /**
  * 类型验证装饰器
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function validateTypes<T extends (...args: any[]) => any>(
+export function validateTypes<T extends (...args: unknown[]) => unknown>(
   fn: T,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  validators: Array<(arg: any) => boolean>
+  validators: Array<((arg: Parameters<T>[number]) => boolean) | undefined>
 ): T {
   return ((...args: Parameters<T>) => {
     args.forEach((arg, index) => {
