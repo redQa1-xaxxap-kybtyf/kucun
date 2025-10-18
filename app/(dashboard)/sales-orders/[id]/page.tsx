@@ -38,8 +38,8 @@ import {
   TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { getErrorMessage } from '@/lib/utils/error-handler';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { getErrorMessage } from '@/lib/utils/error-handler';
 
 interface PaymentRecord {
   id: string;
@@ -682,7 +682,7 @@ export default function SalesOrderDetailPage() {
                       创建时间
                     </div>
                     <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                      {formatDate(order.createdAt)}
+                      {formatDate(order.createdAt, 'datetime')}
                     </div>
                   </div>
                   {order.shippedAt && (
@@ -700,7 +700,7 @@ export default function SalesOrderDetailPage() {
                       更新时间
                     </div>
                     <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                      {formatDate(order.updatedAt)}
+                      {formatDate(order.updatedAt, 'datetime')}
                     </div>
                   </div>
                 </div>
@@ -896,11 +896,12 @@ export default function SalesOrderDetailPage() {
                         if (piecesBreakdown) {
                           remarkParts.push(piecesBreakdown);
                         }
-                        if (
-                          typeof item.remarks === 'string' &&
-                          item.remarks.trim()
-                        ) {
-                          remarkParts.push(item.remarks.trim());
+                        const manualRemark =
+                          typeof item.remarks === 'string'
+                            ? item.remarks.trim()
+                            : '';
+                        if (manualRemark && manualRemark !== piecesBreakdown) {
+                          remarkParts.push(manualRemark);
                         }
                         if (typeof item.manualWeight === 'number') {
                           remarkParts.push(
@@ -1371,7 +1372,7 @@ export default function SalesOrderDetailPage() {
                         订单创建
                       </div>
                       <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
-                        {formatDate(order.createdAt)}
+                        {formatDate(order.createdAt, 'datetime')}
                       </div>
                       <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
                         创建人：{userName}
@@ -1386,7 +1387,7 @@ export default function SalesOrderDetailPage() {
                           订单更新
                         </div>
                         <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
-                          {formatDate(order.updatedAt)}
+                          {formatDate(order.updatedAt, 'datetime')}
                         </div>
                       </div>
                     </div>
