@@ -179,7 +179,6 @@ export function OrderItemsSection({
                   onProductChange={handleProductChange}
                   orderType={orderType as 'NORMAL' | 'TRANSFER'}
                   transferMode={transferMode}
-                  unitMapping={unitMapping}
                 />
               ))}
             </TableBody>

@@ -1,4 +1,5 @@
 'use client';
+/* eslint-disable max-lines-per-function */
 
 import { Check, ChevronsUpDown, Plus, Search, User } from 'lucide-react';
 import * as React from 'react';
@@ -17,7 +18,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import type { Customer } from '@/lib/types/customer';
+import type { Customer, CustomerExtendedInfo } from '@/lib/types/customer';
 import { cn } from '@/lib/utils';
 import {
   chineseToPinyinInitialsUppercase,
@@ -42,6 +43,21 @@ interface CustomerSelectorProps {
  * 可搜索的客户选择器组件
  * 支持按客户名称和手机号码进行模糊搜索
  */
+function extractCustomerEmail(customer: Customer): string | undefined {
+  if (!customer.extendedInfo) {
+    return undefined;
+  }
+
+  try {
+    const info = JSON.parse(customer.extendedInfo) as CustomerExtendedInfo;
+    return typeof info.email === 'string' && info.email.trim().length > 0
+      ? info.email.trim()
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 export function CustomerSelector({
   customers,
   value,
@@ -82,10 +98,8 @@ export function CustomerSelector({
         return true;
       }
 
-      if (
-        customer.email &&
-        customer.email.toLowerCase().includes(normalizedSearch)
-      ) {
+      const email = extractCustomerEmail(customer);
+      if (email && email.toLowerCase().includes(normalizedSearch)) {
         return true;
       }
 
@@ -229,12 +243,13 @@ export function CustomerSelector({
               {filteredCustomers.length > 0 && (
                 <CommandGroup>
                   {filteredCustomers.map(customer => {
+                    const customerEmail = extractCustomerEmail(customer);
                     const isSelected = value === customer.id;
 
                     return (
                       <CommandItem
                         key={customer.id}
-                        value={`${customer.name} ${customer.phone || ''} ${customer.email || ''}`}
+                        value={`${customer.name} ${customer.phone || ''} ${customerEmail || ''}`}
                         onSelect={() => handleSelect(customer.id)}
                         className="flex items-center gap-3 p-3"
                       >
@@ -253,6 +268,13 @@ export function CustomerSelector({
                           {customer.phone && (
                             <div className="text-muted-foreground text-xs">
                               {customer.phone}
+                            </div>
+                          )}
+
+                          {/* 客户邮箱 */}
+                          {customerEmail && (
+                            <div className="text-muted-foreground text-xs">
+                              {customerEmail}
                             </div>
                           )}
 

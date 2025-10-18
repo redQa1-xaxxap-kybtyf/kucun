@@ -30,9 +30,7 @@ export const factoryShipmentOrderItemSchema = z
     quantity: z.number().positive('数量必须大于0'),
     unitPrice: z.number().min(0, '单价不能为负数'),
     ownership: z
-      .nativeEnum(FACTORY_SHIPMENT_ITEM_OWNERSHIP, {
-        required_error: '请指定货物归属',
-      })
+      .nativeEnum(FACTORY_SHIPMENT_ITEM_OWNERSHIP)
       .default(FACTORY_SHIPMENT_ITEM_OWNERSHIP.CUSTOMER),
     customerDeliveryStatus: z.enum(['pending', 'delivered']).optional(),
     selfInboundStatus: z.enum(['pending', 'received']).optional(),

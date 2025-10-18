@@ -2,6 +2,7 @@
  * 伙伴账本服务
  * 统一管理客户/供应商（业务伙伴）的账户流水与余额
  */
+/* eslint-disable max-lines-per-function, max-lines */
 
 import type {
   AccountStatement as AccountStatementModel,
@@ -577,7 +578,7 @@ export async function getPartnerStatementDetail(
   }
 
   const mappedTransactions: StatementTransactionType[] = transactions.map(
-    (transaction: StatementTransactionModel & { metadata?: unknown }) => ({
+    transaction => ({
       id: transaction.id,
       statementId: transaction.statementId,
       transactionType: transaction.transactionType as TransactionType,
