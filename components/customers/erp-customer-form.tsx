@@ -4,7 +4,6 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Loader2, Save, Users } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 
 import {
@@ -72,8 +71,6 @@ export function ERPCustomerForm({
   const { toast } = useToast();
 
   // 用于清理导航定时器的引用
-  const navigationTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // 表单配置
   const form = useForm<CreateCustomerData>({
     resolver: zodResolver(CreateCustomerSchema),
@@ -90,15 +87,6 @@ export function ERPCustomerForm({
       },
     },
   });
-
-  // 组件卸载时清理定时器
-  useEffect(() => {
-    return () => {
-      if (navigationTimerRef.current) {
-        clearTimeout(navigationTimerRef.current);
-      }
-    };
-  }, []);
 
   const normalizeExtendedInfo = (
     extendedInfo?: CreateCustomerData['extendedInfo']
@@ -127,15 +115,12 @@ export function ERPCustomerForm({
         description: `客户 "${data.name}" 创建成功！`,
         variant: 'success',
       });
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerQueryKeys.all });
 
       if (onSuccess) {
         onSuccess();
       } else {
-        // 延迟跳转到客户列表页，让用户看到成功提示
-        navigationTimerRef.current = setTimeout(() => {
-          router.push('/customers');
-        }, 1500);
+        router.push('/customers');
       }
     },
     onError: error => {
@@ -157,7 +142,7 @@ export function ERPCustomerForm({
         description: `客户 "${data.name}" 更新成功！`,
         variant: 'success',
       });
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerQueryKeys.all });
       queryClient.invalidateQueries({
         queryKey: customerQueryKeys.detail(initialData?.id || ''),
       });
@@ -165,10 +150,7 @@ export function ERPCustomerForm({
       if (onSuccess) {
         onSuccess();
       } else {
-        // 延迟跳转到客户列表页，让用户看到成功提示
-        navigationTimerRef.current = setTimeout(() => {
-          router.push('/customers');
-        }, 1500);
+        router.push('/customers');
       }
     },
     onError: error => {
@@ -346,7 +328,9 @@ export function ERPCustomerForm({
           {/* 扩展信息 */}
           <Card className="overflow-hidden">
             <CardHeader className="border-b bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-[hsl(var(--color-bg-tertiary))]">
-              <CardTitle className="text-[hsl(var(--color-text-primary))]">扩展信息</CardTitle>
+              <CardTitle className="text-[hsl(var(--color-text-primary))]">
+                扩展信息
+              </CardTitle>
               <CardDescription>客户的其他补充信息（可选）</CardDescription>
             </CardHeader>
             <CardContent className="p-6">
