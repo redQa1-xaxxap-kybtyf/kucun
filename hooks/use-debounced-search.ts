@@ -161,19 +161,16 @@ export function useDebounce<T>(value: T, delay: number): T {
  *
  * @param callback 回调函数
  * @param delay 防抖延迟时间
- * @param deps 依赖数组
  * @returns 防抖后的回调函数
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-export function useDebouncedCallback<T extends (...args: any[]) => any>(
-  callback: T,
-  delay: number,
-  deps: React.DependencyList = []
-): T {
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+export function useDebouncedCallback<TArgs extends unknown[], TResult>(
+  callback: (...args: TArgs) => TResult,
+  delay: number
+): (...args: TArgs) => void {
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const debouncedCallback = useCallback(
-    (...args: Parameters<T>) => {
+    (...args: TArgs) => {
       if (timeoutRef.current) {
         clearTimeout(timeoutRef.current);
       }
@@ -182,8 +179,8 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
         callback(...args);
       }, delay);
     },
-    [callback, delay, ...deps]
-  ) as T;
+    [callback, delay]
+  );
 
   useEffect(
     () => () => {
@@ -191,7 +188,7 @@ export function useDebouncedCallback<T extends (...args: any[]) => any>(
         clearTimeout(timeoutRef.current);
       }
     },
-    []
+    [delay]
   );
 
   return debouncedCallback;

@@ -106,8 +106,7 @@ export function IntelligentProductInput<
       }
       performSearch(trimmed);
     },
-    300,
-    [performSearch]
+    300
   );
 
   React.useEffect(
@@ -196,6 +195,7 @@ export function IntelligentProductInput<
     specification?: string;
     weight?: number;
     unit?: string;
+    piecesPerUnit?: number;
   }) => {
     // 清空库存产品选择
     form.setValue(
@@ -253,6 +253,27 @@ export function IntelligentProductInput<
     form.setValue(
       `items.${index}.unit` as unknown as Path<TFieldValues>,
       (productData.unit || '') as unknown as PathValue<
+        TFieldValues,
+        Path<TFieldValues>
+      >
+    );
+    form.setValue(
+      `items.${index}.piecesPerUnit` as unknown as Path<TFieldValues>,
+      (productData.piecesPerUnit ?? undefined) as unknown as PathValue<
+        TFieldValues,
+        Path<TFieldValues>
+      >
+    );
+
+    const nextDisplayUnit =
+      productData.unit === '件' && productData.piecesPerUnit && productData.piecesPerUnit > 0
+        ? '件'
+        : (form.getValues(
+            `items.${index}.displayUnit` as unknown as Path<TFieldValues>
+          ) as unknown as '片' | '件' | undefined) ?? '片';
+    form.setValue(
+      `items.${index}.displayUnit` as unknown as Path<TFieldValues>,
+      (nextDisplayUnit || '片') as unknown as PathValue<
         TFieldValues,
         Path<TFieldValues>
       >
