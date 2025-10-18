@@ -506,9 +506,6 @@ function validateTransferRequirements(
   if (!formData.supplierId?.trim()) {
     errors.push('调货销售必须选择供应商');
   }
-  if (!formData.costAmount || formData.costAmount <= 0) {
-    errors.push('调货销售必须填写成本金额');
-  }
   if (!formData.transferMode) {
     errors.push('请选择调货履约模式');
   } else if (!allowedModes.includes(formData.transferMode)) {

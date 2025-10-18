@@ -5,7 +5,7 @@
 ## 技术栈
 
 - **全栈框架**: Next.js 15.4.7 (App Router) + TypeScript 5.9
-- **数据库**: MySQL 8.0+
+- **数据库**: MySQL 5.7+ (兼容 MySQL 8.0)
 - **数据库驱动**: Prisma 5.22.0
 - **身份认证**: Next-Auth.js 4.24
 - **缓存**: Redis (ioredis 5.8.0)
@@ -72,8 +72,10 @@ const form = useForm<ProductCreateInput>({
 
 - Node.js >= 18.0.0
 - npm >= 8.0.0
-- MySQL 8.0+
+- MySQL 5.7+ (推荐 8.0+ 以获得完整索引优化)
 - Redis (可选，用于缓存和实时通知)
+
+**注意**: 项目支持 MySQL 5.7,但降序索引不会被优化。详见 [MySQL 迁移指南](./MYSQL_MIGRATION.md)
 
 ## 快速开始
 

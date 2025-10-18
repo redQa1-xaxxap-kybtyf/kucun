@@ -30,3 +30,23 @@ export function chineseToPinyinUppercase(text: string): string {
 
   return pinyinText.toUpperCase();
 }
+
+/**
+ * 中文转拼音首字母大写
+ * 用于首字母匹配搜索体验优化
+ */
+export function chineseToPinyinInitialsUppercase(text: string): string {
+  if (!text) {
+    return '';
+  }
+
+  const initials = pinyin(text, {
+    pattern: 'first',
+  });
+
+  if (!initials) {
+    return '';
+  }
+
+  return initials.replace(/\s+/g, '').toUpperCase();
+}

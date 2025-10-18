@@ -165,21 +165,6 @@ export const salesOrderCreateSchema = baseSalesOrderSchema
     }
   )
   .refine(
-    data => {
-      if (data.status === 'draft') {
-        return true;
-      }
-      if (data.orderType === 'TRANSFER') {
-        return data.costAmount !== undefined && data.costAmount > 0;
-      }
-      return true;
-    },
-    {
-      message: '调货销售必须填写成本金额',
-      path: ['costAmount'],
-    }
-  )
-  .refine(
     data => validateManualProductFields(data.items, data.status ?? 'draft'),
     {
       message: '手动输入商品必须填写商品名称，库存商品必须选择产品',

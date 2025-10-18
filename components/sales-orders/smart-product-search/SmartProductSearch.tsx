@@ -1,0 +1,173 @@
+'use client';
+
+import { ChevronsUpDown, Search } from 'lucide-react';
+import React from 'react';
+
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  Command,
+  CommandEmpty,
+  CommandInput,
+  CommandList,
+} from '@/components/ui/command';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+
+import { AddTemporaryProductDialog } from '../add-temporary-product-dialog';
+
+import { ProductSearchEmptyState } from './components/ProductSearchEmptyState';
+import { ProductSearchLoadingIndicator } from './components/ProductSearchLoadingIndicator';
+import { ProductSearchResults } from './components/ProductSearchResults';
+import { useSmartProductSearchController } from './hooks/useSmartProductSearchController';
+import type { ProductWithInventory, SmartProductSearchProps } from './types';
+
+export function SmartProductSearch(props: SmartProductSearchProps) {
+  const {
+    open,
+    setOpen,
+    searchValue,
+    handleSearchValueChange,
+    showAddDialog,
+    setShowAddDialog,
+    filteredProducts,
+    selectedProduct,
+    selectedSpecification,
+    handleProductSelect,
+    handleBatchSelect,
+    handleAddTemporaryProduct,
+    handleTemporaryProductAdded,
+  } = useSmartProductSearchController(props);
+
+  const {
+    placeholder = '搜索商品',
+    disabled = false,
+    className,
+    allowTemporaryProducts = false,
+    isSearching = false,
+    simple = false,
+  } = props;
+
+  const displaySearchValue = searchValue.trim();
+  const hasResults = Boolean(displaySearchValue && filteredProducts.length > 0);
+
+  return (
+    <>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            type="button"
+            variant="outline"
+            role="combobox"
+            aria-expanded={open}
+            className={cn(
+              'w-full justify-between text-left font-normal',
+              !selectedProduct && 'text-muted-foreground',
+              className
+            )}
+            disabled={disabled}
+          >
+            <SmartProductSearchTriggerContent
+              selectedProduct={selectedProduct}
+              selectedSpecification={selectedSpecification}
+              placeholder={placeholder}
+              simple={simple}
+            />
+            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-[620px] p-0" align="start">
+          <Command shouldFilter={false}>
+            <CommandInput
+              placeholder="输入商品名称、编码或规格搜索..."
+              value={searchValue}
+              onValueChange={handleSearchValueChange}
+              className="h-10"
+            />
+            <CommandList className="max-h-[400px]">
+              {isSearching && <ProductSearchLoadingIndicator />}
+              {hasResults ? (
+                <ProductSearchResults
+                  products={filteredProducts}
+                  selectedValue={props.value}
+                  searchQuery={displaySearchValue}
+                  onSelectProduct={handleProductSelect}
+                  onSelectBatch={handleBatchSelect}
+                />
+              ) : (
+                <CommandEmpty>
+                  <ProductSearchEmptyState
+                    searchValue={displaySearchValue}
+                    isSearching={isSearching}
+                    allowTemporaryProducts={allowTemporaryProducts}
+                    onAddTemporaryProduct={handleAddTemporaryProduct}
+                  />
+                </CommandEmpty>
+              )}
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+      <AddTemporaryProductDialog
+        open={showAddDialog}
+        onOpenChange={setShowAddDialog}
+        initialName={searchValue}
+        onConfirm={handleTemporaryProductAdded}
+      />
+    </>
+  );
+}
+
+interface TriggerContentProps {
+  selectedProduct: ProductWithInventory | null;
+  selectedSpecification: string;
+  placeholder: string;
+  simple: boolean;
+}
+
+function SmartProductSearchTriggerContent({
+  selectedProduct,
+  selectedSpecification,
+  placeholder,
+  simple,
+}: TriggerContentProps) {
+  return (
+    <div className="flex min-w-0 flex-1 items-center gap-2">
+      <Search className="h-4 w-4 shrink-0" />
+      <span className="flex min-w-0 flex-col">
+        {selectedProduct ? (
+          simple ? (
+            <span className="truncate text-sm text-gray-700">
+              {selectedProduct.code || selectedProduct.name}
+            </span>
+          ) : (
+            <>
+              <span className="flex items-center gap-2 truncate">
+                {selectedProduct.code && (
+                  <Badge
+                    variant="outline"
+                    className="border-blue-200 bg-blue-50 px-2 font-mono text-xs font-semibold text-blue-700"
+                  >
+                    {selectedProduct.code}
+                  </Badge>
+                )}
+                <span className="font-medium">{selectedProduct.name}</span>
+              </span>
+              {selectedSpecification && (
+                <span className="text-muted-foreground truncate text-xs">
+                  规格：{selectedSpecification}
+                </span>
+              )}
+            </>
+          )
+        ) : (
+          placeholder
+        )}
+      </span>
+    </div>
+  );
+}

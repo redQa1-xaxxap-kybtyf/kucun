@@ -149,7 +149,13 @@
       "mcp__serena__write_memory",
       "mcp__playwright__browser_console_messages",
       "Bash(xargs cat:*)",
-      "Bash(del scriptsverify-prepayment-fields.js)"
+      "Bash(del scriptsverify-prepayment-fields.js)",
+      "Bash(del E:kucunscriptstest-inventory-data.ts)",
+      "mcp__playwright__browser_press_key",
+      "Bash(then grep \"DATABASE_URL\" .env)",
+      "Bash(else echo \".env 文件不存在\")",
+      "Bash(del tsc-errors.log)",
+      "Bash(rm:*)"
     ],
     "deny": [],
     "ask": []

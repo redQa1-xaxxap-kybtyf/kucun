@@ -60,6 +60,8 @@ export const productKeys = {
       status?: string;
       categoryId?: string;
       ids?: string;
+      includeInventory?: boolean;
+      includeStatistics?: boolean;
     }
   ) => [...productKeys.lists(), filters] as const,
 

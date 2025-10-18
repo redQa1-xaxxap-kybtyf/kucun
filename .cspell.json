@@ -2,16 +2,18 @@
   "version": "0.2",
   "language": "en",
   "words": [
-    "findstr",
-    "taskkill",
+    "Financials",
+    "GUANGZHOUSF123",
     "erkai",
-    "stackoverflow",
-    "pkill",
+    "financials",
+    "findstr",
     "pencilandpaper",
+    "pkill",
     "robinwieruch",
     "scriptsverify",
-    "financials",
-    "Financials",
+    "stackoverflow",
+    "taskkill",
     "uncategorized"
-  ]
+  ],
+  "flagWords": []
 }
