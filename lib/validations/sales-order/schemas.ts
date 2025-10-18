@@ -62,7 +62,7 @@ export const salesOrderFeeItemSchema = z.object({
  * 销售订单明细验证规则
  */
 export const salesOrderItemSchema = z.object({
-  productId: z.string().min(1, '产品ID不能为空').optional(),
+  productId: z.string().min(1, '产品ID不能为空').optional().or(z.literal('')),
 
   variantId: z
     .string()

@@ -369,113 +369,115 @@ export function ERPSalesOrderForm({
           : undefined;
       const epsilon = 0.01;
 
-    for (let index = 0; index < items.length; index += 1) {
-      const item = items[index];
-      const manual = Boolean(item.isManualProduct);
-      const manualName = item.manualProductName?.trim() ?? '';
-      const productId = item.productId?.trim() ?? '';
-      const quantity = toNumber(item.quantity);
-      const unitPrice = toNumber(item.unitPrice);
-      const piecesPerUnit = toNumber(item.piecesPerUnit);
+      for (let index = 0; index < items.length; index += 1) {
+        const item = items[index];
+        const manual = Boolean(item.isManualProduct);
+        const manualName = item.manualProductName?.trim() ?? '';
+        const productId = item.productId?.trim() ?? '';
+        const quantity = toNumber(item.quantity);
+        const unitPrice = toNumber(item.unitPrice);
+        const piecesPerUnit = toNumber(item.piecesPerUnit);
 
-      if (manual) {
-        if (!manualName) {
+        if (manual) {
+          if (!manualName) {
+            return {
+              valid: false,
+              message: `第 ${index + 1} 行：临时商品必须填写名称`,
+              path: `items.${index}.manualProductName`,
+            };
+          }
+        } else if (!productId) {
           return {
             valid: false,
-            message: `第 ${index + 1} 行：临时商品必须填写名称`,
-            path: `items.${index}.manualProductName`,
+            message: `第 ${index + 1} 行：请选择商品`,
+            path: `items.${index}.productId`,
           };
         }
-      } else if (!productId) {
-        return {
-          valid: false,
-          message: `第 ${index + 1} 行：请选择商品`,
-          path: `items.${index}.productId`,
-        };
-      }
 
-      if (
-        item.displayUnit === '件' &&
-        (!Number.isFinite(piecesPerUnit) || piecesPerUnit <= 0)
-      ) {
-        return {
-          valid: false,
-          message: `第 ${index + 1} 行：件数换算需要有效的每件片数`,
-          path: `items.${index}.piecesPerUnit`,
-        };
-      }
-
-      if (!Number.isFinite(quantity) || quantity <= 0) {
-        return {
-          valid: false,
-          message: `第 ${index + 1} 行：数量必须大于 0`,
-          path: `items.${index}.displayQuantity`,
-        };
-      }
-
-      if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-        return {
-          valid: false,
-          message: `第 ${index + 1} 行：单价必须大于 0`,
-          path: `items.${index}.unitPrice`,
-        };
-      }
-
-      if (currentOrderType === 'TRANSFER') {
-        const localQuantity = toNumber(item.localQuantity);
-        const transferQuantity =
-          currentTransferMode === 'MIXED'
-            ? toNumber(item.transferQuantity)
-            : toNumber(item.transferQuantity, quantity);
-        if (currentTransferMode === 'MIXED') {
-          if (localQuantity < 0) {
-            return {
-              valid: false,
-              message: `第 ${index + 1} 行：本地发货数量不能为负数`,
-              path: `items.${index}.localQuantity`,
-            };
-          }
-          if (transferQuantity < 0) {
-            return {
-              valid: false,
-              message: `第 ${index + 1} 行：调货数量不能为负数`,
-              path: `items.${index}.transferQuantity`,
-            };
-          }
-          if (Math.abs(localQuantity + transferQuantity - quantity) > epsilon) {
-            return {
-              valid: false,
-              message: `第 ${index + 1} 行：本地发货数量与调货数量之和必须等于系统数量`,
-              path: `items.${index}.transferQuantity`,
-            };
-          }
-        } else {
-          if (Math.abs(localQuantity) > epsilon) {
-            return {
-              valid: false,
-              message: `第 ${index + 1} 行：调货模式下本地发货数量应为 0`,
-              path: `items.${index}.localQuantity`,
-            };
-          }
-          if (Math.abs(transferQuantity - quantity) > epsilon) {
-            return {
-              valid: false,
-              message: `第 ${index + 1} 行：调货模式下调货数量必须等于系统数量`,
-              path: `items.${index}.transferQuantity`,
-            };
-          }
-        }
-
-        const unitCost = toNumber(item.unitCost);
-        if (unitCost < 0) {
+        if (
+          item.displayUnit === '件' &&
+          (!Number.isFinite(piecesPerUnit) || piecesPerUnit <= 0)
+        ) {
           return {
             valid: false,
-            message: `第 ${index + 1} 行：成本单价不能为负数`,
-            path: `items.${index}.unitCost`,
+            message: `第 ${index + 1} 行：件数换算需要有效的每件片数`,
+            path: `items.${index}.piecesPerUnit`,
           };
         }
+
+        if (!Number.isFinite(quantity) || quantity <= 0) {
+          return {
+            valid: false,
+            message: `第 ${index + 1} 行：数量必须大于 0`,
+            path: `items.${index}.displayQuantity`,
+          };
+        }
+
+        if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+          return {
+            valid: false,
+            message: `第 ${index + 1} 行：单价必须大于 0`,
+            path: `items.${index}.unitPrice`,
+          };
+        }
+
+        if (currentOrderType === 'TRANSFER') {
+          const localQuantity = toNumber(item.localQuantity);
+          const transferQuantity =
+            currentTransferMode === 'MIXED'
+              ? toNumber(item.transferQuantity)
+              : toNumber(item.transferQuantity, quantity);
+          if (currentTransferMode === 'MIXED') {
+            if (localQuantity < 0) {
+              return {
+                valid: false,
+                message: `第 ${index + 1} 行：本地发货数量不能为负数`,
+                path: `items.${index}.localQuantity`,
+              };
+            }
+            if (transferQuantity < 0) {
+              return {
+                valid: false,
+                message: `第 ${index + 1} 行：调货数量不能为负数`,
+                path: `items.${index}.transferQuantity`,
+              };
+            }
+            if (
+              Math.abs(localQuantity + transferQuantity - quantity) > epsilon
+            ) {
+              return {
+                valid: false,
+                message: `第 ${index + 1} 行：本地发货数量与调货数量之和必须等于系统数量`,
+                path: `items.${index}.transferQuantity`,
+              };
+            }
+          } else {
+            if (Math.abs(localQuantity) > epsilon) {
+              return {
+                valid: false,
+                message: `第 ${index + 1} 行：调货模式下本地发货数量应为 0`,
+                path: `items.${index}.localQuantity`,
+              };
+            }
+            if (Math.abs(transferQuantity - quantity) > epsilon) {
+              return {
+                valid: false,
+                message: `第 ${index + 1} 行：调货模式下调货数量必须等于系统数量`,
+                path: `items.${index}.transferQuantity`,
+              };
+            }
+          }
+
+          const unitCost = toNumber(item.unitCost);
+          if (unitCost < 0) {
+            return {
+              valid: false,
+              message: `第 ${index + 1} 行：成本单价不能为负数`,
+              path: `items.${index}.unitCost`,
+            };
+          }
+        }
       }
-    }
 
       return { valid: true };
     },
@@ -946,8 +948,7 @@ export function ERPSalesOrderForm({
           typeof previous.pagination.total === 'number'
             ? previous.pagination.total
             : previous.data.length;
-        const newTotal =
-          existingIndex >= 0 ? previousTotal : previousTotal + 1;
+        const newTotal = existingIndex >= 0 ? previousTotal : previousTotal + 1;
 
         const updatedPagination = {
           ...previous.pagination,
@@ -1019,6 +1020,23 @@ export function ERPSalesOrderForm({
   const submitWithStatus = React.useCallback(
     (status: SalesOrderStatus) => {
       const snapshot = form.getValues();
+      if (!snapshot.customerId || snapshot.customerId.trim() === '') {
+        form.setError('customerId', {
+          type: 'manual',
+          message: '请选择客户',
+        });
+        try {
+          form.setFocus('customerId');
+        } catch (error) {
+          logger.debug('sales-orders', 'Failed to focus customer field', error);
+        }
+        toast({
+          variant: 'destructive',
+          title: '客户未选择',
+          description: '请选择客户后再保存订单。',
+        });
+        return;
+      }
       const preCheck = validateOrderItems(snapshot.items);
       if (!preCheck.valid) {
         try {
@@ -1304,7 +1322,6 @@ export function ERPSalesOrderForm({
                         </FormItem>
                       )}
                     />
-
                   </div>
                 </div>
               )}

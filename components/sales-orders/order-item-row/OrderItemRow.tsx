@@ -169,6 +169,7 @@ function useOrderItemRowController({
   const form = useFormContext();
 
   const watchers = useOrderItemWatchers(form, index);
+  const { isManualProduct } = watchers;
 
   const { resolvedProduct, handleProductOverride } = useResolvedProductState(
     products,
