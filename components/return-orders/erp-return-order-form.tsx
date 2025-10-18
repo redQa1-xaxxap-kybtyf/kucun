@@ -9,7 +9,11 @@ import { useCallback, useEffect, useState } from 'react';
 import { useFieldArray, useForm } from 'react-hook-form';
 
 import { CustomerSalesOrderSelector } from '@/components/return-orders/customer-sales-order-selector';
-import { ReturnItemsSection, type ReturnOrderSelectableItem, type ReturnOrderProductInfo } from '@/components/return-orders/erp-return-order-form/ReturnItemsSection';
+import {
+  ReturnItemsSection,
+  type ReturnOrderSelectableItem,
+  type ReturnOrderProductInfo,
+} from '@/components/return-orders/erp-return-order-form/ReturnItemsSection';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -139,8 +143,11 @@ export function ERPReturnOrderForm({
     : [];
 
   // 监听销售订单变化
-  
-  const returnMode = returnMode;
+
+  const returnMode =
+    form.watch('returnMode') ??
+    (initialData?.returnMode as 'single_order' | 'multi_order' | undefined) ??
+    'single_order';
   const watchedSalesOrderId = form.watch('salesOrderId');
   useEffect(() => {
     if (watchedSalesOrderId && watchedSalesOrderId !== selectedSalesOrderId) {

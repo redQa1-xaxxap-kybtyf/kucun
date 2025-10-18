@@ -77,7 +77,7 @@ TableHeaderComponent.displayName = 'TableHeaderComponent';
 /**
  * 空状态组件
  */
-const EmptyState = React.memo(() => (
+const InventoryEmptyState = React.memo(() => (
   <div className="bg-card rounded border">
     <Table>
       <TableHeaderComponent
@@ -100,7 +100,7 @@ const EmptyState = React.memo(() => (
   </div>
 ));
 
-EmptyState.displayName = 'EmptyState';
+InventoryEmptyState.displayName = 'InventoryEmptyState';
 
 /**
  * 虚拟化库存表格组件
@@ -150,7 +150,7 @@ export const VirtualizedInventoryTable =
 
       // 空状态
       if (data.length === 0) {
-        return <EmptyState />;
+        return <InventoryEmptyState />;
       }
 
       return (

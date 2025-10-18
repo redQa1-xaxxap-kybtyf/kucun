@@ -1,5 +1,6 @@
 'use client';
 
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import React, { useEffect } from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
@@ -15,6 +16,8 @@ import {
   getLatestSupplierPrice,
   useSupplierPriceHistory,
 } from '@/hooks/use-price-history';
+import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
+import type { Supplier } from '@/lib/types/supplier';
 import type { CreateFactoryShipmentOrderData } from '@/lib/validations/factory-shipment';
 
 interface SupplierPriceSelectorProps {
@@ -35,67 +38,96 @@ interface SupplierPriceSelectorProps {
  * 使用 React.memo 优化性能
  */
 export const SupplierPriceSelector = React.memo<SupplierPriceSelectorProps>(
-  function SupplierPriceSelector({
-    form,
-    index,
-    value,
-    onChange,
-  }) {
-  const { toast } = useToast();
+  ({ form, index, value, onChange }) => {
+    const { toast } = useToast();
+    const queryClient = useQueryClient();
 
-  // 获取当前行的产品ID
-  const currentProductId = form.watch(`items.${index}.productId`);
+    const supplierListParams = React.useMemo(
+      () => ({
+        page: 1,
+        limit: 100,
+        status: 'active' as const,
+        sortBy: 'name' as const,
+        sortOrder: 'asc' as const,
+      }),
+      []
+    );
 
-  // 查询供应商价格历史
-  const { data: supplierPriceHistoryData } = useSupplierPriceHistory({
-    supplierId: value,
-    productId: currentProductId,
-  });
+    const { data: supplierResult, isLoading: isLoadingSuppliers } = useQuery({
+      queryKey: supplierQueryKeys.list(supplierListParams),
+      queryFn: () => getSuppliers(supplierListParams),
+      staleTime: 5 * 60 * 1000,
+    });
 
-  // 当供应商或产品变化时，自动填充价格
-  useEffect(() => {
-    if (
-      value &&
-      currentProductId &&
-      supplierPriceHistoryData?.data &&
-      supplierPriceHistoryData.data.length > 0
-    ) {
-      const supplierPrice = getLatestSupplierPrice(
-        supplierPriceHistoryData.data,
-        currentProductId
-      );
+    const suppliers = supplierResult?.data ?? [];
 
-      if (supplierPrice !== undefined) {
-        // 获取当前价格，避免重复填充
-        const currentPrice = form.getValues(`items.${index}.unitPrice`);
+    // 获取当前行的产品ID
+    const currentProductId = form.watch(`items.${index}.productId`);
 
-        // 只在价格为0或未设置时自动填充
-        if (!currentPrice || currentPrice === 0) {
-          form.setValue(`items.${index}.unitPrice`, supplierPrice);
-          toast({
-            title: '已自动填充供应商历史价格',
-            description: `供应商对该产品的上次报价：¥${supplierPrice}`,
-            duration: 2000,
-          });
+    // 查询供应商价格历史
+    const { data: supplierPriceHistoryData } = useSupplierPriceHistory({
+      supplierId: value,
+      productId: currentProductId,
+    });
+
+    // 当供应商或产品变化时，自动填充价格
+    useEffect(() => {
+      if (
+        value &&
+        currentProductId &&
+        supplierPriceHistoryData?.data &&
+        supplierPriceHistoryData.data.length > 0
+      ) {
+        const supplierPrice = getLatestSupplierPrice(
+          supplierPriceHistoryData.data,
+          currentProductId
+        );
+
+        if (supplierPrice !== undefined) {
+          // 获取当前价格，避免重复填充
+          const currentPrice = form.getValues(`items.${index}.unitPrice`);
+
+          // 只在价格为0或未设置时自动填充
+          if (!currentPrice || currentPrice === 0) {
+            form.setValue(`items.${index}.unitPrice`, supplierPrice);
+            toast({
+              title: '已自动填充供应商历史价格',
+              description: `供应商对该产品的上次报价：¥${supplierPrice}`,
+              duration: 2000,
+            });
+          }
         }
       }
-    }
-  }, [value, currentProductId, supplierPriceHistoryData, form, index, toast]);
+    }, [value, currentProductId, supplierPriceHistoryData, form, index, toast]);
 
-  return (
-    <FormItem>
-      <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
-        供应商 <span className="text-[hsl(var(--color-error))]">*</span>
-      </FormLabel>
-      <FormControl>
-        <SupplierSelector
-          value={value}
-          onValueChange={onChange}
-          placeholder="请选择供应商"
-          className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
-        />
-      </FormControl>
-      <FormMessage />
-    </FormItem>
-  );
-});
+    return (
+      <FormItem>
+        <FormLabel className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
+          供应商 <span className="text-[hsl(var(--color-error))]">*</span>
+        </FormLabel>
+        <FormControl>
+          <SupplierSelector
+            suppliers={suppliers}
+            value={value}
+            onValueChange={onChange}
+            placeholder="请选择供应商"
+            isLoading={isLoadingSuppliers}
+            className="transition-all duration-200 focus:ring-2 focus:ring-[hsl(var(--color-primary))]/20"
+            onSupplierCreated={(supplier: Supplier) => {
+              queryClient.invalidateQueries({
+                queryKey: supplierQueryKeys.list(supplierListParams),
+              });
+              onChange(supplier.id);
+            }}
+            onRefreshSuppliers={() => {
+              queryClient.invalidateQueries({
+                queryKey: supplierQueryKeys.list(supplierListParams),
+              });
+            }}
+          />
+        </FormControl>
+        <FormMessage />
+      </FormItem>
+    );
+  }
+);

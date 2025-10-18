@@ -133,6 +133,7 @@ export const createReturnOrderSchema = z
 // 退货订单更新验证规则
 export const updateReturnOrderSchema = z.object({
   id: z.string().min(1, '退货订单ID不能为空'),
+  returnMode: z.enum(['single_order', 'multi_order']).optional(),
   salesOrderId: z.string().optional(),
   customerId: z.string().optional(),
   type: z

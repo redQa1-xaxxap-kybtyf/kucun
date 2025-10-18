@@ -4,11 +4,11 @@ import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 
-type RouteParams = {
-  params: Promise<{
-    id: string;
-  }>;
-};
+type RouteParams =
+  | {
+      params?: { id: string } | Promise<{ id: string }>;
+    }
+  | undefined;
 
 /**
  * 获取单个库存调整记录详情
@@ -17,10 +17,10 @@ type RouteParams = {
 const getInventoryAdjustmentDetail = async (
   request: NextRequest,
   context: RouteParams
-) => {
+): Promise<Response> => {
   try {
-    const params = await context.params;
-    const { id } = params;
+    const resolvedParams = await Promise.resolve(context?.params ?? { id: '' });
+    const { id } = resolvedParams;
 
     if (!id) {
       return NextResponse.json(
@@ -112,9 +112,9 @@ const getInventoryAdjustmentDetail = async (
       data: formattedAdjustment,
     });
   } catch (error) {
-    const params = await context.params;
+    const resolvedParams = await Promise.resolve(context?.params ?? { id: '' });
     logger.error('inventory-adjustments', '获取库存调整记录详情失败', error, {
-      id: params.id,
+      id: resolvedParams.id,
     });
     return NextResponse.json(
       {
@@ -129,4 +129,7 @@ const getInventoryAdjustmentDetail = async (
 
 export const GET = withRateLimit(RateLimitType.READ)(
   getInventoryAdjustmentDetail
-);
+) satisfies (
+  request: NextRequest,
+  context: { params: { id: string } }
+) => Promise<Response>;

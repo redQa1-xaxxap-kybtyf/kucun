@@ -42,6 +42,7 @@ type SelectableItem = Pick<
   | 'colorCode'
   | 'productionDate'
   | 'returnQuantity'
+  | 'damagedQuantity'
   | 'originalQuantity'
   | 'unitPrice'
   | 'subtotal'
@@ -61,7 +62,7 @@ interface ReturnItemsSectionProps {
   isSubmitting: boolean;
   isLoadingItems: boolean;
   selectedCustomerId?: string;
-  returnMode: SupportedForm['returnMode'];
+  returnMode: 'single_order' | 'multi_order';
   productInfoMap: Record<string, ProductInfo>;
   calculateSubtotal: (index: number) => void;
   calculateTotal: () => number;
@@ -97,7 +98,9 @@ export function ReturnItemsSection({
       <div className="px-3 py-3">
         {isMultiOrder && selectedCustomerId && (
           <div className="mb-4">
-            <div className="mb-2 text-xs font-medium">从销售订单中选择退货商品</div>
+            <div className="mb-2 text-xs font-medium">
+              从销售订单中选择退货商品
+            </div>
             <MultiOrderItemSelector
               customerId={selectedCustomerId}
               onItemSelect={onSelectSalesOrderItem}
@@ -170,12 +173,18 @@ export function ReturnItemsSection({
                               <span>
                                 {productInfoMap[field.productId]?.code}
                               </span>
-                              {productInfoMap[field.productId]?.specification && (
+                              {productInfoMap[field.productId]
+                                ?.specification && (
                                 <span>
-                                  {productInfoMap[field.productId]?.specification}
+                                  {
+                                    productInfoMap[field.productId]
+                                      ?.specification
+                                  }
                                 </span>
                               )}
-                              {field.colorCode && <span>颜色: {field.colorCode}</span>}
+                              {field.colorCode && (
+                                <span>颜色: {field.colorCode}</span>
+                              )}
                             </div>
                           )}
                         </div>
@@ -183,7 +192,8 @@ export function ReturnItemsSection({
                       {isMultiOrder && (
                         <TableCell className="h-8 px-2">
                           <span className="text-muted-foreground font-mono text-xs">
-                            {productInfoMap[field.productId]?.salesOrderNumber || '-'}
+                            {productInfoMap[field.productId]
+                              ?.salesOrderNumber || '-'}
                           </span>
                         </TableCell>
                       )}
@@ -192,7 +202,12 @@ export function ReturnItemsSection({
                           control={form.control}
                           name={`items.${index}.originalQuantity`}
                           render={({ field: fieldControl }) => (
-                            <Input type="number" className="h-6 w-20 text-xs" readOnly {...fieldControl} />
+                            <Input
+                              type="number"
+                              className="h-6 w-20 text-xs"
+                              readOnly
+                              {...fieldControl}
+                            />
                           )}
                         />
                       </TableCell>
@@ -207,7 +222,9 @@ export function ReturnItemsSection({
                               className="h-6 w-16 text-xs"
                               {...fieldControl}
                               onChange={event => {
-                                fieldControl.onChange(Number(event.target.value));
+                                fieldControl.onChange(
+                                  Number(event.target.value)
+                                );
                                 calculateSubtotal(index);
                               }}
                             />
@@ -227,7 +244,9 @@ export function ReturnItemsSection({
                               className="h-6 w-16 text-xs"
                               {...fieldControl}
                               onChange={event => {
-                                fieldControl.onChange(Number(event.target.value) || 0);
+                                fieldControl.onChange(
+                                  Number(event.target.value) || 0
+                                );
                               }}
                             />
                           )}
@@ -244,7 +263,9 @@ export function ReturnItemsSection({
                               className="h-6 w-20 text-xs"
                               {...fieldControl}
                               onChange={event => {
-                                fieldControl.onChange(Number(event.target.value));
+                                fieldControl.onChange(
+                                  Number(event.target.value)
+                                );
                                 calculateSubtotal(index);
                               }}
                             />
@@ -253,7 +274,9 @@ export function ReturnItemsSection({
                       </TableCell>
                       <TableCell className="h-8 px-2">
                         <span className="font-mono text-xs">
-                          ¥{form.watch(`items.${index}.subtotal`)?.toFixed(2) || '0.00'}
+                          ¥
+                          {form.watch(`items.${index}.subtotal`)?.toFixed(2) ||
+                            '0.00'}
                         </span>
                       </TableCell>
                       <TableCell className="h-8 px-2">
@@ -280,4 +303,7 @@ export function ReturnItemsSection({
   );
 }
 
-export type { SelectableItem as ReturnOrderSelectableItem, ProductInfo as ReturnOrderProductInfo };
+export type {
+  SelectableItem as ReturnOrderSelectableItem,
+  ProductInfo as ReturnOrderProductInfo,
+};

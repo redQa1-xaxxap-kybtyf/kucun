@@ -158,27 +158,44 @@ const formatUnit = (unit: string): string =>
   UNIT_MAP[unit.toLowerCase()] || unit;
 
 // 判断是否可以确认发货
-const canConfirmShipment = (status: FactoryShipmentStatus): boolean =>
-  ['draft', 'planning', 'waiting_deposit', 'deposit_paid'].includes(status);
+const canConfirmShipment = (status: FactoryShipmentStatus): boolean => {
+  const allowedStatuses: FactoryShipmentStatus[] = [
+    FACTORY_SHIPMENT_STATUS.DRAFT,
+    FACTORY_SHIPMENT_STATUS.PLANNING,
+    FACTORY_SHIPMENT_STATUS.WAITING_DEPOSIT,
+    FACTORY_SHIPMENT_STATUS.DEPOSIT_PAID,
+  ];
+
+  return allowedStatuses.includes(status);
+};
 
 // 判断是否可以确认到港
-const canConfirmArrival = (status: FactoryShipmentStatus): boolean =>
-  [
+const canConfirmArrival = (status: FactoryShipmentStatus): boolean => {
+  const allowedStatuses: FactoryShipmentStatus[] = [
     FACTORY_SHIPMENT_STATUS.FACTORY_SHIPPED,
     FACTORY_SHIPMENT_STATUS.IN_TRANSIT,
-  ].includes(status);
+  ];
+
+  return allowedStatuses.includes(status);
+};
 
 // 判断是否可以确认自用货入库
 const canConfirmInbound = (
   status: FactoryShipmentStatus,
   hasPendingSelfInbound: boolean
-): boolean =>
-  hasPendingSelfInbound &&
-  [
+): boolean => {
+  if (!hasPendingSelfInbound) {
+    return false;
+  }
+
+  const allowedStatuses: FactoryShipmentStatus[] = [
     FACTORY_SHIPMENT_STATUS.ARRIVED,
     FACTORY_SHIPMENT_STATUS.DELIVERED,
     FACTORY_SHIPMENT_STATUS.COMPLETED,
-  ].includes(status);
+  ];
+
+  return allowedStatuses.includes(status);
+};
 
 /**
  * 厂家发货订单详情组件
