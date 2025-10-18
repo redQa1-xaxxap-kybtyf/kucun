@@ -7,6 +7,7 @@ import * as React from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
+import { PaymentCreationDialog } from '@/components/finance/payment-creation-dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,6 +62,18 @@ export function ReceivablesClient({
 }: ReceivablesClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  // 收款对话框状态管理
+  const [isPaymentDialogOpen, setIsPaymentDialogOpen] = React.useState(false);
+  const [selectedOrder, setSelectedOrder] = React.useState<{
+    id: string;
+    orderNumber: string;
+    customerId: string;
+    customerName: string;
+    totalAmount: number;
+    paidAmount: number;
+    remainingAmount: number;
+  } | null>(null);
 
   const [queryParams, setQueryParams] = React.useState<ReceivablesQueryParams>(
     initialParams || {
@@ -171,6 +184,23 @@ export function ReceivablesClient({
       }
     },
     [externalOnPageChange]
+  );
+
+  // 打开收款对话框
+  const handleOpenPaymentDialog = React.useCallback(
+    (receivable: ReceivableItem) => {
+      setSelectedOrder({
+        id: receivable.id,
+        orderNumber: receivable.orderNumber,
+        customerId: receivable.customerId,
+        customerName: receivable.customerName,
+        totalAmount: receivable.totalAmount,
+        paidAmount: receivable.paidAmount,
+        remainingAmount: receivable.remainingAmount,
+      });
+      setIsPaymentDialogOpen(true);
+    },
+    []
   );
 
   const currentData = data?.data || initialData;
@@ -320,11 +350,7 @@ export function ReceivablesClient({
                           <Button
                             size="sm"
                             className="bg-gradient-to-r from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary))]/90 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                            onClick={() =>
-                              router.push(
-                                `/finance/payments/create?orderId=${receivable.id}`
-                              )
-                            }
+                            onClick={() => handleOpenPaymentDialog(receivable)}
                           >
                             收款
                           </Button>
@@ -412,6 +438,13 @@ export function ReceivablesClient({
           )}
         </CardContent>
       </Card>
+
+      {/* 收款对话框 */}
+      <PaymentCreationDialog
+        open={isPaymentDialogOpen}
+        onOpenChange={setIsPaymentDialogOpen}
+        orderInfo={selectedOrder}
+      />
     </div>
   );
 }
