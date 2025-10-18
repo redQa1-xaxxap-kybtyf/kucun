@@ -16,6 +16,7 @@ import {
 import { CustomerSelector } from '@/components/sales-orders/customer-selector';
 import { FeeItemsInput } from '@/components/sales-orders/fee-items-input';
 import { InventoryChecker } from '@/components/sales-orders/inventory-checker';
+import { SupplierSelector } from '@/components/sales-orders/supplier-selector';
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -25,16 +26,8 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
 import {
   useCustomerPriceHistory,
@@ -57,6 +50,7 @@ import {
   type SalesOrderItem,
 } from '@/lib/types/sales-order';
 import type { SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
+import type { Supplier } from '@/lib/types/supplier';
 import { logger } from '@/lib/utils/console-logger';
 import {
   transformFormDataToCreateInput,
@@ -96,6 +90,7 @@ const UNIT_MAPPING: Record<string, string> = {
 };
 
 type CustomersResponse = Awaited<ReturnType<typeof getCustomers>>;
+type SuppliersResponse = Awaited<ReturnType<typeof getSuppliers>>;
 
 interface ERPSalesOrderFormProps {
   mode?: 'create' | 'edit';
@@ -133,6 +128,22 @@ export function ERPSalesOrderForm({
   const customersQueryKey = React.useMemo(
     () => customerQueryKeys.list(customersQueryParams),
     [customersQueryParams]
+  );
+
+  const suppliersQueryParams = React.useMemo(
+    () =>
+      ({
+        page: 1,
+        limit: 100,
+        status: 'active',
+        sortBy: 'name',
+        sortOrder: 'asc',
+      }) as const,
+    []
+  );
+  const suppliersQueryKey = React.useMemo(
+    () => supplierQueryKeys.list(suppliersQueryParams),
+    [suppliersQueryParams]
   );
 
   // 单位转换工具函数
@@ -241,7 +252,6 @@ export function ERPSalesOrderForm({
       orderType: payload.orderType,
       transferMode: payload.transferMode,
       supplierId: payload.supplierId,
-      costAmount: payload.costAmount,
       remarks: payload.remarks ?? '',
       items: payload.items ?? [],
       feeItems: (payload.feeItems ?? []).map(fee => ({
@@ -268,7 +278,6 @@ export function ERPSalesOrderForm({
       orderType: 'NORMAL',
       transferMode: 'SUPPLIER_ONLY',
       supplierId: '',
-      costAmount: undefined,
       remarks: '',
       feeItems: [],
       items: [],
@@ -360,103 +369,113 @@ export function ERPSalesOrderForm({
           : undefined;
       const epsilon = 0.01;
 
-      for (let index = 0; index < items.length; index += 1) {
-        const item = items[index];
-        const manual = Boolean(item.isManualProduct);
-        const manualName = item.manualProductName?.trim() ?? '';
-        const productId = item.productId?.trim() ?? '';
-        const quantity = toNumber(item.quantity);
-        const unitPrice = toNumber(item.unitPrice);
+    for (let index = 0; index < items.length; index += 1) {
+      const item = items[index];
+      const manual = Boolean(item.isManualProduct);
+      const manualName = item.manualProductName?.trim() ?? '';
+      const productId = item.productId?.trim() ?? '';
+      const quantity = toNumber(item.quantity);
+      const unitPrice = toNumber(item.unitPrice);
+      const piecesPerUnit = toNumber(item.piecesPerUnit);
 
-        if (manual) {
-          if (!manualName) {
+      if (manual) {
+        if (!manualName) {
+          return {
+            valid: false,
+            message: `第 ${index + 1} 行：临时商品必须填写名称`,
+            path: `items.${index}.manualProductName`,
+          };
+        }
+      } else if (!productId) {
+        return {
+          valid: false,
+          message: `第 ${index + 1} 行：请选择商品`,
+          path: `items.${index}.productId`,
+        };
+      }
+
+      if (
+        item.displayUnit === '件' &&
+        (!Number.isFinite(piecesPerUnit) || piecesPerUnit <= 0)
+      ) {
+        return {
+          valid: false,
+          message: `第 ${index + 1} 行：件数换算需要有效的每件片数`,
+          path: `items.${index}.piecesPerUnit`,
+        };
+      }
+
+      if (!Number.isFinite(quantity) || quantity <= 0) {
+        return {
+          valid: false,
+          message: `第 ${index + 1} 行：数量必须大于 0`,
+          path: `items.${index}.displayQuantity`,
+        };
+      }
+
+      if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
+        return {
+          valid: false,
+          message: `第 ${index + 1} 行：单价必须大于 0`,
+          path: `items.${index}.unitPrice`,
+        };
+      }
+
+      if (currentOrderType === 'TRANSFER') {
+        const localQuantity = toNumber(item.localQuantity);
+        const transferQuantity =
+          currentTransferMode === 'MIXED'
+            ? toNumber(item.transferQuantity)
+            : toNumber(item.transferQuantity, quantity);
+        if (currentTransferMode === 'MIXED') {
+          if (localQuantity < 0) {
             return {
               valid: false,
-              message: `第 ${index + 1} 行：临时商品必须填写名称`,
-              path: `items.${index}.manualProductName`,
+              message: `第 ${index + 1} 行：本地发货数量不能为负数`,
+              path: `items.${index}.localQuantity`,
             };
           }
-        } else if (!productId) {
-          return {
-            valid: false,
-            message: `第 ${index + 1} 行：请选择商品`,
-            path: `items.${index}.productId`,
-          };
-        }
-
-        if (!Number.isFinite(quantity) || quantity <= 0) {
-          return {
-            valid: false,
-            message: `第 ${index + 1} 行：数量必须大于 0`,
-            path: `items.${index}.displayQuantity`,
-          };
-        }
-
-        if (!Number.isFinite(unitPrice) || unitPrice <= 0) {
-          return {
-            valid: false,
-            message: `第 ${index + 1} 行：单价必须大于 0`,
-            path: `items.${index}.unitPrice`,
-          };
-        }
-
-        if (currentOrderType === 'TRANSFER') {
-          const localQuantity = toNumber(item.localQuantity);
-          const transferQuantity =
-            currentTransferMode === 'MIXED'
-              ? toNumber(item.transferQuantity)
-              : toNumber(item.transferQuantity, quantity);
-          if (currentTransferMode === 'MIXED') {
-            if (localQuantity < 0) {
-              return {
-                valid: false,
-                message: `第 ${index + 1} 行：本地发货数量不能为负数`,
-                path: `items.${index}.localQuantity`,
-              };
-            }
-            if (transferQuantity < 0) {
-              return {
-                valid: false,
-                message: `第 ${index + 1} 行：调货数量不能为负数`,
-                path: `items.${index}.transferQuantity`,
-              };
-            }
-            if (
-              Math.abs(localQuantity + transferQuantity - quantity) > epsilon
-            ) {
-              return {
-                valid: false,
-                message: `第 ${index + 1} 行：本地发货数量与调货数量之和必须等于系统数量`,
-                path: `items.${index}.transferQuantity`,
-              };
-            }
-          } else {
-            if (Math.abs(localQuantity) > epsilon) {
-              return {
-                valid: false,
-                message: `第 ${index + 1} 行：调货模式下本地发货数量应为 0`,
-                path: `items.${index}.localQuantity`,
-              };
-            }
-            if (Math.abs(transferQuantity - quantity) > epsilon) {
-              return {
-                valid: false,
-                message: `第 ${index + 1} 行：调货模式下调货数量必须等于系统数量`,
-                path: `items.${index}.transferQuantity`,
-              };
-            }
-          }
-
-          const unitCost = toNumber(item.unitCost);
-          if (unitCost < 0) {
+          if (transferQuantity < 0) {
             return {
               valid: false,
-              message: `第 ${index + 1} 行：成本单价不能为负数`,
-              path: `items.${index}.unitCost`,
+              message: `第 ${index + 1} 行：调货数量不能为负数`,
+              path: `items.${index}.transferQuantity`,
             };
           }
+          if (Math.abs(localQuantity + transferQuantity - quantity) > epsilon) {
+            return {
+              valid: false,
+              message: `第 ${index + 1} 行：本地发货数量与调货数量之和必须等于系统数量`,
+              path: `items.${index}.transferQuantity`,
+            };
+          }
+        } else {
+          if (Math.abs(localQuantity) > epsilon) {
+            return {
+              valid: false,
+              message: `第 ${index + 1} 行：调货模式下本地发货数量应为 0`,
+              path: `items.${index}.localQuantity`,
+            };
+          }
+          if (Math.abs(transferQuantity - quantity) > epsilon) {
+            return {
+              valid: false,
+              message: `第 ${index + 1} 行：调货模式下调货数量必须等于系统数量`,
+              path: `items.${index}.transferQuantity`,
+            };
+          }
+        }
+
+        const unitCost = toNumber(item.unitCost);
+        if (unitCost < 0) {
+          return {
+            valid: false,
+            message: `第 ${index + 1} 行：成本单价不能为负数`,
+            path: `items.${index}.unitCost`,
+          };
         }
       }
+    }
 
       return { valid: true };
     },
@@ -485,21 +504,8 @@ export function ERPSalesOrderForm({
   });
 
   const { data: suppliersData, isLoading: suppliersLoading } = useQuery({
-    queryKey: supplierQueryKeys.list({
-      page: 1,
-      limit: 100,
-      status: 'active',
-      sortBy: 'name',
-      sortOrder: 'asc',
-    }),
-    queryFn: () =>
-      getSuppliers({
-        page: 1,
-        limit: 100,
-        status: 'active',
-        sortBy: 'name',
-        sortOrder: 'asc',
-      }),
+    queryKey: suppliersQueryKey,
+    queryFn: () => getSuppliers(suppliersQueryParams),
   });
 
   // 获取客户的历史价格（根据订单类型决定价格类型）
@@ -596,12 +602,6 @@ export function ERPSalesOrderForm({
       }
       if (form.getValues('supplierId')) {
         form.setValue('supplierId', '', {
-          shouldDirty: true,
-          shouldValidate: false,
-        });
-      }
-      if (form.getValues('costAmount')) {
-        form.setValue('costAmount', undefined, {
           shouldDirty: true,
           shouldValidate: false,
         });
@@ -796,7 +796,6 @@ export function ERPSalesOrderForm({
         (initialData.transferMode as TransferFulfillmentMode | undefined) ??
         'SUPPLIER_ONLY',
       supplierId: initialData.supplierId ?? '',
-      costAmount: initialData.costAmount ?? undefined,
       remarks: initialData.remarks ?? '',
       roundingAdjustment: initialData.roundingAdjustment ?? undefined,
       items: mappedItems,
@@ -902,6 +901,79 @@ export function ERPSalesOrderForm({
     toast({
       title: '客户创建成功',
       description: `客户 "${customer.name}" 已创建并自动选择`,
+      variant: 'success',
+    });
+  };
+
+  const handleSupplierCreated = (supplier: Supplier) => {
+    queryClient.setQueryData<SuppliersResponse | undefined>(
+      suppliersQueryKey,
+      previous => {
+        if (!previous) {
+          return {
+            data: [supplier],
+            pagination: {
+              page: suppliersQueryParams.page,
+              limit: suppliersQueryParams.limit,
+              total: 1,
+              totalPages: 1,
+            },
+          };
+        }
+
+        const existingIndex = previous.data.findIndex(
+          existing => existing.id === supplier.id
+        );
+
+        const updatedData =
+          existingIndex >= 0
+            ? previous.data.map((item, index) =>
+                index === existingIndex ? supplier : item
+              )
+            : [supplier, ...previous.data].slice(
+                0,
+                previous.pagination?.limit ?? previous.data.length + 1
+              );
+
+        if (!previous.pagination) {
+          return {
+            ...previous,
+            data: updatedData,
+          };
+        }
+
+        const previousTotal =
+          typeof previous.pagination.total === 'number'
+            ? previous.pagination.total
+            : previous.data.length;
+        const newTotal =
+          existingIndex >= 0 ? previousTotal : previousTotal + 1;
+
+        const updatedPagination = {
+          ...previous.pagination,
+          total: newTotal,
+          totalPages:
+            previous.pagination.limit && previous.pagination.limit > 0
+              ? Math.ceil(newTotal / previous.pagination.limit)
+              : previous.pagination.totalPages,
+        };
+
+        return {
+          ...previous,
+          data: updatedData,
+          pagination: updatedPagination,
+        };
+      }
+    );
+
+    form.setValue('supplierId', supplier.id, {
+      shouldDirty: true,
+      shouldTouch: true,
+    });
+
+    toast({
+      title: '供应商创建成功',
+      description: `供应商 "${supplier.name}" 已创建并自动选择`,
       variant: 'success',
     });
   };
@@ -1208,71 +1280,31 @@ export function ERPSalesOrderForm({
                             供应商/调出方{' '}
                             <span className="text-red-500">*</span>
                           </FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            value={field.value || ''}
-                            disabled={suppliersLoading}
-                          >
-                            <FormControl>
-                              <SelectTrigger className="h-10 text-sm">
-                                <SelectValue placeholder="请选择供应商" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              {suppliersData?.data?.map(supplier => (
-                                <SelectItem
-                                  key={supplier.id}
-                                  value={supplier.id}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-sm">
-                                      {supplier.name}
-                                    </span>
-                                    {supplier.phone && (
-                                      <span className="text-xs text-gray-500">
-                                        ({supplier.phone})
-                                      </span>
-                                    )}
-                                  </div>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                          <FormMessage className="text-xs" />
-                        </FormItem>
-                      )}
-                    />
-
-                    {/* 成本金额 */}
-                    <FormField
-                      control={form.control}
-                      name="costAmount"
-                      render={({ field }) => (
-                        <FormItem className="space-y-2">
-                          <FormLabel className="text-sm font-medium text-gray-700">
-                            成本金额 <span className="text-red-500">*</span>
-                          </FormLabel>
                           <FormControl>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              placeholder="0.00"
-                              className="h-10 text-sm"
-                              {...field}
-                              value={field.value || ''}
-                              onChange={e => {
-                                const value = e.target.value;
-                                field.onChange(
-                                  value === '' ? undefined : parseFloat(value)
-                                );
+                            <SupplierSelector
+                              suppliers={suppliersData?.data || []}
+                              value={field.value}
+                              onValueChange={field.onChange}
+                              placeholder="搜索并选择供应商"
+                              disabled={suppliersLoading}
+                              isLoading={suppliersLoading}
+                              onSupplierCreated={handleSupplierCreated}
+                              onRefreshSuppliers={() => {
+                                queryClient.invalidateQueries({
+                                  queryKey: suppliersQueryKey,
+                                });
+                                queryClient.refetchQueries({
+                                  queryKey: suppliersQueryKey,
+                                });
                               }}
+                              className="h-10"
                             />
                           </FormControl>
                           <FormMessage className="text-xs" />
                         </FormItem>
                       )}
                     />
+
                   </div>
                 </div>
               )}
