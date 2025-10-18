@@ -73,11 +73,12 @@ export function PiecesPerUnitCell({
   index: number;
   isManualProduct: boolean;
 }) {
+  const piecesPerUnitPath = `items.${index}.piecesPerUnit` as const;
   return (
     <TableCell className="min-w-[80px]">
       <FormField
         control={form.control}
-        name={`items.${index}.piecesPerUnit`}
+        name={piecesPerUnitPath}
         render={({ field }) => (
           <FormItem>
             <FormControl>
@@ -117,11 +118,12 @@ export function BatchSelectorCell({
   availableBatches: Array<{ batchNumber: string; quantity: number }>;
   disabled: boolean;
 }) {
+  const batchNumberPath = `items.${index}.batchNumber` as const;
   return (
     <TableCell className="min-w-[180px]">
       <FormField
         control={form.control}
-        name={`items.${index}.batchNumber`}
+        name={batchNumberPath}
         render={({ field }) => (
           <FormItem>
             <FormControl>
@@ -149,12 +151,15 @@ export function ManualInfoCells({
   index: number;
   isManualProduct: boolean;
 }) {
+  const manualNamePath = `items.${index}.manualProductName` as const;
+  const manualSpecPath = `items.${index}.manualSpecification` as const;
+  const manualUnitPath = `items.${index}.manualUnit` as const;
   return (
     <>
       <TableCell className="min-w-[120px]">
         <FormField
           control={form.control}
-          name={`items.${index}.manualProductName`}
+          name={manualNamePath}
           render={({ field }) => (
             <FormItem>
               <FormControl>
@@ -173,7 +178,7 @@ export function ManualInfoCells({
       <TableCell className="min-w-[120px]">
         <FormField
           control={form.control}
-          name={`items.${index}.manualSpecification`}
+          name={manualSpecPath}
           render={({ field }) => (
             <FormItem>
               <FormControl>
@@ -192,7 +197,7 @@ export function ManualInfoCells({
       <TableCell className="min-w-[100px]">
         <FormField
           control={form.control}
-          name={`items.${index}.manualUnit`}
+          name={manualUnitPath}
           render={({ field }) => (
             <FormItem>
               <FormControl>

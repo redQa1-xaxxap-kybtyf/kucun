@@ -6,6 +6,7 @@ import { useFormContext } from 'react-hook-form';
 import { TableRow } from '@/components/ui/table';
 import type { Product } from '@/lib/types/product';
 import type { TransferFulfillmentMode } from '@/lib/types/sales-order';
+import type { SalesOrderCreateFormData } from '@/lib/validations/sales-order';
 
 import {
   ActionsCell,
@@ -166,7 +167,7 @@ function useOrderItemRowController({
   orderType,
   transferMode,
 }: UseOrderItemRowControllerParams): OrderItemRowViewProps {
-  const form = useFormContext();
+  const form = useFormContext<SalesOrderCreateFormData>();
 
   const watchers = useOrderItemWatchers(form, index);
   const { isManualProduct } = watchers;

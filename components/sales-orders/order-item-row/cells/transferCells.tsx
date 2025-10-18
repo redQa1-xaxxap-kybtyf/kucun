@@ -27,13 +27,14 @@ export function TransferInfoCell({
   transferQuantityDisplay: number;
   formatQuantity: (value: number) => string;
 }) {
+  const localQuantityPath = `items.${index}.localQuantity` as const;
   if (transferMode === 'MIXED') {
     return (
       <TableCell className="min-w-[160px]">
         <div className="space-y-1">
           <FormField
             control={form.control}
-            name={`items.${index}.localQuantity`}
+            name={localQuantityPath}
             render={({ field }) => (
               <FormItem>
                 <FormControl>

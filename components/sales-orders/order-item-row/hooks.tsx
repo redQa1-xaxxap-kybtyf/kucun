@@ -6,6 +6,7 @@ import { useWatch } from 'react-hook-form';
 import type { Product } from '@/lib/types/product';
 import type { TransferFulfillmentMode } from '@/lib/types/sales-order';
 import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
+import type { SalesOrderCreateFormData } from '@/lib/validations/sales-order';
 
 import type { OrderFormInstance } from './types';
 
@@ -24,97 +25,157 @@ interface OrderItemWatchers {
   remarks?: string;
 }
 
-export function useOrderItemWatchers(
+function useOrderItemManualFlag(
   form: OrderFormInstance,
   index: number
-): OrderItemWatchers {
-  const productId = useWatch({
+): boolean {
+  const rawValue = useWatch<
+    SalesOrderCreateFormData,
+    `items.${number}.isManualProduct`
+  >({
     control: form.control,
-    name: `items.${index}.productId`,
+    name: `items.${index}.isManualProduct` as const,
+    defaultValue: false,
   });
-  const isManualProduct = Boolean(
-    useWatch({
-      control: form.control,
-      name: `items.${index}.isManualProduct`,
-      defaultValue: false,
-    })
-  );
+  return Boolean(rawValue);
+}
+
+function useOrderItemQuantityMetrics(
+  form: OrderFormInstance,
+  index: number
+): {
+  quantity: number;
+  localQuantity: number;
+  transferQuantity: number;
+  displayUnit: string;
+  piecesPerUnit: number;
+  displayQuantity: number;
+} {
   const quantity = Number(
-    useWatch({
+    useWatch<SalesOrderCreateFormData, `items.${number}.quantity`>({
       control: form.control,
-      name: `items.${index}.quantity`,
+      name: `items.${index}.quantity` as const,
       defaultValue: 0,
     })
   );
   const localQuantity = Number(
-    useWatch({
+    useWatch<SalesOrderCreateFormData, `items.${number}.localQuantity`>({
       control: form.control,
-      name: `items.${index}.localQuantity`,
+      name: `items.${index}.localQuantity` as const,
       defaultValue: 0,
     })
   );
   const transferQuantity = Number(
-    useWatch({
+    useWatch<SalesOrderCreateFormData, `items.${number}.transferQuantity`>({
       control: form.control,
-      name: `items.${index}.transferQuantity`,
-      defaultValue: 0,
-    })
-  );
-  const unitPrice = Number(
-    useWatch({
-      control: form.control,
-      name: `items.${index}.unitPrice`,
+      name: `items.${index}.transferQuantity` as const,
       defaultValue: 0,
     })
   );
   const displayUnit =
-    useWatch({
+    useWatch<SalesOrderCreateFormData, `items.${number}.displayUnit`>({
       control: form.control,
-      name: `items.${index}.displayUnit`,
+      name: `items.${index}.displayUnit` as const,
       defaultValue: '片',
     }) ?? '片';
   const piecesPerUnit = Number(
-    useWatch({
+    useWatch<SalesOrderCreateFormData, `items.${number}.piecesPerUnit`>({
       control: form.control,
-      name: `items.${index}.piecesPerUnit`,
+      name: `items.${index}.piecesPerUnit` as const,
       defaultValue: 1,
     })
   );
   const displayQuantity = Number(
-    useWatch({
+    useWatch<SalesOrderCreateFormData, `items.${number}.displayQuantity`>({
       control: form.control,
-      name: `items.${index}.displayQuantity`,
+      name: `items.${index}.displayQuantity` as const,
       defaultValue: 1,
     })
   );
-  const manualProductName = useWatch({
-    control: form.control,
-    name: `items.${index}.manualProductName`,
-    defaultValue: '',
-  });
-  const batchNumber = useWatch({
-    control: form.control,
-    name: `items.${index}.batchNumber`,
-  });
-  const remarks = useWatch({
-    control: form.control,
-    name: `items.${index}.remarks`,
-  });
 
   return {
-    productId,
-    isManualProduct,
     quantity,
     localQuantity,
     transferQuantity,
-    unitPrice,
     displayUnit,
     piecesPerUnit,
     displayQuantity,
-    manualProductName,
-    batchNumber,
-    remarks,
   };
+}
+
+function useOrderItemPricing(form: OrderFormInstance, index: number): number {
+  return Number(
+    useWatch<SalesOrderCreateFormData, `items.${number}.unitPrice`>({
+      control: form.control,
+      name: `items.${index}.unitPrice` as const,
+      defaultValue: 0,
+    })
+  );
+}
+
+function useOrderItemTextWatchers(
+  form: OrderFormInstance,
+  index: number
+): {
+  productId?: string;
+  manualProductName?: string;
+  batchNumber?: string;
+  remarks?: string;
+} {
+  const productId = useWatch<
+    SalesOrderCreateFormData,
+    `items.${number}.productId`
+  >({
+    control: form.control,
+    name: `items.${index}.productId` as const,
+  });
+  const manualProductName = useWatch<
+    SalesOrderCreateFormData,
+    `items.${number}.manualProductName`
+  >({
+    control: form.control,
+    name: `items.${index}.manualProductName` as const,
+    defaultValue: '',
+  });
+  const batchNumber = useWatch<
+    SalesOrderCreateFormData,
+    `items.${number}.batchNumber`
+  >({
+    control: form.control,
+    name: `items.${index}.batchNumber` as const,
+  });
+  const remarks = useWatch<SalesOrderCreateFormData, `items.${number}.remarks`>(
+    {
+      control: form.control,
+      name: `items.${index}.remarks` as const,
+    }
+  );
+
+  return { productId, manualProductName, batchNumber, remarks };
+}
+
+function useOrderItemWatcherValues(
+  form: OrderFormInstance,
+  index: number
+): OrderItemWatchers {
+  const isManualProduct = useOrderItemManualFlag(form, index);
+  const quantityMetrics = useOrderItemQuantityMetrics(form, index);
+  const unitPrice = useOrderItemPricing(form, index);
+  const textWatchers = useOrderItemTextWatchers(form, index);
+
+  return {
+    ...textWatchers,
+    isManualProduct,
+    unitPrice,
+    ...quantityMetrics,
+  };
+}
+
+export function useOrderItemWatchers(
+  form: OrderFormInstance,
+  index: number
+): OrderItemWatchers {
+  return useOrderItemWatcherValues(form, index);
 }
 
 export function useResolvedProductState(
@@ -197,7 +258,7 @@ export function useDisplayQuantitySync(
       : 0;
 
     if (Math.abs(quantity - normalizedQuantity) > 1e-6) {
-      form.setValue(`items.${index}.quantity`, normalizedQuantity, {
+      form.setValue(`items.${index}.quantity` as const, normalizedQuantity, {
         shouldDirty: true,
         shouldValidate: false,
       });
@@ -222,7 +283,7 @@ export function useTransferQuantitySync(
       if (transferMode === 'MIXED') {
         const boundedLocal = clamp(localQuantity, 0, quantity);
         if (Math.abs(boundedLocal - localQuantity) > 0.01) {
-          form.setValue(`items.${index}.localQuantity`, boundedLocal, {
+          form.setValue(`items.${index}.localQuantity` as const, boundedLocal, {
             shouldDirty: true,
             shouldValidate: false,
           });
@@ -230,21 +291,25 @@ export function useTransferQuantitySync(
         }
         const expectedTransfer = Math.max(quantity - boundedLocal, 0);
         if (Math.abs(expectedTransfer - transferQuantity) > 0.01) {
-          form.setValue(`items.${index}.transferQuantity`, expectedTransfer, {
-            shouldDirty: true,
-            shouldValidate: false,
-          });
+          form.setValue(
+            `items.${index}.transferQuantity` as const,
+            expectedTransfer,
+            {
+              shouldDirty: true,
+              shouldValidate: false,
+            }
+          );
         }
       } else {
         if (Math.abs(localQuantity) > 0.01) {
-          form.setValue(`items.${index}.localQuantity`, 0, {
+          form.setValue(`items.${index}.localQuantity` as const, 0, {
             shouldDirty: true,
             shouldValidate: false,
           });
           return;
         }
         if (Math.abs(transferQuantity - quantity) > 0.01) {
-          form.setValue(`items.${index}.transferQuantity`, quantity, {
+          form.setValue(`items.${index}.transferQuantity` as const, quantity, {
             shouldDirty: true,
             shouldValidate: false,
           });
@@ -252,14 +317,14 @@ export function useTransferQuantitySync(
       }
     } else {
       if (Math.abs(localQuantity - quantity) > 0.01) {
-        form.setValue(`items.${index}.localQuantity`, quantity, {
+        form.setValue(`items.${index}.localQuantity` as const, quantity, {
           shouldDirty: true,
           shouldValidate: false,
         });
         return;
       }
       if (Math.abs(transferQuantity) > 0.01) {
-        form.setValue(`items.${index}.transferQuantity`, 0, {
+        form.setValue(`items.${index}.transferQuantity` as const, 0, {
           shouldDirty: true,
           shouldValidate: false,
         });
@@ -300,21 +365,21 @@ export function useAutoRemarks(
         }
 
         if (remarksText !== remarks) {
-          form.setValue(`items.${index}.remarks`, remarksText, {
+          form.setValue(`items.${index}.remarks` as const, remarksText, {
             shouldDirty: false,
             shouldValidate: false,
           });
         }
       } catch (_error) {
         if (remarks) {
-          form.setValue(`items.${index}.remarks`, '', {
+          form.setValue(`items.${index}.remarks` as const, '', {
             shouldDirty: false,
             shouldValidate: false,
           });
         }
       }
     } else if (remarks) {
-      form.setValue(`items.${index}.remarks`, '', {
+      form.setValue(`items.${index}.remarks` as const, '', {
         shouldDirty: false,
         shouldValidate: false,
       });

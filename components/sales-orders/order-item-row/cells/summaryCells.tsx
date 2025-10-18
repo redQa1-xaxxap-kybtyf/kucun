@@ -29,11 +29,12 @@ export function RemarksCell({
   form: OrderFormInstance;
   index: number;
 }) {
+  const remarksPath = `items.${index}.remarks` as const;
   return (
     <TableCell className="min-w-[150px]">
       <FormField
         control={form.control}
-        name={`items.${index}.remarks`}
+        name={remarksPath}
         render={({ field }) => (
           <FormItem>
             <FormControl>

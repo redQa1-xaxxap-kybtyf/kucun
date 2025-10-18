@@ -4,6 +4,9 @@ import * as React from 'react';
 import {
   useFieldArray,
   type FieldArrayWithId,
+  type UseFieldArrayAppend,
+  type UseFieldArrayRemove,
+  type UseFieldArrayUpdate,
   type UseFormReturn,
 } from 'react-hook-form';
 
@@ -29,11 +32,44 @@ export interface OrderItemsManagerResult {
   totalQuantity: number;
 }
 
+function createEmptyOrderItem(): SalesOrderItemFormData {
+  return {
+    productId: '',
+    productCode: '',
+    batchNumber: '',
+    colorCode: '',
+    productionDate: '',
+    specification: '',
+    displayUnit: '件',
+    displayQuantity: 1,
+    quantity: 1,
+    unit: '',
+    unitPrice: 0,
+    piecesPerUnit: undefined,
+    remarks: '',
+    subtotal: undefined,
+    unitCost: undefined,
+    costSubtotal: undefined,
+    profitAmount: undefined,
+    localQuantity: undefined,
+    transferQuantity: undefined,
+    isManualProduct: false,
+    manualProductName: '',
+    manualSpecification: '',
+    manualWeight: undefined,
+    manualUnit: '',
+  };
+}
+
 export function useOrderItemsManager(
   form: UseFormReturn<CreateSalesOrderData>,
   products: Product[]
 ): OrderItemsManagerResult {
-  const fieldArray = useFieldArray({
+  const { fields, append, remove, update } = useFieldArray<
+    CreateSalesOrderData,
+    'items',
+    'id'
+  >({
     control: form.control,
     name: 'items',
   });
@@ -42,23 +78,20 @@ export function useOrderItemsManager(
     Record<number, string>
   >({});
 
-  const addOrderItem = useAddOrderItem(fieldArray.append);
-  const removeOrderItem = useRemoveOrderItem(
-    fieldArray.remove,
-    setStockWarnings
-  );
+  const addOrderItem = useAddOrderItem(append);
+  const removeOrderItem = useRemoveOrderItem(remove, setStockWarnings);
   const { updateOrderItem, handleProductSelect } = useOrderItemUpdaters(
-    fieldArray.fields,
-    fieldArray.update,
+    fields,
+    update,
     products,
     setStockWarnings
   );
   const handleInventoryCheck = useInventoryCheckHandler(setStockWarnings);
-  const totalAmount = useTotalAmount(fieldArray.fields);
-  const totalQuantity = useTotalQuantity(fieldArray.fields);
+  const totalAmount = useTotalAmount(fields);
+  const totalQuantity = useTotalQuantity(fields);
 
   return {
-    fields: fieldArray.fields,
+    fields,
     stockWarnings,
     addOrderItem,
     removeOrderItem,
@@ -71,21 +104,15 @@ export function useOrderItemsManager(
 }
 
 function useAddOrderItem(
-  append: ReturnType<typeof useFieldArray>['append']
+  append: UseFieldArrayAppend<CreateSalesOrderData, 'items'>
 ): () => void {
   return React.useCallback(() => {
-    append({
-      productId: '',
-      quantity: 1,
-      unitPrice: 0,
-      displayUnit: '件',
-      displayQuantity: 1,
-    } as unknown as SalesOrderItemFormData);
+    append(createEmptyOrderItem());
   }, [append]);
 }
 
 function useRemoveOrderItem(
-  remove: ReturnType<typeof useFieldArray>['remove'],
+  remove: UseFieldArrayRemove,
   setStockWarnings: React.Dispatch<React.SetStateAction<Record<number, string>>>
 ) {
   return React.useCallback(
@@ -107,13 +134,13 @@ function useRemoveOrderItem(
         return next;
       });
     },
-    [remove]
+    [remove, setStockWarnings]
   );
 }
 
 function useOrderItemUpdaters(
   fields: FieldArrayWithId<CreateSalesOrderData, 'items', 'id'>[],
-  update: ReturnType<typeof useFieldArray>['update'],
+  update: UseFieldArrayUpdate<CreateSalesOrderData, 'items'>,
   products: Product[],
   setStockWarnings: React.Dispatch<React.SetStateAction<Record<number, string>>>
 ) {
@@ -203,15 +230,18 @@ function useOrderItemUpdaters(
 function useInventoryCheckHandler(
   setStockWarnings: React.Dispatch<React.SetStateAction<Record<number, string>>>
 ): InventoryCheckHandler {
-  return React.useCallback<InventoryCheckHandler>(results => {
-    const warnings: Record<number, string> = {};
-    results.forEach((result, index) => {
-      if (result.severity === 'error' || result.severity === 'warning') {
-        warnings[index] = result.message;
-      }
-    });
-    setStockWarnings(warnings);
-  }, []);
+  return React.useCallback<InventoryCheckHandler>(
+    results => {
+      const warnings: Record<number, string> = {};
+      results.forEach((result, index) => {
+        if (result.severity === 'error' || result.severity === 'warning') {
+          warnings[index] = result.message;
+        }
+      });
+      setStockWarnings(warnings);
+    },
+    [setStockWarnings]
+  );
 }
 
 function useTotalAmount(
