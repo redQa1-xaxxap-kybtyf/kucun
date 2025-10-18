@@ -409,6 +409,8 @@ export default function SalesOrderDetailPage() {
     (sum, item) => sum + (item.transferQuantity ?? 0),
     0
   );
+  const canEditOrder = order.status === 'draft';
+  const canDeleteOrder = canEditOrder;
 
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
@@ -477,13 +479,13 @@ export default function SalesOrderDetailPage() {
                   variant="outline"
                   size="lg"
                   onClick={() => {
-                    if (order.status === 'draft') {
+                    if (canEditOrder) {
                       router.push(`/sales-orders/${id}/edit`);
                     } else {
                       alert('只有草稿状态的订单才能编辑');
                     }
                   }}
-                  disabled={order.status !== 'draft'}
+                  disabled={!canEditOrder}
                 >
                   <Edit className="mr-2 h-4 w-4" />
                   编辑
@@ -516,9 +518,11 @@ export default function SalesOrderDetailPage() {
                       导出订单
                     </DropdownMenuItem>
                     <DropdownMenuItem>复制订单</DropdownMenuItem>
-                    <DropdownMenuItem className="text-[hsl(var(--color-error))]">
-                      删除订单
-                    </DropdownMenuItem>
+                    {canDeleteOrder && (
+                      <DropdownMenuItem className="text-[hsl(var(--color-error))]">
+                        删除订单
+                      </DropdownMenuItem>
+                    )}
                   </DropdownMenuContent>
                 </DropdownMenu>
               </div>
