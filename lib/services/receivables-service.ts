@@ -47,7 +47,7 @@ export interface ReceivablesQueryParams {
   limit?: number;
   search?: string;
   customerId?: string;
-  paymentStatus?: 'unpaid' | 'partial' | 'paid';
+  paymentStatus?: 'unpaid' | 'partial' | 'pending' | 'paid';
   startDate?: string;
   endDate?: string;
   sortBy?: string;

@@ -403,7 +403,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
           },
         });
       } catch (error) {
-        logger.warn('payments', '记录收款往来账失败', error, {
+        logger.error('payments', '记录收款往来账失败', error, {
           paymentId: payment.id,
           paymentNumber: payment.paymentNumber,
         });

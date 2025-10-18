@@ -174,7 +174,7 @@ export const POST = withAuth(
             },
           });
         } catch (error) {
-          logger.warn('payments', '确认收款后同步往来账失败', error, {
+          logger.error('payments', '确认收款后同步往来账失败', error, {
             paymentId: updated.id,
             paymentNumber: updated.paymentNumber,
           });

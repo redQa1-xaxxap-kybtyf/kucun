@@ -123,6 +123,10 @@ async function getPaymentDetail(id: string): Promise<PaymentRecord | null> {
       id: payment.id,
       paymentNumber: payment.paymentNumber,
       paymentAmount: Number(payment.paymentAmount),
+      actualPaymentAmount: Number(
+        payment.actualPaymentAmount ?? payment.paymentAmount
+      ),
+      roundingAmount: Number(payment.roundingAmount ?? 0),
       paymentMethod: payment.paymentMethod,
       paymentDate: payment.paymentDate.toISOString(),
       status: payment.status,

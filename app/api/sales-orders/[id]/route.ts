@@ -4,6 +4,8 @@ import { ApiError } from '@/lib/api/errors';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { publishOrderStatus } from '@/lib/events';
+import { logger } from '@/lib/logger';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import {
   createTransferPayableRecord,
   validateStatusTransition,
@@ -416,6 +418,71 @@ export const PUT = withAuth(
       createdAt: fullOrder.createdAt,
       updatedAt: fullOrder.updatedAt,
     };
+
+    const ledgerAmount = Number(fullOrder.totalAmount ?? 0);
+    const becameConfirmed =
+      status === 'confirmed' && existingOrder.status !== 'confirmed';
+    const becameCancelled =
+      status === 'cancelled' &&
+      ['confirmed', 'shipped', 'completed'].includes(
+        existingOrder.status as string
+      );
+
+    if (ledgerAmount > 0) {
+      if (becameConfirmed) {
+        try {
+          await recordPartnerTransaction({
+            partnerId: fullOrder.customerId,
+            partnerRole: 'customer',
+            entityType: 'customer',
+            transactionType: 'sale',
+            amount: ledgerAmount,
+            referenceId: fullOrder.id,
+            referenceNumber: fullOrder.orderNumber,
+            description: `销售订单 ${fullOrder.orderNumber} 确认`,
+            occurredAt: fullOrder.updatedAt ?? new Date(),
+            metadata: {
+              previousStatus: existingOrder.status,
+              status,
+              triggeredBy: 'order:status-change',
+            },
+          });
+        } catch (error) {
+          logger.error('sales-orders', '记录销售订单往来账失败', error, {
+            orderId: fullOrder.id,
+            orderNumber: fullOrder.orderNumber,
+            previousStatus: existingOrder.status,
+            status,
+          });
+        }
+      } else if (becameCancelled) {
+        try {
+          await recordPartnerTransaction({
+            partnerId: fullOrder.customerId,
+            partnerRole: 'customer',
+            entityType: 'customer',
+            transactionType: 'sales_return',
+            amount: ledgerAmount,
+            referenceId: fullOrder.id,
+            referenceNumber: fullOrder.orderNumber,
+            description: `销售订单 ${fullOrder.orderNumber} 取消`,
+            occurredAt: fullOrder.updatedAt ?? new Date(),
+            metadata: {
+              previousStatus: existingOrder.status,
+              status,
+              triggeredBy: 'order:status-change',
+            },
+          });
+        } catch (error) {
+          logger.error('sales-orders', '回滚销售订单往来账失败', error, {
+            orderId: fullOrder.id,
+            orderNumber: fullOrder.orderNumber,
+            previousStatus: existingOrder.status,
+            status,
+          });
+        }
+      }
+    }
 
     // 发布订单状态变更事件
     await publishOrderStatus({
