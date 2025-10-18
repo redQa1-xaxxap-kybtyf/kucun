@@ -132,6 +132,7 @@ const AccountsReceivableComponent = React.forwardRef<
       const configs = {
         unpaid: { label: '未付款', color: 'red', icon: XCircle },
         partial: { label: '部分付款', color: 'yellow', icon: Clock },
+        pending: { label: '待确认', color: 'yellow', icon: Clock },
         paid: { label: '已付款', color: 'green', icon: CheckCircle },
       };
       return configs[status as keyof typeof configs] || configs.unpaid;
@@ -486,6 +487,7 @@ const AccountsReceivableComponent = React.forwardRef<
                     <SelectItem value="">全部状态</SelectItem>
                     <SelectItem value="unpaid">未付款</SelectItem>
                     <SelectItem value="partial">部分付款</SelectItem>
+                    <SelectItem value="pending">待确认</SelectItem>
                     <SelectItem value="paid">已付款</SelectItem>
                   </SelectContent>
                 </Select>

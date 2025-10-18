@@ -228,7 +228,7 @@ export const accountsReceivableQuerySchema = z
     limit: z.number().int().positive().max(100).optional().default(10),
     search: z.string().optional(),
     customerId: z.string().optional(),
-    paymentStatus: z.enum(['unpaid', 'partial', 'paid']).optional(),
+    paymentStatus: z.enum(['unpaid', 'partial', 'pending', 'paid']).optional(),
     startDate: z
       .string()
       .optional()

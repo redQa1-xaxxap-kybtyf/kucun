@@ -296,8 +296,8 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
               totalAmount: true,
               status: true,
               payments: {
-                where: { status: 'confirmed' },
-                select: { paymentAmount: true },
+                where: { status: { in: ['confirmed', 'pending'] } },
+                select: { paymentAmount: true, status: true },
               },
             },
           });
@@ -306,18 +306,23 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
             throw new Error('销售订单不存在');
           }
 
-          const totalPaid = salesOrder.payments.reduce(
-            (sum, p) => sum + p.paymentAmount,
-            0
-          );
+          const confirmedAmount = salesOrder.payments
+            .filter(payment => payment.status === 'confirmed')
+            .reduce((sum, payment) => sum + payment.paymentAmount, 0);
+          const pendingAmount = salesOrder.payments
+            .filter(payment => payment.status === 'pending')
+            .reduce((sum, payment) => sum + payment.paymentAmount, 0);
 
           // 验证收款金额不超过订单总额
-          if (totalPaid + data.paymentAmount > salesOrder.totalAmount) {
+          if (
+            confirmedAmount + pendingAmount + data.paymentAmount >
+            salesOrder.totalAmount
+          ) {
             throw new Error('收款金额超过订单总额');
           }
 
           // 如果收款金额达到或超过订单总额且订单已发货,自动更新为已完成
-          const newTotalPaid = totalPaid + data.paymentAmount;
+          const newTotalPaid = confirmedAmount + data.paymentAmount;
           if (
             newTotalPaid >= salesOrder.totalAmount &&
             salesOrder.status === 'shipped'

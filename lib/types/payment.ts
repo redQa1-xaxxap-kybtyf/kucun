@@ -78,8 +78,9 @@ export interface AccountsReceivable {
   customerName: string;
   totalAmount: number;
   paidAmount: number;
+  pendingAmount?: number;
   remainingAmount: number;
-  paymentStatus: 'unpaid' | 'partial' | 'paid';
+  paymentStatus: 'unpaid' | 'partial' | 'pending' | 'paid';
   orderDate: Date | string; // 支持Date对象和ISO字符串
   dueDate?: Date | string;
   lastPaymentDate?: Date | string;

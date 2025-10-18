@@ -159,7 +159,10 @@ export function PaymentCreationDialog({
 
       // 刷新应收账款列表
       queryClient.invalidateQueries({
-        queryKey: queryKeys.finance.receivablesList({}),
+        queryKey: queryKeys.finance.receivables(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.payments.all,
       });
 
       // 关闭对话框并重置表单

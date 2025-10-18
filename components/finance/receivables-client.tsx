@@ -259,6 +259,7 @@ export function ReceivablesClient({
                 options: [
                   { label: '未收款', value: 'unpaid' },
                   { label: '部分收款', value: 'partial' },
+                  { label: '待确认', value: 'pending' },
                   { label: '已收款', value: 'paid' },
                 ],
                 width: 'w-[140px]',
@@ -346,14 +347,27 @@ export function ReceivablesClient({
                         >
                           查看详情
                         </Button>
-                        {receivable.remainingAmount > 0 && (
+                        {receivable.paymentStatus === 'pending' ? (
                           <Button
                             size="sm"
-                            className="bg-gradient-to-r from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary))]/90 shadow-md transition-all hover:scale-105 hover:shadow-lg"
-                            onClick={() => handleOpenPaymentDialog(receivable)}
+                            variant="outline"
+                            disabled
+                            className="cursor-not-allowed border-[hsl(var(--color-border-primary))] bg-white text-[hsl(var(--color-warning))]"
                           >
-                            收款
+                            待确认
                           </Button>
+                        ) : (
+                          receivable.remainingAmount > 0 && (
+                            <Button
+                              size="sm"
+                              className="bg-gradient-to-r from-[hsl(var(--color-primary))] to-[hsl(var(--color-primary))]/90 shadow-md transition-all hover:scale-105 hover:shadow-lg"
+                              onClick={() =>
+                                handleOpenPaymentDialog(receivable)
+                              }
+                            >
+                              收款
+                            </Button>
+                          )
                         )}
                       </div>
                     </div>

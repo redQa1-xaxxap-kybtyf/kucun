@@ -14,7 +14,7 @@ import { prisma } from '@/lib/db';
 
 // ==================== 类型定义 ====================
 
-export type PaymentStatus = 'unpaid' | 'partial' | 'paid';
+export type PaymentStatus = 'unpaid' | 'partial' | 'pending' | 'paid';
 
 export interface ReceivableItem {
   id: string;
@@ -25,8 +25,9 @@ export interface ReceivableItem {
   orderDate: string;
   totalAmount: number;
   paidAmount: number;
+  pendingAmount: number;
   remainingAmount: number;
-  paymentStatus: 'unpaid' | 'partial' | 'paid';
+  paymentStatus: PaymentStatus;
   lastPaymentDate?: string;
 }
 
@@ -36,6 +37,7 @@ export interface ReceivableSummary {
   paidCount: number; // 已付清笔数
   unpaidCount: number; // 未付款笔数
   partialCount: number; // 部分付款笔数
+  pendingCount: number; // 待确认笔数
   collectionRate: number; // 当前月收款率
   collectionRateChange: number; // 较上月收款率变化(百分点)
 }
@@ -72,8 +74,16 @@ function calculatePaymentStatus(
   paidAmount: number,
   totalAmount: number,
   _orderDate: Date,
-  _paymentDeadlineDays = 30
-): 'unpaid' | 'partial' | 'paid' {
+  pendingAmount = 0
+): PaymentStatus {
+  if (pendingAmount > 0) {
+    return 'pending';
+  }
+
+  if (totalAmount <= 0) {
+    return 'paid';
+  }
+
   const paidRatio = paidAmount / totalAmount;
 
   if (paidRatio >= 0.9999) {
@@ -168,16 +178,32 @@ function transformToReceivable(order: {
   payments: Array<{
     paymentAmount: number;
     paymentDate: Date;
+    status: string;
   }>;
 }): ReceivableItem {
-  const paidAmount =
-    order.payments?.reduce((sum, p) => sum + p.paymentAmount, 0) || 0;
+  const confirmedPayments =
+    order.payments?.filter(payment => payment.status === 'confirmed') || [];
+  const pendingPayments =
+    order.payments?.filter(payment => payment.status === 'pending') || [];
 
-  const remainingAmount = Math.max(0, order.totalAmount - paidAmount);
+  const paidAmount =
+    confirmedPayments.reduce(
+      (sum, payment) => sum + payment.paymentAmount,
+      0
+    ) || 0;
+  const pendingAmount =
+    pendingPayments.reduce((sum, payment) => sum + payment.paymentAmount, 0) ||
+    0;
+
+  const remainingAmount = Math.max(
+    0,
+    order.totalAmount - paidAmount - pendingAmount
+  );
   const paymentStatus = calculatePaymentStatus(
     paidAmount,
     order.totalAmount,
-    order.createdAt
+    order.createdAt,
+    pendingAmount
   );
 
   const lastPayment = order.payments?.sort(
@@ -193,6 +219,7 @@ function transformToReceivable(order: {
     orderDate: order.createdAt.toISOString().split('T')[0],
     totalAmount: order.totalAmount,
     paidAmount,
+    pendingAmount,
     remainingAmount,
     paymentStatus,
     lastPaymentDate: lastPayment
@@ -227,6 +254,10 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
           acc.partialCount++;
           acc.receivableCount++;
           break;
+        case 'pending':
+          acc.pendingCount++;
+          acc.receivableCount++;
+          break;
       }
 
       const orderDate = safeParseDate(item.orderDate);
@@ -257,6 +288,7 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
       paidCount: 0,
       unpaidCount: 0,
       partialCount: 0,
+      pendingCount: 0,
       currentMonth: {
         totalAmount: 0,
         paidAmount: 0,
@@ -287,6 +319,7 @@ function calculateSummary(receivables: ReceivableItem[]): ReceivableSummary {
     paidCount: totals.paidCount,
     unpaidCount: totals.unpaidCount,
     partialCount: totals.partialCount,
+    pendingCount: totals.pendingCount,
     collectionRate: currentCollectionRate,
     collectionRateChange: currentCollectionRate - previousCollectionRate,
   };
@@ -348,10 +381,11 @@ export async function getReceivables(
         },
       },
       payments: {
-        where: { status: 'confirmed' },
+        where: { status: { in: ['confirmed', 'pending'] } },
         select: {
           paymentAmount: true,
           paymentDate: true,
+          status: true,
         },
         orderBy: { paymentDate: 'desc' },
       },
