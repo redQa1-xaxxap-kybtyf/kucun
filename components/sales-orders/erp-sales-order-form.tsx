@@ -48,6 +48,7 @@ import {
   salesOrderQueryKeys,
 } from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
+import type { Customer } from '@/lib/types/customer';
 import {
   TRANSFER_MODE_LABELS,
   type SalesOrderStatus,
@@ -94,6 +95,8 @@ const UNIT_MAPPING: Record<string, string> = {
   ml: '毫升',
 };
 
+type CustomersResponse = Awaited<ReturnType<typeof getCustomers>>;
+
 interface ERPSalesOrderFormProps {
   mode?: 'create' | 'edit';
   orderId?: string;
@@ -116,6 +119,21 @@ export function ERPSalesOrderForm({
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const customersQueryParams = React.useMemo(
+    () =>
+      ({
+        page: 1,
+        limit: 100,
+        sortBy: 'createdAt',
+        sortOrder: 'desc',
+      }) as const,
+    []
+  );
+  const customersQueryKey = React.useMemo(
+    () => customerQueryKeys.list(customersQueryParams),
+    [customersQueryParams]
+  );
 
   // 单位转换工具函数
   const convertQuantity = {
@@ -456,19 +474,8 @@ export function ERPSalesOrderForm({
 
   // 数据查询
   const { data: customersData, isLoading: customersLoading } = useQuery({
-    queryKey: customerQueryKeys.list({
-      page: 1,
-      limit: 100,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    }),
-    queryFn: () =>
-      getCustomers({
-        page: 1,
-        limit: 100,
-        sortBy: 'createdAt',
-        sortOrder: 'desc',
-      }),
+    queryKey: customersQueryKey,
+    queryFn: () => getCustomers(customersQueryParams),
   });
 
   const { data: productsData, isLoading: _productsLoading } = useQuery({
@@ -832,13 +839,66 @@ export function ERPSalesOrderForm({
   }, []);
 
   // 处理客户创建成功
-  const handleCustomerCreated = (customer: {
-    id: string;
-    name: string;
-    phone?: string;
-  }) => {
-    // 客户选择器会自动选择新创建的客户
-    // 这里可以添加额外的处理逻辑，比如显示成功提示
+  const handleCustomerCreated = (customer: Customer) => {
+    queryClient.setQueryData<CustomersResponse | undefined>(
+      customersQueryKey,
+      previous => {
+        if (!previous) {
+          return {
+            data: [customer],
+            pagination: {
+              page: customersQueryParams.page,
+              limit: customersQueryParams.limit,
+              total: 1,
+              totalPages: 1,
+            },
+          };
+        }
+
+        const existingIndex = previous.data.findIndex(
+          existing => existing.id === customer.id
+        );
+
+        const updatedData =
+          existingIndex >= 0
+            ? previous.data.map((item, index) =>
+                index === existingIndex ? customer : item
+              )
+            : [customer, ...previous.data].slice(
+                0,
+                previous.pagination?.limit ?? previous.data.length + 1
+              );
+
+        if (!previous.pagination) {
+          return {
+            ...previous,
+            data: updatedData,
+          };
+        }
+
+        const previousTotal =
+          typeof previous.pagination.total === 'number'
+            ? previous.pagination.total
+            : previous.data.length;
+        const newTotal = existingIndex >= 0 ? previousTotal : previousTotal + 1;
+
+        const updatedPagination = {
+          ...previous.pagination,
+          total: newTotal,
+          totalPages:
+            previous.pagination.limit && previous.pagination.limit > 0
+              ? Math.ceil(newTotal / previous.pagination.limit)
+              : previous.pagination.totalPages,
+        };
+
+        return {
+          ...previous,
+          data: updatedData,
+          pagination: updatedPagination,
+        };
+      }
+    );
+
     toast({
       title: '客户创建成功',
       description: `客户 "${customer.name}" 已创建并自动选择`,
@@ -1015,6 +1075,14 @@ export function ERPSalesOrderForm({
                           disabled={customersLoading}
                           isLoading={customersLoading}
                           onCustomerCreated={handleCustomerCreated}
+                          onRefreshCustomers={() => {
+                            queryClient.invalidateQueries({
+                              queryKey: customersQueryKey,
+                            });
+                            queryClient.refetchQueries({
+                              queryKey: customersQueryKey,
+                            });
+                          }}
                           className="h-10"
                         />
                       </FormControl>

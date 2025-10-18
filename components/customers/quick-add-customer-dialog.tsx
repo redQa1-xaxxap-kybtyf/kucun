@@ -34,13 +34,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { createCustomer, customerQueryKeys } from '@/lib/api/customers';
 import type { AddressData } from '@/lib/types/address';
+import type { Customer } from '@/lib/types/customer';
 import {
   customerCreateSchema as CreateCustomerSchema,
   type CustomerCreateFormData as CreateCustomerData,
 } from '@/lib/validations/customer';
 
 interface QuickAddCustomerDialogProps {
-  onCustomerCreated?: (customer: { id: string; name: string }) => void;
+  onCustomerCreated?: (customer: Customer) => void;
   trigger?: React.ReactNode;
 }
 
@@ -82,12 +83,10 @@ export function QuickAddCustomerDialog({
       });
 
       // 刷新客户列表
-      queryClient.invalidateQueries({ queryKey: customerQueryKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: customerQueryKeys.all });
 
       // 回调通知父组件
-      if (onCustomerCreated) {
-        onCustomerCreated({ id: data.id, name: data.name });
-      }
+      onCustomerCreated?.(data);
 
       // 重置表单并关闭对话框
       form.reset();

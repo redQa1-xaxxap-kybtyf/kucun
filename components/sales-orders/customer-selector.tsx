@@ -17,17 +17,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
+import type { Customer } from '@/lib/types/customer';
 import { cn } from '@/lib/utils';
+import {
+  chineseToPinyinInitialsUppercase,
+  chineseToPinyinUppercase,
+} from '@/lib/utils/pinyin';
 
 import { CustomerCreateDialog } from './customer-create-dialog';
-
-interface Customer {
-  id: string;
-  name: string;
-  phone?: string;
-  email?: string;
-  address?: string;
-}
 
 interface CustomerSelectorProps {
   customers: Customer[];
@@ -38,6 +35,7 @@ interface CustomerSelectorProps {
   className?: string;
   isLoading?: boolean;
   onCustomerCreated?: (customer: Customer) => void;
+  onRefreshCustomers?: () => void;
 }
 
 /**
@@ -53,26 +51,70 @@ export function CustomerSelector({
   className,
   isLoading = false,
   onCustomerCreated,
+  onRefreshCustomers,
 }: CustomerSelectorProps) {
   const [open, setOpen] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
   const [createDialogOpen, setCreateDialogOpen] = React.useState(false);
+  const wasOpenRef = React.useRef(false);
 
   const selectedCustomer = customers.find(customer => customer.id === value);
 
   // 过滤客户列表
   const filteredCustomers = React.useMemo(() => {
-    if (!searchValue) {
-      return customers;
+    const normalizedSearch = searchValue.trim().toLowerCase();
+
+    if (!normalizedSearch) {
+      return [];
     }
 
-    const search = searchValue.toLowerCase();
-    return customers.filter(
-      customer =>
-        customer.name.toLowerCase().includes(search) ||
-        (customer.phone && customer.phone.includes(search)) ||
-        (customer.email && customer.email.toLowerCase().includes(search))
-    );
+    const collapseSpaces = (value: string) => value.replace(/\s+/g, '');
+
+    return customers.filter(customer => {
+      const name = customer.name ?? '';
+      const nameLower = name.toLowerCase();
+
+      if (nameLower.includes(normalizedSearch)) {
+        return true;
+      }
+
+      if (customer.phone && customer.phone.includes(normalizedSearch)) {
+        return true;
+      }
+
+      if (
+        customer.email &&
+        customer.email.toLowerCase().includes(normalizedSearch)
+      ) {
+        return true;
+      }
+
+      if (
+        customer.address &&
+        customer.address.toLowerCase().includes(normalizedSearch)
+      ) {
+        return true;
+      }
+
+      const pinyinFull = collapseSpaces(
+        chineseToPinyinUppercase(name).toLowerCase()
+      );
+      if (pinyinFull && pinyinFull.includes(collapseSpaces(normalizedSearch))) {
+        return true;
+      }
+
+      const pinyinInitials = collapseSpaces(
+        chineseToPinyinInitialsUppercase(name).toLowerCase()
+      );
+      if (
+        pinyinInitials &&
+        pinyinInitials.includes(collapseSpaces(normalizedSearch))
+      ) {
+        return true;
+      }
+
+      return false;
+    });
   }, [customers, searchValue]);
 
   // 处理客户选择
@@ -89,13 +131,9 @@ export function CustomerSelector({
   };
 
   // 处理客户创建成功
-  const handleCustomerCreated = (customer: {
-    id: string;
-    name: string;
-    phone?: string;
-  }) => {
+  const handleCustomerCreated = (customer: Customer) => {
     // 通知父组件
-    onCustomerCreated?.(customer as Customer);
+    onCustomerCreated?.(customer);
 
     // 自动选择新创建的客户
     onValueChange?.(customer.id);
@@ -103,6 +141,13 @@ export function CustomerSelector({
     // 关闭创建对话框
     setCreateDialogOpen(false);
   };
+
+  React.useEffect(() => {
+    if (open && !wasOpenRef.current) {
+      onRefreshCustomers?.();
+    }
+    wasOpenRef.current = open;
+  }, [open, onRefreshCustomers]);
 
   return (
     <>
@@ -149,10 +194,25 @@ export function CustomerSelector({
               <CommandEmpty>
                 {isLoading ? (
                   '加载中...'
+                ) : searchValue.trim() ? (
+                  <div className="py-6 text-center">
+                    <div className="text-muted-foreground mb-3 text-sm">
+                      未找到相关客户，尝试输入其它关键词
+                    </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCreateCustomer}
+                      className="h-8"
+                    >
+                      <Plus className="mr-2 h-3 w-3" />
+                      新增客户
+                    </Button>
+                  </div>
                 ) : (
                   <div className="py-6 text-center">
                     <div className="text-muted-foreground mb-3 text-sm">
-                      未找到相关客户
+                      输入客户名称 / 手机号进行搜索，或直接创建新客户
                     </div>
                     <Button
                       variant="outline"
@@ -166,46 +226,48 @@ export function CustomerSelector({
                   </div>
                 )}
               </CommandEmpty>
-              <CommandGroup>
-                {filteredCustomers.map(customer => {
-                  const isSelected = value === customer.id;
+              {filteredCustomers.length > 0 && (
+                <CommandGroup>
+                  {filteredCustomers.map(customer => {
+                    const isSelected = value === customer.id;
 
-                  return (
-                    <CommandItem
-                      key={customer.id}
-                      value={`${customer.name} ${customer.phone || ''} ${customer.email || ''}`}
-                      onSelect={() => handleSelect(customer.id)}
-                      className="flex items-center gap-3 p-3"
-                    >
-                      <Check
-                        className={cn(
-                          'h-4 w-4',
-                          isSelected ? 'opacity-100' : 'opacity-0'
-                        )}
-                      />
+                    return (
+                      <CommandItem
+                        key={customer.id}
+                        value={`${customer.name} ${customer.phone || ''} ${customer.email || ''}`}
+                        onSelect={() => handleSelect(customer.id)}
+                        className="flex items-center gap-3 p-3"
+                      >
+                        <Check
+                          className={cn(
+                            'h-4 w-4',
+                            isSelected ? 'opacity-100' : 'opacity-0'
+                          )}
+                        />
 
-                      <div className="flex-1 space-y-1">
-                        {/* 客户名称 */}
-                        <div className="font-medium">{customer.name}</div>
+                        <div className="flex-1 space-y-1">
+                          {/* 客户名称 */}
+                          <div className="font-medium">{customer.name}</div>
 
-                        {/* 客户电话 */}
-                        {customer.phone && (
-                          <div className="text-muted-foreground text-xs">
-                            {customer.phone}
-                          </div>
-                        )}
+                          {/* 客户电话 */}
+                          {customer.phone && (
+                            <div className="text-muted-foreground text-xs">
+                              {customer.phone}
+                            </div>
+                          )}
 
-                        {/* 客户地址 */}
-                        {customer.address && (
-                          <div className="text-muted-foreground text-xs">
-                            {customer.address}
-                          </div>
-                        )}
-                      </div>
-                    </CommandItem>
-                  );
-                })}
-              </CommandGroup>
+                          {/* 客户地址 */}
+                          {customer.address && (
+                            <div className="text-muted-foreground text-xs">
+                              {customer.address}
+                            </div>
+                          )}
+                        </div>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              )}
             </CommandList>
           </Command>
         </PopoverContent>
