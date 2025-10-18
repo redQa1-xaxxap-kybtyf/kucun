@@ -143,6 +143,16 @@ async function fetchSalesOrderDetail(id: string): Promise<SalesOrderDetail> {
   });
 
   if (!response.ok) {
+    try {
+      const errorResult = await response.json();
+      if (errorResult?.error) {
+        throw new Error(errorResult.error);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        throw error;
+      }
+    }
     throw new Error('获取销售订单详情失败');
   }
 

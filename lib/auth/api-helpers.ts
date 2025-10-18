@@ -8,13 +8,13 @@
  * 3. 使用 withAuth() 包装 API 处理函数，自动处理认证和错误
  */
 
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 
-import type { AuthUser } from './context';
-import { getApiAuthContext } from './context';
-import type { Permission } from './permissions';
-import { can, requirePermission } from './permissions';
+import { ApiError } from '@/lib/api/errors';
+import { logger } from '@/lib/logger';
+
+import { getApiAuthContext, type AuthUser } from './context';
+import { can, requirePermission, type Permission } from './permissions';
 
 // ==================== 类型定义 ====================
 
@@ -230,6 +230,18 @@ export function withAuth(
         params: context?.params,
       });
     } catch (error) {
+      if (error instanceof ApiError) {
+        // 业务类错误：使用标准格式返回
+        return NextResponse.json(
+          {
+            success: false,
+            error: error.message,
+            errorId: error.errorId,
+            details: error.details,
+          },
+          { status: error.statusCode }
+        );
+      }
       // 认证错误
       if (error instanceof Error && error.message.includes('未授权')) {
         // 🚀 性能优化：401 错误是正常流程，不记录日志（避免控制台污染）
@@ -242,7 +254,7 @@ export function withAuth(
       }
 
       // 其他错误才记录详细日志
-      console.error('[API Auth] 请求处理失败:', error);
+      logger.error('api-auth', '请求处理失败', error);
 
       // 权限错误
       if (error instanceof Error && error.message.includes('权限不足')) {
