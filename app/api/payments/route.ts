@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import type { z } from 'zod';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { clearCacheAfterPayment } from '@/lib/cache/finance-cache';
@@ -12,6 +13,8 @@ import {
   createPaymentRecordSchema,
   paymentRecordQuerySchema,
 } from '@/lib/validations/payment';
+
+type CreatePaymentRecordInput = z.infer<typeof createPaymentRecordSchema>;
 
 /**
  * GET /api/payments - 获取收款记录列表
@@ -156,7 +159,7 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
  */
 export const POST = withAuth(async (request: NextRequest, { user }) => {
   const userId = user.id;
-  let data: any = null;
+  let requestData: CreatePaymentRecordInput | null = null;
 
   try {
     // 解析请求体
@@ -202,7 +205,8 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       );
     }
 
-    data = validationResult.data;
+    const data = validationResult.data;
+    requestData = data;
 
     // 根据收款类型执行不同的验证逻辑
     if (data.paymentType === 'order_payment') {
@@ -430,7 +434,7 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
   } catch (error) {
     logger.error('payments', '创建收款记录失败', error, {
       userId,
-      salesOrderId: data?.salesOrderId,
+      salesOrderId: requestData?.salesOrderId,
     });
     return NextResponse.json(
       { success: false, error: '创建收款记录失败' },

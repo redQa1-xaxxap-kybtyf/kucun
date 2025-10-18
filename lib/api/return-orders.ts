@@ -93,7 +93,17 @@ export async function createReturnOrder(
     // 如果有详细的验证错误，追加到错误消息中
     if (errorData.details && Array.isArray(errorData.details)) {
       const detailsMessage = errorData.details
-        .map((d: any) => d.message || d)
+        .map((detail: unknown) => {
+          if (
+            detail &&
+            typeof detail === 'object' &&
+            'message' in detail &&
+            typeof (detail as { message?: unknown }).message === 'string'
+          ) {
+            return (detail as { message: string }).message;
+          }
+          return String(detail);
+        })
         .join(', ');
       throw new Error(`${errorMessage}: ${detailsMessage}`);
     }

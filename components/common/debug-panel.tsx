@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import { Bug, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
+
 import { Button } from '@/components/ui/button';
 
 interface DebugLog {
   timestamp: string;
   type: 'log' | 'error' | 'warn' | 'info';
   message: string;
-  data?: any;
+  data?: ReadonlyArray<unknown>;
 }
 
 /**
@@ -32,10 +33,7 @@ export function DebugPanel() {
     const originalInfo = console.info;
 
     // 添加日志的辅助函数
-    const addLog = (
-      type: DebugLog['type'],
-      args: any[]
-    ) => {
+    const addLog = (type: DebugLog['type'], args: ReadonlyArray<unknown>) => {
       const timestamp = new Date().toLocaleTimeString('zh-CN', {
         hour: '2-digit',
         minute: '2-digit',
@@ -45,7 +43,7 @@ export function DebugPanel() {
 
       const message = args
         .map(arg => {
-          if (typeof arg === 'object') {
+          if (typeof arg === 'object' && arg !== null) {
             try {
               return JSON.stringify(arg, null, 2);
             } catch {
@@ -63,23 +61,27 @@ export function DebugPanel() {
     };
 
     // 拦截控制台方法
-    console.log = (...args: any[]) => {
-      originalLog.apply(console, args);
+    console.log = (...args: unknown[]) => {
+      const typedArgs = args as Parameters<typeof console.log>;
+      originalLog(...typedArgs);
       addLog('log', args);
     };
 
-    console.error = (...args: any[]) => {
-      originalError.apply(console, args);
+    console.error = (...args: unknown[]) => {
+      const typedArgs = args as Parameters<typeof console.error>;
+      originalError(...typedArgs);
       addLog('error', args);
     };
 
-    console.warn = (...args: any[]) => {
-      originalWarn.apply(console, args);
+    console.warn = (...args: unknown[]) => {
+      const typedArgs = args as Parameters<typeof console.warn>;
+      originalWarn(...typedArgs);
       addLog('warn', args);
     };
 
-    console.info = (...args: any[]) => {
-      originalInfo.apply(console, args);
+    console.info = (...args: unknown[]) => {
+      const typedArgs = args as Parameters<typeof console.info>;
+      originalInfo(...typedArgs);
       addLog('info', args);
     };
 

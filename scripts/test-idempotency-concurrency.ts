@@ -103,8 +103,9 @@ async function testFailureRetry() {
         throw new Error('模拟操作失败');
       }
     );
-  } catch (error: any) {
-    console.log(`  第一次请求失败（预期）: ${error.message}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.log(`  第一次请求失败（预期）: ${message}`);
   }
 
   // 检查状态
@@ -236,12 +237,13 @@ async function testTimeoutProtection() {
     await timeoutPromise;
     console.log('  ❌ 未触发超时（预期应该超时）');
     return false;
-  } catch (error: any) {
-    if (error.message.includes('操作超时')) {
-      console.log(`  ✅ 正确触发超时: ${error.message}`);
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes('操作超时')) {
+      console.log(`  ✅ 正确触发超时: ${message}`);
       return true;
     } else {
-      console.log(`  ❌ 错误类型不对: ${error.message}`);
+      console.log(`  ❌ 错误类型不对: ${message}`);
       return false;
     }
   }

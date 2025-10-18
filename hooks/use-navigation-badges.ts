@@ -27,7 +27,7 @@ export function useNavigationBadges() {
     isLoading: false,
     error: null,
     refetch: () => Promise.resolve(),
-    addBadgesToNavItems: (navItems: any[]) => navItems,
+    addBadgesToNavItems: <T>(navItems: T[]) => navItems,
     getBadgeForNavItem: () => undefined,
     getTotalBadgeCount: () => 0,
     getUrgentBadgeCount: () => 0,
