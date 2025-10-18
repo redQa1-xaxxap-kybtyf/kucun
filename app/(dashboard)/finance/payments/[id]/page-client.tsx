@@ -25,6 +25,8 @@ interface PaymentRecord {
   id: string;
   paymentNumber: string;
   paymentAmount: number;
+  actualPaymentAmount: number;
+  roundingAmount: number;
   paymentMethod: string;
   paymentDate: string;
   status: string;
@@ -232,10 +234,32 @@ export function PaymentDetailClient({
 
                 <div className="grid grid-cols-3 gap-6">
                   <div>
-                    <p className="mb-1 text-xs text-gray-500">收款金额</p>
+                    <p className="mb-1 text-xs text-gray-500">实际收款金额</p>
                     <p className="text-3xl font-bold text-green-600">
-                      {formatCurrency(payment.paymentAmount)}
+                      {formatCurrency(payment.actualPaymentAmount)}
                     </p>
+                    <div className="mt-2 space-y-1 text-xs text-gray-500">
+                      <div className="flex items-center justify-between">
+                        <span>记账金额</span>
+                        <span className="font-medium text-gray-700">
+                          {formatCurrency(payment.paymentAmount)}
+                        </span>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span>抹零金额</span>
+                        <span
+                          className={`font-medium ${
+                            payment.roundingAmount > 0
+                              ? 'text-orange-600'
+                              : payment.roundingAmount < 0
+                                ? 'text-blue-600'
+                                : 'text-gray-700'
+                          }`}
+                        >
+                          {formatCurrency(payment.roundingAmount)}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                   <div>
                     <p className="mb-1 text-xs text-gray-500">收款方式</p>

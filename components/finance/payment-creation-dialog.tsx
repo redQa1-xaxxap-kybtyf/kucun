@@ -47,18 +47,37 @@ import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency } from '@/lib/utils';
 
 // 收款记录表单验证Schema
-const paymentSchema = z.object({
-  paymentType: z.literal('order_payment').default('order_payment'),
-  salesOrderId: z.string().min(1, { message: '销售订单ID不能为空' }),
-  customerId: z.string().min(1, { message: '客户ID不能为空' }),
-  paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other'], {
-    message: '请选择收款方式',
-  }),
-  paymentAmount: z.number().min(0.01, { message: '收款金额必须大于0' }),
-  paymentDate: z.string().min(1, { message: '请选择收款日期' }),
-  bankInfo: z.string().optional(),
-  remarks: z.string().optional(),
-});
+const paymentSchema = z
+  .object({
+    paymentType: z.literal('order_payment').default('order_payment'),
+    salesOrderId: z.string().min(1, { message: '销售订单ID不能为空' }),
+    customerId: z.string().min(1, { message: '客户ID不能为空' }),
+    paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other'], {
+      message: '请选择收款方式',
+    }),
+    paymentAmount: z.number().min(0.01, { message: '收款金额必须大于0' }),
+    actualPaymentAmount: z.number().min(0, { message: '实际收款金额不能为负' }),
+    roundingAmount: z
+      .number()
+      .min(-9999999, { message: '抹零金额不能低于 -9,999,999' })
+      .max(9999999, { message: '抹零金额不能超过 9,999,999' }),
+    paymentDate: z.string().min(1, { message: '请选择收款日期' }),
+    bankInfo: z.string().optional(),
+    remarks: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    const expected = Number(
+      (value.actualPaymentAmount + value.roundingAmount).toFixed(2)
+    );
+    const recorded = Number(value.paymentAmount.toFixed(2));
+    if (Math.abs(expected - recorded) >= 0.01) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['actualPaymentAmount'],
+        message: '收款金额应等于实际收款金额与抹零金额之和',
+      });
+    }
+  });
 
 type PaymentFormData = z.infer<typeof paymentSchema>;
 
@@ -108,6 +127,8 @@ export function PaymentCreationDialog({
       customerId: '',
       paymentMethod: 'cash',
       paymentAmount: 0,
+      actualPaymentAmount: 0,
+      roundingAmount: 0,
       paymentDate: format(new Date(), 'yyyy-MM-dd'),
       bankInfo: '',
       remarks: '',
@@ -115,6 +136,8 @@ export function PaymentCreationDialog({
   });
 
   const watchedPaymentMethod = form.watch('paymentMethod');
+  const watchedPaymentAmount = form.watch('paymentAmount');
+  const watchedActualAmount = form.watch('actualPaymentAmount');
 
   // 当订单信息变化时，更新表单默认值
   useEffect(() => {
@@ -125,12 +148,32 @@ export function PaymentCreationDialog({
         customerId: orderInfo.customerId,
         paymentMethod: 'cash',
         paymentAmount: orderInfo.remainingAmount,
+        actualPaymentAmount: orderInfo.remainingAmount,
+        roundingAmount: 0,
         paymentDate: format(new Date(), 'yyyy-MM-dd'),
         bankInfo: '',
         remarks: '',
       });
     }
   }, [orderInfo, form]);
+
+  useEffect(() => {
+    if (
+      typeof watchedPaymentAmount === 'number' &&
+      !Number.isNaN(watchedPaymentAmount) &&
+      typeof watchedActualAmount === 'number' &&
+      !Number.isNaN(watchedActualAmount)
+    ) {
+      const rounding = Number(
+        (watchedPaymentAmount - watchedActualAmount).toFixed(2)
+      );
+      if (rounding !== form.getValues('roundingAmount')) {
+        form.setValue('roundingAmount', rounding, { shouldDirty: true });
+      }
+    } else if (form.getValues('roundingAmount') !== 0) {
+      form.setValue('roundingAmount', 0, { shouldDirty: true });
+    }
+  }, [watchedPaymentAmount, watchedActualAmount, form]);
 
   // 创建收款记录mutation
   const createPaymentMutation = useMutation({
@@ -303,10 +346,74 @@ export function PaymentCreationDialog({
                       }
                     />
                   </FormControl>
-                  <FormDescription>实际收到的金额</FormDescription>
+                  <FormDescription>
+                    记入订单的金额，将用于冲抵应收款
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
+            />
+
+            <FormField
+              control={form.control}
+              name="actualPaymentAmount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>实际收款金额 *</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      value={field.value}
+                      onChange={e =>
+                        field.onChange(
+                          e.target.value === ''
+                            ? 0
+                            : parseFloat(e.target.value) || 0
+                        )
+                      }
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    与客户实际到账金额，可低于收款金额以实现抹零
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="roundingAmount"
+              render={({ field }) => {
+                const displayValue =
+                  typeof field.value === 'number' && !Number.isNaN(field.value)
+                    ? field.value.toFixed(2)
+                    : '0.00';
+
+                return (
+                  <FormItem>
+                    <FormLabel>抹零金额</FormLabel>
+                    <FormControl>
+                      <Input
+                        type="number"
+                        step="0.01"
+                        readOnly
+                        name={field.name}
+                        ref={field.ref}
+                        value={displayValue}
+                        className="bg-muted"
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      系统根据差额自动计算，正值表示抹零减免，负值表示多收
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             {/* 收款日期 */}

@@ -6,6 +6,7 @@ import { clearCacheAfterPayment } from '@/lib/cache/finance-cache';
 import { prisma } from '@/lib/db';
 import { publishFinanceEvent } from '@/lib/events';
 import { logger } from '@/lib/logger';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 
 function appendRemark(existing: string | null, note?: string): string | null {
   if (!note?.trim()) {
@@ -145,6 +146,40 @@ export const POST = withAuth(
       });
 
       await clearCacheAfterPayment();
+
+      if (
+        updated.customerId &&
+        Number(updated.actualPaymentAmount) > 0 &&
+        updated.status === 'confirmed'
+      ) {
+        try {
+          await recordPartnerTransaction({
+            partnerId: updated.customerId,
+            partnerRole: 'customer',
+            entityType: 'customer',
+            transactionType: 'payment_in',
+            amount: Number(updated.actualPaymentAmount),
+            referenceId: updated.id,
+            referenceNumber: updated.paymentNumber,
+            description: `收款 ${updated.paymentNumber} 确认到账`,
+            occurredAt: updated.paymentDate ?? new Date(),
+            metadata: {
+              paymentMethod: updated.paymentMethod,
+              paymentType: updated.paymentType,
+              salesOrderId: updated.salesOrderId ?? undefined,
+              paymentAmount: updated.paymentAmount,
+              actualPaymentAmount: updated.actualPaymentAmount,
+              roundingAmount: updated.roundingAmount,
+              triggeredBy: 'payment:confirm',
+            },
+          });
+        } catch (error) {
+          logger.warn('payments', '确认收款后同步往来账失败', error, {
+            paymentId: updated.id,
+            paymentNumber: updated.paymentNumber,
+          });
+        }
+      }
 
       await publishFinanceEvent({
         action: 'confirmed',

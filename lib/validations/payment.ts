@@ -45,6 +45,16 @@ export const createPaymentRecordSchema = z
       .positive({ error: '收款金额必须大于0' })
       .max(999999999, { error: '收款金额不能超过999,999,999' }),
 
+    actualPaymentAmount: z
+      .number({ message: '实际收款金额必须是数字' })
+      .min(0, { error: '实际收款金额不能为负' })
+      .max(999999999, { error: '实际收款金额不能超过999,999,999' }),
+
+    roundingAmount: z
+      .number({ message: '抹零金额必须是数字' })
+      .min(-9999999, { error: '抹零金额不能低于-9,999,999' })
+      .max(9999999, { error: '抹零金额不能超过9,999,999' }),
+
     paymentDate: z
       .string({ message: '收款日期必须是字符串' })
       .min(1, { error: '请选择收款日期' })
@@ -116,6 +126,19 @@ export const createPaymentRecordSchema = z
       message: '银行转账时必须填写银行信息',
       path: ['bankInfo'],
     }
+  )
+  .refine(
+    data => {
+      const expected = Number(
+        (data.actualPaymentAmount + data.roundingAmount).toFixed(2)
+      );
+      const actual = Number(data.paymentAmount.toFixed(2));
+      return Math.abs(expected - actual) < 0.01;
+    },
+    {
+      message: '收款金额应等于实际收款金额与抹零金额之和',
+      path: ['actualPaymentAmount'],
+    }
   );
 
 // 收款记录更新验证规则
@@ -132,6 +155,18 @@ export const updatePaymentRecordSchema = z
       })
       .positive({ error: '收款金额必须大于0' })
       .max(999999999, { error: '收款金额不能超过999,999,999' })
+      .optional(),
+
+    actualPaymentAmount: z
+      .number({ message: '实际收款金额必须是数字' })
+      .min(0, { error: '实际收款金额不能为负' })
+      .max(999999999, { error: '实际收款金额不能超过999,999,999' })
+      .optional(),
+
+    roundingAmount: z
+      .number({ message: '抹零金额必须是数字' })
+      .min(-9999999, { error: '抹零金额不能低于-9,999,999' })
+      .max(9999999, { error: '抹零金额不能超过9,999,999' })
       .optional(),
 
     paymentDate: z
@@ -166,7 +201,35 @@ export const updatePaymentRecordSchema = z
       message: '银行转账时必须填写银行信息',
       path: ['bankInfo'],
     }
-  );
+  )
+  .superRefine((data, ctx) => {
+    const hasActual = data.actualPaymentAmount !== undefined;
+    const hasRounding = data.roundingAmount !== undefined;
+
+    if (hasActual || hasRounding) {
+      if (data.paymentAmount === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '更新实际收款金额或抹零金额时必须同时提供收款金额',
+          path: ['paymentAmount'],
+        });
+        return;
+      }
+
+      const actual = data.actualPaymentAmount ?? 0;
+      const rounding = data.roundingAmount ?? 0;
+      const expected = Number((actual + rounding).toFixed(2));
+      const recorded = Number(data.paymentAmount.toFixed(2));
+
+      if (Math.abs(expected - recorded) >= 0.01) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '收款金额应等于实际收款金额与抹零金额之和',
+          path: ['actualPaymentAmount'],
+        });
+      }
+    }
+  });
 
 // 收款记录查询验证规则
 export const paymentRecordQuerySchema = z
@@ -423,6 +486,20 @@ export const PAYMENT_FORM_FIELDS = {
     label: '收款金额',
     placeholder: '请输入收款金额',
     required: true,
+    type: 'number',
+  },
+  actualPaymentAmount: {
+    name: 'actualPaymentAmount',
+    label: '实际收款金额',
+    placeholder: '请输入实际到账金额',
+    required: true,
+    type: 'number',
+  },
+  roundingAmount: {
+    name: 'roundingAmount',
+    label: '抹零金额',
+    placeholder: '请输入抹零金额',
+    required: false,
     type: 'number',
   },
   paymentDate: {

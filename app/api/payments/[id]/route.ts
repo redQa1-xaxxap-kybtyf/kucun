@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
+import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { updatePaymentRecordSchema } from '@/lib/validations/payment';
-import { resolveParams } from '@/lib/api/middleware';
 
 /**
  * GET /api/payments/[id] - 获取单个收款记录详情
@@ -108,7 +108,34 @@ export const PUT = withAuth(
 
       // 解析请求体
       const body = await request.json();
-      const validationResult = updatePaymentRecordSchema.safeParse(body);
+      const parseNumber = (value: unknown): number => {
+        if (typeof value === 'number' && Number.isFinite(value)) {
+          return value;
+        }
+        if (typeof value === 'string' && value.trim() !== '') {
+          const parsed = Number(value);
+          if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+            return parsed;
+          }
+        }
+        return Number.NaN;
+      };
+
+      const normalizedBody = {
+        ...body,
+        ...(body?.paymentAmount !== undefined && {
+          paymentAmount: parseNumber(body.paymentAmount),
+        }),
+        ...(body?.actualPaymentAmount !== undefined && {
+          actualPaymentAmount: parseNumber(body.actualPaymentAmount),
+        }),
+        ...(body?.roundingAmount !== undefined && {
+          roundingAmount: parseNumber(body.roundingAmount),
+        }),
+      };
+
+      const validationResult =
+        updatePaymentRecordSchema.safeParse(normalizedBody);
 
       if (!validationResult.success) {
         return NextResponse.json(

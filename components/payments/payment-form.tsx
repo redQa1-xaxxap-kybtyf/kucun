@@ -18,6 +18,7 @@ import {
 import * as React from 'react';
 import { useForm } from 'react-hook-form';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -50,7 +51,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { ContentLoading } from '@/components/common/loading';
 import { Textarea } from '@/components/ui/textarea';
 import { paymentUtils } from '@/lib/api/payments';
 import {
@@ -106,6 +106,16 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
         ? {
             paymentMethod: initialData.paymentMethod,
             paymentAmount: initialData.paymentAmount,
+            actualPaymentAmount:
+              'actualPaymentAmount' in initialData &&
+              typeof initialData.actualPaymentAmount === 'number'
+                ? initialData.actualPaymentAmount
+                : initialData.paymentAmount,
+            roundingAmount:
+              'roundingAmount' in initialData &&
+              typeof initialData.roundingAmount === 'number'
+                ? initialData.roundingAmount
+                : 0,
             paymentDate:
               typeof initialData.paymentDate === 'string'
                 ? initialData.paymentDate.split('T')[0]
@@ -120,6 +130,8 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
             customerId: customerId || '',
             paymentMethod: 'cash' as PaymentMethod,
             paymentAmount: 0,
+            actualPaymentAmount: 0,
+            roundingAmount: 0,
             paymentDate: format(new Date(), 'yyyy-MM-dd'),
             remarks: '',
             receiptNumber: '',
@@ -129,6 +141,26 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
 
     // 监听收款方式变化
     const watchedPaymentMethod = form.watch('paymentMethod');
+    const watchedPaymentAmount = form.watch('paymentAmount');
+    const watchedActualAmount = form.watch('actualPaymentAmount');
+
+    React.useEffect(() => {
+      if (
+        typeof watchedPaymentAmount === 'number' &&
+        !Number.isNaN(watchedPaymentAmount) &&
+        typeof watchedActualAmount === 'number' &&
+        !Number.isNaN(watchedActualAmount)
+      ) {
+        const rounding = Number(
+          (watchedPaymentAmount - watchedActualAmount).toFixed(2)
+        );
+        if (rounding !== form.getValues('roundingAmount')) {
+          form.setValue('roundingAmount', rounding, { shouldDirty: true });
+        }
+      } else if (form.getValues('roundingAmount') !== 0) {
+        form.setValue('roundingAmount', 0, { shouldDirty: true });
+      }
+    }, [form, watchedActualAmount, watchedPaymentAmount]);
 
     // 处理表单提交
     const handleSubmit = async (
@@ -329,6 +361,85 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+
+                {/* 实际收款金额 */}
+                <FormField
+                  control={form.control}
+                  name="actualPaymentAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {PAYMENT_FORM_FIELDS.actualPaymentAmount.label}
+                      </FormLabel>
+                      <FormControl>
+                        <div className="relative">
+                          <DollarSign className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
+                          <Input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder={
+                              PAYMENT_FORM_FIELDS.actualPaymentAmount
+                                .placeholder
+                            }
+                            className="pl-10"
+                            value={field.value === undefined ? '' : field.value}
+                            onChange={e =>
+                              field.onChange(
+                                e.target.value === ''
+                                  ? undefined
+                                  : parseFloat(e.target.value) || 0
+                              )
+                            }
+                          />
+                        </div>
+                      </FormControl>
+                      <FormDescription>
+                        实际到账金额，可低于收款金额以记录抹零
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {/* 抹零金额 */}
+                <FormField
+                  control={form.control}
+                  name="roundingAmount"
+                  render={({ field }) => {
+                    const displayValue =
+                      typeof field.value === 'number' &&
+                      !Number.isNaN(field.value)
+                        ? field.value.toFixed(2)
+                        : '0.00';
+
+                    return (
+                      <FormItem>
+                        <FormLabel>
+                          {PAYMENT_FORM_FIELDS.roundingAmount.label}
+                        </FormLabel>
+                        <FormControl>
+                          <div className="relative">
+                            <Input
+                              type="number"
+                              step="0.01"
+                              readOnly
+                              name={field.name}
+                              ref={field.ref}
+                              value={displayValue}
+                              className="bg-muted pl-10"
+                            />
+                            <DollarSign className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
+                          </div>
+                        </FormControl>
+                        <FormDescription>
+                          系统自动计算的差额，正值表示抹零减免，负值表示多收
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 {/* 收款日期 */}

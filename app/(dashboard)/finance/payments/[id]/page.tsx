@@ -31,6 +31,8 @@ interface PaymentRecord {
   id: string;
   paymentNumber: string;
   paymentAmount: number;
+  actualPaymentAmount: number;
+  roundingAmount: number;
   paymentMethod: string;
   paymentDate: string;
   status: string;

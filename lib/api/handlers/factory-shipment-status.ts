@@ -188,6 +188,8 @@ export async function updateFactoryShipmentStatus(
               paymentType: 'order_payment',
               paymentMethod: 'other',
               paymentAmount: outstandingAmount,
+              actualPaymentAmount: outstandingAmount,
+              roundingAmount: 0,
               paymentDate: data.deliveryDate ?? new Date(),
               status: 'pending',
               remarks: '系统自动生成应收（厂家直发）',

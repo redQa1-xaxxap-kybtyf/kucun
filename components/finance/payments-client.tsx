@@ -34,6 +34,8 @@ interface PaymentRecord {
   id: string;
   paymentNumber: string;
   paymentAmount: number;
+  actualPaymentAmount: number;
+  roundingAmount: number;
   paymentMethod: string;
   paymentDate: string;
   status: PaymentStatus;
@@ -559,13 +561,27 @@ export function PaymentsClient({
                         <div className="flex flex-col items-end justify-between">
                           <div className="mb-3 text-right">
                             <div className="mb-1 text-xs text-[hsl(var(--color-text-tertiary))]">
-                              本次收款
+                              实际收款
                             </div>
                             <div className="text-2xl font-bold text-[hsl(var(--color-success))]">
-                              {formatCurrency(payment.paymentAmount)}
+                              {formatCurrency(payment.actualPaymentAmount)}
                             </div>
-                            <div className="mt-1 text-[10px] text-[hsl(var(--color-text-tertiary))]">
-                              {paymentStatusLabel}
+                            <div className="mt-1 flex flex-col items-end gap-0.5 text-[10px] text-[hsl(var(--color-text-tertiary))]">
+                              <span>{paymentStatusLabel}</span>
+                              <span>
+                                记账金额 {formatCurrency(payment.paymentAmount)}
+                              </span>
+                              <span
+                                className={
+                                  payment.roundingAmount > 0
+                                    ? 'text-orange-600'
+                                    : payment.roundingAmount < 0
+                                      ? 'text-blue-600'
+                                      : undefined
+                                }
+                              >
+                                抹零 {formatCurrency(payment.roundingAmount)}
+                              </span>
                             </div>
                           </div>
                           <div className="flex gap-2">

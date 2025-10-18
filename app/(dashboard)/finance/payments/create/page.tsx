@@ -48,20 +48,39 @@ import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency } from '@/lib/utils';
 
 // 创建收款记录表单Schema
-const createPaymentSchema = z.object({
-  salesOrderId: z.string().min(1, { error: '请选择销售订单' }),
-  customerId: z.string().min(1, { error: '请选择客户' }),
-  paymentMethod: z.enum(
-    ['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'],
-    {
-      message: '请选择收款方式',
+const createPaymentSchema = z
+  .object({
+    salesOrderId: z.string().min(1, { error: '请选择销售订单' }),
+    customerId: z.string().min(1, { error: '请选择客户' }),
+    paymentMethod: z.enum(
+      ['cash', 'bank_transfer', 'alipay', 'wechat', 'check', 'other'],
+      {
+        message: '请选择收款方式',
+      }
+    ),
+    paymentAmount: z.number().min(0.01, { error: '收款金额必须大于0' }),
+    actualPaymentAmount: z.number().min(0, { error: '实际收款金额不能为负' }),
+    roundingAmount: z
+      .number()
+      .min(-9999999, { error: '抹零金额不能低于 -9,999,999' })
+      .max(9999999, { error: '抹零金额不能超过 9,999,999' }),
+    paymentDate: z.string().min(1, { error: '请选择收款日期' }),
+    bankInfo: z.string().optional(),
+    remarks: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    const expected = Number(
+      (value.actualPaymentAmount + value.roundingAmount).toFixed(2)
+    );
+    const recorded = Number(value.paymentAmount.toFixed(2));
+    if (Math.abs(expected - recorded) >= 0.01) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['actualPaymentAmount'],
+        message: '收款金额应等于实际收款金额与抹零金额之和',
+      });
     }
-  ),
-  paymentAmount: z.number().min(0.01, { error: '收款金额必须大于0' }),
-  paymentDate: z.string().min(1, { error: '请选择收款日期' }),
-  bankInfo: z.string().optional(),
-  remarks: z.string().optional(),
-});
+  });
 
 type CreatePaymentFormData = z.infer<typeof createPaymentSchema>;
 
@@ -98,6 +117,8 @@ export default function CreatePaymentPage() {
       customerId: '',
       paymentMethod: 'cash',
       paymentAmount: 0,
+      actualPaymentAmount: 0,
+      roundingAmount: 0,
       paymentDate: format(new Date(), 'yyyy-MM-dd'),
       bankInfo: '',
       remarks: '',
@@ -107,6 +128,8 @@ export default function CreatePaymentPage() {
   // 监听表单字段变化
   const watchedOrderId = form.watch('salesOrderId');
   const watchedPaymentMethod = form.watch('paymentMethod');
+  const watchedPaymentAmount = form.watch('paymentAmount');
+  const watchedActualAmount = form.watch('actualPaymentAmount');
 
   // 获取销售订单信息
   const { data: orderData } = useQuery({
@@ -141,6 +164,24 @@ export default function CreatePaymentPage() {
   });
 
   const availableOrders: SalesOrder[] = ordersData?.data?.orders || [];
+
+  useEffect(() => {
+    if (
+      typeof watchedPaymentAmount === 'number' &&
+      !Number.isNaN(watchedPaymentAmount) &&
+      typeof watchedActualAmount === 'number' &&
+      !Number.isNaN(watchedActualAmount)
+    ) {
+      const rounding = Number(
+        (watchedPaymentAmount - watchedActualAmount).toFixed(2)
+      );
+      if (rounding !== form.getValues('roundingAmount')) {
+        form.setValue('roundingAmount', rounding, { shouldDirty: true });
+      }
+    } else if (form.getValues('roundingAmount') !== 0) {
+      form.setValue('roundingAmount', 0, { shouldDirty: true });
+    }
+  }, [watchedPaymentAmount, watchedActualAmount, form]);
 
   // 创建收款记录
   const createMutation = useMutation({
@@ -182,6 +223,8 @@ export default function CreatePaymentPage() {
     if (orderId && salesOrder) {
       form.setValue('customerId', salesOrder.customer.id);
       form.setValue('paymentAmount', salesOrder.remainingAmount);
+      form.setValue('actualPaymentAmount', salesOrder.remainingAmount);
+      form.setValue('roundingAmount', 0);
     }
   }, [orderId, salesOrder, form]);
 
@@ -191,6 +234,8 @@ export default function CreatePaymentPage() {
     if (order) {
       form.setValue('customerId', order.customer.id);
       form.setValue('paymentAmount', order.remainingAmount);
+      form.setValue('actualPaymentAmount', order.remainingAmount);
+      form.setValue('roundingAmount', 0);
     }
   };
 
@@ -359,10 +404,77 @@ export default function CreatePaymentPage() {
                               }
                             />
                           </FormControl>
-                          <FormDescription>实际收到的金额</FormDescription>
+                          <FormDescription>
+                            记入订单的金额，将用于冲抵应收款
+                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
+                    />
+
+                    {/* 实际收款金额 */}
+                    <FormField
+                      control={form.control}
+                      name="actualPaymentAmount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>实际收款金额 *</FormLabel>
+                          <FormControl>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              placeholder="0.00"
+                              value={field.value}
+                              onChange={e =>
+                                field.onChange(
+                                  e.target.value === ''
+                                    ? 0
+                                    : parseFloat(e.target.value) || 0
+                                )
+                              }
+                            />
+                          </FormControl>
+                          <FormDescription>
+                            与客户实际到账的金额，可小于收款金额以实现抹零
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+
+                    {/* 抹零金额 */}
+                    <FormField
+                      control={form.control}
+                      name="roundingAmount"
+                      render={({ field }) => {
+                        const displayValue =
+                          typeof field.value === 'number' &&
+                          !Number.isNaN(field.value)
+                            ? field.value.toFixed(2)
+                            : '0.00';
+
+                        return (
+                          <FormItem>
+                            <FormLabel>抹零金额</FormLabel>
+                            <FormControl>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                readOnly
+                                name={field.name}
+                                ref={field.ref}
+                                value={displayValue}
+                                className="bg-muted"
+                              />
+                            </FormControl>
+                            <FormDescription>
+                              自动计算的差额，正值表示抹零减免，负值表示多收
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        );
+                      }}
                     />
 
                     {/* 收款日期 */}
@@ -533,15 +645,15 @@ export default function CreatePaymentPage() {
               </CardHeader>
               <CardContent className="space-y-3 pt-6 text-sm">
                 <div className="flex items-start gap-2">
-                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary-light))]0" />
+                  <div className="bg-[hsl(var(--color-primary-light))]0 mt-2 h-2 w-2 shrink-0 rounded-full" />
                   <p>请确认收款金额与实际到账金额一致</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary-light))]0" />
+                  <div className="bg-[hsl(var(--color-primary-light))]0 mt-2 h-2 w-2 shrink-0 rounded-full" />
                   <p>建议保留收款凭证并填写收据号码</p>
                 </div>
                 <div className="flex items-start gap-2">
-                  <div className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[hsl(var(--color-primary-light))]0" />
+                  <div className="bg-[hsl(var(--color-primary-light))]0 mt-2 h-2 w-2 shrink-0 rounded-full" />
                   <p>收款记录创建后可在列表中查看和管理</p>
                 </div>
               </CardContent>

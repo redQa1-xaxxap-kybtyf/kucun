@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { publishFinanceEvent } from '@/lib/events';
 import { logger } from '@/lib/logger';
+import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
   createPaymentRecordSchema,
@@ -160,7 +161,35 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
   try {
     // 解析请求体
     const body = await request.json();
-    const validationResult = createPaymentRecordSchema.safeParse(body);
+    const parseNumber = (value: unknown): number => {
+      if (typeof value === 'number' && Number.isFinite(value)) {
+        return value;
+      }
+      if (typeof value === 'string' && value.trim() !== '') {
+        const parsed = Number(value);
+        if (!Number.isNaN(parsed) && Number.isFinite(parsed)) {
+          return parsed;
+        }
+      }
+      return Number.NaN;
+    };
+
+    const rawPaymentAmount = parseNumber(body?.paymentAmount);
+    const normalizedActual =
+      body?.actualPaymentAmount !== undefined
+        ? parseNumber(body.actualPaymentAmount)
+        : rawPaymentAmount;
+    const normalizedRounding =
+      body?.roundingAmount !== undefined
+        ? parseNumber(body.roundingAmount)
+        : Number((rawPaymentAmount - normalizedActual).toFixed(2));
+
+    const validationResult = createPaymentRecordSchema.safeParse({
+      ...body,
+      paymentAmount: rawPaymentAmount,
+      actualPaymentAmount: normalizedActual,
+      roundingAmount: normalizedRounding,
+    });
 
     if (!validationResult.success) {
       return NextResponse.json(
@@ -255,6 +284,8 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
             paymentType: data.paymentType, // ✅ 支持 order_payment | prepayment
             paymentMethod: data.paymentMethod,
             paymentAmount: data.paymentAmount,
+            actualPaymentAmount: data.actualPaymentAmount,
+            roundingAmount: data.roundingAmount,
             appliedAmount: 0, // ✅ 预收款初始已冲抵金额为0
             paymentDate: new Date(data.paymentDate),
             status: data.paymentType === 'prepayment' ? 'confirmed' : 'pending', // ✅ 预收款直接确认
@@ -344,6 +375,40 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
 
     // 清除相关缓存
     await clearCacheAfterPayment();
+
+    if (
+      payment.status === 'confirmed' &&
+      payment.customerId &&
+      Number(payment.actualPaymentAmount) > 0
+    ) {
+      try {
+        await recordPartnerTransaction({
+          partnerId: payment.customerId,
+          partnerRole: 'customer',
+          entityType: 'customer',
+          transactionType: 'payment_in',
+          amount: Number(payment.actualPaymentAmount),
+          referenceId: payment.id,
+          referenceNumber: payment.paymentNumber,
+          description: `收款 ${payment.paymentNumber} 已确认`,
+          occurredAt: payment.paymentDate ?? new Date(),
+          metadata: {
+            paymentType: payment.paymentType,
+            paymentMethod: payment.paymentMethod,
+            salesOrderId: payment.salesOrderId ?? undefined,
+            paymentAmount: payment.paymentAmount,
+            actualPaymentAmount: payment.actualPaymentAmount,
+            roundingAmount: payment.roundingAmount,
+            triggeredBy: 'payment:create',
+          },
+        });
+      } catch (error) {
+        logger.warn('payments', '记录收款往来账失败', error, {
+          paymentId: payment.id,
+          paymentNumber: payment.paymentNumber,
+        });
+      }
+    }
 
     // 发布财务事件
     await publishFinanceEvent({

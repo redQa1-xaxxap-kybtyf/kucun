@@ -31,6 +31,8 @@ export interface PaymentRecord {
   paymentType: PaymentType;
   paymentMethod: PaymentMethod;
   paymentAmount: number;
+  actualPaymentAmount: number;
+  roundingAmount: number;
   appliedAmount: number;
   paymentDate: Date | string; // 支持Date对象和ISO字符串
   status: PaymentStatus;

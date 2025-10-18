@@ -1,13 +1,14 @@
 // 库存管理工具 Prisma Schema
 // 严格按照 TECH_ARCHITECTURE 文档设计
-// 支持 MySQL 8.0+ 特性：JSON字段、全文搜索、窗口函数
+// 开发环境: SQLite | 生产环境: MySQL 5.7+
+// 注意: MySQL 5.7 不支持降序索引优化,但语法兼容
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "sqlite"  // 开发环境使用 SQLite
   url      = env("DATABASE_URL")
 }
 
@@ -591,6 +592,8 @@ model PaymentRecord {
   paymentType   String   @default("order_payment") @map("payment_type") // order_payment, prepayment
   paymentMethod String   @default("cash") // cash, bank_transfer, check, other
   paymentAmount Float    @map("payment_amount")
+  actualPaymentAmount Float @default(0) @map("actual_payment_amount") // 实际到账金额
+  roundingAmount Float @default(0) @map("rounding_amount") // 抹零金额(正数表示冲减)
   appliedAmount Float    @default(0) @map("applied_amount") // 已冲抵金额(预收款使用)
   paymentDate   DateTime @map("payment_date")
   status        String   @default("pending") // pending, confirmed, cancelled, applied

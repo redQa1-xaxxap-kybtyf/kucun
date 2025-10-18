@@ -1,12 +1,13 @@
 'use server';
 
-import { getServerSession } from 'next-auth';
+import type { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
+import { getServerSession } from 'next-auth';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import type { Prisma } from '@prisma/client';
+
 // cspell:words payables
 
 /**
@@ -34,15 +35,34 @@ export type ActionResult<T = unknown> = {
 // 收款记录 Actions
 // ============================================
 
-const createPaymentSchema = z.object({
-  salesOrderId: z.string().min(1, '销售订单 ID 不能为空'),
-  customerId: z.string().min(1, '客户 ID 不能为空'),
-  paymentAmount: z.number().positive('收款金额必须大于 0'),
-  paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other']),
-  paymentDate: z.date(),
-  receiptNumber: z.string().optional(),
-  remarks: z.string().optional(),
-});
+const createPaymentSchema = z
+  .object({
+    salesOrderId: z.string().min(1, '销售订单 ID 不能为空'),
+    customerId: z.string().min(1, '客户 ID 不能为空'),
+    paymentAmount: z.number().positive('收款金额必须大于 0'),
+    actualPaymentAmount: z.number().min(0, '实际收款金额不能为负'),
+    roundingAmount: z
+      .number()
+      .min(-9999999, '抹零金额不能低于 -9,999,999')
+      .max(9999999, '抹零金额不能超过 9,999,999'),
+    paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other']),
+    paymentDate: z.date(),
+    receiptNumber: z.string().optional(),
+    remarks: z.string().optional(),
+  })
+  .superRefine((value, ctx) => {
+    const expected = Number(
+      (value.actualPaymentAmount + value.roundingAmount).toFixed(2)
+    );
+    const recorded = Number(value.paymentAmount.toFixed(2));
+    if (Math.abs(expected - recorded) >= 0.01) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['actualPaymentAmount'],
+        message: '收款金额应等于实际收款金额与抹零金额之和',
+      });
+    }
+  });
 
 /**
  * 创建收款记录
@@ -58,10 +78,29 @@ export async function createPaymentRecord(
     }
 
     // 2. 数据验证
+    const paymentAmount = parseFloat(formData.get('paymentAmount') as string);
+    const actualAmount = parseFloat(
+      (formData.get('actualPaymentAmount') as string) ?? ''
+    );
+    const roundingAmount = parseFloat(
+      (formData.get('roundingAmount') as string) ?? ''
+    );
+
     const rawData = {
       salesOrderId: formData.get('salesOrderId') as string,
       customerId: formData.get('customerId') as string,
-      paymentAmount: parseFloat(formData.get('paymentAmount') as string),
+      paymentAmount,
+      actualPaymentAmount: Number.isFinite(actualAmount)
+        ? actualAmount
+        : paymentAmount,
+      roundingAmount: Number.isFinite(roundingAmount)
+        ? roundingAmount
+        : Number(
+            (
+              paymentAmount -
+              (Number.isFinite(actualAmount) ? actualAmount : paymentAmount)
+            ).toFixed(2)
+          ),
       paymentMethod: formData.get('paymentMethod') as string,
       paymentDate: new Date(formData.get('paymentDate') as string),
       receiptNumber: formData.get('receiptNumber') as string,
@@ -83,6 +122,8 @@ export async function createPaymentRecord(
           salesOrderId: data.salesOrderId,
           customerId: data.customerId,
           paymentAmount: data.paymentAmount,
+          actualPaymentAmount: data.actualPaymentAmount,
+          roundingAmount: data.roundingAmount,
           paymentMethod: data.paymentMethod,
           paymentDate: data.paymentDate,
           receiptNumber: data.receiptNumber,
@@ -131,7 +172,10 @@ export async function createPaymentRecord(
   } catch (error) {
     console.error('创建收款记录失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues[0]?.message ?? '数据验证失败' };
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? '数据验证失败',
+      };
     }
     return { success: false, error: '创建收款记录失败' };
   }
@@ -228,7 +272,10 @@ export async function createPayableRecord(
   } catch (error) {
     console.error('创建应付款记录失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues[0]?.message ?? '数据验证失败' };
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? '数据验证失败',
+      };
     }
     return { success: false, error: '创建应付款记录失败' };
   }
@@ -299,8 +346,14 @@ export async function createPaymentOutRecord(
 
       const currentPaidAmount = payableRecord.paidAmount ?? 0;
       const computedPaidAmount = currentPaidAmount + data.paymentAmount;
-      const updatedPaidAmount = Math.min(computedPaidAmount, payableRecord.payableAmount);
-      const remainingAmount = Math.max(payableRecord.payableAmount - updatedPaidAmount, 0);
+      const updatedPaidAmount = Math.min(
+        computedPaidAmount,
+        payableRecord.payableAmount
+      );
+      const remainingAmount = Math.max(
+        payableRecord.payableAmount - updatedPaidAmount,
+        0
+      );
       const updatedStatus =
         remainingAmount <= 0
           ? 'paid'
@@ -327,7 +380,10 @@ export async function createPaymentOutRecord(
   } catch (error) {
     console.error('创建付款记录失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues[0]?.message ?? '数据验证失败' };
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? '数据验证失败',
+      };
     }
     return { success: false, error: '创建付款记录失败' };
   }
@@ -472,7 +528,10 @@ export async function createRefundRecord(
   } catch (error) {
     console.error('创建退款记录失败:', error);
     if (error instanceof z.ZodError) {
-      return { success: false, error: error.issues[0]?.message ?? '数据验证失败' };
+      return {
+        success: false,
+        error: error.issues[0]?.message ?? '数据验证失败',
+      };
     }
     return { success: false, error: '创建退款记录失败' };
   }

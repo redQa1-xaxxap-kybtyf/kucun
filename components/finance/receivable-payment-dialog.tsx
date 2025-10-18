@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { useEffect, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
+import { Button } from '@/components/ui/button';
 import {
   Dialog,
   DialogContent,
@@ -15,6 +16,7 @@ import {
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -29,18 +31,19 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
-import { DEFAULT_PAYMENT_METHODS } from '@/lib/types/payment';
+import { useCreatePaymentRecord, useConfirmPayment } from '@/lib/api/payments';
+import { queryKeys } from '@/lib/queryKeys';
 import type { ReceivableItem } from '@/lib/services/receivables-service';
+import {
+  DEFAULT_PAYMENT_METHODS,
+  type CreatePaymentRecordData,
+} from '@/lib/types/payment';
+import { formatCurrency } from '@/lib/utils';
 import {
   createPaymentRecordSchema,
   validatePaymentAmount,
 } from '@/lib/validations/payment';
-import type { CreatePaymentRecordData } from '@/lib/types/payment';
-import { useCreatePaymentRecord, useConfirmPayment } from '@/lib/api/payments';
-import { queryKeys } from '@/lib/queryKeys';
-import { formatCurrency } from '@/lib/utils';
 
 type FormValues = CreatePaymentRecordData;
 
@@ -69,6 +72,8 @@ export function ReceivablePaymentDialog({
       customerId: receivable?.customerId ?? '',
       paymentMethod: 'cash',
       paymentAmount: receivable?.remainingAmount ?? 0,
+      actualPaymentAmount: receivable?.remainingAmount ?? 0,
+      roundingAmount: 0,
       paymentDate: format(new Date(), 'yyyy-MM-dd'),
       remarks: '',
       receiptNumber: '',
@@ -90,6 +95,8 @@ export function ReceivablePaymentDialog({
         customerId: receivable.customerId,
         paymentMethod: form.getValues('paymentMethod') ?? 'cash',
         paymentAmount: receivable.remainingAmount,
+        actualPaymentAmount: receivable.remainingAmount,
+        roundingAmount: 0,
         paymentDate: format(new Date(), 'yyyy-MM-dd'),
         remarks: '',
         receiptNumber: '',
@@ -102,6 +109,26 @@ export function ReceivablePaymentDialog({
   }, [receivable, form.reset]);
 
   const paymentMethod = form.watch('paymentMethod');
+  const paymentAmountValue = form.watch('paymentAmount');
+  const actualPaymentAmountValue = form.watch('actualPaymentAmount');
+
+  useEffect(() => {
+    if (
+      typeof paymentAmountValue === 'number' &&
+      !Number.isNaN(paymentAmountValue) &&
+      typeof actualPaymentAmountValue === 'number' &&
+      !Number.isNaN(actualPaymentAmountValue)
+    ) {
+      const rounding = Number(
+        (paymentAmountValue - actualPaymentAmountValue).toFixed(2)
+      );
+      if (rounding !== form.getValues('roundingAmount')) {
+        form.setValue('roundingAmount', rounding, { shouldDirty: true });
+      }
+    } else if (form.getValues('roundingAmount') !== 0) {
+      form.setValue('roundingAmount', 0, { shouldDirty: true });
+    }
+  }, [paymentAmountValue, actualPaymentAmountValue, form]);
 
   const handleClose = (nextOpen: boolean) => {
     if (!nextOpen) {
@@ -131,6 +158,8 @@ export function ReceivablePaymentDialog({
       salesOrderId: receivable.id,
       customerId: receivable.customerId,
       paymentAmount: Number(values.paymentAmount),
+      actualPaymentAmount: Number(values.actualPaymentAmount ?? 0),
+      roundingAmount: Number(values.roundingAmount ?? 0),
       remarks: values.remarks?.trim() || undefined,
       receiptNumber: values.receiptNumber?.trim() || undefined,
       bankInfo:
@@ -150,7 +179,7 @@ export function ReceivablePaymentDialog({
       });
       toast({
         title: '收款记录已创建',
-        description: `成功收款 ${formatCurrency(payload.paymentAmount)}`,
+        description: `成功收款 ${formatCurrency(payload.actualPaymentAmount)}`,
       });
       handleClose(false);
       onSuccess?.();
@@ -279,6 +308,67 @@ export function ReceivablePaymentDialog({
                       <FormMessage />
                     </FormItem>
                   )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="actualPaymentAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>实际收款金额</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min={0}
+                          value={field.value === undefined ? '' : field.value}
+                          onChange={event => {
+                            const value = event.target.value;
+                            field.onChange(
+                              value === '' ? undefined : Number(value)
+                            );
+                          }}
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        与客户实际到账金额，可低于应收金额用于抹零。
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="roundingAmount"
+                  render={({ field }) => {
+                    const displayValue =
+                      typeof field.value === 'number' &&
+                      !Number.isNaN(field.value)
+                        ? field.value.toFixed(2)
+                        : '0.00';
+
+                    return (
+                      <FormItem>
+                        <FormLabel>抹零金额</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            readOnly
+                            name={field.name}
+                            ref={field.ref}
+                            value={displayValue}
+                            className="bg-muted"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          系统根据差额自动计算，正值表示抹零减免，负值表示多收。
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
                 />
 
                 <FormField

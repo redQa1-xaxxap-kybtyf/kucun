@@ -226,6 +226,8 @@ export async function processOrderPayment(
         paymentType: 'order_payment',
         paymentMethod,
         paymentAmount,
+        actualPaymentAmount: paymentAmount,
+        roundingAmount: 0,
         paymentDate: new Date(),
         status: 'confirmed',
         remarks: metadata?.transactionId

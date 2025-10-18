@@ -197,10 +197,20 @@ async function getPaymentsData(searchParams: {
     rate === null ? null : Number(rate.toFixed(1));
 
   const currentMonthCollectionRate = formatRate(
-    calculateCollectionRate(currentMonthPayments)
+    calculateCollectionRate(
+      currentMonthPayments.map(payment => ({
+        paymentAmount: payment.paymentAmount,
+        status: payment.status as PaymentStatus,
+      }))
+    )
   );
   const previousMonthCollectionRate = formatRate(
-    calculateCollectionRate(previousMonthPayments)
+    calculateCollectionRate(
+      previousMonthPayments.map(payment => ({
+        paymentAmount: payment.paymentAmount,
+        status: payment.status as PaymentStatus,
+      }))
+    )
   );
   const collectionRateChange =
     currentMonthCollectionRate !== null && previousMonthCollectionRate !== null
@@ -274,6 +284,14 @@ async function getPaymentsData(searchParams: {
         id: payment.id,
         paymentNumber: payment.paymentNumber,
         paymentAmount: Number(payment.paymentAmount),
+        actualPaymentAmount: Number(
+          (payment as unknown as { actualPaymentAmount?: number })
+            .actualPaymentAmount ?? payment.paymentAmount
+        ),
+        roundingAmount: Number(
+          (payment as unknown as { roundingAmount?: number }).roundingAmount ??
+            0
+        ),
         paymentMethod: payment.paymentMethod ?? 'other',
         paymentDate: payment.paymentDate.toISOString(),
         status: (payment.status ?? 'pending') as PaymentStatus,
