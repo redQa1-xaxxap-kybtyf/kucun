@@ -14,15 +14,10 @@ import { Separator } from '@/components/ui/separator';
 import {
   useProductForm,
   type ProductFormSuccessHandler,
+  type ProductFormValues,
 } from '@/hooks/use-product-form';
 import type { Product } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
-import type {
-  ProductCreateFormData,
-  ProductUpdateFormData,
-} from '@/lib/validations/product';
-
-type ProductFormValues = ProductCreateFormData | ProductUpdateFormData;
 
 interface ProductFormProps {
   mode: 'create' | 'edit';
@@ -89,7 +84,11 @@ function ProductFormLayout({
           <ProductFormError message={submitError} />
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-              <ProductInfoCard form={form} isEdit={isEdit} isLoading={isLoading} />
+              <ProductInfoCard
+                form={form}
+                isEdit={isEdit}
+                isLoading={isLoading}
+              />
               <ProductImagesCard form={form} isLoading={isLoading} />
               <ProductFormFooter
                 isEdit={isEdit}
@@ -171,7 +170,9 @@ function ProductInfoCard({ form, isEdit, isLoading }: ProductInfoCardProps) {
       </CardHeader>
       <CardContent className="space-y-6">
         <div>
-          <h3 className="text-muted-foreground mb-4 text-sm font-medium">基础信息</h3>
+          <h3 className="text-muted-foreground mb-4 text-sm font-medium">
+            基础信息
+          </h3>
           <ProductBasicInfoForm
             control={form.control}
             isLoading={isLoading}
@@ -189,7 +190,9 @@ function ProductInfoCard({ form, isEdit, isLoading }: ProductInfoCardProps) {
         <Separator />
 
         <div>
-          <h3 className="text-muted-foreground mb-4 text-sm font-medium">补充信息</h3>
+          <h3 className="text-muted-foreground mb-4 text-sm font-medium">
+            补充信息
+          </h3>
           <ProductDetailsForm control={form.control} isLoading={isLoading} />
         </div>
       </CardContent>
@@ -235,7 +238,11 @@ interface ProductFormFooterProps {
   onCancel: () => void;
 }
 
-function ProductFormFooter({ isEdit, isLoading, onCancel }: ProductFormFooterProps) {
+function ProductFormFooter({
+  isEdit,
+  isLoading,
+  onCancel,
+}: ProductFormFooterProps) {
   return (
     <div
       className={cn(
@@ -244,7 +251,12 @@ function ProductFormFooter({ isEdit, isLoading, onCancel }: ProductFormFooterPro
       )}
     >
       <div className="flex items-center justify-end gap-3">
-        <Button type="button" variant="outline" onClick={onCancel} disabled={isLoading}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onCancel}
+          disabled={isLoading}
+        >
           取消
         </Button>
         <Button type="submit" disabled={isLoading}>

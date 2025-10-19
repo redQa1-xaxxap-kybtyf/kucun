@@ -20,17 +20,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import type { ProductFormValues } from '@/hooks/use-product-form';
 import { categoryQueryKeys, getCategories } from '@/lib/api/categories';
 import type { Category } from '@/lib/types/category';
 import { PRODUCT_STATUS_LABELS } from '@/lib/types/product';
-import type {
-  ProductCreateFormData,
-  ProductUpdateFormData,
-} from '@/lib/validations/product';
 
-type ProductFormControl = Control<
-  ProductCreateFormData | ProductUpdateFormData
->;
+type ProductFormControl = Control<ProductFormValues>;
 
 interface ProductBasicInfoFormProps {
   control: ProductFormControl;
@@ -186,7 +181,9 @@ interface CategoryOptionWithDepth extends Category {
   depth: number;
 }
 
-function buildCategoryOptions(categories: Category[]): CategoryOptionWithDepth[] {
+function buildCategoryOptions(
+  categories: Category[]
+): CategoryOptionWithDepth[] {
   if (categories.length === 0) {
     return [];
   }
@@ -215,7 +212,11 @@ function buildCategoryOptions(categories: Category[]): CategoryOptionWithDepth[]
   return result;
 }
 
-function CategoryOptionLabel({ category }: { category: CategoryOptionWithDepth }) {
+function CategoryOptionLabel({
+  category,
+}: {
+  category: CategoryOptionWithDepth;
+}) {
   const indent = Math.max(0, category.depth) * 16;
   const icon = category.depth === 0 ? '📁' : '📂';
 
@@ -226,7 +227,9 @@ function CategoryOptionLabel({ category }: { category: CategoryOptionWithDepth }
         {category.name}
       </span>
       {category.parent && (
-        <span className="ml-2 text-xs text-gray-500">· {category.parent.name}</span>
+        <span className="ml-2 text-xs text-gray-500">
+          · {category.parent.name}
+        </span>
       )}
     </div>
   );
@@ -250,11 +253,7 @@ function ProductSpecificationInput({
             <span className="text-destructive">*</span>
           </FormLabel>
           <FormControl>
-            <Input
-              placeholder="如:600x600mm"
-              disabled={disabled}
-              {...field}
-            />
+            <Input placeholder="如:600x600mm" disabled={disabled} {...field} />
           </FormControl>
           <FormMessage />
         </FormItem>

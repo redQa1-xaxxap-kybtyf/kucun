@@ -4,20 +4,16 @@ import type { Control } from 'react-hook-form';
 
 import {
   FormControl,
-  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
 import { Textarea } from '@/components/ui/textarea';
-import type {
-  ProductCreateFormData,
-  ProductUpdateFormData,
-} from '@/lib/validations/product';
+import type { ProductFormValues } from '@/hooks/use-product-form';
 
 interface ProductDetailsFormProps {
-  control: Control<ProductCreateFormData | ProductUpdateFormData>;
+  control: Control<ProductFormValues>;
   isLoading: boolean;
 }
 

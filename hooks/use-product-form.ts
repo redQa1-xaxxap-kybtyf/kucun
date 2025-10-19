@@ -1,9 +1,14 @@
 'use client';
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+} from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useCallback, useMemo, useState } from 'react';
+import { useForm, type UseFormReturn } from 'react-hook-form';
 
 import {
   createProduct,
@@ -13,6 +18,7 @@ import {
 } from '@/lib/api/products';
 import { type Product } from '@/lib/types/product';
 import { combineAsyncStates } from '@/lib/utils/async-state';
+import { logger } from '@/lib/utils/console-logger';
 import { ProductDataUtils } from '@/lib/utils/product-data';
 import { showError, showSuccess } from '@/lib/utils/toast-helper';
 import {
@@ -25,6 +31,23 @@ import {
 export type ProductFormSuccessHandler = (
   product: Product
 ) => void | boolean | Promise<void | boolean>;
+
+type CreateMutationResult = UseMutationResult<
+  Product,
+  Error,
+  ProductCreateFormData
+>;
+
+type UpdateMutationResult = UseMutationResult<
+  Product,
+  Error,
+  { id: string; data: ProductUpdateFormData }
+>;
+
+export type ProductFormValues = ProductCreateFormData &
+  Partial<Omit<ProductUpdateFormData, keyof ProductCreateFormData>> & {
+    id?: string;
+  };
 
 interface UseProductFormProps {
   mode: 'create' | 'edit';
@@ -45,70 +68,144 @@ export function useProductForm({
   const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string>('');
 
-  // 表单配置
   const isEdit = mode === 'edit';
-  // 如果是编辑模式且提供了productId但没有initialData，则预加载产品数据
-  const { data: productData, isLoading: isLoadingProduct } = useQuery({
-    queryKey: productQueryKeys.detail(productId!),
-    queryFn: () => getProduct(productId!),
-    enabled: isEdit && !!productId && !initialData,
-    staleTime: 5 * 60 * 1000, // 5分钟缓存
-  });
+  const productQuery = useProductDetailData({ isEdit, productId, initialData });
 
-  // 确定实际使用的产品数据
-  const actualProductData = initialData || productData;
+  const actualProductData = initialData ?? productQuery.data ?? undefined;
 
-  const defaultValues =
-    isEdit && actualProductData
-      ? ProductDataUtils.transformer.toFormData(actualProductData)
-      : ProductDataUtils.defaults.getCreateDefaults();
+  const defaultValues = useMemo(
+    () => getProductFormDefaultValues(isEdit, actualProductData),
+    [actualProductData, isEdit]
+  );
 
-  const form = useForm<ProductCreateFormData | ProductUpdateFormData>({
+  const form = useForm<ProductFormValues>({
     defaultValues,
-    mode: 'onSubmit', // 只在提交时验证,不在onChange或onBlur时验证
-    reValidateMode: 'onChange', // 提交后再次修改时实时验证
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
   });
-  const getFirstErrorMessage = (
-    issues: readonly { message?: string }[]
-  ): string | undefined => {
-    for (const issue of issues) {
-      if (issue?.message) {
-        return issue.message;
-      }
-    }
-    return undefined;
-  };
 
-  // 创建产品
-  const navigateToList = () => {
+  const navigateToList = useCallback(() => {
     router.replace('/products');
-  };
+  }, [router]);
 
-  const createMutation = useMutation({
+  const createMutation = useCreateProductMutation({
+    queryClient,
+    onSuccess,
+    setSubmitError,
+    navigateToList,
+  });
+
+  const updateMutation = useUpdateProductMutation({
+    queryClient,
+    onSuccess,
+    setSubmitError,
+    navigateToList,
+  });
+
+  const loadingState = getProductFormLoadingState({
+    createMutation,
+    updateMutation,
+    productQuery,
+    actualProductData,
+  });
+
+  const onSubmit = useCallback(
+    async (values: ProductFormValues) => {
+      setSubmitError('');
+      form.clearErrors();
+      await handleProductFormSubmit({
+        values,
+        isEdit,
+        productId,
+        actualProductData,
+        form,
+        setSubmitError,
+        createMutation,
+        updateMutation,
+      });
+    },
+    [
+      actualProductData,
+      createMutation,
+      form,
+      isEdit,
+      productId,
+      setSubmitError,
+      updateMutation,
+    ]
+  );
+
+  const handleCancel = useCallback(() => {
+    if (onCancel) {
+      onCancel();
+      return;
+    }
+    router.back();
+  }, [onCancel, router]);
+
+  return {
+    form,
+    isEdit,
+    isLoading: loadingState.isLoading,
+    loadingState,
+    submitError,
+    onSubmit,
+    handleCancel,
+  };
+}
+
+function useProductDetailData({
+  isEdit,
+  productId,
+  initialData,
+}: {
+  isEdit: boolean;
+  productId?: string;
+  initialData?: Product;
+}) {
+  const shouldFetch = isEdit && Boolean(productId) && !initialData;
+  const detailQueryKey = useMemo(
+    () => productQueryKeys.detail(productId ?? '__placeholder__'),
+    [productId]
+  );
+
+  return useQuery({
+    queryKey: detailQueryKey,
+    queryFn: async () => {
+      if (!productId) {
+        throw new Error('Missing productId');
+      }
+      return getProduct(productId);
+    },
+    enabled: shouldFetch,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+function useCreateProductMutation({
+  queryClient,
+  onSuccess,
+  setSubmitError,
+  navigateToList,
+}: {
+  queryClient: ReturnType<typeof useQueryClient>;
+  onSuccess?: ProductFormSuccessHandler;
+  setSubmitError: (message: string) => void;
+  navigateToList: () => void;
+}): CreateMutationResult {
+  return useMutation({
     mutationFn: createProduct,
     onSuccess: async product => {
       showSuccess('创建成功', {
         description: '产品已成功创建',
       });
 
-      // 立即失效所有产品相关的查询缓存,确保数据最新
       await queryClient.invalidateQueries({
         queryKey: productQueryKeys.all,
-        refetchType: 'all', // 强制重新获取所有相关查询,不仅仅是活跃的
+        refetchType: 'all',
       });
 
-      let shouldNavigate = true;
-      if (onSuccess) {
-        try {
-          const result = await Promise.resolve(onSuccess(product));
-          if (result === false) {
-            shouldNavigate = false;
-          }
-        } catch (error) {
-          console.error('[useProductForm] onSuccess callback failed', error);
-        }
-      }
-
+      const shouldNavigate = await handleSuccessCallback(onSuccess, product);
       if (shouldNavigate) {
         navigateToList();
       }
@@ -121,9 +218,20 @@ export function useProductForm({
       });
     },
   });
+}
 
-  // 更新产品
-  const updateMutation = useMutation({
+function useUpdateProductMutation({
+  queryClient,
+  onSuccess,
+  setSubmitError,
+  navigateToList,
+}: {
+  queryClient: ReturnType<typeof useQueryClient>;
+  onSuccess?: ProductFormSuccessHandler;
+  setSubmitError: (message: string) => void;
+  navigateToList: () => void;
+}): UpdateMutationResult {
+  return useMutation({
     mutationFn: ({ id, data }: { id: string; data: ProductUpdateFormData }) =>
       updateProduct(id, data),
     onSuccess: async product => {
@@ -131,24 +239,12 @@ export function useProductForm({
         description: '产品已成功更新',
       });
 
-      // 立即失效所有产品相关的查询缓存,确保数据最新
       await queryClient.invalidateQueries({
         queryKey: productQueryKeys.all,
-        refetchType: 'all', // 强制重新获取所有相关查询,不仅仅是活跃的
+        refetchType: 'all',
       });
 
-      let shouldNavigate = true;
-      if (onSuccess) {
-        try {
-          const result = await Promise.resolve(onSuccess(product));
-          if (result === false) {
-            shouldNavigate = false;
-          }
-        } catch (error) {
-          console.error('[useProductForm] onSuccess callback failed', error);
-        }
-      }
-
+      const shouldNavigate = await handleSuccessCallback(onSuccess, product);
       if (shouldNavigate) {
         navigateToList();
       }
@@ -161,8 +257,177 @@ export function useProductForm({
       });
     },
   });
+}
 
-  const loadingState = combineAsyncStates([
+interface SubmitHandlerArgs {
+  values: ProductFormValues;
+  isEdit: boolean;
+  productId?: string;
+  actualProductData?: Product;
+  form: UseFormReturn<ProductFormValues>;
+  setSubmitError: (message: string) => void;
+  createMutation: CreateMutationResult;
+  updateMutation: UpdateMutationResult;
+}
+
+async function handleProductFormSubmit(args: SubmitHandlerArgs): Promise<void> {
+  if (args.isEdit) {
+    const targetId = args.productId ?? args.actualProductData?.id;
+    if (!targetId) {
+      args.setSubmitError('无法确定产品ID');
+      return;
+    }
+    await handleUpdateSubmit({ ...args, targetId });
+    return;
+  }
+
+  await handleCreateSubmit(args);
+}
+
+async function handleUpdateSubmit(
+  args: SubmitHandlerArgs & { targetId: string }
+): Promise<void> {
+  const { values, form, setSubmitError, updateMutation, targetId } = args;
+
+  const updateInput: ProductUpdateFormData = {
+    code: values.code,
+    name: values.name,
+    specification: values.specification,
+    description: values.description,
+    piecesPerUnit: values.piecesPerUnit,
+    weight: values.weight,
+    thickness: values.thickness,
+    status: values.status,
+    categoryId: values.categoryId,
+    thumbnailUrl: values.thumbnailUrl,
+    images: values.images,
+  };
+
+  if (typeof updateInput.code === 'string') {
+    const normalizedCode = normalizeRequiredTextField(
+      form,
+      setSubmitError,
+      'code',
+      updateInput.code,
+      '产品编码不能为空'
+    );
+    if (normalizedCode === undefined) {
+      return;
+    }
+    updateInput.code = normalizedCode;
+  }
+
+  if (typeof updateInput.name === 'string') {
+    updateInput.name = normalizeOptionalTextField(
+      form,
+      'name',
+      updateInput.name
+    );
+  }
+
+  const normalizedSpec = normalizeRequiredTextField(
+    form,
+    setSubmitError,
+    'specification',
+    updateInput.specification,
+    '产品规格不能为空'
+  );
+  if (normalizedSpec === undefined) {
+    return;
+  }
+  updateInput.specification = normalizedSpec;
+
+  const parsed = productUpdateSchema.safeParse(updateInput);
+  if (!parsed.success) {
+    handleValidationErrors(parsed.error.issues, form, setSubmitError);
+    return;
+  }
+
+  const normalizedUpdateData = ProductDataUtils.transformer.toUpdateApiData(
+    parsed.data
+  );
+  await updateMutation.mutateAsync({
+    id: targetId,
+    data: normalizedUpdateData,
+  });
+}
+
+async function handleCreateSubmit(args: SubmitHandlerArgs): Promise<void> {
+  const { values, form, setSubmitError, createMutation } = args;
+
+  const code = normalizeRequiredTextField(
+    form,
+    setSubmitError,
+    'code',
+    values.code,
+    '产品编码不能为空'
+  );
+  if (code === undefined) {
+    return;
+  }
+
+  const specification = normalizeRequiredTextField(
+    form,
+    setSubmitError,
+    'specification',
+    values.specification,
+    '产品规格不能为空'
+  );
+  if (specification === undefined) {
+    return;
+  }
+
+  const name =
+    typeof values.name === 'string'
+      ? normalizeOptionalTextField(form, 'name', values.name)
+      : values.name;
+
+  const createInput: ProductCreateFormData = {
+    code,
+    name,
+    specification,
+    description: values.description,
+    thickness: values.thickness,
+    status: values.status,
+    categoryId: values.categoryId,
+    thumbnailUrl: values.thumbnailUrl,
+    images: values.images,
+  };
+
+  const parsed = productCreateSchema.safeParse(createInput);
+  if (!parsed.success) {
+    handleValidationErrors(parsed.error.issues, form, setSubmitError);
+    return;
+  }
+
+  const createData = ProductDataUtils.transformer.toCreateApiData(parsed.data);
+  await createMutation.mutateAsync(createData);
+}
+
+function getProductFormDefaultValues(
+  isEdit: boolean,
+  product?: Product
+): Partial<ProductFormValues> {
+  if (isEdit && product) {
+    return ProductDataUtils.transformer.toFormData(
+      product
+    ) as Partial<ProductFormValues>;
+  }
+  return ProductDataUtils.defaults.getCreateDefaults();
+}
+
+function getProductFormLoadingState({
+  createMutation,
+  updateMutation,
+  productQuery,
+  actualProductData,
+}: {
+  createMutation: CreateMutationResult;
+  updateMutation: UpdateMutationResult;
+  productQuery: ReturnType<typeof useProductDetailData>;
+  actualProductData?: Product;
+}) {
+  return combineAsyncStates([
     {
       isLoading: createMutation.isPending,
       isError: createMutation.isError,
@@ -174,189 +439,102 @@ export function useProductForm({
       isSuccess: updateMutation.isSuccess,
     },
     {
-      isLoading: isLoadingProduct,
-      isSuccess: !isLoadingProduct && !!actualProductData,
+      isLoading: productQuery.isLoading,
+      isError: productQuery.isError,
+      isSuccess: !productQuery.isLoading && Boolean(actualProductData),
     },
   ]);
+}
 
-  const isLoading = loadingState.isLoading;
+function normalizeRequiredTextField(
+  form: UseFormReturn<ProductFormValues>,
+  setSubmitError: (message: string) => void,
+  field: 'code' | 'specification',
+  value: unknown,
+  message: string
+): string | undefined {
+  if (typeof value !== 'string') {
+    form.setError(field, { type: 'manual', message });
+    setSubmitError(message);
+    return undefined;
+  }
 
-  const onSubmit = async (
-    data: ProductCreateFormData | ProductUpdateFormData
-  ) => {
-    setSubmitError('');
-    form.clearErrors();
+  const trimmed = value.trim();
+  form.setValue(field, trimmed, {
+    shouldDirty: true,
+    shouldValidate: false,
+  });
 
-    if (process.env.NODE_ENV === 'development') {
-      console.warn('[useProductForm] submit attempt', {
-        mode,
-        data,
+  if (trimmed.length === 0) {
+    form.setError(field, { type: 'manual', message });
+    setSubmitError(message);
+    return undefined;
+  }
+
+  return trimmed;
+}
+
+function normalizeOptionalTextField(
+  form: UseFormReturn<ProductFormValues>,
+  field: keyof ProductFormValues,
+  value: unknown
+): string | undefined {
+  if (typeof value !== 'string') {
+    return value as string | undefined;
+  }
+
+  const trimmed = value.trim();
+  form.setValue(field, trimmed, {
+    shouldDirty: true,
+    shouldValidate: false,
+  });
+  return trimmed;
+}
+
+function handleValidationErrors(
+  issues: readonly { message?: string; path: PropertyKey[] }[],
+  form: UseFormReturn<ProductFormValues>,
+  setSubmitError: (message: string) => void
+) {
+  issues.forEach(issue => {
+    const field = issue.path[0];
+    if (typeof field === 'string') {
+      form.setError(field as keyof ProductFormValues, {
+        type: 'manual',
+        message: issue.message,
       });
     }
+  });
 
-    try {
-      if (isEdit && (productId || actualProductData?.id)) {
-        const updateInput: ProductUpdateFormData = {
-          ...(data as ProductUpdateFormData),
-        };
+  const message =
+    getFirstErrorMessage(issues) || '表单验证失败，请检查输入内容';
+  setSubmitError(message);
+}
 
-        if (typeof updateInput.code === 'string') {
-          const trimmedCode = updateInput.code.trim();
-          form.setValue('code', trimmedCode, {
-            shouldDirty: true,
-          });
-
-          if (trimmedCode.length === 0) {
-            form.setError('code', {
-              type: 'manual',
-              message: '产品编码不能为空',
-            });
-            return;
-          }
-
-          updateInput.code = trimmedCode;
-        }
-
-        if (typeof updateInput.name === 'string') {
-          const trimmedName = updateInput.name.trim();
-          form.setValue('name', trimmedName, {
-            shouldValidate: false,
-            shouldDirty: true,
-          });
-          updateInput.name = trimmedName;
-        }
-
-        if (typeof updateInput.specification === 'string') {
-          const trimmedSpec = updateInput.specification.trim();
-          form.setValue('specification', trimmedSpec, {
-            shouldDirty: true,
-          });
-
-          if (trimmedSpec.length === 0) {
-            form.setError('specification', {
-              type: 'manual',
-              message: '产品规格不能为空',
-            });
-            return;
-          }
-
-          updateInput.specification = trimmedSpec;
-        }
-
-        const parsed = productUpdateSchema.safeParse(updateInput);
-        if (!parsed.success) {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('[useProductForm] update validation failed', {
-              issues: parsed.error.issues,
-            });
-          }
-          parsed.error.issues.forEach(issue => {
-            const field = issue.path[0];
-            if (typeof field === 'string') {
-              form.setError(field as keyof ProductUpdateFormData, {
-                type: 'manual',
-                message: issue.message,
-              });
-            }
-          });
-          const message = getFirstErrorMessage(parsed.error.issues);
-          setSubmitError(message || '表单验证失败，请检查输入内容');
-          return;
-        }
-
-        const normalizedUpdateData =
-          ProductDataUtils.transformer.toUpdateApiData(parsed.data);
-        await updateMutation.mutateAsync({
-          id: productId || (actualProductData?.id ?? ''),
-          data: normalizedUpdateData,
-        });
-      } else {
-        const createInput: ProductCreateFormData = {
-          ...(data as ProductCreateFormData),
-        };
-
-        const trimmedCode = createInput.code.trim();
-        form.setValue('code', trimmedCode, {
-          shouldDirty: true,
-        });
-        if (trimmedCode.length === 0) {
-          form.setError('code', {
-            type: 'manual',
-            message: '产品编码不能为空',
-          });
-          return;
-        }
-
-        const trimmedSpec = createInput.specification.trim();
-        form.setValue('specification', trimmedSpec, {
-          shouldDirty: true,
-        });
-        if (trimmedSpec.length === 0) {
-          form.setError('specification', {
-            type: 'manual',
-            message: '产品规格不能为空',
-          });
-          return;
-        }
-
-        createInput.code = trimmedCode;
-        createInput.specification = trimmedSpec;
-
-        if (typeof createInput.name === 'string') {
-          const trimmedName = createInput.name.trim();
-          form.setValue('name', trimmedName, {
-            shouldValidate: false,
-            shouldDirty: true,
-          });
-          createInput.name = trimmedName;
-        }
-
-        const parsed = productCreateSchema.safeParse(createInput);
-        if (!parsed.success) {
-          if (process.env.NODE_ENV === 'development') {
-            console.warn('[useProductForm] create validation failed', {
-              issues: parsed.error.issues,
-            });
-          }
-          parsed.error.issues.forEach(issue => {
-            const field = issue.path[0];
-            if (typeof field === 'string') {
-              form.setError(field as keyof ProductCreateFormData, {
-                type: 'manual',
-                message: issue.message,
-              });
-            }
-          });
-          const message = getFirstErrorMessage(parsed.error.issues);
-          setSubmitError(message || '表单验证失败，请检查输入内容');
-          return;
-        }
-
-        const createData = ProductDataUtils.transformer.toCreateApiData(
-          parsed.data
-        );
-        await createMutation.mutateAsync(createData);
-      }
-    } catch {
-      // 错误已在mutation的onError中处理
+function getFirstErrorMessage(
+  issues: readonly { message?: string }[]
+): string | undefined {
+  for (const issue of issues) {
+    if (issue?.message) {
+      return issue.message;
     }
-  };
+  }
+  return undefined;
+}
 
-  const handleCancel = () => {
-    if (onCancel) {
-      onCancel();
-    } else {
-      router.back();
-    }
-  };
+async function handleSuccessCallback(
+  onSuccess: ProductFormSuccessHandler | undefined,
+  product: Product
+): Promise<boolean> {
+  if (!onSuccess) {
+    return true;
+  }
 
-  return {
-    form,
-    isEdit,
-    isLoading,
-    loadingState,
-    submitError,
-    onSubmit,
-    handleCancel,
-  };
+  try {
+    const result = await Promise.resolve(onSuccess(product));
+    return result !== false;
+  } catch (error) {
+    logger.error('[useProductForm] onSuccess callback failed', { error });
+    return true;
+  }
 }
