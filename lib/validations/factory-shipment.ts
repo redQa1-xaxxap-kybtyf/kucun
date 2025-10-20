@@ -25,8 +25,17 @@ export const factoryShipmentStatusSchema = z.enum([
 // 厂家发货订单明细项验证
 export const factoryShipmentOrderItemSchema = z
   .object({
-    productId: z.string().uuid().optional(),
-    supplierId: z.string().uuid('供应商ID格式不正确'),
+    productId: z
+      .union([z.string().uuid('商品ID格式不正确'), z.literal('')])
+      .optional()
+      .transform(value =>
+        value && value.trim().length > 0 ? value : undefined
+      ),
+    supplierId: z
+      .string()
+      .trim()
+      .min(1, '请选择供应商')
+      .uuid('供应商ID格式不正确'),
     quantity: z.number().positive('数量必须大于0'),
     unitPrice: z.number().min(0, '单价不能为负数'),
     ownership: z

@@ -41,6 +41,7 @@ export interface FilterConfig {
   options: FilterOption[];
   placeholder?: string;
   width?: string; // Tailwind类名,如 'w-32'
+  includeAllOption?: boolean;
 }
 
 /**
@@ -221,33 +222,42 @@ export const UnifiedSearchBar = React.memo<UnifiedSearchBarProps>(
 
           {/* 筛选器组 */}
           {filters.length > 0 &&
-            filters.map(filter => (
-              <Select
-                key={filter.key}
-                value={filterValues[filter.key] || 'all'}
-                onValueChange={handleFilterChange(filter.key)}
-              >
-                <SelectTrigger
-                  className={cn(
-                    inputSize,
-                    filter.width || 'w-32',
-                    compact && 'text-xs'
-                  )}
+            filters.map(filter => {
+              const includeAllOption = filter.includeAllOption ?? true;
+              const selectedValue =
+                filterValues[filter.key] ??
+                (includeAllOption ? 'all' : undefined);
+
+              return (
+                <Select
+                  key={filter.key}
+                  value={selectedValue}
+                  onValueChange={handleFilterChange(filter.key)}
                 >
-                  <SelectValue
-                    placeholder={filter.placeholder || filter.label}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">全部{filter.label}</SelectItem>
-                  {filter.options.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ))}
+                  <SelectTrigger
+                    className={cn(
+                      inputSize,
+                      filter.width || 'w-32',
+                      compact && 'text-xs'
+                    )}
+                  >
+                    <SelectValue
+                      placeholder={filter.placeholder || filter.label}
+                    />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {includeAllOption && (
+                      <SelectItem value="all">全部{filter.label}</SelectItem>
+                    )}
+                    {filter.options.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              );
+            })}
         </div>
       </div>
     );

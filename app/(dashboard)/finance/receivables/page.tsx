@@ -42,6 +42,8 @@ export default async function ReceivablesPage({
   const status = (params.status as PaymentStatus) || undefined;
   const sortBy = (params.sortBy as string) || 'orderDate';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
+  const startDate = (params.startDate as string) || undefined;
+  const endDate = (params.endDate as string) || undefined;
 
   const queryParams = {
     page,
@@ -50,6 +52,8 @@ export default async function ReceivablesPage({
     status,
     sortBy,
     sortOrder,
+    startDate,
+    endDate,
   };
 
   // 服务器端获取初始数据
@@ -60,6 +64,8 @@ export default async function ReceivablesPage({
     paymentStatus: status,
     sortBy,
     sortOrder,
+    startDate,
+    endDate,
   });
 
   return (

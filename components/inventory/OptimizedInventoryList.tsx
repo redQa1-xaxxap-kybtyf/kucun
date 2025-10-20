@@ -43,7 +43,6 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
   }) => {
     const {
       queryParams,
-      selectedIds,
       inventoryData,
       pagination: _pagination,
       isLoading: _isLoading,
@@ -56,8 +55,6 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
       handleInbound,
       handleOutbound,
       handleAdjust,
-      handleSelectAll,
-      handleSelectRow,
     } = useOptimizedInventoryList(initialParams);
 
     // 错误状态处理
@@ -87,7 +84,6 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
         {/* 操作栏 */}
         <div className="flex items-center justify-between">
           <InventoryListActions
-            selectedCount={selectedIds.size}
             onInbound={handleInbound}
             onOutbound={handleOutbound}
             onAdjust={() => handleAdjust()}
@@ -102,9 +98,6 @@ export const OptimizedInventoryList = React.memo<OptimizedInventoryListProps>(
         {/* 虚拟化表格 */}
         <VirtualizedInventoryTable
           data={inventoryData}
-          selectedIds={selectedIds}
-          onSelectAll={handleSelectAll}
-          onSelectRow={handleSelectRow}
           onAdjust={handleAdjust}
           itemHeight={virtualizationConfig.itemHeight}
           containerHeight={virtualizationConfig.containerHeight}

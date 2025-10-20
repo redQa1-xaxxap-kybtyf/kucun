@@ -68,14 +68,17 @@ const getCustomerStatementDetailHandler = withAuth(
   async (request: NextRequest, { params }) => {
     try {
       const { customerId } = await resolveParams(
-        params as Promise<Record<string, string>> | Record<string, string> | undefined
+        params as
+          | Promise<Record<string, string>>
+          | Record<string, string>
+          | undefined
       );
       if (!customerId) {
         return errorResponse('缺少客户ID', 400);
       }
 
       const searchParams = new URL(request.url).searchParams;
-  const { startDate, endDate } = normalizeRange(
+      const { startDate, endDate } = normalizeRange(
         searchParams.get('startDate'),
         searchParams.get('endDate')
       );

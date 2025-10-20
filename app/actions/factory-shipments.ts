@@ -18,7 +18,7 @@ const FACTORY_SHIPMENT_STATUS_VALUES = Object.values(
 const factoryShipmentStatusEnum = z.enum(
   FACTORY_SHIPMENT_STATUS_VALUES as [
     FactoryShipmentStatus,
-    ...FactoryShipmentStatus[]
+    ...FactoryShipmentStatus[],
   ]
 );
 
@@ -117,7 +117,11 @@ async function resolveShipmentItems(
   Prisma.FactoryShipmentOrderItemUncheckedCreateWithoutFactoryShipmentOrderInput[]
 > {
   const productIds = Array.from(
-    new Set(items.map(item => item.productId).filter((id): id is string => Boolean(id)))
+    new Set(
+      items
+        .map(item => item.productId)
+        .filter((id): id is string => Boolean(id))
+    )
   );
 
   const products =
@@ -146,7 +150,9 @@ async function resolveShipmentItems(
       item.specification?.trim() ?? product?.specification ?? undefined;
     const trimmedUnit = item.unit?.trim() ?? product?.unit ?? 'piece';
     const itemWeight =
-      typeof item.weight === 'number' ? item.weight : product?.weight ?? undefined;
+      typeof item.weight === 'number'
+        ? item.weight
+        : (product?.weight ?? undefined);
 
     return {
       productId:
@@ -159,14 +165,16 @@ async function resolveShipmentItems(
       totalPrice: item.totalPrice,
       isManualProduct: item.isManualProduct ? true : undefined,
       manualProductName: item.isManualProduct
-        ? trimmedManualName ?? '临时商品'
+        ? (trimmedManualName ?? '临时商品')
         : undefined,
       manualSpecification: item.isManualProduct
-        ? item.manualSpecification?.trim() ?? undefined
+        ? (item.manualSpecification?.trim() ?? undefined)
         : undefined,
-      manualWeight: item.isManualProduct ? item.manualWeight ?? undefined : undefined,
+      manualWeight: item.isManualProduct
+        ? (item.manualWeight ?? undefined)
+        : undefined,
       manualUnit: item.isManualProduct
-        ? item.manualUnit?.trim() ?? undefined
+        ? (item.manualUnit?.trim() ?? undefined)
         : undefined,
       remarks: item.remarks?.trim() ?? undefined,
       displayName: trimmedDisplayName,
@@ -221,10 +229,7 @@ export async function createFactoryShipment(
         (data.status as FactoryShipmentStatus | undefined) ??
         FACTORY_SHIPMENT_STATUS.DRAFT;
       const receivableAmount = data.receivableAmount ?? grandTotal;
-      const depositAmount = Math.min(
-        data.depositAmount ?? 0,
-        receivableAmount
-      );
+      const depositAmount = Math.min(data.depositAmount ?? 0, receivableAmount);
       const trimmedContainer = data.containerNumber?.trim();
 
       // 创建厂家发货订单
@@ -374,7 +379,6 @@ export async function updateFactoryShipmentStatus(
           }
         }
       }
-
     });
 
     revalidatePath('/factory-shipments');

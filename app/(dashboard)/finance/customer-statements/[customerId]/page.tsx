@@ -10,8 +10,8 @@ import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { ErrorMessage } from '@/components/ui/error-message';
-import { Input } from '@/components/ui/input';
 import {
   Table,
   TableBody,
@@ -356,37 +356,22 @@ export default function CustomerStatementDetailPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4 md:flex-row md:items-end">
-            <div className="flex flex-1 flex-col gap-2 md:max-w-xs">
-              <label className="text-muted-foreground text-sm font-medium">
-                开始日期
-              </label>
-              <Input
-                type="date"
-                value={dateRange.startDate}
-                max={dateRange.endDate}
-                onChange={event =>
-                  setDateRange(prev => ({
-                    ...prev,
-                    startDate: event.target.value,
-                  }))
-                }
-              />
-            </div>
-            <div className="flex flex-1 flex-col gap-2 md:max-w-xs">
-              <label className="text-muted-foreground text-sm font-medium">
-                结束日期
-              </label>
-              <Input
-                type="date"
-                value={dateRange.endDate}
-                min={dateRange.startDate}
-                max={format(today, 'yyyy-MM-dd')}
-                onChange={event =>
-                  setDateRange(prev => ({
-                    ...prev,
-                    endDate: event.target.value,
-                  }))
-                }
+            <div className="flex-1 md:max-w-md">
+              <DateRangePicker
+                value={{
+                  startDate: dateRange.startDate,
+                  endDate: dateRange.endDate,
+                }}
+                onChange={({ startDate, endDate }) => {
+                  setDateRange({
+                    startDate: startDate || defaultStartDate,
+                    endDate: endDate || defaultEndDate,
+                  });
+                }}
+                label="对账期间"
+                maxDate={today}
+                showPresets={true}
+                showClearButton={false}
               />
             </div>
             <div className="flex items-center gap-2">

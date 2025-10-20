@@ -13,6 +13,10 @@ import * as React from 'react';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/ui/date-range-picker';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 
 interface InventorySearchToolbarProps {
@@ -58,13 +62,25 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
       onFilter('categoryId', undefined);
       onFilter('lowStock', false);
       onFilter('hasStock', false);
+      onFilter('startDate', undefined);
+      onFilter('endDate', undefined);
     }, [onFilter]);
+
+    const handleDateRangeChange = React.useCallback(
+      (range: DateRangeValue) => {
+        onFilter('startDate', range.startDate);
+        onFilter('endDate', range.endDate);
+      },
+      [onFilter]
+    );
 
     // 检查是否有激活的筛选器（排除默认值）
     const hasActiveFilters =
       !!queryParams.categoryId || // 有选择分类
       queryParams.lowStock || // 开启了库存偏低
-      queryParams.hasStock; // 开启了有库存
+      queryParams.hasStock || // 开启了有库存
+      !!queryParams.startDate ||
+      !!queryParams.endDate;
     // 注意：不包括 sortBy，因为它总是有默认值 'updatedAt'
 
     return (
@@ -124,6 +140,19 @@ export const InventorySearchToolbar = React.memo<InventorySearchToolbarProps>(
                 sortBy: queryParams.sortBy,
               }}
               onFilterChange={handleFilterChange}
+            />
+
+            <DateRangePicker
+              value={{
+                startDate: queryParams.startDate,
+                endDate: queryParams.endDate,
+              }}
+              onChange={handleDateRangeChange}
+              label=""
+              placeholder="选择更新时间范围"
+              showPresets
+              showClearButton
+              className="w-full min-w-[220px] sm:w-auto"
             />
 
             {/* 清空筛选按钮 - 仅在有激活的筛选时显示，显示在筛选器右侧 */}

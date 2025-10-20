@@ -51,6 +51,9 @@ async function logDatabaseError(
   }
 }
 
+const isJestEnvironment =
+  typeof process !== 'undefined' && !!process.env.JEST_WORKER_ID;
+
 // 全局 Prisma 客户端实例
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
@@ -59,7 +62,7 @@ const globalForPrisma = globalThis as unknown as {
 // 防止在客户端环境中初始化 Prisma
 function createPrismaClient() {
   // 客户端环境检测
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && !isJestEnvironment) {
     throw new Error(
       'PrismaClient is not available in browser environment. Please use API routes to access database.'
     );
@@ -80,7 +83,7 @@ function createPrismaClient() {
 
 // 创建 Prisma 客户端实例（仅在服务端）
 export const prisma =
-  typeof window !== 'undefined'
+  typeof window !== 'undefined' && !isJestEnvironment
     ? (null as unknown as PrismaClient) // 客户端返回 null
     : (globalForPrisma.prisma ?? createPrismaClient());
 

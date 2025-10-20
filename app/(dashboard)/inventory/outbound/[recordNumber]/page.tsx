@@ -1,4 +1,12 @@
-import { type LucideIcon, ArrowLeft, BadgeCheck, Boxes, HandCoins, PackageMinus, Warehouse } from 'lucide-react';
+import {
+  type LucideIcon,
+  ArrowLeft,
+  BadgeCheck,
+  Boxes,
+  HandCoins,
+  PackageMinus,
+  Warehouse,
+} from 'lucide-react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import type { ReactNode } from 'react';
@@ -42,17 +50,13 @@ function resolveReasonLabel(record: OutboundRecordDetail) {
   return OUTBOUND_REASON_LABELS[record.type] || '出库';
 }
 
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: ReactNode;
-}) {
+function DetailRow({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className="grid grid-cols-[120px_1fr] gap-2">
       <span className="text-[hsl(var(--color-text-secondary))]">{label}</span>
-      <span className="text-[hsl(var(--color-text-primary))]">{value ?? '—'}</span>
+      <span className="text-[hsl(var(--color-text-primary))]">
+        {value ?? '—'}
+      </span>
     </div>
   );
 }
@@ -92,11 +96,19 @@ function OutboundRecordDetail({ record }: { record: OutboundRecordDetail }) {
       <div className="mx-auto w-full max-w-6xl space-y-6 p-6 pb-12">
         <div className="flex flex-col gap-4">
           <BackButton />
-          <OutboundOverviewCard record={record} createdAt={createdAt} updatedAt={updatedAt} />
+          <OutboundOverviewCard
+            record={record}
+            createdAt={createdAt}
+            updatedAt={updatedAt}
+          />
         </div>
         <div className="grid gap-6 lg:grid-cols-2">
           <ProductInfoCard record={record} />
-          <OutboundInfoCard record={record} createdAt={createdAt} updatedAt={updatedAt} />
+          <OutboundInfoCard
+            record={record}
+            createdAt={createdAt}
+            updatedAt={updatedAt}
+          />
         </div>
         <BatchHistoryCard batchNumber={record.batchNumber} />
       </div>
@@ -129,14 +141,16 @@ function OutboundOverviewCard({
       label: '出库数量',
       value: `${formatNumber(record.quantity)} ${record.product?.unit || '片'}`,
       icon: Boxes,
-      iconClassName: 'bg-[hsl(var(--color-primary-light))] text-[hsl(var(--color-primary))]',
+      iconClassName:
+        'bg-[hsl(var(--color-primary-light))] text-[hsl(var(--color-primary))]',
     },
     {
       label: '单位成本',
       value:
         record.unitCost !== undefined ? formatCurrency(record.unitCost) : '—',
       icon: HandCoins,
-      iconClassName: 'bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
+      iconClassName:
+        'bg-[hsl(var(--color-success-light))] text-[hsl(var(--color-success))]',
     },
     {
       label: '当前批次库存',
@@ -145,13 +159,15 @@ function OutboundOverviewCard({
           ? `${formatNumber(record.inventoryBalance)} ${record.product?.unit || '片'}`
           : '—',
       icon: Warehouse,
-      iconClassName: 'bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
+      iconClassName:
+        'bg-[hsl(var(--color-warning-light))] text-[hsl(var(--color-warning))]',
     },
     {
       label: '操作人',
       value: record.user?.name || '—',
       icon: BadgeCheck,
-      iconClassName: 'bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
+      iconClassName:
+        'bg-[hsl(var(--color-info-light))] text-[hsl(var(--color-info))]',
     },
   ];
 
@@ -172,7 +188,10 @@ function OutboundOverviewCard({
           <Badge variant={typeVariant} className="w-fit">
             {typeLabel}
           </Badge>
-          <Badge variant="outline" className="w-fit text-[hsl(var(--color-text-secondary))]">
+          <Badge
+            variant="outline"
+            className="w-fit text-[hsl(var(--color-text-secondary))]"
+          >
             {reasonLabel}
           </Badge>
         </div>
@@ -196,7 +215,9 @@ function SummaryStat({ icon: Icon, iconClassName, label, value }: SummaryItem) {
           <Icon className="h-5 w-5" />
         </div>
         <div>
-          <div className="text-xs text-[hsl(var(--color-text-tertiary))]">{label}</div>
+          <div className="text-xs text-[hsl(var(--color-text-tertiary))]">
+            {label}
+          </div>
           <div className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
             {value}
           </div>
@@ -239,7 +260,10 @@ function OutboundInfoCard({
   updatedAt?: string;
 }) {
   const salesOrderValue = record.salesOrder ? (
-    <Link href={`/sales-orders/${record.salesOrder.id}`} className="text-[hsl(var(--color-primary))] hover:underline">
+    <Link
+      href={`/sales-orders/${record.salesOrder.id}`}
+      className="text-[hsl(var(--color-primary))] hover:underline"
+    >
       {record.salesOrder.orderNumber}
     </Link>
   ) : (
@@ -282,7 +306,9 @@ function BatchHistoryCard({ batchNumber }: { batchNumber?: string | null }) {
           </p>
         </div>
         <Button variant="outline" asChild>
-          <Link href={`/inventory/batch/${encodeURIComponent(batchNumber)}/history`}>
+          <Link
+            href={`/inventory/batch/${encodeURIComponent(batchNumber)}/history`}
+          >
             查看批次历史
           </Link>
         </Button>

@@ -35,7 +35,6 @@ export function ERPProductList({
     setDeleteDialog,
     handleSearch,
     handleFilter,
-    handleSortChange,
     handlePageChange,
     handleDeleteProduct,
   } = useProductListState(initialParams);
@@ -102,12 +101,9 @@ export function ERPProductList({
         searchValue={initialParams?.search || ''}
         categoryId={initialParams?.categoryId}
         status={initialParams?.status}
-        sortBy={initialParams?.sortBy || 'createdAt'}
-        sortOrder={initialParams?.sortOrder || 'desc'}
         categories={categories}
         onSearchChange={handleSearch}
         onFilterChange={handleFilter}
-        onSortChange={handleSortChange}
         onClearFilters={handleClearFilters}
       />
 

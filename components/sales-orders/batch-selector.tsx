@@ -62,9 +62,7 @@ export function BatchSelector({
 
   if (batches.length === 0) {
     return (
-      <div className={cn('text-sm text-gray-500', className)}>
-        暂无可用批次
-      </div>
+      <div className={cn('text-sm text-gray-500', className)}>暂无可用批次</div>
     );
   }
 

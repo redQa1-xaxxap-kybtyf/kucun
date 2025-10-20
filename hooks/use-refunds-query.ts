@@ -23,13 +23,13 @@ interface UseRefundsQueryOptions {
  *
  * ✅ 特性：
  * - 与服务端 HydrationBoundary 共用同一 queryKey
- * - 默认避免刷新时的重复请求（staleTime=Infinity）
+ * - 默认使用 5 分钟缓存窗口避免频繁刷新
  * - 提供预取能力，支持分页预取
  */
 export function useRefundsQuery({
   params,
   enabled = true,
-  staleTime = Infinity,
+  staleTime = 5 * 60 * 1000,
   cacheTime = 10 * 60 * 1000,
 }: UseRefundsQueryOptions) {
   const queryClient = useQueryClient();

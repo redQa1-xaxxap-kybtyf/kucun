@@ -16,8 +16,7 @@ import type { Product } from '@/lib/types/product';
 import { transformFormDataToCreateInput } from '@/lib/utils/sales-order-transforms';
 import type { SalesOrderCreateFormData as CreateSalesOrderData } from '@/lib/validations/sales-order';
 
-const ORDER_NUMBER_API =
-  '/api/sales-orders/generate-order-number?action=generate';
+const ORDER_NUMBER_API = '/api/sales-orders/generate-order-number';
 
 function generateLocalOrderNumber(): string {
   const now = new Date();
@@ -80,7 +79,12 @@ export function useOrderNumber(
 
     const fetchOrderNumber = async () => {
       try {
-        const response = await fetch(ORDER_NUMBER_API);
+        const response = await fetch(ORDER_NUMBER_API, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
         const data = await response.json();
 
         if (mounted && data?.success && data.data?.orderNumber) {
@@ -104,7 +108,12 @@ export function useOrderNumber(
 
   const handleGenerateOrderNumber = React.useCallback(async () => {
     try {
-      const response = await fetch(ORDER_NUMBER_API);
+      const response = await fetch(ORDER_NUMBER_API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       const data = await response.json();
 
       if (data?.success && data.data?.orderNumber) {

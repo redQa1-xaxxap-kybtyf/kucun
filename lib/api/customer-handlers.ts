@@ -5,6 +5,19 @@
 
 import { getServerSession } from 'next-auth';
 
+import {
+  buildCustomerDetail,
+  mapCustomerBase,
+  transformCustomerListItem,
+  type CustomerDetailQueryResult,
+  type CustomerDetailResult,
+  type CustomerListQueryResult,
+  type PrismaCustomerBase,
+} from '@/lib/api/customer-transformers';
+import {
+  checkHierarchyLoop,
+  ensureUniquePhoneInRegion,
+} from '@/lib/api/customer-validators';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { env } from '@/lib/env';
@@ -18,59 +31,6 @@ import {
   parseExtendedInfo,
   processExtendedInfo,
 } from '@/lib/validations/customer';
-
-type PrismaCustomerBase = {
-  id: string;
-  name: string;
-  phone: string | null;
-  address: string | null;
-  extendedInfo: string | null;
-  parentCustomerId: string | null;
-  createdAt: Date;
-  updatedAt: Date;
-};
-
-type CustomerOrderSummary = {
-  id: string;
-  orderNumber: string;
-  totalAmount: number;
-  paidAmount: number;
-  status: string;
-  createdAt: string;
-};
-
-type CustomerReturnSummary = {
-  id: string;
-  returnNumber: string;
-  totalAmount: number;
-  status: string;
-  createdAt: string;
-};
-
-type CustomerDetailResult = Customer & {
-  salesOrders: CustomerOrderSummary[];
-  returnOrders: CustomerReturnSummary[];
-  _count: {
-    salesOrders: number;
-    returnOrders: number;
-  };
-  totalOrders: number;
-  totalAmount: number;
-  lastOrderDate?: string;
-};
-
-function mapCustomerBase(customer: PrismaCustomerBase): Customer {
-  return {
-    id: customer.id,
-    name: customer.name,
-    phone: customer.phone || undefined,
-    address: customer.address || undefined,
-    extendedInfo: customer.extendedInfo || undefined,
-    parentCustomerId: customer.parentCustomerId || undefined,
-    createdAt: customer.createdAt.toISOString(),
-    updatedAt: customer.updatedAt.toISOString(),
-  };
-}
 
 /**
  * 验证用户会话
@@ -182,57 +142,7 @@ export async function getCustomerDetail(
     throw new Error('客户不存在');
   }
 
-  // 解析扩展信息
-  const extendedInfo = parseExtendedInfo(customer.extendedInfo || undefined);
-
-  // 计算统计信息
-  const totalOrders = customer.salesOrders.length;
-  const totalAmount = customer.salesOrders.reduce(
-    (sum, order) => sum + order.totalAmount,
-    0
-  );
-  const lastOrderDate = customer.salesOrders[0]?.createdAt.toISOString();
-
-  // 转换订单数据，将 Date 转换为 string
-  const salesOrders: CustomerOrderSummary[] = customer.salesOrders.map(
-    order => ({
-      ...order,
-      createdAt: order.createdAt.toISOString(),
-    })
-  );
-
-  const returnOrders: CustomerReturnSummary[] = customer.returnOrders.map(
-    order => ({
-      ...order,
-      createdAt: order.createdAt.toISOString(),
-    })
-  );
-
-  const baseCustomer = mapCustomerBase(customer);
-  const parentCustomer = customer.parentCustomer
-    ? mapCustomerBase(customer.parentCustomer as PrismaCustomerBase)
-    : undefined;
-  const childCustomers =
-    customer.childCustomers.length > 0
-      ? customer.childCustomers.map(child =>
-          mapCustomerBase(child as PrismaCustomerBase)
-        )
-      : undefined;
-
-  const detail: CustomerDetailResult = {
-    ...baseCustomer,
-    extendedInfo: JSON.stringify(extendedInfo),
-    parentCustomer,
-    childCustomers,
-    salesOrders,
-    returnOrders,
-    _count: customer._count,
-    totalOrders,
-    totalAmount,
-    lastOrderDate,
-  };
-
-  return detail;
+  return buildCustomerDetail(customer as CustomerDetailQueryResult);
 }
 
 /**
@@ -244,6 +154,8 @@ export async function getCustomerDetail(
 export async function createCustomer(
   data: CustomerCreateInput
 ): Promise<Customer> {
+  await ensureUniquePhoneInRegion(data.phone, data.extendedInfo?.region);
+
   // 处理扩展信息
   const extendedInfoStr = processExtendedInfo(data.extendedInfo);
 
@@ -301,6 +213,20 @@ export async function updateCustomer(
   if (!existingCustomer) {
     throw new Error('客户不存在');
   }
+
+  const existingExtendedInfo = parseExtendedInfo(
+    existingCustomer.extendedInfo || undefined
+  );
+
+  const mergedExtendedInfo = data.extendedInfo
+    ? { ...existingExtendedInfo, ...data.extendedInfo }
+    : existingExtendedInfo;
+
+  await ensureUniquePhoneInRegion(
+    data.phone !== undefined ? data.phone : existingCustomer.phone,
+    mergedExtendedInfo.region,
+    id
+  );
 
   // 如果更新了父级客户,检查是否会形成循环
   if (data.parentCustomerId) {
@@ -527,61 +453,9 @@ export async function getCustomerList(params: CustomerQueryParams) {
     prisma.customer.count({ where }),
   ]);
 
-  // 转换数据格式
-  const transformedCustomers: Customer[] = customers.map(customer => {
-    const extendedInfo = parseExtendedInfo(customer.extendedInfo || undefined);
-
-    // 实际交易次数：已完成的订单数（排除已取消的订单）
-    const completedOrders = customer.salesOrders.filter(
-      order => order.status !== 'cancelled' && order.status !== 'draft'
-    );
-    const transactionCount = completedOrders.length;
-
-    // 累计销售金额
-    const totalAmount = completedOrders.reduce(
-      (sum, order) => sum + order.totalAmount,
-      0
-    );
-
-    // 最后下单时间（所有订单中最新的）
-    const lastOrderDate =
-      customer.salesOrders.length > 0
-        ? customer.salesOrders[
-            customer.salesOrders.length - 1
-          ]?.createdAt.toISOString()
-        : undefined;
-
-    // 合作天数：从首次下单到当前的天数
-    let cooperationDays: number | undefined;
-    if (customer.salesOrders.length > 0) {
-      const firstOrderDate = customer.salesOrders[0].createdAt;
-      const now = new Date();
-      const diffTime = Math.abs(now.getTime() - firstOrderDate.getTime());
-      cooperationDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    }
-
-    // 退货次数：所有退货订单数（排除已取消的）
-    const returnOrderCount = customer.returnOrders.filter(
-      order => order.status !== 'cancelled'
-    ).length;
-
-    const baseCustomer = mapCustomerBase(customer);
-    const parentCustomer = customer.parentCustomer
-      ? mapCustomerBase(customer.parentCustomer as PrismaCustomerBase)
-      : undefined;
-
-    return {
-      ...baseCustomer,
-      extendedInfo: JSON.stringify(extendedInfo),
-      parentCustomer,
-      totalOrders: customer.salesOrders.length,
-      totalAmount,
-      lastOrderDate,
-      transactionCount,
-      cooperationDays,
-      returnOrderCount,
-    };
-  });
+  const transformedCustomers: Customer[] = customers.map(customer =>
+    transformCustomerListItem(customer as CustomerListQueryResult)
+  );
 
   // 计算分页信息
   const totalPages = Math.ceil(total / limit);
@@ -603,41 +477,3 @@ export async function getCustomerList(params: CustomerQueryParams) {
  * @param newParentId 新父级客户ID
  * @returns 如果会形成循环返回true,否则返回false
  */
-async function checkHierarchyLoop(
-  customerId: string,
-  newParentId: string
-): Promise<boolean> {
-  // 不能将自己设为父级
-  if (customerId === newParentId) {
-    return true;
-  }
-
-  // 检查新父级的所有祖先
-  let currentParentId: string | null = newParentId;
-  const visited = new Set<string>();
-
-  while (currentParentId) {
-    // 检测循环
-    if (visited.has(currentParentId)) {
-      return true;
-    }
-
-    // 如果新父级的祖先中包含当前客户,则形成循环
-    if (currentParentId === customerId) {
-      return true;
-    }
-
-    visited.add(currentParentId);
-
-    // 查找父级的父级
-    const parent: { parentCustomerId: string | null } | null =
-      await prisma.customer.findUnique({
-        where: { id: currentParentId },
-        select: { parentCustomerId: true },
-      });
-
-    currentParentId = parent?.parentCustomerId || null;
-  }
-
-  return false;
-}

@@ -343,6 +343,195 @@ function safeParseDate(value: string): Date {
   return new Date();
 }
 
+interface BaseReceivableOrder {
+  id: string;
+  orderNumber: string;
+  customerId: string;
+  totalAmount: Prisma.Decimal | number | null;
+  createdAt: Date;
+}
+
+type PaymentTotals = {
+  confirmed: number;
+  pending: number;
+};
+
+async function fetchReceivableBaseOrders(
+  where: Prisma.SalesOrderWhereInput,
+  orderBy: Prisma.SalesOrderOrderByWithRelationInput
+): Promise<BaseReceivableOrder[]> {
+  return prisma.salesOrder.findMany({
+    where,
+    select: {
+      id: true,
+      orderNumber: true,
+      customerId: true,
+      totalAmount: true,
+      createdAt: true,
+    },
+    orderBy,
+  });
+}
+
+async function aggregatePaymentsByOrder(
+  orderIds: string[]
+): Promise<Record<string, PaymentTotals>> {
+  if (!orderIds.length) {
+    return {};
+  }
+
+  const paymentAggregations = await prisma.paymentRecord.groupBy({
+    by: ['salesOrderId', 'status'],
+    where: {
+      salesOrderId: { in: orderIds },
+      status: { in: ['confirmed', 'pending'] },
+    },
+    _sum: { paymentAmount: true },
+  });
+
+  return paymentAggregations.reduce<Record<string, PaymentTotals>>(
+    (acc, item) => {
+      if (!item.salesOrderId) {
+        return acc;
+      }
+
+      const existing = acc[item.salesOrderId] ?? {
+        confirmed: 0,
+        pending: 0,
+      };
+      const amount = Number(item._sum.paymentAmount ?? 0);
+
+      if (item.status === 'confirmed') {
+        existing.confirmed += amount;
+      } else if (item.status === 'pending') {
+        existing.pending += amount;
+      }
+
+      acc[item.salesOrderId] = existing;
+      return acc;
+    },
+    {}
+  );
+}
+
+function createSummaryReceivables(
+  orders: BaseReceivableOrder[],
+  paymentsByOrder: Record<string, PaymentTotals>
+): ReceivableItem[] {
+  return orders.map(order => {
+    const amounts = paymentsByOrder[order.id] ?? {
+      confirmed: 0,
+      pending: 0,
+    };
+
+    const totalAmount = Number(order.totalAmount ?? 0);
+    const remainingAmount = Math.max(
+      0,
+      totalAmount - amounts.confirmed - amounts.pending
+    );
+    const statusDerived = calculatePaymentStatus(
+      amounts.confirmed,
+      totalAmount,
+      order.createdAt,
+      amounts.pending
+    );
+
+    return {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      customerId: order.customerId,
+      customerName: '',
+      customerPhone: undefined,
+      orderDate: order.createdAt.toISOString().split('T')[0],
+      totalAmount,
+      paidAmount: amounts.confirmed,
+      pendingAmount: amounts.pending,
+      remainingAmount,
+      paymentStatus: statusDerived,
+      lastPaymentDate: undefined,
+    };
+  });
+}
+
+function filterReceivablesByStatus(
+  receivables: ReceivableItem[],
+  status?: PaymentStatus
+): ReceivableItem[] {
+  if (!status) {
+    return receivables;
+  }
+
+  return receivables.filter(item => item.paymentStatus === status);
+}
+
+function paginateReceivableIds(
+  receivables: ReceivableItem[],
+  page: number,
+  limit: number
+): {
+  total: number;
+  totalPages: number;
+  pageOrderIds: string[];
+} {
+  const total = receivables.length;
+  const totalPages = Math.ceil(total / limit);
+  const startIndex = Math.max(0, (page - 1) * limit);
+  const pageOrderIds = receivables
+    .slice(startIndex, startIndex + limit)
+    .map(item => item.id);
+
+  return { total, totalPages, pageOrderIds };
+}
+
+async function fetchReceivableDetails(orderIds: string[]) {
+  if (!orderIds.length) {
+    return [];
+  }
+
+  return prisma.salesOrder.findMany({
+    where: { id: { in: orderIds } },
+    include: {
+      customer: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+      payments: {
+        where: { status: { in: ['confirmed', 'pending'] } },
+        select: {
+          paymentAmount: true,
+          paymentDate: true,
+          status: true,
+        },
+        orderBy: { paymentDate: 'desc' },
+      },
+    },
+  });
+}
+
+function mapOrdersById<T extends { id: string }>(
+  orders: T[]
+): Record<string, T> {
+  return orders.reduce<Record<string, T>>((acc, item) => {
+    acc[item.id] = item;
+    return acc;
+  }, {});
+}
+
+function buildPaginatedReceivables(
+  orderIds: string[],
+  orderMap: Record<string, Parameters<typeof transformToReceivable>[0]>
+): ReceivableItem[] {
+  return orderIds
+    .map(id => orderMap[id])
+    .filter((value): value is Parameters<typeof transformToReceivable>[0] =>
+      Boolean(value)
+    )
+    .map(transformToReceivable);
+}
+
 // ==================== 公共服务函数 ====================
 
 /**
@@ -363,53 +552,40 @@ export async function getReceivables(
 
   // 构建基础查询条件
   const baseWhere = buildWhereConditions(filterParams);
+  const orderBy = buildOrderBy(sortBy, sortOrder);
 
-  // 获取所有符合基础条件的订单
-  const allOrders = await prisma.salesOrder.findMany({
-    where: baseWhere,
-    select: {
-      id: true,
-      orderNumber: true,
-      customerId: true,
-      totalAmount: true,
-      createdAt: true,
-      customer: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-        },
-      },
-      payments: {
-        where: { status: { in: ['confirmed', 'pending'] } },
-        select: {
-          paymentAmount: true,
-          paymentDate: true,
-          status: true,
-        },
-        orderBy: { paymentDate: 'desc' },
-      },
-    },
-    orderBy: buildOrderBy(sortBy, sortOrder),
-  });
+  // 获取符合条件的订单基础数据（用于统计与分页）
+  const orders = await fetchReceivableBaseOrders(baseWhere, orderBy);
 
-  // 转换为应收款项并计算支付状态
-  let receivables = allOrders.map(transformToReceivable);
+  const orderIds = orders.map(order => order.id);
 
-  // 如果有支付状态筛选,在应用层过滤
-  if (paymentStatus) {
-    receivables = receivables.filter(r => r.paymentStatus === paymentStatus);
-  }
+  // 聚合收款信息（仅获取需要的状态）
+  const paymentsByOrder = await aggregatePaymentsByOrder(orderIds);
+
+  // 构建用于统计的应收款列表
+  const summaryReceivables = createSummaryReceivables(orders, paymentsByOrder);
+
+  // 应用支付状态筛选
+  const filteredReceivables = filterReceivablesByStatus(
+    summaryReceivables,
+    paymentStatus
+  );
 
   // 计算统计数据
-  const summary = calculateSummary(receivables);
+  const summary = calculateSummary(filteredReceivables);
 
-  // 分页处理
-  const total = receivables.length;
-  const totalPages = Math.ceil(total / limit);
-  const paginatedReceivables = receivables.slice(
-    (page - 1) * limit,
-    page * limit
+  // 计算分页并获取当前页需要的订单详情
+  const { total, totalPages, pageOrderIds } = paginateReceivableIds(
+    filteredReceivables,
+    page,
+    limit
+  );
+
+  const pageOrders = await fetchReceivableDetails(pageOrderIds);
+  const orderMap = mapOrdersById(pageOrders);
+  const paginatedReceivables = buildPaginatedReceivables(
+    pageOrderIds,
+    orderMap
   );
 
   return {

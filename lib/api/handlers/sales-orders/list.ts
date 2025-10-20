@@ -74,6 +74,8 @@ const buildWhere = ({
     where.OR = [
       { orderNumber: { contains: search } },
       { customer: { name: { contains: search } } },
+      { customer: { phone: { contains: search } } },
+      { customer: { address: { contains: search } } },
       { remarks: { contains: search } },
     ];
   }

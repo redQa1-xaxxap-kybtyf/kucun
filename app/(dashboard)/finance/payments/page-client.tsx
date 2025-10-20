@@ -10,6 +10,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PaymentsClient } from '@/components/finance/payments-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import type { PaymentStatus } from '@/lib/types/payment';
 
 interface PaymentRecord {
@@ -52,6 +53,8 @@ interface PaymentsQueryParams {
   paymentMethod?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
 }
 
 interface PaymentsPageClientProps {
@@ -102,6 +105,12 @@ export function PaymentsPageClient({
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
   );
+  const [startDate, setStartDate] = React.useState<string | undefined>(
+    initialParams.startDate
+  );
+  const [endDate, setEndDate] = React.useState<string | undefined>(
+    initialParams.endDate
+  );
 
   // 防抖更新URL - 避免每次输入都触发导航
   const debouncedUpdateURL = useDebouncedCallback(
@@ -122,6 +131,12 @@ export function PaymentsPageClient({
         }
         if (filters.sortOrder) {
           params.set('sortOrder', filters.sortOrder);
+        }
+        if (filters.startDate) {
+          params.set('startDate', filters.startDate);
+        }
+        if (filters.endDate) {
+          params.set('endDate', filters.endDate);
         }
         if (filters.page && filters.page > 1) {
           params.set('page', filters.page.toString());
@@ -148,6 +163,8 @@ export function PaymentsPageClient({
         sortBy,
         sortOrder,
         page: 1,
+        startDate,
+        endDate,
       });
     },
     [
@@ -157,6 +174,8 @@ export function PaymentsPageClient({
       paymentMethod,
       sortBy,
       sortOrder,
+      startDate,
+      endDate,
     ]
   );
 
@@ -190,6 +209,8 @@ export function PaymentsPageClient({
         paymentMethod: nextPaymentMethod,
         sortBy: nextSortBy,
         sortOrder: nextSortOrder,
+        startDate,
+        endDate,
       };
 
       startTransition(() => {
@@ -208,6 +229,12 @@ export function PaymentsPageClient({
         }
         if (nextFilters.sortOrder) {
           params.set('sortOrder', nextFilters.sortOrder);
+        }
+        if (nextFilters.startDate) {
+          params.set('startDate', nextFilters.startDate);
+        }
+        if (nextFilters.endDate) {
+          params.set('endDate', nextFilters.endDate);
         }
         if (nextFilters.limit) {
           params.set('limit', nextFilters.limit.toString());
@@ -239,11 +266,68 @@ export function PaymentsPageClient({
         if (sortOrder) {
           params.set('sortOrder', sortOrder);
         }
+        if (startDate) {
+          params.set('startDate', startDate);
+        }
+        if (endDate) {
+          params.set('endDate', endDate);
+        }
         if (page > 1) {
           params.set('page', page.toString());
         }
         if (initialParams.limit) {
           params.set('limit', initialParams.limit.toString());
+        }
+
+        router.push(`/finance/payments?${params.toString()}`);
+      });
+    },
+    [
+      router,
+      search,
+      status,
+      paymentMethod,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+      initialParams.limit,
+    ]
+  );
+
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      const nextStart = range.startDate || undefined;
+      const nextEnd = range.endDate || undefined;
+
+      setStartDate(nextStart);
+      setEndDate(nextEnd);
+
+      startTransition(() => {
+        const params = new URLSearchParams();
+        if (search) {
+          params.set('search', search);
+        }
+        if (status) {
+          params.set('status', status);
+        }
+        if (paymentMethod) {
+          params.set('paymentMethod', paymentMethod);
+        }
+        if (sortBy) {
+          params.set('sortBy', sortBy);
+        }
+        if (sortOrder) {
+          params.set('sortOrder', sortOrder);
+        }
+        if (initialParams.limit) {
+          params.set('limit', initialParams.limit.toString());
+        }
+        if (nextStart) {
+          params.set('startDate', nextStart);
+        }
+        if (nextEnd) {
+          params.set('endDate', nextEnd);
         }
 
         router.push(`/finance/payments?${params.toString()}`);
@@ -326,6 +410,7 @@ export function PaymentsPageClient({
             initialParams={initialParams}
             onSearch={handleSearch}
             onFilter={handleFilter}
+            onDateRangeChange={handleDateRangeChange}
             onPageChange={handlePageChange}
             onRefresh={handleRefresh}
           />

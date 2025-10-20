@@ -20,6 +20,8 @@ interface PageProps {
     status?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
+    startDate?: string;
+    endDate?: string;
   }>;
 }
 
@@ -55,6 +57,8 @@ export default async function ReturnOrdersPage({ searchParams }: PageProps) {
     status: isReturnOrderStatus(params?.status) ? params?.status : undefined,
     sortBy: params?.sortBy || 'createdAt',
     sortOrder: (params?.sortOrder as 'asc' | 'desc') || 'desc',
+    startDate: params?.startDate || undefined,
+    endDate: params?.endDate || undefined,
   };
 
   return <ReturnOrdersPageClient initialParams={initialParams} />;

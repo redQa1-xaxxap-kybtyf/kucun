@@ -16,6 +16,10 @@ import { RefundProcessDialog } from '@/components/finance/refund-process-dialog'
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -40,6 +44,7 @@ interface RefundsClientProps {
   errorMessage?: string | null;
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
+  onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
 }
 
@@ -54,6 +59,7 @@ export function RefundsClient({
   errorMessage,
   onSearch,
   onFilter,
+  onDateRangeChange,
   onPageChange,
 }: RefundsClientProps) {
   const router = useRouter();
@@ -62,6 +68,13 @@ export function RefundsClient({
     null
   );
   const { refunds, statistics, pagination } = data;
+  const [searchValue, setSearchValue] = React.useState(
+    initialParams.search ?? ''
+  );
+
+  React.useEffect(() => {
+    setSearchValue(initialParams.search ?? '');
+  }, [initialParams.search]);
 
   const handleDialogOpenChange = React.useCallback((open: boolean) => {
     setProcessDialogOpen(open);
@@ -214,8 +227,12 @@ export function RefundsClient({
                 <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
                 <Input
                   placeholder="搜索退款单号、退货单号..."
-                  defaultValue={initialParams.search}
-                  onChange={e => onSearch?.(e.target.value)}
+                  value={searchValue}
+                  onChange={e => {
+                    const value = e.target.value;
+                    setSearchValue(value);
+                    onSearch?.(value);
+                  }}
                   className="pl-9"
                 />
               </div>
@@ -238,6 +255,18 @@ export function RefundsClient({
                 </SelectContent>
               </Select>
             </div>
+            <DateRangePicker
+              value={{
+                startDate: initialParams.startDate,
+                endDate: initialParams.endDate,
+              }}
+              onChange={range => onDateRangeChange?.(range)}
+              label=""
+              placeholder="选择退款日期范围"
+              showPresets
+              showClearButton
+              className="min-w-[220px]"
+            />
           </div>
 
           {/* 退款申请列表 */}

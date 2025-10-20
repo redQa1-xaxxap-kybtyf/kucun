@@ -62,6 +62,8 @@ export default function SignInPage() {
   // 表单配置
   const form = useForm<UserLoginInput>({
     resolver: zodResolver(userValidations.login),
+    mode: 'onSubmit',
+    reValidateMode: 'onSubmit',
     defaultValues: {
       username: '',
       password: '',
@@ -83,6 +85,7 @@ export default function SignInPage() {
       CAPTCHA_VERIFY_FAILED: string;
       CAPTCHA_INCORRECT: string;
       TOO_MANY_ATTEMPTS: string;
+      RATE_LIMIT_EXCEEDED: string;
       SERVER_ERROR: string;
       NETWORK_ERROR: string;
       Default: string;
@@ -104,6 +107,7 @@ export default function SignInPage() {
 
       // 登录限制错误
       TOO_MANY_ATTEMPTS: '登录失败次数过多，请稍后再试',
+      RATE_LIMIT_EXCEEDED: '认证请求过于频繁，请稍后再试',
 
       // 服务器错误
       SERVER_ERROR: '服务器错误，请稍后重试',
@@ -521,4 +525,3 @@ export default function SignInPage() {
     </div>
   );
 }
-

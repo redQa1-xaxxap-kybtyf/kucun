@@ -146,98 +146,140 @@ export const inventoryAdjustmentsQuerySchema = z
   );
 
 // 库存查询API验证规则
-export const inventoryQuerySchema = z.object({
-  page: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => (val ? parseInt(val) : 1))
-    .refine(val => val > 0, '页码必须大于0'),
+export const inventoryQuerySchema = z
+  .object({
+    page: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => (val ? parseInt(val) : 1))
+      .refine(val => val > 0, '页码必须大于0'),
 
-  limit: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => (val ? parseInt(val) : paginationConfig.defaultPageSize))
-    .refine(
-      val => val > 0 && val <= paginationConfig.maxPageSize,
-      `每页数量必须在1-${paginationConfig.maxPageSize}之间`
-    ),
+    limit: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val =>
+        val ? parseInt(val) : paginationConfig.defaultPageSize
+      )
+      .refine(
+        val => val > 0 && val <= paginationConfig.maxPageSize,
+        `每页数量必须在1-${paginationConfig.maxPageSize}之间`
+      ),
 
-  search: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => val?.trim() || undefined),
+    search: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined),
 
-  sortBy: z
-    .enum([
-      'updatedAt',
-      'createdAt',
-      'quantity',
-      'reservedQuantity',
-      'batchNumber',
-      'productId',
-    ])
-    .nullable()
-    .optional()
-    .transform(val => val || 'updatedAt'),
+    sortBy: z
+      .enum([
+        'updatedAt',
+        'createdAt',
+        'quantity',
+        'reservedQuantity',
+        'batchNumber',
+        'productId',
+      ])
+      .nullable()
+      .optional()
+      .transform(val => val || 'updatedAt'),
 
-  sortOrder: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => (val === 'asc' ? 'asc' : 'desc')),
+    sortOrder: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => (val === 'asc' ? 'asc' : 'desc')),
 
-  productId: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => val?.trim() || undefined),
+    productId: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined),
 
-  batchNumber: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => val?.trim() || undefined),
+    batchNumber: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined),
 
-  location: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => val?.trim() || undefined),
+    location: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined),
 
-  categoryId: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => val?.trim() || undefined),
+    categoryId: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val?.trim() || undefined),
 
-  lowStock: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => val === 'true'),
+    lowStock: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val === 'true'),
 
-  hasStock: z
-    .string()
-    .nullable()
-    .optional()
-    .transform(val => val === 'true'),
+    hasStock: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => val === 'true'),
 
-  // 移除悬空的变体相关参数，因为当前系统不支持产品变体功能
-  // groupByVariant: z
-  //   .string()
-  //   .nullable()
-  //   .optional()
-  //   .transform(val => val === 'true'),
+    startDate: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => {
+        const trimmed = val?.trim();
+        return trimmed && trimmed.length > 0 ? trimmed : undefined;
+      })
+      .refine(
+        val => !val || /^\d{4}-\d{2}-\d{2}$/.test(val),
+        '开始日期格式不正确'
+      ),
 
-  // includeVariants: z
-  //   .string()
-  //   .nullable()
-  //   .optional()
-  //   .transform(val => val === 'true'),
-});
+    endDate: z
+      .string()
+      .nullable()
+      .optional()
+      .transform(val => {
+        const trimmed = val?.trim();
+        return trimmed && trimmed.length > 0 ? trimmed : undefined;
+      })
+      .refine(
+        val => !val || /^\d{4}-\d{2}-\d{2}$/.test(val),
+        '结束日期格式不正确'
+      ),
+
+    // 移除悬空的变体相关参数，因为当前系统不支持产品变体功能
+    // groupByVariant: z
+    //   .string()
+    //   .nullable()
+    //   .optional()
+    //   .transform(val => val === 'true'),
+
+    // includeVariants: z
+    //   .string()
+    //   .nullable()
+    //   .optional()
+    //   .transform(val => val === 'true'),
+  })
+  .superRefine((data, ctx) => {
+    if (data.startDate && data.endDate) {
+      const start = new Date(data.startDate);
+      const end = new Date(data.endDate);
+      if (start > end) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: '开始日期不能晚于结束日期',
+          path: ['endDate'],
+        });
+      }
+    }
+  });
 
 // 库存搜索表单验证
 export const inventorySearchSchema = z.object({

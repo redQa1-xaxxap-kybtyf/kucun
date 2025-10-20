@@ -14,6 +14,7 @@ import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -46,8 +47,8 @@ interface FactoryShipmentQueryParams {
   limit?: number;
   search?: string;
   status?: FactoryShipmentStatus;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
+  startDate?: Date;
+  endDate?: Date;
 }
 
 interface FactoryShipmentOrderListProps {
@@ -55,6 +56,7 @@ interface FactoryShipmentOrderListProps {
   initialParams?: FactoryShipmentQueryParams;
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
+  onDateRangeChange?: (range: { startDate?: string; endDate?: string }) => void;
   onPageChange?: (page: number) => void;
 }
 
@@ -76,6 +78,7 @@ export function FactoryShipmentOrderList({
   initialParams,
   onSearch: externalOnSearch,
   onFilter: externalOnFilter,
+  onDateRangeChange: externalOnDateRangeChange,
   onPageChange: externalOnPageChange,
 }: FactoryShipmentOrderListProps) {
   const router = useRouter();
@@ -211,31 +214,51 @@ export function FactoryShipmentOrderList({
         style={{ boxShadow: 'var(--shadow-light)' }}
       >
         <CardContent className="bg-[hsl(var(--color-bg-card))] pt-6">
-          <UnifiedSearchBar
-            // 搜索配置
-            searchValue={searchTerm}
-            onSearchChange={handleSearch}
-            searchPlaceholder="搜索集装箱号码或订单编号..."
-            debounceDelay={400}
-            // 筛选器配置
-            filters={[
-              {
-                key: 'status',
-                label: '状态',
-                options: Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(
-                  ([status, label]) => ({
-                    label,
-                    value: status,
-                  })
-                ),
-                width: 'w-full sm:w-48',
-              },
-            ]}
-            filterValues={{
-              status: statusFilter,
-            }}
-            onFilterChange={handleFilterChange}
-          />
+          <div className="flex flex-wrap gap-4">
+            <div className="min-w-[280px] flex-1">
+              <UnifiedSearchBar
+                searchValue={searchTerm}
+                onSearchChange={handleSearch}
+                searchPlaceholder="搜索集装箱号码或订单编号..."
+                debounceDelay={400}
+                filters={[
+                  {
+                    key: 'status',
+                    label: '状态',
+                    options: Object.entries(FACTORY_SHIPMENT_STATUS_LABELS).map(
+                      ([status, label]) => ({
+                        label,
+                        value: status,
+                      })
+                    ),
+                    width: 'w-full sm:w-48',
+                  },
+                ]}
+                filterValues={{
+                  status: statusFilter,
+                }}
+                onFilterChange={handleFilterChange}
+              />
+            </div>
+
+            <DateRangePicker
+              value={{
+                startDate: initialParams?.startDate
+                  ?.toISOString()
+                  .split('T')[0],
+                endDate: initialParams?.endDate?.toISOString().split('T')[0],
+              }}
+              onChange={range => {
+                if (externalOnDateRangeChange) {
+                  externalOnDateRangeChange(range);
+                }
+              }}
+              showPresets={true}
+              showClearButton={true}
+              label=""
+              className="min-w-[220px]"
+            />
+          </div>
         </CardContent>
       </Card>
 

@@ -11,6 +11,10 @@ import { PaymentCreationDialog } from '@/components/finance/payment-creation-dia
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/ui/date-range-picker';
 import { Pagination } from '@/components/ui/pagination';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
@@ -37,6 +41,8 @@ interface ReceivablesQueryParams {
   limit: number;
   search: string;
   status?: string;
+  startDate?: string;
+  endDate?: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
 }
@@ -46,6 +52,7 @@ interface ReceivablesClientProps {
   initialParams?: ReceivablesQueryParams;
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
+  onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
 }
 
@@ -58,6 +65,7 @@ export function ReceivablesClient({
   initialParams,
   onSearch: externalOnSearch,
   onFilter: externalOnFilter,
+  onDateRangeChange: externalOnDateRangeChange,
   onPageChange: externalOnPageChange,
 }: ReceivablesClientProps) {
   const router = useRouter();
@@ -84,10 +92,21 @@ export function ReceivablesClient({
       ),
       search: searchParams.get('search') || '',
       status: searchParams.get('status') || undefined,
+      startDate: searchParams.get('startDate') || undefined,
+      endDate: searchParams.get('endDate') || undefined,
       sortBy: searchParams.get('sortBy') || 'orderDate',
       sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
     }
   );
+
+  React.useEffect(() => {
+    if (initialParams) {
+      setQueryParams(prev => ({
+        ...prev,
+        ...initialParams,
+      }));
+    }
+  }, [initialParams]);
 
   // 获取应收账款数据
   const { data, isLoading, error } = useQuery({
@@ -101,6 +120,12 @@ export function ReceivablesClient({
       }
       if (queryParams.status) {
         params.set('status', queryParams.status);
+      }
+      if (queryParams.startDate) {
+        params.set('startDate', queryParams.startDate);
+      }
+      if (queryParams.endDate) {
+        params.set('endDate', queryParams.endDate);
       }
       params.set('sortBy', queryParams.sortBy);
       params.set('sortOrder', queryParams.sortOrder);
@@ -135,11 +160,8 @@ export function ReceivablesClient({
 
   const handleSearch = React.useCallback(
     (value: string) => {
-      if (externalOnSearch) {
-        externalOnSearch(value);
-      } else {
-        setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
-      }
+      setQueryParams(prev => ({ ...prev, search: value, page: 1 }));
+      externalOnSearch?.(value);
     },
     [externalOnSearch]
   );
@@ -147,39 +169,50 @@ export function ReceivablesClient({
   // 统一处理筛选器变更
   const handleFilterChange = React.useCallback(
     (key: string, value: string | undefined) => {
-      if (externalOnFilter) {
-        externalOnFilter(key, value);
-      } else {
-        if (key === 'status') {
-          setQueryParams(prev => ({
-            ...prev,
-            status: value === 'all' || !value ? undefined : value,
-            page: 1,
-          }));
-        } else if (key === 'sortBy') {
-          setQueryParams(prev => ({
-            ...prev,
-            sortBy: value || 'orderDate',
-            page: 1,
-          }));
-        } else if (key === 'sortOrder') {
-          setQueryParams(prev => ({
-            ...prev,
-            sortOrder: (value as 'asc' | 'desc') || 'desc',
-            page: 1,
-          }));
-        }
+      if (key === 'status') {
+        setQueryParams(prev => ({
+          ...prev,
+          status: value === 'all' || !value ? undefined : value,
+          page: 1,
+        }));
+      } else if (key === 'sortBy') {
+        setQueryParams(prev => ({
+          ...prev,
+          sortBy: value || 'orderDate',
+          page: 1,
+        }));
+      } else if (key === 'sortOrder') {
+        setQueryParams(prev => ({
+          ...prev,
+          sortOrder: (value as 'asc' | 'desc') || 'desc',
+          page: 1,
+        }));
       }
+
+      externalOnFilter?.(key, value);
     },
     [externalOnFilter]
   );
 
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      setQueryParams(prev => ({
+        ...prev,
+        startDate: range.startDate,
+        endDate: range.endDate,
+        page: 1,
+      }));
+      externalOnDateRangeChange?.(range);
+    },
+    [externalOnDateRangeChange]
+  );
+
   const handlePageChange = React.useCallback(
     (newPage: number) => {
+      setQueryParams(prev => ({ ...prev, page: newPage }));
       if (externalOnPageChange) {
         externalOnPageChange(newPage);
       } else {
-        setQueryParams(prev => ({ ...prev, page: newPage }));
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     },
@@ -245,53 +278,44 @@ export function ReceivablesClient({
       {/* 搜索和筛选 */}
       <Card>
         <CardContent className="pt-6">
-          <UnifiedSearchBar
-            // 搜索配置
-            searchValue={queryParams.search}
-            onSearchChange={handleSearch}
-            searchPlaceholder="搜索订单号或客户名称..."
-            debounceDelay={400}
-            // 筛选器配置
-            filters={[
-              {
-                key: 'status',
-                label: '状态',
-                options: [
-                  { label: '未收款', value: 'unpaid' },
-                  { label: '部分收款', value: 'partial' },
-                  { label: '待确认', value: 'pending' },
-                  { label: '已收款', value: 'paid' },
-                ],
-                width: 'w-[140px]',
-              },
-              {
-                key: 'sortBy',
-                label: '排序字段',
-                options: [
-                  { label: '订单日期', value: 'orderDate' },
-                  { label: '订单金额', value: 'totalAmount' },
-                  { label: '客户名称', value: 'customerName' },
-                  { label: '创建时间', value: 'createdAt' },
-                ],
-                width: 'w-[140px]',
-              },
-              {
-                key: 'sortOrder',
-                label: '排序方向',
-                options: [
-                  { label: '降序', value: 'desc' },
-                  { label: '升序', value: 'asc' },
-                ],
-                width: 'w-[100px]',
-              },
-            ]}
-            filterValues={{
-              status: queryParams.status || 'all',
-              sortBy: queryParams.sortBy,
-              sortOrder: queryParams.sortOrder,
-            }}
-            onFilterChange={handleFilterChange}
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-[280px] flex-1">
+              <UnifiedSearchBar
+                searchValue={queryParams.search}
+                onSearchChange={handleSearch}
+                searchPlaceholder="搜索订单号或客户名称..."
+                debounceDelay={400}
+                filters={[
+                  {
+                    key: 'status',
+                    label: '状态',
+                    options: [
+                      { label: '未收款', value: 'unpaid' },
+                      { label: '部分收款', value: 'partial' },
+                      { label: '待确认', value: 'pending' },
+                      { label: '已收款', value: 'paid' },
+                    ],
+                    width: 'w-[140px]',
+                  },
+                ]}
+                filterValues={{
+                  status: queryParams.status || 'all',
+                }}
+                onFilterChange={handleFilterChange}
+              />
+            </div>
+            <DateRangePicker
+              value={{
+                startDate: queryParams.startDate,
+                endDate: queryParams.endDate,
+              }}
+              onChange={handleDateRangeChange}
+              label=""
+              placeholder="选择订单日期范围"
+              showPresets
+              className="min-w-[220px]"
+            />
+          </div>
 
           {/* 应收账款列表 */}
           <div className="mt-6 space-y-4">

@@ -79,7 +79,7 @@ export function FactoryShipmentOrderForm({
       remarks: '',
       items: [
         {
-          productId: '',
+          productId: undefined,
           supplierId: '',
           quantity: 1,
           unitPrice: 0,
@@ -206,7 +206,7 @@ export function FactoryShipmentOrderForm({
           ? new Date(orderDetail.planDate)
           : undefined,
         items: orderDetail.items?.map(item => ({
-          productId: item.productId || '',
+          productId: item.productId ?? undefined,
           supplierId: item.supplierId,
           quantity: item.quantity,
           unitPrice: item.unitPrice,
@@ -219,7 +219,7 @@ export function FactoryShipmentOrderForm({
           remarks: item.remarks || '',
         })) || [
           {
-            productId: '',
+            productId: undefined,
             supplierId: '',
             quantity: 1,
             unitPrice: 0,

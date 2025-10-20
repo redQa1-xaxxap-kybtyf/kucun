@@ -51,9 +51,7 @@ export function ScrollableTableContainer({
       )}
 
       {/* 可滚动的表格内容区域 - 使用相对定位容器 */}
-      <div className="relative flex-1 overflow-auto min-w-0">
-        {children}
-      </div>
+      <div className="relative min-w-0 flex-1 overflow-auto">{children}</div>
 
       {/* 固定的底部区域：分页器 */}
       {footer && (

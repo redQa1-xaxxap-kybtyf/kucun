@@ -9,6 +9,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { RefundsClient } from '@/components/finance/refunds-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import { useRefundsQuery } from '@/hooks/use-refunds-query';
 import type {
   RefundListData,
@@ -39,17 +40,46 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
   );
+  const [startDate, setStartDate] = React.useState<string | undefined>(
+    initialParams.startDate
+  );
+  const [endDate, setEndDate] = React.useState<string | undefined>(
+    initialParams.endDate
+  );
 
   React.useEffect(() => {
     setSearch(initialParams.search || '');
     setStatus(initialParams.status);
     setSortBy(initialParams.sortBy || 'refundDate');
     setSortOrder(initialParams.sortOrder || 'desc');
+    setStartDate(initialParams.startDate);
+    setEndDate(initialParams.endDate);
   }, [initialParams]);
 
   const { data, isLoading, error } = useRefundsQuery({
-    params: initialParams,
+    params: {
+      ...initialParams,
+      search,
+      status,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+    },
   });
+
+  const currentParams = React.useMemo(
+    () => ({
+      ...initialParams,
+      search,
+      status,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+    }),
+    [initialParams, search, status, sortBy, sortOrder, startDate, endDate]
+  );
 
   const resolvedData = React.useMemo<RefundListData>(
     () => ({
@@ -63,13 +93,13 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         completedCount: 0,
       },
       pagination: data?.pagination ?? {
-        page: initialParams.page,
-        limit: initialParams.limit,
+        page: currentParams.page,
+        limit: currentParams.limit,
         total: 0,
         totalPages: 1,
       },
     }),
-    [data, initialParams.limit, initialParams.page]
+    [data, currentParams]
   );
 
   const pagination = resolvedData.pagination;
@@ -92,6 +122,12 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         }
         if (filters.sortOrder) {
           params.set('sortOrder', filters.sortOrder);
+        }
+        if (filters.startDate) {
+          params.set('startDate', filters.startDate);
+        }
+        if (filters.endDate) {
+          params.set('endDate', filters.endDate);
         }
         if (filters.page && filters.page > 1) {
           params.set('page', filters.page.toString());
@@ -116,10 +152,20 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         status,
         sortBy,
         sortOrder,
+        startDate,
+        endDate,
         page: 1,
       });
     },
-    [debouncedUpdateURL, initialParams, status, sortBy, sortOrder]
+    [
+      debouncedUpdateURL,
+      initialParams,
+      status,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+    ]
   );
 
   // 筛选处理
@@ -151,6 +197,12 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         if (newFilters.sortOrder) {
           params.set('sortOrder', newFilters.sortOrder);
         }
+        if (startDate) {
+          params.set('startDate', startDate);
+        }
+        if (endDate) {
+          params.set('endDate', endDate);
+        }
         if (newFilters.limit) {
           params.set('limit', newFilters.limit.toString());
         }
@@ -158,7 +210,7 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         router.push(`/finance/refunds?${params.toString()}`);
       });
     },
-    [router, search, initialParams]
+    [router, search, initialParams, startDate, endDate]
   );
 
   // 分页处理
@@ -178,6 +230,12 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         if (sortOrder) {
           params.set('sortOrder', sortOrder);
         }
+        if (startDate) {
+          params.set('startDate', startDate);
+        }
+        if (endDate) {
+          params.set('endDate', endDate);
+        }
         if (page > 1) {
           params.set('page', page.toString());
         }
@@ -188,7 +246,51 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         router.push(`/finance/refunds?${params.toString()}`);
       });
     },
-    [router, search, status, sortBy, sortOrder, pagination.limit]
+    [
+      router,
+      search,
+      status,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+      pagination.limit,
+    ]
+  );
+
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      setStartDate(range.startDate);
+      setEndDate(range.endDate);
+
+      startTransition(() => {
+        const params = new URLSearchParams();
+        if (search) {
+          params.set('search', search);
+        }
+        if (status) {
+          params.set('status', status);
+        }
+        if (sortBy) {
+          params.set('sortBy', sortBy);
+        }
+        if (sortOrder) {
+          params.set('sortOrder', sortOrder);
+        }
+        if (range.startDate) {
+          params.set('startDate', range.startDate);
+        }
+        if (range.endDate) {
+          params.set('endDate', range.endDate);
+        }
+        if (pagination.limit) {
+          params.set('limit', pagination.limit.toString());
+        }
+
+        router.push(`/finance/refunds?${params.toString()}`);
+      });
+    },
+    [router, pagination.limit, search, sortBy, sortOrder, status]
   );
 
   return (
@@ -241,11 +343,12 @@ export function RefundsPageClient({ initialParams }: RefundsPageClientProps) {
         {/* 客户端交互组件 */}
         <RefundsClient
           data={resolvedData}
-          initialParams={initialParams}
+          initialParams={currentParams}
           isLoading={isLoading}
           errorMessage={loadError}
           onSearch={handleSearch}
           onFilter={handleFilter}
+          onDateRangeChange={handleDateRangeChange}
           onPageChange={handlePageChange}
         />
       </div>

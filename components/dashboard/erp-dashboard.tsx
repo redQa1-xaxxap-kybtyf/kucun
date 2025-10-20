@@ -104,9 +104,7 @@ const DASHBOARD_ORDER_STATUSES: readonly DashboardSalesOrderStatus[] = [
   'cancelled',
 ] as const;
 
-const toDashboardOrderStatus = (
-  status: unknown
-): DashboardSalesOrderStatus =>
+const toDashboardOrderStatus = (status: unknown): DashboardSalesOrderStatus =>
   DASHBOARD_ORDER_STATUSES.includes(status as DashboardSalesOrderStatus)
     ? (status as DashboardSalesOrderStatus)
     : 'draft';
@@ -123,9 +121,7 @@ const FACTORY_SHIPMENT_STATUSES = new Set<FactoryShipmentStatus>([
   'completed',
 ]);
 
-const toFactoryShipmentStatus = (
-  status: unknown
-): FactoryShipmentStatus =>
+const toFactoryShipmentStatus = (status: unknown): FactoryShipmentStatus =>
   FACTORY_SHIPMENT_STATUSES.has(status as FactoryShipmentStatus)
     ? (status as FactoryShipmentStatus)
     : 'draft';
@@ -268,12 +264,12 @@ export function ERPDashboard({
   const [isRefreshing, setIsRefreshing] = React.useState(false);
 
   // 订单数据状态 - 使用 RSC 预取的数据作为初始状态
-  const [recentOrders, setRecentOrders] = React.useState<DashboardSalesOrderSummary[]>(
-    initialOrders?.recent || []
-  );
-  const [pendingOrders, setPendingOrders] = React.useState<DashboardSalesOrderSummary[]>(
-    initialOrders?.pending || []
-  );
+  const [recentOrders, setRecentOrders] = React.useState<
+    DashboardSalesOrderSummary[]
+  >(initialOrders?.recent || []);
+  const [pendingOrders, setPendingOrders] = React.useState<
+    DashboardSalesOrderSummary[]
+  >(initialOrders?.pending || []);
   const [factoryShipments, setFactoryShipments] = React.useState<
     DashboardFactoryShipmentSummary[]
   >(initialOrders?.shipments || []);
@@ -374,7 +370,9 @@ export function ERPDashboard({
       );
       if (shipmentsResponse.ok) {
         const shipmentsData = await shipmentsResponse.json();
-        setFactoryShipments(mapFactoryShipmentSummaries(shipmentsData.data?.factoryShipmentOrders));
+        setFactoryShipments(
+          mapFactoryShipmentSummaries(shipmentsData.data?.factoryShipmentOrders)
+        );
       }
     } catch (error) {
       console.error('加载订单数据失败:', error);

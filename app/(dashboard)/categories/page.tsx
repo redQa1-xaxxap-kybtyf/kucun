@@ -3,6 +3,7 @@ import {
   QueryClient,
   dehydrate,
 } from '@tanstack/react-query';
+import { redirect } from 'next/navigation';
 
 import { CategoryPageWrapper } from '@/components/categories/category-page-wrapper';
 import {
@@ -11,6 +12,8 @@ import {
   type CategoryQueryParams,
 } from '@/lib/api/categories';
 import { getCategoriesServer } from '@/lib/api/categories-server';
+import { requireServerAuth } from '@/lib/auth/context';
+import { requirePermission } from '@/lib/auth/permissions';
 
 /**
  * 分类管理页面
@@ -36,6 +39,13 @@ export default async function CategoriesPage({
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
+  const user = await requireServerAuth();
+  try {
+    requirePermission(user, 'categories:view');
+  } catch {
+    redirect('/auth/error?error=AccessDenied');
+  }
+
   // 解析查询参数
   const params = await searchParams;
   const page = Number(params.page) || 1;
@@ -99,12 +109,7 @@ export default async function CategoriesPage({
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>
-      <CategoryPageWrapper
-        initialParams={{
-          ...queryParams,
-          search,
-        }}
-      />
+      <CategoryPageWrapper initialParams={queryParams} />
     </HydrationBoundary>
   );
 }

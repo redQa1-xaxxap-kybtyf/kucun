@@ -66,7 +66,7 @@ const ToastAction = React.forwardRef<
   <ToastPrimitives.Action
     ref={ref}
     className={cn(
-      'inline-flex h-8 shrink-0 items-center justify-center rounded-[var(--radius-small)] border border-[hsl(var(--color-border-secondary))] bg-transparent px-3 text-sm font-medium text-[hsl(var(--color-text-secondary))] transition-colors focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-focus))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--color-bg-secondary))] hover:bg-[hsl(var(--color-primary-light))] hover:text-[hsl(var(--color-primary))] disabled:pointer-events-none disabled:opacity-50',
+      'inline-flex h-8 shrink-0 items-center justify-center rounded-[var(--radius-small)] border border-[hsl(var(--color-border-secondary))] bg-transparent px-3 text-sm font-medium text-[hsl(var(--color-text-secondary))] transition-colors hover:bg-[hsl(var(--color-primary-light))] hover:text-[hsl(var(--color-primary))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-focus))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--color-bg-secondary))] focus-visible:outline-hidden disabled:pointer-events-none disabled:opacity-50',
       'group-[.destructive]:border-[hsl(var(--color-error))] group-[.destructive]:text-[hsl(var(--color-error))] hover:group-[.destructive]:bg-[hsl(var(--color-error))] hover:group-[.destructive]:text-[hsl(var(--color-text-on-primary))] focus-visible:group-[.destructive]:ring-[hsl(var(--color-error))] focus-visible:group-[.destructive]:ring-offset-[hsl(var(--color-error-light))]',
       className
     )}
@@ -82,7 +82,7 @@ const ToastClose = React.forwardRef<
   <ToastPrimitives.Close
     ref={ref}
     className={cn(
-      'absolute top-2 right-2 rounded-[var(--radius-small)] p-1 text-[hsl(var(--color-text-tertiary))] opacity-0 transition-opacity hover:text-[hsl(var(--color-text-primary))] focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-focus))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--color-bg-secondary))] group-hover:opacity-100 focus:opacity-100',
+      'absolute top-2 right-2 rounded-[var(--radius-small)] p-1 text-[hsl(var(--color-text-tertiary))] opacity-0 transition-opacity group-hover:opacity-100 hover:text-[hsl(var(--color-text-primary))] focus:opacity-100 focus-visible:ring-2 focus-visible:ring-[hsl(var(--color-focus))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--color-bg-secondary))] focus-visible:outline-hidden',
       'group-[.destructive]:text-[hsl(var(--color-error-hover))] hover:group-[.destructive]:text-[hsl(var(--color-error))] focus-visible:group-[.destructive]:ring-[hsl(var(--color-error))] focus-visible:group-[.destructive]:ring-offset-[hsl(var(--color-error-light))]',
       className
     )}
@@ -100,7 +100,10 @@ const ToastTitle = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <ToastPrimitives.Title
     ref={ref}
-    className={cn('text-sm font-semibold text-[hsl(var(--color-text-primary))]', className)}
+    className={cn(
+      'text-sm font-semibold text-[hsl(var(--color-text-primary))]',
+      className
+    )}
     {...props}
   />
 ));

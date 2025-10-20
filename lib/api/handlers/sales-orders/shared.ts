@@ -1,9 +1,6 @@
 import type { Prisma } from '@prisma/client';
 
-import type {
-  SalesOrderStatus,
-  SalesOrderType,
-} from '@/lib/types/sales-order';
+import type { SalesOrderStatus, SalesOrderType } from '@/lib/types/sales-order';
 
 export const salesOrderItemSelect = {
   id: true,
@@ -52,6 +49,7 @@ export const salesOrderRelations = {
     select: {
       id: true,
       name: true,
+      address: true,
       phone: true,
     },
   },

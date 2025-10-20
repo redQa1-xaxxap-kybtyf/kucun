@@ -41,6 +41,14 @@ export default async function FactoryShipmentsPage({
   const sortBy = (params.sortBy as string) || 'createdAt';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
 
+  // 日期筛选参数
+  const startDate = params.startDate
+    ? new Date(params.startDate as string)
+    : undefined;
+  const endDate = params.endDate
+    ? new Date(params.endDate as string)
+    : undefined;
+
   const queryParams = {
     page,
     limit,
@@ -48,6 +56,8 @@ export default async function FactoryShipmentsPage({
     status,
     sortBy,
     sortOrder,
+    startDate,
+    endDate,
   };
 
   // 创建 QueryClient 用于服务端预取

@@ -5,7 +5,10 @@ import { ApiError } from '@/lib/api/errors';
 import { invalidateProductCache } from '@/lib/cache/product-cache';
 import type { ProductStatus, ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
-import { deleteFromQiniu, extractQiniuKeysFromUrls } from '@/lib/services/qiniu-upload';
+import {
+  deleteFromQiniu,
+  extractQiniuKeysFromUrls,
+} from '@/lib/services/qiniu-upload';
 import { parseProductImages } from '@/lib/utils/product-transforms';
 import { productUpdateSchema } from '@/lib/validations/product';
 

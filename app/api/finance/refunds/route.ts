@@ -106,7 +106,9 @@ export const GET = withAuth(
         dateFilter.gte = new Date(startDate);
       }
       if (endDate) {
-        dateFilter.lte = new Date(endDate);
+        const endDateValue = new Date(endDate);
+        endDateValue.setHours(23, 59, 59, 999);
+        dateFilter.lte = endDateValue;
       }
       where.refundDate = dateFilter;
     }

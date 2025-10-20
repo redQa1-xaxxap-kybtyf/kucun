@@ -1,6 +1,10 @@
 import { notFound } from 'next/navigation';
 
 import { prisma } from '@/lib/db';
+import {
+  countSupplierShipments,
+  getRecentSupplierShipments,
+} from '@/lib/services/supplier-service';
 import { SupplierDetailPageClient } from './page-client';
 
 /**
@@ -43,22 +47,8 @@ export default async function SupplierDetailPage({
       updatedAt: true,
       _count: {
         select: {
-          factoryShipmentOrderItems: true,
           payableRecords: true,
         },
-      },
-      factoryShipmentOrderItems: {
-        select: {
-          id: true,
-          quantity: true,
-          unitPrice: true,
-          totalPrice: true,
-          createdAt: true,
-        },
-        orderBy: {
-          createdAt: 'desc',
-        },
-        take: 10,
       },
       payableRecords: {
         select: {
@@ -82,20 +72,32 @@ export default async function SupplierDetailPage({
     notFound();
   }
 
+  const [recentShipments, shipmentCount] = await Promise.all([
+    getRecentSupplierShipments(id, 10),
+    countSupplierShipments(id),
+  ]);
+
+  const factoryShipments = recentShipments.map(shipment => ({
+    id: shipment.id,
+    shipmentNumber: shipment.orderNumber,
+    status: shipment.status,
+    totalAmount: shipment.items.reduce(
+      (sum, item) => sum + Number(item.totalPrice),
+      0
+    ),
+    createdAt: shipment.createdAt.toISOString(),
+  }));
+
   // 序列化数据（将 Date 转换为 string）
   const serializedSupplier = {
     ...supplier,
     createdAt: supplier.createdAt.toISOString(),
     updatedAt: supplier.updatedAt.toISOString(),
-    factoryShipments: [], // 添加空数组满足类型要求
     _count: {
       ...supplier._count,
-      factoryShipments: 0, // 添加缺失的 factoryShipments 计数
+      factoryShipments: shipmentCount,
     },
-    factoryShipmentOrderItems: supplier.factoryShipmentOrderItems.map(item => ({
-      ...item,
-      createdAt: item.createdAt.toISOString(),
-    })),
+    factoryShipments,
     payableRecords: supplier.payableRecords.map(record => ({
       ...record,
       dueDate: record.dueDate ? record.dueDate.toISOString() : null,

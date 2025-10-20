@@ -56,6 +56,44 @@ export const ItemForm = React.memo<ItemFormProps>(
     customerPriceHistoryData,
   }) => {
     const { toast } = useToast();
+    const isManualProduct = form.watch(`items.${index}.isManualProduct`);
+    const manualProductName = form.watch(`items.${index}.manualProductName`);
+    const selectedProductId = form.watch(`items.${index}.productId`);
+
+    React.useEffect(() => {
+      const currentDisplayName = form.getValues(`items.${index}.displayName`);
+
+      if (isManualProduct) {
+        const trimmedManualName =
+          typeof manualProductName === 'string' ? manualProductName.trim() : '';
+        if (trimmedManualName && currentDisplayName !== trimmedManualName) {
+          form.setValue(`items.${index}.displayName`, trimmedManualName, {
+            shouldDirty: true,
+          });
+        }
+        return;
+      }
+
+      if (selectedProductId) {
+        const matchedProduct = products.find(
+          product => product.id === selectedProductId
+        );
+        const derivedName =
+          matchedProduct?.name?.trim() || matchedProduct?.code?.trim() || '';
+        if (derivedName && currentDisplayName !== derivedName) {
+          form.setValue(`items.${index}.displayName`, derivedName, {
+            shouldDirty: true,
+          });
+        }
+      }
+    }, [
+      form,
+      index,
+      isManualProduct,
+      manualProductName,
+      products,
+      selectedProductId,
+    ]);
 
     return (
       <Card className="border-2 border-dashed border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]/30 shadow-sm transition-all duration-200 hover:border-[hsl(var(--color-primary))]/40 hover:shadow-md">

@@ -36,6 +36,8 @@ const getInventoryHandler = withAuth(
 
       lowStock: searchParams.get('lowStock'),
       hasStock: searchParams.get('hasStock'),
+      startDate: searchParams.get('startDate'),
+      endDate: searchParams.get('endDate'),
       // 移除悬空的变体相关参数
       // groupByVariant: searchParams.get('groupByVariant'),
       // includeVariants: searchParams.get('includeVariants'),

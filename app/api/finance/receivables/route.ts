@@ -26,7 +26,7 @@ import { accountsReceivableQuerySchema } from '@/lib/validations/payment';
  * 权限：需要 finance:view 权限
  */
 export const GET = withAuth(
-  async (request: NextRequest) => {
+  async (request: NextRequest, { user }) => {
     // 参数验证
     const searchParams = new URL(request.url).searchParams;
     const limitParam =
@@ -53,7 +53,7 @@ export const GET = withAuth(
 
     // 构建缓存键
     const cacheKey = buildCacheKey(
-      'finance:receivables:list',
+      `finance:receivables:list:${user.id}`,
       validationResult.data
     );
 

@@ -34,7 +34,7 @@ export function ItemListSection({
   // 添加商品
   const handleAddItem = () => {
     append({
-      productId: '',
+      productId: undefined,
       supplierId: '',
       quantity: 1,
       unitPrice: 0,

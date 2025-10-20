@@ -19,7 +19,23 @@ export function validateItemCombinations(
 ): boolean {
   const combinations = new Set();
   for (const item of items) {
-    const key = `${item.productId}-${item.colorCode || ''}-${item.productionDate || ''}`;
+    let key: string;
+    if (item.isManualProduct) {
+      const name = (item.manualProductName ?? '').trim().toLowerCase();
+      const specification = (item.manualSpecification ?? '')
+        .trim()
+        .toLowerCase();
+      const unit = (item.manualUnit ?? '').trim().toLowerCase();
+      key = `manual:${name}|${specification}|${unit}`;
+    } else {
+      const productId = (item.productId ?? '').trim();
+      const colorCode = (item.colorCode ?? '').trim().toLowerCase();
+      const productionDate = (item.productionDate ?? '').trim();
+      const batchNumber = (item.batchNumber ?? '').trim().toLowerCase();
+      const specification = (item.specification ?? '').trim().toLowerCase();
+      key = `inventory:${productId}|${colorCode}|${productionDate}|${batchNumber}|${specification}`;
+    }
+
     if (combinations.has(key)) {
       return false;
     }

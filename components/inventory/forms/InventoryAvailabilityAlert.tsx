@@ -7,15 +7,15 @@ import { Package } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-interface InventoryAvailabilityData {
-  available: boolean;
-  currentStock: number;
-  message?: string;
-}
+import type { OperationMode } from '../hooks/useInventoryOperationForm';
 
 interface InventoryAvailabilityAlertProps {
-  availabilityData: InventoryAvailabilityData | null;
-  mode: 'inbound' | 'outbound' | 'adjust';
+  availabilityData?: {
+    available: boolean;
+    currentStock: number;
+    message?: string;
+  } | null;
+  mode: OperationMode;
 }
 
 export function InventoryAvailabilityAlert({

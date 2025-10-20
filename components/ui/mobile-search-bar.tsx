@@ -341,7 +341,10 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
                             placeholder={filter.placeholder}
                             value={stringValue}
                             onChange={e => {
-                              const next = e.target.value.split(',').map(str => str.trim()).filter(Boolean);
+                              const next = e.target.value
+                                .split(',')
+                                .map(str => str.trim())
+                                .filter(Boolean);
                               handleFilterChange(
                                 filter.key,
                                 next.length ? next : undefined
@@ -472,9 +475,7 @@ const MobileSearchBar = React.forwardRef<HTMLDivElement, MobileSearchBarProps>(
                 );
                 displayValue = option?.label ?? String(filterValue);
               } else if (Array.isArray(filterValue)) {
-                displayValue = filterValue
-                  .map(item => String(item))
-                  .join(', ');
+                displayValue = filterValue.map(item => String(item)).join(', ');
               } else if (typeof filterValue === 'boolean') {
                 displayValue = filterValue ? '是' : '否';
               } else {

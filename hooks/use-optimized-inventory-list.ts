@@ -24,9 +24,6 @@ export function useOptimizedInventoryList(
     ...initialParams,
   });
 
-  // 选中的库存ID（使用 Set 以配合虚拟表格组件）
-  const [selectedIds, setSelectedIds] = React.useState<Set<string>>(new Set());
-
   // 使用优化的查询Hook
   const { data, isLoading, isError, error, cache } = useOptimizedInventoryQuery(
     {
@@ -74,32 +71,6 @@ export function useOptimizedInventoryList(
     [router]
   );
 
-  // 优化的选择处理函数
-  const handleSelectAll = React.useCallback(
-    (checked: boolean) => {
-      const responseData = data as InventoryListResponse;
-      const inventories = responseData?.data?.inventories;
-      if (checked && inventories) {
-        setSelectedIds(new Set(inventories.map(item => item.id)));
-      } else {
-        setSelectedIds(new Set());
-      }
-    },
-    [data]
-  );
-
-  const handleSelectRow = React.useCallback((id: string, checked: boolean) => {
-    setSelectedIds(prev => {
-      const newSet = new Set(prev);
-      if (checked) {
-        newSet.add(id);
-      } else {
-        newSet.delete(id);
-      }
-      return newSet;
-    });
-  }, []);
-
   // 使用useMemo优化计算
   const inventoryData = React.useMemo(() => {
     const responseData = data as InventoryListResponse;
@@ -113,7 +84,6 @@ export function useOptimizedInventoryList(
 
   return {
     queryParams,
-    selectedIds,
     inventoryData,
     pagination,
     isLoading,
@@ -124,7 +94,5 @@ export function useOptimizedInventoryList(
     handleFilter,
     handlePageChange,
     ...navigationHandlers,
-    handleSelectAll,
-    handleSelectRow,
   };
 }

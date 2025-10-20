@@ -23,6 +23,10 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/ui/date-range-picker';
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -49,6 +53,7 @@ import {
   RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
+import { formatDateTime } from '@/lib/utils/datetime';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 
 interface ERPReturnOrderListProps {
@@ -57,6 +62,7 @@ interface ERPReturnOrderListProps {
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
   onPageChange?: (page: number) => void;
+  onDateRangeChange?: (range: DateRangeValue) => void;
   onViewDetail?: (returnOrder: ReturnOrder) => void;
   onEdit?: (returnOrder: ReturnOrder) => void;
   onDelete?: (returnOrder: ReturnOrder) => void;
@@ -72,6 +78,7 @@ export function ERPReturnOrderList({
   onSearch,
   onFilter,
   onPageChange,
+  onDateRangeChange,
   onViewDetail,
   onEdit,
   onDelete,
@@ -224,16 +231,23 @@ export function ERPReturnOrderList({
               | undefined,
             page: 1,
           }));
-        } else if (key === 'sortBy') {
-          setQueryParams(prev => ({
-            ...prev,
-            sortBy: value || 'createdAt',
-            page: 1,
-          }));
         }
       }
     },
     [onFilter]
+  );
+
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      setQueryParams(prev => ({
+        ...prev,
+        startDate: range.startDate,
+        endDate: range.endDate,
+        page: 1,
+      }));
+      onDateRangeChange?.(range);
+    },
+    [onDateRangeChange]
   );
 
   // 处理新建
@@ -271,14 +285,6 @@ export function ERPReturnOrderList({
   };
 
   // 格式化金额
-  // 格式化日期
-  const formatDate = (dateString: string) =>
-    new Date(dateString).toLocaleDateString('zh-CN', {
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-    });
-
   // 获取状态颜色（使用统一的 badge-helpers）
   const getStatusColor = (status: string) =>
     getReturnOrderStatusBadgeVariant(status);
@@ -300,48 +306,49 @@ export function ERPReturnOrderList({
     <div className="space-y-4">
       {/* 搜索和筛选 */}
       <Card className="shadow-md shadow-gray-200/50">
-        <CardContent className="pt-6">
-          <UnifiedSearchBar
-            // 搜索配置
-            searchValue={queryParams.search || ''}
-            onSearchChange={handleSearch}
-            searchPlaceholder="搜索退货单号或客户名称..."
-            debounceDelay={400}
-            compact={true}
-            // 筛选器配置
-            filters={[
-              {
-                key: 'status',
-                label: '状态',
-                options: [
-                  { label: '草稿', value: 'draft' },
-                  { label: '已提交', value: 'submitted' },
-                  { label: '已审核', value: 'approved' },
-                  { label: '已拒绝', value: 'rejected' },
-                  { label: '处理中', value: 'processing' },
-                  { label: '已完成', value: 'completed' },
-                  { label: '已取消', value: 'cancelled' },
-                ],
-                width: 'w-24',
-              },
-              {
-                key: 'sortBy',
-                label: '排序',
-                options: [
-                  { label: '创建时间', value: 'createdAt' },
-                  { label: '退货单号', value: 'returnNumber' },
-                  { label: '退货金额', value: 'totalAmount' },
-                  { label: '订单状态', value: 'status' },
-                ],
-                width: 'w-24',
-              },
-            ]}
-            filterValues={{
-              status: queryParams.status || 'all',
-              sortBy: queryParams.sortBy || 'createdAt',
-            }}
-            onFilterChange={handleFilterChange}
-          />
+        <CardContent className="space-y-4 pt-6">
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-[280px] flex-1">
+              <UnifiedSearchBar
+                searchValue={queryParams.search || ''}
+                onSearchChange={handleSearch}
+                searchPlaceholder="搜索退货单号或客户名称..."
+                debounceDelay={400}
+                compact
+                filters={[
+                  {
+                    key: 'status',
+                    label: '状态',
+                    options: [
+                      { label: '草稿', value: 'draft' },
+                      { label: '已提交', value: 'submitted' },
+                      { label: '已审核', value: 'approved' },
+                      { label: '已拒绝', value: 'rejected' },
+                      { label: '处理中', value: 'processing' },
+                      { label: '已完成', value: 'completed' },
+                      { label: '已取消', value: 'cancelled' },
+                    ],
+                    width: 'w-24',
+                  },
+                ]}
+                filterValues={{
+                  status: queryParams.status || 'all',
+                }}
+                onFilterChange={handleFilterChange}
+              />
+            </div>
+            <DateRangePicker
+              value={{
+                startDate: queryParams.startDate,
+                endDate: queryParams.endDate,
+              }}
+              onChange={handleDateRangeChange}
+              label=""
+              placeholder="选择退货日期范围"
+              showPresets
+              className="min-w-[220px]"
+            />
+          </div>
         </CardContent>
       </Card>
 
@@ -443,7 +450,7 @@ export function ERPReturnOrderList({
                     </Badge>
                   </TableCell>
                   <TableCell className="text-muted-foreground">
-                    {formatDate(returnOrder.createdAt)}
+                    {formatDateTime(returnOrder.createdAt)}
                   </TableCell>
                   <TableCell className="text-center">
                     <DropdownMenu>

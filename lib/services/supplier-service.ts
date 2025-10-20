@@ -48,6 +48,12 @@ export interface CreateSupplierParams {
   address?: string | null;
 }
 
+interface SupplierBasicInfo {
+  id: string;
+  name: string;
+  status: string;
+}
+
 // ==================== 辅助函数 ====================
 
 /**
@@ -198,6 +204,187 @@ export async function getSupplierById(
 
   // 直接返回，无需转换
   return supplier;
+}
+
+// ==================== 业务校验辅助函数 ====================
+
+async function getSupplierBasicInfo(
+  supplierId: string
+): Promise<SupplierBasicInfo | null> {
+  return prisma.supplier.findUnique({
+    where: { id: supplierId },
+    select: {
+      id: true,
+      name: true,
+      status: true,
+    },
+  });
+}
+
+/**
+ * 确保供应商可以停用
+ * 如果存在未完成的厂家发货或未结清的应付账款，则抛出错误
+ */
+export async function ensureSupplierCanBeDeactivated(
+  supplierId: string,
+  supplierName?: string
+): Promise<void> {
+  let basicInfo = supplierName
+    ? { id: supplierId, name: supplierName, status: 'unknown' }
+    : null;
+
+  if (!basicInfo) {
+    basicInfo = await getSupplierBasicInfo(supplierId);
+  }
+
+  if (!basicInfo) {
+    throw new Error('供应商不存在');
+  }
+
+  const [activeShipmentCount, unpaidPayablesCount] = await prisma.$transaction([
+    prisma.factoryShipmentOrder.count({
+      where: {
+        items: {
+          some: {
+            supplierId,
+            factoryShipmentOrder: {
+              status: {
+                notIn: ['completed', 'cancelled'],
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.payableRecord.count({
+      where: {
+        supplierId,
+        status: {
+          notIn: ['paid', 'cancelled'],
+        },
+      },
+    }),
+  ]);
+
+  if (activeShipmentCount > 0) {
+    throw new Error(
+      `供应商 "${basicInfo.name}" 有 ${activeShipmentCount} 个进行中的发货订单，无法停用`
+    );
+  }
+
+  if (unpaidPayablesCount > 0) {
+    throw new Error(
+      `供应商 "${basicInfo.name}" 有 ${unpaidPayablesCount} 笔未结清的应付账款，无法停用`
+    );
+  }
+}
+
+/**
+ * 确保供应商可以删除
+ * 如果有关联业务数据，则抛出错误
+ */
+export async function ensureSupplierCanBeDeleted(
+  supplierId: string,
+  supplierName?: string
+): Promise<void> {
+  let basicInfo = supplierName
+    ? { id: supplierId, name: supplierName, status: 'unknown' }
+    : null;
+
+  if (!basicInfo) {
+    basicInfo = await getSupplierBasicInfo(supplierId);
+  }
+
+  if (!basicInfo) {
+    throw new Error('供应商不存在');
+  }
+
+  const [salesOrderCount, shipmentItemCount, payableCount, paymentOutCount] =
+    await prisma.$transaction([
+      prisma.salesOrder.count({
+        where: { supplierId },
+      }),
+      prisma.factoryShipmentOrderItem.count({
+        where: { supplierId },
+      }),
+      prisma.payableRecord.count({
+        where: { supplierId },
+      }),
+      prisma.paymentOutRecord.count({
+        where: { supplierId },
+      }),
+    ]);
+
+  if (salesOrderCount > 0) {
+    throw new Error(
+      `供应商 "${basicInfo.name}" 有 ${salesOrderCount} 个关联的销售订单，无法删除`
+    );
+  }
+
+  if (shipmentItemCount > 0) {
+    throw new Error(
+      `供应商 "${basicInfo.name}" 有 ${shipmentItemCount} 个关联的发货订单明细，无法删除`
+    );
+  }
+
+  if (payableCount > 0) {
+    throw new Error(
+      `供应商 "${basicInfo.name}" 有 ${payableCount} 笔应付账款记录，无法删除`
+    );
+  }
+
+  if (paymentOutCount > 0) {
+    throw new Error(
+      `供应商 "${basicInfo.name}" 有 ${paymentOutCount} 条付款记录，无法删除`
+    );
+  }
+}
+
+/**
+ * 获取供应商最近的厂家发货汇总
+ */
+export async function getRecentSupplierShipments(
+  supplierId: string,
+  take = 10
+) {
+  return prisma.factoryShipmentOrder.findMany({
+    where: {
+      items: {
+        some: { supplierId },
+      },
+    },
+    select: {
+      id: true,
+      orderNumber: true,
+      status: true,
+      createdAt: true,
+      items: {
+        where: { supplierId },
+        select: {
+          totalPrice: true,
+        },
+      },
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+    take,
+  });
+}
+
+/**
+ * 统计供应商关联的厂家发货数量
+ */
+export async function countSupplierShipments(
+  supplierId: string
+): Promise<number> {
+  return prisma.factoryShipmentOrder.count({
+    where: {
+      items: {
+        some: { supplierId },
+      },
+    },
+  });
 }
 
 /**

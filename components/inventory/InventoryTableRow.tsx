@@ -25,8 +25,6 @@ import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryTableRowProps {
   item: Inventory;
-  isSelected: boolean;
-  onSelect: (id: string, checked: boolean) => void;
   onAdjust: (id: string) => void;
   /** 自定义样式（用于虚拟化） */
   style?: React.CSSProperties;
@@ -49,16 +47,8 @@ const getStockBadge = (quantity: number, reservedQuantity: number = 0) => {
 
 function useInventoryRowHandlers(
   item: Inventory,
-  onSelect: (id: string, checked: boolean) => void,
   onAdjust: (id: string) => void
 ) {
-  const handleSelect = React.useCallback(
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      onSelect(item.id, e.target.checked);
-    },
-    [item.id, onSelect]
-  );
-
   const handleAdjust = React.useCallback(() => {
     if (!item.batchNumber) {
       return;
@@ -66,7 +56,7 @@ function useInventoryRowHandlers(
     onAdjust(item.id);
   }, [item.batchNumber, item.id, onAdjust]);
 
-  return { handleSelect, handleAdjust };
+  return { handleAdjust };
 }
 
 function useInventoryRowData(item: Inventory) {
@@ -166,8 +156,6 @@ function useInventoryRowData(item: Inventory) {
 
 interface InventoryRowViewProps {
   item: Inventory;
-  isSelected: boolean;
-  onSelect: React.ChangeEventHandler<HTMLInputElement>;
   onAdjust: () => void;
   style?: React.CSSProperties;
   className?: string;
@@ -182,8 +170,6 @@ interface InventoryRowViewProps {
 
 function InventoryRowView({
   item,
-  isSelected,
-  onSelect,
   onAdjust,
   style,
   className,
@@ -200,14 +186,6 @@ function InventoryRowView({
       className={`text-xs transition-colors hover:bg-blue-50/50 ${className || ''}`}
       style={style}
     >
-      <TableCell>
-        <input
-          type="checkbox"
-          checked={isSelected}
-          onChange={onSelect}
-          className="border-input rounded border"
-        />
-      </TableCell>
       <TableCell className="font-medium text-blue-600">
         {item.product?.code || '-'}
       </TableCell>
@@ -256,19 +234,13 @@ function InventoryRowView({
  * 使用React.memo优化重渲染性能
  */
 export const InventoryTableRow = React.memo<InventoryTableRowProps>(
-  ({ item, isSelected, onSelect, onAdjust, style, className }) => {
-    const { handleSelect, handleAdjust } = useInventoryRowHandlers(
-      item,
-      onSelect,
-      onAdjust
-    );
+  ({ item, onAdjust, style, className }) => {
+    const { handleAdjust } = useInventoryRowHandlers(item, onAdjust);
     const rowData = useInventoryRowData(item);
 
     return (
       <InventoryRowView
         item={item}
-        isSelected={isSelected}
-        onSelect={handleSelect}
         onAdjust={handleAdjust}
         style={style}
         className={className}

@@ -48,10 +48,8 @@ export const ProductSelector = React.forwardRef<
     },
     ref
   ) => {
-    const {
-      ['aria-invalid']: ariaInvalidProp,
-      ...restButtonProps
-    } = buttonProps;
+    const { ['aria-invalid']: ariaInvalidProp, ...restButtonProps } =
+      buttonProps;
     const {
       open,
       setOpen,

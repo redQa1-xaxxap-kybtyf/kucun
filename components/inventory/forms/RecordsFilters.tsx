@@ -6,9 +6,10 @@
 
 'use client';
 
-import { Calendar, Filter, RotateCcw, Search } from 'lucide-react';
+import { Filter, RotateCcw, Search } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -135,7 +136,7 @@ function TypeFilterField({
 }
 
 /**
- * 日期范围组件
+ * 日期范围组件 - 使用统一的 DateRangePicker
  */
 function DateRangeFields({
   config,
@@ -155,36 +156,18 @@ function DateRangeFields({
   }
 
   return (
-    <>
-      <div>
-        <label className="text-muted-foreground mb-1 block text-xs">
-          {config.startLabel || '开始日期'}
-        </label>
-        <div className="relative">
-          <Input
-            type="date"
-            value={startDate || ''}
-            onChange={e => onStartChange(e.target.value || undefined)}
-            className="h-8 text-xs"
-          />
-          <Calendar className="text-muted-foreground pointer-events-none absolute top-2 right-2 h-3 w-3" />
-        </div>
-      </div>
-      <div>
-        <label className="text-muted-foreground mb-1 block text-xs">
-          {config.endLabel || '结束日期'}
-        </label>
-        <div className="relative">
-          <Input
-            type="date"
-            value={endDate || ''}
-            onChange={e => onEndChange(e.target.value || undefined)}
-            className="h-8 text-xs"
-          />
-          <Calendar className="text-muted-foreground pointer-events-none absolute top-2 right-2 h-3 w-3" />
-        </div>
-      </div>
-    </>
+    <div className="md:col-span-2">
+      <DateRangePicker
+        value={{ startDate, endDate }}
+        onChange={({ startDate, endDate }) => {
+          onStartChange(startDate);
+          onEndChange(endDate);
+        }}
+        label={config.startLabel || '日期范围'}
+        showPresets={true}
+        showClearButton={true}
+      />
+    </div>
   );
 }
 

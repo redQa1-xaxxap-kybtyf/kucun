@@ -57,6 +57,12 @@ export function InventoryPageClient({
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
   );
+  const [startDate, setStartDate] = React.useState<string | undefined>(
+    initialParams.startDate
+  );
+  const [endDate, setEndDate] = React.useState<string | undefined>(
+    initialParams.endDate
+  );
   const [limit, setLimit] = React.useState<number>(
     typeof initialParams.limit === 'number' &&
       Number.isFinite(initialParams.limit)
@@ -73,6 +79,8 @@ export function InventoryPageClient({
     setHasStock(Boolean(initialParams.hasStock));
     setSortBy(initialParams.sortBy || 'updatedAt');
     setSortOrder(initialParams.sortOrder === 'asc' ? 'asc' : 'desc');
+    setStartDate(initialParams.startDate);
+    setEndDate(initialParams.endDate);
     setLimit(current =>
       typeof initialParams.limit === 'number' &&
       Number.isFinite(initialParams.limit)
@@ -94,6 +102,8 @@ export function InventoryPageClient({
     hasStock,
     sortBy,
     sortOrder,
+    startDate,
+    endDate,
   });
 
   // ✅ 每次状态变化时更新 ref
@@ -104,8 +114,10 @@ export function InventoryPageClient({
       hasStock,
       sortBy,
       sortOrder,
+      startDate,
+      endDate,
     };
-  }, [categoryId, lowStock, hasStock, sortBy, sortOrder]);
+  }, [categoryId, lowStock, hasStock, sortBy, sortOrder, startDate, endDate]);
 
   // ✅ 获取库存列表数据（从 HydrationBoundary 自动获取服务端预取的数据，无需重复请求）
   // ✅ 暴露预取方法供分页按钮使用
@@ -207,6 +219,12 @@ export function InventoryPageClient({
       if (filters.sortOrder) {
         params.set('sortOrder', filters.sortOrder);
       }
+      if (filters.startDate) {
+        params.set('startDate', filters.startDate);
+      }
+      if (filters.endDate) {
+        params.set('endDate', filters.endDate);
+      }
 
       params.set('page', '1');
 
@@ -275,6 +293,20 @@ export function InventoryPageClient({
         const sortOrderValue = stringValue === 'asc' ? 'asc' : 'desc';
         nextFilters.sortOrder = sortOrderValue;
         setSortOrder(sortOrderValue);
+      } else if (key === 'startDate') {
+        const dateValue =
+          typeof stringValue === 'string' && stringValue.length > 0
+            ? stringValue
+            : undefined;
+        nextFilters.startDate = dateValue;
+        setStartDate(dateValue);
+      } else if (key === 'endDate') {
+        const dateValue =
+          typeof stringValue === 'string' && stringValue.length > 0
+            ? stringValue
+            : undefined;
+        nextFilters.endDate = dateValue;
+        setEndDate(dateValue);
       } else if (key === 'limit') {
         const parsed = Number(stringValue);
         if (Number.isFinite(parsed) && parsed > 0) {
@@ -303,6 +335,12 @@ export function InventoryPageClient({
       }
       if (nextFilters.sortOrder) {
         params.set('sortOrder', nextFilters.sortOrder);
+      }
+      if (nextFilters.startDate) {
+        params.set('startDate', nextFilters.startDate);
+      }
+      if (nextFilters.endDate) {
+        params.set('endDate', nextFilters.endDate);
       }
 
       params.set('page', '1');
@@ -345,6 +383,12 @@ export function InventoryPageClient({
       if (currentFilters.sortOrder) {
         params.set('sortOrder', currentFilters.sortOrder);
       }
+      if (currentFilters.startDate) {
+        params.set('startDate', currentFilters.startDate);
+      }
+      if (currentFilters.endDate) {
+        params.set('endDate', currentFilters.endDate);
+      }
       if (page > 1) {
         params.set('page', page.toString());
       }
@@ -376,6 +420,8 @@ export function InventoryPageClient({
       hasStock,
       sortBy,
       sortOrder,
+      startDate,
+      endDate,
       page: initialParams.page,
       limit,
     }),
@@ -386,6 +432,8 @@ export function InventoryPageClient({
       hasStock,
       sortBy,
       sortOrder,
+      startDate,
+      endDate,
       limit,
       initialParams,
     ]

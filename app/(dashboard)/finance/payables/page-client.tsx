@@ -10,6 +10,7 @@ import { useDebouncedCallback, type DebouncedState } from 'use-debounce';
 import { PayablesClient } from '@/components/finance/payables-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
   PAYABLE_SORT_OPTIONS,
   type PayableSourceType,
@@ -47,6 +48,8 @@ interface PayablesQueryParams {
   sourceType?: PayableSourceType;
   sortBy?: PayableSortField;
   sortOrder?: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
 }
 
 interface PayablesPageClientProps {
@@ -85,6 +88,8 @@ function normalizeInitialParams(
     sourceType: undefined,
     sortBy: 'createdAt',
     sortOrder: params.sortOrder === 'asc' ? 'asc' : 'desc',
+    startDate: params.startDate,
+    endDate: params.endDate,
   };
 
   if (isPayableStatus(params.status)) {
@@ -110,6 +115,8 @@ type FilterOverrides = Partial<
     | 'sourceType'
     | 'sortBy'
     | 'sortOrder'
+    | 'startDate'
+    | 'endDate'
   >
 >;
 
@@ -138,6 +145,12 @@ function usePayablesQueryState(initialParams: PayablesQueryParams) {
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     normalizedInitialParams.sortOrder ?? 'desc'
   );
+  const [startDate, setStartDate] = React.useState<string | undefined>(
+    normalizedInitialParams.startDate
+  );
+  const [endDate, setEndDate] = React.useState<string | undefined>(
+    normalizedInitialParams.endDate
+  );
 
   React.useEffect(() => {
     setSearch(normalizedInitialParams.search ?? '');
@@ -145,6 +158,8 @@ function usePayablesQueryState(initialParams: PayablesQueryParams) {
     setSourceType(normalizedInitialParams.sourceType);
     setSortBy(normalizedInitialParams.sortBy ?? 'createdAt');
     setSortOrder(normalizedInitialParams.sortOrder ?? 'desc');
+    setStartDate(normalizedInitialParams.startDate);
+    setEndDate(normalizedInitialParams.endDate);
   }, [normalizedInitialParams]);
 
   return {
@@ -159,6 +174,10 @@ function usePayablesQueryState(initialParams: PayablesQueryParams) {
     setSortBy,
     sortOrder,
     setSortOrder,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
   };
 }
 
@@ -168,7 +187,9 @@ function usePayablesUrlUpdater(
   status: PayableStatus | undefined,
   sourceType: PayableSourceType | undefined,
   sortBy: PayableSortField,
-  sortOrder: 'asc' | 'desc'
+  sortOrder: 'asc' | 'desc',
+  startDate: string | undefined,
+  endDate: string | undefined
 ): DebouncedUpdateFn {
   const [, startTransition] = React.useTransition();
 
@@ -181,6 +202,8 @@ function usePayablesUrlUpdater(
         sourceType,
         sortBy,
         sortOrder,
+        startDate,
+        endDate,
         ...overrides,
       };
 
@@ -194,10 +217,16 @@ function usePayablesUrlUpdater(
         searchParams.set('status', nextParams.status);
       }
       if (nextParams.sourceType) {
-        searchParams.set('source', nextParams.sourceType);
+        searchParams.set('sourceType', nextParams.sourceType);
       }
       searchParams.set('sortBy', nextParams.sortBy ?? 'createdAt');
       searchParams.set('sortOrder', nextParams.sortOrder ?? 'desc');
+      if (nextParams.startDate) {
+        searchParams.set('startDate', nextParams.startDate);
+      }
+      if (nextParams.endDate) {
+        searchParams.set('endDate', nextParams.endDate);
+      }
 
       startTransition(() => {
         router.push(`/finance/payables?${searchParams.toString()}`);
@@ -215,6 +244,8 @@ function usePayablesSearchHandler(args: {
   sortBy: PayableSortField;
   sortOrder: 'asc' | 'desc';
   setSearch: React.Dispatch<React.SetStateAction<string>>;
+  startDate: string | undefined;
+  endDate: string | undefined;
 }) {
   const {
     debouncedUpdateURL,
@@ -224,6 +255,8 @@ function usePayablesSearchHandler(args: {
     sortOrder,
     sourceType,
     status,
+    startDate,
+    endDate,
   } = args;
 
   return React.useCallback(
@@ -237,15 +270,19 @@ function usePayablesSearchHandler(args: {
         sourceType,
         sortBy,
         sortOrder,
+        startDate,
+        endDate,
       });
     },
     [
       debouncedUpdateURL,
+      endDate,
       normalizedInitialParams.limit,
       setSearch,
       sortBy,
       sortOrder,
       sourceType,
+      startDate,
       status,
     ]
   );
@@ -265,6 +302,8 @@ function usePayablesFilterHandler(args: {
   setSortBy: React.Dispatch<React.SetStateAction<PayableSortField>>;
   sortOrder: 'asc' | 'desc';
   setSortOrder: React.Dispatch<React.SetStateAction<'asc' | 'desc'>>;
+  startDate: string | undefined;
+  endDate: string | undefined;
 }) {
   const {
     debouncedUpdateURL,
@@ -278,6 +317,8 @@ function usePayablesFilterHandler(args: {
     sortOrder,
     sourceType,
     status,
+    startDate,
+    endDate,
   } = args;
 
   return React.useCallback(
@@ -315,9 +356,12 @@ function usePayablesFilterHandler(args: {
         sourceType: nextSourceType,
         sortBy: nextSortBy,
         sortOrder: nextSortOrder,
+        startDate,
+        endDate,
       });
     },
     [
+      endDate,
       debouncedUpdateURL,
       normalizedInitialParams.limit,
       search,
@@ -328,6 +372,7 @@ function usePayablesFilterHandler(args: {
       sortBy,
       sortOrder,
       sourceType,
+      startDate,
       status,
     ]
   );
@@ -341,6 +386,8 @@ function usePayablesPageHandler(args: {
   sourceType: PayableSourceType | undefined;
   sortBy: PayableSortField;
   sortOrder: 'asc' | 'desc';
+  startDate: string | undefined;
+  endDate: string | undefined;
 }) {
   const {
     debouncedUpdateURL,
@@ -350,6 +397,8 @@ function usePayablesPageHandler(args: {
     sortOrder,
     sourceType,
     status,
+    startDate,
+    endDate,
   } = args;
 
   return React.useCallback(
@@ -362,15 +411,19 @@ function usePayablesPageHandler(args: {
         sourceType,
         sortBy,
         sortOrder,
+        startDate,
+        endDate,
       });
     },
     [
       debouncedUpdateURL,
+      endDate,
       normalizedInitialParams.limit,
       search,
       sortBy,
       sortOrder,
       sourceType,
+      startDate,
       status,
     ]
   );
@@ -392,6 +445,10 @@ function usePayablesFilters(
     setSortBy,
     sortOrder,
     setSortOrder,
+    startDate,
+    setStartDate,
+    endDate,
+    setEndDate,
   } = usePayablesQueryState(initialParams);
 
   const debouncedUpdateURL = usePayablesUrlUpdater(
@@ -400,7 +457,9 @@ function usePayablesFilters(
     status,
     sourceType,
     sortBy,
-    sortOrder
+    sortOrder,
+    startDate,
+    endDate
   );
 
   const handleSearch = usePayablesSearchHandler({
@@ -411,6 +470,8 @@ function usePayablesFilters(
     sortBy,
     sortOrder,
     setSearch,
+    startDate,
+    endDate,
   });
 
   const handleFilter = usePayablesFilterHandler({
@@ -425,6 +486,8 @@ function usePayablesFilters(
     setSortBy,
     sortOrder,
     setSortOrder,
+    startDate,
+    endDate,
   });
 
   const handlePageChange = usePayablesPageHandler({
@@ -435,13 +498,46 @@ function usePayablesFilters(
     sourceType,
     sortBy,
     sortOrder,
+    startDate,
+    endDate,
   });
+
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      setStartDate(range.startDate);
+      setEndDate(range.endDate);
+
+      debouncedUpdateURL(search, {
+        page: 1,
+        limit: normalizedInitialParams.limit,
+        search: search || undefined,
+        status,
+        sourceType,
+        sortBy,
+        sortOrder,
+        startDate: range.startDate,
+        endDate: range.endDate,
+      });
+    },
+    [
+      debouncedUpdateURL,
+      normalizedInitialParams.limit,
+      search,
+      setEndDate,
+      setStartDate,
+      sortBy,
+      sortOrder,
+      sourceType,
+      status,
+    ]
+  );
 
   return {
     normalizedInitialParams,
     handleSearch,
     handleFilter,
     handlePageChange,
+    handleDateRangeChange,
   };
 }
 
@@ -459,6 +555,7 @@ export function PayablesPageClient({
     handleSearch,
     handleFilter,
     handlePageChange,
+    handleDateRangeChange,
   } = usePayablesFilters(router, initialParams);
 
   return (
@@ -521,6 +618,7 @@ export function PayablesPageClient({
             initialParams={normalizedInitialParams}
             onSearch={handleSearch}
             onFilter={handleFilter}
+            onDateRangeChange={handleDateRangeChange}
             onPageChange={handlePageChange}
           />
         </Suspense>

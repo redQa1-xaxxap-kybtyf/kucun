@@ -2,8 +2,7 @@ import type { Prisma } from '@prisma/client';
 
 import type { CreateInput } from './types';
 
-const roundCurrency = (value: number) =>
-  Math.round((value ?? 0) * 100) / 100;
+const roundCurrency = (value: number) => Math.round((value ?? 0) * 100) / 100;
 
 const calculateItemTotals = (
   data: CreateInput,
@@ -18,7 +17,7 @@ const calculateItemTotals = (
     const subtotal = item.subtotal ?? quantity * unitPrice;
     const effectiveTransferQuantity =
       data.orderType === 'TRANSFER' && transferMode === 'MIXED'
-        ? item.transferQuantity ?? 0
+        ? (item.transferQuantity ?? 0)
         : quantity;
     const unitCost = item.unitCost ?? 0;
 
@@ -35,7 +34,7 @@ const calculateItemTotals = (
 
 export const normalizeTransferMode = (data: CreateInput) =>
   data.orderType === 'TRANSFER'
-    ? data.transferMode ?? 'SUPPLIER_ONLY'
+    ? (data.transferMode ?? 'SUPPLIER_ONLY')
     : 'SUPPLIER_ONLY';
 
 export const calculateFinancials = (
@@ -74,13 +73,13 @@ export const buildOrderItemsInput = (
     const localQuantity =
       data.orderType === 'TRANSFER'
         ? transferMode === 'MIXED'
-          ? item.localQuantity ?? 0
+          ? (item.localQuantity ?? 0)
           : 0
         : quantity;
     const transferQuantity =
       data.orderType === 'TRANSFER'
         ? transferMode === 'MIXED'
-          ? item.transferQuantity ?? 0
+          ? (item.transferQuantity ?? 0)
           : quantity
         : 0;
 

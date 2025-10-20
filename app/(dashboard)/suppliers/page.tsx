@@ -10,6 +10,7 @@ import { supplierQueryKeys } from '@/lib/api/suppliers';
 import { paginationConfig } from '@/lib/env';
 import { getSuppliers } from '@/lib/services/supplier-service';
 import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
+import { SupplierQuerySchema } from '@/lib/validations/supplier';
 
 export const metadata: Metadata = {
   title: '供应商管理',
@@ -42,30 +43,31 @@ export default async function SuppliersPage({
 }) {
   // 解析查询参数
   const params = await searchParams;
-  const page = Number(params.page) || 1;
-  const limit = Number(params.limit) || paginationConfig.defaultPageSize;
-  const search = (params.search as string) || '';
-  const status =
-    (params.status as 'active' | 'inactive' | undefined) || undefined;
-  const allowedSortFields: SupplierQueryParams['sortBy'][] = [
-    'name',
-    'createdAt',
-    'updatedAt',
-  ];
-  const sortByParam = (params.sortBy as string) || 'createdAt';
-  const normalizedSortBy: SupplierQueryParams['sortBy'] =
-    allowedSortFields.includes(sortByParam as SupplierQueryParams['sortBy'])
-      ? (sortByParam as SupplierQueryParams['sortBy'])
-      : 'createdAt';
-  const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
+
+  const normalizedParams = Object.entries(params).reduce<
+    Record<string, string>
+  >((acc, [key, value]) => {
+    if (Array.isArray(value)) {
+      if (value.length > 0 && value[0] !== undefined) {
+        acc[key] = value[0] as string;
+      }
+    } else if (value !== undefined) {
+      acc[key] = value as string;
+    }
+    return acc;
+  }, {});
+
+  const parsedParams = SupplierQuerySchema.parse(normalizedParams);
+  const search = parsedParams.search?.trim();
+  const status = parsedParams.status;
 
   const queryParams: SupplierQueryParams = {
-    page,
-    limit,
-    search: search || undefined,
-    status: status === undefined ? undefined : status,
-    sortBy: normalizedSortBy,
-    sortOrder,
+    page: parsedParams.page ?? 1,
+    limit: parsedParams.limit ?? paginationConfig.defaultPageSize,
+    search: search ? search : undefined,
+    status,
+    sortBy: parsedParams.sortBy ?? 'createdAt',
+    sortOrder: parsedParams.sortOrder ?? 'desc',
   };
 
   const queryClient = new QueryClient({
@@ -104,12 +106,12 @@ export default async function SuppliersPage({
     <HydrationBoundary state={dehydrate(queryClient)}>
       <SuppliersPageClient
         initialParams={{
-          page,
-          limit,
+          page: queryParams.page ?? 1,
+          limit: queryParams.limit ?? paginationConfig.defaultPageSize,
           search: search || undefined,
           status,
-          sortBy: normalizedSortBy,
-          sortOrder,
+          sortBy: queryParams.sortBy ?? 'createdAt',
+          sortOrder: queryParams.sortOrder ?? 'desc',
         }}
       />
     </HydrationBoundary>

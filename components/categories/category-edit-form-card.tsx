@@ -1,6 +1,7 @@
 'use client';
 
 import { FolderTree, Save, X } from 'lucide-react';
+import * as React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { Button } from '@/components/ui/button';
@@ -41,8 +42,10 @@ interface CategoryEditFormCardProps {
   onSubmit: (data: UpdateCategoryData) => void;
   onCancel: () => void;
   parentCategories: ParentCategory[];
-  isCategoriesLoading: boolean;
+  isParentOptionsLoading: boolean;
   isSubmitting: boolean;
+  parentSearchTerm: string;
+  onParentSearchChange: React.Dispatch<React.SetStateAction<string>>;
 }
 
 export function CategoryEditFormCard({
@@ -50,8 +53,10 @@ export function CategoryEditFormCard({
   onSubmit,
   onCancel,
   parentCategories,
-  isCategoriesLoading,
+  isParentOptionsLoading,
   isSubmitting,
+  parentSearchTerm,
+  onParentSearchChange,
 }: CategoryEditFormCardProps) {
   return (
     <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
@@ -63,8 +68,10 @@ export function CategoryEditFormCard({
           onSubmit={onSubmit}
           onCancel={onCancel}
           parentCategories={parentCategories}
-          isCategoriesLoading={isCategoriesLoading}
+          isParentOptionsLoading={isParentOptionsLoading}
           isSubmitting={isSubmitting}
+          parentSearchTerm={parentSearchTerm}
+          onParentSearchChange={onParentSearchChange}
         />
       </CardContent>
     </Card>
@@ -110,8 +117,10 @@ interface CategoryEditFormBodyProps {
   onSubmit: (data: UpdateCategoryData) => void;
   onCancel: () => void;
   parentCategories: ParentCategory[];
-  isCategoriesLoading: boolean;
+  isParentOptionsLoading: boolean;
   isSubmitting: boolean;
+  parentSearchTerm: string;
+  onParentSearchChange: React.Dispatch<React.SetStateAction<string>>;
 }
 
 function CategoryEditFormBody({
@@ -119,8 +128,10 @@ function CategoryEditFormBody({
   onSubmit,
   onCancel,
   parentCategories,
-  isCategoriesLoading,
+  isParentOptionsLoading,
   isSubmitting,
+  parentSearchTerm,
+  onParentSearchChange,
 }: CategoryEditFormBodyProps) {
   return (
     <Form {...form}>
@@ -128,7 +139,9 @@ function CategoryEditFormBody({
         <CategoryFormFieldGrid
           control={form.control}
           parentCategories={parentCategories}
-          isCategoriesLoading={isCategoriesLoading}
+          isParentOptionsLoading={isParentOptionsLoading}
+          parentSearchTerm={parentSearchTerm}
+          onParentSearchChange={onParentSearchChange}
         />
         <CategoryFormActions onCancel={onCancel} isSubmitting={isSubmitting} />
       </form>
@@ -139,13 +152,17 @@ function CategoryEditFormBody({
 interface CategoryFormFieldGridProps {
   control: CategoryFormControl;
   parentCategories: ParentCategory[];
-  isCategoriesLoading: boolean;
+  isParentOptionsLoading: boolean;
+  parentSearchTerm: string;
+  onParentSearchChange: React.Dispatch<React.SetStateAction<string>>;
 }
 
 function CategoryFormFieldGrid({
   control,
   parentCategories,
-  isCategoriesLoading,
+  isParentOptionsLoading,
+  parentSearchTerm,
+  onParentSearchChange,
 }: CategoryFormFieldGridProps) {
   return (
     <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -153,7 +170,9 @@ function CategoryFormFieldGrid({
       <CategoryParentField
         control={control}
         parentCategories={parentCategories}
-        isDisabled={isCategoriesLoading}
+        isLoading={isParentOptionsLoading}
+        parentSearchTerm={parentSearchTerm}
+        onParentSearchChange={onParentSearchChange}
       />
       <CategorySortOrderField control={control} />
     </div>
@@ -182,14 +201,20 @@ function CategoryNameField({ control }: { control: CategoryFormControl }) {
 interface CategoryParentFieldProps {
   control: CategoryFormControl;
   parentCategories: ParentCategory[];
-  isDisabled: boolean;
+  isLoading: boolean;
+  parentSearchTerm: string;
+  onParentSearchChange: React.Dispatch<React.SetStateAction<string>>;
 }
 
 function CategoryParentField({
   control,
   parentCategories,
-  isDisabled,
+  isLoading,
+  parentSearchTerm,
+  onParentSearchChange,
 }: CategoryParentFieldProps) {
+  const disableSelect = isLoading && parentCategories.length === 0;
+
   return (
     <FormField
       control={control}
@@ -197,42 +222,73 @@ function CategoryParentField({
       render={({ field }) => (
         <FormItem>
           <FormLabel>父级分类</FormLabel>
-          <Select
-            onValueChange={field.onChange}
-            value={field.value || 'none'}
-            disabled={isDisabled}
-          >
-            <FormControl>
-              <SelectTrigger>
-                <SelectValue placeholder="请选择父级分类" />
-              </SelectTrigger>
-            </FormControl>
-            <SelectContent>
-              <SelectItem value="none">
-                <div className="flex items-center gap-2">
-                  <span className="text-blue-600">🏠</span>
-                  <span>无（顶级分类）</span>
-                </div>
-              </SelectItem>
-              {parentCategories.map(category => (
-                <SelectItem key={category.id} value={category.id}>
+          <div className="space-y-3">
+            <Input
+              type="search"
+              value={parentSearchTerm}
+              onChange={event => onParentSearchChange(event.target.value)}
+              placeholder="输入关键字搜索父级分类"
+              autoComplete="off"
+              aria-label="搜索父级分类"
+            />
+            <Select
+              onValueChange={field.onChange}
+              value={field.value || 'none'}
+              disabled={disableSelect}
+            >
+              <FormControl>
+                <SelectTrigger className="relative">
+                  <SelectValue placeholder="请选择父级分类" />
+                  {isLoading && (
+                    <span className="pointer-events-none absolute inset-y-0 right-3 flex items-center">
+                      <div className="border-muted-foreground h-3.5 w-3.5 animate-spin rounded-full border-2 border-t-transparent" />
+                    </span>
+                  )}
+                </SelectTrigger>
+              </FormControl>
+              <SelectContent>
+                <SelectItem value="none">
                   <div className="flex items-center gap-2">
-                    {category.parent ? (
-                      <span className="ml-4 text-gray-400">↳</span>
-                    ) : (
-                      <span className="text-green-600">📁</span>
-                    )}
-                    <span>{category.name}</span>
-                    {category.parent && (
-                      <span className="text-xs text-gray-400">
-                        ({category.parent.name})
-                      </span>
-                    )}
+                    <span className="text-blue-600">🏠</span>
+                    <span>无（顶级分类）</span>
                   </div>
                 </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+                {parentCategories.length === 0 ? (
+                  <SelectItem value="__empty" disabled>
+                    <span className="text-muted-foreground">无匹配的分类</span>
+                  </SelectItem>
+                ) : (
+                  parentCategories
+                    .slice()
+                    .sort((a, b) => {
+                      const levelA = a.parent ? 1 : 0;
+                      const levelB = b.parent ? 1 : 0;
+                      if (levelA !== levelB) {
+                        return levelA - levelB;
+                      }
+                      return a.name.localeCompare(b.name, 'zh-Hans-CN');
+                    })
+                    .map(category => (
+                      <SelectItem key={category.id} value={category.id}>
+                        <div className="flex items-center gap-2">
+                          {category.parent ? (
+                            <span className="ml-4 text-gray-400">↳</span>
+                          ) : (
+                            <span className="text-green-600">📁</span>
+                          )}
+                          <span>{category.name}</span>
+                          {category.parent && (
+                            <span className="text-xs text-gray-400">
+                              ({category.parent.name})
+                            </span>
+                          )}
+                        </div>
+                      </SelectItem>
+                    ))
+                )}
+              </SelectContent>
+            </Select>
+          </div>
           <FormDescription>
             选择父级分类以创建层级结构（最多支持3级）
             <span className="mt-1 block text-xs text-blue-600">

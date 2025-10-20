@@ -66,6 +66,16 @@ export default async function InventoryPage({
   const sortBy =
     (getParam('sortBy') as InventoryQueryParams['sortBy']) || 'updatedAt';
   const sortOrder = getParam('sortOrder') === 'asc' ? 'asc' : 'desc';
+  const startDateParam = getParam('startDate');
+  const endDateParam = getParam('endDate');
+  const startDate =
+    startDateParam && startDateParam.trim().length > 0
+      ? startDateParam.trim()
+      : undefined;
+  const endDate =
+    endDateParam && endDateParam.trim().length > 0
+      ? endDateParam.trim()
+      : undefined;
 
   const queryParams: InventoryQueryParams = {
     page,
@@ -76,6 +86,8 @@ export default async function InventoryPage({
     hasStock,
     sortBy,
     sortOrder,
+    startDate,
+    endDate,
   };
 
   // ✅ TanStack Query v5 最佳实践：在组件内创建 QueryClient，避免数据泄漏

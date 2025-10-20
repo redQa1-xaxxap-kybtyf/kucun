@@ -25,8 +25,8 @@ const baseValidations = {
     .max(20, '分类编码不能超过20个字符')
     .regex(/^[A-Za-z0-9-_]+$/, '分类编码只能包含字母、数字、短横线和下划线'),
 
-  /** 父级分类ID验证：可选 */
-  parentId: z.string().optional(),
+  /** 父级分类ID验证：可选，可显式置空 */
+  parentId: z.string().optional().nullable(),
 
   /** 排序顺序验证：必须是非负整数 */
   sortOrder: z

@@ -257,20 +257,13 @@ const InventoryHealth = React.forwardRef<HTMLDivElement, InventoryHealthProps>(
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-medium">库存健康度</h3>
           <div className="flex items-center gap-2">
-            <div
-              className={cn(
-                'text-2xl font-bold',
-                healthScoreColorClass
-              )}
-            >
+            <div className={cn('text-2xl font-bold', healthScoreColorClass)}>
               {healthStats.healthScore}%
             </div>
             {healthStats.healthScore >= 80 ? (
               <CheckCircle className={cn('h-5 w-5', healthScoreColorClass)} />
             ) : healthStats.healthScore >= 60 ? (
-              <AlertTriangle
-                className={cn('h-5 w-5', healthScoreColorClass)}
-              />
+              <AlertTriangle className={cn('h-5 w-5', healthScoreColorClass)} />
             ) : (
               <XCircle className={cn('h-5 w-5', healthScoreColorClass)} />
             )}

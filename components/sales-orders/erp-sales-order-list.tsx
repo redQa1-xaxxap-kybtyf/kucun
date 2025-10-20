@@ -28,6 +28,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -326,91 +327,9 @@ export function ERPSalesOrderList({
     }
   }, []);
 
-  // 计算当前选中的日期范围类型
-  const getActiveDateRange = React.useCallback(() => {
-    const now = new Date();
-    const today = now.toISOString().split('T')[0];
-
-    const yesterday = new Date(now);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
-
-    const startOfWeek = new Date(now);
-    const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
-    startOfWeek.setDate(diff);
-    const weekStart = startOfWeek.toISOString().split('T')[0];
-
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const monthStart = startOfMonth.toISOString().split('T')[0];
-
-    const { startDate, endDate } = initialParams || {};
-
-    if (!startDate && !endDate) {
-      return 'all';
-    }
-    if (startDate === today && endDate === today) {
-      return 'today';
-    }
-    if (startDate === yesterdayStr && endDate === yesterdayStr) {
-      return 'yesterday';
-    }
-    if (startDate === weekStart && endDate === today) {
-      return 'thisWeek';
-    }
-    if (startDate === monthStart && endDate === today) {
-      return 'thisMonth';
-    }
-    return null;
-  }, [initialParams]);
-
-  const activeDateRange = getActiveDateRange();
-
-  // 时间范围筛选处理
-  const handleDateRangeFilter = React.useCallback(
-    (range: 'today' | 'yesterday' | 'thisWeek' | 'thisMonth' | 'all') => {
-      if (!externalOnFilter) {
-        return;
-      }
-
-      const now = new Date();
-      let startDate: string | undefined;
-      let endDate: string | undefined;
-
-      switch (range) {
-        case 'today':
-          startDate = endDate = now.toISOString().split('T')[0];
-          break;
-        case 'yesterday':
-          const yesterday = new Date(now);
-          yesterday.setDate(yesterday.getDate() - 1);
-          startDate = endDate = yesterday.toISOString().split('T')[0];
-          break;
-        case 'thisWeek': {
-          const startOfWeek = new Date(now);
-          const day = startOfWeek.getDay();
-          const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1); // 周一为第一天
-          startOfWeek.setDate(diff);
-          startDate = startOfWeek.toISOString().split('T')[0];
-          endDate = now.toISOString().split('T')[0];
-          break;
-        }
-        case 'thisMonth':
-          const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-          startDate = startOfMonth.toISOString().split('T')[0];
-          endDate = now.toISOString().split('T')[0];
-          break;
-        case 'all':
-          startDate = undefined;
-          endDate = undefined;
-          break;
-      }
-
-      const dateRangeJson = JSON.stringify({ startDate, endDate });
-      externalOnFilter('dateRange', dateRangeJson);
-    },
-    [externalOnFilter]
-  );
+  // ✅ 日期筛选逻辑已移至统一的 DateRangePicker 组件
+  // 移除了 getActiveDateRange 和 handleDateRangeFilter 函数
+  // 现在使用 DateRangePicker 的内置快捷预设功能
 
   // 状态标签渲染 - 自定义颜色，更符合ERP风格
   const getStatusBadge = (status: string) => {
@@ -558,6 +477,7 @@ export function ERPSalesOrderList({
                   {
                     key: 'status',
                     label: '状态',
+                    includeAllOption: false,
                     options: [
                       { label: '全部', value: 'all' },
                       { label: '草稿', value: 'draft' },
@@ -571,6 +491,7 @@ export function ERPSalesOrderList({
                   {
                     key: 'sortBy',
                     label: '排序',
+                    includeAllOption: false,
                     options: [
                       { label: '创建时间', value: 'createdAt' },
                       { label: '订单号', value: 'orderNumber' },
@@ -588,56 +509,22 @@ export function ERPSalesOrderList({
               />
             </div>
 
-            {/* 时间快捷筛选按钮区域 */}
-            <div className="flex flex-col gap-2 lg:w-auto lg:min-w-fit">
-              <div className="flex flex-wrap gap-2">
-                <Button
-                  variant={activeDateRange === 'today' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleDateRangeFilter('today')}
-                  className="h-8 text-xs"
-                >
-                  今日
-                </Button>
-                <Button
-                  variant={
-                    activeDateRange === 'yesterday' ? 'default' : 'outline'
-                  }
-                  size="sm"
-                  onClick={() => handleDateRangeFilter('yesterday')}
-                  className="h-8 text-xs"
-                >
-                  昨日
-                </Button>
-                <Button
-                  variant={
-                    activeDateRange === 'thisWeek' ? 'default' : 'outline'
-                  }
-                  size="sm"
-                  onClick={() => handleDateRangeFilter('thisWeek')}
-                  className="h-8 text-xs"
-                >
-                  本周
-                </Button>
-                <Button
-                  variant={
-                    activeDateRange === 'thisMonth' ? 'default' : 'outline'
-                  }
-                  size="sm"
-                  onClick={() => handleDateRangeFilter('thisMonth')}
-                  className="h-8 text-xs"
-                >
-                  本月
-                </Button>
-                <Button
-                  variant={activeDateRange === 'all' ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleDateRangeFilter('all')}
-                  className="h-8 text-xs"
-                >
-                  全部
-                </Button>
-              </div>
+            {/* 统一日期范围筛选器 */}
+            <div className="flex flex-col gap-2 lg:w-auto lg:min-w-[280px]">
+              <DateRangePicker
+                value={{
+                  startDate: initialParams?.startDate,
+                  endDate: initialParams?.endDate,
+                }}
+                label=""
+                placeholder="选择订单日期"
+                onChange={({ startDate, endDate }) => {
+                  const dateRangeJson = JSON.stringify({ startDate, endDate });
+                  externalOnFilter?.('dateRange', dateRangeJson);
+                }}
+                showPresets={true}
+                showClearButton={true}
+              />
             </div>
           </div>
         </CardContent>
@@ -653,6 +540,7 @@ export function ERPSalesOrderList({
             <TableRow>
               <TableHead>订单号</TableHead>
               <TableHead>客户名称</TableHead>
+              <TableHead>客户地址</TableHead>
               <TableHead>状态</TableHead>
               <TableHead className="text-right">订单金额</TableHead>
               <TableHead>收款状态</TableHead>
@@ -668,6 +556,7 @@ export function ERPSalesOrderList({
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell className="h-8 text-xs">加载中...</TableCell>
+                  <TableCell className="h-8 text-xs">-</TableCell>
                   <TableCell className="h-8 text-xs">-</TableCell>
                   <TableCell className="h-8 text-xs">-</TableCell>
                   <TableCell className="h-8 text-xs">-</TableCell>
@@ -735,8 +624,20 @@ export function ERPSalesOrderList({
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="h-8 text-xs font-medium text-[hsl(var(--color-text-primary))]">
-                    {order.customer?.name || (
+                  <TableCell className="h-8 text-xs">
+                    <div className="flex flex-col gap-1">
+                      <span className="font-medium text-[hsl(var(--color-text-primary))]">
+                        {order.customer?.name || '-'}
+                      </span>
+                      <span className="text-[hsl(var(--color-text-tertiary))]">
+                        {order.customer?.phone || '-'}
+                      </span>
+                    </div>
+                  </TableCell>
+                  <TableCell className="h-8 text-xs text-[hsl(var(--color-text-secondary))]">
+                    {order.customer?.address ? (
+                      <span>{order.customer?.address}</span>
+                    ) : (
                       <span className="text-[hsl(var(--color-text-tertiary))]">
                         -
                       </span>

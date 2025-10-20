@@ -1,10 +1,5 @@
-/**
- * 库存操作详细信息表单组件
- * 包含批次号、供应商/客户、位置、备注等详细字段
- */
-
 import { Building2, Calculator } from 'lucide-react';
-import type { Control, FieldValues, Path } from 'react-hook-form';
+import type { Control, Path } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/customers/customer-hierarchy';
 import {
@@ -30,20 +25,28 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
+import { ADJUST_REASON_LABELS } from '@/lib/validations/inventory-operations';
 
-import { type OperationMode } from '../hooks/useInventoryOperationForm';
+import type {
+  FormValuesByMode,
+  OperationMode,
+} from '../hooks/useInventoryOperationForm';
 
-interface InventoryDetailFormProps<T extends FieldValues> {
-  control: Control<T>;
-  mode: OperationMode;
+interface InventoryDetailFormProps<M extends OperationMode> {
+  control: Control<FormValuesByMode[M]>;
+  mode: M;
   isLoading: boolean;
 }
 
-export function InventoryDetailForm<T extends FieldValues>({
+const adjustReasonOptions = Object.entries(ADJUST_REASON_LABELS).map(
+  ([value, label]) => ({ value, label })
+);
+
+export function InventoryDetailForm<M extends OperationMode>({
   control,
   mode,
   isLoading,
-}: InventoryDetailFormProps<T>) {
+}: InventoryDetailFormProps<M>) {
   return (
     <Card>
       <CardHeader>
@@ -60,10 +63,9 @@ export function InventoryDetailForm<T extends FieldValues>({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {/* 批次号 */}
         <FormField
           control={control}
-          name={'batchNumber' as Path<T>}
+          name={'batchNumber' as Path<FormValuesByMode[M]>}
           render={({ field }) => (
             <FormItem>
               <FormLabel>批次号</FormLabel>
@@ -71,7 +73,8 @@ export function InventoryDetailForm<T extends FieldValues>({
                 <Input
                   placeholder="输入批次号"
                   disabled={isLoading}
-                  {...field}
+                  value={typeof field.value === 'string' ? field.value : ''}
+                  onChange={event => field.onChange(event.target.value)}
                 />
               </FormControl>
               <FormMessage />
@@ -79,44 +82,28 @@ export function InventoryDetailForm<T extends FieldValues>({
           )}
         />
 
-        {/* 存储位置（仅入库和出库模式） */}
-        {(mode === 'inbound' || mode === 'outbound') && (
+        {mode === 'outbound' && (
           <FormField
-            control={control}
-            name={'location' as Path<T>}
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>存储位置</FormLabel>
-                <FormControl>
-                  <Input
-                    placeholder="如：A区-1排-3层"
-                    disabled={isLoading}
-                    {...field}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
-
-        {/* 供应商/客户选择 */}
-        {(mode === 'inbound' || mode === 'outbound') && (
-          <FormField
-            control={control}
-            name={(mode === 'inbound' ? 'supplierId' : 'customerId') as Path<T>}
-            render={({ field }) => (
+            control={
+              control as unknown as Control<FormValuesByMode['outbound']>
+            }
+            name={'customerId' as Path<FormValuesByMode['outbound']>}
+            render={() => (
               <FormItem>
                 <FormLabel className="flex items-center">
                   <Building2 className="mr-2 h-4 w-4" />
-                  {mode === 'inbound' ? '供应商' : '客户'}
+                  客户
                 </FormLabel>
                 <FormControl>
-                  <CustomerSelector
-                    control={control}
-                    name={field.name}
+                  <CustomerSelector<FormValuesByMode['outbound']>
+                    control={
+                      control as unknown as Control<
+                        FormValuesByMode['outbound']
+                      >
+                    }
+                    name={'customerId' as Path<FormValuesByMode['outbound']>}
+                    placeholder="选择客户"
                     disabled={isLoading}
-                    placeholder={`选择${mode === 'inbound' ? '供应商' : '客户'}`}
                   />
                 </FormControl>
                 <FormMessage />
@@ -125,17 +112,16 @@ export function InventoryDetailForm<T extends FieldValues>({
           />
         )}
 
-        {/* 调整原因（仅调整模式） */}
         {mode === 'adjust' && (
           <FormField
             control={control}
-            name={'reason' as Path<T>}
+            name={'reason' as Path<FormValuesByMode[M]>}
             render={({ field }) => (
               <FormItem>
                 <FormLabel>调整原因</FormLabel>
                 <Select
                   onValueChange={field.onChange}
-                  defaultValue={field.value}
+                  value={field.value as string | undefined}
                   disabled={isLoading}
                 >
                   <FormControl>
@@ -144,12 +130,11 @@ export function InventoryDetailForm<T extends FieldValues>({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="inventory_gain">盘盈</SelectItem>
-                    <SelectItem value="inventory_loss">盘亏</SelectItem>
-                    <SelectItem value="damage_loss">报损</SelectItem>
-                    <SelectItem value="surplus_gain">报溢</SelectItem>
-                    <SelectItem value="transfer">调拨</SelectItem>
-                    <SelectItem value="other">其他</SelectItem>
+                    {adjustReasonOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -158,19 +143,23 @@ export function InventoryDetailForm<T extends FieldValues>({
           />
         )}
 
-        {/* 备注 */}
         <FormField
           control={control}
-          name={'notes' as Path<T>}
+          name={
+            (mode === 'adjust' ? 'notes' : 'remarks') as Path<
+              FormValuesByMode[M]
+            >
+          }
           render={({ field }) => (
             <FormItem>
-              <FormLabel>备注</FormLabel>
+              <FormLabel>{mode === 'adjust' ? '调整备注' : '备注'}</FormLabel>
               <FormControl>
                 <Textarea
-                  placeholder="其他备注信息..."
+                  placeholder="输入备注信息"
                   className="min-h-[80px]"
                   disabled={isLoading}
-                  {...field}
+                  value={typeof field.value === 'string' ? field.value : ''}
+                  onChange={event => field.onChange(event.target.value)}
                 />
               </FormControl>
               <FormMessage />

@@ -117,12 +117,12 @@ export function DebugPanel() {
       {/* 浮动按钮 */}
       <Button
         onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-4 right-4 z-50 h-12 w-12 rounded-full p-0 shadow-lg"
+        className="fixed right-4 bottom-4 z-50 h-12 w-12 rounded-full p-0 shadow-lg"
         variant={logs.some(l => l.type === 'error') ? 'destructive' : 'default'}
       >
         <Bug className="h-5 w-5" />
         {logs.length > 0 && (
-          <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
+          <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-xs text-white">
             {logs.length}
           </span>
         )}
@@ -130,7 +130,7 @@ export function DebugPanel() {
 
       {/* 调试面板 */}
       {isOpen && (
-        <div className="fixed bottom-20 right-4 z-50 flex h-96 w-[600px] flex-col rounded-lg border bg-white shadow-2xl">
+        <div className="fixed right-4 bottom-20 z-50 flex h-96 w-[600px] flex-col rounded-lg border bg-white shadow-2xl">
           {/* 头部 */}
           <div className="flex items-center justify-between border-b bg-gray-100 px-4 py-2">
             <div className="flex items-center gap-2">
@@ -171,13 +171,15 @@ export function DebugPanel() {
                 {logs.map((log, index) => (
                   <div
                     key={index}
-                    className={`rounded p-2 text-xs font-mono ${getLogColor(log.type)}`}
+                    className={`rounded p-2 font-mono text-xs ${getLogColor(log.type)}`}
                   >
                     <div className="mb-1 flex items-center gap-2">
-                      <span className="font-bold">{log.type.toUpperCase()}</span>
+                      <span className="font-bold">
+                        {log.type.toUpperCase()}
+                      </span>
                       <span className="text-gray-500">{log.timestamp}</span>
                     </div>
-                    <pre className="whitespace-pre-wrap break-all">
+                    <pre className="break-all whitespace-pre-wrap">
                       {log.message}
                     </pre>
                   </div>

@@ -3,261 +3,35 @@
  * 通过 AccountStatement / StatementTransaction 统一聚合客户与供应商的往来数据
  */
 
-import type {
-  AccountStatement as AccountStatementModel,
-  Prisma,
-} from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 
 import { prisma } from '@/lib/db';
-import type {
-  PartnerRole,
-  StatementStatus,
-  StatementType,
-} from '@/lib/types/statement';
+import type { StatementType } from '@/lib/types/statement';
 
-// ==================== 类型定义 ====================
+import {
+  CUSTOMER_ROLES,
+  SUPPLIER_ROLES,
+  buildStatementWhere,
+  getStatementsOrderBy,
+  includesCustomerRole,
+  includesSupplierRole,
+  mapAccountStatementToSummary,
+  type FinanceOverview,
+  type FinanceStatistics,
+  type FinanceStatisticsParams,
+  type FinanceSummary,
+  type StatementQueryParams,
+  type StatementSummary,
+} from './finance-statistics-shared';
 
-export interface FinanceOverview {
-  totalReceivable: number;
-  totalRefundable: number;
-  monthlyReceived: number;
-  receivableCount: number;
-  refundCount: number;
-  summary: {
-    totalOrders: number;
-    totalAmount: number;
-    paidAmount: number;
-    pendingAmount: number;
-    paymentRate: number;
-  };
-}
-
-export interface FinanceStatisticsParams {
-  startDate?: string;
-  endDate?: string;
-  customerId?: string;
-  includeRefunds?: boolean;
-  includeStatements?: boolean;
-}
-
-export interface FinanceStatistics {
-  period: {
-    startDate?: string;
-    endDate?: string;
-  };
-  sales: {
-    totalAmount: number;
-    orderCount: number;
-  };
-  payments: {
-    totalAmount: number;
-    paymentCount: number;
-  };
-  receivables: {
-    totalAmount: number;
-    paymentRate: number;
-  };
-  refunds?: {
-    totalAmount: number;
-    refundCount: number;
-  };
-  statements?: {
-    customerCount: number;
-    supplierCount: number;
-    totalReceivable: number;
-    totalPayable: number;
-  };
-}
-
-export interface StatementSummary {
-  id: string;
-  name: string;
-  type: StatementType;
-  partnerRole: PartnerRole;
-  status: StatementStatus;
-  totalOrders: number;
-  totalAmount: number;
-  paidAmount: number;
-  pendingAmount: number;
-  currentBalance: number;
-  lastTransactionDate: string | null;
-  lastPaymentDate: string | null;
-}
-
-export interface FinanceSummary {
-  totalCustomers: number;
-  totalSuppliers: number;
-  totalReceivable: number;
-  totalPayable: number;
-}
-
-export interface StatementQueryParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  type?: StatementType | 'all';
-  sortBy?:
-    | 'entityName'
-    | 'totalAmount'
-    | 'pendingAmount'
-    | 'totalOrders'
-    | 'lastTransactionDate';
-  sortOrder?: 'asc' | 'desc';
-}
-
-// ==================== 常量 & 工具函数 ====================
-
-const CUSTOMER_ROLES: PartnerRole[] = ['customer', 'both'];
-const SUPPLIER_ROLES: PartnerRole[] = ['supplier', 'both'];
-
-function normalisePartnerRole(role?: string | null): PartnerRole {
-  if (role === 'supplier' || role === 'both') {
-    return role;
-  }
-  return 'customer';
-}
-
-function normaliseStatementStatus(status?: string | null): StatementStatus {
-  if (status === 'active' || status === 'settled' || status === 'suspended') {
-    return status;
-  }
-  return 'active';
-}
-
-function normaliseEntityType(value?: string | null): StatementType | undefined {
-  if (value === 'customer' || value === 'supplier' || value === 'partner') {
-    return value;
-  }
-  return undefined;
-}
-
-function resolveStatementType(
-  role: PartnerRole,
-  entityType?: string | null
-): StatementType {
-  const normalised = normaliseEntityType(entityType);
-  if (normalised) {
-    if (normalised === 'partner') {
-      return 'partner';
-    }
-    return normalised;
-  }
-  if (role === 'supplier') {
-    return 'supplier';
-  }
-  if (role === 'both') {
-    return 'partner';
-  }
-  return 'customer';
-}
-
-function includesCustomerRole(role?: string | null): boolean {
-  return role === 'customer' || role === 'both';
-}
-
-function includesSupplierRole(role?: string | null): boolean {
-  return role === 'supplier' || role === 'both';
-}
-
-function formatDate(value?: Date | null): string | null {
-  return value ? value.toISOString() : null;
-}
-
-function mapAccountStatementToSummary(
-  statement: AccountStatementModel,
-  overrideType?: StatementType
-): StatementSummary {
-  const partnerRole = normalisePartnerRole(statement.partnerRole);
-  const type =
-    overrideType ?? resolveStatementType(partnerRole, statement.entityType);
-  const currentBalance = statement.currentBalance ?? 0;
-
-  return {
-    id: statement.entityId,
-    name: statement.entityName,
-    type,
-    partnerRole,
-    status: normaliseStatementStatus(statement.status),
-    totalOrders: statement.totalOrders,
-    totalAmount: statement.totalAmount,
-    paidAmount: statement.paidAmount,
-    pendingAmount: Math.abs(currentBalance),
-    currentBalance,
-    lastTransactionDate: formatDate(statement.lastTransactionDate),
-    lastPaymentDate: formatDate(statement.lastPaymentDate),
-  };
-}
-
-function buildStatementWhere(params: {
-  type?: StatementType | 'all';
-  search?: string;
-}): Prisma.AccountStatementWhereInput {
-  const where: Prisma.AccountStatementWhereInput = {};
-
-  switch (params.type) {
-    case 'customer':
-      where.partnerRole = { in: CUSTOMER_ROLES };
-      break;
-    case 'supplier':
-      where.partnerRole = { in: SUPPLIER_ROLES };
-      break;
-    case 'partner':
-    case 'all':
-    case undefined:
-      // 不做限制
-      break;
-    default:
-      break;
-  }
-
-  const searchTerm = params.search?.trim();
-  if (searchTerm) {
-    where.OR = [
-      {
-        entityName: {
-          contains: searchTerm,
-        },
-      },
-      {
-        entityId: {
-          contains: searchTerm,
-        },
-      },
-    ];
-  }
-
-  return where;
-}
-
-function getStatementsOrderBy(
-  sortBy: string | undefined,
-  sortOrder: 'asc' | 'desc'
-): Prisma.AccountStatementOrderByWithRelationInput {
-  const order: Prisma.AccountStatementOrderByWithRelationInput = {};
-
-  switch (sortBy) {
-    case 'entityName':
-      order.entityName = sortOrder;
-      break;
-    case 'totalAmount':
-      order.totalAmount = sortOrder;
-      break;
-    case 'pendingAmount':
-      order.pendingAmount = sortOrder;
-      break;
-    case 'totalOrders':
-      order.totalOrders = sortOrder;
-      break;
-    case 'lastTransactionDate':
-      order.lastTransactionDate = sortOrder;
-      break;
-    default:
-      order.updatedAt = sortOrder;
-      break;
-  }
-
-  return order;
-}
+export type {
+  FinanceOverview,
+  FinanceStatistics,
+  FinanceStatisticsParams,
+  FinanceSummary,
+  StatementQueryParams,
+  StatementSummary,
+} from './finance-statistics-shared';
 
 // ==================== 核心聚合函数 ====================
 
@@ -373,11 +147,28 @@ export async function getStatementsList(params: StatementQueryParams): Promise<{
     type,
     sortBy,
     sortOrder = 'desc',
+    startDate,
+    endDate,
   } = params;
 
   const where = buildStatementWhere({ type, search });
   const orderBy = getStatementsOrderBy(sortBy, sortOrder);
   const skip = (page - 1) * limit;
+
+  if (startDate || endDate) {
+    const updatedAtFilter: Prisma.DateTimeFilter = {};
+    if (startDate) {
+      updatedAtFilter.gte = new Date(startDate);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      updatedAtFilter.lte = end;
+    }
+    if (Object.keys(updatedAtFilter).length > 0) {
+      where.updatedAt = updatedAtFilter;
+    }
+  }
 
   const [total, statements] = await prisma.$transaction([
     prisma.accountStatement.count({ where }),
@@ -388,13 +179,33 @@ export async function getStatementsList(params: StatementQueryParams): Promise<{
       take: limit,
     }),
   ]);
-
-  const summary = await getFinanceSummary(
-    type && type !== 'all' ? type : undefined
+  const mappedStatements = statements.map(statement =>
+    mapAccountStatementToSummary(statement)
   );
 
+  const summary = {
+    totalCustomers: mappedStatements.filter(statement =>
+      includesCustomerRole(statement.partnerRole)
+    ).length,
+    totalSuppliers: mappedStatements.filter(statement =>
+      includesSupplierRole(statement.partnerRole)
+    ).length,
+    totalReceivable: mappedStatements.reduce((sum, statement) => {
+      const balance = statement.currentBalance ?? 0;
+      return includesCustomerRole(statement.partnerRole)
+        ? sum + Math.max(balance, 0)
+        : sum;
+    }, 0),
+    totalPayable: mappedStatements.reduce((sum, statement) => {
+      const balance = statement.currentBalance ?? 0;
+      return includesSupplierRole(statement.partnerRole)
+        ? sum + Math.max(-balance, 0)
+        : sum;
+    }, 0),
+  };
+
   return {
-    data: statements.map(statement => mapAccountStatementToSummary(statement)),
+    data: mappedStatements,
     pagination: {
       page,
       limit,

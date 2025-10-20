@@ -82,7 +82,7 @@ export async function checkRateLimit(
 
     // 如果被限制，返回 429 响应
     if (!result.allowed) {
-      const response = createRateLimitResponse(result, type);
+      const response = createRateLimitResponse(request, result, type);
       return { limited: true, response };
     }
 
@@ -108,6 +108,7 @@ export async function checkRateLimit(
  * @returns HTTP 响应对象
  */
 function createRateLimitResponse(
+  request: NextRequest,
   result: { remaining: number; resetAt: Date; limit: number },
   type: RateLimitType
 ): Response {
@@ -127,6 +128,11 @@ function createRateLimitResponse(
 
   const message = messages[type] || '请求过于频繁，请稍后再试';
 
+  // 构造 NextAuth 兼容的错误跳转地址，确保前端能解析 error 参数
+  const errorUrl = new URL('/auth/error', request.nextUrl.origin);
+  errorUrl.searchParams.set('error', 'RATE_LIMIT_EXCEEDED');
+  errorUrl.searchParams.set('type', type);
+
   return new Response(
     JSON.stringify({
       success: false,
@@ -140,6 +146,7 @@ function createRateLimitResponse(
           resetAt: result.resetAt.toISOString(),
         },
       },
+      url: errorUrl.toString(),
     }),
     {
       status: 429,

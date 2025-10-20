@@ -245,7 +245,9 @@ function SummaryCards({ summary }: { summary: BatchSummary }) {
       <SummaryCard
         title="净变动"
         value={
-          summary.netChange !== undefined ? formatChange(summary.netChange) : '—'
+          summary.netChange !== undefined
+            ? formatChange(summary.netChange)
+            : '—'
         }
         valueClassName="text-blue-600"
         containerClassName="border-blue-200 bg-blue-50/50"
@@ -253,9 +255,21 @@ function SummaryCards({ summary }: { summary: BatchSummary }) {
       />
       <SummaryCard title="变动汇总">
         <div className="mt-2 space-y-1 text-xs">
-          <SummaryRow label="入库" value={`+${formatNumber(summary.totalInbound)}`} valueClassName="text-green-600" />
-          <SummaryRow label="出库" value={`-${formatNumber(summary.totalOutbound)}`} valueClassName="text-red-600" />
-          <SummaryRow label="调整" value={formatChange(summary.totalAdjustment)} valueClassName="text-orange-600" />
+          <SummaryRow
+            label="入库"
+            value={`+${formatNumber(summary.totalInbound)}`}
+            valueClassName="text-green-600"
+          />
+          <SummaryRow
+            label="出库"
+            value={`-${formatNumber(summary.totalOutbound)}`}
+            valueClassName="text-red-600"
+          />
+          <SummaryRow
+            label="调整"
+            value={formatChange(summary.totalAdjustment)}
+            valueClassName="text-orange-600"
+          />
         </div>
       </SummaryCard>
     </div>
@@ -288,7 +302,9 @@ function SummaryCard({
         </div>
         {value !== undefined ? (
           <>
-            <div className={`mt-2 text-2xl font-bold ${valueClassName ?? 'text-[hsl(var(--color-text-primary))]'}`}>
+            <div
+              className={`mt-2 text-2xl font-bold ${valueClassName ?? 'text-[hsl(var(--color-text-primary))]'}`}
+            >
               {value}
             </div>
             {caption ? (
@@ -336,7 +352,7 @@ function ProductInfoCard({
       ? `${variant.colorCode}${
           variant.colorName ? ` - ${variant.colorName}` : ''
         }`
-      : variant.colorName ?? '—'
+      : (variant.colorName ?? '—')
     : '—';
 
   return (
@@ -420,20 +436,39 @@ function MovementTable({ groups }: { groups: BatchMovementGroup[] }) {
           style={{ boxShadow: 'var(--shadow-light)' }}
         >
           <TableRow className="text-xs text-[hsl(var(--color-text-secondary))]">
-            <TableHead className="px-4 py-3 text-left font-medium">时间</TableHead>
-            <TableHead className="px-4 py-3 text-left font-medium">类型</TableHead>
-            <TableHead className="px-4 py-3 text-left font-medium">单据编号</TableHead>
-            <TableHead className="px-4 py-3 text-right font-medium">变动数量</TableHead>
-            <TableHead className="px-4 py-3 text-right font-medium">操作前</TableHead>
-            <TableHead className="px-4 py-3 text-right font-medium">操作后</TableHead>
-            <TableHead className="px-4 py-3 text-left font-medium">操作人</TableHead>
-            <TableHead className="px-4 py-3 text-left font-medium">原因/备注</TableHead>
+            <TableHead className="px-4 py-3 text-left font-medium">
+              时间
+            </TableHead>
+            <TableHead className="px-4 py-3 text-left font-medium">
+              类型
+            </TableHead>
+            <TableHead className="px-4 py-3 text-left font-medium">
+              单据编号
+            </TableHead>
+            <TableHead className="px-4 py-3 text-right font-medium">
+              变动数量
+            </TableHead>
+            <TableHead className="px-4 py-3 text-right font-medium">
+              操作前
+            </TableHead>
+            <TableHead className="px-4 py-3 text-right font-medium">
+              操作后
+            </TableHead>
+            <TableHead className="px-4 py-3 text-left font-medium">
+              操作人
+            </TableHead>
+            <TableHead className="px-4 py-3 text-left font-medium">
+              原因/备注
+            </TableHead>
           </TableRow>
         </TableHeader>
         <TableBody className="divide-y">
           {groups.flatMap(group =>
             group.movements.map(entry => (
-              <MovementRow key={`${entry.type}-${entry.id}-${entry.createdAt}`} entry={entry} />
+              <MovementRow
+                key={`${entry.type}-${entry.id}-${entry.createdAt}`}
+                entry={entry}
+              />
             ))
           )}
         </TableBody>
@@ -447,11 +482,7 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
   const piecesPerUnit = entry.product?.piecesPerUnit || 0;
   const absChange = Math.abs(entry.quantityChange);
   const changePrefix =
-    entry.quantityChange > 0
-      ? '+'
-      : entry.quantityChange < 0
-        ? '-'
-        : '';
+    entry.quantityChange > 0 ? '+' : entry.quantityChange < 0 ? '-' : '';
 
   const changeDisplay =
     piecesPerUnit > 0
@@ -499,7 +530,7 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
         <div className="max-w-xs">
           <div className="text-sm text-[hsl(var(--color-text-secondary))]">
             {entry.reason
-              ? OUTBOUND_REASON_LABELS[entry.reason] ?? entry.reason
+              ? (OUTBOUND_REASON_LABELS[entry.reason] ?? entry.reason)
               : '—'}
           </div>
           {entry.referenceNumber ? (

@@ -103,11 +103,14 @@ export const GET = withAuth(async (request: NextRequest) => {
     });
 
     // 在内存中进行分组，获取每个产品+价格类型组合的最新价格
-    const latestPricesMap = new Map<string, typeof allPrices[0]>();
+    const latestPricesMap = new Map<string, (typeof allPrices)[0]>();
     for (const price of allPrices) {
       const key = `${price.productId}-${price.priceType}`;
       const existing = latestPricesMap.get(key);
-      if (!existing || new Date(price.createdAt) > new Date(existing.createdAt)) {
+      if (
+        !existing ||
+        new Date(price.createdAt) > new Date(existing.createdAt)
+      ) {
         latestPricesMap.set(key, price);
       }
     }

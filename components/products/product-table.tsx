@@ -21,8 +21,9 @@ import {
 } from '@/components/ui/table';
 import { PRODUCT_STATUS_LABELS } from '@/lib/config/product';
 import type { Product } from '@/lib/types/product';
-import { ProductDataUtils } from '@/lib/utils/product-data';
 import { getCommonStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { formatDateTime } from '@/lib/utils/datetime';
+import { ProductDataUtils } from '@/lib/utils/product-data';
 
 interface ProductTableProps {
   products: Product[];
@@ -53,27 +54,13 @@ export function ProductTable({
     <Table>
       <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
         <TableRow>
-          <TableHead>
-            产品编码
-          </TableHead>
-          <TableHead>
-            产品名称
-          </TableHead>
-          <TableHead>
-            分类
-          </TableHead>
-          <TableHead>
-            规格
-          </TableHead>
-          <TableHead>
-            状态
-          </TableHead>
-          <TableHead>
-            创建时间
-          </TableHead>
-          <TableHead className="text-right">
-            操作
-          </TableHead>
+          <TableHead>产品编码</TableHead>
+          <TableHead>产品名称</TableHead>
+          <TableHead>分类</TableHead>
+          <TableHead>规格</TableHead>
+          <TableHead>状态</TableHead>
+          <TableHead>创建时间</TableHead>
+          <TableHead className="text-right">操作</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -96,11 +83,7 @@ export function ProductTable({
             </TableCell>
             <TableCell>{getStatusBadge(product.status)}</TableCell>
             <TableCell className="text-[hsl(var(--color-text-secondary))]">
-              {new Date(product.createdAt).toLocaleDateString('zh-CN', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-              })}
+              {formatDateTime(product.createdAt)}
             </TableCell>
             <TableCell className="text-right">
               <DropdownMenu>

@@ -31,7 +31,7 @@ const ChildMenuList = React.memo(
     }, [items, pathname]);
 
     return (
-      <div className="ml-3 mt-2 space-y-1 rounded-md border border-[hsl(var(--sidebar-subtle-border))] bg-[hsl(var(--sidebar-subtle-bg))] p-2">
+      <div className="mt-2 ml-3 space-y-1 rounded-md border border-[hsl(var(--sidebar-subtle-border))] bg-[hsl(var(--sidebar-subtle-bg))] p-2">
         {items.map(child => {
           const ChildIcon = child.icon;
           // 只激活最佳匹配的子菜单
@@ -52,7 +52,7 @@ const ChildMenuList = React.memo(
                   'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
                   'disabled:opacity-60',
                   isChildActive &&
-                    'bg-[hsl(var(--sidebar-sub-active))] text-[hsl(var(--sidebar-hover-foreground))] shadow-sm before:absolute before:left-0 before:top-1/2 before:h-5 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
+                    'bg-[hsl(var(--sidebar-sub-active))] text-[hsl(var(--sidebar-hover-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-5 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
                 )}
                 disabled={child.disabled}
                 asChild
@@ -143,7 +143,7 @@ export const SidebarNavItem = React.memo(
             className={cn(
               'block rounded-md transition-all duration-150',
               isFocused &&
-                'ring-[hsl(var(--sidebar-focus-ring))] ring-2 ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
+                'ring-2 ring-[hsl(var(--sidebar-focus-ring))] ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
             )}
             aria-label={item.title}
             title={isCollapsed ? item.title : undefined}
@@ -157,7 +157,7 @@ export const SidebarNavItem = React.memo(
                 'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
                 'disabled:opacity-60',
                 isActive &&
-                  'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:left-0 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
+                  'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
               )}
               disabled={item.disabled}
               asChild
@@ -168,17 +168,16 @@ export const SidebarNavItem = React.memo(
                     'h-4 w-4 transition-colors duration-150',
                     !isCollapsed && 'mr-3',
                     'text-[hsl(var(--sidebar-icon-muted))] group-hover:text-[hsl(var(--sidebar-hover-foreground))]',
-                    isActive &&
-                      'text-[hsl(var(--sidebar-icon-active))]'
+                    isActive && 'text-[hsl(var(--sidebar-icon-active))]'
                   )}
                 />
-              {!isCollapsed && (
-                <span className="flex-1 text-left">{item.title}</span>
-              )}
-            </div>
-          </Button>
-        </Link>
-      );
+                {!isCollapsed && (
+                  <span className="flex-1 text-left">{item.title}</span>
+                )}
+              </div>
+            </Button>
+          </Link>
+        );
       }
 
       // 渲染带子菜单的导航项
@@ -192,7 +191,7 @@ export const SidebarNavItem = React.memo(
               className={cn(
                 'block rounded-md transition-all duration-150',
                 isFocused &&
-                  'ring-[hsl(var(--sidebar-focus-ring))] ring-2 ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
+                  'ring-2 ring-[hsl(var(--sidebar-focus-ring))] ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
               )}
               aria-label={item.title}
               title={item.title}
@@ -206,7 +205,7 @@ export const SidebarNavItem = React.memo(
                   'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
                   'disabled:opacity-60',
                   (isActive || hasActiveChild) &&
-                    'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:left-0 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
+                    'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]'
                 )}
                 disabled={item.disabled}
                 asChild
@@ -235,9 +234,9 @@ export const SidebarNavItem = React.memo(
                   'focus-visible:ring-[hsl(var(--sidebar-focus-ring))] focus-visible:ring-offset-2 focus-visible:ring-offset-[hsl(var(--sidebar-bg))]',
                   'disabled:opacity-60',
                   (isActive || hasActiveChild) &&
-                    'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:left-0 before:top-1/2 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]',
+                    'bg-[hsl(var(--sidebar-active))] text-[hsl(var(--sidebar-active-foreground))] shadow-sm before:absolute before:top-1/2 before:left-0 before:h-6 before:w-1 before:-translate-y-1/2 before:rounded-full before:bg-[hsl(var(--sidebar-active-indicator))] before:content-[""]',
                   isFocused &&
-                    'ring-[hsl(var(--sidebar-focus-ring))] ring-2 ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
+                    'ring-2 ring-[hsl(var(--sidebar-focus-ring))] ring-offset-2 ring-offset-[hsl(var(--sidebar-bg))]'
                 )}
                 disabled={item.disabled}
                 onClick={handleSubMenuToggle}

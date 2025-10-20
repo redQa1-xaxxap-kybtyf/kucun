@@ -49,16 +49,39 @@ export function SupplierSelector({
   const [suppliers, setSuppliers] = React.useState<Supplier[]>([]);
   const [loading, setLoading] = React.useState(false);
   const [searchValue, setSearchValue] = React.useState('');
+  const [error, setError] = React.useState<string | null>(null);
+  const abortControllerRef = React.useRef<AbortController | null>(null);
+  const cacheRef = React.useRef<Map<string, Supplier[]>>(new Map());
 
   // 获取供应商列表
   React.useEffect(() => {
     const fetchSuppliers = async () => {
+      const normalizedSearch = searchValue.trim().toLowerCase();
+
+      if (cacheRef.current.has(normalizedSearch)) {
+        setSuppliers(cacheRef.current.get(normalizedSearch) ?? []);
+        setError(null);
+        return;
+      }
+
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+      const controller = new AbortController();
+      abortControllerRef.current = controller;
+
       setLoading(true);
+      setError(null);
       try {
         const response = await fetch(
-          `/api/suppliers?status=active&limit=100${searchValue ? `&search=${searchValue}` : ''}`,
+          `/api/suppliers?status=active&limit=100${
+            normalizedSearch
+              ? `&search=${encodeURIComponent(normalizedSearch)}`
+              : ''
+          }`,
           {
             credentials: 'include',
+            signal: controller.signal,
           }
         );
 
@@ -69,9 +92,17 @@ export function SupplierSelector({
         const result = await response.json();
         if (result.success && result.data) {
           setSuppliers(result.data);
+          cacheRef.current.set(normalizedSearch, result.data);
+          setError(null);
+        } else {
+          throw new Error(result.error || '获取供应商列表失败');
         }
       } catch (error) {
+        if (controller.signal.aborted) {
+          return;
+        }
         console.error('获取供应商列表失败:', error);
+        setError('获取供应商列表失败，请稍后重试');
       } finally {
         setLoading(false);
       }
@@ -80,6 +111,12 @@ export function SupplierSelector({
     if (open) {
       fetchSuppliers();
     }
+
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
   }, [open, searchValue]);
 
   const selectedSupplier = suppliers.find(s => s.id === value);
@@ -110,7 +147,11 @@ export function SupplierSelector({
             onValueChange={setSearchValue}
           />
           <CommandList>
-            {loading ? (
+            {error ? (
+              <div className="text-destructive py-6 text-center text-sm">
+                {error}
+              </div>
+            ) : loading ? (
               <div className="py-6 text-center text-sm">加载中...</div>
             ) : (
               <>

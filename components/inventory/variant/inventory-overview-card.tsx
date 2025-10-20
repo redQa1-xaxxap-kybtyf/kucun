@@ -58,7 +58,7 @@ export function InventoryOverviewCard({
       <CardContent>
         <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
           <div className="text-center">
-            <div className="text-[hsl(var(--color-primary))] text-2xl font-bold">
+            <div className="text-2xl font-bold text-[hsl(var(--color-primary))]">
               {inventory.totalQuantity}
             </div>
             <div className="text-sm text-[hsl(var(--color-text-secondary))]">
@@ -96,8 +96,9 @@ export function InventoryOverviewCard({
             <span className="text-sm font-medium">库存状态</span>
             <Badge
               variant={
-                (getStockStatusColor(inventory.stockStatus) as BadgeProps['variant']) ??
-                'secondary'
+                (getStockStatusColor(
+                  inventory.stockStatus
+                ) as BadgeProps['variant']) ?? 'secondary'
               }
             >
               {getStockStatusText(inventory.stockStatus)}

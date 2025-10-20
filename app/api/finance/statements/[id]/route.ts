@@ -84,4 +84,6 @@ const getStatementDetailHandler = withAuth(
   { permissions: ['finance:view'] }
 );
 
-export const GET = withRateLimit(RateLimitType.FINANCE_READ)(getStatementDetailHandler);
+export const GET = withRateLimit(RateLimitType.FINANCE_READ)(
+  getStatementDetailHandler
+);

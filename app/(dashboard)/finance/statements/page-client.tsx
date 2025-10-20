@@ -32,6 +32,8 @@ interface StatementsQueryParams {
   type?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
 }
 
 interface StatementsPageClientProps {
@@ -115,6 +117,7 @@ export function StatementsPageClient({
             filters={filters}
             onSearch={handlers.handleSearch}
             onFilter={handlers.handleFilter}
+            onDateRangeChange={handlers.handleDateRangeChange}
             onPageChange={handlers.handlePageChange}
           />
         </Suspense>

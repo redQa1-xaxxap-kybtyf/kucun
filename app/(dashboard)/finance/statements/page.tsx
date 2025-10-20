@@ -29,6 +29,8 @@ async function getStatementsData(searchParams: {
   type?: string;
   sortBy?: string;
   sortOrder?: string;
+  startDate?: string;
+  endDate?: string;
 }) {
   const rawType = searchParams.type;
   const normalizedType =
@@ -48,6 +50,16 @@ async function getStatementsData(searchParams: {
     sortBy: (searchParams.sortBy ||
       'totalAmount') as StatementQueryParams['sortBy'],
     sortOrder: (searchParams.sortOrder as 'asc' | 'desc') || 'desc',
+    startDate:
+      typeof searchParams.startDate === 'string' &&
+      searchParams.startDate.trim().length > 0
+        ? searchParams.startDate
+        : undefined,
+    endDate:
+      typeof searchParams.endDate === 'string' &&
+      searchParams.endDate.trim().length > 0
+        ? searchParams.endDate
+        : undefined,
   };
 
   // 使用与API相同的服务函数
@@ -73,6 +85,8 @@ export default async function StatementsPage({
     type?: string;
     sortBy?: string;
     sortOrder?: string;
+    startDate?: string;
+    endDate?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -90,6 +104,14 @@ export default async function StatementsPage({
     type,
     sortBy: params.sortBy || 'totalAmount',
     sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
+    startDate:
+      typeof params.startDate === 'string' && params.startDate.trim().length > 0
+        ? params.startDate
+        : undefined,
+    endDate:
+      typeof params.endDate === 'string' && params.endDate.trim().length > 0
+        ? params.endDate
+        : undefined,
   };
 
   return (

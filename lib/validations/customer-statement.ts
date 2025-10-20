@@ -47,11 +47,7 @@ export const customerStatementQuerySchema = z.object({
     .or(z.string().transform(val => parseInt(val, 10))),
 
   // 筛选条件
-  customerId: z
-    .string()
-    .min(1, '客户ID不能为空')
-    .optional()
-    .or(z.literal('')),
+  customerId: z.string().min(1, '客户ID不能为空').optional().or(z.literal('')),
 
   customerName: z
     .string()

@@ -138,20 +138,6 @@ export function useProductListState(initialParams?: ProductQueryParams) {
     [replaceURL]
   );
 
-  // 排序处理
-  const handleSortChange = useCallback(
-    (sortBy: string, sortOrder: 'asc' | 'desc') => {
-      const overrides: Partial<LatestQueryState> = {
-        sortBy,
-        sortOrder,
-        page: 1,
-      };
-      latestParamsRef.current = { ...latestParamsRef.current, ...overrides };
-      replaceURL(overrides);
-    },
-    [replaceURL]
-  );
-
   // 分页处理 - 参考销售订单模块的实现
   const handlePageChange = useCallback(
     (nextPage: number) => {
@@ -228,7 +214,6 @@ export function useProductListState(initialParams?: ProductQueryParams) {
     // 事件处理函数
     handleSearch,
     handleFilter,
-    handleSortChange,
     handlePageChange,
     handleDeleteProduct,
     handleSelectProduct,

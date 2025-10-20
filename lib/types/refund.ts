@@ -228,6 +228,8 @@ export interface RefundListQueryParams {
   status?: RefundStatus;
   sortBy?: 'refundDate' | 'refundAmount' | 'createdAt' | 'updatedAt';
   sortOrder?: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
 }
 
 // 退款列表统计数据（用于列表视图）

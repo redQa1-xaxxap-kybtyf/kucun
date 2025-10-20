@@ -157,11 +157,15 @@ export function EnhancedProductInput({
                           inventory: p.inventory
                             ? {
                                 totalInventory: p.inventory.totalQuantity || 0,
-                                availableInventory: p.inventory.availableQuantity || 0,
-                                reservedInventory: p.inventory.reservedQuantity || 0,
+                                availableInventory:
+                                  p.inventory.availableQuantity || 0,
+                                reservedInventory:
+                                  p.inventory.reservedQuantity || 0,
                               }
                             : undefined,
-                        })) as unknown as Parameters<typeof EnhancedProductSelector>[0]['products']
+                        })) as unknown as Parameters<
+                          typeof EnhancedProductSelector
+                        >[0]['products']
                       }
                       value={field.value || ''}
                       onValueChange={value => {

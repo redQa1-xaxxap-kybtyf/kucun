@@ -819,7 +819,13 @@ export function ERPSalesOrderForm({
       const generateOrderNumber = async () => {
         try {
           const response = await fetch(
-            '/api/sales-orders/generate-order-number?action=generate'
+            '/api/sales-orders/generate-order-number',
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+            }
           );
           const data = await response.json();
           if (data.success) {

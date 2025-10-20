@@ -33,6 +33,8 @@ export interface InventoryQueryParams {
   categoryId?: string; // 产品分类筛选
   lowStock?: boolean;
   hasStock?: boolean;
+  startDate?: string;
+  endDate?: string;
   // groupByVariant?: boolean; // 移除：当前系统不支持产品变体
   // includeVariants?: boolean; // 移除：当前系统不支持产品变体
 }

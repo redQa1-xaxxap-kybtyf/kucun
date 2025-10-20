@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { ensureSupplierCanBeDeleted } from '@/lib/services/supplier-service';
 import type { BatchDeleteSuppliersResult } from '@/lib/types/supplier';
 import { BatchDeleteSuppliersSchema } from '@/lib/validations/supplier';
 
@@ -37,23 +38,35 @@ export const DELETE = withAuth(
       });
     });
 
-    // 批量删除存在的供应商
+    const deletableIds: string[] = [];
+
+    // 校验并收集可以删除的供应商
     for (const supplier of suppliersToDelete) {
       try {
-        // TODO: 检查是否有关联的采购订单等
-        // 这里可以根据业务需求添加相关检查
-
-        await prisma.supplier.delete({
-          where: { id: supplier.id },
-        });
-
-        deletedCount++;
+        await ensureSupplierCanBeDeleted(supplier.id, supplier.name);
+        deletableIds.push(supplier.id);
       } catch (error) {
         failedCount++;
         failedSuppliers.push({
           id: supplier.id,
           name: supplier.name,
-          reason: error instanceof Error ? error.message : '删除失败',
+          reason: error instanceof Error ? error.message : '供应商无法删除',
+        });
+      }
+    }
+
+    if (deletableIds.length > 0) {
+      const result = await prisma.supplier.deleteMany({
+        where: { id: { in: deletableIds } },
+      });
+      deletedCount += result.count;
+      const notDeleted = deletableIds.length - result.count;
+      if (notDeleted > 0) {
+        failedCount += notDeleted;
+        failedSuppliers.push({
+          id: 'unknown',
+          name: '未知',
+          reason: '部分供应商删除失败，请重试',
         });
       }
     }

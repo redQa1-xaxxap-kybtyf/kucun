@@ -94,7 +94,7 @@ export function MultiOrderItemSelector({
   if (isLoadingOrders) {
     return (
       <div className="flex items-center justify-center gap-2 py-8">
-        <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
         <span className="text-muted-foreground text-xs">加载销售订单...</span>
       </div>
     );
@@ -109,7 +109,7 @@ export function MultiOrderItemSelector({
   }
 
   return (
-    <div className="max-h-96 space-y-2 overflow-y-auto rounded-md border bg-muted/5 p-2">
+    <div className="bg-muted/5 max-h-96 space-y-2 overflow-y-auto rounded-md border p-2">
       {salesOrders.map(order => (
         <SalesOrderSection
           key={order.id}
@@ -174,7 +174,7 @@ function SalesOrderSection({
         <CollapsibleTrigger asChild>
           <Button
             variant="ghost"
-            className="w-full justify-between px-3 py-2 text-xs hover:bg-muted/50"
+            className="hover:bg-muted/50 w-full justify-between px-3 py-2 text-xs"
           >
             <div className="flex items-center gap-2">
               <ChevronDown
@@ -203,7 +203,7 @@ function SalesOrderSection({
           <div className="border-t p-2">
             {isLoadingItems ? (
               <div className="flex items-center justify-center gap-2 py-4">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <div className="border-primary h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" />
                 <span className="text-muted-foreground text-xs">
                   加载商品明细...
                 </span>

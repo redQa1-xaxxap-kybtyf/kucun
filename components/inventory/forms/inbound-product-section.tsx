@@ -104,9 +104,7 @@ export function InboundProductSection({
                 error={fieldState.invalid || showProductPrompt}
               />
             </FormControl>
-            <FormMessage>
-              {showProductPrompt ? '请选择产品' : null}
-            </FormMessage>
+            <FormMessage>{showProductPrompt ? '请选择产品' : null}</FormMessage>
           </FormItem>
         )}
       />
@@ -226,4 +224,3 @@ export function InboundProductSection({
     </div>
   );
 }
-

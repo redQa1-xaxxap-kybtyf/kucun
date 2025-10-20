@@ -9,6 +9,10 @@ import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/ui/date-range-picker';
 import { usePayableRecords } from '@/lib/api/payables';
 import {
   type PayableRecordDetail,
@@ -35,7 +39,9 @@ const areQueriesEqual = (a: PayableRecordQuery, b: PayableRecordQuery) =>
   a.status === b.status &&
   a.sourceType === b.sourceType &&
   a.sortBy === b.sortBy &&
-  a.sortOrder === b.sortOrder;
+  a.sortOrder === b.sortOrder &&
+  a.startDate === b.startDate &&
+  a.endDate === b.endDate;
 
 interface PayablesClientProps {
   initialStatistics: {
@@ -49,6 +55,7 @@ interface PayablesClientProps {
   initialParams?: PayableRecordQuery;
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
+  onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
 }
 
@@ -61,6 +68,7 @@ export function PayablesClient({
   initialParams,
   onSearch: externalOnSearch,
   onFilter: externalOnFilter,
+  onDateRangeChange: externalOnDateRangeChange,
   onPageChange: externalOnPageChange,
 }: PayablesClientProps) {
   const router = useRouter();
@@ -99,6 +107,11 @@ export function PayablesClient({
       initialParams?.sortOrder ??
       (searchParams.get('sortOrder') === 'asc' ? 'asc' : 'desc');
 
+    const rawStartDate =
+      initialParams?.startDate ?? searchParams.get('startDate') ?? undefined;
+    const rawEndDate =
+      initialParams?.endDate ?? searchParams.get('endDate') ?? undefined;
+
     const page = Number.isFinite(rawPage) && rawPage > 0 ? rawPage : 1;
     const limit = Number.isFinite(rawLimit) && rawLimit > 0 ? rawLimit : 20;
 
@@ -118,6 +131,8 @@ export function PayablesClient({
       sourceType: rawSourceType,
       sortBy,
       sortOrder,
+      startDate: rawStartDate || undefined,
+      endDate: rawEndDate || undefined,
     };
   }, [initialParams, searchParams]);
 
@@ -216,6 +231,24 @@ export function PayablesClient({
     [externalOnFilter]
   );
 
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      setQuery(prev => {
+        const next: PayableRecordQuery = {
+          ...prev,
+          startDate: range.startDate,
+          endDate: range.endDate,
+          page: 1,
+        };
+
+        return areQueriesEqual(prev, next) ? prev : next;
+      });
+
+      externalOnDateRangeChange?.(range);
+    },
+    [externalOnDateRangeChange]
+  );
+
   const handlePageChange = React.useCallback(
     (newPage: number) => {
       setQuery(prev => {
@@ -300,54 +333,79 @@ export function PayablesClient({
       {/* 搜索和筛选 */}
       <Card className="border border-[hsl(var(--color-border-secondary))]">
         <CardContent className="pt-6">
-          <UnifiedSearchBar
-            // 搜索配置
-            searchValue={query.search || ''}
-            onSearchChange={handleSearch}
-            searchPlaceholder="搜索应付款单号或供应商名称..."
-            debounceDelay={400}
-            // 筛选器配置
-            filters={[
-              {
-                key: 'status',
-                label: '状态',
-                options: [
-                  { label: '待付款', value: 'pending' },
-                  { label: '部分付款', value: 'partial' },
-                  { label: '已付款', value: 'paid' },
-                  { label: '已取消', value: 'cancelled' },
-                ],
-                width: 'w-[140px]',
-              },
-              {
-                key: 'sourceType',
-                label: '来源类型',
-                options: [
-                  { label: '采购订单', value: 'purchase_order' },
-                  { label: '厂家发货', value: 'factory_shipment' },
-                  { label: '服务费用', value: 'service' },
-                  { label: '其他', value: 'other' },
-                ],
-                width: 'w-[140px]',
-              },
-              {
-                key: 'sortBy',
-                label: '排序',
-                options: [
-                  { label: '创建时间', value: 'createdAt' },
-                  { label: '应付金额', value: 'payableAmount' },
-                  { label: '剩余金额', value: 'remainingAmount' },
-                ],
-                width: 'w-[140px]',
-              },
-            ]}
-            filterValues={{
-              status: query.status || 'all',
-              sourceType: query.sourceType || 'all',
-              sortBy: query.sortBy || 'createdAt',
-            }}
-            onFilterChange={handleFilterChange}
-          />
+          <div className="flex flex-wrap items-center gap-3">
+            <div className="min-w-[280px] flex-1">
+              <UnifiedSearchBar
+                searchValue={query.search || ''}
+                onSearchChange={handleSearch}
+                searchPlaceholder="搜索应付款单号或供应商名称..."
+                debounceDelay={400}
+                filters={[
+                  {
+                    key: 'status',
+                    label: '状态',
+                    options: [
+                      { label: '全部状态', value: 'all' },
+                      { label: '待付款', value: 'pending' },
+                      { label: '部分付款', value: 'partial' },
+                      { label: '已付款', value: 'paid' },
+                      { label: '已取消', value: 'cancelled' },
+                    ],
+                    width: 'w-[140px]',
+                  },
+                  {
+                    key: 'sourceType',
+                    label: '来源类型',
+                    options: [
+                      { label: '全部来源', value: 'all' },
+                      { label: '采购订单', value: 'purchase_order' },
+                      { label: '厂家发货', value: 'factory_shipment' },
+                      { label: '服务费用', value: 'service' },
+                      { label: '其他', value: 'other' },
+                    ],
+                    width: 'w-[140px]',
+                  },
+                  {
+                    key: 'sortBy',
+                    label: '排序',
+                    options: [
+                      { label: '创建时间', value: 'createdAt' },
+                      { label: '应付金额', value: 'payableAmount' },
+                      { label: '剩余金额', value: 'remainingAmount' },
+                    ],
+                    width: 'w-[140px]',
+                  },
+                  {
+                    key: 'sortOrder',
+                    label: '排序方向',
+                    options: [
+                      { label: '降序', value: 'desc' },
+                      { label: '升序', value: 'asc' },
+                    ],
+                    width: 'w-[100px]',
+                  },
+                ]}
+                filterValues={{
+                  status: query.status || 'all',
+                  sourceType: query.sourceType || 'all',
+                  sortBy: query.sortBy || 'createdAt',
+                  sortOrder: query.sortOrder,
+                }}
+                onFilterChange={handleFilterChange}
+              />
+            </div>
+            <DateRangePicker
+              value={{
+                startDate: query.startDate,
+                endDate: query.endDate,
+              }}
+              onChange={handleDateRangeChange}
+              label=""
+              placeholder="选择单据日期范围"
+              showPresets
+              className="min-w-[220px]"
+            />
+          </div>
 
           {/* 应付款列表 */}
           <div className="mt-6 space-y-4">

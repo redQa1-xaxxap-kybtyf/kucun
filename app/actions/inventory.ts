@@ -44,8 +44,7 @@ const inventoryAdjustFormSchema = z.object({
     .string()
     .optional()
     .transform(value => (value?.trim() ? value.trim() : undefined)),
-  quantity: z
-    .coerce
+  quantity: z.coerce
     .number()
     .int('调整数量必须为整数')
     .refine(value => value !== 0, '调整数量不能为 0'),
@@ -85,7 +84,10 @@ function normalizeAdjustInput(
 
 function generateAdjustmentNumber() {
   const now = new Date();
-  const timestamp = now.toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+  const timestamp = now
+    .toISOString()
+    .replace(/[-:.TZ]/g, '')
+    .slice(0, 14);
   const randomSuffix = Math.random().toString(36).slice(-4).toUpperCase();
   return `ADJ-${timestamp}-${randomSuffix}`;
 }

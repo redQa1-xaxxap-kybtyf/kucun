@@ -41,17 +41,30 @@ interface UseOptimizedInventoryQueryOptions {
  * ✅ Next.js 15.4 + TanStack Query v5 最佳实践：
  * - 服务端通过 HydrationBoundary 预取数据
  * - 客户端使用相同的 queryKey 获取缓存数据
- * - 配置 staleTime=Infinity 防止首次渲染时重新请求
+ * - 根据业务需求设置有限的 staleTime，避免长期占用陈旧数据
  * - 后续交互（翻页、筛选）会自动触发新请求
  * - 预取策略改为按需触发，避免不必要的请求
  */
 export function useOptimizedInventoryQuery({
   params,
   enabled = true,
-  staleTime = Infinity, // 防止客户端重复请求服务端已预取的数据
+  staleTime = 30 * 1000, // 默认缓存30秒，避免长期持有陈旧数据
   cacheTime = 10 * 60 * 1000, // 10分钟
 }: UseOptimizedInventoryQueryOptions) {
   const queryClient = useQueryClient();
+
+  const executeRequest = useCallback(async (searchParams: URLSearchParams) => {
+    const response = await fetch(`/api/inventory?${searchParams.toString()}`);
+    if (!response.ok) {
+      const error = new Error(
+        `库存查询失败: ${response.status} ${response.statusText}`
+      ) as Error & { status?: number };
+      error.status = response.status;
+      throw error;
+    }
+
+    return response.json();
+  }, []);
 
   // 主查询
   const query = useQuery<InventoryListResponse>({
@@ -66,22 +79,17 @@ export function useOptimizedInventoryQuery({
         }
       });
 
-      const response = await fetch(`/api/inventory?${searchParams.toString()}`);
-      if (!response.ok) {
-        throw new Error(`库存查询失败: ${response.statusText}`);
-      }
-
-      return response.json();
+      return executeRequest(searchParams);
     },
     enabled,
-    staleTime, // 数据新鲜度时间 - Infinity 表示永不过期（除非手动 invalidate）
+    staleTime, // 数据新鲜度时间，可通过参数覆盖（默认30秒）
     gcTime: cacheTime, // 垃圾回收时间
     // ✅ 修复：移除 placeholderData，避免数据切换时的闪烁
     // 使用 React 的 useTransition 在父组件中处理加载状态
     // 错误重试配置
     retry: (failureCount, error) => {
-      // 4xx错误不重试
-      if (error instanceof Error && error.message.includes('4')) {
+      const status = (error as { status?: number }).status;
+      if (typeof status === 'number' && status >= 400 && status < 500) {
         return false;
       }
       return failureCount < 3;
@@ -103,19 +111,12 @@ export function useOptimizedInventoryQuery({
             }
           });
 
-          const response = await fetch(
-            `/api/inventory?${searchParams.toString()}`
-          );
-          if (!response.ok) {
-            throw new Error(`库存查询失败: ${response.statusText}`);
-          }
-
-          return response.json();
+          return executeRequest(searchParams);
         },
         staleTime: 5 * 60 * 1000, // 预取数据缓存5分钟
       });
     },
-    [queryClient]
+    [executeRequest, queryClient]
   );
 
   // ✅ 提供便捷的预取方法，供组件使用

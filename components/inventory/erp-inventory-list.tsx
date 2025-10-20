@@ -1,11 +1,11 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import * as React from 'react';
 
 import { InventoryTable } from '@/components/inventory/erp/inventory-table';
 import { InventorySearchToolbar } from '@/components/inventory/InventorySearchToolbar';
 import { Pagination } from '@/components/ui/pagination';
-import { useERPInventoryList } from '@/hooks/use-erp-inventory-list';
 import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
 
 interface ERPInventoryListProps {
@@ -51,15 +51,32 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
     onPrevPageHover,
     isLoading: _isLoading = false,
   }) => {
-    const {
-      hasData,
-      canSelectAll,
-      isAllSelected,
-      selectedInventoryIds,
-      handleRowSelect,
-      handleSelectAll,
-      handleAdjust,
-    } = useERPInventoryList(data, onPageChange);
+    const router = useRouter();
+
+    const handleAdjust = React.useCallback(
+      (inventoryId: string) => {
+        const inventory = data.data.find(item => item.id === inventoryId);
+        if (!inventory || !inventory.batchNumber) {
+          return;
+        }
+
+        const params = new URLSearchParams();
+        params.set('inventoryId', inventoryId);
+        if (inventory.productId) {
+          params.set('productId', inventory.productId);
+        }
+        if (inventory.variantId) {
+          params.set('variantId', inventory.variantId);
+        } else {
+          params.set('variantId', 'null');
+        }
+
+        router.push(
+          `/inventory/batch/${encodeURIComponent(inventory.batchNumber)}/history?${params.toString()}`
+        );
+      },
+      [data.data, router]
+    );
 
     return (
       <div className="space-y-4">
@@ -78,11 +95,6 @@ export const ERPInventoryList = React.memo<ERPInventoryListProps>(
         >
           <InventoryTable
             data={data.data}
-            selectedIds={selectedInventoryIds}
-            isAllSelected={isAllSelected}
-            canSelectAll={canSelectAll}
-            onSelectAll={handleSelectAll}
-            onSelectRow={handleRowSelect}
             onAdjust={handleAdjust}
             useVirtualization={data.data.length > 50}
           />

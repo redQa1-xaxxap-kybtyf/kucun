@@ -22,6 +22,8 @@ const getStatementsHandler = withAuth(
       const searchParams = new URL(request.url).searchParams;
       const searchValue = searchParams.get('search')?.trim();
       const typeValue = searchParams.get('type')?.trim();
+      const startDateValue = searchParams.get('startDate')?.trim();
+      const endDateValue = searchParams.get('endDate')?.trim();
       const queryParams = {
         page: parseInt(searchParams.get('page') || '1', 10),
         limit: parseInt(
@@ -34,6 +36,8 @@ const getStatementsHandler = withAuth(
         sortBy: (searchParams.get('sortBy') ||
           'totalAmount') as StatementQueryParams['sortBy'],
         sortOrder: (searchParams.get('sortOrder') || 'desc') as 'asc' | 'desc',
+        startDate: startDateValue || undefined,
+        endDate: endDateValue || undefined,
       };
 
       // 使用财务统计服务获取数据
@@ -62,4 +66,6 @@ const getStatementsHandler = withAuth(
   { permissions: ['finance:view'] }
 );
 
-export const GET = withRateLimit(RateLimitType.FINANCE_READ)(getStatementsHandler);
+export const GET = withRateLimit(RateLimitType.FINANCE_READ)(
+  getStatementsHandler
+);

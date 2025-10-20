@@ -3,11 +3,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import {
-  AlertCircle,
-  ArrowLeft,
-  Save,
-} from 'lucide-react';
+import { AlertCircle, ArrowLeft, Save } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -243,9 +239,7 @@ export function CustomerForm({
               取消
             </Button>
             <Button type="submit" disabled={isLoading}>
-              {isLoading && (
-                <InlineLoading size="sm" className="mr-2" />
-              )}
+              {isLoading && <InlineLoading size="sm" className="mr-2" />}
               <Save className="mr-2 h-4 w-4" />
               {isEdit ? '保存修改' : '创建客户'}
             </Button>

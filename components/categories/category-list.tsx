@@ -120,10 +120,25 @@ export function CategoryList({
 }: CategoryListProps) {
   const router = useRouter();
 
-  const categoriesWithLevel = useMemo<CategoryWithLevel[]>(
-    () => buildCategoriesWithLevel(categories),
-    [categories]
-  );
+  const categoriesWithLevel = useMemo<CategoryWithLevel[]>(() => {
+    const withLevel = buildCategoriesWithLevel(categories);
+    return withLevel.slice().sort((a, b) => {
+      if (a.level !== b.level) {
+        return a.level - b.level;
+      }
+
+      const sortOrderA =
+        typeof a.sortOrder === 'number' ? a.sortOrder : Number.MAX_SAFE_INTEGER;
+      const sortOrderB =
+        typeof b.sortOrder === 'number' ? b.sortOrder : Number.MAX_SAFE_INTEGER;
+
+      if (sortOrderA !== sortOrderB) {
+        return sortOrderA - sortOrderB;
+      }
+
+      return a.name.localeCompare(b.name, 'zh-Hans-CN');
+    });
+  }, [categories]);
 
   const handleEdit = useMemo(
     () => (categoryId: string) => router.push(`/categories/${categoryId}/edit`),
@@ -202,16 +217,11 @@ function CategoryRow({
 
   // 根据层级选择不同的视觉样式
   const style =
-    LEVEL_STYLES[category.level] ||
-    LEVEL_STYLES[LEVEL_STYLES.length - 1];
+    LEVEL_STYLES[category.level] || LEVEL_STYLES[LEVEL_STYLES.length - 1];
 
   return (
     <TableRow className={`transition-colors hover:${style.bg}`}>
-      <CategoryNameCell
-        category={category}
-        indentPx={indentPx}
-        style={style}
-      />
+      <CategoryNameCell category={category} indentPx={indentPx} style={style} />
 
       {/* 分类编码 */}
       <TableCell className="font-mono text-sm text-gray-600">

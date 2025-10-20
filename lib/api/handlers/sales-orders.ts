@@ -1,6 +1,4 @@
-import type {
-  SalesOrderQueryParams as StandardSalesOrderQueryParams,
-} from '@/lib/types/sales-order';
+import type { SalesOrderQueryParams as StandardSalesOrderQueryParams } from '@/lib/types/sales-order';
 import { salesOrderQuerySchema as standardSalesOrderQuerySchema } from '@/lib/validations/sales-order';
 
 export const salesOrderQuerySchema = standardSalesOrderQuerySchema;

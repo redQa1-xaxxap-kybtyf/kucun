@@ -226,7 +226,9 @@ export function getLatestPrice(
 
   // 过滤出指定产品编码和价格类型的价格
   const filteredPrices = prices.filter(
-    p => p.product?.code === productCode && (!priceType || p.priceType === priceType)
+    p =>
+      p.product?.code === productCode &&
+      (!priceType || p.priceType === priceType)
   );
 
   if (filteredPrices.length === 0) {

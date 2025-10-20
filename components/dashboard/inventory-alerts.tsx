@@ -147,7 +147,10 @@ const InventoryAlertItem = React.forwardRef<
           </div>
 
           <div className="flex shrink-0 items-center space-x-2">
-            <Badge variant={levelConfig.badgeVariant} className="text-xs font-medium">
+            <Badge
+              variant={levelConfig.badgeVariant}
+              className="text-xs font-medium"
+            >
               {ALERT_LEVEL_LABELS[alert.alertLevel]}
             </Badge>
             {onDismiss && (

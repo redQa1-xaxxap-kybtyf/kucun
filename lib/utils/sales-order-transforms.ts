@@ -113,6 +113,71 @@ const toOptionalNumber = (value: unknown): number | undefined => {
 
 const QUANTITY_EPSILON = 0.01;
 
+const hasMeaningfulItemContent = (item: SalesOrderFormItem): boolean => {
+  const fieldsToCheck: Array<unknown> = [
+    item.productId,
+    item.productCode,
+    item.batchNumber,
+    item.colorCode,
+    item.productionDate,
+    item.specification,
+    item.remarks,
+    item.quantity,
+    item.unitPrice,
+    item.displayQuantity,
+    item.piecesPerUnit,
+    item.unitCost,
+    item.localQuantity,
+    item.transferQuantity,
+    item.manualProductName,
+    item.manualSpecification,
+    item.manualWeight,
+    item.manualUnit,
+  ];
+
+  return fieldsToCheck.some(value => {
+    if (typeof value === 'number') {
+      return Number.isFinite(value) && Math.abs(value) > QUANTITY_EPSILON;
+    }
+    if (typeof value === 'string') {
+      return value.trim().length > 0;
+    }
+    return Boolean(value);
+  });
+};
+
+const shouldIncludeTransformedItem = (
+  source: SalesOrderFormItem,
+  transformed: SalesOrderItemCreateInput | SalesOrderItemUpdateInput,
+  isDraft: boolean
+): boolean => {
+  if (!isDraft) {
+    const hasPositiveQuantity =
+      typeof transformed.quantity === 'number' && transformed.quantity > 0;
+    const hasPositivePrice =
+      typeof transformed.unitPrice === 'number' && transformed.unitPrice > 0;
+
+    if (!hasPositiveQuantity || !hasPositivePrice) {
+      return false;
+    }
+
+    if (transformed.isManualProduct) {
+      return Boolean(transformed.manualProductName?.trim());
+    }
+    return Boolean(transformed.productId?.trim());
+  }
+
+  if (!hasMeaningfulItemContent(source)) {
+    return false;
+  }
+
+  if (source.isManualProduct) {
+    return Boolean(source.manualProductName?.trim());
+  }
+
+  return Boolean(source.productId?.trim());
+};
+
 function sanitizeFeeItems(feeItems?: SalesOrderFeeItem[]): SalesOrderFeeItem[] {
   if (!Array.isArray(feeItems)) {
     return [];
@@ -145,23 +210,15 @@ function sanitizeFeeItems(feeItems?: SalesOrderFeeItem[]): SalesOrderFeeItem[] {
 export function transformFormDataToCreateInput(
   formData: SalesOrderFormData
 ): SalesOrderCreateInput {
-  const items = formData.items
-    .map(transformFormItemToCreateInput)
-    .filter(item => {
-      const hasPositiveQuantity =
-        typeof item.quantity === 'number' && item.quantity > 0;
-      const hasPositivePrice =
-        typeof item.unitPrice === 'number' && item.unitPrice > 0;
+  const isDraft = (formData.status ?? 'draft') === 'draft';
+  const items: SalesOrderItemCreateInput[] = [];
 
-      if (!hasPositiveQuantity || !hasPositivePrice) {
-        return false;
-      }
-
-      if (item.isManualProduct) {
-        return Boolean(item.manualProductName?.trim());
-      }
-      return Boolean(item.productId?.trim());
-    });
+  formData.items.forEach(formItem => {
+    const transformed = transformFormItemToCreateInput(formItem);
+    if (shouldIncludeTransformedItem(formItem, transformed, isDraft)) {
+      items.push(transformed);
+    }
+  });
 
   const sanitizedFeeItems = sanitizeFeeItems(formData.feeItems);
   const effectiveOrderType = formData.orderType || 'NORMAL';
@@ -260,23 +317,15 @@ export function transformFormDataToUpdateInput(
   orderId: string,
   formData: SalesOrderFormData
 ): SalesOrderUpdateInput {
-  const items = formData.items
-    .map(transformFormItemToUpdateInput)
-    .filter(item => {
-      const hasPositiveQuantity =
-        typeof item.quantity === 'number' && item.quantity > 0;
-      const hasPositivePrice =
-        typeof item.unitPrice === 'number' && item.unitPrice > 0;
+  const isDraft = (formData.status ?? 'draft') === 'draft';
+  const items: SalesOrderItemUpdateInput[] = [];
 
-      if (!hasPositiveQuantity || !hasPositivePrice) {
-        return false;
-      }
-
-      if (item.isManualProduct) {
-        return Boolean(item.manualProductName?.trim());
-      }
-      return Boolean(item.productId?.trim());
-    });
+  formData.items.forEach(formItem => {
+    const transformed = transformFormItemToUpdateInput(formItem);
+    if (shouldIncludeTransformedItem(formItem, transformed, isDraft)) {
+      items.push(transformed);
+    }
+  });
 
   const sanitizedFeeItems = sanitizeFeeItems(formData.feeItems);
   const effectiveOrderType = formData.orderType;
@@ -544,6 +593,11 @@ export function validateFormData(formData: SalesOrderFormData): {
   valid: boolean;
   errors: string[];
 } {
+  const isDraft = (formData.status ?? 'draft') === 'draft';
+  if (isDraft) {
+    return { valid: true, errors: [] };
+  }
+
   const items = Array.isArray(formData.items) ? formData.items : [];
   const transferMode = deriveTransferMode(formData);
 

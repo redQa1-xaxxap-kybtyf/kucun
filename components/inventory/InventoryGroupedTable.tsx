@@ -26,11 +26,6 @@ import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryGroupedTableProps {
   data: Inventory[];
-  selectedIds: Set<string>;
-  isAllSelected: boolean;
-  canSelectAll: boolean;
-  onSelectAll: (checked: boolean) => void;
-  onSelectRow: (id: string, checked: boolean) => void;
   onAdjust: (id: string) => void;
 }
 
@@ -121,15 +116,7 @@ function formatSpecification(spec: string | null | undefined): string {
 }
 
 export const InventoryGroupedTable = React.memo<InventoryGroupedTableProps>(
-  ({
-    data,
-    selectedIds: _selectedIds,
-    isAllSelected: _isAllSelected,
-    canSelectAll: _canSelectAll,
-    onSelectAll: _onSelectAll,
-    onSelectRow: _onSelectRow,
-    onAdjust,
-  }) => {
+  ({ data, onAdjust }) => {
     const groups = React.useMemo(() => groupByProduct(data), [data]);
 
     return (

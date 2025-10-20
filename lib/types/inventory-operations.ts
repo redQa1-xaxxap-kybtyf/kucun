@@ -110,23 +110,32 @@ export interface OutboundRecordDetail extends OutboundRecord {
 export type { CreateInboundData as InboundCreateInput } from '@/lib/validations/inbound';
 
 export interface OutboundCreateInput {
+  idempotencyKey: string;
   type: OutboundType;
   productId: string;
   batchNumber?: string;
+  variantId?: string;
   quantity: number;
   unitCost?: number;
   customerId?: string;
   salesOrderId?: string;
   remarks?: string;
+  reason?: string;
+  notes?: string;
 }
 
 // 库存调整输入类型
 export interface InventoryAdjustInput {
+  idempotencyKey: string;
   productId: string;
   batchNumber?: string;
+  variantId?: string;
   adjustQuantity: number; // 正数为增加，负数为减少
   reason: string;
-  remarks?: string;
+  notes?: string;
+  currentQuantity?: number;
+  maxQuantity?: number;
+  minQuantity?: number;
 }
 
 // 库存盘点输入类型

@@ -19,6 +19,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/ui/date-range-picker';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -90,9 +94,12 @@ interface PaymentsClientProps {
     paymentMethod?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
+    startDate?: string;
+    endDate?: string;
   };
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: PaymentStatus | string | undefined) => void;
+  onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
   onRefresh?: () => void;
 }
@@ -143,6 +150,7 @@ export function PaymentsClient({
   initialParams,
   onSearch: externalOnSearch,
   onFilter: externalOnFilter,
+  onDateRangeChange: externalOnDateRangeChange,
   onPageChange: externalOnPageChange,
   onRefresh: externalOnRefresh,
 }: PaymentsClientProps) {
@@ -150,6 +158,13 @@ export function PaymentsClient({
   const { toast } = useToast();
   const confirmPaymentMutation = useConfirmPayment();
   const [confirmingId, setConfirmingId] = React.useState<string | null>(null);
+  const [searchValue, setSearchValue] = React.useState(
+    initialParams?.search ?? ''
+  );
+
+  React.useEffect(() => {
+    setSearchValue(initialParams?.search ?? '');
+  }, [initialParams?.search]);
 
   const overallCollectionRate =
     typeof statistics.collectionRate === 'number'
@@ -193,9 +208,8 @@ export function PaymentsClient({
   // 处理搜索
   const handleSearch = React.useCallback(
     (value: string) => {
-      if (externalOnSearch) {
-        externalOnSearch(value);
-      }
+      setSearchValue(value);
+      externalOnSearch?.(value);
     },
     [externalOnSearch]
   );
@@ -226,6 +240,13 @@ export function PaymentsClient({
       }
     },
     [externalOnPageChange]
+  );
+
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      externalOnDateRangeChange?.(range);
+    },
+    [externalOnDateRangeChange]
   );
 
   const handleConfirm = React.useCallback(
@@ -326,10 +347,10 @@ export function PaymentsClient({
       {/* 搜索和筛选 */}
       <Card>
         <CardContent className="pt-6">
-          <div className="mb-6 flex flex-col gap-4 sm:flex-row">
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="flex-1">
               <UnifiedSearchBar
-                searchValue={initialParams?.search ?? ''}
+                searchValue={searchValue}
                 onSearchChange={handleSearch}
                 searchPlaceholder="搜索收款单号、客户名称或订单号..."
               />
@@ -366,6 +387,17 @@ export function PaymentsClient({
                 <SelectItem value="wechat">微信支付</SelectItem>
               </SelectContent>
             </Select>
+            <DateRangePicker
+              value={{
+                startDate: initialParams?.startDate,
+                endDate: initialParams?.endDate,
+              }}
+              onChange={handleDateRangeChange}
+              label=""
+              placeholder="选择收款日期范围"
+              showPresets
+              className="w-full sm:w-auto sm:min-w-[240px]"
+            />
           </div>
 
           {/* 收款记录列表 */}

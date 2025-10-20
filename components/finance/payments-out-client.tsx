@@ -20,6 +20,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Pagination } from '@/components/ui/pagination';
 import {
+  DateRangePicker,
+  type DateRangeValue,
+} from '@/components/ui/date-range-picker';
+import {
   Select,
   SelectContent,
   SelectItem,
@@ -83,9 +87,12 @@ interface PaymentsOutClientProps {
     paymentMethod?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
+    startDate?: string;
+    endDate?: string;
   };
   onSearch?: (value: string) => void;
   onFilter?: (key: string, value: string | undefined) => void;
+  onDateRangeChange?: (range: DateRangeValue) => void;
   onPageChange?: (page: number) => void;
 }
 
@@ -151,9 +158,17 @@ export function PaymentsOutClient({
   initialParams,
   onSearch,
   onFilter,
+  onDateRangeChange,
   onPageChange,
 }: PaymentsOutClientProps) {
   const router = useRouter();
+  const [searchValue, setSearchValue] = React.useState(
+    initialParams?.search ?? ''
+  );
+
+  React.useEffect(() => {
+    setSearchValue(initialParams?.search ?? '');
+  }, [initialParams?.search]);
   const { payments, statistics, pagination } = initialData;
 
   const confirmedAmountChangeLabel = React.useMemo(() => {
@@ -177,6 +192,13 @@ export function PaymentsOutClient({
     statistics.currentMonthConfirmedAmount,
     statistics.previousMonthConfirmedAmount,
   ]);
+
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      onDateRangeChange?.(range);
+    },
+    [onDateRangeChange]
+  );
 
   return (
     <div className="space-y-4">
@@ -250,13 +272,12 @@ export function PaymentsOutClient({
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-            <div className="flex flex-1 items-center gap-2">
+            <div className="flex flex-1 flex-wrap items-center gap-2">
               <UnifiedSearchBar
-                searchValue={initialParams?.search ?? ''}
+                searchValue={searchValue}
                 onSearchChange={value => {
-                  if (onSearch) {
-                    onSearch(value);
-                  }
+                  setSearchValue(value);
+                  onSearch?.(value);
                 }}
                 searchPlaceholder="搜索付款单号、供应商名称、凭证号..."
                 className="max-w-sm"
@@ -316,6 +337,17 @@ export function PaymentsOutClient({
                 </SelectContent>
               </Select>
             </div>
+            <DateRangePicker
+              value={{
+                startDate: initialParams?.startDate,
+                endDate: initialParams?.endDate,
+              }}
+              onChange={handleDateRangeChange}
+              label=""
+              placeholder="选择付款日期范围"
+              showPresets
+              className="w-full min-w-[220px] md:w-auto"
+            />
           </div>
 
           {/* 付款记录列表 */}

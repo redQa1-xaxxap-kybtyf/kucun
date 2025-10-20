@@ -14,6 +14,8 @@ type RawSearchParams = {
   status?: string;
   sortBy?: string;
   sortOrder?: string;
+  startDate?: string;
+  endDate?: string;
 };
 
 type ParsedQuery = {
@@ -23,6 +25,8 @@ type ParsedQuery = {
   status?: string;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
 };
 
 export function sanitizeRefundSearchParams(searchParams: RawSearchParams) {
@@ -37,10 +41,17 @@ export function sanitizeRefundSearchParams(searchParams: RawSearchParams) {
     status: searchParams.status || undefined,
     sortBy: searchParams.sortBy || undefined,
     sortOrder: searchParams.sortOrder || undefined,
+    startDate: searchParams.startDate || undefined,
+    endDate: searchParams.endDate || undefined,
   };
 }
 
-function buildQueryConditions(search: string, status?: string) {
+function buildQueryConditions(
+  search: string,
+  status?: string,
+  startDate?: string,
+  endDate?: string
+) {
   const whereConditions: Record<string, unknown> = {};
 
   if (search) {
@@ -52,6 +63,19 @@ function buildQueryConditions(search: string, status?: string) {
 
   if (status) {
     whereConditions.status = status;
+  }
+
+  if (startDate || endDate) {
+    const dateFilter: { gte?: Date; lte?: Date } = {};
+    if (startDate) {
+      dateFilter.gte = new Date(startDate);
+    }
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      dateFilter.lte = end;
+    }
+    whereConditions.refundDate = dateFilter;
   }
 
   return whereConditions;
@@ -201,7 +225,12 @@ function buildRefundPagination(total: number, query: ParsedQuery) {
 }
 
 export async function fetchRefundsList(query: ParsedQuery) {
-  const whereConditions = buildQueryConditions(query.search, query.status);
+  const whereConditions = buildQueryConditions(
+    query.search,
+    query.status,
+    query.startDate,
+    query.endDate
+  );
 
   const [refundsData, total, statisticsSource] = await Promise.all([
     fetchRefundRecords(whereConditions, query),
@@ -236,5 +265,7 @@ export function buildRefundQueryParams(
       (validatedParams.sortBy as RefundListQueryParams['sortBy']) ??
       'refundDate',
     sortOrder: (validatedParams.sortOrder as 'asc' | 'desc') ?? 'desc',
+    startDate: validatedParams.startDate,
+    endDate: validatedParams.endDate,
   };
 }

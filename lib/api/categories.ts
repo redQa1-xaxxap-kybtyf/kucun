@@ -213,7 +213,7 @@ async function createApiError(response: Response): Promise<Error> {
     const errorData = await response.json();
     const message = extractErrorMessage(errorData, fallbackMessage);
     return new Error(message);
-  } catch (error) {
+  } catch {
     return new Error(fallbackMessage);
   }
 }
@@ -246,7 +246,10 @@ function extractErrorMessage(errorData: unknown, fallback: string): string {
     }
   }
 
-  if (typeof errorObject.message === 'string' && errorObject.message.length > 0) {
+  if (
+    typeof errorObject.message === 'string' &&
+    errorObject.message.length > 0
+  ) {
     return errorObject.message;
   }
 

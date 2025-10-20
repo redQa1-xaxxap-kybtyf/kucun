@@ -9,11 +9,7 @@ import { AlertCircle, Package, TrendingDown, TrendingUp } from 'lucide-react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Form } from '@/components/ui/form';
-import {
-  type InboundRecord,
-  type Inventory,
-  type OutboundRecord,
-} from '@/lib/types/inventory';
+import type { Inventory } from '@/lib/types/inventory';
 
 import { InventoryAvailabilityAlert } from './forms/InventoryAvailabilityAlert';
 import { InventoryBasicInfoForm } from './forms/InventoryBasicInfoForm';
@@ -27,7 +23,7 @@ import {
 
 interface InventoryOperationFormProps {
   mode: OperationMode;
-  onSuccess?: (result: InboundRecord | OutboundRecord | Inventory) => void;
+  onSuccess?: (result: Inventory) => void;
   onCancel?: () => void;
 }
 

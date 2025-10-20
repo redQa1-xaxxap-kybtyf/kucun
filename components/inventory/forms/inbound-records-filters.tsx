@@ -26,7 +26,7 @@ export function InboundRecordsFilters({
 }: InboundRecordsFiltersProps) {
   // 将queryParams转换为FilterValues格式
   const filterValues: FilterValues = {
-    search: queryParams.productId,
+    search: queryParams.search,
     type: queryParams.reason,
     startDate: queryParams.startDate,
     endDate: queryParams.endDate,
@@ -39,7 +39,7 @@ export function InboundRecordsFilters({
   ) => {
     // 将FilterValues的key映射到InboundQueryParams的key
     const keyMap: Record<keyof FilterValues, keyof InboundQueryParams> = {
-      search: 'productId',
+      search: 'search',
       type: 'reason',
       startDate: 'startDate',
       endDate: 'endDate',

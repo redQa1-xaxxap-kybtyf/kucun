@@ -19,15 +19,12 @@ interface ProductSearchFiltersProps {
   searchValue: string;
   categoryId?: string;
   status?: ProductStatus;
-  sortBy: string;
-  sortOrder: 'asc' | 'desc';
   categories: Category[];
   onSearchChange: (value: string) => void;
   onFilterChange: (filters: {
     categoryId?: string;
     status?: ProductStatus;
   }) => void;
-  onSortChange: (sortBy: string, sortOrder: 'asc' | 'desc') => void;
   onClearFilters: () => void;
 }
 
@@ -35,12 +32,9 @@ export function ProductSearchFilters({
   searchValue,
   categoryId,
   status,
-  sortBy,
-  sortOrder,
   categories,
   onSearchChange,
   onFilterChange,
-  onSortChange: _onSortChange,
   onClearFilters,
 }: ProductSearchFiltersProps) {
   const hasActiveFilters = categoryId || status;
@@ -54,22 +48,8 @@ export function ProductSearchFilters({
       });
     } else if (key === 'categoryId') {
       onFilterChange({ categoryId: value, status });
-    } else if (key === 'sortBy') {
-      // 排序字段变更，保持当前排序方向
-      _onSortChange(value || 'createdAt', sortOrder);
-    } else if (key === 'sortOrder') {
-      // 排序方向变更，保持当前排序字段
-      _onSortChange(sortBy, (value as 'asc' | 'desc') || 'desc');
     }
   };
-
-  // 排序选项
-  const sortOptions = [
-    { label: '创建时间', value: 'createdAt' },
-    { label: '产品编码', value: 'code' },
-    { label: '产品名称', value: 'name' },
-    { label: '更新时间', value: 'updatedAt' },
-  ];
 
   // 状态选项
   const statusOptions = PRODUCT_STATUS_OPTIONS.map(option => ({
@@ -105,27 +85,10 @@ export function ProductSearchFilters({
               options: statusOptions,
               width: 'w-32',
             },
-            {
-              key: 'sortBy',
-              label: '排序字段',
-              options: sortOptions,
-              width: 'w-36',
-            },
-            {
-              key: 'sortOrder',
-              label: '排序方式',
-              options: [
-                { label: '升序', value: 'asc' },
-                { label: '降序', value: 'desc' },
-              ],
-              width: 'w-28',
-            },
           ]}
           filterValues={{
             categoryId: categoryId || 'all',
             status: status || 'all',
-            sortBy: sortBy,
-            sortOrder: sortOrder,
           }}
           onFilterChange={handleFilterChange}
         />

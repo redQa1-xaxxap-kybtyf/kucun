@@ -237,8 +237,13 @@ export const financeKeys = {
 
   // 应收款
   receivables: () => [...financeKeys.all, 'receivables'] as const,
-  receivablesList: (filters?: BaseFilters & { status?: string }) =>
-    [...financeKeys.receivables(), 'list', filters] as const,
+  receivablesList: (
+    filters?: BaseFilters & {
+      status?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ) => [...financeKeys.receivables(), 'list', filters] as const,
   receivable: (id: string) => [...financeKeys.receivables(), id] as const,
 
   // 应付款
@@ -262,8 +267,13 @@ export const financeKeys = {
 
   // 退款记录
   refunds: () => [...financeKeys.all, 'refunds'] as const,
-  refundsList: (filters?: BaseFilters & { status?: string }) =>
-    [...financeKeys.refunds(), 'list', filters] as const,
+  refundsList: (
+    filters?: BaseFilters & {
+      status?: string;
+      startDate?: string;
+      endDate?: string;
+    }
+  ) => [...financeKeys.refunds(), 'list', filters] as const,
   refund: (id: string) => [...financeKeys.refunds(), id] as const,
 
   // 财务统计

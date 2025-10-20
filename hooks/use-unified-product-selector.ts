@@ -41,27 +41,16 @@ function normalizeStatusFilter(
   return status;
 }
 
-export function useProductSelectorData({
-  dataSource,
-  products: propsProducts,
+function useApiProducts({
+  enabled,
   apiConfig,
-  mode,
-  value,
-  open,
-}: UseProductSelectorDataParams): UseProductSelectorDataResult {
-  const {
-    inputValue: searchValue,
-    debouncedValue,
-    setInputValue,
-    clearSearch,
-  } = useDebouncedSearch({
-    delay: apiConfig?.debounceDelay ?? 250,
-    minLength: 0,
-  });
-
-  const shouldFetchFromApi = dataSource === 'api';
-
-  const { data: apiResponse, isLoading: isApiLoading } = useQuery({
+  debouncedValue,
+}: {
+  enabled: boolean;
+  apiConfig: ProductSelectorConfig['apiQuery'];
+  debouncedValue: string;
+}) {
+  return useQuery({
     queryKey: productQueryKeys.list({
       search: debouncedValue || undefined,
       limit: apiConfig?.limit,
@@ -75,7 +64,7 @@ export function useProductSelectorData({
         status: normalizeStatusFilter(apiConfig?.statusFilter),
         includeInventory: apiConfig?.includeInventory,
       }),
-    enabled: shouldFetchFromApi && open,
+    enabled,
     staleTime: apiConfig?.enableCache
       ? (apiConfig?.staleTime ?? 5 * 60 * 1000)
       : 0,
@@ -83,6 +72,32 @@ export function useProductSelectorData({
       ? (apiConfig?.staleTime ?? 5 * 60 * 1000)
       : 0,
     refetchOnWindowFocus: false,
+  });
+}
+
+export function useProductSelectorData({
+  dataSource,
+  products: propsProducts,
+  apiConfig,
+  mode,
+  value,
+  open,
+}: UseProductSelectorDataParams): UseProductSelectorDataResult {
+  const shouldFetchFromApi = dataSource === 'api';
+  const {
+    inputValue: searchValue,
+    debouncedValue,
+    setInputValue,
+    clearSearch,
+  } = useDebouncedSearch({
+    delay: apiConfig?.debounceDelay ?? 250,
+    minLength: 0,
+  });
+
+  const { data: apiResponse, isLoading: isApiLoading } = useApiProducts({
+    enabled: shouldFetchFromApi && open,
+    apiConfig,
+    debouncedValue,
   });
 
   const baseProducts = useMemo(() => {
@@ -275,12 +290,17 @@ function buildUniqueProducts(
     map.set(product.id, product);
   });
 
+  (propsProducts ?? []).forEach(product => {
+    map.set(product.id, product);
+  });
+
   const ensureProduct = (id: string) => {
-    if (!map.has(id) && propsProducts) {
-      const product = propsProducts.find(item => item.id === id);
-      if (product) {
-        map.set(product.id, product);
-      }
+    if (!id || map.has(id) || !propsProducts) {
+      return;
+    }
+    const product = propsProducts.find(item => item.id === id);
+    if (product) {
+      map.set(product.id, product);
     }
   };
 

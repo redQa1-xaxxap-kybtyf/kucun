@@ -68,7 +68,9 @@ type SalesOrderDetailResult = Prisma.SalesOrderGetPayload<{
   include: typeof detailInclude;
 }>;
 
-const mapReturnOrder = (order: SalesOrderDetailResult['returnOrders'][number]) => ({
+const mapReturnOrder = (
+  order: SalesOrderDetailResult['returnOrders'][number]
+) => ({
   id: order.id,
   returnNumber: order.returnNumber,
   status: order.status,

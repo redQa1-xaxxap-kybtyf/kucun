@@ -11,6 +11,7 @@ import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
+import { revalidateCategoryCache } from '@/lib/services/category-service';
 import type { ApiResponse } from '@/lib/types/api';
 import { categoryStatusUpdateSchema } from '@/lib/validations/category';
 
@@ -107,6 +108,8 @@ export const PATCH = withAuth(
         success: true,
         data: transformedCategory,
       };
+
+      await revalidateCategoryCache();
 
       return NextResponse.json(response);
     })(request, context),

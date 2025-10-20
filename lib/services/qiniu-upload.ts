@@ -151,16 +151,21 @@ function getQiniuZone(region: string = 'z0'): qiniu.conf.Zone {
     'cn-east-1': qiniu.zone.Zone_z0, // 华东-浙江（别名）
     'cn-north-1': qiniu.zone.Zone_z1, // 华北-河北（别名）
     'cn-south-1': qiniu.zone.Zone_z2, // 华南-广东（别名）
-    'cn-east-2': (qiniu.zone as unknown as Record<string, qiniu.conf.Zone>)
-      .Zone_cn_east_2 ?? qiniu.zone.Zone_z0, // 华东-安徽
-    'up-cn-east-2': (qiniu.zone as unknown as Record<string, qiniu.conf.Zone>)
-      .Zone_cn_east_2 ?? qiniu.zone.Zone_z0,
+    'cn-east-2':
+      (qiniu.zone as unknown as Record<string, qiniu.conf.Zone>)
+        .Zone_cn_east_2 ?? qiniu.zone.Zone_z0, // 华东-安徽
+    'up-cn-east-2':
+      (qiniu.zone as unknown as Record<string, qiniu.conf.Zone>)
+        .Zone_cn_east_2 ?? qiniu.zone.Zone_z0,
   };
 
   return zoneMap[region] || qiniu.zone.Zone_z0;
 }
 
-function deriveQiniuKeyFromUrl(url: string, config: QiniuConfig): string | null {
+function deriveQiniuKeyFromUrl(
+  url: string,
+  config: QiniuConfig
+): string | null {
   try {
     const fileUrl = new URL(url);
     const domainUrl = new URL(config.domain);

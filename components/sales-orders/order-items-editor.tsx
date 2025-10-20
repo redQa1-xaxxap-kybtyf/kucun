@@ -2,7 +2,12 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { Calculator, Package, Plus, Trash2 } from 'lucide-react';
-import { useFieldArray, useWatch, type Control, type FieldValues } from 'react-hook-form';
+import {
+  useFieldArray,
+  useWatch,
+  type Control,
+  type FieldValues,
+} from 'react-hook-form';
 
 // UI Components
 import { EnhancedProductSelector } from '@/components/sales-orders/enhanced-product-selector';
@@ -164,10 +169,12 @@ export function OrderItemsEditor<
                 return (
                   <OrderItemRow
                     key={field.id}
-                    control={control as unknown as Control<{
-                      items: SalesOrderItemCreateFormData[];
-                      [key: string]: unknown;
-                    }>}
+                    control={
+                      control as unknown as Control<{
+                        items: SalesOrderItemCreateFormData[];
+                        [key: string]: unknown;
+                      }>
+                    }
                     name={`${name}.${index}`}
                     index={index}
                     onRemove={() => removeItem(index)}
@@ -329,12 +336,17 @@ function OrderItemRow({
                             piecesPerUnit: p.piecesPerUnit,
                             inventory: p.inventory
                               ? {
-                                  totalInventory: p.inventory.totalQuantity || 0,
-                                  availableInventory: p.inventory.availableQuantity || 0,
-                                  reservedInventory: p.inventory.reservedQuantity || 0,
+                                  totalInventory:
+                                    p.inventory.totalQuantity || 0,
+                                  availableInventory:
+                                    p.inventory.availableQuantity || 0,
+                                  reservedInventory:
+                                    p.inventory.reservedQuantity || 0,
                                 }
                               : undefined,
-                          })) as unknown as Parameters<typeof EnhancedProductSelector>[0]['products']
+                          })) as unknown as Parameters<
+                            typeof EnhancedProductSelector
+                          >[0]['products']
                         }
                         value={field.value}
                         onValueChange={value => {

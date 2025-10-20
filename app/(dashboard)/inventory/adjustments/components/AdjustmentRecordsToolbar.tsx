@@ -42,7 +42,12 @@ export function AdjustmentRecordsToolbar({
         </div>
         <div className="flex items-center gap-2">
           {onGoBack && (
-            <Button variant="outline" size="lg" className="h-11 gap-2" onClick={onGoBack}>
+            <Button
+              variant="outline"
+              size="lg"
+              className="h-11 gap-2"
+              onClick={onGoBack}
+            >
               <ArrowLeft className="h-4 w-4" />
               返回
             </Button>

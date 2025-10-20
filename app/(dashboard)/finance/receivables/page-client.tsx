@@ -10,6 +10,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { ReceivablesClient } from '@/components/finance/receivables-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import type {
   PaymentStatus,
   ReceivablesResult,
@@ -22,6 +23,8 @@ interface ReceivablesPageQueryParams {
   status?: PaymentStatus;
   sortBy: string;
   sortOrder: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
 }
 
 interface ReceivablesPageClientProps {
@@ -50,6 +53,12 @@ export function ReceivablesPageClient({
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
   );
+  const [startDate, setStartDate] = React.useState<string | undefined>(
+    initialParams.startDate
+  );
+  const [endDate, setEndDate] = React.useState<string | undefined>(
+    initialParams.endDate
+  );
 
   // 防抖更新URL - 避免每次输入都触发导航
   const debouncedUpdateURL = useDebouncedCallback(
@@ -67,6 +76,12 @@ export function ReceivablesPageClient({
         }
         if (filters.sortOrder) {
           params.set('sortOrder', filters.sortOrder);
+        }
+        if (filters.startDate) {
+          params.set('startDate', filters.startDate);
+        }
+        if (filters.endDate) {
+          params.set('endDate', filters.endDate);
         }
         if (filters.page && filters.page > 1) {
           params.set('page', filters.page.toString());
@@ -91,10 +106,20 @@ export function ReceivablesPageClient({
         status,
         sortBy,
         sortOrder,
+        startDate,
+        endDate,
         page: 1,
       });
     },
-    [debouncedUpdateURL, initialParams, status, sortBy, sortOrder]
+    [
+      debouncedUpdateURL,
+      initialParams,
+      status,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+    ]
   );
 
   // 筛选处理
@@ -129,6 +154,12 @@ export function ReceivablesPageClient({
         if (nextSortOrder) {
           params.set('sortOrder', nextSortOrder);
         }
+        if (startDate) {
+          params.set('startDate', startDate);
+        }
+        if (endDate) {
+          params.set('endDate', endDate);
+        }
         if (initialParams.limit) {
           params.set('limit', initialParams.limit.toString());
         }
@@ -136,7 +167,16 @@ export function ReceivablesPageClient({
         router.push(`/finance/receivables?${params.toString()}`);
       });
     },
-    [router, search, initialParams.limit, sortBy, sortOrder, status]
+    [
+      router,
+      search,
+      initialParams.limit,
+      sortBy,
+      sortOrder,
+      status,
+      startDate,
+      endDate,
+    ]
   );
 
   // 分页处理
@@ -156,6 +196,12 @@ export function ReceivablesPageClient({
         if (sortOrder) {
           params.set('sortOrder', sortOrder);
         }
+        if (startDate) {
+          params.set('startDate', startDate);
+        }
+        if (endDate) {
+          params.set('endDate', endDate);
+        }
         if (page > 1) {
           params.set('page', page.toString());
         }
@@ -164,6 +210,54 @@ export function ReceivablesPageClient({
         }
 
         router.push(`/finance/receivables?${params.toString()}`);
+      });
+    },
+    [
+      router,
+      search,
+      status,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+      initialParams.limit,
+    ]
+  );
+
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      setStartDate(range.startDate);
+      setEndDate(range.endDate);
+
+      startTransition(() => {
+        const params = new URLSearchParams();
+        if (search) {
+          params.set('search', search);
+        }
+        if (status) {
+          params.set('status', status);
+        }
+        if (sortBy) {
+          params.set('sortBy', sortBy);
+        }
+        if (sortOrder) {
+          params.set('sortOrder', sortOrder);
+        }
+        if (range.startDate) {
+          params.set('startDate', range.startDate);
+        }
+        if (range.endDate) {
+          params.set('endDate', range.endDate);
+        }
+        params.set('page', '1');
+        if (initialParams.limit) {
+          params.set('limit', initialParams.limit.toString());
+        }
+
+        const query = params.toString();
+        router.push(
+          query ? `/finance/receivables?${query}` : '/finance/receivables'
+        );
       });
     },
     [router, search, status, sortBy, sortOrder, initialParams.limit]
@@ -229,6 +323,7 @@ export function ReceivablesPageClient({
             initialParams={initialParams}
             onSearch={handleSearch}
             onFilter={handleFilter}
+            onDateRangeChange={handleDateRangeChange}
             onPageChange={handlePageChange}
           />
         </Suspense>

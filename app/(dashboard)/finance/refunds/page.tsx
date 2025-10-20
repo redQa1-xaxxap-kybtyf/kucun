@@ -34,6 +34,8 @@ type RefundSearchParams = {
   status?: string;
   sortBy?: string;
   sortOrder?: string;
+  startDate?: string;
+  endDate?: string;
 };
 
 async function getRefundsData(searchParams: RefundSearchParams) {
@@ -70,6 +72,8 @@ async function getRefundsData(searchParams: RefundSearchParams) {
     status,
     sortBy,
     sortOrder: sortOrder === 'asc' ? 'asc' : 'desc',
+    startDate: parsedParams.startDate,
+    endDate: parsedParams.endDate,
   });
 }
 
@@ -108,6 +112,8 @@ export default async function RefundsPage({
     status: validatedParams.status,
     sortBy: validatedParams.sortBy as RefundListQueryParams['sortBy'],
     sortOrder: validatedParams.sortOrder as 'asc' | 'desc',
+    startDate: validatedParams.startDate,
+    endDate: validatedParams.endDate,
   });
 
   const queryClient = new QueryClient({

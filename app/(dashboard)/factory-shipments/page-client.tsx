@@ -19,6 +19,8 @@ interface FactoryShipmentQueryParams {
   status?: FactoryShipmentStatus;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  startDate?: Date;
+  endDate?: Date;
 }
 
 interface FactoryShipmentsPageClientProps {
@@ -45,6 +47,8 @@ export function FactoryShipmentsPageClient({
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
   );
+  const [startDate, setStartDate] = React.useState(initialParams.startDate);
+  const [endDate, setEndDate] = React.useState(initialParams.endDate);
 
   // 防抖更新URL - 避免每次输入都触发导航
   const debouncedUpdateURL = useDebouncedCallback(
@@ -62,6 +66,15 @@ export function FactoryShipmentsPageClient({
         }
         if (filters.sortOrder) {
           params.set('sortOrder', filters.sortOrder);
+        }
+        if (filters.startDate) {
+          params.set(
+            'startDate',
+            filters.startDate.toISOString().split('T')[0]
+          );
+        }
+        if (filters.endDate) {
+          params.set('endDate', filters.endDate.toISOString().split('T')[0]);
         }
         if (filters.page && filters.page > 1) {
           params.set('page', filters.page.toString());
@@ -86,10 +99,20 @@ export function FactoryShipmentsPageClient({
         status,
         sortBy,
         sortOrder,
+        startDate,
+        endDate,
         page: 1,
       });
     },
-    [debouncedUpdateURL, initialParams, status, sortBy, sortOrder]
+    [
+      debouncedUpdateURL,
+      initialParams,
+      status,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+    ]
   );
 
   // 筛选处理
@@ -121,6 +144,12 @@ export function FactoryShipmentsPageClient({
         if (newFilters.sortOrder) {
           params.set('sortOrder', newFilters.sortOrder);
         }
+        if (startDate) {
+          params.set('startDate', startDate.toISOString().split('T')[0]);
+        }
+        if (endDate) {
+          params.set('endDate', endDate.toISOString().split('T')[0]);
+        }
         if (newFilters.limit) {
           params.set('limit', newFilters.limit.toString());
         }
@@ -128,7 +157,49 @@ export function FactoryShipmentsPageClient({
         router.push(`/factory-shipments?${params.toString()}`);
       });
     },
-    [router, search, initialParams]
+    [router, search, initialParams, startDate, endDate]
+  );
+
+  // 日期范围处理
+  const handleDateRangeChange = React.useCallback(
+    (range: { startDate?: string; endDate?: string }) => {
+      const newStartDate = range.startDate
+        ? new Date(range.startDate)
+        : undefined;
+      const newEndDate = range.endDate ? new Date(range.endDate) : undefined;
+
+      setStartDate(newStartDate);
+      setEndDate(newEndDate);
+
+      // 立即更新URL
+      startTransition(() => {
+        const params = new URLSearchParams();
+        if (search) {
+          params.set('search', search);
+        }
+        if (status) {
+          params.set('status', status);
+        }
+        if (sortBy) {
+          params.set('sortBy', sortBy);
+        }
+        if (sortOrder) {
+          params.set('sortOrder', sortOrder);
+        }
+        if (range.startDate) {
+          params.set('startDate', range.startDate);
+        }
+        if (range.endDate) {
+          params.set('endDate', range.endDate);
+        }
+        if (initialParams.limit) {
+          params.set('limit', initialParams.limit.toString());
+        }
+
+        router.push(`/factory-shipments?${params.toString()}`);
+      });
+    },
+    [router, search, status, sortBy, sortOrder, initialParams.limit]
   );
 
   // 分页处理
@@ -148,6 +219,12 @@ export function FactoryShipmentsPageClient({
         if (sortOrder) {
           params.set('sortOrder', sortOrder);
         }
+        if (startDate) {
+          params.set('startDate', startDate.toISOString().split('T')[0]);
+        }
+        if (endDate) {
+          params.set('endDate', endDate.toISOString().split('T')[0]);
+        }
         if (page > 1) {
           params.set('page', page.toString());
         }
@@ -158,7 +235,16 @@ export function FactoryShipmentsPageClient({
         router.push(`/factory-shipments?${params.toString()}`);
       });
     },
-    [router, search, status, sortBy, sortOrder, initialParams.limit]
+    [
+      router,
+      search,
+      status,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+      initialParams.limit,
+    ]
   );
 
   return (
@@ -208,6 +294,7 @@ export function FactoryShipmentsPageClient({
           initialParams={initialParams}
           onSearch={handleSearch}
           onFilter={handleFilter}
+          onDateRangeChange={handleDateRangeChange}
           onPageChange={handlePageChange}
         />
       </Suspense>

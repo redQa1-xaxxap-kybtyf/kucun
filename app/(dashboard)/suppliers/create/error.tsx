@@ -26,7 +26,7 @@ export default function CreateSupplierError({
   return (
     <div className="mx-auto max-w-2xl px-4 py-16">
       <Card className="border border-[hsl(var(--color-error))] bg-[hsl(var(--color-error-light))]">
-        <CardContent className="flex flex-col items-center justify中心 space-y-6 p-12 text中心">
+        <CardContent className="justify中心 text中心 flex flex-col items-center space-y-6 p-12">
           <div className="flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--color-error-light))]">
             <AlertCircle className="h-12 w-12 text-[hsl(var(--color-error))]" />
           </div>

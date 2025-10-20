@@ -12,10 +12,7 @@ const isProductItem = (
 const buildInventoryKey = (productId: string, batchNumber?: string | null) =>
   `${productId}::${(batchNumber ?? '').trim()}`;
 
-const loadInventory = async (
-  tx: Tx,
-  targets: Array<{ productId: string }>
-) => {
+const loadInventory = async (tx: Tx, targets: Array<{ productId: string }>) => {
   if (targets.length === 0) {
     return new Map<string, InventoryRecord[]>();
   }
@@ -48,7 +45,10 @@ const resolveInventory = (
     throw new Error(`产品ID ${item.productId} 库存记录不存在`);
   }
 
-  const preferredKey = buildInventoryKey(item.productId, item.batchNumber ?? null);
+  const preferredKey = buildInventoryKey(
+    item.productId,
+    item.batchNumber ?? null
+  );
   const cached = cache.get(preferredKey);
   if (cached) {
     return cached;
@@ -99,13 +99,14 @@ const processReservation = async (
   }
 
   const inventory = resolveInventory(item, inventories, cache);
-  const reservationKey = buildInventoryKey(inventory.productId, inventory.batchNumber);
+  const reservationKey = buildInventoryKey(
+    inventory.productId,
+    inventory.batchNumber
+  );
   const pendingReservation = localReservation.get(reservationKey) ?? 0;
   const effectiveReserved = inventory.reservedQuantity + pendingReservation;
   const itemQuantity =
-    transferMode === 'MIXED'
-      ? item.localQuantity ?? 0
-      : item.quantity ?? 0;
+    transferMode === 'MIXED' ? (item.localQuantity ?? 0) : (item.quantity ?? 0);
 
   if (itemQuantity <= 0) {
     return;

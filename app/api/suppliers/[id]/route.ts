@@ -4,6 +4,10 @@ import { ApiError } from '@/lib/api/errors';
 import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import {
+  ensureSupplierCanBeDeactivated,
+  ensureSupplierCanBeDeleted,
+} from '@/lib/services/supplier-service';
 import { UpdateSupplierSchema } from '@/lib/validations/supplier';
 
 /**
@@ -60,12 +64,13 @@ export const PUT = withAuth(
     ) => {
       const { id } = await resolveParams(context.params);
 
-      // 检查供应商是否存在 - 只需要 id 和 name 字段
+      // 检查供应商是否存在 - 只需要基础字段
       const existingSupplier = await prisma.supplier.findUnique({
         where: { id },
         select: {
           id: true,
           name: true,
+          status: true,
         },
       });
 
@@ -92,6 +97,13 @@ export const PUT = withAuth(
         if (duplicateSupplier) {
           throw ApiError.badRequest('供应商名称已存在');
         }
+      }
+
+      if (
+        validatedData.status === 'inactive' &&
+        existingSupplier.status !== 'inactive'
+      ) {
+        await ensureSupplierCanBeDeactivated(id, existingSupplier.name);
       }
 
       // 更新供应商 - 使用 select 指定返回字段
@@ -130,57 +142,6 @@ export const PUT = withAuth(
 );
 
 /**
- * 检查供应商关联数据
- * @param supplierId 供应商ID
- * @throws ApiError 如果有关联数据
- */
-async function checkSupplierRelations(supplierId: string): Promise<void> {
-  // 检查是否有关联的销售订单(调货销售)
-  const salesOrderCount = await prisma.salesOrder.count({
-    where: { supplierId },
-  });
-
-  if (salesOrderCount > 0) {
-    throw ApiError.badRequest(
-      `无法删除供应商,该供应商有 ${salesOrderCount} 个关联的销售订单`
-    );
-  }
-
-  // 检查是否有关联的厂家发货订单明细
-  const factoryShipmentItemCount = await prisma.factoryShipmentOrderItem.count({
-    where: { supplierId },
-  });
-
-  if (factoryShipmentItemCount > 0) {
-    throw ApiError.badRequest(
-      `无法删除供应商,该供应商有 ${factoryShipmentItemCount} 个关联的厂家发货订单明细`
-    );
-  }
-
-  // 检查是否有关联的应付款记录
-  const payableCount = await prisma.payableRecord.count({
-    where: { supplierId },
-  });
-
-  if (payableCount > 0) {
-    throw ApiError.badRequest(
-      `无法删除供应商,该供应商有 ${payableCount} 个关联的应付款记录`
-    );
-  }
-
-  // 检查是否有关联的付款记录
-  const paymentOutCount = await prisma.paymentOutRecord.count({
-    where: { supplierId },
-  });
-
-  if (paymentOutCount > 0) {
-    throw ApiError.badRequest(
-      `无法删除供应商,该供应商有 ${paymentOutCount} 个关联的付款记录`
-    );
-  }
-}
-
-/**
  * DELETE /api/suppliers/[id] - 删除供应商
  */
 export const DELETE = withAuth(
@@ -198,6 +159,7 @@ export const DELETE = withAuth(
         where: { id },
         select: {
           id: true,
+          name: true,
         },
       });
 
@@ -205,8 +167,7 @@ export const DELETE = withAuth(
         throw ApiError.notFound('供应商');
       }
 
-      // 检查关联数据
-      await checkSupplierRelations(id);
+      await ensureSupplierCanBeDeleted(id, existingSupplier.name);
 
       // 所有检查通过,可以安全删除
       await prisma.supplier.delete({

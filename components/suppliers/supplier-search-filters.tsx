@@ -37,7 +37,7 @@ export function SupplierSearchFilters({
           // 搜索配置
           searchValue={searchValue}
           onSearchChange={onSearchChange}
-          searchPlaceholder="搜索供应商名称、联系人或电话..."
+          searchPlaceholder="搜索供应商名称或联系电话..."
           debounceDelay={SEARCH_CONFIG.DEBOUNCE_DELAY.DEFAULT}
           // 筛选器配置
           filters={[

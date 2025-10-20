@@ -18,16 +18,14 @@ export const recordCustomerPriceHistory = async (
   salesOrderId: string
 ) => {
   const priceType = data.orderType === 'NORMAL' ? 'SALES' : 'FACTORY';
-  const records = data.items
-    .filter(hasPriceRecord)
-    .map(item => ({
-      customerId: data.customerId,
-      productId: item.productId,
-      priceType,
-      unitPrice: item.unitPrice,
-      orderId: salesOrderId,
-      orderType: 'SALES_ORDER' as const,
-    }));
+  const records = data.items.filter(hasPriceRecord).map(item => ({
+    customerId: data.customerId,
+    productId: item.productId,
+    priceType,
+    unitPrice: item.unitPrice,
+    orderId: salesOrderId,
+    orderType: 'SALES_ORDER' as const,
+  }));
 
   for (const record of records) {
     try {

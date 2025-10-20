@@ -1,10 +1,17 @@
 'use server';
 
+import { Prisma } from '@prisma/client';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
+import type { AuthUser } from '@/lib/auth/context';
+import { can } from '@/lib/auth/permissions';
 import { prisma } from '@/lib/db';
+import {
+  ensureSupplierCanBeDeactivated,
+  ensureSupplierCanBeDeleted,
+} from '@/lib/services/supplier-service';
 
 /**
  * 供应商管理模块 Server Actions
@@ -81,6 +88,24 @@ const updateSupplierStatusSchema = z.object({
 // Server Actions
 // ============================================
 
+function mapSessionUserToAuthUser(user: {
+  id: string;
+  email?: string | null;
+  username: string;
+  name?: string | null;
+  role: string;
+  status: string;
+}): AuthUser {
+  return {
+    id: user.id,
+    email: user.email ?? '',
+    username: user.username,
+    name: user.name ?? user.username,
+    role: user.role,
+    status: user.status,
+  };
+}
+
 /**
  * 创建供应商
  */
@@ -92,6 +117,11 @@ export async function createSupplier(
     const session = await auth();
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
+    }
+
+    const authUser = mapSessionUserToAuthUser(session.user);
+    if (!can(authUser, 'suppliers:create')) {
+      return { success: false, error: '权限不足：需要 suppliers:create 权限' };
     }
 
     // 2. 解析和验证数据
@@ -122,18 +152,50 @@ export async function createSupplier(
       sequenceNumber = lastSequence + 1;
     }
 
-    const supplierCode = `SUP${dateStr}${sequenceNumber.toString().padStart(4, '0')}`;
+    const maxRetries = 5;
+    let supplierCode = '';
+    let createdSupplier: {
+      id: string;
+      name: string;
+      supplierCode: string | null;
+    } | null = null;
 
-    // 4. 创建供应商
-    const supplier = await prisma.supplier.create({
-      data: {
-        name: data.name,
-        supplierCode,
-        phone: data.phone || null,
-        address: data.address || null,
-        status: 'active',
-      },
-    });
+    for (let attempt = 0; attempt < maxRetries; attempt += 1) {
+      supplierCode = `SUP${dateStr}${sequenceNumber.toString().padStart(4, '0')}`;
+
+      // 4. 创建供应商
+      try {
+        const supplier = await prisma.supplier.create({
+          data: {
+            name: data.name,
+            supplierCode,
+            phone: data.phone || null,
+            address: data.address || null,
+            status: 'active',
+          },
+          select: {
+            id: true,
+            name: true,
+            supplierCode: true,
+          },
+        });
+        createdSupplier = supplier;
+        break;
+      } catch (error) {
+        if (
+          error instanceof Prisma.PrismaClientKnownRequestError &&
+          error.code === 'P2002'
+        ) {
+          sequenceNumber += 1;
+          continue;
+        }
+        throw error;
+      }
+    }
+
+    if (!createdSupplier) {
+      return { success: false, error: '创建供应商失败，请稍后重试' };
+    }
 
     // 5. 重新验证路径
     revalidatePath('/suppliers');
@@ -141,9 +203,9 @@ export async function createSupplier(
     return {
       success: true,
       data: {
-        id: supplier.id,
-        name: supplier.name,
-        supplierCode: supplier.supplierCode ?? supplierCode,
+        id: createdSupplier.id,
+        name: createdSupplier.name,
+        supplierCode: createdSupplier.supplierCode ?? supplierCode,
       },
     };
   } catch (error) {
@@ -167,6 +229,11 @@ export async function updateSupplier(
       return { success: false, error: '未授权操作' };
     }
 
+    const authUser = mapSessionUserToAuthUser(session.user);
+    if (!can(authUser, 'suppliers:edit')) {
+      return { success: false, error: '权限不足：需要 suppliers:edit 权限' };
+    }
+
     const supplierId = formData.get('supplierId') as string;
     const rawData = JSON.parse(formData.get('data') as string);
     const data = updateSupplierSchema.parse(rawData);
@@ -174,21 +241,43 @@ export async function updateSupplier(
     // 检查供应商是否存在
     const existingSupplier = await prisma.supplier.findUnique({
       where: { id: supplierId },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+      },
     });
 
     if (!existingSupplier) {
       return { success: false, error: '供应商不存在' };
     }
 
+    if (data.status === 'inactive' && existingSupplier.status !== 'inactive') {
+      try {
+        await ensureSupplierCanBeDeactivated(supplierId, existingSupplier.name);
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : '供应商无法停用',
+        };
+      }
+    }
+
+    const updatePayload: Prisma.SupplierUpdateInput = {
+      ...(data.name !== undefined ? { name: data.name } : {}),
+      ...(data.phone !== undefined
+        ? { phone: data.phone === '' ? null : data.phone }
+        : {}),
+      ...(data.address !== undefined
+        ? { address: data.address === '' ? null : data.address }
+        : {}),
+      ...(data.status !== undefined ? { status: data.status } : {}),
+    };
+
     // 更新供应商
     const supplier = await prisma.supplier.update({
       where: { id: supplierId },
-      data: {
-        name: data.name,
-        phone: data.phone === '' ? null : data.phone,
-        address: data.address === '' ? null : data.address,
-        status: data.status,
-      },
+      data: updatePayload,
     });
 
     revalidatePath('/suppliers');
@@ -219,6 +308,11 @@ export async function updateSupplierStatus(
       return { success: false, error: '未授权操作' };
     }
 
+    const authUser = mapSessionUserToAuthUser(session.user);
+    if (!can(authUser, 'suppliers:edit')) {
+      return { success: false, error: '权限不足：需要 suppliers:edit 权限' };
+    }
+
     const rawData = {
       supplierId: formData.get('supplierId') as string,
       status: formData.get('status') as string,
@@ -229,13 +323,10 @@ export async function updateSupplierStatus(
     // 检查供应商是否存在
     const supplier = await prisma.supplier.findUnique({
       where: { id: data.supplierId },
-      include: {
-        factoryShipmentOrderItems: {
-          include: {
-            factoryShipmentOrder: true,
-          },
-        },
-        payableRecords: true,
+      select: {
+        id: true,
+        name: true,
+        status: true,
       },
     });
 
@@ -243,34 +334,13 @@ export async function updateSupplierStatus(
       return { success: false, error: '供应商不存在' };
     }
 
-    // 如果要停用供应商，检查是否有未完成的业务
-    if (data.status === 'inactive') {
-      // 检查是否有进行中的厂家发货订单
-      const activeOrders = supplier.factoryShipmentOrderItems.filter(item => {
-        const status = item.factoryShipmentOrder?.status;
-        return (
-          status !== undefined &&
-          status !== 'completed' &&
-          status !== 'cancelled'
-        );
-      });
-
-      if (activeOrders.length > 0) {
+    if (data.status === 'inactive' && supplier.status !== 'inactive') {
+      try {
+        await ensureSupplierCanBeDeactivated(data.supplierId, supplier.name);
+      } catch (error) {
         return {
           success: false,
-          error: `该供应商有 ${activeOrders.length} 个进行中的发货订单，无法停用`,
-        };
-      }
-
-      // 检查是否有未结清的应付账款
-      const unpaidPayables = supplier.payableRecords.filter(
-        record => record.status !== 'paid' && record.status !== 'cancelled'
-      );
-
-      if (unpaidPayables.length > 0) {
-        return {
-          success: false,
-          error: `该供应商有 ${unpaidPayables.length} 笔未结清的应付账款，无法停用`,
+          error: error instanceof Error ? error.message : '供应商无法停用',
         };
       }
     }
@@ -305,39 +375,28 @@ export async function deleteSupplier(
       return { success: false, error: '未授权操作' };
     }
 
-    await prisma.$transaction(async tx => {
-      // 检查供应商是否存在
-      const supplier = await tx.supplier.findUnique({
-        where: { id: supplierId },
-        include: {
-          factoryShipmentOrderItems: true,
-          payableRecords: true,
-        },
-      });
+    const authUser = mapSessionUserToAuthUser(session.user);
+    if (!can(authUser, 'suppliers:delete')) {
+      return { success: false, error: '权限不足：需要 suppliers:delete 权限' };
+    }
 
-      if (!supplier) {
-        throw new Error('供应商不存在');
-      }
+    try {
+      await ensureSupplierCanBeDeleted(supplierId);
+    } catch (error) {
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : '供应商无法删除',
+      };
+    }
 
-      // 检查是否有关联的发货订单
-      if (supplier.factoryShipmentOrderItems.length > 0) {
-        throw new Error(
-          `该供应商有 ${supplier.factoryShipmentOrderItems.length} 个发货订单，无法删除`
-        );
-      }
-
-      // 检查是否有关联的应付账款
-      if (supplier.payableRecords.length > 0) {
-        throw new Error(
-          `该供应商有 ${supplier.payableRecords.length} 笔应付账款记录，无法删除`
-        );
-      }
-
-      // 删除供应商
-      await tx.supplier.delete({
-        where: { id: supplierId },
-      });
+    const deleted = await prisma.supplier.delete({
+      where: { id: supplierId },
+      select: { id: true },
     });
+
+    if (!deleted) {
+      return { success: false, error: '供应商不存在' };
+    }
 
     revalidatePath('/suppliers');
 
@@ -363,6 +422,11 @@ export async function batchUpdateSupplierStatus(
       return { success: false, error: '未授权操作' };
     }
 
+    const authUser = mapSessionUserToAuthUser(session.user);
+    if (!can(authUser, 'suppliers:edit')) {
+      return { success: false, error: '权限不足：需要 suppliers:edit 权限' };
+    }
+
     const supplierIds = JSON.parse(
       formData.get('supplierIds') as string
     ) as string[];
@@ -372,44 +436,34 @@ export async function batchUpdateSupplierStatus(
       return { success: false, error: '未选择供应商' };
     }
 
+    const suppliers = await prisma.supplier.findMany({
+      where: { id: { in: supplierIds } },
+      select: {
+        id: true,
+        name: true,
+        status: true,
+      },
+    });
+
+    if (suppliers.length !== supplierIds.length) {
+      return { success: false, error: '存在未找到的供应商，请刷新后重试' };
+    }
+
     // 如果要停用供应商，需要检查每个供应商
     if (status === 'inactive') {
-      const suppliers = await prisma.supplier.findMany({
-        where: { id: { in: supplierIds } },
-        include: {
-          factoryShipmentOrderItems: {
-            include: {
-              factoryShipmentOrder: true,
-            },
-          },
-          payableRecords: true,
-        },
-      });
-
       for (const supplier of suppliers) {
-        // 检查进行中的订单
-        const activeOrders = supplier.factoryShipmentOrderItems.filter(
-          item =>
-            item.factoryShipmentOrder?.status !== 'completed' &&
-            item.factoryShipmentOrder?.status !== 'cancelled'
-        );
-
-        if (activeOrders.length > 0) {
-          return {
-            success: false,
-            error: `供应商 "${supplier.name}" 有 ${activeOrders.length} 个进行中的发货订单，无法批量停用`,
-          };
+        if (supplier.status === 'inactive') {
+          continue;
         }
-
-        // 检查未结清的应付账款
-        const unpaidPayables = supplier.payableRecords.filter(
-          record => record.status !== 'paid' && record.status !== 'cancelled'
-        );
-
-        if (unpaidPayables.length > 0) {
+        try {
+          await ensureSupplierCanBeDeactivated(supplier.id, supplier.name);
+        } catch (error) {
           return {
             success: false,
-            error: `供应商 "${supplier.name}" 有 ${unpaidPayables.length} 笔未结清的应付账款，无法批量停用`,
+            error:
+              error instanceof Error
+                ? error.message
+                : `供应商 "${supplier.name}" 无法停用`,
           };
         }
       }
@@ -441,6 +495,11 @@ export async function batchDeleteSuppliers(
       return { success: false, error: '未授权操作' };
     }
 
+    const authUser = mapSessionUserToAuthUser(session.user);
+    if (!can(authUser, 'suppliers:delete')) {
+      return { success: false, error: '权限不足：需要 suppliers:delete 权限' };
+    }
+
     const supplierIds = JSON.parse(
       formData.get('supplierIds') as string
     ) as string[];
@@ -449,37 +508,79 @@ export async function batchDeleteSuppliers(
       return { success: false, error: '未选择供应商' };
     }
 
-    await prisma.$transaction(async tx => {
-      // 检查所有供应商
-      const suppliers = await tx.supplier.findMany({
-        where: { id: { in: supplierIds } },
-        include: {
-          factoryShipmentOrderItems: true,
-          payableRecords: true,
-        },
-      });
+    const suppliers = await prisma.supplier.findMany({
+      where: { id: { in: supplierIds } },
+      select: {
+        id: true,
+        name: true,
+      },
+    });
 
-      for (const supplier of suppliers) {
-        if (supplier.factoryShipmentOrderItems.length > 0) {
-          throw new Error(
-            `供应商 "${supplier.name}" 有 ${supplier.factoryShipmentOrderItems.length} 个发货订单，无法批量删除`
-          );
-        }
+    const foundIds = new Set(suppliers.map(s => s.id));
+    const notFoundIds = supplierIds.filter(id => !foundIds.has(id));
 
-        if (supplier.payableRecords.length > 0) {
-          throw new Error(
-            `供应商 "${supplier.name}" 有 ${supplier.payableRecords.length} 笔应付账款记录，无法批量删除`
-          );
-        }
-      }
+    let deletedCount = 0;
+    let failedCount = 0;
+    const failedSuppliers: {
+      id: string;
+      name: string;
+      reason: string;
+    }[] = [];
+    const deletableIds: string[] = [];
 
-      // 删除所有供应商
-      await tx.supplier.deleteMany({
-        where: { id: { in: supplierIds } },
+    notFoundIds.forEach(id => {
+      failedCount += 1;
+      failedSuppliers.push({
+        id,
+        name: '未知',
+        reason: '供应商不存在',
       });
     });
 
+    for (const supplier of suppliers) {
+      try {
+        await ensureSupplierCanBeDeleted(supplier.id, supplier.name);
+        deletableIds.push(supplier.id);
+      } catch (error) {
+        failedCount += 1;
+        failedSuppliers.push({
+          id: supplier.id,
+          name: supplier.name,
+          reason: error instanceof Error ? error.message : '供应商无法删除',
+        });
+      }
+    }
+
+    if (deletableIds.length > 0) {
+      const result = await prisma.supplier.deleteMany({
+        where: { id: { in: deletableIds } },
+      });
+      deletedCount += result.count;
+      const notDeleted = deletableIds.length - result.count;
+      if (notDeleted > 0) {
+        failedCount += notDeleted;
+        failedSuppliers.push({
+          id: 'unknown',
+          name: '未知',
+          reason: '部分供应商删除失败，请重试',
+        });
+      }
+    }
+
     revalidatePath('/suppliers');
+
+    if (failedCount > 0) {
+      const errorMessage =
+        failedSuppliers
+          .map(item => `${item.name}：${item.reason}`)
+          .filter(Boolean)
+          .slice(0, 3)
+          .join('；') || '部分供应商删除失败';
+      return {
+        success: false,
+        error: errorMessage,
+      };
+    }
 
     return { success: true };
   } catch (error) {

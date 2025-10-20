@@ -15,6 +15,7 @@ import { logger } from '@/lib/logger';
 import { redis } from '@/lib/redis/redis-client';
 import { publish, subscribe } from '@/lib/redis/redis-pubsub';
 
+import { invalidateNamespace } from './cache';
 import { CacheTags, RedisCachePrefix, tagToRedisKey } from './tags';
 
 /**
@@ -340,6 +341,11 @@ export async function revalidateInventory(productId?: string): Promise<void> {
   } else {
     await revalidateCache(CacheTags.Inventory.all);
   }
+
+  // 失效基于 hash 的可用性查询缓存
+  await invalidateNamespace('inventory:availability:*');
+  // 同步刷新库存预警数据，避免出现旧状态
+  await revalidateCache(CacheTags.Inventory.alerts, { cascade: false });
 }
 
 /**

@@ -5,11 +5,10 @@
 
 'use client';
 
-import { CalendarIcon, Filter, Search, X } from 'lucide-react';
+import { Filter, Search, X } from 'lucide-react';
 import React from 'react';
 
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
 import {
   Card,
   CardContent,
@@ -17,13 +16,9 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
 import {
   Select,
   SelectContent,
@@ -70,13 +65,6 @@ const LOG_LEVEL_OPTIONS: {
  * 日志筛选组件
  */
 export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
-  const [startDate, setStartDate] = React.useState<Date | undefined>(
-    filters.startDate ? new Date(filters.startDate) : undefined
-  );
-  const [endDate, setEndDate] = React.useState<Date | undefined>(
-    filters.endDate ? new Date(filters.endDate) : undefined
-  );
-
   const handleFilterChange = (
     key: keyof SystemLogFilters,
     value: string | null
@@ -87,25 +75,18 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
     });
   };
 
-  const handleDateChange = (type: 'start' | 'end', date: Date | undefined) => {
-    if (type === 'start') {
-      setStartDate(date);
-      handleFilterChange(
-        'startDate',
-        date ? date.toISOString().split('T')[0] : null
-      );
-    } else {
-      setEndDate(date);
-      handleFilterChange(
-        'endDate',
-        date ? date.toISOString().split('T')[0] : null
-      );
-    }
+  const handleDateRangeChange = (range: {
+    startDate?: string;
+    endDate?: string;
+  }) => {
+    onFiltersChange({
+      ...filters,
+      startDate: range.startDate || null,
+      endDate: range.endDate || null,
+    });
   };
 
   const clearFilters = () => {
-    setStartDate(undefined);
-    setEndDate(undefined);
     onFiltersChange({});
   };
 
@@ -204,62 +185,18 @@ export const LogFilters = ({ filters, onFiltersChange }: LogFiltersProps) => {
             />
           </div>
 
-          {/* 开始日期 */}
-          <div className="space-y-2">
-            <Label>开始日期</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !startDate && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate
-                    ? startDate.toLocaleDateString('zh-CN')
-                    : '选择开始日期'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={startDate}
-                  onSelect={date => handleDateChange('start', date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
-          </div>
-
-          {/* 结束日期 */}
-          <div className="space-y-2">
-            <Label>结束日期</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    'w-full justify-start text-left font-normal',
-                    !endDate && 'text-muted-foreground'
-                  )}
-                >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endDate
-                    ? endDate.toLocaleDateString('zh-CN')
-                    : '选择结束日期'}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={endDate}
-                  onSelect={date => handleDateChange('end', date)}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+          {/* 日期范围筛选 - 统一组件 */}
+          <div className="space-y-2 md:col-span-2">
+            <DateRangePicker
+              value={{
+                startDate: filters.startDate || undefined,
+                endDate: filters.endDate || undefined,
+              }}
+              onChange={handleDateRangeChange}
+              label="日期范围"
+              showPresets={true}
+              showClearButton={true}
+            />
           </div>
         </div>
       </CardContent>

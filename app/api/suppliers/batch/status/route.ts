@@ -2,6 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { ensureSupplierCanBeDeactivated } from '@/lib/services/supplier-service';
 import type { BatchUpdateSupplierStatusResult } from '@/lib/types/supplier';
 import { BatchUpdateSupplierStatusSchema } from '@/lib/validations/supplier';
 
@@ -43,12 +44,34 @@ export const PUT = withAuth(
     );
     const sameStatusCount = sameStatusSuppliers.length;
 
-    // 获取需要更新的供应商ID
-    const idsToUpdate = suppliersToUpdate
-      .filter(s => s.status !== status)
-      .map(s => s.id);
+    // 获取需要更新的供应商
+    const suppliersNeedingUpdate = suppliersToUpdate.filter(
+      s => s.status !== status
+    );
 
-    // 使用updateMany一次性更新所有需要更新的供应商
+    const idsToUpdate: string[] = [];
+
+    for (const supplier of suppliersNeedingUpdate) {
+      if (status === 'inactive') {
+        try {
+          await ensureSupplierCanBeDeactivated(supplier.id, supplier.name);
+          idsToUpdate.push(supplier.id);
+        } catch (error) {
+          failedCount++;
+          failedSuppliers.push({
+            id: supplier.id,
+            name: supplier.name,
+            reason: error instanceof Error ? error.message : '供应商无法停用',
+          });
+        }
+      } else {
+        idsToUpdate.push(supplier.id);
+      }
+    }
+
+    updatedCount = sameStatusCount;
+
+    // 使用 updateMany 一次性更新所有需要更新的供应商
     if (idsToUpdate.length > 0) {
       try {
         const result = await prisma.supplier.updateMany({
@@ -58,24 +81,22 @@ export const PUT = withAuth(
           data: { status },
         });
 
-        updatedCount = result.count + sameStatusCount;
+        updatedCount += result.count;
       } catch (error) {
         // 如果批量更新失败,回退到逐个更新
         console.warn('批量更新失败,回退到逐个更新:', error);
 
-        for (const supplier of suppliersToUpdate) {
+        for (const supplierId of idsToUpdate) {
+          const supplier = suppliersToUpdate.find(s => s.id === supplierId);
+          if (!supplier) {
+            continue;
+          }
           try {
-            if (supplier.status === status) {
-              updatedCount++;
-              continue;
-            }
-
             await prisma.supplier.update({
               where: { id: supplier.id },
               data: { status },
             });
-
-            updatedCount++;
+            updatedCount += 1;
           } catch (updateError) {
             failedCount++;
             failedSuppliers.push({
@@ -87,9 +108,6 @@ export const PUT = withAuth(
           }
         }
       }
-    } else {
-      // 所有供应商状态都相同,无需更新
-      updatedCount = sameStatusCount;
     }
 
     const statusText = status === 'active' ? '启用' : '停用';

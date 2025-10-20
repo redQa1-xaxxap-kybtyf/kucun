@@ -138,6 +138,8 @@ export async function getStatementsList(
     type: params.type || 'all',
     sortBy: params.sortBy || 'totalAmount',
     sortOrder: params.sortOrder || 'desc',
+    startDate: params.startDate || '',
+    endDate: params.endDate || '',
   });
 
   return withCache(cacheKey, CACHE_TTL.STATEMENTS_LIST, () =>

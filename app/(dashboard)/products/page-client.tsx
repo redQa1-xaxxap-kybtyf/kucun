@@ -52,7 +52,10 @@ export function ProductsPageClient({
         />
 
         {/* 产品列表 */}
-        <ERPProductList _initialData={initialData} initialParams={initialParams} />
+        <ERPProductList
+          _initialData={initialData}
+          initialParams={initialParams}
+        />
       </div>
     </div>
   );

@@ -132,7 +132,10 @@ export function ERPProductDetail({ product }: ERPProductDetailProps) {
           <CardContent className="bg-[hsl(var(--color-bg-secondary))] p-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]" style={{ boxShadow: 'var(--shadow-light)' }}>
+                <div
+                  className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))] text-[hsl(var(--color-text-on-primary))]"
+                  style={{ boxShadow: 'var(--shadow-light)' }}
+                >
                   <Edit className="h-6 w-6" />
                 </div>
                 <div>

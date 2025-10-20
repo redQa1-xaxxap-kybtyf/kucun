@@ -112,4 +112,3 @@ export const UPLOAD_ERROR_MESSAGES = {
   NO_FILE_SELECTED: '请选择要上传的文件',
   MULTIPLE_FILES_NOT_ALLOWED: '不支持多文件上传',
 } as const;
-

@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 import type { InventoryQueryParams } from '@/lib/types/inventory';
 
 const AVAILABLE_QUANTITY_SQL = Prisma.raw(
@@ -98,6 +99,14 @@ function buildWhereClause(params: InventoryQueryParams): Prisma.Sql {
   } else if (params.hasStock) {
     // 仅筛选有库存：可用数量 > 0
     conditions.push(Prisma.sql`${AVAILABLE_QUANTITY_SQL} > 0`);
+  }
+
+  if (params.startDate) {
+    conditions.push(Prisma.sql`DATE(i.updated_at) >= ${params.startDate}`);
+  }
+
+  if (params.endDate) {
+    conditions.push(Prisma.sql`DATE(i.updated_at) <= ${params.endDate}`);
   }
 
   // 组合所有条件
@@ -190,7 +199,11 @@ export async function getOptimizedInventoryList(
       // 验证第一条记录
       const firstResult = inventoryQueryResultSchema.safeParse(rawRecords[0]);
       if (!firstResult.success) {
-        console.error('库存查询结果验证失败 (第一条):', firstResult.error);
+        logger.error(
+          'inventory-query',
+          '库存查询结果验证失败 (第一条)',
+          firstResult.error
+        );
         throw new Error(
           `数据库返回的库存数据格式不正确: ${firstResult.error.message}`
         );
@@ -203,14 +216,15 @@ export async function getOptimizedInventoryList(
           rawRecords[randomIndex]
         );
         if (!randomResult.success) {
-          console.error(
-            `库存查询结果验证失败 (随机索引 ${randomIndex}):`,
+          logger.error(
+            'inventory-query',
+            `库存查询结果验证失败 (随机索引 ${randomIndex})`,
             randomResult.error
           );
         }
       }
     } catch (error) {
-      console.error('库存查询结果验证失败:', error);
+      logger.error('inventory-query', '库存查询结果验证失败', error);
       // 开发环境抛出错误，帮助发现问题
       throw error;
     }

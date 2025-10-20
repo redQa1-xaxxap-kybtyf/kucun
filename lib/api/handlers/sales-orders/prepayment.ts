@@ -75,7 +75,10 @@ export const applyPrepaymentToOrder = async (
 ) => {
   const prepayments = await fetchAvailablePrepayments(tx, customerId);
   if (prepayments.length === 0) {
-    return { totalApplied: 0, records: [] as Array<{ id: string; amount: number }> };
+    return {
+      totalApplied: 0,
+      records: [] as Array<{ id: string; amount: number }>,
+    };
   }
 
   const targetAmount = specifiedAmount
@@ -83,7 +86,10 @@ export const applyPrepaymentToOrder = async (
     : orderTotal;
 
   if (targetAmount <= 0) {
-    return { totalApplied: 0, records: [] as Array<{ id: string; amount: number }> };
+    return {
+      totalApplied: 0,
+      records: [] as Array<{ id: string; amount: number }>,
+    };
   }
 
   return allocatePrepayments(tx, prepayments, targetAmount);

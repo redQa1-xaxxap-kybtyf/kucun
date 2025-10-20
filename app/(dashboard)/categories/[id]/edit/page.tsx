@@ -26,6 +26,7 @@ import {
   getCategory,
   updateCategory,
 } from '@/lib/api/categories';
+import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import { UpdateCategorySchema } from '@/lib/validations/category';
 
@@ -40,6 +41,10 @@ type CategoryDetail = {
   name: string;
   parentId: string | null;
   sortOrder: number;
+  parent?: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 interface CategoryEditContentProps {
@@ -66,16 +71,17 @@ function CategoryEditContent({ categoryId }: CategoryEditContentProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const [parentSearchTerm, setParentSearchTerm] = React.useState('');
+  const deferredParentSearchTerm = React.useDeferredValue(parentSearchTerm);
 
   const {
-    category,
+    categoryData,
     isCategoryLoading,
     categoryError,
     parentCategories,
-    isCategoriesLoading,
-  } = useCategoryData(categoryId);
+    areParentOptionsLoading,
+  } = useCategoryData(categoryId, deferredParentSearchTerm);
 
-  const categoryData = category?.data as CategoryDetail | undefined;
   const form = useCategoryForm(categoryData);
 
   const updateMutation = useUpdateCategoryMutation({
@@ -89,7 +95,7 @@ function CategoryEditContent({ categoryId }: CategoryEditContentProps) {
     (data: UpdateCategoryData) => {
       const submitData = {
         ...data,
-        parentId: data.parentId === 'none' ? undefined : data.parentId,
+        parentId: data.parentId === 'none' ? null : data.parentId,
       };
       updateMutation.mutate(submitData);
     },
@@ -124,15 +130,20 @@ function CategoryEditContent({ categoryId }: CategoryEditContentProps) {
           onSubmit={handleSubmit}
           onCancel={() => router.back()}
           parentCategories={parentCategories}
-          isCategoriesLoading={isCategoriesLoading}
+          isParentOptionsLoading={
+            areParentOptionsLoading ||
+            parentSearchTerm !== deferredParentSearchTerm
+          }
           isSubmitting={updateMutation.isPending}
+          parentSearchTerm={parentSearchTerm}
+          onParentSearchChange={setParentSearchTerm}
         />
       </div>
     </div>
   );
 }
 
-function useCategoryData(categoryId: string) {
+function useCategoryData(categoryId: string, parentSearch: string) {
   const categoryQuery = useQuery({
     queryKey: queryKeys.categories.detail(categoryId),
     queryFn: () => getCategory(categoryId),
@@ -142,22 +153,47 @@ function useCategoryData(categoryId: string) {
     queryKey: queryKeys.categories.list({
       status: 'active',
       exclude: categoryId,
+      search: parentSearch || undefined,
+      limit: paginationConfig.maxPageSize,
     }),
-    queryFn: () => getCategories({ status: 'active', limit: 100 }),
+    queryFn: () =>
+      getCategories({
+        status: 'active',
+        limit: paginationConfig.maxPageSize,
+        search: parentSearch || undefined,
+      }),
     enabled: !!categoryId,
   });
 
+  const categoryData = categoryQuery.data?.data as CategoryDetail | undefined;
+
   const parentCategories = React.useMemo(() => {
     const categories = (categoriesQuery.data?.data || []) as ParentCategory[];
-    return categories.filter(cat => cat.id !== categoryId);
-  }, [categoriesQuery.data, categoryId]);
+    const filtered = categories.filter(cat => cat.id !== categoryId);
+
+    if (
+      categoryData?.parent &&
+      !filtered.some(cat => cat.id === categoryData.parent?.id)
+    ) {
+      return [
+        {
+          id: categoryData.parent.id,
+          name: categoryData.parent.name,
+          parent: null,
+        },
+        ...filtered,
+      ];
+    }
+
+    return filtered;
+  }, [categoriesQuery.data, categoryId, categoryData?.parent]);
 
   return {
-    category: categoryQuery.data,
+    categoryData,
     isCategoryLoading: categoryQuery.isLoading,
     categoryError: categoryQuery.error,
     parentCategories,
-    isCategoriesLoading: categoriesQuery.isLoading,
+    areParentOptionsLoading: categoriesQuery.isFetching,
   };
 }
 
@@ -206,7 +242,7 @@ function useUpdateCategoryMutation({
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.categories.all }),
-        queryClient.refetchQueries({
+        queryClient.invalidateQueries({
           queryKey: queryKeys.categories.detail(categoryId),
         }),
       ]);

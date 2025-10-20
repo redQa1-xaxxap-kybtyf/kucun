@@ -36,14 +36,23 @@ function normalizeQueryParams(
     delete next.search;
   }
 
-  (['productId', 'variantId', 'batchNumber', 'reason', 'status', 'operatorId', 'startDate', 'endDate'] as const).forEach(
-    key => {
-      const value = next[key];
-      if (typeof value === 'string' && value.trim() === '') {
-        delete next[key];
-      }
+  (
+    [
+      'productId',
+      'variantId',
+      'batchNumber',
+      'reason',
+      'status',
+      'operatorId',
+      'startDate',
+      'endDate',
+    ] as const
+  ).forEach(key => {
+    const value = next[key];
+    if (typeof value === 'string' && value.trim() === '') {
+      delete next[key];
     }
-  );
+  });
 
   return next;
 }
@@ -158,4 +167,3 @@ export function useAdjustmentRecords(
     refetch,
   };
 }
-

@@ -10,19 +10,161 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PageHeader } from '@/components/common/page-header';
 import { ERPReturnOrderList } from '@/components/return-orders/erp-return-order-list';
 import { Button } from '@/components/ui/button';
-import type { ReturnOrderStatus } from '@/lib/types/return-order';
-
-interface ReturnOrderQueryParams {
-  page?: number;
-  limit?: number;
-  search?: string;
-  status?: ReturnOrderStatus;
-  sortBy?: string;
-  sortOrder?: 'asc' | 'desc';
-}
+import type {
+  ReturnOrderQueryParams,
+  ReturnOrderStatus,
+} from '@/lib/types/return-order';
 
 interface ReturnOrdersPageClientProps {
   initialParams: ReturnOrderQueryParams;
+}
+
+interface DateRangePayload {
+  startDate?: string;
+  endDate?: string;
+}
+
+function buildReturnOrderQuery(
+  searchValue: string,
+  filters: ReturnOrderQueryParams
+) {
+  const params = new URLSearchParams();
+
+  if (searchValue) {
+    params.set('search', searchValue);
+  }
+  if (filters.status) {
+    params.set('status', filters.status);
+  }
+  if (filters.sortBy) {
+    params.set('sortBy', filters.sortBy);
+  }
+  if (filters.sortOrder) {
+    params.set('sortOrder', filters.sortOrder);
+  }
+  if (filters.startDate) {
+    params.set('startDate', filters.startDate);
+  }
+  if (filters.endDate) {
+    params.set('endDate', filters.endDate);
+  }
+  if (filters.page && filters.page > 1) {
+    params.set('page', filters.page.toString());
+  }
+  if (filters.limit) {
+    params.set('limit', filters.limit.toString());
+  }
+
+  return params.toString();
+}
+
+function useReturnOrderNavigation(initialParams: ReturnOrderQueryParams) {
+  const router = useRouter();
+  const [, startTransition] = React.useTransition();
+
+  const [search, setSearch] = React.useState(initialParams.search || '');
+  const [status, setStatus] = React.useState(initialParams.status);
+  const [sortBy, setSortBy] = React.useState(
+    initialParams.sortBy || 'createdAt'
+  );
+  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
+    initialParams.sortOrder || 'desc'
+  );
+  const [startDate, setStartDate] = React.useState(initialParams.startDate);
+  const [endDate, setEndDate] = React.useState(initialParams.endDate);
+
+  const buildFilters = React.useCallback(
+    (overrides: Partial<ReturnOrderQueryParams> = {}) => ({
+      ...initialParams,
+      status,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+      page: 1,
+      ...overrides,
+    }),
+    [endDate, initialParams, sortBy, sortOrder, startDate, status]
+  );
+
+  const pushFilters = React.useCallback(
+    (searchValue: string, filters: ReturnOrderQueryParams) => {
+      startTransition(() => {
+        const query = buildReturnOrderQuery(searchValue, filters);
+        router.push(query ? `/return-orders?${query}` : '/return-orders');
+      });
+    },
+    [router, startTransition]
+  );
+
+  const debouncedPushFilters = useDebouncedCallback(pushFilters, 300);
+
+  const handleSearch = React.useCallback(
+    (value: string) => {
+      setSearch(value);
+      debouncedPushFilters(value, buildFilters({ page: 1 }));
+    },
+    [buildFilters, debouncedPushFilters]
+  );
+
+  const handleFilter = React.useCallback(
+    (key: string, value: string | undefined) => {
+      if (key === 'status') {
+        const nextStatus =
+          (value as ReturnOrderStatus | undefined) || undefined;
+        setStatus(nextStatus);
+        pushFilters(search, buildFilters({ status: nextStatus, page: 1 }));
+        return;
+      }
+
+      if (key === 'sortBy') {
+        const nextSortBy = value || 'createdAt';
+        setSortBy(nextSortBy);
+        pushFilters(search, buildFilters({ sortBy: nextSortBy, page: 1 }));
+        return;
+      }
+
+      if (key === 'sortOrder') {
+        const nextSortOrder = (value as 'asc' | 'desc') || 'desc';
+        setSortOrder(nextSortOrder);
+        pushFilters(
+          search,
+          buildFilters({ sortOrder: nextSortOrder, page: 1 })
+        );
+      }
+    },
+    [buildFilters, pushFilters, search]
+  );
+
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangePayload) => {
+      setStartDate(range.startDate);
+      setEndDate(range.endDate);
+      pushFilters(
+        search,
+        buildFilters({
+          startDate: range.startDate,
+          endDate: range.endDate,
+          page: 1,
+        })
+      );
+    },
+    [buildFilters, pushFilters, search]
+  );
+
+  const handlePageChange = React.useCallback(
+    (page: number) => {
+      pushFilters(search, buildFilters({ page }));
+    },
+    [buildFilters, pushFilters, search]
+  );
+
+  return {
+    onSearch: handleSearch,
+    onFilter: handleFilter,
+    onDateRangeChange: handleDateRangeChange,
+    onPageChange: handlePageChange,
+  };
 }
 
 /**
@@ -33,150 +175,12 @@ interface ReturnOrdersPageClientProps {
 export function ReturnOrdersPageClient({
   initialParams,
 }: ReturnOrdersPageClientProps) {
-  const router = useRouter();
-  const [, startTransition] = React.useTransition();
-
-  // 本地状态管理 - 用于即时更新UI
-  const [search, setSearch] = React.useState(initialParams.search || '');
-  const [status, setStatus] = React.useState(initialParams.status);
-  const [sortBy, setSortBy] = React.useState(
-    initialParams.sortBy || 'createdAt'
-  );
-  const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
-    initialParams.sortOrder || 'desc'
-  );
-
-  // 防抖更新URL - 避免每次输入都触发导航
-  const debouncedUpdateURL = useDebouncedCallback(
-    (searchValue: string, filters: ReturnOrderQueryParams) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (searchValue) {
-          params.set('search', searchValue);
-        }
-        if (filters.status) {
-          params.set('status', filters.status);
-        }
-        if (filters.sortBy) {
-          params.set('sortBy', filters.sortBy);
-        }
-        if (filters.sortOrder) {
-          params.set('sortOrder', filters.sortOrder);
-        }
-        if (filters.page && filters.page > 1) {
-          params.set('page', filters.page.toString());
-        }
-        if (filters.limit) {
-          params.set('limit', filters.limit.toString());
-        }
-
-        router.push(`/return-orders?${params.toString()}`);
-      });
-    },
-    300
-  );
-
-  // 搜索处理 - 立即更新本地状态，防抖更新URL
-  const handleSearch = React.useCallback(
-    (value: string) => {
-      setSearch(value);
-      debouncedUpdateURL(value, {
-        ...initialParams,
-        search: value,
-        status,
-        sortBy,
-        sortOrder,
-        page: 1,
-      });
-    },
-    [debouncedUpdateURL, initialParams, status, sortBy, sortOrder]
-  );
-
-  // 筛选处理
-  const handleFilter = React.useCallback(
-    (key: string, value: string | undefined) => {
-      const newFilters = { ...initialParams, [key]: value, page: 1 };
-
-      if (key === 'status') {
-        setStatus(value as ReturnOrderStatus | undefined);
-      } else if (key === 'sortBy') {
-        setSortBy(value || 'createdAt');
-      } else if (key === 'sortOrder') {
-        setSortOrder((value as 'asc' | 'desc') || 'desc');
-      }
-
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (newFilters.status) {
-          params.set('status', newFilters.status);
-        }
-        if (newFilters.sortBy) {
-          params.set('sortBy', newFilters.sortBy);
-        }
-        if (newFilters.sortOrder) {
-          params.set('sortOrder', newFilters.sortOrder);
-        }
-        if (newFilters.limit) {
-          params.set('limit', newFilters.limit.toString());
-        }
-
-        router.push(`/return-orders?${params.toString()}`);
-      });
-    },
-    [router, search, initialParams]
-  );
-
-  // 分页处理
-  const handlePageChange = React.useCallback(
-    (page: number) => {
-      startTransition(() => {
-        const params = new URLSearchParams();
-        if (search) {
-          params.set('search', search);
-        }
-        if (status) {
-          params.set('status', status);
-        }
-        if (sortBy) {
-          params.set('sortBy', sortBy);
-        }
-        if (sortOrder) {
-          params.set('sortOrder', sortOrder);
-        }
-        if (page > 1) {
-          params.set('page', page.toString());
-        }
-        if (initialParams.limit) {
-          params.set('limit', initialParams.limit.toString());
-        }
-
-        router.push(`/return-orders?${params.toString()}`);
-      });
-    },
-    [router, search, status, sortBy, sortOrder, initialParams.limit]
-  );
-
-  // 操作处理函数 - 这些函数已在 ERPReturnOrderList 中实现，不需要在这里覆盖
-  // 如果需要自定义行为，可以在这里实现
-  // const handleViewDetail = (returnOrder: ReturnOrder) => {
-  //   router.push(`/return-orders/${returnOrder.id}`);
-  // };
-
-  // const handleEdit = (returnOrder: ReturnOrder) => {
-  //   router.push(`/return-orders/${returnOrder.id}/edit`);
-  // };
-
-  // const handleDelete = (returnOrder: ReturnOrder) => {
-  //   // TODO: 实现删除确认对话框
-  // };
+  const { onSearch, onFilter, onDateRangeChange, onPageChange } =
+    useReturnOrderNavigation(initialParams);
 
   return (
     <div className="flex h-full flex-col overflow-auto p-6">
       <div className="space-y-6">
-        {/* 页面标题 */}
         <PageHeader
           title="退货订单管理"
           description="管理客户退货订单，跟踪退货处理状态和退款情况"
@@ -209,7 +213,6 @@ export function ReturnOrdersPageClient({
           }
         />
 
-        {/* 退货订单列表 */}
         <Suspense
           fallback={
             <div className="flex items-center justify-center py-12">
@@ -219,9 +222,10 @@ export function ReturnOrdersPageClient({
         >
           <ERPReturnOrderList
             initialParams={initialParams}
-            onSearch={handleSearch}
-            onFilter={handleFilter}
-            onPageChange={handlePageChange}
+            onSearch={onSearch}
+            onFilter={onFilter}
+            onDateRangeChange={onDateRangeChange}
+            onPageChange={onPageChange}
           />
         </Suspense>
       </div>

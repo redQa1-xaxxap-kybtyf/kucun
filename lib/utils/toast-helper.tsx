@@ -61,10 +61,14 @@ export function showSuccess(
       <CheckCircle2 className="mt-0.5 h-4 w-4" />
       <div className="space-y-1">
         <span>{message}</span>
-        {description ? <span className="text-sm text-muted-foreground">{description}</span> : null}
+        {description ? (
+          <span className="text-muted-foreground text-sm">{description}</span>
+        ) : null}
       </div>
     </div>
-  ) : description;
+  ) : (
+    description
+  );
 
   return baseToast({
     title: showIcon ? undefined : message,
@@ -97,10 +101,14 @@ export function showError(
       <AlertCircle className="mt-0.5 h-4 w-4" />
       <div className="space-y-1">
         <span>{message}</span>
-        {description ? <span className="text-sm text-muted-foreground">{description}</span> : null}
+        {description ? (
+          <span className="text-muted-foreground text-sm">{description}</span>
+        ) : null}
       </div>
     </div>
-  ) : description;
+  ) : (
+    description
+  );
 
   return baseToast({
     title: showIcon ? undefined : message,
@@ -133,10 +141,14 @@ export function showInfo(
       <Info className="mt-0.5 h-4 w-4" />
       <div className="space-y-1">
         <span>{message}</span>
-        {description ? <span className="text-sm text-muted-foreground">{description}</span> : null}
+        {description ? (
+          <span className="text-muted-foreground text-sm">{description}</span>
+        ) : null}
       </div>
     </div>
-  ) : description;
+  ) : (
+    description
+  );
 
   return baseToast({
     title: showIcon ? undefined : message,
@@ -169,10 +181,14 @@ export function showWarning(
       <AlertTriangle className="mt-0.5 h-4 w-4" />
       <div className="space-y-1">
         <span>{message}</span>
-        {description ? <span className="text-sm text-muted-foreground">{description}</span> : null}
+        {description ? (
+          <span className="text-muted-foreground text-sm">{description}</span>
+        ) : null}
       </div>
     </div>
-  ) : description;
+  ) : (
+    description
+  );
 
   return baseToast({
     title: showIcon ? undefined : message,

@@ -60,14 +60,18 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials, req) {
         // 获取客户端 IP 和 User-Agent
         const rawForwarded = (
-          req as unknown as { headers?: { get?: (key: string) => string | null } }
+          req as unknown as {
+            headers?: { get?: (key: string) => string | null };
+          }
         )?.headers?.get?.('x-forwarded-for');
         const primaryForwardedIp = rawForwarded
           ?.split(',')
           ?.map(value => value.trim())
           ?.find(Boolean);
         const fallbackIp = (
-          req as unknown as { headers?: { get?: (key: string) => string | null } }
+          req as unknown as {
+            headers?: { get?: (key: string) => string | null };
+          }
         )?.headers?.get?.('x-real-ip');
         const requestIp = (req as unknown as { ip?: string }).ip;
         const clientIp =
@@ -384,5 +388,3 @@ export async function updateUserStatus(
 
 // 导出 NextAuth 实例（用于 API 路由）
 export default NextAuth(authOptions);
-
-

@@ -43,13 +43,13 @@ export function InventoryChecker({
   onInventoryCheck,
   className,
 }: InventoryCheckerProps) {
-  const [checkResults, setCheckResults] = React.useState<InventoryCheckResult[]>([]);
+  const [checkResults, setCheckResults] = React.useState<
+    InventoryCheckResult[]
+  >([]);
 
   const normalizedItems = React.useMemo(
     () =>
-      items.filter(
-        item => item.productId?.trim() && (item.quantity ?? 0) > 0
-      ),
+      items.filter(item => item.productId?.trim() && (item.quantity ?? 0) > 0),
     [items]
   );
 
@@ -124,7 +124,7 @@ export function InventoryChecker({
           severity,
         };
       })
-      .filter((result) => result !== null) as InventoryCheckResult[];
+      .filter(result => result !== null) as InventoryCheckResult[];
 
     setCheckResults(results);
     onInventoryCheck?.(results);

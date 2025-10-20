@@ -57,9 +57,12 @@ export function useSalesOrderBasics(
 
   const handleGenerateOrderNumber = React.useCallback(async () => {
     try {
-      const response = await fetch(
-        '/api/sales-orders/generate-order-number?action=generate'
-      );
+      const response = await fetch('/api/sales-orders/generate-order-number', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       const data = await response.json();
       if (data.success) {
         form.setValue('orderNumber', data.data.orderNumber);
@@ -114,7 +117,13 @@ function useAutoOrderNumber(
     const generateOrderNumber = async () => {
       try {
         const response = await fetch(
-          '/api/sales-orders/generate-order-number?action=generate'
+          '/api/sales-orders/generate-order-number',
+          {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
         );
         const data = await response.json();
         if (isMounted && data.success) {

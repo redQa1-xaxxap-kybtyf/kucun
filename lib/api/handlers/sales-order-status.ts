@@ -32,7 +32,7 @@ const ORDER_STATUS_TRANSACTION_OPTIONS = {
 /**
  * 扩展的销售订单明细类型(包含库存查询所需字段)
  */
-interface SalesOrderItemWithInventoryFields {
+interface _SalesOrderItemWithInventoryFields {
   id: string;
   salesOrderId: string;
   productId: string | null;
@@ -98,7 +98,7 @@ async function executeOrderStatusUpdateWithInventory(
 
   // 预先生成所有出库单号（在事务外部，避免嵌套事务）
   const itemsWithInventory: Array<{
-    item: typeof existingOrder.items[0];
+    item: (typeof existingOrder.items)[0];
     outboundRecordNumber: string;
   }> = [];
 

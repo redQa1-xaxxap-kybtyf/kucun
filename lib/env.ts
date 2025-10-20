@@ -597,8 +597,11 @@ export type Env = z.infer<typeof envSchema>;
  */
 /* eslint-disable max-lines-per-function */
 function validateEnv(): Env {
+  const isJestEnvironment =
+    typeof process !== 'undefined' && process.env.JEST_WORKER_ID !== undefined;
+
   // 在客户端环境下，只验证公开的环境变量
-  if (typeof window !== 'undefined') {
+  if (typeof window !== 'undefined' && !isJestEnvironment) {
     const clientEnvSchema = z.object({
       NEXT_PUBLIC_WS_PORT: z
         .string()

@@ -128,13 +128,15 @@ export function ProductCombobox({
           <div className="group border-input ring-offset-background focus-within:ring-ring rounded-md border px-3 py-1.5 text-sm focus-within:ring-1 focus-within:ring-offset-0">
             <div className="flex flex-wrap gap-1">
               {selectedProduct && (
-                <div className="bg-blue-100 flex items-center gap-1 rounded px-2 py-0.5">
-                  <span className="text-xs font-medium text-blue-900">{selectedProduct.label}</span>
+                <div className="flex items-center gap-1 rounded bg-blue-100 px-2 py-0.5">
+                  <span className="text-xs font-medium text-blue-900">
+                    {selectedProduct.label}
+                  </span>
                   {!disabled && (
                     <button
                       type="button"
                       onClick={handleClear}
-                      className="hover:bg-blue-200 ml-1 rounded"
+                      className="ml-1 rounded hover:bg-blue-200"
                     >
                       <X className="h-3 w-3 text-blue-700" />
                     </button>
@@ -179,8 +181,10 @@ export function ProductCombobox({
                         />
                         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
                           <div className="flex items-center gap-2">
-                            <span className="font-semibold text-gray-900 text-sm">{product.label}</span>
-                            <span className="text-blue-600 text-xs font-medium">
+                            <span className="text-sm font-semibold text-gray-900">
+                              {product.label}
+                            </span>
+                            <span className="text-xs font-medium text-blue-600">
                               {product.code}
                             </span>
                           </div>

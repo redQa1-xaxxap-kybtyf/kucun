@@ -14,6 +14,8 @@ interface StatementsQueryParams {
   type?: string;
   sortBy?: string;
   sortOrder?: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
 }
 
 interface UseStatementsFiltersProps {
@@ -30,6 +32,8 @@ function buildStatementsURLParams(params: {
   sortOrder?: string;
   page?: number;
   limit?: number;
+  startDate?: string;
+  endDate?: string;
 }) {
   const urlParams = new URLSearchParams();
   if (params.search) {
@@ -50,6 +54,12 @@ function buildStatementsURLParams(params: {
   if (params.limit) {
     urlParams.set('limit', params.limit.toString());
   }
+  if (params.startDate) {
+    urlParams.set('startDate', params.startDate);
+  }
+  if (params.endDate) {
+    urlParams.set('endDate', params.endDate);
+  }
   return urlParams;
 }
 
@@ -68,6 +78,12 @@ export function useStatementsFilters({
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     initialParams.sortOrder || 'desc'
   );
+  const [startDate, setStartDate] = React.useState<string | undefined>(
+    initialParams.startDate
+  );
+  const [endDate, setEndDate] = React.useState<string | undefined>(
+    initialParams.endDate
+  );
 
   // 构建URL参数
   const buildURLParams = React.useCallback(buildStatementsURLParams, []);
@@ -83,6 +99,8 @@ export function useStatementsFilters({
           sortOrder: filters.sortOrder,
           page: filters.page,
           limit: filters.limit,
+          startDate: filters.startDate,
+          endDate: filters.endDate,
         });
         router.push(`/finance/statements?${params.toString()}`);
       });
@@ -101,9 +119,19 @@ export function useStatementsFilters({
         sortBy,
         sortOrder,
         page: 1,
+        startDate,
+        endDate,
       });
     },
-    [debouncedUpdateURL, initialParams, type, sortBy, sortOrder]
+    [
+      debouncedUpdateURL,
+      initialParams,
+      type,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+    ]
   );
 
   // 筛选处理
@@ -125,6 +153,8 @@ export function useStatementsFilters({
           sortBy: nextSortBy,
           sortOrder: nextSortOrder,
           limit: initialParams.limit,
+          startDate,
+          endDate,
         });
         router.push(`/finance/statements?${params.toString()}`);
       });
@@ -137,6 +167,8 @@ export function useStatementsFilters({
       sortBy,
       sortOrder,
       type,
+      startDate,
+      endDate,
     ]
   );
 
@@ -151,6 +183,8 @@ export function useStatementsFilters({
           sortOrder,
           page,
           limit: initialParams.limit,
+          startDate,
+          endDate,
         });
         router.push(`/finance/statements?${params.toString()}`);
       });
@@ -163,6 +197,41 @@ export function useStatementsFilters({
       sortBy,
       sortOrder,
       initialParams.limit,
+      startDate,
+      endDate,
+    ]
+  );
+
+  const handleDateRangeChange = React.useCallback(
+    (range: { startDate?: string; endDate?: string }) => {
+      const nextStart = range.startDate || undefined;
+      const nextEnd = range.endDate || undefined;
+
+      setStartDate(nextStart);
+      setEndDate(nextEnd);
+
+      startTransition(() => {
+        const params = buildURLParams({
+          search,
+          type,
+          sortBy,
+          sortOrder,
+          page: 1,
+          limit: initialParams.limit,
+          startDate: nextStart,
+          endDate: nextEnd,
+        });
+        router.push(`/finance/statements?${params.toString()}`);
+      });
+    },
+    [
+      buildURLParams,
+      initialParams.limit,
+      router,
+      search,
+      sortBy,
+      sortOrder,
+      type,
     ]
   );
 
@@ -172,11 +241,14 @@ export function useStatementsFilters({
       type,
       sortBy,
       sortOrder,
+      startDate,
+      endDate,
     },
     handlers: {
       handleSearch,
       handleFilter,
       handlePageChange,
+      handleDateRangeChange,
     },
   };
 }

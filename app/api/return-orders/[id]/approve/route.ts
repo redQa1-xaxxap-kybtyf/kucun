@@ -138,25 +138,15 @@ export const POST = withAuth(
           // 1. 通知仓库准备收货
           // 2. 发送客户通知
           // 3. 创建相关任务等
-          logger.info(
-            'return-order-approve',
-            '退货订单审批通过',
-            undefined,
-            {
-              returnNumber: returnOrder.returnNumber,
-              returnOrderId: returnOrder.id,
-            }
-          );
+          logger.info('return-order-approve', '退货订单审批通过', undefined, {
+            returnNumber: returnOrder.returnNumber,
+            returnOrderId: returnOrder.id,
+          });
         } else {
-          logger.info(
-            'return-order-approve',
-            '退货订单审批拒绝',
-            undefined,
-            {
-              returnNumber: returnOrder.returnNumber,
-              returnOrderId: returnOrder.id,
-            }
-          );
+          logger.info('return-order-approve', '退货订单审批拒绝', undefined, {
+            returnNumber: returnOrder.returnNumber,
+            returnOrderId: returnOrder.id,
+          });
         }
 
         return returnOrder;
@@ -183,10 +173,16 @@ export const POST = withAuth(
       });
     } catch (error) {
       // 如果事件发布失败，记录错误但不影响业务流程
-      logger.error('return-order-approve', '退货订单审批事件发布失败', error, undefined, {
-        returnOrderId: existingReturnOrder.id,
-        approved,
-      });
+      logger.error(
+        'return-order-approve',
+        '退货订单审批事件发布失败',
+        error,
+        undefined,
+        {
+          returnOrderId: existingReturnOrder.id,
+          approved,
+        }
+      );
 
       // 如果是事务执行失败，抛出错误
       if (!updatedReturnOrder) {

@@ -78,7 +78,7 @@ export function calculateFinalQuantity(
       { value: inputQuantity, unit: inputUnit },
       validPiecesPerUnit
     );
-  } catch (error) {
+  } catch {
     return inputQuantity ?? 0; // 发生错误时返回输入数量
   }
 }
@@ -96,7 +96,8 @@ export function useProductSelection(
       shouldValidate: false,
     });
     form.setValue('quantity', 0, { shouldDirty: false, shouldValidate: false });
-    const hasPiecesPerUnit = product.piecesPerUnit !== undefined && product.piecesPerUnit !== null;
+    const hasPiecesPerUnit =
+      product.piecesPerUnit !== undefined && product.piecesPerUnit !== null;
     form.setValue(
       'piecesPerUnit',
       hasPiecesPerUnit ? product.piecesPerUnit : undefined,
@@ -109,12 +110,15 @@ export function useProductSelection(
       shouldTouch: false,
       shouldValidate: false,
     });
-    const productWithWeight = product as ProductOption & { weight?: number | null };
+    const productWithWeight = product as ProductOption & {
+      weight?: number | null;
+    };
     const hasWeight =
-      productWithWeight.weight !== undefined && productWithWeight.weight !== null;
+      productWithWeight.weight !== undefined &&
+      productWithWeight.weight !== null;
     form.setValue(
       'weight',
-      hasWeight ? productWithWeight.weight ?? undefined : undefined,
+      hasWeight ? (productWithWeight.weight ?? undefined) : undefined,
       hasWeight
         ? { shouldDirty: true, shouldValidate: false }
         : { shouldDirty: false, shouldValidate: false }

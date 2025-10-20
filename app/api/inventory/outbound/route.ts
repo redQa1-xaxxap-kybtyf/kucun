@@ -5,6 +5,7 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { revalidateInventory } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { publishInventoryChange } from '@/lib/events';
+import { paginationConfig } from '@/lib/env';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { outboundCreateSchema } from '@/lib/validations/inventory-operations';
@@ -96,6 +97,65 @@ function formatOutboundRecord(record: OutboundRecordWithProduct) {
   };
 }
 
+function parsePositiveInteger(
+  value: string | null,
+  {
+    defaultValue,
+    field,
+    max,
+  }: { defaultValue: number; field: string; max?: number }
+): number {
+  if (value === null) {
+    return defaultValue;
+  }
+
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || !Number.isInteger(parsed)) {
+    throw new Error(`${field}必须为正整数`);
+  }
+  if (parsed <= 0) {
+    throw new Error(`${field}必须大于0`);
+  }
+  if (typeof max === 'number' && parsed > max) {
+    throw new Error(`${field}不能超过${max}`);
+  }
+
+  return parsed;
+}
+
+function normalizeStringParam(value: string | null): string | undefined {
+  if (!value) {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : undefined;
+}
+
+function validateDateRange(
+  startDate?: string,
+  endDate?: string
+): string | undefined {
+  const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+
+  if (startDate && !dateRegex.test(startDate)) {
+    return '开始日期格式不正确，需使用 YYYY-MM-DD';
+  }
+  if (endDate && !dateRegex.test(endDate)) {
+    return '结束日期格式不正确，需使用 YYYY-MM-DD';
+  }
+  if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
+      return '日期参数无效';
+    }
+    if (start > end) {
+      return '开始日期不能晚于结束日期';
+    }
+  }
+  return undefined;
+}
+
 /**
  * 获取出库记录列表
  * GET /api/inventory/outbound
@@ -105,12 +165,45 @@ const getOutboundRecordsHandler = withAuth(
     withErrorHandling(async () => {
       // 解析查询参数
       const { searchParams } = request.nextUrl;
-      const page = parseInt(searchParams.get('page') || '1');
-      const limit = parseInt(searchParams.get('limit') || '20');
-      const search = searchParams.get('search') || undefined;
-      const type = searchParams.get('type') || undefined;
-      const startDate = searchParams.get('startDate') || undefined;
-      const endDate = searchParams.get('endDate') || undefined;
+
+      let page: number;
+      let limit: number;
+      try {
+        page = parsePositiveInteger(searchParams.get('page'), {
+          defaultValue: 1,
+          field: '页码',
+        });
+        limit = parsePositiveInteger(searchParams.get('limit'), {
+          defaultValue: paginationConfig.defaultPageSize,
+          field: '每页数量',
+          max: paginationConfig.maxPageSize,
+        });
+      } catch (error) {
+        return NextResponse.json(
+          {
+            success: false,
+            error:
+              error instanceof Error ? error.message : '分页参数格式不正确',
+          },
+          { status: 400 }
+        );
+      }
+
+      const search = normalizeStringParam(searchParams.get('search'));
+      const type = normalizeStringParam(searchParams.get('type'));
+      const startDate = normalizeStringParam(searchParams.get('startDate'));
+      const endDate = normalizeStringParam(searchParams.get('endDate'));
+
+      const dateError = validateDateRange(startDate, endDate);
+      if (dateError) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: dateError,
+          },
+          { status: 400 }
+        );
+      }
 
       // 构建查询条件
       const where = buildOutboundWhereClause({

@@ -10,6 +10,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { PaymentsOutClient } from '@/components/finance/payments-out-client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import type { DateRangeValue } from '@/components/ui/date-range-picker';
 import {
   PAYMENT_OUT_SORT_OPTIONS,
   type PaymentOutMethod,
@@ -27,6 +28,8 @@ interface PaymentsOutQueryParams {
   paymentMethod?: PaymentOutMethod;
   sortBy?: PaymentOutSortField;
   sortOrder?: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
 }
 
 interface ClientPaymentRecord {
@@ -126,6 +129,8 @@ export function PaymentsOutPageClient({
       paymentMethod: undefined,
       sortBy: 'createdAt',
       sortOrder: initialParams.sortOrder === 'asc' ? 'asc' : 'desc',
+      startDate: initialParams.startDate,
+      endDate: initialParams.endDate,
     };
 
     if (isPaymentStatus(initialParams.status)) {
@@ -148,6 +153,8 @@ export function PaymentsOutPageClient({
     initialParams.search,
     initialParams.sortBy,
     initialParams.sortOrder,
+    initialParams.startDate,
+    initialParams.endDate,
     initialParams.status,
     isPaymentMethod,
     isPaymentSortField,
@@ -212,6 +219,12 @@ export function PaymentsOutPageClient({
   const [sortOrder, setSortOrder] = React.useState<'asc' | 'desc'>(
     normalizedInitialParams.sortOrder || 'desc'
   );
+  const [startDate, setStartDate] = React.useState<string | undefined>(
+    normalizedInitialParams.startDate
+  );
+  const [endDate, setEndDate] = React.useState<string | undefined>(
+    normalizedInitialParams.endDate
+  );
 
   const debouncedUpdateURL = useDebouncedCallback(
     (searchValue: string, filters: PaymentsOutQueryParams) => {
@@ -231,6 +244,12 @@ export function PaymentsOutPageClient({
         }
         if (filters.sortOrder) {
           params.set('sortOrder', filters.sortOrder);
+        }
+        if (filters.startDate) {
+          params.set('startDate', filters.startDate);
+        }
+        if (filters.endDate) {
+          params.set('endDate', filters.endDate);
         }
         if (filters.page && filters.page > 1) {
           params.set('page', filters.page.toString());
@@ -256,6 +275,8 @@ export function PaymentsOutPageClient({
         paymentMethod,
         sortBy,
         sortOrder,
+        startDate,
+        endDate,
       });
     },
     [
@@ -265,6 +286,8 @@ export function PaymentsOutPageClient({
       paymentMethod,
       sortBy,
       sortOrder,
+      startDate,
+      endDate,
     ]
   );
 
@@ -303,6 +326,8 @@ export function PaymentsOutPageClient({
         paymentMethod: nextPaymentMethod,
         sortBy: nextSortBy,
         sortOrder: nextSortOrder,
+        startDate,
+        endDate,
       });
     },
     [
@@ -316,6 +341,8 @@ export function PaymentsOutPageClient({
       sortBy,
       sortOrder,
       status,
+      startDate,
+      endDate,
     ]
   );
 
@@ -338,6 +365,12 @@ export function PaymentsOutPageClient({
         if (sortOrder) {
           params.set('sortOrder', sortOrder);
         }
+        if (startDate) {
+          params.set('startDate', startDate);
+        }
+        if (endDate) {
+          params.set('endDate', endDate);
+        }
         if (page > 1) {
           params.set('page', page.toString());
         }
@@ -356,6 +389,80 @@ export function PaymentsOutPageClient({
       sortBy,
       sortOrder,
       normalizedInitialParams.limit,
+      startDate,
+      endDate,
+    ]
+  );
+
+  const handleDateRangeChange = React.useCallback(
+    (range: DateRangeValue) => {
+      const nextStart = range.startDate || undefined;
+      const nextEnd = range.endDate || undefined;
+
+      setStartDate(nextStart);
+      setEndDate(nextEnd);
+
+      startTransition(() => {
+        const params = new URLSearchParams();
+        if (search) {
+          params.set('search', search);
+        }
+        if (status) {
+          params.set('status', status);
+        }
+        if (paymentMethod) {
+          params.set('paymentMethod', paymentMethod);
+        }
+        if (sortBy) {
+          params.set('sortBy', sortBy);
+        }
+        if (sortOrder) {
+          params.set('sortOrder', sortOrder);
+        }
+        if (normalizedInitialParams.limit) {
+          params.set('limit', normalizedInitialParams.limit.toString());
+        }
+        if (nextStart) {
+          params.set('startDate', nextStart);
+        }
+        if (nextEnd) {
+          params.set('endDate', nextEnd);
+        }
+
+        router.push(`/finance/payments-out?${params.toString()}`);
+      });
+    },
+    [
+      router,
+      search,
+      status,
+      paymentMethod,
+      sortBy,
+      sortOrder,
+      normalizedInitialParams.limit,
+    ]
+  );
+
+  const currentParams = React.useMemo(
+    () => ({
+      ...normalizedInitialParams,
+      search,
+      status,
+      paymentMethod,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+    }),
+    [
+      normalizedInitialParams,
+      search,
+      status,
+      paymentMethod,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
     ]
   );
 
@@ -416,9 +523,10 @@ export function PaymentsOutPageClient({
         >
           <PaymentsOutClient
             initialData={normalizedInitialData}
-            initialParams={normalizedInitialParams}
+            initialParams={currentParams}
             onSearch={handleSearch}
             onFilter={handleFilter}
+            onDateRangeChange={handleDateRangeChange}
             onPageChange={handlePageChange}
           />
         </Suspense>

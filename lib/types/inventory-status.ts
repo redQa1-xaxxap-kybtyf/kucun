@@ -136,8 +136,7 @@ export const getInventoryStatus = (
     return {
       status: 'overstock',
       label: INVENTORY_STATUS_LABELS.overstock,
-      color:
-        'text-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))]',
+      color: 'text-[hsl(var(--color-info))] bg-[hsl(var(--color-info-light))]',
       variant: 'info',
     };
   }

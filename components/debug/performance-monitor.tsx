@@ -38,12 +38,17 @@ export function PerformanceMonitor({
       renderTimes.current.reduce((a, b) => a + b, 0) /
       renderTimes.current.length;
 
-    logger.debug('PerformanceMonitor', `${componentName} render metrics`, undefined, {
-      componentName,
-      renderCount: renderCount.current,
-      intervalSinceLastRender: timeSinceLastRender,
-      averageInterval: Number(avgRenderTime.toFixed(2)),
-    });
+    logger.debug(
+      'PerformanceMonitor',
+      `${componentName} render metrics`,
+      undefined,
+      {
+        componentName,
+        renderCount: renderCount.current,
+        intervalSinceLastRender: timeSinceLastRender,
+        averageInterval: Number(avgRenderTime.toFixed(2)),
+      }
+    );
 
     // 警告：渲染过于频繁
     if (timeSinceLastRender < 50 && renderCount.current > 5) {
@@ -88,11 +93,16 @@ export function useInputPerformance(componentName: string) {
       inputDelays.current.reduce((a, b) => a + b, 0) /
       inputDelays.current.length;
 
-    logger.debug('PerformanceMonitor', `${componentName} input latency`, undefined, {
-      componentName,
-      delay: Number(delay.toFixed(2)),
-      averageDelay: Number(avgDelay.toFixed(2)),
-    });
+    logger.debug(
+      'PerformanceMonitor',
+      `${componentName} input latency`,
+      undefined,
+      {
+        componentName,
+        delay: Number(delay.toFixed(2)),
+        averageDelay: Number(avgDelay.toFixed(2)),
+      }
+    );
 
     if (delay > 50) {
       logger.warn(
@@ -149,4 +159,3 @@ export function useWhyDidYouUpdate(
     previousProps.current = props;
   });
 }
-

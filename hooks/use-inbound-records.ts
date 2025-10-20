@@ -52,7 +52,8 @@ export function useInboundRecordsState(
     [initialParams]
   );
 
-  const [queryParams, setQueryParams] = React.useState<InboundQueryParams>(mergedInitial);
+  const [queryParams, setQueryParams] =
+    React.useState<InboundQueryParams>(mergedInitial);
 
   React.useEffect(() => {
     setQueryParams(mergedInitial);
@@ -87,4 +88,3 @@ export function useInboundRecordsState(
     handleResetFilters,
   };
 }
-

@@ -14,9 +14,7 @@ interface ERPOutboundRecordsProps {
  * ERP风格的出库记录组件
  * 采用紧凑布局，符合中国ERP系统用户习惯
  */
-export function ERPOutboundRecords({
-  initialParams,
-}: ERPOutboundRecordsProps) {
+export function ERPOutboundRecords({ initialParams }: ERPOutboundRecordsProps) {
   const { outboundRecords, filters, isLoading, resetFilters, updateFilter } =
     useOutboundRecords(initialParams);
 
@@ -39,4 +37,3 @@ export function ERPOutboundRecords({
     </div>
   );
 }
-

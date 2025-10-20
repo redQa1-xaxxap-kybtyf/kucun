@@ -10,7 +10,10 @@ import { resolveParams, withErrorHandling } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
-import { updateCategory } from '@/lib/services/category-service';
+import {
+  revalidateCategoryCache,
+  updateCategory,
+} from '@/lib/services/category-service';
 import { UpdateCategorySchema } from '@/lib/validations/category';
 
 /**
@@ -183,6 +186,8 @@ export const DELETE = withAuth(
       await prisma.category.delete({
         where: { id },
       });
+
+      await revalidateCategoryCache();
 
       return NextResponse.json({
         success: true,

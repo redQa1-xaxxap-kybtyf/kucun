@@ -9,6 +9,8 @@
 
 import type { Prisma } from '@prisma/client';
 
+import { revalidateCachePath, revalidateCaches } from '@/lib/cache/revalidate';
+import { CacheTags } from '@/lib/cache/tags';
 import { prisma } from '@/lib/db';
 import type {
   Category,
@@ -150,6 +152,30 @@ function buildWhereConditions(params: {
 // transformCategory 函数已移至 lib/utils/category-transforms.ts
 // 使用统一的 toCategory 函数代替
 
+async function revalidateCategoryCache(): Promise<void> {
+  try {
+    const { getCategoriesServer } = await import('@/lib/api/categories-server');
+    const maybeCache = (
+      getCategoriesServer as unknown as {
+        cache?: { clear?: () => void };
+      }
+    )?.cache;
+    maybeCache?.clear?.();
+  } catch (_error) {
+    // ignore cache clear errors
+  }
+
+  await revalidateCaches(
+    [
+      CacheTags.Categories.all,
+      CacheTags.Categories.list,
+      CacheTags.Categories.tree,
+    ],
+    { cascade: false }
+  );
+  await revalidateCachePath('/categories');
+}
+
 // ==================== 公共服务函数 ====================
 
 /**
@@ -197,15 +223,6 @@ export async function getCategories(
             id: true,
             name: true,
             code: true,
-          },
-        },
-        // 只选择子分类的必要字段
-        children: {
-          select: {
-            id: true,
-            name: true,
-            code: true,
-            status: true,
           },
         },
         // 产品计数
@@ -282,14 +299,31 @@ export async function createCategory(
     throw new Error('同一父分类下已存在相同名称的分类');
   }
 
+  const parentId = params.parentId ?? null;
+
+  // 4. 计算排序值（默认使用同级最大值+1）
+  let sortOrder = params.sortOrder;
+  if (
+    sortOrder === undefined ||
+    sortOrder === null ||
+    Number.isNaN(sortOrder) ||
+    sortOrder === 0
+  ) {
+    const { _max } = await prisma.category.aggregate({
+      where: { parentId },
+      _max: { sortOrder: true },
+    });
+    sortOrder = (_max.sortOrder ?? 0) + 1;
+  }
+
   // 创建分类
   const category = await prisma.category.create({
     data: {
       name: params.name,
       code,
       description: params.description ?? null,
-      parentId: params.parentId,
-      sortOrder: params.sortOrder ?? 0,
+      parentId,
+      sortOrder,
       status: params.status === 'inactive' ? 'inactive' : 'active',
     },
     include: {
@@ -302,6 +336,8 @@ export async function createCategory(
       },
     },
   });
+
+  await revalidateCategoryCache();
 
   // 转换数据格式 - 使用统一的转换函数
   return toCategory(category);
@@ -442,5 +478,9 @@ export async function updateCategory(
     },
   });
 
+  await revalidateCategoryCache();
+
   return toCategory(updatedCategory);
 }
+
+export { revalidateCategoryCache };

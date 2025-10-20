@@ -46,9 +46,12 @@ export function OrderNumberGenerator({
 
     setIsGenerating(true);
     try {
-      const response = await fetch(
-        '/api/sales-orders/generate-order-number?action=generate'
-      );
+      const response = await fetch('/api/sales-orders/generate-order-number', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       const data = await response.json();
 
       if (data.success) {
@@ -300,9 +303,12 @@ export function SimpleOrderNumberInput({
   const generateOrderNumber = async () => {
     setIsGenerating(true);
     try {
-      const response = await fetch(
-        '/api/sales-orders/generate-order-number?action=generate'
-      );
+      const response = await fetch('/api/sales-orders/generate-order-number', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       const data = await response.json();
 
       if (data.success) {

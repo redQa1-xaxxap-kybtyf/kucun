@@ -97,17 +97,14 @@ export function IntelligentProductInput<
     }
   }, []);
 
-  const handleProductSearch = useDebouncedCallback(
-    (query: string) => {
-      const trimmed = query.trim();
-      if (!trimmed) {
-        setIsSearchingProducts(false);
-        return;
-      }
-      performSearch(trimmed);
-    },
-    300
-  );
+  const handleProductSearch = useDebouncedCallback((query: string) => {
+    const trimmed = query.trim();
+    if (!trimmed) {
+      setIsSearchingProducts(false);
+      return;
+    }
+    performSearch(trimmed);
+  }, 300);
 
   React.useEffect(
     () => () => {
@@ -184,6 +181,12 @@ export function IntelligentProductInput<
         `items.${index}.unitCost` as unknown as Path<TFieldValues>,
         undefined as unknown as PathValue<TFieldValues, Path<TFieldValues>>
       );
+      const displayName = product.name?.trim() || product.code?.trim() || '';
+      form.setValue(
+        `items.${index}.displayName` as unknown as Path<TFieldValues>,
+        displayName as unknown as PathValue<TFieldValues, Path<TFieldValues>>,
+        { shouldDirty: true }
+      );
 
       onProductChange?.(product);
     }
@@ -200,7 +203,7 @@ export function IntelligentProductInput<
     // 清空库存产品选择
     form.setValue(
       `items.${index}.productId` as unknown as Path<TFieldValues>,
-      '' as unknown as PathValue<TFieldValues, Path<TFieldValues>>
+      undefined as unknown as PathValue<TFieldValues, Path<TFieldValues>>
     );
 
     // 设置临时产品标识和信息
@@ -208,9 +211,10 @@ export function IntelligentProductInput<
       `items.${index}.isManualProduct` as unknown as Path<TFieldValues>,
       true as unknown as PathValue<TFieldValues, Path<TFieldValues>>
     );
+    const manualName = productData.name?.trim() ?? '';
     form.setValue(
       `items.${index}.manualProductName` as unknown as Path<TFieldValues>,
-      productData.name as unknown as PathValue<TFieldValues, Path<TFieldValues>>
+      manualName as unknown as PathValue<TFieldValues, Path<TFieldValues>>
     );
     form.setValue(
       `items.${index}.manualSpecification` as unknown as Path<TFieldValues>,
@@ -241,6 +245,11 @@ export function IntelligentProductInput<
       `items.${index}.productCode` as unknown as Path<TFieldValues>,
       '' as unknown as PathValue<TFieldValues, Path<TFieldValues>>
     );
+    form.setValue(
+      `items.${index}.displayName` as unknown as Path<TFieldValues>,
+      manualName as unknown as PathValue<TFieldValues, Path<TFieldValues>>,
+      { shouldDirty: true }
+    );
 
     // 自动填充到表单的通用字段（用于显示）
     form.setValue(
@@ -266,11 +275,13 @@ export function IntelligentProductInput<
     );
 
     const nextDisplayUnit =
-      productData.unit === '件' && productData.piecesPerUnit && productData.piecesPerUnit > 0
+      productData.unit === '件' &&
+      productData.piecesPerUnit &&
+      productData.piecesPerUnit > 0
         ? '件'
-        : (form.getValues(
+        : ((form.getValues(
             `items.${index}.displayUnit` as unknown as Path<TFieldValues>
-          ) as unknown as '片' | '件' | undefined) ?? '片';
+          ) as unknown as '片' | '件' | undefined) ?? '片');
     form.setValue(
       `items.${index}.displayUnit` as unknown as Path<TFieldValues>,
       (nextDisplayUnit || '片') as unknown as PathValue<
