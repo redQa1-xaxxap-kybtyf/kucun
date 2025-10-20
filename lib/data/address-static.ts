@@ -159,6 +159,9 @@ const CITY_RAW_DATA = [
   // 北京市 (11)
   { code: '1101', name: '市辖区', provinceCode: '11' },
 
+  // 天津市 (12)
+  { code: '1201', name: '市辖区', provinceCode: '12' },
+
   // 上海市 (31)
   { code: '3101', name: '市辖区', provinceCode: '31' },
 
@@ -254,6 +257,24 @@ const DISTRICT_RAW_DATA = [
   { code: '110117', name: '平谷区', cityCode: '1101', provinceCode: '11' },
   { code: '110118', name: '密云区', cityCode: '1101', provinceCode: '11' },
   { code: '110119', name: '延庆区', cityCode: '1101', provinceCode: '11' },
+
+  // 天津市 (1201)
+  { code: '120101', name: '和平区', cityCode: '1201', provinceCode: '12' },
+  { code: '120102', name: '河东区', cityCode: '1201', provinceCode: '12' },
+  { code: '120103', name: '河西区', cityCode: '1201', provinceCode: '12' },
+  { code: '120104', name: '南开区', cityCode: '1201', provinceCode: '12' },
+  { code: '120105', name: '河北区', cityCode: '1201', provinceCode: '12' },
+  { code: '120106', name: '红桥区', cityCode: '1201', provinceCode: '12' },
+  { code: '120110', name: '东丽区', cityCode: '1201', provinceCode: '12' },
+  { code: '120111', name: '西青区', cityCode: '1201', provinceCode: '12' },
+  { code: '120112', name: '津南区', cityCode: '1201', provinceCode: '12' },
+  { code: '120113', name: '北辰区', cityCode: '1201', provinceCode: '12' },
+  { code: '120114', name: '武清区', cityCode: '1201', provinceCode: '12' },
+  { code: '120115', name: '宝坻区', cityCode: '1201', provinceCode: '12' },
+  { code: '120116', name: '滨海新区', cityCode: '1201', provinceCode: '12' },
+  { code: '120117', name: '宁河区', cityCode: '1201', provinceCode: '12' },
+  { code: '120118', name: '静海区', cityCode: '1201', provinceCode: '12' },
+  { code: '120119', name: '蓟州区', cityCode: '1201', provinceCode: '12' },
 
   // 上海市 (3101)
   { code: '310101', name: '黄浦区', cityCode: '3101', provinceCode: '31' },
