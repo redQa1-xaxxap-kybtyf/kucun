@@ -160,6 +160,11 @@ function useCreateCategoryController(): CreateCategoryController {
         queryClient.invalidateQueries({
           queryKey: queryKeys.categories.lists(),
         }),
+        // 主动重新获取分类选项数据，确保产品表单能立即看到新分类
+        queryClient.refetchQueries({
+          queryKey: categoryQueryKeys.options(),
+          type: 'active',
+        }),
       ]).catch(() => {
         // ignore cache invalidation errors
       });

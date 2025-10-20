@@ -22,6 +22,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import {
+  categoryQueryKeys,
   getCategories,
   getCategory,
   updateCategory,
@@ -244,6 +245,14 @@ function useUpdateCategoryMutation({
         queryClient.invalidateQueries({ queryKey: queryKeys.categories.all }),
         queryClient.invalidateQueries({
           queryKey: queryKeys.categories.detail(categoryId),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: categoryQueryKeys.options(),
+        }),
+        // 主动重新获取分类选项数据，确保产品表单能立即看到更新后的分类
+        queryClient.refetchQueries({
+          queryKey: categoryQueryKeys.options(),
+          type: 'active',
         }),
       ]);
 
