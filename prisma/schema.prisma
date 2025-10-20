@@ -113,7 +113,7 @@ model Category {
   id          String   @id @default(uuid())
   name        String
   code        String   @unique
-  description String? // 分类描述
+  description String? @db.Text // 分类描述
   parentId    String?  @map("parent_id")
   sortOrder   Int      @default(0) @map("sort_order")
   status      String   @default("active") // active, inactive
@@ -140,7 +140,7 @@ model Product {
   id            String  @id @default(uuid())
   code          String  @unique
   name          String
-  specification String?
+  specification String? @db.Text
   unit          String  @default("piece") // 瓷砖行业专用单位：piece(件), sheet(片)
   piecesPerUnit Int     @default(1) @map("pieces_per_unit")
   weight        Float?
@@ -150,8 +150,8 @@ model Product {
 
   // 图片相关字段
   thumbnailUrl String? @map("thumbnail_url") // 缩略图URL
-  images       String? // 产品图片数组JSON字符串 [{"url": "...", "type": "main|effect", "alt": "..."}]
-  description  String? // 产品描述
+  images       String? @db.Text // 产品图片数组JSON字符串 [{"url": "...", "type": "main|effect", "alt": "..."}]
+  description  String? @db.Text // 产品描述
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -231,7 +231,7 @@ model SalesOrder {
   usePrepayment    Boolean @default(false) @map("use_prepayment") // 是否使用预收款冲抵
   prepaymentAmount Float?  @default(0) @map("prepayment_amount") // 预收款冲抵金额
 
-  remarks   String?
+  remarks   String? @db.Text
   shippedAt DateTime? @map("shipped_at") // 发货时间
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
@@ -272,7 +272,7 @@ model SalesOrderFeeItem {
   feeType      String   @map("fee_type") // processing: 加工费, shipping: 运费, other: 其他
   feeName      String   @map("fee_name") // 费用名称
   feeAmount    Float    @map("fee_amount") // 费用金额
-  remarks      String? // 备注
+  remarks      String? @db.Text // 备注
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
 
@@ -316,8 +316,8 @@ model SalesOrderItem {
   displayUnit     String? @map("display_unit") // 显示单位（片/件）
   displayQuantity Float?  @map("display_quantity") // 显示数量
   piecesPerUnit   Int?    @map("pieces_per_unit") // 每件片数
-  specification   String? @map("specification") // 规格
-  remarks         String? @map("remarks") // 备注
+  specification   String? @map("specification") @db.Text // 规格
+  remarks         String? @map("remarks") @db.Text // 备注
 
   // 关联关系
   salesOrder       SalesOrder        @relation(fields: [salesOrderId], references: [id], onDelete: Cascade)
@@ -441,7 +441,7 @@ model InboundRecord {
   totalCost            Float?   @map("total_cost") // 总成本
   location             String? // 存储位置
   reason               String   @default("purchase") // purchase, return, transfer, surplus, other
-  remarks              String? // 最大500字符
+  remarks              String? @db.Text // 最大500字符
   userId               String   @map("user_id")
   createdAt            DateTime @default(now()) @map("created_at")
   updatedAt            DateTime @updatedAt @map("updated_at")
@@ -478,7 +478,7 @@ model OutboundRecord {
   unitCost     Float?   @map("unit_cost") // 单位成本
   totalCost    Float?   @map("total_cost") // 总成本
   reason       String   @default("manual_outbound") // manual_outbound, sales_outbound, transfer, damage, other
-  notes        String? // 备注信息
+  notes        String? @db.Text // 备注信息
   customerId   String?  @map("customer_id") // 客户ID（销售出库时）
   salesOrderId String?  @map("sales_order_id") // 销售订单ID（销售出库时）
   operatorId   String   @map("operator_id") // 操作员ID
@@ -547,7 +547,7 @@ model InventoryAdjustment {
 
   // 调整原因和备注
   reason String // inventory_gain, inventory_loss, damage_loss, surplus_gain, transfer, other
-  notes  String? // 备注信息
+  notes  String? @db.Text // 备注信息
 
   // 审批状态
   status String @default("draft") // draft, pending, approved, rejected
@@ -597,7 +597,7 @@ model PaymentRecord {
   appliedAmount          Float    @default(0) @map("applied_amount") // 已冲抵金额(预收款使用)
   paymentDate            DateTime @map("payment_date")
   status                 String   @default("pending") // pending, confirmed, cancelled, applied
-  remarks                String?
+  remarks                String? @db.Text
   receiptNumber          String?  @map("receipt_number") // 收据号
   bankInfo               String?  @map("bank_info") // 银行信息（转账时使用）
   createdAt              DateTime @default(now()) @map("created_at")
@@ -636,7 +636,7 @@ model FactoryShipmentOrder {
   receivableAmount Float     @default(0) @map("receivable_amount") // 应收金额
   depositAmount    Float     @default(0) @map("deposit_amount") // 定金金额
   paidAmount       Float     @default(0) @map("paid_amount") // 已付金额
-  remarks          String? // 备注
+  remarks          String? @db.Text // 备注
   planDate         DateTime? @map("plan_date") // 计划发货日期
   shipmentDate     DateTime? @map("shipment_date") // 实际发货日期
   arrivalDate      DateTime? @map("arrival_date") // 到港日期
@@ -689,11 +689,11 @@ model FactoryShipmentOrderItem {
 
   // 通用字段（用于显示，无论是库存商品还是手动输入商品）
   displayName   String  @map("display_name") // 显示名称
-  specification String? // 规格
+  specification String? @db.Text // 规格
   unit          String  @default("piece") // 单位
   weight        Float? // 重量
 
-  remarks   String? // 备注
+  remarks   String? @db.Text // 备注
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -720,10 +720,10 @@ model ReturnOrder {
   type         String    @map("type") // quality_issue, wrong_product, customer_change, damage_in_transit, remaining_return, other
   processType  String    @map("process_type") // refund, exchange, repair, credit
   status       String    @default("draft") // draft, submitted, approved, rejected, processing, completed, cancelled
-  reason       String?
+  reason       String? @db.Text
   totalAmount  Float     @map("total_amount")
   refundAmount Float     @map("refund_amount")
-  remarks      String?
+  remarks      String? @db.Text
   submittedAt  DateTime? @map("submitted_at")
   approvedAt   DateTime? @map("approved_at")
   processedAt  DateTime? @map("processed_at")
@@ -800,8 +800,8 @@ model RefundRecord {
   refundDate        DateTime  @map("refund_date")
   processedDate     DateTime? @map("processed_date")
   status            String    @default("pending") // pending, processing, completed, rejected, cancelled
-  reason            String
-  remarks           String?
+  reason            String @db.Text
+  remarks           String? @db.Text
   bankInfo          String?   @map("bank_info")
   receiptNumber     String?   @map("receipt_number")
   createdAt         DateTime  @default(now()) @map("created_at")
