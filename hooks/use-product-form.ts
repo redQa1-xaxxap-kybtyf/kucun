@@ -200,16 +200,14 @@ function useCreateProductMutation({
         description: '产品已成功创建',
       });
 
-      // ✅ 修复: 先 invalidate 标记数据过时，再 refetch 主动刷新
-      // 这样即使列表页设置了 refetchOnWindowFocus: false，也能看到最新数据
-      await queryClient.invalidateQueries({
-        queryKey: productQueryKeys.all,
+      // ✅ 使用 removeQueries 完全清除缓存，确保列表页必定重新获取数据
+      await queryClient.removeQueries({
+        queryKey: productQueryKeys.lists(),
       });
 
-      // 主动重新获取列表数据，确保导航回列表页时能看到新产品
-      await queryClient.refetchQueries({
-        queryKey: productQueryKeys.lists(),
-        type: 'active', // 只刷新当前活跃的列表查询
+      // 标记所有产品相关查询为过期
+      await queryClient.invalidateQueries({
+        queryKey: productQueryKeys.all,
       });
 
       const shouldNavigate = await handleSuccessCallback(onSuccess, product);
@@ -246,16 +244,14 @@ function useUpdateProductMutation({
         description: '产品已成功更新',
       });
 
-      // ✅ 修复: 先 invalidate 标记数据过时，再 refetch 主动刷新
-      // 这样即使列表页设置了 refetchOnWindowFocus: false，也能看到最新数据
-      await queryClient.invalidateQueries({
-        queryKey: productQueryKeys.all,
+      // ✅ 使用 removeQueries 完全清除缓存，确保列表页必定重新获取数据
+      await queryClient.removeQueries({
+        queryKey: productQueryKeys.lists(),
       });
 
-      // 主动重新获取列表数据，确保导航回列表页时能看到更新后的产品
-      await queryClient.refetchQueries({
-        queryKey: productQueryKeys.lists(),
-        type: 'active', // 只刷新当前活跃的列表查询
+      // 标记所有产品相关查询为过期
+      await queryClient.invalidateQueries({
+        queryKey: productQueryKeys.all,
       });
 
       const shouldNavigate = await handleSuccessCallback(onSuccess, product);
