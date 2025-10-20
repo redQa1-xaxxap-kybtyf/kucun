@@ -241,13 +241,15 @@ function useUpdateCategoryMutation({
         duration: 1500,
       });
 
+      // 先移除旧缓存，再重新获取，确保数据是最新的
+      await queryClient.removeQueries({
+        queryKey: categoryQueryKeys.options(),
+      });
+
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.categories.all }),
         queryClient.invalidateQueries({
           queryKey: queryKeys.categories.detail(categoryId),
-        }),
-        queryClient.invalidateQueries({
-          queryKey: categoryQueryKeys.options(),
         }),
         // 主动重新获取分类选项数据，确保产品表单能立即看到更新后的分类
         queryClient.refetchQueries({

@@ -152,11 +152,13 @@ function useCreateCategoryController(): CreateCategoryController {
         duration: 1500,
       });
 
+      // 先移除旧缓存，再重新获取，确保数据是最新的
+      await queryClient.removeQueries({
+        queryKey: categoryQueryKeys.options(),
+      });
+
       Promise.all([
         queryClient.invalidateQueries({ queryKey: categoryQueryKeys.lists() }),
-        queryClient.invalidateQueries({
-          queryKey: categoryQueryKeys.options(),
-        }),
         queryClient.invalidateQueries({
           queryKey: queryKeys.categories.lists(),
         }),
