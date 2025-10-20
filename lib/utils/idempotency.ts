@@ -121,9 +121,6 @@ export async function createIdempotencyRecord(
   const expiresAt = new Date();
   expiresAt.setHours(expiresAt.getHours() + 24);
 
-  // ✅ 只存储关键字段，避免JSON数据过大
-  const keyRequestData = extractKeyRequestData(requestData);
-
   const operation = await prisma.inventoryOperation.create({
     data: {
       idempotencyKey,
@@ -131,7 +128,7 @@ export async function createIdempotencyRecord(
       productId,
       operatorId,
       status: 'processing',
-      requestData: JSON.stringify(keyRequestData), // ✅ 只存储关键字段
+      requestData: JSON.stringify(requestData),
       expiresAt,
     },
   });
@@ -194,52 +191,16 @@ export async function cleanupExpiredIdempotencyRecords(): Promise<number> {
 }
 
 /**
- * 提取请求数据的关键信息用于幂等性记录
- * 只保留必要的字段，避免存储过大的JSON数据
- */
-function extractKeyRequestData(
-  requestData: Record<string, unknown>
-): Record<string, unknown> {
-  // 只保留关键字段，移除可能很大的字段（如详细的产品信息、批次列表等）
-  const keyFields: Record<string, unknown> = {};
-
-  // 保留的关键字段列表
-  const allowedFields = [
-    'productId',
-    'variantId',
-    'quantity',
-    'reason',
-    'remarks',
-    'batchNumber',
-    'piecesPerUnit',
-    'weight',
-    'customerId',
-    'supplierId',
-    'status',
-    'orderNumber',
-    'orderId',
-    // 添加其他关键字段...
-  ];
-
-  for (const field of allowedFields) {
-    if (field in requestData) {
-      keyFields[field] = requestData[field];
-    }
-  }
-
-  return keyFields;
-}
-
-/**
  * 幂等性包装器
  * 自动处理幂等性检查和记录
  *
- * 修复说明：
+ * 实现说明：
  * - 使用乐观锁策略（先创建后检查）避免检查-创建竞态条件
  * - 当检测到并发请求时，实现轮询等待机制而非直接抛出错误
  * - 添加重试计数和超时保护，防止无限等待
  * - 利用数据库唯一约束保证原子性
- * - 只存储关键字段信息，避免JSON数据过大
+ * - 存储完整的请求和响应数据（遵循行业最佳实践）
+ * - 使用MEDIUMTEXT字段类型(16MB)确保足够的存储空间
  */
 export async function withIdempotency<T>(
   idempotencyKey: string,
@@ -253,9 +214,6 @@ export async function withIdempotency<T>(
   const retryDelayMs = 100; // 初始重试延迟(毫秒)
   const maxRetryDelayMs = 500; // 最大重试延迟(毫秒)
 
-  // ✅ 只提取关键字段，避免存储过大的JSON
-  const keyRequestData = extractKeyRequestData(requestData);
-
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       // 策略1：乐观锁 - 先尝试创建记录
@@ -268,7 +226,7 @@ export async function withIdempotency<T>(
           productId,
           operatorId,
           status: 'processing',
-          requestData: JSON.stringify(keyRequestData), // ✅ 只存储关键字段
+          requestData: JSON.stringify(requestData),
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24小时后过期
         },
       });
