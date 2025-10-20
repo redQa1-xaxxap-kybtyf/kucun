@@ -200,9 +200,16 @@ function useCreateProductMutation({
         description: '产品已成功创建',
       });
 
+      // ✅ 修复: 先 invalidate 标记数据过时，再 refetch 主动刷新
+      // 这样即使列表页设置了 refetchOnWindowFocus: false，也能看到最新数据
       await queryClient.invalidateQueries({
         queryKey: productQueryKeys.all,
-        refetchType: 'all',
+      });
+
+      // 主动重新获取列表数据，确保导航回列表页时能看到新产品
+      await queryClient.refetchQueries({
+        queryKey: productQueryKeys.lists(),
+        type: 'active', // 只刷新当前活跃的列表查询
       });
 
       const shouldNavigate = await handleSuccessCallback(onSuccess, product);
@@ -239,9 +246,16 @@ function useUpdateProductMutation({
         description: '产品已成功更新',
       });
 
+      // ✅ 修复: 先 invalidate 标记数据过时，再 refetch 主动刷新
+      // 这样即使列表页设置了 refetchOnWindowFocus: false，也能看到最新数据
       await queryClient.invalidateQueries({
         queryKey: productQueryKeys.all,
-        refetchType: 'all',
+      });
+
+      // 主动重新获取列表数据，确保导航回列表页时能看到更新后的产品
+      await queryClient.refetchQueries({
+        queryKey: productQueryKeys.lists(),
+        type: 'active', // 只刷新当前活跃的列表查询
       });
 
       const shouldNavigate = await handleSuccessCallback(onSuccess, product);
