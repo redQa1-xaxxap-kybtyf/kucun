@@ -4,12 +4,11 @@
  */
 
 // 销售订单状态枚举
+// 严格遵循实际业务流程：草稿 → 已确认 → 已发货 → 已完成（可随时取消）
 export const SALES_ORDER_STATUSES = {
   DRAFT: 'draft',
   CONFIRMED: 'confirmed',
-  PROCESSING: 'processing',
   SHIPPED: 'shipped',
-  DELIVERED: 'delivered',
   COMPLETED: 'completed',
   CANCELLED: 'cancelled',
 } as const;
@@ -21,9 +20,7 @@ export type SalesOrderStatus =
 export const SALES_ORDER_STATUS_LABELS = {
   [SALES_ORDER_STATUSES.DRAFT]: '草稿',
   [SALES_ORDER_STATUSES.CONFIRMED]: '已确认',
-  [SALES_ORDER_STATUSES.PROCESSING]: '处理中',
   [SALES_ORDER_STATUSES.SHIPPED]: '已发货',
-  [SALES_ORDER_STATUSES.DELIVERED]: '已送达',
   [SALES_ORDER_STATUSES.COMPLETED]: '已完成',
   [SALES_ORDER_STATUSES.CANCELLED]: '已取消',
 } as const;

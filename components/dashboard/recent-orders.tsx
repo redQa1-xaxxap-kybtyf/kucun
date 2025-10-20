@@ -32,9 +32,7 @@ const statusVariants: Record<
 > = {
   draft: 'secondary',
   confirmed: 'info',
-  processing: 'info',
   shipped: 'purple',
-  delivered: 'info',
   completed: 'success',
   cancelled: 'destructive',
 };
