@@ -160,7 +160,8 @@ export function handlePrismaError(error: unknown): ApiError {
   if (error instanceof Prisma.PrismaClientKnownRequestError) {
     // P2002: 唯一约束冲突
     if (error.code === 'P2002') {
-      const fields = (error.meta?.target as string[]) || [];
+      const target = error.meta?.target;
+      const fields = Array.isArray(target) ? target : target ? [target] : [];
       return ApiError.badRequest(`${fields.join(', ')} 已存在`, {
         code: error.code,
         fields,
