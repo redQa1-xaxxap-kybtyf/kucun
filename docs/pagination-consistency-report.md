@@ -17,11 +17,13 @@
 ### 关键发现
 
 ✅ **做得好的地方:**
+
 - 销售订单、库存、产品、厂家发货、财务账单、供应商等6个模块使用了统一的Pagination组件
 - 所有使用分页的模块都遵循URL参数管理模式
 - 分页组件配置一致(showRange, showTotal)
 
 ⚠️ **存在的问题:**
+
 1. **客户管理页面**: 缺少分页组件,但数据结构支持分页
 2. **退货订单页面**: 缺少分页UI实现
 3. **库存入库/出库/调整记录页面**: 记录表中没有分页
@@ -34,25 +36,29 @@
 ### 1. 销售订单列表 (Sales Orders) ✅
 
 **文件路径**:
+
 - `app/(dashboard)/sales-orders/page-client.tsx`
 - `components/sales-orders/erp-sales-order-list.tsx`
 
 **分页实现**: ✅ **完整** (位置: 526行)
 
 ```tsx
-{data?.pagination && (
-  <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-    <Pagination
-      pagination={data.pagination}
-      onPageChange={handlePageChange}
-      showRange
-      showTotal
-    />
-  </div>
-)}
+{
+  data?.pagination && (
+    <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+      <Pagination
+        pagination={data.pagination}
+        onPageChange={handlePageChange}
+        showRange
+        showTotal
+      />
+    </div>
+  );
+}
 ```
 
 **特点**:
+
 - ✅ 使用HydrationBoundary进行SSR数据传递
 - ✅ URL参数管理(page, limit, search等)
 - ✅ 防抖搜索(300ms)
@@ -60,6 +66,7 @@
 - ✅ 分页组件位于表格容器底部,有边框和背景色区分
 
 **合理性评估**: ⭐⭐⭐⭐⭐ (5/5)
+
 - 销售订单数据量大,必须分页
 - 实现规范,可作为参考模式
 
@@ -68,32 +75,39 @@
 ### 2. 产品管理列表 (Products) ✅
 
 **文件路径**:
+
 - `app/(dashboard)/products/page-client.tsx`
 - `components/products/erp-product-list.tsx`
 
 **分页实现**: ✅ **完整** (位置: 128-137行)
 
 ```tsx
-{pagination && (
-  <div className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3"
-       style={{ boxShadow: 'var(--shadow-medium)' }}>
-    <Pagination
-      pagination={pagination}
-      onPageChange={handlePageChange}
-      showRange
-      showTotal
-    />
-  </div>
-)}
+{
+  pagination && (
+    <div
+      className="rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3"
+      style={{ boxShadow: 'var(--shadow-medium)' }}
+    >
+      <Pagination
+        pagination={pagination}
+        onPageChange={handlePageChange}
+        showRange
+        showTotal
+      />
+    </div>
+  );
+}
 ```
 
 **特点**:
+
 - ✅ 使用TanStack Query管理数据
 - ✅ staleTime设置为5分钟
 - ✅ placeholderData保持前一次数据,切换流畅
 - ✅ 分页容器有圆角、边框和阴影
 
 **合理性评估**: ⭐⭐⭐⭐⭐ (5/5)
+
 - 产品数据量大,必须分页
 - 实现优秀,包含性能优化
 
@@ -102,27 +116,31 @@
 ### 3. 库存管理列表 (Inventory) ✅
 
 **文件路径**:
+
 - `app/(dashboard)/inventory/page-client.tsx`
 - `components/inventory/erp-inventory-list.tsx`
 
 **分页实现**: ✅ **完整** (位置: 104-115行)
 
 ```tsx
-{data.pagination && (
-  <div className="mx-6 mb-6 rounded-lg border bg-gray-50/50 px-4 py-3 shadow-md">
-    <Pagination
-      pagination={data.pagination}
-      onPageChange={onPageChange}
-      onNextPageHover={onNextPageHover}  // ✨ 创新功能
-      onPrevPageHover={onPrevPageHover}  // ✨ 创新功能
-      showRange
-      showTotal
-    />
-  </div>
-)}
+{
+  data.pagination && (
+    <div className="mx-6 mb-6 rounded-lg border bg-gray-50/50 px-4 py-3 shadow-md">
+      <Pagination
+        pagination={data.pagination}
+        onPageChange={onPageChange}
+        onNextPageHover={onNextPageHover} // ✨ 创新功能
+        onPrevPageHover={onPrevPageHover} // ✨ 创新功能
+        showRange
+        showTotal
+      />
+    </div>
+  );
+}
 ```
 
 **特点**:
+
 - ✅ 使用自定义hook `useOptimizedInventoryQuery`
 - ✅ **Hover预取功能** - 鼠标悬停时预加载下一页数据
 - ✅ 使用ref避免闭包问题
@@ -130,6 +148,7 @@
 - ✅ router.replace避免页面滚动和输入框失焦
 
 **合理性评估**: ⭐⭐⭐⭐⭐ (5/5)
+
 - 库存数据量非常大,必须分页
 - **性能优化最佳实践** - hover预取提升用户体验
 
@@ -138,43 +157,48 @@
 ### 4. 客户管理列表 (Customers) ❌
 
 **文件路径**:
+
 - `app/(dashboard)/customers/page-client.tsx`
 - `components/customers/erp-customer-list.tsx`
 
 **分页实现**: ❌ **缺失**
 
 **问题描述**:
+
 - page-client.tsx中有完整的分页数据结构(initialData.pagination)
 - URL参数管理包含分页参数
 - **但是ERPCustomerList组件中没有渲染Pagination组件**
 
 **现状**:
+
 ```tsx
 // 只有表格,没有分页UI
 <div className="flex-1 overflow-hidden">
-  <Table>
-    {/* 表格内容 */}
-  </Table>
+  <Table>{/* 表格内容 */}</Table>
 </div>
 ```
 
 **合理性评估**: ⭐⭐ (2/5)
+
 - 客户数据会逐渐增多,需要分页
 - **缺失分页UI是明显的BUG**
 
 **建议修复**:
 在ERPCustomerList组件末尾添加分页组件:
+
 ```tsx
-{initialData.pagination && (
-  <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-    <Pagination
-      pagination={initialData.pagination}
-      onPageChange={handlePageChange}
-      showRange
-      showTotal
-    />
-  </div>
-)}
+{
+  initialData.pagination && (
+    <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+      <Pagination
+        pagination={initialData.pagination}
+        onPageChange={handlePageChange}
+        showRange
+        showTotal
+      />
+    </div>
+  );
+}
 ```
 
 ---
@@ -182,44 +206,49 @@
 ### 5. 退货订单列表 (Return Orders) ❌
 
 **文件路径**:
+
 - `app/(dashboard)/return-orders/page-client.tsx`
 - `components/return-orders/erp-return-order-list.tsx`
 
 **分页实现**: ❌ **缺失**
 
 **问题描述**:
+
 - page-client.tsx中有完整的handlePageChange逻辑
 - URL参数管理包含分页参数
 - **组件中完全没有Pagination组件渲染**
 - 当前使用mock数据,返回空列表
 
 **现状**:
+
 ```tsx
 // 只有表格,没有分页
 <div className="overflow-hidden rounded-lg border bg-white shadow-lg shadow-gray-200/50">
-  <Table>
-    {/* 表格内容 */}
-  </Table>
+  <Table>{/* 表格内容 */}</Table>
 </div>
 ```
 
 **合理性评估**: ⭐⭐ (2/5)
+
 - 退货订单需要分页管理
 - **严重的实现不完整问题**
 
 **建议修复**:
 在Table容器末尾添加:
+
 ```tsx
-{displayData?.data.pagination && (
-  <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-    <Pagination
-      pagination={displayData.data.pagination}
-      onPageChange={handlePageChange}
-      showRange
-      showTotal
-    />
-  </div>
-)}
+{
+  displayData?.data.pagination && (
+    <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+      <Pagination
+        pagination={displayData.data.pagination}
+        onPageChange={handlePageChange}
+        showRange
+        showTotal
+      />
+    </div>
+  );
+}
 ```
 
 ---
@@ -227,37 +256,42 @@
 ### 6. 厂家发货列表 (Factory Shipments) ✅
 
 **文件路径**:
+
 - `app/(dashboard)/factory-shipments/page-client.tsx`
 - `components/factory-shipments/factory-shipment-order-list.tsx`
 
 **分页实现**: ✅ **完整** (位置: 381-396行)
 
 ```tsx
-{pagination && (
-  <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-    <Pagination
-      pagination={{
-        page: pagination.page,
-        limit: pagination.limit,
-        total: pagination.totalCount,
-        totalPages: pagination.totalPages,
-      }}
-      onPageChange={handlePageChange}
-      showRange
-      showTotal
-      disabled={isLoading}  // ✨ 加载时禁用
-    />
-  </div>
-)}
+{
+  pagination && (
+    <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+      <Pagination
+        pagination={{
+          page: pagination.page,
+          limit: pagination.limit,
+          total: pagination.totalCount,
+          totalPages: pagination.totalPages,
+        }}
+        onPageChange={handlePageChange}
+        showRange
+        showTotal
+        disabled={isLoading} // ✨ 加载时禁用
+      />
+    </div>
+  );
+}
 ```
 
 **特点**:
+
 - ✅ 使用TanStack Query
 - ✅ 删除功能使用mutation
 - ✅ 分页禁用状态处理
 - ✅ 统一的UnifiedSearchBar
 
 **合理性评估**: ⭐⭐⭐⭐⭐ (5/5)
+
 - 厂家发货订单需要分页
 - 实现完整,包含边界处理
 
@@ -266,18 +300,21 @@
 ### 7. 财务往来账单 (Finance Statements) ✅
 
 **文件路径**:
+
 - `app/(dashboard)/finance/statements/page-client.tsx`
 - `components/finance/statements-client.tsx`
 
 **分页实现**: ✅ **完整**
 
 **特点**:
+
 - ✅ URL参数管理
 - ✅ 防抖搜索
 - ✅ 统计数据展示
 - ✅ 类型筛选(客户/供应商)
 
 **合理性评估**: ⭐⭐⭐⭐⭐ (5/5)
+
 - 账单数据必须分页
 - 实现规范
 
@@ -286,6 +323,7 @@
 ### 8. 供应商管理列表 (Suppliers) ✅
 
 **文件路径**:
+
 - `components/suppliers/suppliers-page-client.tsx`
 
 **分页实现**: ✅ **完整** (位置: 253-261行)
@@ -302,12 +340,14 @@
 ```
 
 **特点**:
+
 - ✅ 服务器端数据预取
 - ✅ 删除确认对话框
 - ✅ 状态筛选
 - ⚠️ **注意**: 分页容器没有圆角,与其他页面略有不同
 
 **合理性评估**: ⭐⭐⭐⭐⭐ (5/5)
+
 - 供应商数据需要分页
 - 实现完整
 
@@ -316,18 +356,21 @@
 ### 9. 库存入库记录 (Inventory Inbound) ⚠️
 
 **文件路径**:
+
 - `app/(dashboard)/inventory/inbound/page-client.tsx`
 - `components/inventory/forms/inbound-records-table.tsx`
 
 **分页实现**: ⚠️ **无分页**
 
 **分析**:
+
 - 这是入库记录查询页面,不是库存列表
 - 使用useInboundRecords hook获取数据
 - 数据结构中没有pagination字段
 - **当前实现**: 一次性加载所有记录
 
 **合理性评估**: ⭐⭐⭐ (3/5)
+
 - 如果记录数量少(<100),可以接受不分页
 - 如果记录数量多,需要添加分页
 - **建议**: 添加服务端分页支持
@@ -337,17 +380,20 @@
 ### 10. 库存出库记录 (Inventory Outbound) ⚠️
 
 **文件路径**:
+
 - `app/(dashboard)/inventory/outbound/page-client.tsx`
 - `components/inventory/forms/outbound-records-table.tsx`
 
 **分页实现**: ⚠️ **无分页**
 
 **分析**:
+
 - 同入库记录,没有分页实现
 - 使用useOutboundRecords hook
 - 一次性加载所有记录
 
 **合理性评估**: ⭐⭐⭐ (3/5)
+
 - 与入库记录相同的问题
 - **建议**: 添加服务端分页支持
 
@@ -356,17 +402,20 @@
 ### 11. 库存调整记录 (Inventory Adjustments) ⚠️
 
 **文件路径**:
+
 - `app/(dashboard)/inventory/adjustments/page-client.tsx`
 - `app/(dashboard)/inventory/adjustments/components/AdjustmentRecordsTable.tsx`
 
 **分页实现**: ⚠️ **无分页**
 
 **分析**:
+
 - 调整记录查询页面
 - 使用useAdjustmentRecords hook
 - 返回数据结构包含pagination,但未在UI中使用
 
 **合理性评估**: ⭐⭐⭐ (3/5)
+
 - 数据已支持分页,缺少UI实现
 - **建议**: 在AdjustmentRecordsTable组件中添加Pagination组件
 
@@ -394,7 +443,7 @@
   </Card>
 
   {/* 数据表格 */}
-  <div className="border rounded-lg">
+  <div className="rounded-lg border">
     <Table />
     {/* 分页 */}
     <div className="border-t px-4 py-3">
@@ -406,18 +455,18 @@
 
 ### 布局一致性对比
 
-| 页面 | 外层padding | 标题卡片 | 搜索卡片 | 表格容器 | 分页容器 | 一致性 |
-|------|------------|---------|---------|---------|---------|--------|
-| 销售订单 | ✅ p-6 | ✅ Card | ✅ 独立 | ✅ border+rounded | ✅ border-t | ⭐⭐⭐⭐⭐ |
-| 产品管理 | ✅ p-6 | ❌ 无 | ✅ 独立 | ✅ border+rounded | ✅ border-t+shadow | ⭐⭐⭐⭐ |
-| 库存管理 | ❌ 无padding | ❌ 无 | ❌ sticky | ✅ border+rounded | ✅ 独立卡片 | ⭐⭐⭐ |
-| 客户管理 | ✅ p-6 | ✅ Card+gradient | ✅ 独立 | ✅ 仅Table | ❌ 无分页 | ⭐⭐⭐ |
-| 退货订单 | ✅ p-6 | ✅ Card+gradient | ✅ Card | ✅ border+rounded | ❌ 无分页 | ⭐⭐⭐ |
-| 厂家发货 | ✅ p-6 | ✅ Card | ✅ Card | ✅ border+rounded | ✅ border-t | ⭐⭐⭐⭐⭐ |
-| 财务账单 | ✅ p-6 | ✅ Card+gradient | ❌ 在组件内 | ✅ Card | ✅ border-t | ⭐⭐⭐⭐ |
-| 供应商 | ✅ p-6 | ✅ 独立组件 | ✅ 独立 | ✅ border+rounded | ✅ border-t | ⭐⭐⭐⭐ |
-| 入库记录 | ✅ p-6 | ✅ Card+gradient | ✅ Card | ✅ 内置 | ❌ 无 | ⭐⭐⭐ |
-| 出库记录 | ✅ p-6 | ✅ Card+gradient | ✅ Card | ✅ 内置 | ❌ 无 | ⭐⭐⭐ |
+| 页面     | 外层padding  | 标题卡片         | 搜索卡片    | 表格容器          | 分页容器           | 一致性     |
+| -------- | ------------ | ---------------- | ----------- | ----------------- | ------------------ | ---------- |
+| 销售订单 | ✅ p-6       | ✅ Card          | ✅ 独立     | ✅ border+rounded | ✅ border-t        | ⭐⭐⭐⭐⭐ |
+| 产品管理 | ✅ p-6       | ❌ 无            | ✅ 独立     | ✅ border+rounded | ✅ border-t+shadow | ⭐⭐⭐⭐   |
+| 库存管理 | ❌ 无padding | ❌ 无            | ❌ sticky   | ✅ border+rounded | ✅ 独立卡片        | ⭐⭐⭐     |
+| 客户管理 | ✅ p-6       | ✅ Card+gradient | ✅ 独立     | ✅ 仅Table        | ❌ 无分页          | ⭐⭐⭐     |
+| 退货订单 | ✅ p-6       | ✅ Card+gradient | ✅ Card     | ✅ border+rounded | ❌ 无分页          | ⭐⭐⭐     |
+| 厂家发货 | ✅ p-6       | ✅ Card          | ✅ Card     | ✅ border+rounded | ✅ border-t        | ⭐⭐⭐⭐⭐ |
+| 财务账单 | ✅ p-6       | ✅ Card+gradient | ❌ 在组件内 | ✅ Card           | ✅ border-t        | ⭐⭐⭐⭐   |
+| 供应商   | ✅ p-6       | ✅ 独立组件      | ✅ 独立     | ✅ border+rounded | ✅ border-t        | ⭐⭐⭐⭐   |
+| 入库记录 | ✅ p-6       | ✅ Card+gradient | ✅ Card     | ✅ 内置           | ❌ 无              | ⭐⭐⭐     |
+| 出库记录 | ✅ p-6       | ✅ Card+gradient | ✅ Card     | ✅ 内置           | ❌ 无              | ⭐⭐⭐     |
 
 ### 发现的不一致性
 
@@ -451,21 +500,24 @@
 **位置**: `components/customers/erp-customer-list.tsx:231`
 
 **修复方案**:
+
 ```tsx
 // 在TableBody之后添加
-{initialData.pagination && (
-  <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-    <Pagination
-      pagination={initialData.pagination}
-      onPageChange={(page) => {
-        // 通过props传入的onPageChange或直接导航
-        router.push(`/customers?page=${page}`);
-      }}
-      showRange
-      showTotal
-    />
-  </div>
-)}
+{
+  initialData.pagination && (
+    <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+      <Pagination
+        pagination={initialData.pagination}
+        onPageChange={page => {
+          // 通过props传入的onPageChange或直接导航
+          router.push(`/customers?page=${page}`);
+        }}
+        showRange
+        showTotal
+      />
+    </div>
+  );
+}
 ```
 
 **影响**: 客户数据无法有效浏览,用户体验差
@@ -477,18 +529,21 @@
 **位置**: `components/return-orders/erp-return-order-list.tsx:391`
 
 **修复方案**:
+
 ```tsx
 // 在Table容器末尾添加
-{displayData?.data.pagination && displayData.data.pagination.total > 0 && (
-  <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-    <Pagination
-      pagination={displayData.data.pagination}
-      onPageChange={onPageChange || (() => {})}
-      showRange
-      showTotal
-    />
-  </div>
-)}
+{
+  displayData?.data.pagination && displayData.data.pagination.total > 0 && (
+    <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+      <Pagination
+        pagination={displayData.data.pagination}
+        onPageChange={onPageChange || (() => {})}
+        showRange
+        showTotal
+      />
+    </div>
+  );
+}
 ```
 
 **影响**: 退货订单数据无法分页查看
@@ -516,15 +571,18 @@ export function PageHeader({
   description,
   icon,
   actions,
-  variant = 'gradient'
+  variant = 'gradient',
 }: PageHeaderProps) {
   return (
     <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
-      <CardContent className={cn(
-        "p-6",
-        variant === 'gradient' && "bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]",
-        variant === 'solid' && "bg-[hsl(var(--color-bg-secondary))]"
-      )}>
+      <CardContent
+        className={cn(
+          'p-6',
+          variant === 'gradient' &&
+            'bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))]',
+          variant === 'solid' && 'bg-[hsl(var(--color-bg-secondary))]'
+        )}
+      >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[hsl(var(--color-primary))]">
@@ -548,6 +606,7 @@ export function PageHeader({
 ```
 
 **影响的文件**:
+
 - sales-orders/page-client.tsx
 - customers/page-client.tsx
 - return-orders/page-client.tsx
@@ -573,6 +632,7 @@ export function PageHeader({
 ```
 
 **需要调整的文件**:
+
 - products/erp-product-list.tsx (移除shadow,统一border-t)
 - inventory/erp-inventory-list.tsx (移除mx-6独立卡片,改为border-t)
 - suppliers/suppliers-page-client.tsx (统一背景色)
@@ -584,16 +644,19 @@ export function PageHeader({
 #### P2-1: 库存记录页面添加服务端分页
 
 **位置**:
+
 - `app/api/inventory/inbound/route.ts`
 - `app/api/inventory/outbound/route.ts`
 - `app/api/inventory/adjustments/route.ts`
 
 **建议**:
+
 1. API添加分页参数支持(page, limit)
 2. 前端hook添加分页状态管理
 3. 组件添加Pagination UI
 
 **合理性**:
+
 - 如果记录数量<100,可以不分页
 - 如果记录数量>100,必须分页
 
@@ -604,10 +667,12 @@ export function PageHeader({
 **位置**: `app/(dashboard)/inventory/page-client.tsx`
 
 **当前问题**:
+
 - 使用sticky工具栏,与其他页面布局不同
 - 缺少外层padding
 
 **建议**:
+
 ```tsx
 // 改为标准布局
 <div className="flex h-full flex-col overflow-auto p-6">
@@ -636,20 +701,23 @@ export function PageHeader({
 ### 分页组件使用规范
 
 ✅ **标准实现模式**:
+
 ```tsx
-{pagination && (
-  <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-    <Pagination
-      pagination={pagination}
-      onPageChange={handlePageChange}
-      showRange
-      showTotal
-      disabled={isLoading}  // 可选: 加载时禁用
-      onNextPageHover={prefetchNext}  // 可选: 性能优化
-      onPrevPageHover={prefetchPrev}  // 可选: 性能优化
-    />
-  </div>
-)}
+{
+  pagination && (
+    <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+      <Pagination
+        pagination={pagination}
+        onPageChange={handlePageChange}
+        showRange
+        showTotal
+        disabled={isLoading} // 可选: 加载时禁用
+        onNextPageHover={prefetchNext} // 可选: 性能优化
+        onPrevPageHover={prefetchPrev} // 可选: 性能优化
+      />
+    </div>
+  );
+}
 ```
 
 ### 页面布局标准结构
@@ -725,21 +793,25 @@ const debouncedUpdateURL = useDebouncedCallback(
 ### DRY (Don't Repeat Yourself)
 
 ✅ **做得好**:
+
 - 所有页面使用统一的Pagination组件
 - UnifiedSearchBar在多个页面复用
 - 使用自定义hooks封装分页逻辑
 
 ⚠️ **需要改进**:
+
 - 页面标题卡片代码重复 → 建议创建PageHeader组件
 - 分页容器样式重复 → 建议封装PaginationContainer组件
 
 ### KISS (Keep It Simple)
 
 ✅ **做得好**:
+
 - Pagination组件API简洁清晰
 - URL参数管理逻辑简单直观
 
 ⚠️ **需要改进**:
+
 - 库存管理的sticky布局过于复杂
 
 ### SOLID原则
@@ -747,6 +819,7 @@ const debouncedUpdateURL = useDebouncedCallback(
 #### SRP (Single Responsibility Principle)
 
 ✅ **做得好**:
+
 - page-client.tsx: 负责状态管理和URL同步
 - list组件: 负责UI渲染
 - Pagination组件: 单一职责,只负责分页UI
@@ -754,6 +827,7 @@ const debouncedUpdateURL = useDebouncedCallback(
 #### OCP (Open-Closed Principle)
 
 ✅ **做得好**:
+
 - Pagination组件支持扩展(onNextPageHover, disabled等)
 - 不需要修改组件内部代码
 
@@ -761,14 +835,14 @@ const debouncedUpdateURL = useDebouncedCallback(
 
 ## 📊 修复优先级汇总
 
-| 优先级 | 问题 | 文件 | 影响范围 | 预计工作量 |
-|--------|------|------|---------|-----------|
-| **P0** | 客户管理缺少分页 | erp-customer-list.tsx | 客户模块 | 30分钟 |
-| **P0** | 退货订单缺少分页 | erp-return-order-list.tsx | 退货模块 | 30分钟 |
-| **P1** | 标题卡片样式不统一 | 6个page-client文件 | 全局 | 2小时 |
-| **P1** | 分页容器样式不统一 | 3个list组件 | 多个模块 | 1小时 |
-| **P2** | 记录页面缺少分页 | 3个API+组件 | 库存子模块 | 4小时 |
-| **P2** | 库存页面布局特殊 | inventory/page-client.tsx | 库存模块 | 2小时 |
+| 优先级 | 问题               | 文件                      | 影响范围   | 预计工作量 |
+| ------ | ------------------ | ------------------------- | ---------- | ---------- |
+| **P0** | 客户管理缺少分页   | erp-customer-list.tsx     | 客户模块   | 30分钟     |
+| **P0** | 退货订单缺少分页   | erp-return-order-list.tsx | 退货模块   | 30分钟     |
+| **P1** | 标题卡片样式不统一 | 6个page-client文件        | 全局       | 2小时      |
+| **P1** | 分页容器样式不统一 | 3个list组件               | 多个模块   | 1小时      |
+| **P2** | 记录页面缺少分页   | 3个API+组件               | 库存子模块 | 4小时      |
+| **P2** | 库存页面布局特殊   | inventory/page-client.tsx | 库存模块   | 2小时      |
 
 **总工作量估算**: 约10小时
 
@@ -805,6 +879,7 @@ const debouncedUpdateURL = useDebouncedCallback(
 ### 整体评价
 
 项目的分页实现整体质量**中等偏上**:
+
 - ✅ 6/10页面有完整的分页实现
 - ✅ 所有分页使用统一的Pagination组件
 - ✅ URL参数管理规范

@@ -85,19 +85,19 @@ export function ERPReturnOrderForm() {
 
 ## Props 说明
 
-| 属性 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| `customers` | `Customer[]` | ✅ | 客户列表 |
-| `salesOrders` | `SalesOrder[]` | ✅ | 销售订单列表 |
-| `selectedCustomerId` | `string` | ❌ | 当前选中的客户ID |
-| `value` | `string` | ❌ | 当前选中的销售订单ID |
-| `onCustomerChange` | `(customerId: string) => void` | ❌ | 客户变化回调 |
-| `onValueChange` | `(salesOrderId: string, salesOrder: SalesOrder) => void` | ✅ | 销售订单选择回调 |
-| `placeholder` | `string` | ❌ | 占位符文本 |
-| `disabled` | `boolean` | ❌ | 是否禁用 |
-| `className` | `string` | ❌ | 自定义样式类 |
-| `isLoadingCustomers` | `boolean` | ❌ | 客户列表加载状态 |
-| `isLoadingSalesOrders` | `boolean` | ❌ | 订单列表加载状态 |
+| 属性                   | 类型                                                     | 必填 | 说明                 |
+| ---------------------- | -------------------------------------------------------- | ---- | -------------------- |
+| `customers`            | `Customer[]`                                             | ✅   | 客户列表             |
+| `salesOrders`          | `SalesOrder[]`                                           | ✅   | 销售订单列表         |
+| `selectedCustomerId`   | `string`                                                 | ❌   | 当前选中的客户ID     |
+| `value`                | `string`                                                 | ❌   | 当前选中的销售订单ID |
+| `onCustomerChange`     | `(customerId: string) => void`                           | ❌   | 客户变化回调         |
+| `onValueChange`        | `(salesOrderId: string, salesOrder: SalesOrder) => void` | ✅   | 销售订单选择回调     |
+| `placeholder`          | `string`                                                 | ❌   | 占位符文本           |
+| `disabled`             | `boolean`                                                | ❌   | 是否禁用             |
+| `className`            | `string`                                                 | ❌   | 自定义样式类         |
+| `isLoadingCustomers`   | `boolean`                                                | ❌   | 客户列表加载状态     |
+| `isLoadingSalesOrders` | `boolean`                                                | ❌   | 订单列表加载状态     |
 
 ### 类型定义
 
@@ -147,6 +147,7 @@ interface SalesOrder {
 ### 推荐的 API 端点
 
 1. **获取客户列表**
+
    ```
    GET /api/customers?limit=100
    ```
@@ -167,7 +168,7 @@ interface SalesOrder {
       "orderNumber": "SO-2025-0001",
       "customerId": "customer_456",
       "customerName": "张三公司",
-      "totalAmount": 12500.00,
+      "totalAmount": 12500.0,
       "status": "completed",
       "createdAt": "2025-01-15T10:30:00Z"
     }
@@ -203,6 +204,7 @@ interface SalesOrder {
 ```
 
 **缺点**：
+
 - ❌ 需要用户记住订单号
 - ❌ 输入容易出错
 - ❌ 需要额外的搜索请求
@@ -220,6 +222,7 @@ interface SalesOrder {
 ```
 
 **优点**：
+
 - ✅ 直观的两步选择流程
 - ✅ 支持搜索和筛选
 - ✅ 丰富的信息展示

@@ -34,7 +34,7 @@ const testCases = [
  */
 async function runTests() {
   console.log('🧪 开始测试 IP 地理位置功能\n');
-  console.log('=' .repeat(80));
+  console.log('='.repeat(80));
 
   let successCount = 0;
   let failureCount = 0;
@@ -65,7 +65,9 @@ async function runTests() {
         failureCount++;
       }
     } catch (error) {
-      console.log(`   ❌ 错误: ${error instanceof Error ? error.message : String(error)}`);
+      console.log(
+        `   ❌ 错误: ${error instanceof Error ? error.message : String(error)}`
+      );
       failureCount++;
     }
   }

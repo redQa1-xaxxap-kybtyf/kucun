@@ -5,14 +5,15 @@
 ### ❌ 问题 1：退款计算逻辑错误
 
 **当前实现：**
+
 ```typescript
 // lib/services/customer-statement-service.ts 第 356-361 行
 const receivableBalance =
-  salesAmount -          // 销售金额
-  salesReturnAmount -    // 销售退货
-  paymentReceived -      // 收款
-  prepaymentReceived +   // 预收款
-  refundPaid;            // ❌ 退款（这里有问题！）
+  salesAmount - // 销售金额
+  salesReturnAmount - // 销售退货
+  paymentReceived - // 收款
+  prepaymentReceived + // 预收款
+  refundPaid; // ❌ 退款（这里有问题！）
 ```
 
 **问题分析：**
@@ -23,6 +24,7 @@ const receivableBalance =
    - 结果：同一笔退货，先减后加，余额不准确
 
 2. **会计逻辑错误**
+
    ```
    正确的退货流程：
    1. 销售 ¥10,000 → 应收 +10,000
@@ -37,6 +39,7 @@ const receivableBalance =
    ```
 
 3. **数据库验证**
+
    ```typescript
    // RefundRecord 表有 returnOrderId 字段
    returnOrderId String? @map("return_order_id")
@@ -48,12 +51,13 @@ const receivableBalance =
 ### ❌ 问题 2：交易明细中退款的会计方向错误
 
 **当前实现：**
+
 ```typescript
 // 第 502-514 行
 for (const refund of refunds) {
   transactionEntries.push({
     transactionType: 'refund_out',
-    debitAmount: Number(refund.refundAmount),  // ❌ 借方
+    debitAmount: Number(refund.refundAmount), // ❌ 借方
     creditAmount: 0,
   });
 }
@@ -62,18 +66,20 @@ for (const refund of refunds) {
 **问题分析：**
 
 从客户视角的对账单（我们的应收账款）：
+
 - **借方** = 增加应收（客户欠我们的）
 - **贷方** = 减少应收（客户还我们的/我们退给客户的）
 
 退款给客户应该是**贷方**（减少应收），不是借方！
 
 **正确实现：**
+
 ```typescript
 // 退款应该作为贷方
 transactionEntries.push({
   transactionType: 'refund_out',
   debitAmount: 0,
-  creditAmount: Number(refund.refundAmount),  // ✅ 贷方
+  creditAmount: Number(refund.refundAmount), // ✅ 贷方
 });
 ```
 
@@ -82,6 +88,7 @@ transactionEntries.push({
 ### ❌ 问题 3：退货与退款的关系未处理
 
 **当前查询：**
+
 ```typescript
 // 1. 退货查询（第 453-468 行）
 const returnOrders = await prisma.returnOrder.findMany({
@@ -103,6 +110,7 @@ const refunds = await prisma.refundRecord.findMany({
 ```
 
 **问题：**
+
 - 同一笔退货的 `refundAmount` 被计算了两次
 - 退货作为贷方（减少应收）✅
 - 退款作为借方（增加应收）❌
@@ -113,11 +121,13 @@ const refunds = await prisma.refundRecord.findMany({
 ### 1. 应收账款核算标准
 
 **会计公式：**
+
 ```
 应收账款余额 = 期初余额 + 本期销售 - 本期退货 - 本期收款 - 预收款冲抵
 ```
 
 **说明：**
+
 - 销售：开具发票，增加应收
 - 退货：红字发票，减少应收
 - 收款：客户付款，减少应收
@@ -126,6 +136,7 @@ const refunds = await prisma.refundRecord.findMany({
 ### 2. 退款的正确处理
 
 **情况 A：退货退款**（最常见）
+
 ```sql
 -- ReturnOrder 表
 refundAmount = 3000  -- 退货金额
@@ -140,6 +151,7 @@ refundAmount = 3000    -- 退款金额
 ```
 
 **情况 B：无退货的退款**（补偿、折扣等）
+
 ```sql
 -- RefundRecord 表
 returnOrderId = null   -- 不关联退货
@@ -153,20 +165,21 @@ refundType = "compensation_refund"
 
 ### 3. 交易明细的正确借贷方向
 
-| 交易类型 | 借方 | 贷方 | 说明 |
-|---------|------|------|------|
-| 销售订单 | ✅ | - | 增加应收 |
-| 销售退货 | - | ✅ | 减少应收 |
-| 客户付款 | - | ✅ | 减少应收 |
-| 退货退款 | - | - | 不单独记录（已在退货中）|
-| 补偿退款 | ✅ | - | 增加应收 |
-| 预收款 | - | ✅ | 减少应收 |
+| 交易类型 | 借方 | 贷方 | 说明                     |
+| -------- | ---- | ---- | ------------------------ |
+| 销售订单 | ✅   | -    | 增加应收                 |
+| 销售退货 | -    | ✅   | 减少应收                 |
+| 客户付款 | -    | ✅   | 减少应收                 |
+| 退货退款 | -    | -    | 不单独记录（已在退货中） |
+| 补偿退款 | ✅   | -    | 增加应收                 |
+| 预收款   | -    | ✅   | 减少应收                 |
 
 ## 🔧 修复方案
 
 ### 方案 A：排除退货关联的退款（推荐）
 
 **步骤 1：修改汇总计算**
+
 ```typescript
 // lib/services/customer-statement-service.ts
 
@@ -175,7 +188,7 @@ const refunds = await prisma.refundRecord.findMany({
   where: {
     customerId,
     status: 'completed',
-    returnOrderId: null,  // ✅ 只统计无退货关联的退款
+    returnOrderId: null, // ✅ 只统计无退货关联的退款
     ...(Object.keys(dateFilter).length > 0 && { refundDate: dateFilter }),
   },
   select: { refundAmount: true },
@@ -187,17 +200,18 @@ const receivableBalance =
   salesReturnAmount -
   paymentReceived -
   prepaymentReceived +
-  refundPaid;  // ✅ 现在只包含补偿退款，逻辑正确
+  refundPaid; // ✅ 现在只包含补偿退款，逻辑正确
 ```
 
 **步骤 2：修改交易明细**
+
 ```typescript
 // 只查询无退货关联的退款
 const refunds = await prisma.refundRecord.findMany({
   where: {
     customerId,
     status: 'completed',
-    returnOrderId: null,  // ✅ 排除退货退款
+    returnOrderId: null, // ✅ 排除退货退款
     refundDate: dateFilter,
   },
 });
@@ -206,7 +220,7 @@ const refunds = await prisma.refundRecord.findMany({
 for (const refund of refunds) {
   transactionEntries.push({
     transactionType: 'refund_out',
-    debitAmount: Number(refund.refundAmount),  // ✅ 借方正确
+    debitAmount: Number(refund.refundAmount), // ✅ 借方正确
     creditAmount: 0,
   });
 }
@@ -222,11 +236,8 @@ for (const refund of refunds) {
 
 // 2. 简化余额计算
 const receivableBalance =
-  salesAmount -
-  salesReturnAmount -
-  paymentReceived -
-  prepaymentReceived;
-  // ✅ 不再包含 refundPaid
+  salesAmount - salesReturnAmount - paymentReceived - prepaymentReceived;
+// ✅ 不再包含 refundPaid
 
 // 3. 交易明细不记录退款
 // ✅ 退款信息已在退货记录的 refundAmount 中体现
@@ -235,6 +246,7 @@ const receivableBalance =
 ### 方案 C：区分退款类型（完整版）
 
 **步骤 1：修改 RefundRecord 类型定义**
+
 ```typescript
 // refundType 字段扩展
 refundType:
@@ -245,6 +257,7 @@ refundType:
 ```
 
 **步骤 2：分类查询**
+
 ```typescript
 // 只查询需要计入对账单的退款
 const refunds = await prisma.refundRecord.findMany({
@@ -252,7 +265,7 @@ const refunds = await prisma.refundRecord.findMany({
     customerId,
     status: 'completed',
     refundType: {
-      in: ['compensation_refund', 'discount_refund']
+      in: ['compensation_refund', 'discount_refund'],
     },
     refundDate: dateFilter,
   },
@@ -262,6 +275,7 @@ const refunds = await prisma.refundRecord.findMany({
 ## 📊 测试用例
 
 ### 测试用例 1：退货退款场景
+
 ```
 1. 销售订单 ¥10,000
 2. 客户付款 ¥10,000
@@ -279,6 +293,7 @@ const refunds = await prisma.refundRecord.findMany({
 ```
 
 ### 测试用例 2：补偿退款场景
+
 ```
 1. 销售订单 ¥10,000
 2. 客户付款 ¥10,000
@@ -313,17 +328,20 @@ const refunds = await prisma.refundRecord.findMany({
 ## 📝 总结
 
 **关键问题：**
+
 1. ❌ 退款与退货重复计算
 2. ❌ 退款的会计方向错误（部分场景）
 3. ❌ 未区分退货退款和补偿退款
 
 **修复优先级：**
+
 1. 🔴 高优先级：修正余额计算公式
 2. 🔴 高优先级：过滤退货关联的退款
 3. 🟡 中优先级：统一退款的会计处理
 4. 🟢 低优先级：扩展退款类型体系
 
 **影响范围：**
+
 - 客户对账单余额准确性
 - 财务报表数据可靠性
 - 客户对账确认流程

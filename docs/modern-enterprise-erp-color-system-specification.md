@@ -7,6 +7,7 @@
 本配色系统基于现代企业级应用的设计需求，参考Ant Design 5.0设计语言，旨在创建一个专业、高效、易用的ERP系统视觉体验。
 
 **核心设计原则：**
+
 - **专业性**：采用沉稳、可信赖的色彩搭配，体现企业级应用的严谨性
 - **高效性**：通过合理的色彩对比和层次，提升用户操作效率
 - **一致性**：建立统一的色彩语义系统，确保全平台体验一致
@@ -33,6 +34,7 @@
 ### 2.1 主色调系统
 
 **主蓝色 (Primary Blue)**
+
 - `--color-primary`: #1677FF
 - `--color-primary-hover`: #4096FF
 - `--color-primary-active`: #0958D9
@@ -40,6 +42,7 @@
 - `--color-primary-lighter`: #F0F8FF
 
 **应用场景：**
+
 - 主要操作按钮
 - 链接文本
 - 选中状态
@@ -48,16 +51,19 @@
 ### 2.2 辅助色系统
 
 **科技紫色 (Tech Purple)**
+
 - `--color-purple`: #722ED1
 - `--color-purple-light`: #F9F0FF
 - `--color-purple-hover`: #9254DE
 
 **数据青色 (Data Cyan)**
+
 - `--color-cyan`: #13C2C2
 - `--color-cyan-light`: #E6FFFB
 - `--color-cyan-hover`: #36CFC9
 
 **温和灰色 (Neutral Gray)**
+
 - `--color-gray-50`: #FAFAFA
 - `--color-gray-100`: #F5F5F5
 - `--color-gray-200`: #F0F0F0
@@ -72,21 +78,25 @@
 ### 2.3 状态色系统
 
 **成功绿色 (Success Green)**
+
 - `--color-success`: #52C41A
 - `--color-success-light`: #F6FFED
 - `--color-success-hover`: #73D13D
 
 **警告橙色 (Warning Orange)**
+
 - `--color-warning`: #FA8C16
 - `--color-warning-light`: #FFF7E6
 - `--color-warning-hover`: #FFA940
 
 **错误红色 (Error Red)**
+
 - `--color-error`: #FF4D4F
 - `--color-error-light`: #FFF2F0
 - `--color-error-hover`: #FF7875
 
 **信息青色 (Info Blue)**
+
 - `--color-info`: #1890FF
 - `--color-info-light`: #E6F7FF
 - `--color-info-hover`: #40A9FF
@@ -96,6 +106,7 @@
 ### 3.1 表格系统配色规则
 
 **表头配色**
+
 ```css
 .table-header {
   background: var(--color-gray-50);
@@ -105,9 +116,10 @@
 ```
 
 **表格行配色**
+
 ```css
 .table-row {
-  background: #FFFFFF;
+  background: #ffffff;
   border-bottom: 1px solid var(--color-gray-100);
 }
 
@@ -126,6 +138,7 @@
 ```
 
 **排序和筛选**
+
 ```css
 .table-sort-active {
   color: var(--color-primary);
@@ -139,9 +152,10 @@
 ### 3.2 导航和菜单配色标准
 
 **顶部导航**
+
 ```css
 .top-nav {
-  background: #FFFFFF;
+  background: #ffffff;
   border-bottom: 1px solid var(--color-gray-200);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
@@ -161,6 +175,7 @@
 ```
 
 **侧边栏菜单**
+
 ```css
 .sidebar {
   background: var(--color-gray-50);
@@ -178,17 +193,18 @@
 
 .menu-item.active {
   background: var(--color-primary);
-  color: #FFFFFF;
+  color: #ffffff;
 }
 ```
 
 ### 3.3 表单元素配色指南
 
 **输入框**
+
 ```css
 .input {
   border: 1px solid var(--color-gray-300);
-  background: #FFFFFF;
+  background: #ffffff;
 }
 
 .input:focus {
@@ -206,6 +222,7 @@
 ```
 
 **选择器**
+
 ```css
 .select {
   border: 1px solid var(--color-gray-300);
@@ -217,17 +234,18 @@
 
 .select-option.selected {
   background: var(--color-primary);
-  color: #FFFFFF;
+  color: #ffffff;
 }
 ```
 
 ### 3.4 按钮和交互元素配色
 
 **主要按钮**
+
 ```css
 .btn-primary {
   background: var(--color-primary);
-  color: #FFFFFF;
+  color: #ffffff;
   border: 1px solid var(--color-primary);
 }
 
@@ -241,9 +259,10 @@
 ```
 
 **次要按钮**
+
 ```css
 .btn-secondary {
-  background: #FFFFFF;
+  background: #ffffff;
   color: var(--color-primary);
   border: 1px solid var(--color-primary);
 }
@@ -254,10 +273,11 @@
 ```
 
 **危险按钮**
+
 ```css
 .btn-danger {
   background: var(--color-error);
-  color: #FFFFFF;
+  color: #ffffff;
   border: 1px solid var(--color-error);
 }
 
@@ -269,6 +289,7 @@
 ### 3.5 边框和分割线规范
 
 **主要分割线**
+
 ```css
 .divider {
   border-top: 1px solid var(--color-gray-200);
@@ -280,6 +301,7 @@
 ```
 
 **卡片边框**
+
 ```css
 .card {
   border: 1px solid var(--color-gray-200);
@@ -300,18 +322,20 @@
 ### 4.2 深色模式色彩定义
 
 **背景色系**
+
 ```css
-[data-theme="dark"] {
+[data-theme='dark'] {
   --color-bg-primary: #141414;
-  --color-bg-secondary: #1F1F1F;
+  --color-bg-secondary: #1f1f1f;
   --color-bg-tertiary: #262626;
-  --color-bg-card: #1F1F1F;
+  --color-bg-card: #1f1f1f;
 }
 ```
 
 **文本色系**
+
 ```css
-[data-theme="dark"] {
+[data-theme='dark'] {
   --color-text-primary: rgba(255, 255, 255, 0.85);
   --color-text-secondary: rgba(255, 255, 255, 0.65);
   --color-text-tertiary: rgba(255, 255, 255, 0.45);
@@ -319,11 +343,12 @@
 ```
 
 **主色调适配**
+
 ```css
-[data-theme="dark"] {
-  --color-primary: #1890FF;
-  --color-primary-hover: #40A9FF;
-  --color-primary-active: #096DD9;
+[data-theme='dark'] {
+  --color-primary: #1890ff;
+  --color-primary-hover: #40a9ff;
+  --color-primary-active: #096dd9;
 }
 ```
 
@@ -339,45 +364,47 @@
 ### 5.1 CSS变量命名规范
 
 **语义化命名**
+
 ```css
 :root {
   /* 主色调 */
-  --color-primary: #1677FF;
-  --color-primary-hover: #4096FF;
-  --color-primary-active: #0958D9;
-  
+  --color-primary: #1677ff;
+  --color-primary-hover: #4096ff;
+  --color-primary-active: #0958d9;
+
   /* 背景色 */
-  --color-bg-primary: #FFFFFF;
-  --color-bg-secondary: #FAFAFA;
-  --color-bg-tertiary: #F5F5F5;
-  
+  --color-bg-primary: #ffffff;
+  --color-bg-secondary: #fafafa;
+  --color-bg-tertiary: #f5f5f5;
+
   /* 文本色 */
   --color-text-primary: #262626;
   --color-text-secondary: #595959;
-  --color-text-tertiary: #8C8C8C;
-  
+  --color-text-tertiary: #8c8c8c;
+
   /* 边框色 */
-  --color-border-primary: #D9D9D9;
-  --color-border-secondary: #F0F0F0;
+  --color-border-primary: #d9d9d9;
+  --color-border-secondary: #f0f0f0;
 }
 ```
 
 ### 5.2 语义化颜色定义
 
 **功能性颜色**
+
 ```css
 :root {
   /* 状态色 */
-  --color-success: #52C41A;
-  --color-warning: #FA8C16;
-  --color-error: #FF4D4F;
-  --color-info: #1890FF;
-  
+  --color-success: #52c41a;
+  --color-warning: #fa8c16;
+  --color-error: #ff4d4f;
+  --color-info: #1890ff;
+
   /* 交互色 */
   --color-hover: var(--color-primary-light);
   --color-active: var(--color-primary);
   --color-disabled: var(--color-gray-300);
-  
+
   /* 阴影色 */
   --shadow-light: rgba(0, 0, 0, 0.06);
   --shadow-medium: rgba(0, 0, 0, 0.12);
@@ -388,6 +415,7 @@
 ### 5.3 响应式配色方案
 
 **媒体查询适配**
+
 ```css
 @media (max-width: 768px) {
   :root {
@@ -409,6 +437,7 @@
 ### 6.1 常见UI组件配色示例
 
 **数据卡片**
+
 ```css
 .stats-card {
   background: var(--color-bg-card);
@@ -431,6 +460,7 @@
 ```
 
 **进度条**
+
 ```css
 .progress-bar {
   background: var(--color-gray-200);
@@ -439,7 +469,11 @@
 }
 
 .progress-fill {
-  background: linear-gradient(90deg, var(--color-primary), var(--color-primary-hover));
+  background: linear-gradient(
+    90deg,
+    var(--color-primary),
+    var(--color-primary-hover)
+  );
   height: 100%;
   transition: width 0.3s ease;
 }
@@ -448,16 +482,19 @@
 ### 6.2 配色搭配建议
 
 **高优先级信息**
+
 - 背景：`var(--color-primary-light)`
 - 文本：`var(--color-primary)`
 - 边框：`var(--color-primary)`
 
 **中优先级信息**
+
 - 背景：`var(--color-bg-secondary)`
 - 文本：`var(--color-text-primary)`
 - 边框：`var(--color-border-primary)`
 
 **低优先级信息**
+
 - 背景：`var(--color-bg-tertiary)`
 - 文本：`var(--color-text-secondary)`
 - 边框：`var(--color-border-secondary)`
@@ -465,12 +502,14 @@
 ### 6.3 避免的配色错误
 
 **❌ 错误示例：**
+
 - 使用过多鲜艳色彩，造成视觉疲劳
 - 对比度不足，影响可读性
 - 状态色语义不一致
 - 深色模式下色彩过于刺眼
 
 **✅ 正确做法：**
+
 - 保持色彩的克制和专业
 - 确保足够的对比度
 - 建立一致的色彩语义

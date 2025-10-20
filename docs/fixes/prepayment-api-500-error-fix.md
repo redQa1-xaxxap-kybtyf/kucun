@@ -13,10 +13,12 @@
 ### 验证结果
 
 ✅ 数据库已有新字段:
+
 - `payment_type` (TEXT)
 - `applied_amount` (REAL)
 
 ❌ Prisma Client未重新生成:
+
 - 服务器锁定了 `query_engine-windows.dll.node` 文件
 - 无法更新Prisma Client
 
@@ -33,6 +35,7 @@ npx prisma generate
 ```
 
 **预期输出**:
+
 ```
 ✔ Generated Prisma Client to ./node_modules/@prisma/client
 ```
@@ -48,6 +51,7 @@ npm run dev
 访问: `http://localhost:3000/api/finance/customer-statements?page=1&pageSize=20`
 
 **预期响应**:
+
 ```json
 {
   "success": true,
@@ -63,17 +67,20 @@ npm run dev
 ### 修改的文件
 
 **`lib/services/customer-statement-service.ts`**
+
 - 第314-341行: 更新收款记录查询逻辑
 - 使用 `paymentType` 字段区分订单付款和预收款
 - 使用 `appliedAmount` 字段计算预收款已冲抵金额
 
 **旧代码** (错误):
+
 ```typescript
 // ❌ 使用废弃的 prepaymentReceived 表
 const prepayments = await prisma.prepaymentReceived.findMany({...});
 ```
 
 **新代码** (正确):
+
 ```typescript
 // ✅ 使用 PaymentRecord 表的 paymentType 和 appliedAmount 字段
 const payments = await prisma.paymentRecord.findMany({
@@ -81,7 +88,7 @@ const payments = await prisma.paymentRecord.findMany({
     paymentType: true,
     paymentAmount: true,
     appliedAmount: true,
-  }
+  },
 });
 
 const prepayments = payments.filter(p => p.paymentType === 'prepayment');
@@ -98,6 +105,7 @@ const prepaymentReceived = prepayments.reduce(
 ```
 
 **字段映射**:
+
 - `salesAmount`: 销售订单总额
 - `salesReturnAmount`: 退货订单退款额
 - `paymentReceived`: `payment_type='order_payment'` 的付款金额
@@ -109,6 +117,7 @@ const prepaymentReceived = prepayments.reduce(
 ### 开发流程规范
 
 1. **Schema变更后必须重新生成**:
+
    ```bash
    npx prisma db push      # 推送schema到数据库
    npx prisma generate     # 重新生成Prisma Client

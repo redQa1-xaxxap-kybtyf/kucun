@@ -5,12 +5,14 @@
 销售订单页面在加载数据时出现错误，显示以下错误信息：
 
 ### 用户看到的错误
+
 ```
 加载销售订单数据时出错
 无法加载销售订单数据，请稍后重试
 ```
 
 ### 开发模式错误详情
+
 ```
 useQueryClient is not defined
 ```
@@ -22,6 +24,7 @@ useQueryClient is not defined
 **文件**：`components/sales-orders/erp-sales-order-list.tsx`
 
 **问题代码**（第 70 行）：
+
 ```typescript
 export function ERPSalesOrderList({
   onOrderSelect,
@@ -39,6 +42,7 @@ export function ERPSalesOrderList({
 ```
 
 **导入部分**（第 1-6 行）：
+
 ```typescript
 'use client';
 
@@ -66,6 +70,7 @@ import * as React from 'react';
 **修改文件**：`components/sales-orders/erp-sales-order-list.tsx`
 
 **修改前**（第 67-74 行）：
+
 ```typescript
   searchValue,
 }: ERPSalesOrderListProps) {
@@ -78,6 +83,7 @@ import * as React from 'react';
 ```
 
 **修改后**：
+
 ```typescript
   searchValue,
 }: ERPSalesOrderListProps) {
@@ -92,6 +98,7 @@ import * as React from 'react';
 #### 2. 确认导入正确
 
 **导入部分**（第 1-6 行）：
+
 ```typescript
 'use client';
 
@@ -106,12 +113,14 @@ import * as React from 'react';
 ### 修复前
 
 **错误信息**：
+
 ```
 ReferenceError: useQueryClient is not defined
   at ERPSalesOrderList (components/sales-orders/erp-sales-order-list.tsx:70)
 ```
 
 **页面状态**：
+
 - ❌ 页面无法加载
 - ❌ 显示错误提示
 - ❌ 用户无法查看销售订单列表
@@ -119,6 +128,7 @@ ReferenceError: useQueryClient is not defined
 ### 修复后
 
 **页面状态**：
+
 - ✅ 页面正常加载
 - ✅ 销售订单列表正常显示
 - ✅ 搜索、筛选、分页功能正常工作
@@ -146,7 +156,7 @@ ReferenceError: useQueryClient is not defined
 export default async function SalesOrdersPage({ searchParams }) {
   const queryClient = new QueryClient();
   const initialData = await getSalesOrders(queryParams);
-  
+
   // 预设数据到 QueryClient
   queryClient.setQueryData(salesOrderQueryKeys.list(queryParams), {
     data: initialData.data,
@@ -168,7 +178,7 @@ export function ERPSalesOrderList({ initialParams }) {
     queryFn: () => getSalesOrders(queryParams),
     staleTime: 30 * 1000,
   });
-  
+
   // ✅ 不需要手动使用 queryClient
   // ...
 }
@@ -183,20 +193,20 @@ import { useQueryClient } from '@tanstack/react-query';
 
 export function SomeComponent() {
   const queryClient = useQueryClient();
-  
+
   // 手动失效缓存
   const handleRefresh = () => {
     queryClient.invalidateQueries({ queryKey: ['orders'] });
   };
-  
+
   // 手动设置缓存
-  const handleUpdate = (newData) => {
+  const handleUpdate = newData => {
     queryClient.setQueryData(['orders', id], newData);
   };
-  
+
   // 手动获取缓存
   const cachedData = queryClient.getQueryData(['orders', id]);
-  
+
   // ...
 }
 ```
@@ -296,4 +306,3 @@ git commit -m "fix: remove unused queryClient"
 **修复完成时间**：2025-01-XX
 **修复人员**：AI Assistant
 **审核状态**：已修复，待用户测试验证
-

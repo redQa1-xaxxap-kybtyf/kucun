@@ -39,6 +39,7 @@
 ### 设计决策
 
 参考应退货款详情页面的统一设计规范：
+
 - **蓝色主题**：使用 `blue-600` 作为主色调
 - **渐变背景**：标题卡片使用 `from-blue-50 to-indigo-50`
 - **统一阴影**：所有卡片使用 `shadow-lg shadow-gray-200/50`
@@ -52,6 +53,7 @@
 **1. 改为 Server Component**
 
 **修改前**（Client Component）：
+
 ```typescript
 'use client';
 
@@ -80,6 +82,7 @@ export default function PaymentDetailPage() {
 ```
 
 **修改后**（Server Component）：
+
 ```typescript
 import { notFound } from 'next/navigation';
 import { prisma } from '@/lib/db';
@@ -153,6 +156,7 @@ export default async function PaymentDetailPage({
 **2. 修改页面容器和标题卡片**
 
 **修改前**：
+
 ```typescript
 <div className="container mx-auto max-w-6xl px-4 py-6">
   <div className="mb-6 flex items-center justify-between">
@@ -170,6 +174,7 @@ export default async function PaymentDetailPage({
 ```
 
 **修改后**：
+
 ```typescript
 <div className="flex h-full flex-col overflow-auto p-6">
   <div className="space-y-6">
@@ -205,6 +210,7 @@ export default async function PaymentDetailPage({
 **3. 修改所有信息卡片样式**
 
 **修改前**：
+
 ```typescript
 <Card>
   <CardHeader>
@@ -220,6 +226,7 @@ export default async function PaymentDetailPage({
 ```
 
 **修改后**：
+
 ```typescript
 <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
   <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
@@ -236,6 +243,7 @@ export default async function PaymentDetailPage({
 ```
 
 **应用到所有卡片**：
+
 - ✅ 收款信息卡片
 - ✅ 关联订单卡片
 - ✅ 客户信息卡片
@@ -252,12 +260,20 @@ export default async function PaymentDetailPage({
 
 ```typescript
 // 修改前
-{format(new Date(payment.paymentDate), 'yyyy年MM月dd日')}
-{format(new Date(payment.createdAt), 'yyyy-MM-dd HH:mm:ss')}
+{
+  format(new Date(payment.paymentDate), 'yyyy年MM月dd日');
+}
+{
+  format(new Date(payment.createdAt), 'yyyy-MM-dd HH:mm:ss');
+}
 
 // 修改后
-{new Date(payment.paymentDate).toLocaleDateString('zh-CN')}
-{new Date(payment.createdAt).toLocaleString('zh-CN')}
+{
+  new Date(payment.paymentDate).toLocaleDateString('zh-CN');
+}
+{
+  new Date(payment.createdAt).toLocaleString('zh-CN');
+}
 ```
 
 ## 📊 修复效果对比
@@ -297,22 +313,26 @@ export default async function PaymentDetailPage({
 ## 🎨 统一的设计规范
 
 ### 颜色方案
+
 - **主色调**：蓝色 (`blue-600`)
 - **标题卡片背景**：`bg-gradient-to-r from-blue-50 to-indigo-50`
 - **信息卡片头部**：`bg-gradient-to-r from-slate-50 to-gray-50`
 - **图标颜色**：`text-blue-600`
 
 ### 间距规范
+
 - **外边距**：`p-6`（24px）
 - **卡片间距**：`space-y-6`（24px）
 - **内容间距**：`gap-6`（24px）
 
 ### 尺寸规范
+
 - **图标容器**：`h-12 w-12`（48px）
 - **图标**：`h-6 w-6`（24px，标题）或 `h-5 w-5`（20px，卡片头部）
 - **按钮高度**：`h-11`（44px）
 
 ### 阴影规范
+
 - **卡片阴影**：`shadow-lg shadow-gray-200/50`
 - **图标阴影**：`shadow-lg shadow-blue-600/30`
 
@@ -376,4 +396,3 @@ export default async function PaymentDetailPage({
 **修复完成时间**：2025-01-XX
 **修复人员**：AI Assistant
 **审核状态**：待用户测试验证
-

@@ -18,30 +18,41 @@ jest.mock('encoding', () => ({
 
 // 设置环境变量
 process.env.NODE_ENV = 'test';
-process.env.DATABASE_URL = 'postgresql://test:test@localhost:5432/test_db';
-process.env.NEXTAUTH_SECRET = 'test-secret-key-for-jest';
+process.env.DATABASE_URL =
+  process.env.DATABASE_URL ||
+  'mysql://root:root@localhost:3306/kucun_dev?connection_limit=5&pool_timeout=30&connect_timeout=10';
+process.env.NEXTAUTH_SECRET =
+  process.env.NEXTAUTH_SECRET ||
+  'test-secret-key-for-jest-should-be-longer-than-32-chars-123';
 process.env.NEXTAUTH_URL = 'http://localhost:3000';
 
 // Mock next/router
-jest.mock('next/navigation', () => ({
-  useRouter() {
-    return {
-      push: jest.fn(),
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-      back: jest.fn(),
-      pathname: '/',
-      query: {},
-      asPath: '/',
-    };
-  },
-  usePathname() {
-    return '/';
-  },
-  useSearchParams() {
-    return new URLSearchParams();
-  },
-}));
+jest.mock('next/navigation', () => {
+  const actual = jest.requireActual('next/navigation');
+  return {
+    ...actual,
+    useRouter() {
+      return {
+        push: jest.fn(),
+        replace: jest.fn(),
+        prefetch: jest.fn(),
+        back: jest.fn(),
+        pathname: '/',
+        query: {},
+        asPath: '/',
+      };
+    },
+    usePathname() {
+      return '/';
+    },
+    useSearchParams() {
+      return new URLSearchParams();
+    },
+    redirect: jest.fn(url => {
+      throw new Error(`redirected:${url}`);
+    }),
+  };
+});
 
 // Mock next-auth
 jest.mock('next-auth/react', () => ({
@@ -69,6 +80,7 @@ jest.mock('next-auth', () => ({
         name: 'Test User',
         email: 'test@example.com',
         username: 'testuser',
+        role: 'admin',
       },
     })
   ),
@@ -116,37 +128,65 @@ afterAll(async () => {
   await new Promise(resolve => setTimeout(resolve, 100));
 });
 
+if (typeof global.setImmediate === 'undefined') {
+  global.setImmediate = (fn, ...args) => setTimeout(fn, 0, ...args);
+}
+
 // Mock @faker-js/faker to avoid ES module issues
-jest.mock('@faker-js/faker', () => ({
-  faker: {
-    string: {
-      uuid: () => `mock-uuid-${Math.random().toString(36).substr(2, 9)}`,
-      alphanumeric: length => 'A'.repeat(length),
+jest.mock('@faker-js/faker', () => {
+  const randomWord = prefix =>
+    `${prefix}-${Math.random().toString(36).substring(2, 10)}`;
+
+  return {
+    faker: {
+      string: {
+        uuid: () => `mock-uuid-${Math.random().toString(36).substring(2, 11)}`,
+        alphanumeric: length =>
+          Array.from(
+            { length },
+            () => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)]
+          ).join(''),
+      },
+      number: {
+        int: ({ min = 0, max = 100 } = {}) =>
+          Math.floor(Math.random() * (max - min + 1)) + min,
+        float: ({ min = 0, max = 100, fractionDigits = 2 } = {}) =>
+          parseFloat(
+            (Math.random() * (max - min) + min).toFixed(fractionDigits)
+          ),
+      },
+      helpers: {
+        maybe: (fn, { probability = 0.5 } = {}) =>
+          Math.random() < probability ? fn() : undefined,
+        arrayElement: array => array[Math.floor(Math.random() * array.length)],
+      },
+      internet: {
+        email: () => `${randomWord('user')}@example.com`,
+        userName: () => randomWord('user'),
+      },
+      person: {
+        fullName: () => `测试用户-${randomWord('name')}`,
+      },
+      phone: {
+        number: () => `138${Math.floor(10000000 + Math.random() * 89999999)}`,
+      },
+      company: {
+        name: () => `测试公司-${randomWord('corp')}`,
+      },
+      location: {
+        streetAddress: () => `测试地址-${randomWord('road')}号`,
+      },
+      commerce: {
+        productName: () => `测试产品-${randomWord('product')}`,
+      },
+      date: {
+        recent: () => new Date(),
+        past: () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+      },
+      color: {
+        rgb: () => '#FF0000',
+        human: () => '红色',
+      },
     },
-    number: {
-      int: ({ min = 0, max = 100 } = {}) =>
-        Math.floor(Math.random() * (max - min + 1)) + min,
-      float: ({ min = 0, max = 100, fractionDigits = 2 } = {}) =>
-        parseFloat((Math.random() * (max - min) + min).toFixed(fractionDigits)),
-    },
-    helpers: {
-      maybe: (fn, { probability = 0.5 } = {}) =>
-        Math.random() < probability ? fn() : undefined,
-      arrayElement: array => array[Math.floor(Math.random() * array.length)],
-    },
-    commerce: {
-      productName: () => '测试产品',
-    },
-    location: {
-      streetAddress: () => '测试地址123号',
-    },
-    date: {
-      recent: () => new Date(),
-      past: () => new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-    },
-    color: {
-      rgb: () => '#FF0000',
-      human: () => '红色',
-    },
-  },
-}));
+  };
+});

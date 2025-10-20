@@ -1,11 +1,13 @@
 # 产品模块图片上传诊断报告
 
 ## 问题描述
+
 产品模块上传图片时返回的是本地地址，而不是七牛云CDN地址。
 
 ## 代码流程分析
 
 ### 1. 上传流程
+
 ```
 用户上传 → ProductImageUpload 组件
          → use-image-upload Hook
@@ -27,13 +29,18 @@ if (!uploadResult.success) {
 
   // 降级策略：fallback到本地存储
   if (uploadConfig.fallbackEnabled) {
-    const fallbackResult = await saveFileLocally(buffer, file.name, file.type, type);
+    const fallbackResult = await saveFileLocally(
+      buffer,
+      file.name,
+      file.type,
+      type
+    );
 
     return NextResponse.json({
       success: true,
       data: {
-        url: fallbackResult.url,  // ⚠️ 返回本地路径
-        storage: 'local',          // ⚠️ 标记为local
+        url: fallbackResult.url, // ⚠️ 返回本地路径
+        storage: 'local', // ⚠️ 标记为local
       },
       message: '文件已保存到本地存储，建议尽快修复云存储配置（七牛云上传失败）',
     });
@@ -43,9 +50,9 @@ if (!uploadResult.success) {
 // 成功情况
 return NextResponse.json({
   data: {
-    url: uploadResult.url,  // ✅ 返回七牛云URL
+    url: uploadResult.url, // ✅ 返回七牛云URL
     storage: 'qiniu',
-  }
+  },
 });
 ```
 
@@ -53,7 +60,11 @@ return NextResponse.json({
 
 ```typescript
 // Line 197-210
-export async function uploadToQiniu(buffer: Buffer, fileName: string, type: string = 'product'): Promise<UploadResult> {
+export async function uploadToQiniu(
+  buffer: Buffer,
+  fileName: string,
+  type: string = 'product'
+): Promise<UploadResult> {
   // 获取七牛云配置
   const config = await getQiniuConfig();
   if (!config) {
@@ -64,7 +75,12 @@ export async function uploadToQiniu(buffer: Buffer, fileName: string, type: stri
   }
 
   // 验证必需配置项 (Line 95-108)
-  if (!config.accessKey || !config.secretKey || !config.bucket || !config.domain) {
+  if (
+    !config.accessKey ||
+    !config.secretKey ||
+    !config.bucket ||
+    !config.domain
+  ) {
     return null; // ⚠️ 配置不完整返回null
   }
 
@@ -75,9 +91,11 @@ export async function uploadToQiniu(buffer: Buffer, fileName: string, type: stri
 ## 问题根因
 
 ### ✅ 确定的原因
+
 **七牛云配置未设置或不完整，触发了fallback机制**
 
 系统按照以下顺序处理：
+
 1. 尝试从数据库读取七牛云配置 (`qiniu_access_key`, `qiniu_secret_key`, `qiniu_bucket`, `qiniu_domain`)
 2. 如果配置不存在或不完整 → `uploadToQiniu()` 返回 `success: false`
 3. 触发 `uploadConfig.fallbackEnabled` 降级策略
@@ -87,6 +105,7 @@ export async function uploadToQiniu(buffer: Buffer, fileName: string, type: stri
 ### 证据
 
 1. **Fallback机制已启用** (`lib/env.ts`)
+
    ```typescript
    uploadConfig: {
      directory: './public/uploads',
@@ -96,6 +115,7 @@ export async function uploadToQiniu(buffer: Buffer, fileName: string, type: stri
    ```
 
 2. **返回消息包含提示**
+
    ```
    message: '文件已保存到本地存储，建议尽快修复云存储配置（七牛云上传失败）'
    ```
@@ -104,13 +124,14 @@ export async function uploadToQiniu(buffer: Buffer, fileName: string, type: stri
    ```json
    {
      "url": "/uploads/product/...",
-     "storage": "local"  // ⚠️ 标记为本地存储
+     "storage": "local" // ⚠️ 标记为本地存储
    }
    ```
 
 ## 解决方案
 
 ### 方案1: 配置七牛云存储 ⭐ 推荐
+
 1. 登录系统设置页面 (`/settings/storage`)
 2. 填写七牛云配置:
    - Access Key: 七牛云控制台获取
@@ -122,7 +143,9 @@ export async function uploadToQiniu(buffer: Buffer, fileName: string, type: stri
 4. 保存配置
 
 ### 方案2: 检查数据库配置
+
 直接检查 `SystemSetting` 表中是否存在以下配置:
+
 ```sql
 SELECT key, value FROM SystemSetting
 WHERE key IN (
@@ -135,11 +158,14 @@ WHERE key IN (
 ```
 
 ### 方案3: 禁用Fallback (不推荐)
+
 如果想强制要求七牛云配置，可以禁用fallback:
+
 ```typescript
 // .env.local
-UPLOAD_FALLBACK_ENABLED=false
+UPLOAD_FALLBACK_ENABLED = false;
 ```
+
 这样未配置七牛云时会直接报错，不会降级到本地存储。
 
 ## 验证步骤

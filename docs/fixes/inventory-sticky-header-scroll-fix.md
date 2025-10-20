@@ -27,6 +27,7 @@ DashboardLayoutClient (主布局)
 **问题**：工具栏的父容器有 `p-6` (24px) 的 padding，导致工具栏的 `sticky top-0` 是相对于 padding 内部的，而不是滚动容器的顶部。
 
 **滚动行为**：
+
 1. 开始滚动时，工具栏在 padding 内部，会跟着滚动
 2. 滚动 24px 后，工具栏到达 padding 的顶部
 3. 此时 `sticky top-0` 生效，工具栏固定
@@ -64,6 +65,7 @@ DashboardLayoutClient (主布局)
 ### 方案：将 padding 移到工具栏内部
 
 **核心思路**：
+
 1. 移除滚动容器的 padding
 2. 将 padding 添加到工具栏内部
 3. 让工具栏从滚动容器的顶部开始 sticky
@@ -142,6 +144,7 @@ return (
 ```
 
 **变化**：
+
 - 移除外层 `<div className="p-6">`
 - 错误提示改用 `m-6` (margin) 而不是依赖父容器的 padding
 
@@ -176,6 +179,7 @@ return (
 ```
 
 **变化**：
+
 - 工具栏：移除 `-mx-6`，添加 `pt-6`
 - 表格：添加 `mx-6` 水平边距
 - 分页器：添加 `mx-6 mb-6` 边距
@@ -183,6 +187,7 @@ return (
 ## 🎯 修复效果
 
 ### 修复前
+
 ```
 滚动行为：
 1. 开始滚动 → 工具栏跟着向上移动
@@ -193,6 +198,7 @@ return (
 ```
 
 ### 修复后
+
 ```
 滚动行为：
 1. 开始滚动 → 工具栏立即固定在顶部
@@ -224,11 +230,13 @@ return (
 ```
 
 **关键点**：
+
 - `sticky` 元素相对于最近的滚动祖先定位
 - `top: 0` 表示固定在滚动容器的顶部
 - 如果父容器有 padding，`top: 0` 是相对于 padding 内部的
 
 **修复前**：
+
 ```
 滚动容器
   └─ padding-top: 24px
@@ -236,6 +244,7 @@ return (
 ```
 
 **修复后**：
+
 ```
 滚动容器
   └─ sticky top: 0  ← 直接相对于滚动容器顶部
@@ -276,6 +285,7 @@ return (
 ### Sticky 定位的正确使用
 
 1. **直接子元素**
+
    ```typescript
    // ✅ 推荐
    <div className="overflow-auto">
@@ -285,6 +295,7 @@ return (
    ```
 
 2. **避免中间 padding**
+
    ```typescript
    // ❌ 避免
    <div className="overflow-auto">
@@ -300,6 +311,7 @@ return (
    ```
 
 3. **使用负边距的问题**
+
    ```typescript
    // ❌ 复杂且容易出错
    <div className="p-6">
@@ -323,4 +335,3 @@ return (
 - [x] 布局美观
 - [x] 代码简洁
 - [x] ESLint 检查通过
-

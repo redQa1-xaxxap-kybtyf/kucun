@@ -31,6 +31,7 @@
 ## 推荐方案：Jest Mock
 
 ### 优势
+
 - ✅ 原生Jest功能，无需额外依赖
 - ✅ 配置简单，学习成本低
 - ✅ 与现有测试基础设施完美兼容
@@ -47,7 +48,7 @@ jest.mock('@/lib/api/with-auth', () => ({
 }));
 
 jest.mock('@/lib/api/error-handler', () => ({
-  handleApiError: jest.fn((error) => {
+  handleApiError: jest.fn(error => {
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
@@ -77,25 +78,29 @@ describe('API: POST /api/inventory/inbound', () => {
       // ... 其他字段
     });
 
-    const response = await POST(new Request('http://localhost:3000/api/inventory/inbound', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        // ... 测试数据
-      }),
-    }));
+    const response = await POST(
+      new Request('http://localhost:3000/api/inventory/inbound', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          // ... 测试数据
+        }),
+      })
+    );
 
     expect(response.status).toBe(200);
   });
 
   it('应返回422错误当数据无效', async () => {
-    const response = await POST(new Request('http://localhost:3000/api/inventory/inbound', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        invalidField: 'invalid',
-      }),
-    }));
+    const response = await POST(
+      new Request('http://localhost:3000/api/inventory/inbound', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          invalidField: 'invalid',
+        }),
+      })
+    );
 
     expect(response.status).toBe(422);
   });
@@ -105,6 +110,7 @@ describe('API: POST /api/inventory/inbound', () => {
 ## MSW安装记录（已回滚）
 
 ### 安装的包（已卸载）
+
 ```json
 {
   "devDependencies": {
@@ -116,11 +122,13 @@ describe('API: POST /api/inventory/inbound', () => {
 ```
 
 ### 创建的文件（已删除）
+
 - `__mocks__/server.ts`
 - `__mocks__/handlers.ts`
 - `__tests__/examples/msw-example.test.ts`
 
 ### jest.setup.js修改（已回滚）
+
 ```javascript
 // 尝试添加的polyfills（已删除）
 const { fetch, Request, Response, Headers } = require('undici');
@@ -129,22 +137,25 @@ const { ReadableStream, TransformStream } = require('node:stream/web');
 ```
 
 ### jest.config.js修改（已回滚）
+
 ```javascript
 // 尝试的transformIgnorePatterns（已恢复到原配置）
 transformIgnorePatterns: [
   'node_modules/(?!(@faker-js|msw|@mswjs|@bundled-es-modules|until-async|@open-draft|statuses))',
-]
+];
 ```
 
 ## 结论
 
 对于当前项目的测试需求，**Jest Mock是更合适的选择**：
+
 - 功能完全满足需求（模拟API响应）
 - 配置简单，无兼容性问题
 - 性能更好，维护成本更低
 - 团队更容易理解和使用
 
 MSW更适合：
+
 - 需要真实的浏览器环境
 - 需要拦截实际的网络请求
 - 需要在开发环境中使用

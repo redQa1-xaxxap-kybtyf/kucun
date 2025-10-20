@@ -14,11 +14,13 @@
 ### 修改前（紧凑的 ERP 风格）
 
 **页面容器**：
+
 ```typescript
 <div className="mx-auto max-w-none space-y-4 px-4 py-4 sm:px-6 lg:px-8">
 ```
 
 **表单容器**：
+
 ```typescript
 <div className="bg-card rounded border">
   <div className="bg-muted/30 border-b px-3 py-2">
@@ -28,6 +30,7 @@
 ```
 
 **表单字段**：
+
 ```typescript
 <Input className="h-7 text-xs" />
 <FormLabel className="text-xs">客户名称 *</FormLabel>
@@ -36,12 +39,14 @@
 ### 修改后（与产品管理一致）
 
 **页面容器**：
+
 ```typescript
 <div className="flex h-full flex-col overflow-auto p-6">
   <div className="space-y-6">
 ```
 
 **页面标题卡片**：
+
 ```typescript
 <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
   <CardContent className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6">
@@ -56,6 +61,7 @@
 ```
 
 **表单卡片**：
+
 ```typescript
 <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
   <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
@@ -71,6 +77,7 @@
 ```
 
 **表单字段**：
+
 ```typescript
 <Input placeholder="请输入客户名称" disabled={isLoading} />
 <FormLabel>客户名称 *</FormLabel>
@@ -106,6 +113,7 @@
 #### 修改点：
 
 1. **导入组件**
+
    ```typescript
    // 新增导入
    import { Users } from 'lucide-react';
@@ -127,6 +135,7 @@
    - 返回按钮：`size="lg" h-11 gap-2 transition-all hover:scale-105`
 
 3. **表单卡片结构**
+
    ```typescript
    <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
      <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
@@ -158,17 +167,17 @@
 
 ## 📊 样式对比表
 
-| 元素 | 修改前 | 修改后 |
-|------|--------|--------|
-| 页面容器 | `px-4 py-4` | `p-6` |
-| 标题大小 | `text-sm` | `text-2xl` |
-| 图标大小 | 无 | `h-12 w-12` |
-| 输入框高度 | `h-7` | 默认（h-10） |
-| 字体大小 | `text-xs` | 默认（text-sm） |
-| 按钮高度 | `h-7` | `h-11` |
-| 卡片阴影 | 无 | `shadow-lg shadow-gray-200/50` |
-| 字段间距 | `gap-3` | `gap-6` |
-| 按钮间距 | `gap-2` | `gap-4` |
+| 元素       | 修改前      | 修改后                         |
+| ---------- | ----------- | ------------------------------ |
+| 页面容器   | `px-4 py-4` | `p-6`                          |
+| 标题大小   | `text-sm`   | `text-2xl`                     |
+| 图标大小   | 无          | `h-12 w-12`                    |
+| 输入框高度 | `h-7`       | 默认（h-10）                   |
+| 字体大小   | `text-xs`   | 默认（text-sm）                |
+| 按钮高度   | `h-7`       | `h-11`                         |
+| 卡片阴影   | 无          | `shadow-lg shadow-gray-200/50` |
+| 字段间距   | `gap-3`     | `gap-6`                        |
+| 按钮间距   | `gap-2`     | `gap-4`                        |
 
 ## 🎨 设计规范
 
@@ -206,12 +215,14 @@
 ## ✅ 修复效果
 
 ### 修改前
+
 - 紧凑的 ERP 风格
 - 小尺寸字体和按钮
 - 简单的边框样式
 - 缺少视觉层次
 
 ### 修改后
+
 - 现代化的卡片设计
 - 标准尺寸，易于操作
 - 丰富的阴影和渐变
@@ -282,4 +293,3 @@
 **修复完成时间**：2025-01-XX
 **修复人员**：AI Assistant
 **审核状态**：待用户测试验证
-

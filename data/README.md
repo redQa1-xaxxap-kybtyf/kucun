@@ -16,6 +16,7 @@
    - 保存你的 License Key
 
 3. **设置环境变量**
+
    ```bash
    # Windows (PowerShell)
    $env:MAXMIND_LICENSE_KEY="your_license_key_here"
@@ -72,18 +73,23 @@ data/
 ## 常见问题
 
 ### Q: 数据库文件有多大？
+
 A: 约 70MB，建议不要提交到 Git 仓库。
 
 ### Q: 定位准确度如何？
+
 A:
+
 - 国家级别: 99.8% 准确
 - 城市级别: 约 80% 准确
 - 内网 IP: 无法定位
 
 ### Q: 是否支持 IPv6？
+
 A: 是的，GeoLite2-City 同时支持 IPv4 和 IPv6。
 
 ### Q: 如何验证数据库是否正常工作？
+
 A: 启动项目后，查看系统日志页面，IP 地址旁会显示地理位置信息。
 
 ## 许可证

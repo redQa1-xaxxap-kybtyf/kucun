@@ -3,11 +3,13 @@
 ## 🔄 设计原则修正
 
 ### ❌ 错误设计(之前的实现)
+
 - 独立的预收款/预付款表
 - 手动创建预收款记录
 - 手动冲抵到订单
 
 ### ✅ 正确设计(业务流程驱动)
+
 - **复用现有 PaymentRecord 表**
 - **业务流程自动触发**
 - **自动关联和冲抵**
@@ -39,10 +41,12 @@ model PaymentRecord {
 ```
 
 **paymentType 枚举:**
+
 - `order_payment`: 订单收款(salesOrderId必填)
 - `prepayment`: 预收款(salesOrderId为null)
 
 **status 状态流转:**
+
 - `pending`: 待确认
 - `confirmed`: 已确认
 - `applied`: 已冲抵(仅预收款)
@@ -52,6 +56,7 @@ model PaymentRecord {
 ### 场景 1: 客户预付定金
 
 #### 步骤 1: 客户付款(无订单)
+
 ```typescript
 // POST /api/payments
 {
@@ -70,6 +75,7 @@ model PaymentRecord {
 ```
 
 #### 步骤 2: 创建销售订单并自动冲抵
+
 ```typescript
 // POST /api/sales-orders
 {
@@ -100,12 +106,14 @@ model PaymentRecord {
 ```
 
 #### 结果:
+
 - 预收款: ¥5000 (全部冲抵)
 - 订单应付: ¥10,000
 - 订单已付: ¥5,000
 - 订单欠款: ¥5,000
 
 ### 场景 2: 订单后付款(现有流程)
+
 ```typescript
 // 1. 创建订单
 POST /api/sales-orders
@@ -130,14 +138,14 @@ POST /api/payments
 
 ```typescript
 // 1. 查询销售金额(不变)
-const salesAmount = sum(SalesOrder, 'totalAmount')
+const salesAmount = sum(SalesOrder, 'totalAmount');
 
 // 2. 查询收款金额
 const payments = await prisma.paymentRecord.findMany({
   where: {
     customerId,
     status: 'confirmed',
-    paymentType: { in: ['order_payment', 'prepayment'] },  // ✅ 包含所有类型
+    paymentType: { in: ['order_payment', 'prepayment'] }, // ✅ 包含所有类型
     paymentDate: dateFilter,
   },
 });
@@ -149,15 +157,15 @@ const orderPayment = payments
 
 const prepaymentApplied = payments
   .filter(p => p.paymentType === 'prepayment')
-  .reduce((sum, p) => sum + p.appliedAmount, 0);  // ✅ 使用已冲抵金额
+  .reduce((sum, p) => sum + p.appliedAmount, 0); // ✅ 使用已冲抵金额
 
 // 4. 计算应收余额
 receivableBalance =
-  salesAmount -           // 销售金额
-  salesReturnAmount -     // 退货金额
-  orderPayment -          // 订单付款
-  prepaymentApplied +     // 预收款冲抵
-  refundPaid;             // 补偿退款
+  salesAmount - // 销售金额
+  salesReturnAmount - // 退货金额
+  orderPayment - // 订单付款
+  prepaymentApplied + // 预收款冲抵
+  refundPaid; // 补偿退款
 ```
 
 ### 交易明细显示
@@ -195,7 +203,7 @@ receivableBalance =
 ```typescript
 // POST /api/payments
 interface PaymentCreateInput {
-  salesOrderId?: string;      // 可选,预收款时为空
+  salesOrderId?: string; // 可选,预收款时为空
   customerId: string;
   paymentType: 'order_payment' | 'prepayment';
   paymentAmount: number;
@@ -220,7 +228,7 @@ if (paymentType === 'prepayment' && salesOrderId) {
 interface SalesOrderCreateInput {
   customerId: string;
   items: OrderItem[];
-  usePrepayment?: boolean;  // ✅ 是否使用预收款
+  usePrepayment?: boolean; // ✅ 是否使用预收款
   prepaymentAmount?: number; // ✅ 指定冲抵金额(可选)
 }
 
@@ -234,7 +242,7 @@ async function applyPrepayment(customerId: string, orderTotal: number) {
       // 剩余可用金额 > 0
       appliedAmount: { lt: prisma.paymentRecord.fields.paymentAmount },
     },
-    orderBy: { paymentDate: 'asc' },  // FIFO策略
+    orderBy: { paymentDate: 'asc' }, // FIFO策略
   });
 
   let remainingAmount = orderTotal;
@@ -250,9 +258,10 @@ async function applyPrepayment(customerId: string, orderTotal: number) {
       where: { id: prepayment.id },
       data: {
         appliedAmount: { increment: applyAmount },
-        status: (prepayment.appliedAmount + applyAmount === prepayment.paymentAmount)
-          ? 'applied'
-          : 'confirmed',
+        status:
+          prepayment.appliedAmount + applyAmount === prepayment.paymentAmount
+            ? 'applied'
+            : 'confirmed',
       },
     });
 
@@ -280,10 +289,7 @@ async function applyPrepayment(customerId: string, orderTotal: number) {
   {/* 预收款面板 */}
   {availablePrepayments > 0 && (
     <PrepaymentPanel>
-      <Checkbox
-        checked={usePrepayment}
-        onChange={setUsePrepayment}
-      >
+      <Checkbox checked={usePrepayment} onChange={setUsePrepayment}>
         使用预收款冲抵 (可用: ¥{availablePrepayments})
       </Checkbox>
 
@@ -343,26 +349,31 @@ async function applyPrepayment(customerId: string, orderTotal: number) {
 ## ✅ 优势总结
 
 ### KISS 原则(简单至上)
+
 - ✅ 复用现有表,无需新建表
 - ✅ 业务流程自然,符合直觉
 - ✅ 减少数据冗余
 
 ### YAGNI 原则(精益求精)
+
 - ✅ 只扩展必要字段(paymentType, appliedAmount)
 - ✅ 无过度设计的独立表结构
 
 ### SOLID 原则
+
 - ✅ SRP: PaymentRecord 单一职责(收款管理)
 - ✅ OCP: 通过 paymentType 扩展,无需修改现有逻辑
 - ✅ DIP: API 层抽象业务逻辑
 
 ### DRY 原则
+
 - ✅ 收款逻辑统一在 PaymentRecord
 - ✅ 无需重复的冲抵逻辑
 
 ## 🔄 迁移策略
 
 ### 数据库变更
+
 ```sql
 -- 1. 添加新字段
 ALTER TABLE payment_records
@@ -382,6 +393,7 @@ CREATE INDEX idx_payment_records_customer_type_status
 ```
 
 ### 代码迁移
+
 1. 删除独立的预收款/预付款 API
 2. 扩展现有 PaymentRecord API
 3. 在 SalesOrder 创建流程中添加预收款冲抵逻辑

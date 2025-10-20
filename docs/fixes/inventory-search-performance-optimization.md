@@ -12,15 +12,15 @@
 // ❌ 问题代码
 const handleSearch = React.useCallback(
   (value: string) => {
-    setSearch(value);  // 触发组件重渲染
+    setSearch(value); // 触发组件重渲染
     debouncedUpdateURL(value, {
-      ...initialParams,  // 每次都创建新对象
+      ...initialParams, // 每次都创建新对象
       search: value,
-      categoryId,        // 闭包依赖
-      lowStock,          // 闭包依赖
-      hasStock,          // 闭包依赖
-      sortBy,            // 闭包依赖
-      sortOrder,         // 闭包依赖
+      categoryId, // 闭包依赖
+      lowStock, // 闭包依赖
+      hasStock, // 闭包依赖
+      sortBy, // 闭包依赖
+      sortOrder, // 闭包依赖
       page: 1,
     });
   },
@@ -32,7 +32,7 @@ const handleSearch = React.useCallback(
     hasStock,
     sortBy,
     sortOrder,
-  ]  // 依赖项过多，频繁重新创建函数
+  ] // 依赖项过多，频繁重新创建函数
 );
 ```
 
@@ -70,6 +70,7 @@ React.useEffect(() => {
 ```
 
 **优势**：
+
 - ref 的更新不会触发组件重渲染
 - 防抖函数可以始终访问最新的状态值
 - 不需要将状态添加到依赖数组
@@ -80,9 +81,9 @@ React.useEffect(() => {
 // ✅ 优化后的防抖函数
 const debouncedUpdateURL = useDebouncedCallback(
   (searchValue: string) => {
-    const filters = filtersRef.current;  // 从 ref 读取最新值
+    const filters = filtersRef.current; // 从 ref 读取最新值
     const params = new URLSearchParams();
-    
+
     if (searchValue) {
       params.set('search', searchValue);
     }
@@ -90,14 +91,15 @@ const debouncedUpdateURL = useDebouncedCallback(
       params.set('categoryId', filters.categoryId);
     }
     // ... 其他参数
-    
+
     router.replace(`/inventory?${params.toString()}`, { scroll: false });
   },
-  500  // 增加到 500ms，减少请求频率
+  500 // 增加到 500ms，减少请求频率
 );
 ```
 
 **优势**：
+
 - 不依赖外部状态，只依赖 ref
 - 减少函数重新创建的频率
 - 增加防抖时间，减少不必要的 URL 更新
@@ -108,14 +110,15 @@ const debouncedUpdateURL = useDebouncedCallback(
 // ✅ 优化后的搜索处理
 const handleSearch = React.useCallback(
   (value: string) => {
-    setSearch(value);           // 立即更新本地状态
-    debouncedUpdateURL(value);  // 防抖更新 URL
+    setSearch(value); // 立即更新本地状态
+    debouncedUpdateURL(value); // 防抖更新 URL
   },
-  [debouncedUpdateURL]  // 只依赖防抖函数
+  [debouncedUpdateURL] // 只依赖防抖函数
 );
 ```
 
 **优势**：
+
 - 依赖项从 7 个减少到 1 个
 - 函数重新创建的频率大幅降低
 - 输入响应更快
@@ -133,6 +136,7 @@ router.replace(`/inventory?${params.toString()}`, { scroll: false });
 ```
 
 **优势**：
+
 - `router.replace` 本身就是异步的，不需要额外的 transition
 - 减少 React 调度开销
 - 简化代码逻辑
@@ -140,18 +144,21 @@ router.replace(`/inventory?${params.toString()}`, { scroll: false });
 ## 性能提升
 
 ### 优化前
+
 - 每次输入触发 2-3 次组件重渲染
 - `handleSearch` 函数频繁重新创建（7 个依赖项）
 - 每次输入都创建新的参数对象
 - 额外的 `startTransition` 调度开销
 
 ### 优化后
+
 - 每次输入只触发 1 次状态更新（`setSearch`）
 - `handleSearch` 函数稳定（只有 1 个依赖项）
 - 使用 ref 避免对象创建
 - 移除不必要的调度开销
 
 ### 性能指标
+
 - **函数重新创建频率**: 降低约 85%
 - **组件重渲染次数**: 减少约 50%
 - **输入响应延迟**: 从 ~100ms 降至 ~20ms
@@ -160,6 +167,7 @@ router.replace(`/inventory?${params.toString()}`, { scroll: false });
 ## 最佳实践总结
 
 ### 1. 使用 useRef 存储频繁变化的状态
+
 ```typescript
 const stateRef = React.useRef(initialState);
 React.useEffect(() => {
@@ -168,6 +176,7 @@ React.useEffect(() => {
 ```
 
 ### 2. 减少 useCallback 的依赖项
+
 ```typescript
 // ❌ 避免
 const handler = useCallback(() => {
@@ -182,6 +191,7 @@ const handler = useCallback(() => {
 ```
 
 ### 3. 合理使用防抖时间
+
 ```typescript
 // 搜索输入: 500ms
 const debouncedSearch = useDebouncedCallback(fn, 500);
@@ -194,10 +204,11 @@ const debouncedScroll = useDebouncedCallback(fn, 100);
 ```
 
 ### 4. 避免不必要的 Transition
+
 ```typescript
 // ❌ 不需要
 startTransition(() => {
-  router.replace(url);  // 已经是异步的
+  router.replace(url); // 已经是异步的
 });
 
 // ✅ 直接调用
@@ -207,12 +218,14 @@ router.replace(url);
 ## 测试验证
 
 ### 性能测试
+
 1. 在搜索框中快速输入 10 个字符
 2. 观察输入是否流畅，无卡顿
 3. 检查 React DevTools Profiler 的渲染次数
 4. 验证 URL 更新是否正确
 
 ### 预期结果
+
 - ✅ 输入流畅，无明显延迟
 - ✅ 每次输入只触发 1 次渲染
 - ✅ 防抖后正确更新 URL
@@ -230,4 +243,3 @@ router.replace(url);
 - [React useCallback 优化](https://react.dev/reference/react/useCallback)
 - [Next.js Router API](https://nextjs.org/docs/app/api-reference/functions/use-router)
 - [防抖和节流最佳实践](https://web.dev/debouncing-throttling-explained/)
-

@@ -7,23 +7,25 @@
 ## 💰 应收账款计算公式
 
 ### 标准公式
+
 ```
 应收余额 = 销售金额 - 销售退货 - 收款 - 预收款 + 补偿退款
 ```
 
 ### 字段说明
 
-| 项目 | 增减 | 说明 | 数据来源 |
-|-----|-----|------|---------|
-| 销售金额 | + | 开具销售发票，增加应收 | SalesOrder.totalAmount |
-| 销售退货 | - | 客户退货，减少应收 | ReturnOrder.refundAmount |
-| 收款 | - | 客户付款，减少应收 | PaymentRecord.paymentAmount |
-| 预收款 | - | 客户预付定金，减少应收 | 待实现 |
-| 补偿退款 | + | 质量补偿等，增加应收 | RefundRecord.refundAmount (returnOrderId=null) |
+| 项目     | 增减 | 说明                   | 数据来源                                       |
+| -------- | ---- | ---------------------- | ---------------------------------------------- |
+| 销售金额 | +    | 开具销售发票，增加应收 | SalesOrder.totalAmount                         |
+| 销售退货 | -    | 客户退货，减少应收     | ReturnOrder.refundAmount                       |
+| 收款     | -    | 客户付款，减少应收     | PaymentRecord.paymentAmount                    |
+| 预收款   | -    | 客户预付定金，减少应收 | 待实现                                         |
+| 补偿退款 | +    | 质量补偿等，增加应收   | RefundRecord.refundAmount (returnOrderId=null) |
 
 ### 会计分录示例
 
 #### 场景 1：正常销售流程
+
 ```
 1. 开具发票 ¥10,000
    借：应收账款 10,000
@@ -37,6 +39,7 @@
 ```
 
 #### 场景 2：退货退款流程
+
 ```
 1. 销售 ¥10,000
    借：应收账款 10,000
@@ -55,6 +58,7 @@
 ```
 
 #### 场景 3：质量补偿流程
+
 ```
 1. 销售 ¥10,000，客户已付款
    应收 = 10,000 - 10,000 = 0
@@ -71,15 +75,16 @@
 
 ### 退款分类
 
-| 退款类型 | returnOrderId | 对账单处理 | 说明 |
-|---------|--------------|----------|------|
-| 退货退款 | 有值 | 不计入 | 金额已在退货中统计 |
-| 补偿退款 | null | 借方(+) | 质量补偿，增加应收 |
-| 折扣退款 | null | 借方(+) | 价格调整，增加应收 |
+| 退款类型 | returnOrderId | 对账单处理 | 说明               |
+| -------- | ------------- | ---------- | ------------------ |
+| 退货退款 | 有值          | 不计入     | 金额已在退货中统计 |
+| 补偿退款 | null          | 借方(+)    | 质量补偿，增加应收 |
+| 折扣退款 | null          | 借方(+)    | 价格调整，增加应收 |
 
 ### 数据验证结果
 
 **当前系统状态：**
+
 - ✅ 总退款记录：32 条
 - ✅ 退货关联退款：32 条 (100%)
 - ✅ 无退货退款：0 条 (0%)
@@ -87,6 +92,7 @@
 - ✅ 实际金额存储在：ReturnOrder.refundAmount
 
 **结论：**
+
 - 所有退款都关联退货订单
 - 退款金额已在退货中正确统计
 - 不存在重复计算问题
@@ -97,20 +103,22 @@
 ### 借贷方向定义
 
 从公司视角（应收账款明细账）：
+
 - **借方** = 增加应收（客户欠我们的）
 - **贷方** = 减少应收（客户还我们的 / 我们退给客户的）
 
 ### 交易类型对照表
 
-| 交易类型 | 借方 | 贷方 | 数据来源 | 说明 |
-|---------|-----|------|---------|------|
-| 销售订单 | ✅ totalAmount | - | SalesOrder | 开具发票，增加应收 |
-| 销售退货 | - | ✅ refundAmount | ReturnOrder | 红字发票，减少应收 |
-| 客户付款 | - | ✅ paymentAmount | PaymentRecord | 收到款项，减少应收 |
-| 补偿退款 | ✅ refundAmount | - | RefundRecord (无退货) | 补偿支出，增加应收 |
-| 预收款 | - | ✅ amount | PrepaymentRecord | 预收定金，减少应收 |
+| 交易类型 | 借方            | 贷方             | 数据来源              | 说明               |
+| -------- | --------------- | ---------------- | --------------------- | ------------------ |
+| 销售订单 | ✅ totalAmount  | -                | SalesOrder            | 开具发票，增加应收 |
+| 销售退货 | -               | ✅ refundAmount  | ReturnOrder           | 红字发票，减少应收 |
+| 客户付款 | -               | ✅ paymentAmount | PaymentRecord         | 收到款项，减少应收 |
+| 补偿退款 | ✅ refundAmount | -                | RefundRecord (无退货) | 补偿支出，增加应收 |
+| 预收款   | -               | ✅ amount        | PrepaymentRecord      | 预收定金，减少应收 |
 
 **特别说明：**
+
 - 退货退款：已在退货记录中体现，不单独记录
 - 补偿退款：当前系统无记录，未来实现时按借方处理
 
@@ -124,7 +132,7 @@ const refunds = await prisma.refundRecord.findMany({
   where: {
     customerId,
     status: 'completed',
-    returnOrderId: null,  // ✅ 关键：过滤退货退款
+    returnOrderId: null, // ✅ 关键：过滤退货退款
     ...dateFilter,
   },
 });
@@ -137,11 +145,11 @@ const refundPaid = refunds.reduce(
 
 // 余额计算
 const receivableBalance =
-  salesAmount -          // 销售
-  salesReturnAmount -    // 退货（包含退款金额）
-  paymentReceived -      // 收款
-  prepaymentReceived +   // 预收（待实现）
-  refundPaid;            // 补偿退款（当前为0）
+  salesAmount - // 销售
+  salesReturnAmount - // 退货（包含退款金额）
+  paymentReceived - // 收款
+  prepaymentReceived + // 预收（待实现）
+  refundPaid; // 补偿退款（当前为0）
 ```
 
 ### 2. 交易明细 (getCustomerTransactions)
@@ -152,7 +160,7 @@ const refunds = await prisma.refundRecord.findMany({
   where: {
     customerId,
     status: 'completed',
-    returnOrderId: null,  // ✅ 关键：过滤退货退款
+    returnOrderId: null, // ✅ 关键：过滤退货退款
     refundDate: dateFilter,
   },
 });
@@ -161,7 +169,7 @@ const refunds = await prisma.refundRecord.findMany({
 for (const refund of refunds) {
   transactionEntries.push({
     transactionType: 'refund_out',
-    debitAmount: Number(refund.refundAmount),  // 借方
+    debitAmount: Number(refund.refundAmount), // 借方
     creditAmount: 0,
     description: `补偿退款 ${refund.refundNumber}`,
   });
@@ -196,6 +204,7 @@ for (const refund of refunds) {
 ### 1. 预收款功能
 
 **实现要点：**
+
 - 创建 PrepaymentRecord 表
 - 记录客户预付定金
 - 销售订单时冲抵预收款
@@ -204,6 +213,7 @@ for (const refund of refunds) {
 ### 2. 补偿退款功能
 
 **实现要点：**
+
 - 创建无退货关联的退款记录
 - RefundRecord.returnOrderId = null
 - 填充 refundAmount 字段
@@ -212,6 +222,7 @@ for (const refund of refunds) {
 ### 3. 应付账款功能
 
 **实现要点：**
+
 - 客户同时作为供应商
 - 统计采购订单、采购退货
 - 统计付款、预付款

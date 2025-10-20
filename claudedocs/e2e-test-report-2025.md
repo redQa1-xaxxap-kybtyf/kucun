@@ -10,21 +10,21 @@
 
 ### 环境检查 ✅
 
-| 项目 | 要求 | 实际 | 状态 |
-|------|------|------|------|
-| Node.js | >= 18.0.0 | v22.19.0 | ✅ 通过 |
-| npm | >= 8.0.0 | 10.9.3 | ✅ 通过 |
-| Prisma Schema | 有效 | 有效 | ✅ 通过 |
-| 依赖安装 | 完整 | 完整 | ✅ 通过 |
+| 项目          | 要求      | 实际     | 状态    |
+| ------------- | --------- | -------- | ------- |
+| Node.js       | >= 18.0.0 | v22.19.0 | ✅ 通过 |
+| npm           | >= 8.0.0  | 10.9.3   | ✅ 通过 |
+| Prisma Schema | 有效      | 有效     | ✅ 通过 |
+| 依赖安装      | 完整      | 完整     | ✅ 通过 |
 
 ### 代码质量检查结果
 
-| 检查项 | 执行 | 结果 | 严重性 |
-|--------|------|------|--------|
-| TypeScript 类型检查 | ✅ | ⚠️ 发现 49 个类型错误 | 🟡 中等 |
-| ESLint 代码检查 | ✅ | ⚠️ 发现多个警告和错误 | 🟡 中等 |
-| Prisma Schema 验证 | ✅ | ✅ 通过 | 🟢 正常 |
-| 项目构建 | ✅ | ✅ 成功构建 | 🟢 正常 |
+| 检查项              | 执行 | 结果                  | 严重性  |
+| ------------------- | ---- | --------------------- | ------- |
+| TypeScript 类型检查 | ✅   | ⚠️ 发现 49 个类型错误 | 🟡 中等 |
+| ESLint 代码检查     | ✅   | ⚠️ 发现多个警告和错误 | 🟡 中等 |
+| Prisma Schema 验证  | ✅   | ✅ 通过               | 🟢 正常 |
+| 项目构建            | ✅   | ✅ 成功构建           | 🟢 正常 |
 
 ---
 
@@ -37,51 +37,63 @@
 **影响**: 可能导致运行时错误
 
 ##### `app/api/return-orders/route.ts:420`
+
 ```typescript
 // 错误: Property 'product' does not exist
 // 原因: 数据模型与类型定义不匹配
 ```
+
 **建议**: 更新类型定义以匹配实际数据结构
 
 ##### `components/return-orders/erp-return-order-form.tsx:215,276,633`
+
 ```typescript
 // 错误: Property 'condition' is missing
 // 原因: ReturnOrderItem 类型缺少必需字段 'condition'
 ```
+
 **建议**: 添加 `condition: 'good' | 'damaged' | 'defective'` 字段
 
 ##### `components/finance/refunds-client.tsx:409`
+
 ```typescript
 // 错误: 'refund.salesOrder' is possibly 'null'
 // 原因: 缺少空值检查
 ```
+
 **建议**: 添加条件检查 `refund.salesOrder?.orderNumber`
 
 #### 1.2 中优先级类型错误 (P1 - 影响类型安全)
 
 ##### 泛型类型不匹配 (8 处)
+
 ```typescript
 // components/payments/accounts-receivable.tsx
 // components/payments/payment-list.tsx
 // 错误: Type 'AccountsReceivable[]' is not assignable to 'Record<string, unknown>[]'
 ```
+
 **建议**: 更新组件以使用正确的泛型类型参数
 
 ##### React Hook Form 类型问题 (3 处)
+
 ```typescript
 // components/finance/payable-form.tsx:171,217
 // 错误: Type '"dueDate"' is not assignable to allowed field names
 ```
+
 **建议**: 扩展表单类型定义以包含所有字段
 
 #### 1.3 低优先级类型错误 (P2 - 代码质量改进)
 
 ##### 分页组件属性不匹配 (2 处)
+
 ```typescript
 // components/finance/payments-out-client.tsx:423
 // components/finance/statements-client.tsx:425
 // 错误: Property 'currentPage' does not exist
 ```
+
 **建议**: 统一分页组件的 API 接口
 
 ---
@@ -91,49 +103,61 @@
 #### 2.1 错误级别 (需要修复)
 
 ##### 导入顺序问题 (15+ 处)
+
 ```typescript
 // 错误: import/order violations
 // 示例: app/(dashboard)/customers/page.tsx
 ```
+
 **建议**: 运行 `npm run lint:fix` 自动修复
 
 ##### 重复导入 (5 处)
+
 ```typescript
 // 错误: import/no-duplicates
 // 示例: app/(dashboard)/categories/[id]/edit/page.tsx
 import { Save } from 'lucide-react';
 import { AlertCircle } from 'lucide-react'; // 重复
 ```
+
 **建议**: 合并为单行导入
 
 ##### 箭头函数体样式 (1 处)
+
 ```typescript
 // app/(dashboard)/finance/customer-statements/[customerId]/page.tsx:112
 // 错误: Unexpected block statement surrounding arrow body
 ```
+
 **建议**: 简化箭头函数体
 
 #### 2.2 警告级别 (建议优化)
 
 ##### 函数行数过多 (20+ 处)
+
 ```
 - CreateCategoryPage: 245 行 (限制 100)
 - CategoryEditPage: 321 行 (限制 100)
 - CustomerDetailPage: 563 行 (限制 100)
 ```
+
 **建议**: 拆分为更小的组件和辅助函数
 
 ##### Console 语句 (10+ 处)
+
 ```typescript
 // 错误: Unexpected console statement (no-console)
 ```
+
 **建议**: 使用结构化日志库或移除调试语句
 
 ##### 文件行数过多 (2 处)
+
 ```
 - app/(dashboard)/customers/[id]/page.tsx: 650 行 (限制 500)
 - app/(dashboard)/finance/customer-statements/[customerId]/page.tsx: 533 行 (限制 500)
 ```
+
 **建议**: 将组件拆分为多个文件
 
 ---
@@ -143,54 +167,66 @@ import { AlertCircle } from 'lucide-react'; // 重复
 #### 3.1 核心业务功能 TODO
 
 ##### `lib/services/customer-statement-service.ts`
+
 ```typescript
 const activeCustomers = 0; // TODO: 实现逻辑
 overdueCustomers: 0, // TODO: 实现逻辑
 monthlyActiveCustomers: 0, // TODO: 实现逻辑
 ```
+
 **影响**: 客户对账单统计功能不完整
 **优先级**: 🟡 中等
 
 ##### `lib/api/handlers/factory-shipment-status.ts:131`
+
 ```typescript
 // TODO: 实现自动创建应收款记录的逻辑
 // 需要确认是否需要单独的 ReceivableRecord 模型
 ```
+
 **影响**: 厂家发货状态变更后的财务记录自动化
 **优先级**: 🟡 中等
 
 #### 3.2 功能增强 TODO
 
 ##### `app/api/finance/receivables/route.ts:105`
+
 ```typescript
 // TODO: 实现导出逻辑(Excel/CSV)
 ```
+
 **影响**: 应收款数据导出功能缺失
 **优先级**: 🟢 低
 
 ##### `lib/validations/customer.ts:255`
+
 ```typescript
 // TODO: 检查是否会形成循环引用
 // 需要查询数据库来验证层级关系的合法性
 ```
+
 **影响**: 客户层级关系验证不完整
 **优先级**: 🟡 中等
 
 #### 3.3 系统功能 TODO
 
 ##### `lib/api/middleware.ts:336`
+
 ```typescript
 // TODO: 写入数据库或发送到错误监控服务
 ```
+
 **影响**: 错误日志持久化和监控
 **优先级**: 🟡 中等
 
 ##### `lib/services/login-log-service.ts:60,279,304`
+
 ```typescript
 // TODO: 添加到数据库
 // TODO: 从数据库查询
 // TODO: 实现异常检测逻辑
 ```
+
 **影响**: 登录日志功能和异常检测不完整
 **优先级**: 🟡 中等
 
@@ -266,19 +302,21 @@ monthlyActiveCustomers: 0, // TODO: 实现逻辑
 ## 📈 代码质量趋势
 
 ### 当前状态
+
 - **TypeScript 错误**: 49 个
 - **ESLint 警告**: 50+ 个
 - **ESLint 错误**: 15+ 个
 - **构建状态**: ✅ 成功
 
 ### 质量评分
-| 维度 | 评分 | 说明 |
-|------|------|------|
-| 类型安全 | 7/10 | 存在类型错误，但不影响构建 |
-| 代码规范 | 6/10 | 较多导入顺序和函数长度问题 |
-| 架构设计 | 9/10 | 清晰的分层架构，职责分明 |
+
+| 维度       | 评分 | 说明                            |
+| ---------- | ---- | ------------------------------- |
+| 类型安全   | 7/10 | 存在类型错误，但不影响构建      |
+| 代码规范   | 6/10 | 较多导入顺序和函数长度问题      |
+| 架构设计   | 9/10 | 清晰的分层架构，职责分明        |
 | 功能完整性 | 8/10 | 核心功能完整，存在待实现的 TODO |
-| 可维护性 | 7/10 | 部分组件过大，需要拆分 |
+| 可维护性   | 7/10 | 部分组件过大，需要拆分          |
 
 **总体评分**: **7.4/10** (良好)
 
@@ -287,21 +325,25 @@ monthlyActiveCustomers: 0, // TODO: 实现逻辑
 ## 🛠️ 推荐行动计划
 
 ### 第一周
+
 1. 修复 P0 级别的类型错误 (退货单、空值检查)
 2. 运行 `npm run lint:fix` 修复导入顺序问题
 3. 修复重复导入和箭头函数体问题
 
 ### 第二周
+
 1. 更新泛型类型参数 (表格组件)
 2. 扩展 React Hook Form 类型定义
 3. 统一分页组件 API
 
 ### 第三周
+
 1. 拆分大型组件 (>300 行)
 2. 实现客户对账单统计逻辑
 3. 完善厂家发货应收款自动化
 
 ### 第四周
+
 1. 实现错误监控集成
 2. 完善登录日志功能
 3. 代码质量复查和文档更新
@@ -315,6 +357,7 @@ monthlyActiveCustomers: 0, // TODO: 实现逻辑
 **总计**: 49 个 TypeScript 错误
 
 #### 按模块分类
+
 - **退货订单**: 8 个错误
 - **财务模块**: 10 个错误
 - **客户管理**: 5 个错误
@@ -322,6 +365,7 @@ monthlyActiveCustomers: 0, // TODO: 实现逻辑
 - **其他**: 20 个错误
 
 #### 按优先级分类
+
 - **P0 (关键)**: 11 个
 - **P1 (重要)**: 18 个
 - **P2 (一般)**: 20 个

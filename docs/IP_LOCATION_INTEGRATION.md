@@ -45,6 +45,7 @@ npm run test:ip-location
 ```
 
 预期输出：
+
 ```
 🧪 开始测试 IP 地理位置功能
 ================================================================================
@@ -112,7 +113,7 @@ await logUserAction(
   'user_login',
   '用户登录',
   userId,
-  '8.8.8.8',  // IP 会自动解析为地理位置
+  '8.8.8.8', // IP 会自动解析为地理位置
   userAgent
 );
 ```
@@ -141,15 +142,15 @@ import { getIpLocation, formatLocation } from '@/lib/services/ip-location';
 // 单个 IP 查询
 const location = await getIpLocation('223.5.5.5');
 if (location) {
-  console.log(location.country);    // "中国"
-  console.log(location.province);   // "浙江省"
-  console.log(location.city);       // "杭州市"
+  console.log(location.country); // "中国"
+  console.log(location.province); // "浙江省"
+  console.log(location.city); // "杭州市"
   console.log(location.fullLocation); // "中国 浙江省 杭州市"
 }
 
 // 格式化显示
 console.log(formatLocation(location, 'short')); // "中国 杭州市"
-console.log(formatLocation(location, 'full'));  // "中国 浙江省 杭州市"
+console.log(formatLocation(location, 'full')); // "中国 浙江省 杭州市"
 ```
 
 ### 批量查询
@@ -207,13 +208,13 @@ ls -lh data/GeoLite2-City.mmdb
 
 ## 性能指标
 
-| 指标 | 数值 |
-|------|------|
-| 数据库大小 | ~70MB |
-| 查询速度 | < 1ms |
-| 内存占用 | ~80MB (加载后) |
-| 准确度（国家） | 99.8% |
-| 准确度（城市） | ~80% |
+| 指标           | 数值           |
+| -------------- | -------------- |
+| 数据库大小     | ~70MB          |
+| 查询速度       | < 1ms          |
+| 内存占用       | ~80MB (加载后) |
+| 准确度（国家） | 99.8%          |
+| 准确度（城市） | ~80%           |
 
 ## 故障排查
 
@@ -222,6 +223,7 @@ ls -lh data/GeoLite2-City.mmdb
 **症状**: 控制台警告 `IP定位数据库不存在`
 
 **解决**:
+
 ```bash
 npm run download-geoip
 ```
@@ -231,6 +233,7 @@ npm run download-geoip
 **症状**: 测试脚本显示所有测试失败
 
 **排查步骤**:
+
 1. 检查数据库文件是否存在: `ls data/GeoLite2-City.mmdb`
 2. 检查文件大小是否正常: 应该约 70MB
 3. 重新下载数据库: `npm run download-geoip`
@@ -240,6 +243,7 @@ npm run download-geoip
 **症状**: 下载脚本报错 `状态码: 401`
 
 **解决**:
+
 1. 检查环境变量是否正确设置
 2. 验证 License Key 是否有效
 3. 确认账号状态正常

@@ -42,47 +42,59 @@ function downloadGeoLite2() {
     if (!MAXMIND_LICENSE_KEY) {
       console.error('❌ 错误: 未设置 MAXMIND_LICENSE_KEY 环境变量');
       console.log('\n请按以下步骤操作:');
-      console.log('1. 注册 MaxMind 账号: https://www.maxmind.com/en/geolite2/signup');
-      console.log('2. 生成 License Key: https://www.maxmind.com/en/accounts/current/license-key');
+      console.log(
+        '1. 注册 MaxMind 账号: https://www.maxmind.com/en/geolite2/signup'
+      );
+      console.log(
+        '2. 生成 License Key: https://www.maxmind.com/en/accounts/current/license-key'
+      );
       console.log('3. 设置环境变量: MAXMIND_LICENSE_KEY=your_license_key');
       console.log('4. 重新运行脚本\n');
       console.log('或者使用免费备用方案:');
-      console.log('从 https://github.com/P3TERX/GeoLite.mmdb/releases 下载并放置到 data/ 目录\n');
+      console.log(
+        '从 https://github.com/P3TERX/GeoLite.mmdb/releases 下载并放置到 data/ 目录\n'
+      );
       process.exit(1);
     }
 
     console.log('📥 开始下载 GeoLite2-City 数据库...');
-    console.log(`下载地址: ${MAXMIND_DOWNLOAD_URL.replace(MAXMIND_LICENSE_KEY, '***')}`);
+    console.log(
+      `下载地址: ${MAXMIND_DOWNLOAD_URL.replace(MAXMIND_LICENSE_KEY, '***')}`
+    );
 
     const tempFile = path.join(DATA_DIR, 'GeoLite2-City.tar.gz');
     const fileStream = fs.createWriteStream(tempFile);
 
-    https.get(MAXMIND_DOWNLOAD_URL, (response) => {
-      if (response.statusCode !== 200) {
-        reject(new Error(`下载失败，状态码: ${response.statusCode}`));
-        return;
-      }
+    https
+      .get(MAXMIND_DOWNLOAD_URL, response => {
+        if (response.statusCode !== 200) {
+          reject(new Error(`下载失败，状态码: ${response.statusCode}`));
+          return;
+        }
 
-      const totalBytes = parseInt(response.headers['content-length'], 10);
-      let downloadedBytes = 0;
+        const totalBytes = parseInt(response.headers['content-length'], 10);
+        let downloadedBytes = 0;
 
-      response.on('data', (chunk) => {
-        downloadedBytes += chunk.length;
-        const progress = ((downloadedBytes / totalBytes) * 100).toFixed(2);
-        process.stdout.write(`\r下载进度: ${progress}% (${(downloadedBytes / 1024 / 1024).toFixed(2)} MB / ${(totalBytes / 1024 / 1024).toFixed(2)} MB)`);
+        response.on('data', chunk => {
+          downloadedBytes += chunk.length;
+          const progress = ((downloadedBytes / totalBytes) * 100).toFixed(2);
+          process.stdout.write(
+            `\r下载进度: ${progress}% (${(downloadedBytes / 1024 / 1024).toFixed(2)} MB / ${(totalBytes / 1024 / 1024).toFixed(2)} MB)`
+          );
+        });
+
+        response.pipe(fileStream);
+
+        fileStream.on('finish', () => {
+          fileStream.close();
+          console.log('\n✅ 下载完成');
+          resolve(tempFile);
+        });
+      })
+      .on('error', err => {
+        fs.unlinkSync(tempFile);
+        reject(err);
       });
-
-      response.pipe(fileStream);
-
-      fileStream.on('finish', () => {
-        fileStream.close();
-        console.log('\n✅ 下载完成');
-        resolve(tempFile);
-      });
-    }).on('error', (err) => {
-      fs.unlinkSync(tempFile);
-      reject(err);
-    });
   });
 }
 
@@ -129,7 +141,6 @@ async function extractDatabase(tarFile) {
     const stats = fs.statSync(DB_FILE);
     console.log(`📊 数据库大小: ${(stats.size / 1024 / 1024).toFixed(2)} MB`);
     console.log(`📅 更新时间: ${stats.mtime.toLocaleString('zh-CN')}`);
-
   } catch (error) {
     throw new Error(`解压失败: ${error.message}`);
   }
@@ -147,7 +158,8 @@ async function main() {
     // 检查是否已存在数据库
     if (fs.existsSync(DB_FILE)) {
       const stats = fs.statSync(DB_FILE);
-      const daysSinceUpdate = (Date.now() - stats.mtime.getTime()) / (1000 * 60 * 60 * 24);
+      const daysSinceUpdate =
+        (Date.now() - stats.mtime.getTime()) / (1000 * 60 * 60 * 24);
 
       console.log(`📂 发现现有数据库:`);
       console.log(`   文件: ${DB_FILE}`);
@@ -168,7 +180,6 @@ async function main() {
 
     console.log('\n🎉 GeoLite2 数据库安装成功！');
     console.log('💡 建议每月运行一次此脚本以更新数据库\n');
-
   } catch (error) {
     console.error('\n❌ 错误:', error.message);
     process.exit(1);

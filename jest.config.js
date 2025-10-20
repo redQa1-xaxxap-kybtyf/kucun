@@ -16,6 +16,7 @@ const customJestConfig = {
   testEnvironment: 'jest-environment-jsdom',
 
   // 设置文件
+  setupFiles: ['<rootDir>/jest.env.js'],
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
 
   // 模块路径映射

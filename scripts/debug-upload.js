@@ -14,7 +14,9 @@ function decrypt(text) {
       return text;
     }
 
-    const ENCRYPTION_KEY = process.env.STORAGE_ENCRYPTION_KEY || 'default-key-for-development-only-32char';
+    const ENCRYPTION_KEY =
+      process.env.STORAGE_ENCRYPTION_KEY ||
+      'default-key-for-development-only-32char';
     const ALGORITHM = 'aes-256-cbc';
 
     const textParts = text.split(':');
@@ -52,15 +54,15 @@ async function debugUpload() {
             'qiniu_bucket',
             'qiniu_domain',
             'qiniu_region',
-            'qiniu_path_format'
-          ]
-        }
+            'qiniu_path_format',
+          ],
+        },
       },
       select: {
         key: true,
         value: true,
-        updatedAt: true
-      }
+        updatedAt: true,
+      },
     });
 
     console.log(`找到 ${settings.length} 条配置记录\n`);
@@ -71,7 +73,7 @@ async function debugUpload() {
       bucket: '',
       domain: '',
       region: '',
-      pathFormat: ''
+      pathFormat: '',
     };
 
     for (const setting of settings) {
@@ -125,16 +127,18 @@ async function debugUpload() {
       { name: 'Bucket', value: config.bucket, required: true },
       { name: 'Domain', value: config.domain, required: true },
       { name: 'Region', value: config.region, required: false },
-      { name: 'Path Format', value: config.pathFormat, required: false }
+      { name: 'Path Format', value: config.pathFormat, required: false },
     ];
 
     let allValid = true;
 
     for (const check of checks) {
       const hasValue = check.value && check.value.trim().length > 0;
-      const status = hasValue ? '✅' : (check.required ? '❌' : '⚠️');
+      const status = hasValue ? '✅' : check.required ? '❌' : '⚠️';
 
-      console.log(`  ${status} ${check.name}: ${hasValue ? '已配置' : '未配置'}${check.required ? ' (必需)' : ' (可选)'}`);
+      console.log(
+        `  ${status} ${check.name}: ${hasValue ? '已配置' : '未配置'}${check.required ? ' (必需)' : ' (可选)'}`
+      );
 
       if (check.required && !hasValue) {
         allValid = false;
@@ -161,9 +165,14 @@ async function debugUpload() {
 
     if (config.domain) {
       const domainChecks = [
-        { name: '包含协议 (http/https)', pass: config.domain.startsWith('http://') || config.domain.startsWith('https://') },
+        {
+          name: '包含协议 (http/https)',
+          pass:
+            config.domain.startsWith('http://') ||
+            config.domain.startsWith('https://'),
+        },
         { name: '不以斜杠结尾', pass: !config.domain.endsWith('/') },
-        { name: '格式正确', pass: /^https?:\/\/[^\/]+$/.test(config.domain) }
+        { name: '格式正确', pass: /^https?:\/\/[^\/]+$/.test(config.domain) },
       ];
 
       for (const check of domainChecks) {
@@ -207,14 +216,15 @@ async function debugUpload() {
       console.log('测试方法:');
       console.log('1. 访问 http://localhost:3001/products/create');
       console.log('2. 上传图片');
-      console.log('3. 在浏览器开发者工具的 Network 标签中查看 /api/upload 响应');
+      console.log(
+        '3. 在浏览器开发者工具的 Network 标签中查看 /api/upload 响应'
+      );
       console.log('4. 检查返回的 data.url 和 data.storage\n');
       console.log('如果仍然返回本地路径,请查看服务器日志中的错误信息:');
       console.log('  • 七牛云 API 错误');
       console.log('  • 网络连接问题');
       console.log('  • 权限/认证失败\n');
     }
-
   } catch (error) {
     console.error('❌ 调试过程出错:', error);
   } finally {

@@ -8,7 +8,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"  // 开发环境使用 SQLite
+  provider = "mysql" // 开发环境使用 SQLite
   url      = env("DATABASE_URL")
 }
 
@@ -211,37 +211,37 @@ model ProductVariant {
 
 // 销售单表 - 销售订单主表
 model SalesOrder {
-  id              String   @id @default(uuid())
-  orderNumber     String   @unique @map("order_number")
-  customerId      String   @map("customer_id")
-  userId          String   @map("user_id")
-  status          String   @default("draft") // draft, confirmed, shipped, completed, cancelled
-  orderType       String   @default("NORMAL") @map("order_type") // NORMAL, TRANSFER
-  transferMode    String   @default("SUPPLIER_ONLY") @map("transfer_mode") // 调货履约模式：SUPPLIER_ONLY, MIXED
-  supplierId      String?  @map("supplier_id") // 调货销售时的供应商ID
-  costAmount      Float?   @default(0) @map("cost_amount") // 调货销售的成本金额
-  profitAmount    Float?   @default(0) @map("profit_amount") // 调货销售的毛利金额
-  itemsAmount     Float    @default(0) @map("items_amount") // 商品总金额
-  additionalFees  Float    @default(0) @map("additional_fees") // 额外费用总额（加工费、运费等）
-  totalAmount     Float    @default(0) @map("total_amount") // 订单总额 = 商品总额 + 额外费用
-  paidAmount      Float    @default(0) @map("paid_amount") // 已付金额
-  roundingAdjustment Float @default(0) @map("rounding_adjustment") // 抹零金额（可正可负）
+  id                 String  @id @default(uuid())
+  orderNumber        String  @unique @map("order_number")
+  customerId         String  @map("customer_id")
+  userId             String  @map("user_id")
+  status             String  @default("draft") // draft, confirmed, shipped, completed, cancelled
+  orderType          String  @default("NORMAL") @map("order_type") // NORMAL, TRANSFER
+  transferMode       String  @default("SUPPLIER_ONLY") @map("transfer_mode") // 调货履约模式：SUPPLIER_ONLY, MIXED
+  supplierId         String? @map("supplier_id") // 调货销售时的供应商ID
+  costAmount         Float?  @default(0) @map("cost_amount") // 调货销售的成本金额
+  profitAmount       Float?  @default(0) @map("profit_amount") // 调货销售的毛利金额
+  itemsAmount        Float   @default(0) @map("items_amount") // 商品总金额
+  additionalFees     Float   @default(0) @map("additional_fees") // 额外费用总额（加工费、运费等）
+  totalAmount        Float   @default(0) @map("total_amount") // 订单总额 = 商品总额 + 额外费用
+  paidAmount         Float   @default(0) @map("paid_amount") // 已付金额
+  roundingAdjustment Float   @default(0) @map("rounding_adjustment") // 抹零金额（可正可负）
 
   // 预收款字段
-  usePrepayment      Boolean  @default(false) @map("use_prepayment") // 是否使用预收款冲抵
-  prepaymentAmount   Float?   @default(0) @map("prepayment_amount") // 预收款冲抵金额
+  usePrepayment    Boolean @default(false) @map("use_prepayment") // 是否使用预收款冲抵
+  prepaymentAmount Float?  @default(0) @map("prepayment_amount") // 预收款冲抵金额
 
-  remarks         String?
-  shippedAt       DateTime? @map("shipped_at") // 发货时间
-  createdAt       DateTime  @default(now()) @map("created_at")
-  updatedAt       DateTime  @updatedAt @map("updated_at")
+  remarks   String?
+  shippedAt DateTime? @map("shipped_at") // 发货时间
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
 
   // 关联关系
-  customer        Customer              @relation(fields: [customerId], references: [id])
-  user            User                  @relation(fields: [userId], references: [id])
-  supplier        Supplier?             @relation(fields: [supplierId], references: [id])
+  customer        Customer            @relation(fields: [customerId], references: [id])
+  user            User                @relation(fields: [userId], references: [id])
+  supplier        Supplier?           @relation(fields: [supplierId], references: [id])
   items           SalesOrderItem[]
-  feeItems        SalesOrderFeeItem[]   // 费用项明细
+  feeItems        SalesOrderFeeItem[] // 费用项明细
   payments        PaymentRecord[]
   refunds         RefundRecord[]
   returnOrders    ReturnOrder[]
@@ -267,11 +267,11 @@ model SalesOrder {
 
 // 销售订单费用项表 - 记录加工费、运费等额外费用
 model SalesOrderFeeItem {
-  id           String  @id @default(uuid())
-  salesOrderId String  @map("sales_order_id")
-  feeType      String  @map("fee_type") // processing: 加工费, shipping: 运费, other: 其他
-  feeName      String  @map("fee_name") // 费用名称
-  feeAmount    Float   @map("fee_amount") // 费用金额
+  id           String   @id @default(uuid())
+  salesOrderId String   @map("sales_order_id")
+  feeType      String   @map("fee_type") // processing: 加工费, shipping: 运费, other: 其他
+  feeName      String   @map("fee_name") // 费用名称
+  feeAmount    Float    @map("fee_amount") // 费用金额
   remarks      String? // 备注
   createdAt    DateTime @default(now()) @map("created_at")
   updatedAt    DateTime @updatedAt @map("updated_at")
@@ -299,11 +299,11 @@ model SalesOrderItem {
   subtotal       Float
 
   // 调货销售相关字段
-  unitCost     Float? @map("unit_cost") // 单位成本价（调货销售时使用）
-  localQuantity    Float   @default(0) @map("local_quantity") // 本地仓发货数量（调货混合模式使用）
-  transferQuantity Float   @default(0) @map("transfer_quantity") // 调货发货数量（调货模式使用）
-  costSubtotal Float? @map("cost_subtotal") // 成本小计（调货销售时使用）
-  profitAmount Float? @map("profit_amount") // 毛利金额（调货销售时使用）
+  unitCost         Float? @map("unit_cost") // 单位成本价（调货销售时使用）
+  localQuantity    Float  @default(0) @map("local_quantity") // 本地仓发货数量（调货混合模式使用）
+  transferQuantity Float  @default(0) @map("transfer_quantity") // 调货发货数量（调货模式使用）
+  costSubtotal     Float? @map("cost_subtotal") // 成本小计（调货销售时使用）
+  profitAmount     Float? @map("profit_amount") // 毛利金额（调货销售时使用）
 
   // 手动输入商品信息（调货销售时使用）
   isManualProduct     Boolean? @map("is_manual_product") // 是否为手动输入的商品
@@ -583,31 +583,31 @@ model InventoryAdjustment {
 
 // 收款记录表 - 收款管理，支持部分收款、分期收款和预收款
 model PaymentRecord {
-  id            String   @id @default(uuid())
-  paymentNumber String   @unique @map("payment_number")
-  salesOrderId  String?  @map("sales_order_id") // 订单收款时必填,预收款时为空
-  factoryShipmentOrderId String? @map("factory_shipment_order_id")
-  customerId    String   @map("customer_id")
-  userId        String   @map("user_id")
-  paymentType   String   @default("order_payment") @map("payment_type") // order_payment, prepayment
-  paymentMethod String   @default("cash") // cash, bank_transfer, check, other
-  paymentAmount Float    @map("payment_amount")
-  actualPaymentAmount Float @default(0) @map("actual_payment_amount") // 实际到账金额
-  roundingAmount Float @default(0) @map("rounding_amount") // 抹零金额(正数表示冲减)
-  appliedAmount Float    @default(0) @map("applied_amount") // 已冲抵金额(预收款使用)
-  paymentDate   DateTime @map("payment_date")
-  status        String   @default("pending") // pending, confirmed, cancelled, applied
-  remarks       String?
-  receiptNumber String?  @map("receipt_number") // 收据号
-  bankInfo      String?  @map("bank_info") // 银行信息（转账时使用）
-  createdAt     DateTime @default(now()) @map("created_at")
-  updatedAt     DateTime @updatedAt @map("updated_at")
+  id                     String   @id @default(uuid())
+  paymentNumber          String   @unique @map("payment_number")
+  salesOrderId           String?  @map("sales_order_id") // 订单收款时必填,预收款时为空
+  factoryShipmentOrderId String?  @map("factory_shipment_order_id")
+  customerId             String   @map("customer_id")
+  userId                 String   @map("user_id")
+  paymentType            String   @default("order_payment") @map("payment_type") // order_payment, prepayment
+  paymentMethod          String   @default("cash") // cash, bank_transfer, check, other
+  paymentAmount          Float    @map("payment_amount")
+  actualPaymentAmount    Float    @default(0) @map("actual_payment_amount") // 实际到账金额
+  roundingAmount         Float    @default(0) @map("rounding_amount") // 抹零金额(正数表示冲减)
+  appliedAmount          Float    @default(0) @map("applied_amount") // 已冲抵金额(预收款使用)
+  paymentDate            DateTime @map("payment_date")
+  status                 String   @default("pending") // pending, confirmed, cancelled, applied
+  remarks                String?
+  receiptNumber          String?  @map("receipt_number") // 收据号
+  bankInfo               String?  @map("bank_info") // 银行信息（转账时使用）
+  createdAt              DateTime @default(now()) @map("created_at")
+  updatedAt              DateTime @updatedAt @map("updated_at")
 
   // 关联关系
-  salesOrder SalesOrder? @relation(fields: [salesOrderId], references: [id])
+  salesOrder           SalesOrder?           @relation(fields: [salesOrderId], references: [id])
   factoryShipmentOrder FactoryShipmentOrder? @relation(fields: [factoryShipmentOrderId], references: [id])
-  customer   Customer    @relation(fields: [customerId], references: [id])
-  user       User        @relation(fields: [userId], references: [id])
+  customer             Customer              @relation(fields: [customerId], references: [id])
+  user                 User                  @relation(fields: [userId], references: [id])
 
   @@index([salesOrderId], map: "idx_payment_records_order")
   @@index([factoryShipmentOrderId], map: "idx_payment_records_factory_shipment")
@@ -646,9 +646,9 @@ model FactoryShipmentOrder {
   updatedAt        DateTime  @updatedAt @map("updated_at")
 
   // 关联关系
-  customer Customer                   @relation(fields: [customerId], references: [id])
-  user     User                       @relation(fields: [userId], references: [id])
-  items    FactoryShipmentOrderItem[]
+  customer       Customer                   @relation(fields: [customerId], references: [id])
+  user           User                       @relation(fields: [userId], references: [id])
+  items          FactoryShipmentOrderItem[]
   paymentRecords PaymentRecord[]
 
   @@index([orderNumber])
@@ -666,17 +666,17 @@ model FactoryShipmentOrder {
 
 // 厂家发货订单明细表 - 厂家发货商品明细
 model FactoryShipmentOrderItem {
-  id                     String  @id @default(uuid())
-  factoryShipmentOrderId String  @map("factory_shipment_order_id")
-  productId              String? @map("product_id") // 产品ID（库存商品时使用）
-  supplierId             String  @map("supplier_id") // 供应商ID
+  id                     String    @id @default(uuid())
+  factoryShipmentOrderId String    @map("factory_shipment_order_id")
+  productId              String?   @map("product_id") // 产品ID（库存商品时使用）
+  supplierId             String    @map("supplier_id") // 供应商ID
   quantity               Float // 数量
-  unitPrice              Float   @map("unit_price") // 单价
-  totalPrice             Float   @map("total_price") // 小计金额
-  ownership              String  @default("customer")
-  ownershipRemarks       String? @map("ownership_remarks")
-  customerDeliveryStatus String? @map("customer_delivery_status")
-  selfInboundStatus      String? @map("self_inbound_status")
+  unitPrice              Float     @map("unit_price") // 单价
+  totalPrice             Float     @map("total_price") // 小计金额
+  ownership              String    @default("customer")
+  ownershipRemarks       String?   @map("ownership_remarks")
+  customerDeliveryStatus String?   @map("customer_delivery_status")
+  selfInboundStatus      String?   @map("self_inbound_status")
   deliveryConfirmedAt    DateTime? @map("delivery_confirmed_at")
   inboundReceivedAt      DateTime? @map("inbound_received_at")
 
@@ -947,23 +947,23 @@ model SettingChangeLog {
 
 // 系统日志表 - 系统操作日志记录
 model SystemLog {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   type        String // user_action, business_operation, system_event, error, security
   level       String // info, warning, error, critical
   action      String
   description String
-  userId      String?  @map("user_id")
-  ipAddress   String?  @map("ip_address")
-  userAgent   String?  @map("user_agent")
+  userId      String? @map("user_id")
+  ipAddress   String? @map("ip_address")
+  userAgent   String? @map("user_agent")
   metadata    String? // JSON格式的额外信息
 
   // IP地理位置信息字段
-  ipCountry   String?  @map("ip_country") // 国家
-  ipProvince  String?  @map("ip_province") // 省份/州
-  ipCity      String?  @map("ip_city") // 城市
-  ipLocation  String?  @map("ip_location") // 完整位置字符串 "国家 省份 城市"
+  ipCountry  String? @map("ip_country") // 国家
+  ipProvince String? @map("ip_province") // 省份/州
+  ipCity     String? @map("ip_city") // 城市
+  ipLocation String? @map("ip_location") // 完整位置字符串 "国家 省份 城市"
 
-  createdAt   DateTime @default(now()) @map("created_at")
+  createdAt DateTime @default(now()) @map("created_at")
 
   // 关联关系
   user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -1088,14 +1088,14 @@ model AccountLockout {
 
 // 运输查询站点配置表
 model ShippingSite {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String // 站点名称，如"顺丰速运"
   url         String // 站点URL
   description String? // 站点描述
 
   // 选择器配置 (JSON格式存储)
-  searchInputSelector String @map("search_input_selector") // 搜索框选择器
-  searchButtonSelector String @map("search_button_selector") // 搜索按钮选择器
+  searchInputSelector     String @map("search_input_selector") // 搜索框选择器
+  searchButtonSelector    String @map("search_button_selector") // 搜索按钮选择器
   resultContainerSelector String @map("result_container_selector") // 结果容器选择器
 
   // 数据提取选择器配置 (JSON格式)
@@ -1114,23 +1114,23 @@ model ShippingSite {
 
 // 运输查询记录表
 model ShippingQuery {
-  id         String   @id @default(uuid())
-  siteId     String   @map("site_id") // 关联站点
+  id             String @id @default(uuid())
+  siteId         String @map("site_id") // 关联站点
   trackingNumber String @map("tracking_number") // 追踪单号(大写)
-  inputKeyword String @map("input_keyword") // 用户输入的关键词(可能是中文)
+  inputKeyword   String @map("input_keyword") // 用户输入的关键词(可能是中文)
 
   // 查询结果
-  status        String? // 当前状态
-  destination   String? // 目的地
+  status           String? // 当前状态
+  destination      String? // 目的地
   estimatedArrival DateTime? @map("estimated_arrival") // 预计到达时间
-  lastUpdateTime DateTime? @map("last_update_time") // 最后更新时间
+  lastUpdateTime   DateTime? @map("last_update_time") // 最后更新时间
 
   // 元数据
-  queryStatus String   @default("pending") @map("query_status") // pending, success, failed
+  queryStatus  String   @default("pending") @map("query_status") // pending, success, failed
   errorMessage String?  @map("error_message") // 错误信息
-  queriedAt DateTime @default(now()) @map("queried_at")
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  queriedAt    DateTime @default(now()) @map("queried_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
 
   // 关联关系
   site ShippingSite @relation(fields: [siteId], references: [id], onDelete: Cascade)

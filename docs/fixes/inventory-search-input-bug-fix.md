@@ -5,6 +5,7 @@
 **严重 Bug**：在库存总览页面的搜索框中连续输入字符时，只能显示第一个字符，后续输入的字符全部丢失。
 
 **复现步骤**：
+
 1. 打开库存总览页面 `/inventory`
 2. 在搜索框中快速连续输入 "00000"（5个0）
 3. **预期**：搜索框显示 "00000"
@@ -124,6 +125,7 @@ const currentQueryParams = React.useMemo(
 ```
 
 **优势**：
+
 - 只在依赖项变化时才创建新对象
 - 避免子组件不必要的重渲染（React.memo 可以正确工作）
 - 提升性能
@@ -131,12 +133,14 @@ const currentQueryParams = React.useMemo(
 ## 🎯 修复效果
 
 ### 修复前
+
 ```
 用户输入: 0 0 0 0 0
 显示结果: 0
 ```
 
 ### 修复后
+
 ```
 用户输入: 0 0 0 0 0
 显示结果: 00000 ✅
@@ -206,9 +210,11 @@ currentQueryParams 更新（useMemo）
 ## 🔧 相关修改
 
 ### 修改的文件
+
 - `app/(dashboard)/inventory/page-client.tsx`
 
 ### 修改内容
+
 1. 添加 `currentQueryParams` 计算属性
 2. 使用 `React.useMemo` 优化性能
 3. 将 `currentQueryParams` 传递给子组件
@@ -244,6 +250,7 @@ currentQueryParams 更新（useMemo）
 **问题**：父组件的本地状态和传递给子组件的 props 不一致
 
 **教训**：
+
 - 确保传递给子组件的 props 包含最新的状态
 - 不要直接传递初始参数，而是传递当前状态
 
@@ -252,6 +259,7 @@ currentQueryParams 更新（useMemo）
 **问题**：受控组件的 value 来源不正确
 
 **教训**：
+
 - 受控组件的 value 必须来自当前状态
 - 不能使用过时的或初始的值
 
@@ -260,6 +268,7 @@ currentQueryParams 更新（useMemo）
 **问题**：每次渲染都创建新对象导致子组件重渲染
 
 **教训**：
+
 - 使用 `useMemo` 缓存计算结果
 - 避免在 render 中创建新对象
 
@@ -278,4 +287,3 @@ currentQueryParams 更新（useMemo）
 - [x] 快速输入无丢失
 - [x] 性能优化（useMemo）
 - [x] 代码质量检查通过
-

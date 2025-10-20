@@ -13,10 +13,12 @@
 #### 1. 客户管理页面添加分页组件 ✅
 
 **修复文件**:
+
 - `components/customers/erp-customer-list.tsx`
 - `app/(dashboard)/customers/page-client.tsx`
 
 **修复内容**:
+
 1. ✅ 在ERPCustomerList组件添加Pagination import
 2. ✅ 添加onPageChange prop
 3. ✅ 实现handlePageChange方法,支持URL参数管理
@@ -26,22 +28,28 @@
 7. ✅ 添加flex-shrink-0确保分页不被压缩
 
 **代码变更**:
+
 ```tsx
 // erp-customer-list.tsx:253-262
-{/* 分页组件 */}
-{pagination && pagination.total > 0 && (
-  <div className="flex-shrink-0 border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
-    <Pagination
-      pagination={pagination}
-      onPageChange={handlePageChange}
-      showRange
-      showTotal
-    />
-  </div>
-)}
+{
+  /* 分页组件 */
+}
+{
+  pagination && pagination.total > 0 && (
+    <div className="flex-shrink-0 border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
+      <Pagination
+        pagination={pagination}
+        onPageChange={handlePageChange}
+        showRange
+        showTotal
+      />
+    </div>
+  );
+}
 ```
 
 **测试要点**:
+
 - [x] 分页组件显示正确
 - [x] 点击分页按钮能正确跳转
 - [x] URL参数正确更新
@@ -52,21 +60,25 @@
 #### 2. 退货订单页面添加分页组件 ✅
 
 **修复文件**:
+
 - `components/return-orders/erp-return-order-list.tsx`
 
 **修复内容**:
+
 1. ✅ 添加Pagination import
 2. ✅ 统一表格容器样式(使用ERP色彩变量)
 3. ✅ 在Table容器内部末尾添加分页UI
 4. ✅ 使用标准分页容器样式(border-t分隔)
 
 **代码变更**:
+
 ```tsx
 // erp-return-order-list.tsx:278
-<div className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]" style={{ boxShadow: 'var(--shadow-medium)' }}>
-  <Table>
-    {/* ... */}
-  </Table>
+<div
+  className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+  style={{ boxShadow: 'var(--shadow-medium)' }}
+>
+  <Table>{/* ... */}</Table>
 
   {/* 分页组件 */}
   {displayData?.data.pagination && displayData.data.pagination.total > 0 && (
@@ -83,6 +95,7 @@
 ```
 
 **测试要点**:
+
 - [x] 分页组件显示正确
 - [x] 容器样式统一(ERP色彩系统)
 - [x] 边框和阴影正确
@@ -94,9 +107,11 @@
 #### 3. 创建统一的PageHeader组件 ✅
 
 **新增文件**:
+
 - `components/common/page-header.tsx`
 
 **组件特性**:
+
 - ✅ 支持gradient和solid两种样式变体
 - ✅ 可自定义图标背景色
 - ✅ 支持操作按钮区域
@@ -104,19 +119,21 @@
 - ✅ 包含详细的JSDoc注释和使用示例
 
 **组件接口**:
+
 ```tsx
 interface PageHeaderProps {
-  title: string;           // 页面标题
-  description: string;     // 页面描述
-  icon: React.ReactNode;   // 图标元素
-  actions?: React.ReactNode;  // 操作按钮
-  variant?: 'gradient' | 'solid';  // 样式变体
-  iconBgColor?: string;    // 图标背景色
-  className?: string;      // 自定义className
+  title: string; // 页面标题
+  description: string; // 页面描述
+  icon: React.ReactNode; // 图标元素
+  actions?: React.ReactNode; // 操作按钮
+  variant?: 'gradient' | 'solid'; // 样式变体
+  iconBgColor?: string; // 图标背景色
+  className?: string; // 自定义className
 }
 ```
 
 **使用示例**:
+
 ```tsx
 <PageHeader
   title="客户管理"
@@ -139,11 +156,13 @@ interface PageHeaderProps {
 #### 4. 统一分页容器样式 ✅
 
 **修复文件**:
+
 - `components/products/erp-product-list.tsx`
 - `components/inventory/erp-inventory-list.tsx`
 - `components/suppliers/suppliers-page-client.tsx`
 
 **统一标准**:
+
 ```tsx
 // 标准分页容器样式
 <div className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3">
@@ -158,13 +177,14 @@ interface PageHeaderProps {
 
 **变更对比**:
 
-| 文件 | 修复前 | 修复后 |
-|------|--------|--------|
-| products/erp-product-list.tsx | rounded-lg + shadow-medium | border-t (标准) |
-| inventory/erp-inventory-list.tsx | rounded-lg + gray-50/50 + shadow-md | border-t + bg-tertiary (标准) |
-| suppliers/suppliers-page-client.tsx | bg-secondary | bg-tertiary (标准) |
+| 文件                                | 修复前                              | 修复后                        |
+| ----------------------------------- | ----------------------------------- | ----------------------------- |
+| products/erp-product-list.tsx       | rounded-lg + shadow-medium          | border-t (标准)               |
+| inventory/erp-inventory-list.tsx    | rounded-lg + gray-50/50 + shadow-md | border-t + bg-tertiary (标准) |
+| suppliers/suppliers-page-client.tsx | bg-secondary                        | bg-tertiary (标准)            |
 
 **测试要点**:
+
 - [x] 所有分页容器使用相同样式
 - [x] border-t分隔线清晰可见
 - [x] 背景色统一使用--color-bg-tertiary
@@ -177,11 +197,13 @@ interface PageHeaderProps {
 ### DRY (Don't Repeat Yourself) ✅
 
 **改进**:
+
 - ✅ 创建PageHeader组件消除标题卡片代码重复
 - ✅ 统一分页容器样式,使用相同的className模式
 - ✅ 所有页面使用相同的Pagination组件
 
 **示例**:
+
 ```tsx
 // 修复前: 每个页面重复实现标题卡片(40+行)
 <Card>
@@ -208,11 +230,13 @@ interface PageHeaderProps {
 ### KISS (Keep It Simple) ✅
 
 **简化**:
+
 - ✅ 分页容器从复杂的独立Card简化为简单的border-t分隔
 - ✅ PageHeader接口清晰简洁,易于使用
 - ✅ handlePageChange逻辑统一,避免重复
 
 **对比**:
+
 ```tsx
 // 复杂 (修复前)
 <div className="mx-6 mb-6 rounded-lg border bg-gray-50/50 px-4 py-3 shadow-md">
@@ -230,12 +254,14 @@ interface PageHeaderProps {
 ### SOLID - SRP (Single Responsibility Principle) ✅
 
 **职责分离**:
+
 - ✅ PageHeader组件: 只负责页面标题显示
 - ✅ Pagination组件: 只负责分页UI和交互
 - ✅ page-client: 负责状态管理和URL同步
 - ✅ list组件: 负责数据展示
 
 **示例**:
+
 ```tsx
 // page-client.tsx - 状态管理
 const handlePageChange = (page: number) => {
@@ -253,7 +279,7 @@ const handlePageChange = (page: number) => {
   onPageChange={handlePageChange}
   showRange
   showTotal
-/>
+/>;
 ```
 
 ---
@@ -261,12 +287,14 @@ const handlePageChange = (page: number) => {
 ### SOLID - OCP (Open-Closed Principle) ✅
 
 **扩展性**:
+
 - ✅ PageHeader组件支持variant扩展(gradient/solid)
 - ✅ PageHeader支持自定义iconBgColor
 - ✅ Pagination组件支持可选的hover预取功能
 - ✅ 不需要修改组件内部代码即可扩展功能
 
 **示例**:
+
 ```tsx
 // PageHeader扩展示例
 <PageHeader
@@ -289,14 +317,14 @@ const handlePageChange = (page: number) => {
 
 ### 修复前问题汇总
 
-| 页面 | 问题 | 严重程度 |
-|------|------|---------|
-| 客户管理 | 缺少分页UI | P0 严重 |
-| 退货订单 | 缺少分页UI | P0 严重 |
-| 产品管理 | 分页容器使用shadow,不统一 | P1 高 |
-| 库存管理 | 分页容器独立Card,不统一 | P1 高 |
-| 供应商管理 | 分页背景色不统一 | P1 高 |
-| 6个页面 | 标题卡片代码重复 | P1 高 |
+| 页面       | 问题                      | 严重程度 |
+| ---------- | ------------------------- | -------- |
+| 客户管理   | 缺少分页UI                | P0 严重  |
+| 退货订单   | 缺少分页UI                | P0 严重  |
+| 产品管理   | 分页容器使用shadow,不统一 | P1 高    |
+| 库存管理   | 分页容器独立Card,不统一   | P1 高    |
+| 供应商管理 | 分页背景色不统一          | P1 高    |
+| 6个页面    | 标题卡片代码重复          | P1 高    |
 
 ### 修复后改进
 
@@ -379,14 +407,17 @@ const handlePageChange = (page: number) => {
    - 如果>100条,添加服务端分页支持
 
 2. **创建PaginationContainer组件** (预计30分钟)
+
    ```tsx
    // components/common/pagination-container.tsx
    export function PaginationContainer({ children, className }) {
      return (
-       <div className={cn(
-         "border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3",
-         className
-       )}>
+       <div
+         className={cn(
+           'border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] px-4 py-3',
+           className
+         )}
+       >
          {children}
        </div>
      );
@@ -404,11 +435,11 @@ const handlePageChange = (page: number) => {
 
 ### 文件修改统计
 
-| 类型 | 数量 | 文件 |
-|------|------|------|
-| 新增 | 2 | page-header.tsx, pagination-fixes-summary.md |
-| 修改 | 5 | erp-customer-list.tsx, customers/page-client.tsx, erp-return-order-list.tsx, erp-product-list.tsx, erp-inventory-list.tsx, suppliers-page-client.tsx |
-| 总计 | 7 | - |
+| 类型 | 数量 | 文件                                                                                                                                                 |
+| ---- | ---- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 新增 | 2    | page-header.tsx, pagination-fixes-summary.md                                                                                                         |
+| 修改 | 5    | erp-customer-list.tsx, customers/page-client.tsx, erp-return-order-list.tsx, erp-product-list.tsx, erp-inventory-list.tsx, suppliers-page-client.tsx |
+| 总计 | 7    | -                                                                                                                                                    |
 
 ### 代码行数变化
 

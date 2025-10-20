@@ -8,11 +8,11 @@
 
 ## 修复概览
 
-| 问题 | 文件数 | 状态 | 影响 |
-|------|--------|------|------|
-| 退货单 condition 字段缺失 | 2 | ✅ 已修复 | 退货订单表单 |
-| refund.salesOrder 空值检查 | 1 | ✅ 已修复 | 退款管理列表 |
-| product 属性类型错误 | 1 | ✅ 已修复 | 退货订单 API |
+| 问题                       | 文件数 | 状态      | 影响         |
+| -------------------------- | ------ | --------- | ------------ |
+| 退货单 condition 字段缺失  | 2      | ✅ 已修复 | 退货订单表单 |
+| refund.salesOrder 空值检查 | 1      | ✅ 已修复 | 退款管理列表 |
+| product 属性类型错误       | 1      | ✅ 已修复 | 退货订单 API |
 
 **修复前**: 11 个 P0 类型错误
 **修复后**: 0 个 P0 类型错误
@@ -28,6 +28,7 @@
 ReturnOrderItem 类型要求 `condition` 字段（good/damaged/defective），但在创建退货明细时缺失此字段。
 
 **影响范围**:
+
 - `components/return-orders/erp-return-order-form.tsx`
 - `components/return-orders/return-order-form.tsx`
 
@@ -36,6 +37,7 @@ ReturnOrderItem 类型要求 `condition` 字段（good/damaged/defective），�
 #### 文件 1: `components/return-orders/erp-return-order-form.tsx`
 
 **位置 1**: 第 213 行 - 初始化表单明细时
+
 ```typescript
 // 修复前
 const formItems = returnableItemsData.data.returnableItems.map(item => ({
@@ -56,6 +58,7 @@ const formItems = returnableItemsData.data.returnableItems.map(item => ({
 ```
 
 **位置 2**: 第 276 行 - 添加新退货明细时
+
 ```typescript
 // 修复前
 const newItem = {
@@ -76,6 +79,7 @@ const newItem = {
 ```
 
 **位置 3**: 第 634 行 - 从多订单选择器添加明细时
+
 ```typescript
 // 修复前
 const newItem = {
@@ -91,15 +95,17 @@ const newItem = {
   productId: item.productId,
   // ... 其他字段
   reason: item.reason,
-  condition: (item.damagedQuantity && item.damagedQuantity > 0)
-    ? 'damaged' as const
-    : 'good' as const, // ✅ 根据损坏数量智能设置
+  condition:
+    item.damagedQuantity && item.damagedQuantity > 0
+      ? ('damaged' as const)
+      : ('good' as const), // ✅ 根据损坏数量智能设置
 };
 ```
 
 #### 文件 2: `components/return-orders/return-order-form.tsx`
 
 **位置**: 第 167 行 - 添加新退货明细时
+
 ```typescript
 // 修复前
 const newItem = {
@@ -120,6 +126,7 @@ const newItem = {
 ```
 
 **修复逻辑**:
+
 - 默认状态设为 `'good'` (良好)
 - 在多订单场景中，根据 `damagedQuantity` 智能判断：
   - 有损坏数量 → `'damaged'`
@@ -133,11 +140,13 @@ const newItem = {
 在 `refunds-client.tsx:409` 访问 `refund.salesOrder.id` 时，TypeScript 报错 `salesOrder` 可能为 null。
 
 **影响范围**:
+
 - `components/finance/refunds-client.tsx`
 
 **修复详情**:
 
 **位置**: 第 408-412 行 - 查看订单按钮点击事件
+
 ```typescript
 // 修复前
 onClick={event => {
@@ -155,6 +164,7 @@ onClick={event => {
 ```
 
 **修复逻辑**:
+
 - 添加 `if (refund.salesOrder)` 条件检查
 - 仅在销售订单存在时才进行路由跳转
 - 外层已有 `{refund.salesOrder && ...}` 条件渲染，双重保护
@@ -167,11 +177,13 @@ onClick={event => {
 在 `app/api/return-orders/route.ts:420` 访问 `salesOrderItem.product` 时，TypeScript 无法推断出 product 属性的存在。
 
 **影响范围**:
+
 - `app/api/return-orders/route.ts`
 
 **修复详情**:
 
 **位置 1**: 第 39 行 - 添加类型定义
+
 ```typescript
 // 修复前
 type SalesOrderWithItems = Prisma.SalesOrderGetPayload<{
@@ -187,6 +199,7 @@ type SalesOrderItemWithProduct = SalesOrderWithItems['items'][number]; // ✅ �
 ```
 
 **位置 2**: 第 231 行 - 更新 Map 类型注解
+
 ```typescript
 // 修复前
 const salesOrderItemsMap = new Map<
@@ -199,6 +212,7 @@ const salesOrderItemsMap = new Map<string, SalesOrderItemWithProduct>(); // ✅ 
 ```
 
 **修复逻辑**:
+
 - 创建 `SalesOrderItemWithProduct` 类型，从 `SalesOrderWithItems['items']` 推导
 - 确保类型包含 product 关联（已在 `SALES_ORDER_WITH_ITEMS_INCLUDE` 定义）
 - 为 `salesOrderItemsMap` 提供准确的类型注解
@@ -208,11 +222,13 @@ const salesOrderItemsMap = new Map<string, SalesOrderItemWithProduct>(); // ✅ 
 ## 修复效果验证
 
 ### TypeScript 类型检查
+
 ```bash
 npm run type-check
 ```
 
 **结果**: P0 错误全部消除
+
 - ❌ 修复前: 3 个退货订单类型错误
 - ❌ 修复前: 1 个空值检查错误
 - ❌ 修复前: 1 个 product 属性错误
@@ -223,12 +239,14 @@ npm run type-check
 **总计**: 38 个 TypeScript 错误（下降 22%）
 
 #### P1 级别 (18 个)
+
 - 泛型类型不匹配: 8 处
 - React Hook Form 类型: 5 处
 - 分页组件 API: 2 处
 - WebSocket 示例组件: 11 处（可选功能）
 
 #### P2 级别 (20 个)
+
 - 索引签名问题: 3 处
 - 隐式 any 类型: 5 处
 - 其他类型推断: 12 处
@@ -278,16 +296,19 @@ npm run type-check
 ### 修复模式总结
 
 1. **默认值策略**
+
    ```typescript
-   condition: 'good' as const // 提供合理的默认值
+   condition: 'good' as const; // 提供合理的默认值
    ```
 
 2. **智能判断**
+
    ```typescript
-   condition: (item.damagedQuantity > 0) ? 'damaged' : 'good'
+   condition: item.damagedQuantity > 0 ? 'damaged' : 'good';
    ```
 
 3. **空值检查**
+
    ```typescript
    if (refund.salesOrder) {
      // 安全访问

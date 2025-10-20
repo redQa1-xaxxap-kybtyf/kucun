@@ -35,6 +35,7 @@
 ### 设计决策
 
 参考产品详情页面的统一设计规范：
+
 - **蓝色主题**：使用 `blue-600` 作为主色调
 - **渐变背景**：标题卡片使用 `from-blue-50 to-indigo-50`
 - **统一阴影**：所有卡片使用 `shadow-lg shadow-gray-200/50`
@@ -50,7 +51,7 @@
 // 添加 ArrowLeft 图标
 import {
   AlertCircle,
-  ArrowLeft,  // 新增
+  ArrowLeft, // 新增
   CheckCircle,
   Clock,
   DollarSign,
@@ -63,7 +64,7 @@ import {
 import {
   Card,
   CardContent,
-  CardDescription,  // 新增
+  CardDescription, // 新增
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -72,6 +73,7 @@ import {
 **2. 修改页面容器和标题卡片**
 
 **修改前**：
+
 ```typescript
 <div className="container mx-auto max-w-4xl px-4 py-6">
   {/* 页面头部 - 移除硬编码标题，依赖 DashboardLayoutClient 自动渲染面包屑 */}
@@ -97,6 +99,7 @@ import {
 ```
 
 **修改后**：
+
 ```typescript
 <div className="flex h-full flex-col overflow-auto p-6">
   <div className="space-y-6">
@@ -152,6 +155,7 @@ import {
 **3. 修改所有信息卡片样式**
 
 **退款信息卡片**：
+
 ```typescript
 <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
   <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
@@ -168,6 +172,7 @@ import {
 ```
 
 **关联订单信息卡片**：
+
 ```typescript
 <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
   <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
@@ -184,6 +189,7 @@ import {
 ```
 
 **处理状态卡片**：
+
 ```typescript
 <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
   <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
@@ -200,6 +206,7 @@ import {
 ```
 
 **操作记录卡片**：
+
 ```typescript
 <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
   <CardHeader className="border-b bg-gradient-to-r from-slate-50 to-gray-50">
@@ -335,4 +342,3 @@ import {
 **修复完成时间**：2025-01-XX
 **修复人员**：AI Assistant
 **审核状态**：待用户测试验证
-

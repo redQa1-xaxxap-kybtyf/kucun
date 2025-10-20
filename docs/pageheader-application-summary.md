@@ -15,6 +15,7 @@
 **文件**: `app/(dashboard)/customers/page-client.tsx`
 
 **修改前** (~45行):
+
 ```tsx
 <Card className="overflow-hidden">
   <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
@@ -52,6 +53,7 @@
 ```
 
 **修改后** (~14行):
+
 ```tsx
 <PageHeader
   title="客户管理"
@@ -87,6 +89,7 @@
 **文件**: `app/(dashboard)/return-orders/page-client.tsx`
 
 **修改前** (~40行 - 使用原始Tailwind颜色):
+
 ```tsx
 <Card className="overflow-hidden shadow-lg shadow-gray-200/50">
   <CardContent className="bg-gradient-to-r from-slate-50 to-gray-50 p-6">
@@ -111,17 +114,14 @@
 ```
 
 **修改后** (~12行):
+
 ```tsx
 <PageHeader
   title="退货订单管理"
   description="管理客户退货订单，跟踪退货处理状态和退款情况"
   icon={<Package className="h-6 w-6 text-white" />}
   iconBgColor="hsl(var(--color-orange))"
-  actions={
-    <>
-      {/* ... 按钮代码 */}
-    </>
-  }
+  actions={<>{/* ... 按钮代码 */}</>}
 />
 ```
 
@@ -135,6 +135,7 @@
 **文件**: `app/(dashboard)/factory-shipments/page-client.tsx`
 
 **修改前** (~42行):
+
 ```tsx
 <Card
   className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
@@ -158,17 +159,14 @@
 ```
 
 **修改后** (~12行):
+
 ```tsx
 <PageHeader
   title="厂家发货管理"
   description="管理厂家发货订单，跟踪货物运输状态和到货情况"
   icon={<Package className="h-6 w-6 text-white" />}
-  variant="solid"  // 使用solid变体
-  actions={
-    <>
-      {/* ... 按钮代码 */}
-    </>
-  }
+  variant="solid" // 使用solid变体
+  actions={<>{/* ... 按钮代码 */}</>}
 />
 ```
 
@@ -182,6 +180,7 @@
 **文件**: `app/(dashboard)/finance/statements/page-client.tsx`
 
 **修改前** (~42行):
+
 ```tsx
 <Card className="overflow-hidden shadow-[var(--shadow-medium)]">
   <CardContent className="bg-gradient-to-r from-[hsl(var(--color-primary-light))] to-[hsl(var(--color-primary-lighter))] p-6">
@@ -199,17 +198,14 @@
 ```
 
 **修改后** (~12行):
+
 ```tsx
 <PageHeader
   title="往来账单"
   description="管理客户和供应商的综合账务往来"
   icon={<FileText className="h-6 w-6 text-white" />}
   iconBgColor="hsl(var(--color-purple))"
-  actions={
-    <>
-      {/* ... 按钮代码 */}
-    </>
-  }
+  actions={<>{/* ... 按钮代码 */}</>}
 />
 ```
 
@@ -223,6 +219,7 @@
 **文件**: `components/suppliers/supplier-page-header.tsx`
 
 **修改前** (~35行):
+
 ```tsx
 export function SupplierPageHeader() {
   const router = useRouter();
@@ -244,10 +241,7 @@ export function SupplierPageHeader() {
               </p>
             </div>
           </div>
-          <Button
-            size="lg"
-            onClick={() => router.push('/suppliers/create')}
-          >
+          <Button size="lg" onClick={() => router.push('/suppliers/create')}>
             <Plus className="mr-2 h-4 w-4" />
             新建供应商
           </Button>
@@ -259,6 +253,7 @@ export function SupplierPageHeader() {
 ```
 
 **修改后** (~18行):
+
 ```tsx
 export function SupplierPageHeader() {
   const router = useRouter();
@@ -269,10 +264,7 @@ export function SupplierPageHeader() {
       description="管理供应商信息，跟踪采购和合作情况"
       icon={<Building2 className="h-6 w-6 text-white" />}
       actions={
-        <Button
-          size="lg"
-          onClick={() => router.push('/suppliers/create')}
-        >
+        <Button size="lg" onClick={() => router.push('/suppliers/create')}>
           <Plus className="mr-2 h-4 w-4" />
           新建供应商
         </Button>
@@ -298,13 +290,13 @@ export function SupplierPageHeader() {
 
 ### 代码减少统计
 
-| 页面 | 修改前 | 修改后 | 减少 |
-|------|--------|--------|------|
-| 客户管理 | 45行 | 14行 | -31行 |
-| 退货订单 | 40行 | 12行 | -28行 |
-| 厂家发货 | 42行 | 12行 | -30行 |
-| 财务账单 | 42行 | 12行 | -30行 |
-| 供应商 | 35行 | 18行 | -17行 |
+| 页面     | 修改前    | 修改后   | 减少       |
+| -------- | --------- | -------- | ---------- |
+| 客户管理 | 45行      | 14行     | -31行      |
+| 退货订单 | 40行      | 12行     | -28行      |
+| 厂家发货 | 42行      | 12行     | -30行      |
+| 财务账单 | 42行      | 12行     | -30行      |
+| 供应商   | 35行      | 18行     | -17行      |
 | **总计** | **204行** | **68行** | **-136行** |
 
 **代码减少率**: 66.7% 📉
@@ -312,11 +304,13 @@ export function SupplierPageHeader() {
 ### Import变更
 
 所有页面都移除了:
+
 ```tsx
 import { Card, CardContent } from '@/components/ui/card';
 ```
 
 所有页面都添加了:
+
 ```tsx
 import { PageHeader } from '@/components/common/page-header';
 ```
@@ -328,11 +322,13 @@ import { PageHeader } from '@/components/common/page-header';
 ### DRY (Don't Repeat Yourself) ✅
 
 **成果**:
+
 - 消除了5个页面中重复的标题卡片实现
 - 减少了136行重复代码
 - 未来新增页面只需1个组件调用
 
 **示例**:
+
 ```tsx
 // 重复代码模式 (修复前)
 每个页面都有 40+ 行相似的 Card + CardContent + div 结构
@@ -346,11 +342,13 @@ import { PageHeader } from '@/components/common/page-header';
 ### KISS (Keep It Simple) ✅
 
 **简化**:
+
 - 从复杂的嵌套JSX简化为单个组件调用
 - 清晰的props接口,易于理解和使用
 - 减少了样式冲突的可能性
 
 **对比**:
+
 ```tsx
 // 复杂 (修复前) - 45行嵌套结构
 <Card>
@@ -387,11 +385,13 @@ import { PageHeader } from '@/components/common/page-header';
 ### SOLID - SRP (Single Responsibility Principle) ✅
 
 **职责分离**:
+
 - PageHeader组件: 只负责页面标题展示
 - page-client组件: 负责业务逻辑和状态管理
 - 按钮操作: 通过actions prop注入
 
 **示例**:
+
 ```tsx
 // PageHeader - 只负责UI展示
 <PageHeader
@@ -410,12 +410,14 @@ const handleCreate = () => router.push('/create');
 ### SOLID - OCP (Open-Closed Principle) ✅
 
 **扩展性**:
+
 - 支持gradient/solid两种变体
 - 支持自定义图标背景色
 - 支持自定义actions内容
 - 未来可扩展新props而不破坏现有代码
 
 **示例**:
+
 ```tsx
 // 基本用法
 <PageHeader title="..." description="..." icon={...} />
@@ -438,13 +440,15 @@ const handleCreate = () => router.push('/create');
 ### 1. 颜色系统统一
 
 **修复前问题**: 退货订单使用原始Tailwind颜色
+
 ```tsx
-bg-orange-600
-text-gray-900
-text-gray-600
+bg - orange - 600;
+text - gray - 900;
+text - gray - 600;
 ```
 
 **修复后**: 统一使用ERP色彩系统
+
 ```tsx
 iconBgColor="hsl(var(--color-orange))"
 text-[hsl(var(--color-text-primary))]
@@ -456,10 +460,12 @@ text-[hsl(var(--color-text-secondary))]
 ### 2. 变体支持
 
 **gradient变体** (默认):
+
 - 使用渐变背景
 - 适用于大多数页面
 
 **solid变体**:
+
 - 使用纯色背景
 - 适用于厂家发货等页面
 
@@ -476,6 +482,7 @@ text-[hsl(var(--color-text-secondary))]
 ### 3. 图标背景色自定义
 
 不同模块使用不同的品牌色:
+
 - 客户管理: 紫色 `hsl(var(--color-purple))`
 - 退货订单: 橙色 `hsl(var(--color-orange))`
 - 财务账单: 紫色 `hsl(var(--color-purple))`
@@ -531,6 +538,7 @@ text-[hsl(var(--color-text-secondary))]
 ### 修改前 (维护难度: 高)
 
 需要修改标题卡片样式时:
+
 1. 找到所有5个文件
 2. 逐个修改45行代码
 3. 确保修改一致性
@@ -543,6 +551,7 @@ text-[hsl(var(--color-text-secondary))]
 ### 修改后 (维护难度: 低)
 
 需要修改标题卡片样式时:
+
 1. 只修改PageHeader组件
 2. 所有页面自动更新
 3. 测试1个组件
@@ -574,6 +583,7 @@ text-[hsl(var(--color-text-secondary))]
 ### 未来扩展
 
 PageHeader组件已为未来扩展做好准备:
+
 - 可添加面包屑支持
 - 可添加返回按钮
 - 可添加更多变体

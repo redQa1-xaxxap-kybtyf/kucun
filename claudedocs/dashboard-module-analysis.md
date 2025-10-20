@@ -9,6 +9,7 @@
 ## 📊 模块概览
 
 ### 文件结构
+
 ```
 仪表盘模块文件分布：
 - API路由: 暂无独立API路由(使用统一的dashboard API)
@@ -30,6 +31,7 @@
 ```
 
 ### 模块质量评分
+
 ```
 🎯 总体评分: 7.5/10
 
@@ -50,6 +52,7 @@
 **位置**: `components/dashboard/erp-dashboard.tsx:321`
 
 **问题描述**:
+
 ```typescript
 // ❌ 当前代码 - 传递了2个参数
 const { data, isLoading, refetch } = useBusinessOverview(
@@ -71,6 +74,7 @@ export const useBusinessOverview = (timeRange: TimeRange) =>
 ```
 
 **影响**:
+
 - TypeScript编译错误
 - 配置参数被忽略，无法控制查询行为
 - 可能导致不必要的重复请求
@@ -79,6 +83,7 @@ export const useBusinessOverview = (timeRange: TimeRange) =>
 **建议修复时间**: 立即
 
 **修复方案**:
+
 ```typescript
 // 方案1: 修改 useBusinessOverview 支持配置参数
 export const useBusinessOverview = (
@@ -111,13 +116,15 @@ const { data } = useQuery({
 **位置**: `components/common/DashboardLayout.tsx:204-205`
 
 **问题描述**:
+
 ```typescript
 // ❌ 类型错误
-accessibleNavItems={accessibleNavItems}  // Type '{ requiredRoles?: UserRole[] }[]'
-accessibleBottomNavItems={accessibleBottomNavItems}  // 不能赋值给 'NavigationItem[]'
+accessibleNavItems = { accessibleNavItems }; // Type '{ requiredRoles?: UserRole[] }[]'
+accessibleBottomNavItems = { accessibleBottomNavItems }; // 不能赋值给 'NavigationItem[]'
 ```
 
 **原因**:
+
 - `accessibleNavItems` 的类型推断不完整
 - 缺少必需的 NavigationItem 属性
 
@@ -129,6 +136,7 @@ accessibleBottomNavItems={accessibleBottomNavItems}  // 不能赋值给 'Navigat
 **位置**: `components/dashboard/recent-orders.tsx:166`
 
 **问题描述**:
+
 ```typescript
 // ❌ 类型错误
 const statusConfig = STATUS_CONFIG[order.status];
@@ -136,10 +144,12 @@ const statusConfig = STATUS_CONFIG[order.status];
 ```
 
 **原因**:
+
 - STATUS_CONFIG 定义的键与 DashboardSalesOrderStatus 类型不匹配
 - 可能缺少某些状态的配置
 
 **建议修复**:
+
 ```typescript
 // 确保 STATUS_CONFIG 包含所有 DashboardSalesOrderStatus 状态
 const STATUS_CONFIG: Record<DashboardSalesOrderStatus, StatusConfig> = {
@@ -155,10 +165,12 @@ const STATUS_CONFIG: Record<DashboardSalesOrderStatus, StatusConfig> = {
 ### 3. StatCard 组件类型错误
 
 **位置**:
+
 - `components/dashboard/stat-cards-enhanced.tsx:126`
 - `components/dashboard/stat-cards.tsx:119`
 
 **问题描述**:
+
 ```typescript
 // ❌ 条件渲染导致类型不匹配
 const Component = href ? Link : 'div';
@@ -168,10 +180,12 @@ return <Component href={href}>...</Component>;
 ```
 
 **原因**:
+
 - 条件组件类型推断失败
 - Link 和 div 的 props 不兼容
 
 **建议修复**:
+
 ```typescript
 // 方案1: 分别渲染
 if (href) {
@@ -192,10 +206,12 @@ const Component = (href ? Link : 'div') as any;
 **位置**: `components/dashboard/erp-dashboard.tsx`
 
 **问题**:
+
 - 606行代码，远超最佳实践的100-200行
 - 多个职责混合：状态管理、数据获取、UI渲染、业务逻辑
 
 **建议拆分**:
+
 ```
 ERPDashboard (主容器)
 ├── DashboardHeader (时间筛选、刷新按钮)
@@ -206,6 +222,7 @@ ERPDashboard (主容器)
 ```
 
 **拆分后的收益**:
+
 - 每个组件 < 200行
 - 职责单一，易于测试
 - 提高代码复用性
@@ -216,11 +233,13 @@ ERPDashboard (主容器)
 **位置**: `components/dashboard/erp-dashboard.tsx`
 
 **问题**:
+
 - 多个 useState 管理不同状态
 - 状态之间存在依赖关系
 - 缺少统一的状态管理
 
 **建议**:
+
 ```typescript
 // 使用 useReducer 统一管理复杂状态
 interface DashboardState {
@@ -238,11 +257,13 @@ const [state, dispatch] = useReducer(dashboardReducer, initialState);
 **位置**: `lib/types/dashboard.ts`
 
 **问题**:
+
 - 部分类型定义缺少文档注释
 - 缺少一些扩展类型（如 DashboardWithStats）
 - 类型定义与实际使用不完全匹配
 
 **建议**:
+
 - 添加 JSDoc 注释
 - 导出更多辅助类型
 - 定期同步类型定义与实际代码
@@ -255,6 +276,7 @@ const [state, dispatch] = useReducer(dashboardReducer, initialState);
 ✅ 使用 refetchOnWindowFocus: false
 
 **进一步优化**:
+
 - 图表数据懒加载
 - 虚拟滚动长列表
 - 使用 React.memo 优化子组件
@@ -315,6 +337,7 @@ const [state, dispatch] = useReducer(dashboardReducer, initialState);
 ### 立即执行（P0）
 
 1. **修复 useBusinessOverview 参数错误**
+
 ```typescript
 // lib/api/dashboard.ts
 export const useBusinessOverview = (
@@ -362,24 +385,26 @@ export const useBusinessOverview = (
 
 ## 📋 对比：产品模块 vs 仪表盘模块
 
-| 维度 | 产品模块 | 仪表盘模块 | 对比 |
-|------|---------|-----------|------|
-| **类型错误** | ✅ 0个 | ⚠️ 4个 | 产品模块更好 |
-| **组件大小** | ✅ < 300行 | ⚠️ 606行 | 产品模块更好 |
+| 维度         | 产品模块        | 仪表盘模块  | 对比         |
+| ------------ | --------------- | ----------- | ------------ |
+| **类型错误** | ✅ 0个          | ⚠️ 4个      | 产品模块更好 |
+| **组件大小** | ✅ < 300行      | ⚠️ 606行    | 产品模块更好 |
 | **代码组织** | ✅ 统一工具函数 | ⚠️ 逻辑分散 | 产品模块更好 |
-| **功能完整** | ✅ 完整 | ✅ 完整 | 相同 |
-| **性能优化** | ✅ 良好 | ✅ 良好 | 相同 |
+| **功能完整** | ✅ 完整         | ✅ 完整     | 相同         |
+| **性能优化** | ✅ 良好         | ✅ 良好     | 相同         |
 
 ---
 
 ## 🎯 总结
 
 ### 核心问题
+
 1. **P0**: useBusinessOverview 参数错误（类型安全）
 2. **P1**: 4个TypeScript类型错误（代码质量）
 3. **P2**: 组件过长、状态管理复杂（可维护性）
 
 ### 修复优先级
+
 ```
 1. 立即修复: useBusinessOverview 参数问题
 2. 本周修复: 所有TypeScript类型错误
@@ -387,6 +412,7 @@ export const useBusinessOverview = (
 ```
 
 ### 模块健康度
+
 ```
 仪表盘模块功能完善，性能良好，主要问题集中在：
 - 4个类型错误（影响编译和类型安全）

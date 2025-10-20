@@ -8,12 +8,12 @@
 
 ## 📊 整体覆盖率统计
 
-| 指标 | 当前值 | 目标值 | 差距 | 状态 |
-|------|--------|--------|------|------|
-| 语句覆盖率 (Statements) | 4.61% | 90% | -85.39% | ❌ |
-| 分支覆盖率 (Branches) | 1.97% | 85% | -83.03% | ❌ |
-| 函数覆盖率 (Functions) | 2.76% | 95% | -92.24% | ❌ |
-| 行覆盖率 (Lines) | 4.58% | 90% | -85.42% | ❌ |
+| 指标                    | 当前值 | 目标值 | 差距    | 状态 |
+| ----------------------- | ------ | ------ | ------- | ---- |
+| 语句覆盖率 (Statements) | 4.61%  | 90%    | -85.39% | ❌   |
+| 分支覆盖率 (Branches)   | 1.97%  | 85%    | -83.03% | ❌   |
+| 函数覆盖率 (Functions)  | 2.76%  | 95%    | -92.24% | ❌   |
+| 行覆盖率 (Lines)        | 4.58%  | 90%    | -85.42% | ❌   |
 
 ---
 
@@ -43,6 +43,7 @@
 ### 🔴 P1 - 关键业务逻辑 (0%覆盖)
 
 #### API路由层
+
 - `lib/api/customers.ts` - 客户管理API (0%)
 - `lib/api/factory-shipments.ts` - 厂家发货API (0%)
 - `lib/api/inbound-handlers.ts` - 入库处理器 (0%)
@@ -53,6 +54,7 @@
 - `lib/api/sales-orders.ts` - 销售订单API (0%)
 
 #### 业务服务层
+
 - `lib/services/finance-statistics.ts` - 财务统计 (0%)
 - `lib/services/receivables-service.ts` - 应收账款服务 (0%)
 - `lib/services/sales-order-service.ts` - 销售订单服务 (0%)
@@ -60,6 +62,7 @@
 - `lib/services/category-service.ts` - 分类服务 (0%)
 
 #### 验证层
+
 - `lib/validations/product.ts` - 产品验证 (0%)
 - `lib/validations/customer.ts` - 客户验证 (0%)
 - `lib/validations/sales-order.ts` - 销售订单验证 (部分覆盖)
@@ -69,6 +72,7 @@
 ### 🟡 P2 - 基础设施层 (0%覆盖)
 
 #### 缓存系统
+
 - `lib/cache/inventory-cache.ts` - 库存缓存 (0%)
 - `lib/cache/product-cache.ts` - 产品缓存 (0%)
 - `lib/cache/revalidate.ts` - 缓存失效 (0%)
@@ -76,21 +80,25 @@
 - `lib/cache/pubsub.ts` - 发布订阅 (0%)
 
 #### 认证授权
+
 - `lib/auth/context.ts` - 认证上下文 (0%)
 - `lib/auth/permissions.ts` - 权限系统 (0%)
 
 #### 日志监控
+
 - `lib/logger/index.ts` - 日志系统 (18.6%)
 - `lib/logger/metrics.ts` - 指标收集 (0%)
 - `lib/monitoring/memory-monitor.ts` - 内存监控 (0%)
 
 #### Redis
+
 - `lib/redis/redis-client.ts` - Redis客户端 (19.47%)
 - `lib/redis/redis-pubsub.ts` - Redis发布订阅 (0%)
 
 ### 🟢 P3 - 工具辅助 (0%覆盖)
 
 #### 工具函数
+
 - `lib/utils/format.ts` - 格式化工具 (0%)
 - `lib/utils/datetime.ts` - 日期时间 (0%)
 - `lib/utils/permissions.ts` - 权限工具 (0%)
@@ -98,6 +106,7 @@
 - `lib/utils/error-handler.ts` - 错误处理 (12.34%)
 
 #### 数据处理
+
 - `lib/utils/category-utils.ts` - 分类工具 (0%)
 - `lib/utils/product-transforms.ts` - 产品转换 (0%)
 - `lib/utils/sales-order-transforms.ts` - 订单转换 (0%)
@@ -107,86 +116,96 @@
 ## 📈 模块化覆盖率分析
 
 ### lib/validations - 验证层 (6.96%)
+
 **总体状态**: ⚠️ 严重不足
 
-| 文件 | 覆盖率 | 状态 | 优先级 |
-|------|--------|------|--------|
-| inventory-base.ts | 100% | ✅ | - |
-| inventory-operations.ts | 100% | ✅ | - |
-| sales-order.ts | 73.91% | 🟢 | P2 |
-| refund.ts | 44.44% | 🟡 | P1 |
-| inbound.ts | 43.9% | 🟡 | P1 |
-| product.ts | 0% | ❌ | P0 |
-| customer.ts | 0% | ❌ | P0 |
-| payment.ts | 0% | ❌ | P1 |
-| return-order.ts | 0% | ❌ | P1 |
+| 文件                    | 覆盖率 | 状态 | 优先级 |
+| ----------------------- | ------ | ---- | ------ |
+| inventory-base.ts       | 100%   | ✅   | -      |
+| inventory-operations.ts | 100%   | ✅   | -      |
+| sales-order.ts          | 73.91% | 🟢   | P2     |
+| refund.ts               | 44.44% | 🟡   | P1     |
+| inbound.ts              | 43.9%  | 🟡   | P1     |
+| product.ts              | 0%     | ❌   | P0     |
+| customer.ts             | 0%     | ❌   | P0     |
+| payment.ts              | 0%     | ❌   | P1     |
+| return-order.ts         | 0%     | ❌   | P1     |
 
 **建议**:
+
 - 🔴 P0: 产品、客户验证是核心业务，必须优先覆盖
 - 🟡 P1: 完善入库、退款验证测试
 - 🟢 P2: 提升销售订单验证至90%+
 
 ### lib/api - API层 (2.39%)
+
 **总体状态**: ❌ 极度不足
 
-| 模块 | 覆盖率 | 测试文件 | 优先级 |
-|------|--------|----------|--------|
-| inbound-handlers.ts | 0% | ❌ 缺失 | P0 |
-| sales-orders.ts | 0% | ❌ 缺失 | P0 |
-| customers.ts | 0% | ❌ 缺失 | P1 |
-| payments.ts | 0% | ❌ 缺失 | P1 |
-| refunds.ts | 0% | ❌ 缺失 | P1 |
-| return-orders.ts | 0% | ❌ 缺失 | P1 |
+| 模块                | 覆盖率 | 测试文件 | 优先级 |
+| ------------------- | ------ | -------- | ------ |
+| inbound-handlers.ts | 0%     | ❌ 缺失  | P0     |
+| sales-orders.ts     | 0%     | ❌ 缺失  | P0     |
+| customers.ts        | 0%     | ❌ 缺失  | P1     |
+| payments.ts         | 0%     | ❌ 缺失  | P1     |
+| refunds.ts          | 0%     | ❌ 缺失  | P1     |
+| return-orders.ts    | 0%     | ❌ 缺失  | P1     |
 
 **建议**:
+
 - 使用已建立的API Mock模式 (参考`inbound-submit-flow.test.tsx`)
 - 优先覆盖核心CRUD操作
 - 测试认证、权限、错误处理
 
 ### lib/services - 服务层 (4.5%)
+
 **总体状态**: ❌ 严重不足
 
-| 服务 | 覆盖率 | 复杂度 | 优先级 |
-|------|--------|--------|--------|
-| customer-statement-service.ts | 33.16% | 高 | P1 |
-| login-log-service.ts | 18.98% | 中 | P2 |
-| ip-location.ts | 13.79% | 低 | P3 |
-| finance-statistics.ts | 0% | 高 | P0 |
-| receivables-service.ts | 0% | 高 | P0 |
-| sales-order-service.ts | 0% | 高 | P0 |
-| order-number-generator.ts | 0% | 中 | P1 |
+| 服务                          | 覆盖率 | 复杂度 | 优先级 |
+| ----------------------------- | ------ | ------ | ------ |
+| customer-statement-service.ts | 33.16% | 高     | P1     |
+| login-log-service.ts          | 18.98% | 中     | P2     |
+| ip-location.ts                | 13.79% | 低     | P3     |
+| finance-statistics.ts         | 0%     | 高     | P0     |
+| receivables-service.ts        | 0%     | 高     | P0     |
+| sales-order-service.ts        | 0%     | 高     | P0     |
+| order-number-generator.ts     | 0%     | 中     | P1     |
 
 **建议**:
+
 - 🔴 P0: 财务统计、应收账款、销售订单服务是核心业务逻辑
 - 🟡 P1: 完善客户对账单服务测试
 - 🟢 P2: 登录日志服务基础覆盖
 
 ### lib/cache - 缓存层 (0%)
+
 **总体状态**: ❌ 完全未测试
 
-| 组件 | 状态 | 优先级 |
-|------|------|--------|
-| inventory-cache.ts | 0% | P1 |
-| product-cache.ts | 0% | P1 |
-| revalidate.ts | 0% | P2 |
-| invalidation-strategy.ts | 0% | P2 |
-| pubsub.ts | 0% | P2 |
+| 组件                     | 状态 | 优先级 |
+| ------------------------ | ---- | ------ |
+| inventory-cache.ts       | 0%   | P1     |
+| product-cache.ts         | 0%   | P1     |
+| revalidate.ts            | 0%   | P2     |
+| invalidation-strategy.ts | 0%   | P2     |
+| pubsub.ts                | 0%   | P2     |
 
 **建议**:
+
 - 测试缓存CRUD操作
 - 验证缓存失效机制
 - 测试并发场景
 
 ### lib/auth - 认证层 (19.04%)
+
 **总体状态**: ⚠️ 不足
 
-| 组件 | 覆盖率 | 优先级 |
-|------|--------|--------|
-| api-helpers.ts | 45.28% | P1 |
-| context.ts | 0% | P0 |
-| permissions.ts | 0% | P0 |
+| 组件           | 覆盖率 | 优先级 |
+| -------------- | ------ | ------ |
+| api-helpers.ts | 45.28% | P1     |
+| context.ts     | 0%     | P0     |
+| permissions.ts | 0%     | P0     |
 
 **建议**:
+
 - 🔴 P0: 认证上下文和权限系统是安全基础
 - 完善API helper测试
 - 测试权限检查逻辑
@@ -197,41 +216,41 @@
 
 ### P0 - 立即行动 (本周内)
 
-| 模块 | 当前 | 目标 | 工作量 | 影响 |
-|------|------|------|--------|------|
-| lib/auth/context.ts | 0% | 80% | 2天 | 🔴 高 |
-| lib/auth/permissions.ts | 0% | 80% | 2天 | 🔴 高 |
-| lib/validations/product.ts | 0% | 90% | 1天 | 🔴 高 |
-| lib/validations/customer.ts | 0% | 90% | 1天 | 🔴 高 |
-| lib/api/inbound-handlers.ts | 0% | 70% | 2天 | 🔴 高 |
-| lib/services/finance-statistics.ts | 0% | 60% | 3天 | 🔴 高 |
+| 模块                               | 当前 | 目标 | 工作量 | 影响  |
+| ---------------------------------- | ---- | ---- | ------ | ----- |
+| lib/auth/context.ts                | 0%   | 80%  | 2天    | 🔴 高 |
+| lib/auth/permissions.ts            | 0%   | 80%  | 2天    | 🔴 高 |
+| lib/validations/product.ts         | 0%   | 90%  | 1天    | 🔴 高 |
+| lib/validations/customer.ts        | 0%   | 90%  | 1天    | 🔴 高 |
+| lib/api/inbound-handlers.ts        | 0%   | 70%  | 2天    | 🔴 高 |
+| lib/services/finance-statistics.ts | 0%   | 60%  | 3天    | 🔴 高 |
 
 **预计**: 11天工作量，覆盖核心安全和业务逻辑
 
 ### P1 - 短期目标 (2周内)
 
-| 模块 | 当前 | 目标 | 工作量 | 影响 |
-|------|------|------|--------|------|
-| lib/api/sales-orders.ts | 0% | 70% | 3天 | 🟡 中 |
-| lib/api/customers.ts | 0% | 70% | 2天 | 🟡 中 |
-| lib/services/receivables-service.ts | 0% | 60% | 2天 | 🟡 中 |
-| lib/services/sales-order-service.ts | 0% | 60% | 2天 | 🟡 中 |
-| lib/cache/inventory-cache.ts | 0% | 50% | 2天 | 🟡 中 |
-| lib/validations/refund.ts | 44.44% | 85% | 1天 | 🟡 中 |
-| lib/validations/inbound.ts | 43.9% | 85% | 1天 | 🟡 中 |
+| 模块                                | 当前   | 目标 | 工作量 | 影响  |
+| ----------------------------------- | ------ | ---- | ------ | ----- |
+| lib/api/sales-orders.ts             | 0%     | 70%  | 3天    | 🟡 中 |
+| lib/api/customers.ts                | 0%     | 70%  | 2天    | 🟡 中 |
+| lib/services/receivables-service.ts | 0%     | 60%  | 2天    | 🟡 中 |
+| lib/services/sales-order-service.ts | 0%     | 60%  | 2天    | 🟡 中 |
+| lib/cache/inventory-cache.ts        | 0%     | 50%  | 2天    | 🟡 中 |
+| lib/validations/refund.ts           | 44.44% | 85%  | 1天    | 🟡 中 |
+| lib/validations/inbound.ts          | 43.9%  | 85%  | 1天    | 🟡 中 |
 
 **预计**: 13天工作量，覆盖主要业务功能
 
 ### P2 - 中期目标 (1个月内)
 
-| 模块 | 当前 | 目标 | 工作量 |
-|------|------|------|--------|
-| lib/api/payments.ts | 0% | 60% | 2天 |
-| lib/api/refunds.ts | 0% | 60% | 2天 |
-| lib/api/return-orders.ts | 0% | 60% | 2天 |
-| lib/cache/product-cache.ts | 0% | 50% | 1天 |
-| lib/redis/redis-client.ts | 19.47% | 60% | 2天 |
-| lib/logger/index.ts | 18.6% | 60% | 2天 |
+| 模块                       | 当前   | 目标 | 工作量 |
+| -------------------------- | ------ | ---- | ------ |
+| lib/api/payments.ts        | 0%     | 60%  | 2天    |
+| lib/api/refunds.ts         | 0%     | 60%  | 2天    |
+| lib/api/return-orders.ts   | 0%     | 60%  | 2天    |
+| lib/cache/product-cache.ts | 0%     | 50%  | 1天    |
+| lib/redis/redis-client.ts  | 19.47% | 60%  | 2天    |
+| lib/logger/index.ts        | 18.6%  | 60%  | 2天    |
 
 **预计**: 11天工作量，扩展业务功能覆盖
 
@@ -240,9 +259,11 @@
 ## 📋 测试实施路线图
 
 ### Week 1: 安全与核心验证
+
 **目标**: 建立安全基础，覆盖核心验证逻辑
 
 **任务**:
+
 1. **Day 1-2**: lib/auth 认证系统测试
    - context.ts: 认证上下文获取、验证
    - permissions.ts: 权限检查、角色验证
@@ -265,9 +286,11 @@
 **里程碑**: 核心验证层达到80%+覆盖
 
 ### Week 2: API层核心功能
+
 **目标**: 建立API测试模式，覆盖关键业务接口
 
 **任务**:
+
 1. **Day 1-2**: lib/api/inbound-handlers.ts
    - 入库处理器完整测试
    - 复用existing mock patterns
@@ -285,9 +308,11 @@
 **里程碑**: API层核心功能覆盖建立
 
 ### Week 3-4: 服务层与缓存
+
 **目标**: 扩展业务逻辑和基础设施测试
 
 **任务**:
+
 1. **Week 3 Day 1-3**: 财务服务
    - finance-statistics.ts: 60%
    - receivables-service.ts: 60%
@@ -310,24 +335,24 @@
 
 ### 按时间线
 
-| 时间点 | 整体覆盖率 | 增长 | 关键模块 |
-|--------|-----------|------|----------|
-| 当前 | 4.61% | - | 库存核心已完成 |
-| Week 1 | ~15% | +10.4% | 认证、验证层 |
-| Week 2 | ~28% | +13% | API层核心 |
-| Week 4 | ~45% | +17% | 服务层、缓存 |
-| Month 2 | ~65% | +20% | 完整业务覆盖 |
-| Month 3 | ~85% | +20% | 达到目标 |
+| 时间点  | 整体覆盖率 | 增长   | 关键模块       |
+| ------- | ---------- | ------ | -------------- |
+| 当前    | 4.61%      | -      | 库存核心已完成 |
+| Week 1  | ~15%       | +10.4% | 认证、验证层   |
+| Week 2  | ~28%       | +13%   | API层核心      |
+| Week 4  | ~45%       | +17%   | 服务层、缓存   |
+| Month 2 | ~65%       | +20%   | 完整业务覆盖   |
+| Month 3 | ~85%       | +20%   | 达到目标       |
 
 ### 按模块
 
-| 模块 | 当前 | Week 2 | Week 4 | Month 2 | 目标 |
-|------|------|--------|--------|---------|------|
-| lib/validations | 6.96% | 65% | 75% | 85% | 90% |
-| lib/api | 2.39% | 35% | 50% | 70% | 80% |
-| lib/services | 4.5% | 12% | 30% | 55% | 75% |
-| lib/auth | 19.04% | 75% | 80% | 85% | 90% |
-| lib/cache | 0% | 5% | 35% | 60% | 70% |
+| 模块            | 当前   | Week 2 | Week 4 | Month 2 | 目标 |
+| --------------- | ------ | ------ | ------ | ------- | ---- |
+| lib/validations | 6.96%  | 65%    | 75%    | 85%     | 90%  |
+| lib/api         | 2.39%  | 35%    | 50%    | 70%     | 80%  |
+| lib/services    | 4.5%   | 12%    | 30%    | 55%     | 75%  |
+| lib/auth        | 19.04% | 75%    | 80%    | 85%     | 90%  |
+| lib/cache       | 0%     | 5%     | 35%    | 60%     | 70%  |
 
 ---
 
@@ -364,16 +389,19 @@
 ### 已建立的模式
 
 ✅ **API测试模式** (参考: `inbound-submit-flow.test.tsx`)
+
 - MockHeaders实现
 - 认证链路Mock
 - 请求/响应验证
 
 ✅ **验证测试模式** (参考: `inbound-schema.test.ts`)
+
 - Zod schema测试
 - 边界条件验证
 - 错误消息验证
 
 ✅ **工具函数测试** (参考: `inventory-thresholds.test.ts`)
+
 - 单元测试覆盖
 - 边界值测试
 - 性能测试
@@ -381,16 +409,19 @@
 ### 待建立的模式
 
 ❌ **服务层测试模式**
+
 - 数据库Mock
 - 复杂业务逻辑
 - 事务处理
 
 ❌ **缓存测试模式**
+
 - Redis Mock
 - 缓存失效验证
 - 并发场景
 
 ❌ **E2E测试**
+
 - Playwright集成
 - 完整业务流程
 - 用户旅程
@@ -457,6 +488,7 @@
 ### 🚀 前进方向
 
 通过3个月渐进式测试扩展，可以将覆盖率从4.61%提升至85%+：
+
 - **Month 1**: 核心验证和API (4.61% → 28%)
 - **Month 2**: 服务层和缓存 (28% → 65%)
 - **Month 3**: 完整覆盖和E2E (65% → 85%)

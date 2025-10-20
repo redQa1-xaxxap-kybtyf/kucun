@@ -9,6 +9,7 @@
 ## 📊 模块概览
 
 ### 文件结构
+
 ```
 往来账单模块文件分布：
 - API路由: 18个文件
@@ -39,6 +40,7 @@
 ```
 
 ### 模块质量评分
+
 ```
 🎯 总体评分: 6.8/10
 
@@ -61,6 +63,7 @@
 项目没有设置账期制度，不应该有"逾期"的概念和相关显示。但当前代码中大量使用了逾期相关的逻辑：
 
 **涉及的文件**:
+
 ```typescript
 // 应收账款模块
 - components/finance/receivables-client.new.tsx
@@ -113,6 +116,7 @@
 ```
 
 **影响**:
+
 - 业务逻辑与实际需求不符
 - 用户看到不存在的"逾期"信息会困惑
 - 不必要的计算消耗性能
@@ -124,6 +128,7 @@
 **修复方案**:
 
 1. **移除应收账款的逾期逻辑**:
+
 ```typescript
 // components/finance/receivables-client.new.tsx
 // ❌ 删除
@@ -140,10 +145,11 @@ interface ReceivableSummary {
 ```
 
 2. **移除应付账款的逾期逻辑**:
+
 ```typescript
 // lib/validations/payable.ts
 export const payableStatusSchema = z.enum(
-  ['pending', 'partial', 'paid', 'cancelled'],  // 移除'overdue'
+  ['pending', 'partial', 'paid', 'cancelled'], // 移除'overdue'
   { message: '请选择有效的应付款状态' }
 );
 
@@ -153,6 +159,7 @@ export const payableStatusSchema = z.enum(
 ```
 
 3. **移除服务层逾期计算**:
+
 ```typescript
 // lib/services/receivables-service.ts
 export interface ReceivableSummary {
@@ -177,9 +184,10 @@ export interface ReceivableItem {
 ```
 
 4. **更新页面描述**:
+
 ```typescript
 // 移除所有提到"逾期"的描述文字
-description: '管理销售订单产生的应收账款，跟踪收款状态'  // 移除"和逾期情况"
+description: '管理销售订单产生的应收账款，跟踪收款状态'; // 移除"和逾期情况"
 ```
 
 ### 2. StatementHeader缺失currentBalance参数 🔴
@@ -187,6 +195,7 @@ description: '管理销售订单产生的应收账款，跟踪收款状态'  // 
 **位置**: `app/(dashboard)/finance/statements/[id]/page.tsx:99`
 
 **问题描述**:
+
 ```typescript
 // ❌ 当前代码 - 传递了currentBalance参数
 <StatementHeader
@@ -206,6 +215,7 @@ interface StatementHeaderProps {
 ```
 
 **影响**:
+
 - TypeScript编译错误
 - 关键财务数据无法显示
 - 用户无法看到当前余额
@@ -214,20 +224,21 @@ interface StatementHeaderProps {
 **建议修复时间**: 立即
 
 **修复方案**:
+
 ```typescript
 // components/finance/statement-header.tsx
 interface StatementHeaderProps {
   name: string;
   type: 'customer' | 'supplier' | 'partner';
   status: 'active' | 'settled' | 'suspended';
-  currentBalance: number;  // ← 添加这个字段
+  currentBalance: number; // ← 添加这个字段
 }
 
 export function StatementHeader({
   name,
   type,
   status,
-  currentBalance  // ← 使用这个参数显示余额
+  currentBalance, // ← 使用这个参数显示余额
 }: StatementHeaderProps) {
   // ...
 }
@@ -238,6 +249,7 @@ export function StatementHeader({
 **位置**: `app/api/finance/payables/route.ts:136`
 
 **问题描述**:
+
 ```typescript
 // ❌ 当前代码 - Prisma查询结果与PayableRecordDetail类型不匹配
 const payables = await prisma.payableRecord.findMany({
@@ -245,16 +257,20 @@ const payables = await prisma.payableRecord.findMany({
     supplier: { select: { id, name, phone, address } },
     user: { select: { id, name, email } },
     paymentOutRecords: {
-      select: {  // ← 只查询了部分字段
-        id, paymentNumber, paymentAmount,
-        paymentDate, paymentMethod
-      }
-    }
-  }
+      select: {
+        // ← 只查询了部分字段
+        id,
+        paymentNumber,
+        paymentAmount,
+        paymentDate,
+        paymentMethod,
+      },
+    },
+  },
 });
 
 const response: PayableRecordListResponse = {
-  data: payables as PayableRecordDetail[],  // ← 强制类型转换
+  data: payables as PayableRecordDetail[], // ← 强制类型转换
 };
 
 // ✅ PaymentOutRecord完整定义 - 需要更多字段
@@ -262,21 +278,22 @@ interface PaymentOutRecord {
   id: string;
   paymentNumber: string;
   payableRecordId?: string;
-  supplierId: string;        // ← 缺失
-  userId: string;            // ← 缺失
+  supplierId: string; // ← 缺失
+  userId: string; // ← 缺失
   paymentMethod: PaymentOutMethod;
   paymentAmount: number;
   paymentDate: Date | string;
-  status: PaymentOutStatus;  // ← 缺失
-  remarks?: string;          // ← 缺失
+  status: PaymentOutStatus; // ← 缺失
+  remarks?: string; // ← 缺失
   voucherNumber?: string;
   bankInfo?: string;
-  createdAt: Date | string;  // ← 缺失
-  updatedAt: Date | string;  // ← 缺失
+  createdAt: Date | string; // ← 缺失
+  updatedAt: Date | string; // ← 缺失
 }
 ```
 
 **影响**:
+
 - 类型不安全,运行时可能出错
 - 付款记录数据不完整
 - 后续处理可能访问undefined字段
@@ -285,6 +302,7 @@ interface PaymentOutRecord {
 **建议修复时间**: 立即
 
 **修复方案**:
+
 ```typescript
 // 方案1: 完整查询所有字段
 paymentOutRecords: {
@@ -327,6 +345,7 @@ interface PayableRecordListItem {
 **位置**: `app/(dashboard)/finance/receivables/page.new.tsx:151`
 
 **问题描述**:
+
 ```typescript
 // ❌ 实际返回的summary
 summary: {
@@ -348,12 +367,13 @@ interface ReceivableSummary {
   partialCount: number;
   collectionRate: number;
   collectionRateChange: number;
-  averageAccountPeriod: number;        // ← 应该删除（无账期制度）
-  averageAccountPeriodChange: number;  // ← 应该删除（无账期制度）
+  averageAccountPeriod: number; // ← 应该删除（无账期制度）
+  averageAccountPeriodChange: number; // ← 应该删除（无账期制度）
 }
 ```
 
 **影响**:
+
 - TypeScript类型不匹配错误
 - 接口定义与业务需求不符
 - 前端尝试访问不存在的字段
@@ -362,15 +382,16 @@ interface ReceivableSummary {
 **建议修复时间**: 立即
 
 **修复方案**:
+
 ```typescript
 // lib/services/receivables-service.ts
 export interface ReceivableSummary {
-  totalReceivable: number;     // 总应收金额
-  receivableCount: number;     // 应收笔数
-  paidCount: number;           // 已付清笔数
-  unpaidCount: number;         // 未付款笔数
-  partialCount: number;        // 部分付款笔数
-  collectionRate: number;      // 当前月收款率
+  totalReceivable: number; // 总应收金额
+  receivableCount: number; // 应收笔数
+  paidCount: number; // 已付清笔数
+  unpaidCount: number; // 未付款笔数
+  partialCount: number; // 部分付款笔数
+  collectionRate: number; // 当前月收款率
   collectionRateChange: number; // 较上月收款率变化（百分点）
   // ❌ 删除账期相关字段
   // averageAccountPeriod: number;
@@ -385,10 +406,12 @@ export interface ReceivableSummary {
 ### 1. payable-form字段不在schema中
 
 **位置**:
+
 - `components/finance/payable-form.tsx:171` (dueDate)
 - `components/finance/payable-form.tsx:217` (paymentTerms)
 
 **问题描述**:
+
 ```typescript
 // ❌ 表单使用了schema中没有的字段
 <FormField
@@ -418,11 +441,13 @@ export const createPayableRecordSchema = z.object({
 ```
 
 **影响**:
+
 - 表单提交时这些字段会被忽略
 - 数据库无法保存到期日期和付款条件
 - 用户输入数据丢失
 
 **建议修复**:
+
 ```typescript
 export const createPayableRecordSchema = z.object({
   supplierId: z.string().min(1, '请选择供应商'),
@@ -430,10 +455,12 @@ export const createPayableRecordSchema = z.object({
   sourceId: z.string().optional(),
   sourceNumber: z.string().optional(),
   payableAmount: z.number().positive(),
-  dueDate: z.string()  // ← 添加
+  dueDate: z
+    .string() // ← 添加
     .refine(date => !isNaN(Date.parse(date)), '请输入有效的到期日期')
     .optional(),
-  paymentTerms: z.string()  // ← 添加
+  paymentTerms: z
+    .string() // ← 添加
     .max(200, '付款条件不能超过200字符')
     .optional(),
   description: z.string().max(500).optional(),
@@ -444,10 +471,12 @@ export const createPayableRecordSchema = z.object({
 ### 2. ReceivableItem缺失overdueDays字段
 
 **位置**:
+
 - `components/finance/receivables-client.new.tsx:392,394`
 - `components/payments/accounts-receivable.tsx:249,254,366,370`
 
 **问题描述**:
+
 ```typescript
 // ❌ 组件使用了不存在的字段
 {item.overdueDays > 0 ? (
@@ -472,19 +501,25 @@ export interface ReceivableItem {
 ```
 
 **影响**:
+
 - 无法显示逾期天数
 - 逾期提醒功能失效
 - 用户无法识别逾期订单
 
 **建议修复**:
+
 ```typescript
 export interface ReceivableItem {
   // ... 其他字段
-  overdueDays?: number;  // ← 添加逾期天数字段
+  overdueDays?: number; // ← 添加逾期天数字段
 }
 
 // 在查询时计算逾期天数
-function calculateOverdueDays(orderDate: Date, paidAmount: number, totalAmount: number): number {
+function calculateOverdueDays(
+  orderDate: Date,
+  paidAmount: number,
+  totalAmount: number
+): number {
   if (paidAmount >= totalAmount) return 0;
 
   const daysSinceOrder = differenceInCalendarDays(new Date(), orderDate);
@@ -499,6 +534,7 @@ function calculateOverdueDays(orderDate: Date, paidAmount: number, totalAmount: 
 **位置**: `hooks/use-payable-form.ts:89,106,115,138`
 
 **问题描述**:
+
 ```typescript
 // ❌ showSuccess调用参数不正确
 showSuccess('创建成功', `应付款单号 "${data.payableNumber}" 创建成功！`);
@@ -507,17 +543,19 @@ showSuccess('创建成功', `应付款单号 "${data.payableNumber}" 创建成�
 function showSuccess(
   title: string,
   options?: Omit<ToastOptions, 'title'>
-): void
+): void;
 ```
 
 **影响**:
+
 - TypeScript编译错误
 - Toast可能不能正确显示
 
 **建议修复**:
+
 ```typescript
 showSuccess('创建成功', {
-  description: `应付款单号 "${data.payableNumber}" 创建成功！`
+  description: `应付款单号 "${data.payableNumber}" 创建成功！`,
 });
 ```
 
@@ -526,15 +564,17 @@ showSuccess('创建成功', {
 **位置**: `lib/api/customer-statements.ts:81,83,85,87`
 
 **问题描述**:
+
 ```typescript
 // ❌ 'customer-statements'不符合QueryKeyPrefix类型
 export const customerStatementQueryKeys = {
-  all: ['customer-statements'] as const satisfies QueryKey,  // ← 类型错误
+  all: ['customer-statements'] as const satisfies QueryKey, // ← 类型错误
   //...
 };
 ```
 
 **影响**:
+
 - React Query类型不安全
 - 查询键可能冲突
 
@@ -545,6 +585,7 @@ export const customerStatementQueryKeys = {
 ### 1. route.old.ts文件需要清理
 
 **位置**:
+
 - `app/api/finance/receivables/route.old.ts`
 
 **问题**: 旧版本文件仍在代码库中,包含过时的逻辑和类型错误
@@ -556,6 +597,7 @@ export const customerStatementQueryKeys = {
 **位置**: `components/finance/statements-client.tsx:425`
 
 **问题**:
+
 ```typescript
 // ❌ 使用currentPage
 <Pagination
@@ -575,11 +617,13 @@ export const customerStatementQueryKeys = {
 ### 3. 类型定义分散
 
 **问题**:
+
 - ReceivableSummary定义在services层
 - PayableRecordDetail定义在types层
 - 缺少统一的FinanceSummary基础类型
 
 **建议**:
+
 - 提取公共类型到lib/types/finance-common.ts
 - 创建统一的Summary基础接口
 - 所有Summary类型继承基础接口
@@ -587,11 +631,13 @@ export const customerStatementQueryKeys = {
 ### 4. 数据转换逻辑重复
 
 **问题**: 多处代码重复计算:
+
 - 付款状态(paid/partial/unpaid)
 - 逾期天数
 - 剩余金额
 
 **建议**:
+
 - 创建lib/utils/finance-transforms.ts
 - 提取公共计算函数
 - 遵循DRY原则
@@ -601,6 +647,7 @@ export const customerStatementQueryKeys = {
 ## 📈 问题统计
 
 ### TypeScript错误分布
+
 ```
 往来账单模块总计: 30+ 个类型错误
 
@@ -618,6 +665,7 @@ export const customerStatementQueryKeys = {
 ```
 
 ### 问题类别
+
 ```
 类型不匹配: 45%  (schema与实际使用不一致)
 缺失字段: 30%   (类型定义不完整)
@@ -654,29 +702,37 @@ export const customerStatementQueryKeys = {
 ## 📋 技术债务分析
 
 ### 架构层面
+
 ✅ **优点**:
+
 - 遵循Next.js 15 App Router规范
 - 使用Prisma + Zod类型安全体系
 - API层清晰,权限控制完善
 
 ⚠️ **问题**:
+
 - Schema定义与组件使用脱节
 - 类型定义分散,缺少统一管理
 - 数据转换逻辑重复
 
 ### 代码质量
+
 ✅ **优点**:
+
 - 代码注释完善
 - 命名规范清晰
 - 错误处理健全
 
 ⚠️ **问题**:
+
 - 30+个TypeScript错误
 - 类型强制转换(`as`)过多
 - 旧版本文件未清理
 
 ### 可维护性
+
 ⚠️ **主要问题**:
+
 1. **Schema与UI分离**: 表单字段与验证schema不匹配
 2. **类型不完整**: 接口定义缺少关键字段
 3. **重复代码**: 相同计算逻辑在多处重复
