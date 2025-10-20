@@ -85,7 +85,9 @@ export function useProductForm({
   });
 
   const navigateToList = useCallback(() => {
-    router.replace('/products');
+    // 刷新服务端组件以获取最新数据，然后导航到列表页
+    router.refresh();
+    router.push('/products');
   }, [router]);
 
   const createMutation = useCreateProductMutation({
