@@ -14,6 +14,7 @@ import { withErrorHandling } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
+import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { createInboundSchema } from '@/lib/validations/inbound';

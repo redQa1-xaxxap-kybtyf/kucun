@@ -320,7 +320,7 @@ export async function getInboundRecords(queryData: {
   const skip = (queryData.page - 1) * queryData.limit;
 
   // 并行查询记录和总数
-  const [records, total] = await Promise.all([
+  const [allRecords, total] = await Promise.all([
     prisma.inboundRecord.findMany({
       where,
       orderBy,
@@ -366,6 +366,24 @@ export async function getInboundRecords(queryData: {
     }),
     prisma.inboundRecord.count({ where }),
   ]);
+
+  // 防御性编程: 过滤掉没有用户的记录（孤儿记录）
+  // 这种情况不应该发生，但如果发生了，我们要优雅地处理
+  const records = allRecords.filter(record => {
+    if (!record.user) {
+      console.warn(
+        `⚠️  警告: 入库记录 ${record.recordNumber} 的用户不存在 (userId: ${record.userId})`
+      );
+      return false;
+    }
+    return true;
+  });
+
+  if (records.length < allRecords.length) {
+    console.error(
+      `❌ 发现 ${allRecords.length - records.length} 条孤儿入库记录，已自动过滤。请运行修复脚本: npx tsx scripts/fix-orphaned-records.ts`
+    );
+  }
 
   // 格式化记录数据
   const formattedRecords = formatInboundRecords(
