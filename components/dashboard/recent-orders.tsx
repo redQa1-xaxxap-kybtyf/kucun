@@ -13,6 +13,10 @@ import Link from 'next/link';
 import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import {
+  SALES_ORDER_STATUS_LABELS,
+  type SalesOrderStatus,
+} from '@/lib/config/sales-order';
 import type { DashboardSalesOrderSummary } from '@/lib/types/dashboard';
 import { formatCurrency } from '@/lib/utils';
 
@@ -21,40 +25,18 @@ interface RecentOrdersProps {
   loading?: boolean;
 }
 
-// 状态配置
-const statusConfig = {
-  draft: {
-    label: '草稿',
-    variant: 'secondary' as const,
-  },
-  pending: {
-    label: '待处理',
-    variant: 'warning' as const,
-  },
-  confirmed: {
-    label: '已确认',
-    variant: 'info' as const,
-  },
-  processing: {
-    label: '处理中',
-    variant: 'info' as const,
-  },
-  shipped: {
-    label: '已发货',
-    variant: 'purple' as const,
-  },
-  delivered: {
-    label: '已送达',
-    variant: 'info' as const,
-  },
-  completed: {
-    label: '已完成',
-    variant: 'success' as const,
-  },
-  cancelled: {
-    label: '已取消',
-    variant: 'destructive' as const,
-  },
+// 状态样式配置 - 使用统一的中文标签
+const statusVariants: Record<
+  SalesOrderStatus,
+  'secondary' | 'warning' | 'info' | 'purple' | 'success' | 'destructive'
+> = {
+  draft: 'secondary',
+  confirmed: 'info',
+  processing: 'info',
+  shipped: 'purple',
+  delivered: 'info',
+  completed: 'success',
+  cancelled: 'destructive',
 };
 
 // 格式化时间
@@ -174,12 +156,12 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
       </CardHeader>
       <CardContent className="space-y-3 p-6">
         {orders.map(order => {
-          const statusInfo =
-            statusConfig[order.status] ??
-            ({
-              label: order.status,
-              variant: 'secondary',
-            } as const);
+          // 使用统一的状态标签和样式配置
+          const statusLabel =
+            SALES_ORDER_STATUS_LABELS[order.status as SalesOrderStatus] ||
+            order.status;
+          const statusVariant =
+            statusVariants[order.status as SalesOrderStatus] || 'secondary';
 
           return (
             <Link
@@ -204,10 +186,10 @@ export function RecentOrders({ orders, loading }: RecentOrdersProps) {
                       </div>
                     </div>
                     <Badge
-                      variant={statusInfo.variant}
+                      variant={statusVariant}
                       className="shrink-0 text-xs font-medium"
                     >
-                      {statusInfo.label}
+                      {statusLabel}
                     </Badge>
                   </div>
 
