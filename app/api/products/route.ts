@@ -18,7 +18,7 @@ import { productCreateSchema } from '@/lib/validations/product';
  */
 function parseProductQueryParams(
   searchParams: URLSearchParams
-): ProductListQueryParams {
+): ProductListQueryParams & { includeBatchSpecs?: boolean } {
   const includeInventory = searchParams.get('includeInventory')
     ? searchParams.get('includeInventory') === 'true'
     : productConfig.defaultIncludeInventory;
@@ -26,6 +26,8 @@ function parseProductQueryParams(
   const includeStatistics = searchParams.get('includeStatistics')
     ? searchParams.get('includeStatistics') === 'true'
     : productConfig.defaultIncludeStatistics;
+
+  const includeBatchSpecs = searchParams.get('includeBatchSpecs') === 'true';
 
   const page = parseInt(searchParams.get('page') || '1', 10);
   const limit = parseInt(
@@ -48,6 +50,7 @@ function parseProductQueryParams(
     sortOrder,
     includeInventory,
     includeStatistics,
+    includeBatchSpecs,
   };
 }
 

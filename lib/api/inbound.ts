@@ -244,10 +244,13 @@ export function useProductSearch(query: string) {
         return [];
       }
 
+      // ✅ 性能优化：使用 includeBatchSpecs=true 一次性获取所有数据
+      // 从 41 次请求（1 + 20 + 20）减少到 1 次请求
       const searchParams = new URLSearchParams({
         search: query.trim(),
         limit: '20',
         includeInventory: 'true', // 包含库存信息
+        includeBatchSpecs: 'true', // ✅ 包含批次规格数据
       });
 
       const response = await fetch(`${PRODUCTS_API}?${searchParams}`);
@@ -273,114 +276,20 @@ export function useProductSearch(query: string) {
           ? result.data
           : [];
 
-      // 并行获取每个产品的批次信息
-      const productsWithBatches = await Promise.all(
+      // ✅ 数据已经在后端一次性获取，直接转换格式即可
+      return products.map(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        products.map(async (product: Record<string, any>) => {
-          try {
-            // 1. 获取该产品的库存列表
-            const inventoryResponse = await fetch(
-              `/api/inventory?productId=${product.id}&limit=100`
-            );
-
-            if (inventoryResponse.ok) {
-              const inventoryResult = await inventoryResponse.json();
-
-              // 处理库存 API 响应格式
-              let inventoryData = [];
-              if (
-                inventoryResult.data &&
-                Array.isArray(inventoryResult.data.inventories)
-              ) {
-                inventoryData = inventoryResult.data.inventories;
-              } else if (
-                inventoryResult.data &&
-                Array.isArray(inventoryResult.data.data)
-              ) {
-                inventoryData = inventoryResult.data.data;
-              } else if (Array.isArray(inventoryResult.data)) {
-                inventoryData = inventoryResult.data;
-              }
-
-              // 2. 获取该产品的所有批次规格
-              const batchSpecResponse = await fetch(
-                `/api/batch-specifications?productId=${product.id}`
-              );
-
-              const batchSpecifications: Record<string, number> = {};
-              if (batchSpecResponse.ok) {
-                const batchSpecResult = await batchSpecResponse.json();
-                const specs = batchSpecResult.data || [];
-                // 构建批次号到每件片数的映射
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                specs.forEach((spec: Record<string, any>) => {
-                  batchSpecifications[spec.batchNumber] = spec.piecesPerUnit;
-                });
-              }
-
-              // 3. 按批次号+每件片数分组统计
-              const batchSpecMap = new Map<
-                string,
-                { batchNumber: string; piecesPerUnit: number; quantity: number }
-              >();
-
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              inventoryData.forEach((inv: Record<string, any>) => {
-                if (inv.batchNumber) {
-                  // 优先使用批次规格的 piecesPerUnit，否则使用产品默认值
-                  const piecesPerUnit =
-                    batchSpecifications[inv.batchNumber] ||
-                    inv.product?.piecesPerUnit ||
-                    product.piecesPerUnit ||
-                    1;
-                  // 使用特殊分隔符避免与批次号中的 - 冲突
-                  const key = `${inv.batchNumber}|||${piecesPerUnit}`;
-                  const existing = batchSpecMap.get(key);
-                  if (existing) {
-                    existing.quantity += inv.quantity || 0;
-                  } else {
-                    batchSpecMap.set(key, {
-                      batchNumber: inv.batchNumber,
-                      piecesPerUnit,
-                      quantity: inv.quantity || 0,
-                    });
-                  }
-                }
-              });
-
-              // 4. 转换为数组格式
-              const batchSpecs = Array.from(batchSpecMap.values());
-
-              return {
-                value: product.id,
-                label: product.name,
-                code: product.code,
-                unit: product.unit || 'piece',
-                piecesPerUnit: product.piecesPerUnit || 1,
-                specification: product.specification,
-                currentStock: product.inventory?.totalQuantity || 0,
-                batchSpecs,
-              };
-            }
-          } catch {
-            // 静默失败，返回不含批次的数据
-          }
-
-          // 如果获取批次失败，返回不含批次的数据
-          return {
-            value: product.id,
-            label: product.name,
-            code: product.code,
-            unit: product.unit || 'piece',
-            piecesPerUnit: product.piecesPerUnit || 1,
-            specification: product.specification,
-            currentStock: product.inventory?.totalQuantity || 0,
-            batchSpecs: [],
-          };
+        (product: Record<string, any>) => ({
+          value: product.id,
+          label: product.name,
+          code: product.code,
+          unit: product.unit || 'piece',
+          piecesPerUnit: product.piecesPerUnit || 1,
+          specification: product.specification,
+          currentStock: product.inventory?.totalQuantity || 0,
+          batchSpecs: product.batchSpecs || [],
         })
       );
-
-      return productsWithBatches;
     },
     enabled: !!query.trim(),
     staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的

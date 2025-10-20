@@ -385,7 +385,7 @@ model Inventory {
   quantity         Int      @default(0)
   reservedQuantity Int      @default(0) @map("reserved_quantity") // 预留数量
   unitCost         Float?   @map("unit_cost") // 单位成本
-  location         String? // 存储位置
+  location         String? @db.VarChar(200) // 存储位置
   updatedAt        DateTime @updatedAt @map("updated_at")
 
   // 关联关系
@@ -439,8 +439,8 @@ model InboundRecord {
   quantity             Float // 支持小数点，最小值0.01
   unitCost             Float?   @map("unit_cost") // 单位成本
   totalCost            Float?   @map("total_cost") // 总成本
-  location             String? // 存储位置
-  reason               String   @default("purchase") // purchase, return, transfer, surplus, other
+  location             String? @db.VarChar(200) // 存储位置
+  reason               String   @db.VarChar(100) @default("purchase") // purchase, return, transfer, surplus, other
   remarks              String? @db.Text // 最大500字符
   userId               String   @map("user_id")
   createdAt            DateTime @default(now()) @map("created_at")

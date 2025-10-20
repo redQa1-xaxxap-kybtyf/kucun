@@ -6,17 +6,18 @@
 
 import { cache } from 'react';
 
-import type { ProductListQueryParams } from '@/lib/api/products';
-import { buildCacheKey, getOrSetJSON, CACHE_STRATEGY } from '@/lib/cache';
-import { paginationConfig, productConfig } from '@/lib/env';
 import {
   buildProductWhereClause,
   buildProductSelect,
   queryProducts,
   getProductsInventory,
+  getProductsBatchSpecifications,
   formatProductList,
   buildPagination,
 } from '@/lib/api/handlers/products-list';
+import type { ProductListQueryParams } from '@/lib/api/products';
+import { buildCacheKey, getOrSetJSON, CACHE_STRATEGY } from '@/lib/cache';
+import { paginationConfig, productConfig } from '@/lib/env';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Product } from '@/lib/types/product';
 
@@ -32,13 +33,14 @@ type ServerProduct = Omit<Product, 'createdAt' | 'updatedAt'> & {
  */
 export const getProductsForServer = cache(
   async (
-    params: ProductListQueryParams
+    params: ProductListQueryParams & { includeBatchSpecs?: boolean }
   ): Promise<PaginatedResponse<ServerProduct> | undefined> => {
     // 直接解析参数，移除不必要的 URLSearchParams 序列化
     const includeInventory =
       params.includeInventory ?? productConfig.defaultIncludeInventory;
     const includeStatistics =
       params.includeStatistics ?? productConfig.defaultIncludeStatistics;
+    const includeBatchSpecs = params.includeBatchSpecs ?? false;
     const requestLimit = params.limit ?? paginationConfig.defaultPageSize;
 
     // 性能优化：超过20条记录时限制聚合查询
@@ -78,6 +80,7 @@ export const getProductsForServer = cache(
       categoryId,
       includeInventory,
       includeStatistics: finalIncludeStatistics,
+      includeBatchSpecs,
       uncategorized: filterUncategorized,
     });
 
@@ -104,6 +107,11 @@ export const getProductsForServer = cache(
           includeInventory
         );
 
+        // 如果需要批次数据，批量获取
+        const batchSpecsMap = includeBatchSpecs
+          ? await getProductsBatchSpecifications(products.map(p => p.id))
+          : undefined;
+
         const formattedProducts = formatProductList({
           products: products as Parameters<
             typeof formatProductList
@@ -111,6 +119,7 @@ export const getProductsForServer = cache(
           inventoryMap,
           includeInventory,
           includeStatistics: finalIncludeStatistics,
+          batchSpecsMap,
         });
 
         const pagination = buildPagination({ page, limit, total });
@@ -134,6 +143,7 @@ export const getProductsForServer = cache(
         cacheKey,
         includeInventory,
         includeStatistics: finalIncludeStatistics,
+        includeBatchSpecs,
         search,
         page,
         limit,

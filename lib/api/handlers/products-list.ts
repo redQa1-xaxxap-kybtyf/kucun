@@ -180,6 +180,111 @@ export async function getProductsInventory(
 }
 
 /**
+ * 批量获取产品的批次规格数据
+ * 用于产品选择器性能优化，避免 N+1 查询问题
+ */
+export async function getProductsBatchSpecifications(productIds: string[]) {
+  if (productIds.length === 0) {
+    return new Map<
+      string,
+      Array<{ batchNumber: string; piecesPerUnit: number; quantity: number }>
+    >();
+  }
+
+  // 1. 批量获取所有产品的库存记录（包含批次号）
+  const inventoryRecords = await prisma.inventory.findMany({
+    where: {
+      productId: { in: productIds },
+      batchNumber: { not: null },
+    },
+    select: {
+      productId: true,
+      batchNumber: true,
+      quantity: true,
+      product: {
+        select: {
+          piecesPerUnit: true,
+        },
+      },
+    },
+  });
+
+  // 2. 批量获取所有批次规格
+  const batchNumbers = [
+    ...new Set(
+      inventoryRecords
+        .map(inv => inv.batchNumber)
+        .filter((bn): bn is string => bn !== null)
+    ),
+  ];
+
+  const batchSpecs = await prisma.batchSpecification.findMany({
+    where: {
+      batchNumber: { in: batchNumbers },
+    },
+    select: {
+      batchNumber: true,
+      piecesPerUnit: true,
+    },
+  });
+
+  // 3. 构建批次号到每件片数的映射
+  const batchSpecMap = new Map<string, number>();
+  batchSpecs.forEach(spec => {
+    batchSpecMap.set(spec.batchNumber, spec.piecesPerUnit);
+  });
+
+  // 4. 按产品ID分组，构建每个产品的批次规格列表
+  const productBatchMap = new Map<
+    string,
+    Map<
+      string,
+      { batchNumber: string; piecesPerUnit: number; quantity: number }
+    >
+  >();
+
+  inventoryRecords.forEach(inv => {
+    if (!inv.batchNumber) return;
+
+    // 获取该批次的每件片数（优先使用批次规格，否则使用产品默认值）
+    const piecesPerUnit =
+      batchSpecMap.get(inv.batchNumber) ?? inv.product.piecesPerUnit ?? 1;
+
+    // 使用特殊分隔符避免与批次号中的 - 冲突
+    const key = `${inv.batchNumber}|||${piecesPerUnit}`;
+
+    if (!productBatchMap.has(inv.productId)) {
+      productBatchMap.set(inv.productId, new Map());
+    }
+
+    const batchMap = productBatchMap.get(inv.productId)!;
+    const existing = batchMap.get(key);
+
+    if (existing) {
+      existing.quantity += inv.quantity;
+    } else {
+      batchMap.set(key, {
+        batchNumber: inv.batchNumber,
+        piecesPerUnit,
+        quantity: inv.quantity,
+      });
+    }
+  });
+
+  // 5. 转换为最终格式
+  const result = new Map<
+    string,
+    Array<{ batchNumber: string; piecesPerUnit: number; quantity: number }>
+  >();
+
+  productBatchMap.forEach((batchMap, productId) => {
+    result.set(productId, Array.from(batchMap.values()));
+  });
+
+  return result;
+}
+
+/**
  * 格式化产品列表数据
  */
 export function formatProductList(params: {
@@ -213,9 +318,18 @@ export function formatProductList(params: {
   inventoryMap: Map<string, typeof DEFAULT_INVENTORY>;
   includeInventory: boolean;
   includeStatistics: boolean;
+  batchSpecsMap?: Map<
+    string,
+    Array<{ batchNumber: string; piecesPerUnit: number; quantity: number }>
+  >;
 }) {
-  const { products, inventoryMap, includeInventory, includeStatistics } =
-    params;
+  const {
+    products,
+    inventoryMap,
+    includeInventory,
+    includeStatistics,
+    batchSpecsMap,
+  } = params;
 
   return products.map(product => {
     const inventory = includeInventory
@@ -233,6 +347,8 @@ export function formatProductList(params: {
           inboundRecordsCount: counts.inboundRecords,
         }
       : undefined;
+
+    const batchSpecs = batchSpecsMap?.get(product.id) ?? [];
 
     return {
       id: product.id,
@@ -257,6 +373,7 @@ export function formatProductList(params: {
       images: parseProductImages(product.images ?? null, product.id),
       inventory,
       statistics,
+      batchSpecs: batchSpecs.length > 0 ? batchSpecs : undefined,
       createdAt:
         product.createdAt instanceof Date
           ? product.createdAt.toISOString()
