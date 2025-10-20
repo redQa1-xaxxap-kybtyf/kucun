@@ -196,4 +196,10 @@ export default [
       '@typescript-eslint/no-explicit-any': 'off',
     },
   },
+  {
+    files: ['lib/data/**/*.ts'],
+    rules: {
+      'max-lines': 'off', // 静态数据文件可能包含大量数据
+    },
+  },
 ];
