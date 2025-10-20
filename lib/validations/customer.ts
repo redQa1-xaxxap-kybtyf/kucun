@@ -48,7 +48,22 @@ const baseValidations = {
 
   phone: z
     .string()
-    .regex(/^1[3-9]\d{9}$/, '请输入正确的手机号码')
+    .refine(
+      val => {
+        if (!val || val === '') return true;
+        // 支持多种电话格式：
+        // 手机号：1[3-9]\d{9}
+        // 固话：区号-号码 或 区号号码 (如 010-12345678、01012345678)
+        // 400/800：400-xxx-xxxx、800-xxx-xxxx
+        const patterns = [
+          /^1[3-9]\d{9}$/, // 手机号
+          /^0\d{2,3}-?\d{7,8}$/, // 固话
+          /^[48]00-?\d{3,4}-?\d{4}$/, // 400/800
+        ];
+        return patterns.some(pattern => pattern.test(val));
+      },
+      { message: '请输入正确的电话号码（支持手机号、固话、400电话）' }
+    )
     .optional()
     .or(z.literal('')),
 
