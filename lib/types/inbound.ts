@@ -104,9 +104,9 @@ export interface CreateInboundRequest {
   unitCost?: number; // 单位成本
   location?: string; // 存储位置
 
-  // 批次规格参数（入库时确定）
-  piecesPerUnit: number; // 每单位片数
-  weight: number; // 产品重量(kg)
+  // 批次规格参数（入库时确定，可选）
+  piecesPerUnit?: number; // 每单位片数
+  weight?: number; // 产品重量(kg)
   thickness?: number; // 产品厚度(mm)
 }
 

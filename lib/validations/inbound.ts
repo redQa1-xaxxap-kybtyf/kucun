@@ -69,12 +69,14 @@ export const createInboundSchema = z.object({
     .number({ message: '每单位片数必须是数字' })
     .int({ error: '每单位片数必须是整数' })
     .min(1, { error: '每单位片数至少为1' })
-    .max(10000, { error: '每单位片数不能超过10000' }),
+    .max(10000, { error: '每单位片数不能超过10000' })
+    .optional(),
 
   weight: z
     .number({ message: '重量必须是数字' })
     .min(0.01, { error: '重量必须大于0' })
-    .max(10000, { error: '重量不能超过10000kg' }),
+    .max(10000, { error: '重量不能超过10000kg' })
+    .optional(),
 });
 
 // 更新入库记录验证规则

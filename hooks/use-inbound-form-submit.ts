@@ -33,14 +33,6 @@ export function useInboundFormSubmit({
         throw new Error('请填写大于 0 的入库数量');
       }
 
-      if (!data.piecesPerUnit || data.piecesPerUnit <= 0) {
-        throw new Error('请填写有效的每件片数');
-      }
-
-      if (!data.weight || data.weight <= 0) {
-        throw new Error('请填写有效的重量');
-      }
-
       if (!data.quantity || data.quantity <= 0) {
         throw new Error('最终片数计算有误，请检查输入');
       }
@@ -52,8 +44,6 @@ export function useInboundFormSubmit({
         inputUnit: data.inputUnit,
         quantity: data.quantity,
         reason: data.reason,
-        piecesPerUnit: data.piecesPerUnit,
-        weight: data.weight,
       };
 
       if (data.variantId) {
@@ -74,9 +64,18 @@ export function useInboundFormSubmit({
         }
       }
 
+      // 可选字段：只在有效值时添加
+      if (data.piecesPerUnit && data.piecesPerUnit > 0) {
+        requestData.piecesPerUnit = data.piecesPerUnit;
+      }
+
+      if (data.weight && data.weight > 0) {
+        requestData.weight = data.weight;
+      }
+
       return await createMutation.mutateAsync(requestData);
     },
-    onSuccess: result => {
+    onSuccess: () => {
       // 调用成功回调
       if (onSuccess) {
         onSuccess();
