@@ -174,7 +174,12 @@ export const POST = withAuth(
 
     const formattedProduct = toProductResponse(productWithCategory);
 
-    // 使用新的统一缓存失效系统
+    // ✅ Next.js 15最佳实践：使用revalidatePath确保服务端缓存失效
+    // 这是创建数据后确保列表页面能立即看到新数据的关键
+    const { revalidatePath } = await import('next/cache');
+    revalidatePath('/products', 'page'); // 失效产品列表页面缓存
+
+    // 使用新的统一缓存失效系统（处理React Query和Redis缓存）
     await revalidateProducts(); // 自动级联失效相关缓存
 
     // 发布实时更新事件

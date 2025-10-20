@@ -59,9 +59,11 @@ export function ERPProductList({
   const { data, isLoading, error } = useQuery({
     queryKey: productQueryKeys.list(initialParams),
     queryFn: () => getProducts(initialParams),
-    staleTime: 30 * 1000, // 30秒缓存时间，平衡性能和数据新鲜度
+    staleTime: 0, // ✅ 修复：设置为0，确保每次导航都重新获取最新数据
     refetchOnWindowFocus: false, // 避免不必要的重新获取
-    initialData: _initialData, // 使用服务端预取的数据，但允许后续更新
+    refetchOnMount: 'always', // ✅ 修复：每次挂载都重新获取，确保数据最新
+    initialData: _initialData, // 使用服务端预取的数据作为初始显示
+    initialDataUpdatedAt: 0, // ✅ 修复：标记初始数据为过期，强制重新验证
   });
 
   // 处理筛选器清空

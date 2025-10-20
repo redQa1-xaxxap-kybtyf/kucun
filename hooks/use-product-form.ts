@@ -85,8 +85,8 @@ export function useProductForm({
   });
 
   const navigateToList = useCallback(() => {
-    // 刷新服务端组件以获取最新数据，然后导航到列表页
-    router.refresh();
+    // ✅ Next.js 15 最佳实践：直接导航，服务端组件会自动获取最新数据
+    // 因为 API 路由已经调用了 revalidatePath()，不需要额外的 refresh
     router.push('/products');
   }, [router]);
 

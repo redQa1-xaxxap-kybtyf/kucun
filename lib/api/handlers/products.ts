@@ -107,6 +107,11 @@ export async function updateProduct(
     select: PRODUCT_WITH_RELATIONS_SELECT,
   });
 
+  // ✅ Next.js 15最佳实践：使用revalidatePath确保服务端缓存失效
+  const { revalidatePath } = await import('next/cache');
+  revalidatePath('/products', 'page'); // 失效产品列表页面缓存
+  revalidatePath(`/products/${id}`, 'page'); // 失效产品详情页面缓存
+
   await invalidateProductCache(id);
 
   return formatProduct(updatedProduct);
@@ -333,6 +338,11 @@ export async function deleteProduct(id: string) {
   await prisma.product.delete({
     where: { id },
   });
+
+  // ✅ Next.js 15最佳实践：使用revalidatePath确保服务端缓存失效
+  const { revalidatePath } = await import('next/cache');
+  revalidatePath('/products', 'page'); // 失效产品列表页面缓存
+  revalidatePath(`/products/${id}`, 'page'); // 失效产品详情页面缓存
 
   await invalidateProductCache(id);
 

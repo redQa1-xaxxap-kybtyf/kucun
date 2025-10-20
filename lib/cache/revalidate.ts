@@ -16,7 +16,7 @@ import { redis } from '@/lib/redis/redis-client';
 import { publish, subscribe } from '@/lib/redis/redis-pubsub';
 
 import { invalidateNamespace } from './cache';
-import { CacheTags, RedisCachePrefix, tagToRedisKey } from './tags';
+import { CacheTags, RedisCachePrefix } from './tags';
 
 /**
  * 缓存失效选项
@@ -68,9 +68,10 @@ export async function revalidateCache(
 
     // 2. 失效 Redis 缓存
     if (opts.redis) {
-      const redisKey = tagToRedisKey(tag);
-      // 使用 scan 删除匹配的键
-      await redis.scanDel(`${redisKey}*`);
+      // ✅ 修复：直接使用标签作为模式，不添加前缀
+      // 因为缓存键已经是 'products:list:{hash}' 格式
+      // scanDel 会自动添加命名空间前缀
+      await redis.scanDel(`${tag}*`);
     }
 
     // 3. 通过 Pub/Sub 通知其他进程（使用新的 Pub/Sub 模块）
