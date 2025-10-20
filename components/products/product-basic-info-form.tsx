@@ -82,7 +82,7 @@ function ProductNameInput({
           <FormLabel>产品名称</FormLabel>
           <FormControl>
             <Input
-              placeholder="可选,留空则使用编码"
+              placeholder="可选，留空则使用分类名称"
               disabled={disabled}
               maxLength={100}
               {...field}
