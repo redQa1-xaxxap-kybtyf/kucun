@@ -178,12 +178,11 @@ function ProductInfoCard({ form, isEdit, isLoading }: ProductInfoCardProps) {
             isLoading={isLoading}
             isCreateMode={!isEdit}
             onCategoryChange={(categoryId, categoryName) => {
-              // 当选择了分类，且产品名称为空时，自动填充分类名称
+              // 保存分类名称，供提交时使用（如果产品名称为空）
               if (categoryId && categoryId !== 'uncategorized') {
-                const currentName = form.getValues('name');
-                if (!currentName || currentName.trim() === '') {
-                  form.setValue('name', categoryName);
-                }
+                form.setValue('_categoryName' as any, categoryName);
+              } else {
+                form.setValue('_categoryName' as any, undefined);
               }
             }}
           />
