@@ -108,7 +108,8 @@ function ProductCategorySelect({
     {
       queryKey: categoryQueryKeys.options(),
       queryFn: () => getCategories({ status: 'active', limit: 100 }),
-      staleTime: 5 * 60 * 1000,
+      staleTime: 30 * 1000, // 30秒 - 确保创建分类后能较快看到更新
+      gcTime: 5 * 60 * 1000, // 5分钟垃圾回收时间
     }
   );
 
