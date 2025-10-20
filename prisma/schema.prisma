@@ -517,9 +517,9 @@ model InventoryOperation {
   operationType  String    @map("operation_type") // inbound, outbound, adjust
   productId      String    @map("product_id")
   status         String    @default("processing") // processing, completed, failed
-  requestData    String    @map("request_data") @db.Text // JSON格式的请求数据
-  responseData   String?   @map("response_data") @db.Text // JSON格式的响应数据
-  errorMessage   String?   @map("error_message") @db.Text
+  requestData    String    @map("request_data") @db.MediumText // JSON格式的请求数据，使用MediumText支持大数据量
+  responseData   String?   @map("response_data") @db.MediumText // JSON格式的响应数据
+  errorMessage   String?   @map("error_message") @db.MediumText
   operatorId     String    @map("operator_id")
   createdAt      DateTime  @default(now()) @map("created_at")
   completedAt    DateTime? @map("completed_at")
