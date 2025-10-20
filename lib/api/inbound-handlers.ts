@@ -387,8 +387,15 @@ export async function getInboundRecords(queryData: {
 /**
  * 验证产品是否存在
  */
-export async function validateProductExists(productId: string) {
-  const product = await prisma.product.findUnique({
+export async function validateProductExists(
+  productId: string,
+  tx?: Omit<
+    PrismaClient,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  >
+) {
+  const prismaClient = tx || prisma;
+  const product = await prismaClient.product.findUnique({
     where: { id: productId },
     select: { id: true, name: true, code: true }, // 使用 code 字段而不是 sku
   });
@@ -422,10 +429,10 @@ export async function createInboundRecord(
     '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
   > // 事务上下文
 ) {
-  // 验证产品存在
-  await validateProductExists(data.productId);
-
   const prismaClient = tx || prisma;
+
+  // 验证产品存在 - 使用事务上下文确保原子性
+  await validateProductExists(data.productId, prismaClient);
   let batchSpecificationId: string | null = null;
 
   // 如果提供了批次号和规格参数，创建或更新批次规格参数
@@ -446,41 +453,9 @@ export async function createInboundRecord(
 
     batchSpecificationId = batchSpec.id;
 
-    // 同步重量到产品表：如果产品的weight为空且入库时提供了weight，则更新产品表
-    if (data.weight !== undefined) {
-      const product = await prismaClient.product.findUnique({
-        where: { id: data.productId },
-        select: { weight: true },
-      });
-
-      const currentWeight = product?.weight ?? null;
-      const hasDifferentWeight =
-        currentWeight === null ||
-        Number.isNaN(currentWeight) ||
-        Math.abs(currentWeight - data.weight) > 0.0001;
-
-      if (hasDifferentWeight) {
-        await prismaClient.product.update({
-          where: { id: data.productId },
-          data: { weight: data.weight },
-        });
-      }
-    }
-
-    // 同步每件片数到产品表：如果产品的piecesPerUnit为默认值1且入库时提供了piecesPerUnit，则更新产品表
-    if (data.piecesPerUnit && data.piecesPerUnit > 1) {
-      const product = await prismaClient.product.findUnique({
-        where: { id: data.productId },
-        select: { piecesPerUnit: true },
-      });
-
-      if (product?.piecesPerUnit === 1) {
-        await prismaClient.product.update({
-          where: { id: data.productId },
-          data: { piecesPerUnit: data.piecesPerUnit },
-        });
-      }
-    }
+    // 性能优化: 将产品表同步操作移到事务外部异步执行
+    // 原因: 减少事务持有时间，避免锁等待。产品规格同步不影响核心入库逻辑
+    // 同步操作会在事务提交后由调用方异步执行
   }
 
   // 生成记录编号
@@ -552,6 +527,62 @@ export async function createInboundRecord(
     productUnit: inboundRecord.product.unit as ProductUnit,
     userName: inboundRecord.user.name || '',
   };
+}
+
+/**
+ * 异步同步产品规格参数（在事务外执行）
+ * 目的：将批次规格参数同步到产品主表，减少事务持有时间
+ */
+export async function syncProductSpecificationAsync(
+  productId: string,
+  piecesPerUnit?: number,
+  weight?: number
+): Promise<void> {
+  try {
+    const updates: { piecesPerUnit?: number; weight?: number } = {};
+
+    // 检查weight是否需要更新
+    if (weight !== undefined) {
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        select: { weight: true },
+      });
+
+      const currentWeight = product?.weight ?? null;
+      const hasDifferentWeight =
+        currentWeight === null ||
+        Number.isNaN(currentWeight) ||
+        Math.abs(currentWeight - weight) > 0.0001;
+
+      if (hasDifferentWeight) {
+        updates.weight = weight;
+      }
+    }
+
+    // 检查piecesPerUnit是否需要更新
+    if (piecesPerUnit && piecesPerUnit > 1) {
+      const product = await prisma.product.findUnique({
+        where: { id: productId },
+        select: { piecesPerUnit: true },
+      });
+
+      if (product?.piecesPerUnit === 1) {
+        updates.piecesPerUnit = piecesPerUnit;
+      }
+    }
+
+    // 如果有需要更新的字段，执行更新
+    if (Object.keys(updates).length > 0) {
+      await prisma.product.update({
+        where: { id: productId },
+        data: updates,
+      });
+    }
+  } catch (error) {
+    // 异步操作失败不应影响主流程，记录错误即可
+    // eslint-disable-next-line no-console
+    console.error('Product specification sync failed:', error);
+  }
 }
 
 /**

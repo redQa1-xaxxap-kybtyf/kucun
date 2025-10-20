@@ -7,13 +7,13 @@ import {
   createInboundRecord,
   getInboundRecords,
   parseInboundQueryParams,
+  syncProductSpecificationAsync,
   updateInventoryQuantity,
 } from '@/lib/api/inbound-handlers';
 import { withErrorHandling } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
-import { getLongTransactionOptions } from '@/lib/db/transaction-options';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { createInboundSchema } from '@/lib/validations/inbound';
@@ -76,6 +76,7 @@ async function generateBatchNumber(
 
 /**
  * 执行入库事务
+ * 性能优化: 批次号生成移到事务内部，减少重试循环中的数据库查询
  */
 async function executeInboundTransaction(
   validatedData: {
@@ -88,11 +89,17 @@ async function executeInboundTransaction(
     piecesPerUnit?: number;
     weight?: number;
   },
-  userId: string,
-  finalBatchNumber: string | undefined
+  userId: string
 ) {
-  // ✅ P2优化: 使用事务超时配置,防止长时间阻塞
+  // ✅ 性能优化: 使用较短的事务超时(10秒)，避免长时间阻塞
+  // 批次号生成移到事务内部，确保原子性且减少重试
   return await prisma.$transaction(async tx => {
+    // 性能优化: 在事务内部生成批次号，避免在重试循环中重复执行
+    const finalBatchNumber = await generateBatchNumber(
+      validatedData.productId,
+      validatedData.batchNumber
+    );
+
     // 创建入库记录
     const record = await createInboundRecord(
       {
@@ -121,7 +128,7 @@ async function executeInboundTransaction(
     );
 
     return record;
-  }, getLongTransactionOptions());
+  }, getStandardTransactionOptions()); // 改用10秒超时，更合理
 }
 
 // POST /api/inventory/inbound - 创建入库记录
@@ -146,30 +153,36 @@ const postInboundRecordHandler = withAuth(
         productId,
         context.user.id,
         validatedData,
-        async () => {
-          // 处理批次号：如果没有提供批次号，自动生成
-          const finalBatchNumber = await generateBatchNumber(
-            validatedData.productId,
-            validatedData.batchNumber
-          );
-
-          // 使用事务确保数据一致性
-          return await executeInboundTransaction(
-            validatedData,
-            context.user.id,
-            finalBatchNumber
-          );
-        }
+        async () =>
+          // 性能优化: 批次号生成移到事务内部，确保原子性且减少重试
+          await executeInboundTransaction(validatedData, context.user.id)
       );
 
-      // 修复：添加缓存失效调用
-      const [{ invalidateInventoryCache }, { revalidateProducts }] =
-        await Promise.all([
-          import('@/lib/cache/inventory-cache'),
-          import('@/lib/cache'),
-        ]);
-      await invalidateInventoryCache(validatedData.productId);
-      await revalidateProducts(validatedData.productId);
+      // 性能优化: 缓存失效和产品规格同步移到幂等性包装器外部，且使用异步执行
+      // 原因: 这些操作不影响事务原子性，失败也不应影响核心入库业务
+      Promise.all([
+        // 缓存失效
+        import('@/lib/cache/inventory-cache').then(
+          ({ invalidateInventoryCache }) =>
+            invalidateInventoryCache(validatedData.productId).catch(err =>
+              console.error('Cache invalidation failed:', err)
+            )
+        ),
+        import('@/lib/cache').then(({ revalidateProducts }) =>
+          revalidateProducts(validatedData.productId).catch(err =>
+            console.error('Product revalidation failed:', err)
+          )
+        ),
+        // 产品规格同步（仅当提供了规格参数时）
+        (validatedData.piecesPerUnit || validatedData.weight) &&
+          syncProductSpecificationAsync(
+            validatedData.productId,
+            validatedData.piecesPerUnit,
+            validatedData.weight
+          ).catch(err =>
+            console.error('Product specification sync failed:', err)
+          ),
+      ]).catch(err => console.error('Async operation failed:', err));
 
       return NextResponse.json({
         success: true,
