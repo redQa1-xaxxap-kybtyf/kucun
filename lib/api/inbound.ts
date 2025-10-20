@@ -40,7 +40,13 @@ export function useInboundRecords(params: InboundQueryParams = {}) {
 
       const response = await fetch(`${API_BASE}?${searchParams}`);
       if (!response.ok) {
-        throw new Error('获取入库记录失败');
+        const error = await response.json().catch(() => ({}));
+        const errorMessage = error.error || error.message || '获取入库记录失败';
+        throw new Error(
+          typeof errorMessage === 'string'
+            ? errorMessage
+            : JSON.stringify(errorMessage)
+        );
       }
 
       const result = await response.json();
@@ -75,7 +81,13 @@ export function useInboundRecord(id: string) {
     queryFn: async (): Promise<InboundRecord> => {
       const response = await fetch(`${API_BASE}/${id}`);
       if (!response.ok) {
-        throw new Error('获取入库记录失败');
+        const error = await response.json().catch(() => ({}));
+        const errorMessage = error.error || error.message || '获取入库记录失败';
+        throw new Error(
+          typeof errorMessage === 'string'
+            ? errorMessage
+            : JSON.stringify(errorMessage)
+        );
       }
 
       const result = await response.json();
@@ -105,7 +117,14 @@ export function useCreateInboundRecord() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '创建入库记录失败');
+        // 正确提取错误消息
+        const errorMessage =
+          error.error || error.message || error.details || '创建入库记录失败';
+        throw new Error(
+          typeof errorMessage === 'string'
+            ? errorMessage
+            : JSON.stringify(errorMessage)
+        );
       }
 
       const result = await response.json();
@@ -148,7 +167,13 @@ export function useUpdateInboundRecord() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '更新入库记录失败');
+        const errorMessage =
+          error.error || error.message || error.details || '更新入库记录失败';
+        throw new Error(
+          typeof errorMessage === 'string'
+            ? errorMessage
+            : JSON.stringify(errorMessage)
+        );
       }
 
       const result = await response.json();
@@ -183,7 +208,13 @@ export function useDeleteInboundRecord() {
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || '删除入库记录失败');
+        const errorMessage =
+          error.error || error.message || error.details || '删除入库记录失败';
+        throw new Error(
+          typeof errorMessage === 'string'
+            ? errorMessage
+            : JSON.stringify(errorMessage)
+        );
       }
 
       const result = await response.json();
@@ -221,7 +252,13 @@ export function useProductSearch(query: string) {
 
       const response = await fetch(`${PRODUCTS_API}?${searchParams}`);
       if (!response.ok) {
-        throw new Error('搜索产品失败');
+        const error = await response.json().catch(() => ({}));
+        const errorMessage = error.error || error.message || '搜索产品失败';
+        throw new Error(
+          typeof errorMessage === 'string'
+            ? errorMessage
+            : JSON.stringify(errorMessage)
+        );
       }
 
       const result = await response.json();
@@ -304,7 +341,7 @@ export function useProductSearch(query: string) {
                   } else {
                     batchSpecMap.set(key, {
                       batchNumber: inv.batchNumber,
-                      piecesPerUnit: piecesPerUnit,
+                      piecesPerUnit,
                       quantity: inv.quantity || 0,
                     });
                   }
@@ -322,7 +359,7 @@ export function useProductSearch(query: string) {
                 piecesPerUnit: product.piecesPerUnit || 1,
                 specification: product.specification,
                 currentStock: product.inventory?.totalQuantity || 0,
-                batchSpecs: batchSpecs,
+                batchSpecs,
               };
             }
           } catch {
