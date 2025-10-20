@@ -14,6 +14,20 @@ import type {
   PaymentStatus,
 } from '@/lib/types/payment';
 
+const ALLOWED_PAYMENT_METHODS: PaymentMethod[] = [
+  'cash',
+  'bank_transfer',
+  'check',
+  'other',
+];
+
+const ALLOWED_PAYMENT_SORT_FIELDS = [
+  'createdAt',
+  'paymentAmount',
+  'paymentDate',
+] as const;
+type PaymentSortField = (typeof ALLOWED_PAYMENT_SORT_FIELDS)[number];
+
 import { PaymentsPageClient } from './page-client';
 
 export const metadata: Metadata = {
@@ -55,15 +69,32 @@ async function getPaymentsData(searchParams: {
   paymentMethod?: string;
   sortBy?: string;
   sortOrder?: string;
+  startDate?: string;
+  endDate?: string;
 }) {
   const page = parseInt(searchParams.page || '1', 10);
   const limit = parseInt(searchParams.limit || '20', 10);
   const skip = (page - 1) * limit;
   const search = searchParams.search || '';
   const status = parsePaymentStatus(searchParams.status);
-  const paymentMethod = searchParams.paymentMethod;
-  const sortBy = searchParams.sortBy || 'createdAt';
-  const sortOrder = searchParams.sortOrder || 'desc';
+  const paymentMethodParam = searchParams.paymentMethod;
+  const paymentMethod =
+    paymentMethodParam &&
+    ALLOWED_PAYMENT_METHODS.includes(paymentMethodParam as PaymentMethod)
+      ? (paymentMethodParam as PaymentMethod)
+      : undefined;
+  const sortByParam = searchParams.sortBy || 'createdAt';
+  const sortBy: PaymentSortField = ALLOWED_PAYMENT_SORT_FIELDS.includes(
+    sortByParam as PaymentSortField
+  )
+    ? (sortByParam as PaymentSortField)
+    : 'createdAt';
+  const sortOrder =
+    searchParams.sortOrder === 'asc' || searchParams.sortOrder === 'desc'
+      ? (searchParams.sortOrder as 'asc' | 'desc')
+      : 'desc';
+  const startDateParam = searchParams.startDate;
+  const endDateParam = searchParams.endDate;
 
   // 构建查询条件
   const whereConditions: Prisma.PaymentRecordWhereInput = {};
@@ -84,6 +115,19 @@ async function getPaymentsData(searchParams: {
 
   if (paymentMethod) {
     whereConditions.paymentMethod = paymentMethod;
+  }
+
+  if (startDateParam || endDateParam) {
+    const paymentDateFilter: { gte?: Date; lte?: Date } = {};
+    if (startDateParam) {
+      paymentDateFilter.gte = new Date(startDateParam);
+    }
+    if (endDateParam) {
+      const endDate = new Date(endDateParam);
+      endDate.setHours(23, 59, 59, 999);
+      paymentDateFilter.lte = endDate;
+    }
+    whereConditions.paymentDate = paymentDateFilter;
   }
 
   // 查询收款记录
@@ -346,37 +390,30 @@ export default async function PaymentsPage({
     paymentMethod?: string;
     sortBy?: string;
     sortOrder?: string;
+    startDate?: string;
+    endDate?: string;
   }>;
 }) {
   const params = await searchParams;
   const initialData = await getPaymentsData(params);
 
-  const allowedPaymentMethods: PaymentMethod[] = [
-    'cash',
-    'bank_transfer',
-    'check',
-    'other',
-  ];
-
-  const allowedSortFields = [
-    'createdAt',
-    'paymentAmount',
-    'paymentDate',
-  ] as const;
-  type PaymentSortField = (typeof allowedSortFields)[number];
-
   const paymentMethod =
     typeof params.paymentMethod === 'string' &&
-    allowedPaymentMethods.includes(params.paymentMethod as PaymentMethod)
+    ALLOWED_PAYMENT_METHODS.includes(params.paymentMethod as PaymentMethod)
       ? (params.paymentMethod as PaymentMethod)
       : undefined;
 
   const sortByParam = params.sortBy || 'createdAt';
-  const sortBy: PaymentSortField = allowedSortFields.includes(
+  const sortBy: PaymentSortField = ALLOWED_PAYMENT_SORT_FIELDS.includes(
     sortByParam as PaymentSortField
   )
     ? (sortByParam as PaymentSortField)
     : 'createdAt';
+
+  const safeSortOrder =
+    params.sortOrder === 'asc' || params.sortOrder === 'desc'
+      ? (params.sortOrder as 'asc' | 'desc')
+      : 'desc';
 
   const queryParams: PaymentRecordQuery = {
     page: parseInt(params.page || '1', 10),
@@ -389,7 +426,15 @@ export default async function PaymentsPage({
     status: parsePaymentStatus(params.status),
     paymentMethod,
     sortBy,
-    sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
+    sortOrder: safeSortOrder,
+    startDate:
+      typeof params.startDate === 'string' && params.startDate.trim().length > 0
+        ? params.startDate
+        : undefined,
+    endDate:
+      typeof params.endDate === 'string' && params.endDate.trim().length > 0
+        ? params.endDate
+        : undefined,
   };
 
   const clientParams = {
@@ -399,7 +444,9 @@ export default async function PaymentsPage({
     status: parsePaymentStatus(params.status),
     paymentMethod: params.paymentMethod,
     sortBy,
-    sortOrder: queryParams.sortOrder,
+    sortOrder: safeSortOrder,
+    startDate: queryParams.startDate,
+    endDate: queryParams.endDate,
   };
 
   const queryClient = new QueryClient({

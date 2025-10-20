@@ -9,7 +9,19 @@ import {
   type PaymentOutStatus,
 } from '@/lib/types/payable';
 
-type PaymentOutSortField = 'createdAt' | 'paymentAmount' | 'paymentDate';
+const ALLOWED_PAYMENT_OUT_METHODS: PaymentOutMethod[] = [
+  'cash',
+  'bank_transfer',
+  'check',
+  'other',
+];
+
+const ALLOWED_PAYMENT_OUT_SORT_FIELDS = [
+  'createdAt',
+  'paymentAmount',
+  'paymentDate',
+] as const;
+type PaymentOutSortField = (typeof ALLOWED_PAYMENT_OUT_SORT_FIELDS)[number];
 
 import { PaymentsOutPageClient } from './page-client';
 
@@ -29,24 +41,41 @@ async function getPaymentsOutData(searchParams: {
   paymentMethod?: string;
   sortBy?: string;
   sortOrder?: string;
+  startDate?: string;
+  endDate?: string;
 }) {
   const page = parseInt(searchParams.page || '1', 10);
   const limit = parseInt(searchParams.limit || '20', 10);
   const skip = (page - 1) * limit;
   const search = searchParams.search || '';
-  const status = searchParams.status;
-  const paymentMethod = searchParams.paymentMethod;
-  const sortFieldValues: PaymentOutSortField[] = [
-    'createdAt',
-    'paymentAmount',
-    'paymentDate',
+  const statusParam = searchParams.status;
+  const allowedStatuses: PaymentOutStatus[] = [
+    'pending',
+    'confirmed',
+    'cancelled',
   ];
-  const sortBy: PaymentOutSortField =
-    searchParams.sortBy &&
-    sortFieldValues.includes(searchParams.sortBy as PaymentOutSortField)
-      ? (searchParams.sortBy as PaymentOutSortField)
-      : 'createdAt';
-  const sortOrder = searchParams.sortOrder || 'desc';
+  const status =
+    statusParam && allowedStatuses.includes(statusParam as PaymentOutStatus)
+      ? (statusParam as PaymentOutStatus)
+      : undefined;
+  const paymentMethodParam = searchParams.paymentMethod;
+  const paymentMethod =
+    paymentMethodParam &&
+    ALLOWED_PAYMENT_OUT_METHODS.includes(paymentMethodParam as PaymentOutMethod)
+      ? (paymentMethodParam as PaymentOutMethod)
+      : undefined;
+  const sortByParam = searchParams.sortBy || 'createdAt';
+  const sortBy: PaymentOutSortField = ALLOWED_PAYMENT_OUT_SORT_FIELDS.includes(
+    sortByParam as PaymentOutSortField
+  )
+    ? (sortByParam as PaymentOutSortField)
+    : 'createdAt';
+  const sortOrder =
+    searchParams.sortOrder === 'asc' || searchParams.sortOrder === 'desc'
+      ? (searchParams.sortOrder as 'asc' | 'desc')
+      : 'desc';
+  const startDateParam = searchParams.startDate;
+  const endDateParam = searchParams.endDate;
 
   // 构建查询条件
   const whereConditions: Prisma.PaymentOutRecordWhereInput = {};
@@ -74,6 +103,19 @@ async function getPaymentsOutData(searchParams: {
 
   if (paymentMethod) {
     whereConditions.paymentMethod = paymentMethod;
+  }
+
+  if (startDateParam || endDateParam) {
+    const paymentDateFilter: { gte?: Date; lte?: Date } = {};
+    if (startDateParam) {
+      paymentDateFilter.gte = new Date(startDateParam);
+    }
+    if (endDateParam) {
+      const endDate = new Date(endDateParam);
+      endDate.setHours(23, 59, 59, 999);
+      paymentDateFilter.lte = endDate;
+    }
+    whereConditions.paymentDate = paymentDateFilter;
   }
 
   // 查询付款记录
@@ -251,10 +293,18 @@ export default async function PaymentsOutPage({
     paymentMethod?: string;
     sortBy?: string;
     sortOrder?: string;
+    startDate?: string;
+    endDate?: string;
   }>;
 }) {
   const params = await searchParams;
   const initialData = await getPaymentsOutData(params);
+
+  const safeSortOrder =
+    typeof params.sortOrder === 'string' &&
+    (params.sortOrder === 'asc' || params.sortOrder === 'desc')
+      ? (params.sortOrder as 'asc' | 'desc')
+      : 'desc';
 
   const queryParams = {
     page: parseInt(params.page || '1', 10),
@@ -273,13 +323,8 @@ export default async function PaymentsOutPage({
     })(),
     paymentMethod: ((): PaymentOutMethod | undefined => {
       const value = params.paymentMethod;
-      const methods: PaymentOutMethod[] = [
-        'cash',
-        'bank_transfer',
-        'check',
-        'other',
-      ];
-      return value && methods.includes(value as PaymentOutMethod)
+      return value &&
+        ALLOWED_PAYMENT_OUT_METHODS.includes(value as PaymentOutMethod)
         ? (value as PaymentOutMethod)
         : undefined;
     })(),
@@ -290,7 +335,15 @@ export default async function PaymentsOutPage({
         ? (value as PaymentOutSortField)
         : 'createdAt';
     })(),
-    sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
+    sortOrder: safeSortOrder,
+    startDate:
+      typeof params.startDate === 'string' && params.startDate.trim().length > 0
+        ? params.startDate
+        : undefined,
+    endDate:
+      typeof params.endDate === 'string' && params.endDate.trim().length > 0
+        ? params.endDate
+        : undefined,
   };
 
   return (

@@ -1,7 +1,508 @@
-import { PrismaClient } from '@prisma/client';
+import { faker } from '@faker-js/faker';
+import { PrismaClient, type Prisma } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
+
+type BulkSeedContext = {
+  adminUser: { id: string };
+  salesUser: { id: string };
+  baseProducts: Array<{
+    id: string;
+    code: string;
+    piecesPerUnit: number | null;
+    specification?: string | null;
+  }>;
+  baseCustomers: Array<{ id: string }>;
+};
+
+const BULK_CONFIG = {
+  customers: 80,
+  suppliers: 40,
+  products: 120,
+  salesOrders: 220,
+  returnOrders: 90,
+  refunds: 70,
+};
+
+const INVENTORY_LOCATIONS = ['A-01', 'A-03', 'B-05', 'C-02', 'D-04', 'E-01'];
+const ORDER_STATUSES = [
+  'draft',
+  'confirmed',
+  'processing',
+  'shipped',
+  'completed',
+];
+const RETURN_TYPES = [
+  'quality_issue',
+  'wrong_product',
+  'customer_change',
+  'damage_in_transit',
+  'remaining_return',
+];
+const RETURN_PROCESS_TYPES = ['refund', 'exchange', 'credit'];
+const REFUND_STATUSES = [
+  'pending',
+  'processing',
+  'completed',
+  'rejected',
+  'cancelled',
+];
+const REFUND_TYPES = ['full_refund', 'partial_refund', 'exchange_refund'];
+const REFUND_METHODS = ['cash', 'bank_transfer', 'original_payment', 'other'];
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function randomFloat(min: number, max: number, fractionDigits = 2): number {
+  return Number((Math.random() * (max - min) + min).toFixed(fractionDigits));
+}
+
+function pickRandomElements<T>(source: T[], min: number, max: number): T[] {
+  if (source.length === 0) {
+    return [];
+  }
+  const count = randomInt(min, Math.min(max, source.length));
+  return faker.helpers.shuffle(source).slice(0, count);
+}
+
+async function generateBulkTestData({
+  adminUser,
+  salesUser,
+  baseProducts,
+  baseCustomers,
+}: BulkSeedContext) {
+  console.log('📈 批量生成测试数据（高容量）...');
+
+  // 批量客户
+  const extraCustomers = [];
+  for (let i = 0; i < BULK_CONFIG.customers; i++) {
+    const customer = await prisma.customer.create({
+      data: {
+        name: `${faker.company.name()} 客户${i + 1}`,
+        phone: faker.phone.number({ style: 'national' }),
+        address: faker.location.streetAddress(),
+        extendedInfo: JSON.stringify({
+          credit_limit: randomInt(30000, 150000),
+          payment_terms: `${faker.number.int({ min: 15, max: 45 })}天`,
+          tags: pickRandomElements(
+            ['批发', '零售', '月结', '预付', '重点客户', '渠道商'],
+            1,
+            3
+          ),
+        }),
+      },
+    });
+    extraCustomers.push(customer);
+  }
+  console.log(`✅ 批量创建客户 ${extraCustomers.length} 个`);
+
+  // 批量供应商
+  const extraSuppliers = [];
+  for (let i = 0; i < BULK_CONFIG.suppliers; i++) {
+    const supplier = await prisma.supplier.create({
+      data: {
+        name: `${faker.company.name()} 供应商${i + 1}`,
+        supplierCode: `SUP-${String(i + 1).padStart(4, '0')}`,
+        phone: faker.phone.number({ style: 'national' }),
+        address: faker.location.streetAddress(),
+        status: faker.helpers.arrayElement(['active', 'active', 'inactive']),
+      },
+    });
+    extraSuppliers.push(supplier);
+  }
+  console.log(`✅ 批量创建供应商 ${extraSuppliers.length} 个`);
+
+  // 批量产品
+  const extraProducts = [];
+  for (let i = 0; i < BULK_CONFIG.products; i++) {
+    const code = `TC${String(100 + i)}`;
+    const product = await prisma.product.create({
+      data: {
+        code,
+        name: `${faker.commerce.productMaterial()} 瓷砖 ${i + 1}`,
+        specification: JSON.stringify({
+          size: faker.helpers.arrayElement([
+            '600x600mm',
+            '800x800mm',
+            '300x600mm',
+            '1200x600mm',
+          ]),
+          thickness: `${randomFloat(6, 12, 1)}mm`,
+          surface: faker.helpers.arrayElement([
+            'matte',
+            'polished',
+            'textured',
+          ]),
+          colors: pickRandomElements(
+            ['white', 'grey', 'beige', 'black', 'blue', 'green', 'cream'],
+            1,
+            4
+          ),
+          properties: {
+            water_absorption: `${randomFloat(0.1, 0.8, 2)}%`,
+            slip_resistance: faker.helpers.arrayElement(['R9', 'R10', 'R11']),
+            frost_resistance: faker.datatype.boolean(),
+          },
+        }),
+        unit: faker.helpers.arrayElement(['piece', 'sheet']),
+        piecesPerUnit: randomInt(1, 10),
+        weight: randomFloat(8, 25, 1),
+        status: 'active',
+      },
+    });
+    extraProducts.push(product);
+  }
+  console.log(`✅ 批量创建产品 ${extraProducts.length} 个`);
+
+  // 批量库存 & 入库
+  const inventoryPayload: Prisma.InventoryCreateManyInput[] = [];
+  const inboundPayload: Prisma.InboundRecordCreateManyInput[] = [];
+
+  for (const product of extraProducts) {
+    const batchCount = randomInt(2, 4);
+    for (let batchIndex = 0; batchIndex < batchCount; batchIndex++) {
+      const pastDate = faker.date.past({ years: 1 });
+      const batchNumber = `${product.code}-${pastDate.toISOString().slice(0, 10).replace(/-/g, '')}-${String(batchIndex + 1).padStart(3, '0')}`;
+      const quantity = randomInt(40, 400);
+      const unitCost = randomFloat(12, 95);
+      const reserved = randomInt(0, Math.floor(quantity / 5));
+
+      inventoryPayload.push({
+        productId: product.id,
+        batchNumber,
+        quantity,
+        reservedQuantity: reserved,
+        unitCost,
+        location: faker.helpers.arrayElement(INVENTORY_LOCATIONS),
+      });
+
+      inboundPayload.push({
+        recordNumber: `RK-BULK-${faker.string.alphanumeric(10).toUpperCase()}`,
+        productId: product.id,
+        quantity,
+        unitCost,
+        totalCost: Number((quantity * unitCost).toFixed(2)),
+        location: faker.helpers.arrayElement([
+          '主仓',
+          '辅仓',
+          '调拨仓',
+          '临时仓',
+        ]),
+        reason: faker.helpers.arrayElement(['purchase', 'surplus', 'transfer']),
+        remarks: faker.lorem.sentence(),
+        userId: adminUser.id,
+        batchNumber,
+        createdAt: pastDate,
+        updatedAt: pastDate,
+      });
+    }
+  }
+
+  if (inventoryPayload.length) {
+    await prisma.inventory.createMany({ data: inventoryPayload });
+  }
+  if (inboundPayload.length) {
+    await prisma.inboundRecord.createMany({ data: inboundPayload });
+  }
+  console.log(`✅ 批量生成库存记录 ${inventoryPayload.length} 条`);
+  console.log(`✅ 批量生成入库记录 ${inboundPayload.length} 条`);
+
+  const allProducts = [...baseProducts, ...extraProducts];
+  const allCustomers = [...baseCustomers, ...extraCustomers];
+
+  // 批量销售订单
+  const bulkOrders = [];
+  for (let i = 0; i < BULK_CONFIG.salesOrders; i++) {
+    const customer = faker.helpers.arrayElement(allCustomers);
+    const orderType =
+      extraSuppliers.length > 0 && Math.random() < 0.25 ? 'TRANSFER' : 'NORMAL';
+    const itemsCount = randomInt(1, 4);
+    const orderItemsData = [];
+
+    for (let j = 0; j < itemsCount; j++) {
+      const product = faker.helpers.arrayElement(allProducts);
+      const quantity = randomInt(8, 250);
+      const unitPrice = randomFloat(18, 180);
+      const subtotal = Number((quantity * unitPrice).toFixed(2));
+      orderItemsData.push({
+        productId: product.id,
+        productCode: product.code,
+        quantity,
+        unitPrice,
+        subtotal,
+        batchNumber: `${product.code}-${faker.string.alphanumeric(6).toUpperCase()}`,
+        colorCode: `C${String(randomInt(1, 999)).padStart(3, '0')}`,
+        productionDate: faker.date
+          .past({ years: 2 })
+          .toISOString()
+          .slice(0, 10),
+        displayUnit: faker.helpers.arrayElement(['件', '箱', '托']),
+        displayQuantity: quantity,
+        piecesPerUnit: product.piecesPerUnit ?? 1,
+        specification:
+          typeof product.specification === 'string'
+            ? product.specification
+            : null,
+      });
+    }
+
+    const itemsAmount = orderItemsData.reduce(
+      (sum, item) => sum + item.subtotal,
+      0
+    );
+    const additionalFees = Math.random() < 0.45 ? randomFloat(50, 500) : 0;
+    const roundingAdjustment = randomFloat(-8, 8);
+    const costAmount =
+      orderType === 'TRANSFER'
+        ? Number((itemsAmount * randomFloat(0.55, 0.85)).toFixed(2))
+        : 0;
+    const profitAmount =
+      orderType === 'TRANSFER'
+        ? Number((itemsAmount - costAmount).toFixed(2))
+        : Number((itemsAmount * randomFloat(0.15, 0.35)).toFixed(2));
+
+    let totalAmount = Number(
+      (itemsAmount + additionalFees + roundingAdjustment).toFixed(2)
+    );
+    if (totalAmount <= 0) {
+      totalAmount = Number((itemsAmount + additionalFees).toFixed(2));
+    }
+
+    const status = faker.helpers.arrayElement(ORDER_STATUSES);
+    const usePrepayment = Math.random() < 0.18;
+    const prepaymentAmount = usePrepayment
+      ? Math.min(
+          totalAmount,
+          Number((totalAmount * randomFloat(0.1, 0.4)).toFixed(2))
+        )
+      : 0;
+    const paidRatio = status === 'completed' ? 1 : randomFloat(0.25, 0.85);
+    const paidAmount =
+      status === 'draft'
+        ? 0
+        : Number(Math.min(totalAmount, totalAmount * paidRatio).toFixed(2));
+
+    const feeItemsData =
+      additionalFees > 0
+        ? [
+            {
+              feeType: faker.helpers.arrayElement([
+                'shipping',
+                'processing',
+                'other',
+              ]),
+              feeName: faker.commerce.productMaterial(),
+              feeAmount: additionalFees,
+              remarks: faker.lorem.words(4),
+            },
+          ]
+        : [];
+
+    const supplier =
+      orderType === 'TRANSFER' && extraSuppliers.length
+        ? faker.helpers.arrayElement(extraSuppliers)
+        : null;
+
+    const order = await prisma.salesOrder.create({
+      data: {
+        orderNumber: `SO-BULK-${String(i + 1).padStart(6, '0')}`,
+        customerId: customer.id,
+        userId: salesUser.id,
+        supplierId: supplier?.id,
+        status,
+        orderType,
+        itemsAmount,
+        additionalFees,
+        totalAmount,
+        paidAmount,
+        roundingAdjustment,
+        costAmount,
+        profitAmount,
+        usePrepayment,
+        prepaymentAmount,
+        remarks: faker.commerce.productDescription(),
+        shippedAt:
+          status === 'shipped' || status === 'completed'
+            ? faker.date.recent({ days: 90 })
+            : null,
+        items: {
+          create: orderItemsData,
+        },
+        feeItems: feeItemsData.length
+          ? {
+              create: feeItemsData,
+            }
+          : undefined,
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    bulkOrders.push(order);
+  }
+  console.log(`✅ 批量创建销售订单 ${bulkOrders.length} 单`);
+
+  // 批量退货单
+  const bulkReturnOrders = [];
+  for (let i = 0; i < BULK_CONFIG.returnOrders; i++) {
+    const order = faker.helpers.arrayElement(bulkOrders);
+    if (!order.items.length) {
+      continue;
+    }
+
+    const itemsForReturn = pickRandomElements(
+      order.items,
+      1,
+      Math.min(3, order.items.length)
+    );
+
+    const returnItemsData = itemsForReturn.map(item => {
+      const returnRatio = randomFloat(0.1, 0.6);
+      const baseQty = Number((item.quantity * returnRatio).toFixed(2));
+      const returnQuantity = Number(
+        Math.min(item.quantity, Math.max(0.5, baseQty)).toFixed(2)
+      );
+      const damagedQuantity = Number(
+        Math.min(returnQuantity, returnQuantity * randomFloat(0, 0.15)).toFixed(
+          2
+        )
+      );
+      const subtotal = Number((returnQuantity * item.unitPrice).toFixed(2));
+      return {
+        salesOrderItemId: item.id,
+        productId: item.productId ?? allProducts[0].id,
+        colorCode: item.colorCode,
+        productionDate: item.productionDate,
+        returnQuantity,
+        damagedQuantity,
+        originalQuantity: item.quantity,
+        unitPrice: item.unitPrice,
+        subtotal,
+        reason: faker.helpers.arrayElement([
+          '色差',
+          '破损',
+          '规格不符',
+          '客户要求变更',
+        ]),
+      };
+    });
+
+    const totalReturnAmount = returnItemsData.reduce(
+      (sum, item) => sum + item.subtotal,
+      0
+    );
+    const returnStatus = faker.helpers.arrayElement([
+      'draft',
+      'submitted',
+      'approved',
+      'processing',
+      'completed',
+      'cancelled',
+    ]);
+
+    const approvedAt =
+      returnStatus === 'approved' ||
+      returnStatus === 'processing' ||
+      returnStatus === 'completed'
+        ? faker.date.recent({ days: 70 })
+        : null;
+    const processedAt =
+      returnStatus === 'processing' || returnStatus === 'completed'
+        ? faker.date.recent({ days: 60 })
+        : null;
+    const completedAt =
+      returnStatus === 'completed' ? faker.date.recent({ days: 45 }) : null;
+
+    const returnOrder = await prisma.returnOrder.create({
+      data: {
+        returnNumber: `RT-BULK-${String(i + 1).padStart(6, '0')}`,
+        returnMode: 'single_order',
+        salesOrderId: order.id,
+        customerId: order.customerId,
+        userId: salesUser.id,
+        type: faker.helpers.arrayElement(RETURN_TYPES),
+        processType: faker.helpers.arrayElement(RETURN_PROCESS_TYPES),
+        status: returnStatus,
+        reason: faker.commerce.productDescription(),
+        totalAmount: Number(totalReturnAmount.toFixed(2)),
+        refundAmount: Number(
+          (totalReturnAmount * randomFloat(0.5, 1)).toFixed(2)
+        ),
+        remarks: faker.lorem.sentence(),
+        submittedAt: faker.date.recent({ days: 120 }),
+        approvedAt,
+        processedAt,
+        completedAt,
+        items: {
+          create: returnItemsData,
+        },
+      },
+      include: {
+        items: true,
+      },
+    });
+
+    bulkReturnOrders.push(returnOrder);
+  }
+  console.log(`✅ 批量创建退货单 ${bulkReturnOrders.length} 单`);
+
+  // 批量退款记录
+  let refundCount = 0;
+  const refundCandidates = pickRandomElements(
+    bulkReturnOrders,
+    Math.min(10, bulkReturnOrders.length),
+    Math.min(BULK_CONFIG.refunds, bulkReturnOrders.length)
+  );
+  for (const returnOrder of refundCandidates) {
+    if (!returnOrder.salesOrderId) {
+      continue;
+    }
+
+    const refundStatus = faker.helpers.arrayElement(REFUND_STATUSES);
+    const refundAmount = Number(
+      Math.max(20, returnOrder.refundAmount || randomFloat(80, 600)).toFixed(2)
+    );
+    const processedAmount =
+      refundStatus === 'completed'
+        ? refundAmount
+        : Number((refundAmount * randomFloat(0, 0.7)).toFixed(2));
+    const remainingAmount = Number(
+      Math.max(refundAmount - processedAmount, 0).toFixed(2)
+    );
+
+    await prisma.refundRecord.create({
+      data: {
+        refundNumber: `RF-BULK-${String(refundCount + 1).padStart(6, '0')}`,
+        returnOrderId: returnOrder.id,
+        returnOrderNumber: returnOrder.returnNumber,
+        salesOrderId: returnOrder.salesOrderId,
+        customerId: returnOrder.customerId,
+        userId: salesUser.id,
+        refundType: faker.helpers.arrayElement(REFUND_TYPES),
+        refundMethod: faker.helpers.arrayElement(REFUND_METHODS),
+        refundAmount,
+        processedAmount,
+        remainingAmount,
+        refundDate: faker.date.recent({ days: 120 }),
+        processedDate:
+          refundStatus === 'completed' || refundStatus === 'processing'
+            ? faker.date.recent({ days: 60 })
+            : null,
+        status: refundStatus,
+        reason: faker.lorem.sentence(),
+        remarks: faker.lorem.words(5),
+        bankInfo: faker.finance.iban(),
+      },
+    });
+    refundCount += 1;
+  }
+  console.log(`✅ 批量创建退款记录 ${refundCount} 条`);
+
+  console.log('📊 批量测试数据生成完成');
+}
 
 async function main() {
   console.log('🌱 开始数据库种子数据初始化...');
@@ -703,6 +1204,13 @@ async function main() {
   console.log(
     `✅ 创建往来账单: ${statement1.entityName}, ${statement2.entityName}`
   );
+
+  await generateBulkTestData({
+    adminUser,
+    salesUser,
+    baseProducts: products,
+    baseCustomers: customers,
+  });
 
   console.log('🎉 数据库种子数据初始化完成！');
   console.log('\n📋 默认账户信息:');

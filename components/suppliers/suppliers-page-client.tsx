@@ -10,7 +10,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Edit, MoreHorizontal, Trash2 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useTransition,
+} from 'react';
 
 import { EmptyState } from '@/components/common/empty-state';
 import { SupplierPageHeader } from '@/components/suppliers/supplier-page-header';
@@ -48,6 +55,7 @@ import {
   getSuppliers,
   supplierQueryKeys,
 } from '@/lib/api/suppliers';
+import { SEARCH_CONFIG } from '@/lib/config/search';
 import type { Supplier, SupplierQueryParams } from '@/lib/types/supplier';
 import { getCommonStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { formatSupplierStatus } from '@/lib/utils/supplier-display';
@@ -72,7 +80,7 @@ export function SuppliersPageClient({
   const [_isPending, startTransition] = useTransition();
 
   // 本地状态
-  const [search, setSearch] = useState(initialParams.search || '');
+  const [searchInput, setSearchInput] = useState(initialParams.search || '');
   const [status, setStatus] = useState<'active' | 'inactive' | undefined>(
     initialParams.status
   );
@@ -80,11 +88,21 @@ export function SuppliersPageClient({
   const [supplierToDelete, setSupplierToDelete] = useState<Supplier | null>(
     null
   );
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
-    setSearch(initialParams.search || '');
+    setSearchInput(initialParams.search || '');
     setStatus(initialParams.status);
   }, [initialParams]);
+
+  useEffect(
+    () => () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    },
+    []
+  );
 
   const queryParams = useMemo(() => {
     const normalizedSearch =
@@ -117,6 +135,8 @@ export function SuppliersPageClient({
   const { data, isLoading, isError, error } = useQuery({
     queryKey: supplierQueryKeys.list(queryParams),
     queryFn: () => getSuppliers(queryParams),
+    placeholderData: keepPreviousData => keepPreviousData,
+    staleTime: SEARCH_CONFIG.CACHE.STALE_TIME,
   });
 
   const suppliers = data?.data ?? [];
@@ -145,49 +165,84 @@ export function SuppliersPageClient({
   });
 
   // 处理搜索
-  const handleSearch = (value: string) => {
-    setSearch(value);
-    startTransition(() => {
-      const params = new URLSearchParams();
-      if (value) {
-        params.set('search', value);
+  const handleSearch = useCallback(
+    (value: string) => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
       }
-      if (status) {
-        params.set('status', status);
-      }
-      router.push(`/suppliers?${params.toString()}`);
-    });
-  };
+
+      setSearchInput(value);
+
+      searchDebounceRef.current = setTimeout(() => {
+        startTransition(() => {
+          const params = new URLSearchParams();
+          const trimmedValue = value.trim();
+          if (trimmedValue) {
+            params.set('search', trimmedValue);
+          }
+          if (status) {
+            params.set('status', status);
+          }
+          router.push(
+            params.size > 0 ? `/suppliers?${params.toString()}` : '/suppliers'
+          );
+          searchDebounceRef.current = null;
+        });
+      }, SEARCH_CONFIG.DEBOUNCE_DELAY.DEFAULT);
+    },
+    [router, startTransition, status]
+  );
 
   // 处理状态筛选
-  const handleStatusChange = (value: 'active' | 'inactive' | undefined) => {
-    setStatus(value);
-    startTransition(() => {
-      const params = new URLSearchParams();
-      if (search) {
-        params.set('search', search);
+  const handleStatusChange = useCallback(
+    (value: 'active' | 'inactive' | undefined) => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
       }
-      if (value) {
-        params.set('status', value);
-      }
-      router.push(`/suppliers?${params.toString()}`);
-    });
-  };
+
+      setStatus(value);
+      startTransition(() => {
+        const params = new URLSearchParams();
+        const trimmedSearch = searchInput.trim();
+        if (trimmedSearch) {
+          params.set('search', trimmedSearch);
+        }
+        if (value) {
+          params.set('status', value);
+        }
+        router.push(
+          params.size > 0 ? `/suppliers?${params.toString()}` : '/suppliers'
+        );
+      });
+    },
+    [router, searchInput, startTransition]
+  );
 
   // 处理分页
-  const handlePageChange = (page: number) => {
-    startTransition(() => {
+  const handlePageChange = useCallback(
+    (page: number) => {
       const params = new URLSearchParams();
       params.set('page', String(page));
-      if (search) {
-        params.set('search', search);
+      const trimmedSearch = searchInput.trim();
+      if (trimmedSearch) {
+        params.set('search', trimmedSearch);
       }
       if (status) {
         params.set('status', status);
       }
-      router.push(`/suppliers?${params.toString()}`);
-    });
-  };
+
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+        searchDebounceRef.current = null;
+      }
+
+      startTransition(() => {
+        router.push(`/suppliers?${params.toString()}`);
+      });
+    },
+    [router, searchInput, startTransition, status]
+  );
 
   // 处理删除
   const handleDelete = (supplier: Supplier) => {
@@ -203,7 +258,7 @@ export function SuppliersPageClient({
 
         {/* 搜索和筛选 */}
         <SupplierSearchFilters
-          searchValue={search}
+          searchValue={searchInput}
           statusFilter={status}
           onSearchChange={handleSearch}
           onStatusChange={handleStatusChange}
@@ -243,7 +298,7 @@ export function SuppliersPageClient({
                   </TableCell>
                 </TableRow>
               ) : (
-                suppliers.map(supplier => (
+                suppliers.map((supplier: Supplier) => (
                   <TableRow
                     key={supplier.id}
                     className="cursor-pointer transition-colors hover:bg-[hsl(var(--color-primary-light))]"

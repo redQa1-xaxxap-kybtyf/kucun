@@ -43,12 +43,25 @@ async function getPayablesData(searchParams: {
   sourceType?: string;
   sortBy?: string;
   sortOrder?: string;
+  startDate?: string;
+  endDate?: string;
 }) {
   const page = parseInt(searchParams.page || '1', 10);
   const limit = parseInt(searchParams.limit || '20', 10);
   const skip = (page - 1) * limit;
   const search = searchParams.search || '';
-  const status = searchParams.status;
+  const statusParam = searchParams.status;
+  const allowedStatuses: PayableStatus[] = [
+    'pending',
+    'partial',
+    'overdue',
+    'paid',
+    'cancelled',
+  ];
+  const status =
+    statusParam && allowedStatuses.includes(statusParam as PayableStatus)
+      ? (statusParam as PayableStatus)
+      : undefined;
   const sourceType = searchParams.sourceType;
   const sortFieldValues: PayableSortField[] = [
     'createdAt',
@@ -62,6 +75,8 @@ async function getPayablesData(searchParams: {
       ? (searchParams.sortBy as PayableSortField)
       : 'createdAt';
   const sortOrder = searchParams.sortOrder || 'desc';
+  const startDateParam = searchParams.startDate;
+  const endDateParam = searchParams.endDate;
 
   // 构建查询条件
   const whereConditions: Record<string, unknown> = {};
@@ -81,8 +96,21 @@ async function getPayablesData(searchParams: {
     whereConditions.sourceType = sourceType;
   }
 
-  // 查询应付款记录
-  const [payables, total] = await Promise.all([
+  if (startDateParam || endDateParam) {
+    const createdAtFilter: { gte?: Date; lte?: Date } = {};
+    if (startDateParam) {
+      createdAtFilter.gte = new Date(startDateParam);
+    }
+    if (endDateParam) {
+      const endDate = new Date(endDateParam);
+      endDate.setHours(23, 59, 59, 999);
+      createdAtFilter.lte = endDate;
+    }
+    whereConditions.createdAt = createdAtFilter;
+  }
+
+  // 查询应付款记录与统计数据
+  const [payables, total, amountSummary, statusSummary] = await Promise.all([
     prisma.payableRecord.findMany({
       where: whereConditions,
       include: {
@@ -113,46 +141,46 @@ async function getPayablesData(searchParams: {
       take: limit,
     }),
     prisma.payableRecord.count({ where: whereConditions }),
+    prisma.payableRecord.aggregate({
+      where: whereConditions,
+      _sum: {
+        payableAmount: true,
+        paidAmount: true,
+        remainingAmount: true,
+      },
+    }),
+    prisma.payableRecord.groupBy({
+      where: whereConditions,
+      by: ['status'],
+      _count: { _all: true },
+    }),
   ]);
 
-  // 计算统计数据（使用相同的筛选条件）
-  const allPayables = await prisma.payableRecord.findMany({
-    where: whereConditions,
-    select: {
-      payableAmount: true,
-      paidAmount: true,
-      remainingAmount: true,
-      status: true,
-      dueDate: true,
+  const totals = {
+    totalPayables: Number(amountSummary._sum.payableAmount ?? 0),
+    totalPaidAmount: Number(amountSummary._sum.paidAmount ?? 0),
+    totalRemainingAmount: Number(amountSummary._sum.remainingAmount ?? 0),
+  };
+
+  const statusCountMap = statusSummary.reduce<Record<string, number>>(
+    (acc, item) => {
+      acc[item.status] = item._count._all;
+      return acc;
     },
-  });
-
-  const totalPayables = allPayables.reduce(
-    (sum, p) => sum + p.payableAmount,
-    0
+    {}
   );
-  const totalPaidAmount = allPayables.reduce((sum, p) => sum + p.paidAmount, 0);
-  const totalRemainingAmount = allPayables.reduce(
-    (sum, p) => sum + p.remainingAmount,
-    0
-  );
-
-  const pendingCount = allPayables.filter(p => p.status === 'pending').length;
-  const partialCount = allPayables.filter(p => p.status === 'partial').length;
-  const overdueCount = allPayables.filter(p => p.status === 'overdue').length;
-  const paidCount = allPayables.filter(p => p.status === 'paid').length;
 
   return {
     payables:
       payables as unknown as import('@/lib/types/payable').PayableRecordDetail[],
     statistics: {
-      totalPayables,
-      totalPaidAmount,
-      totalRemainingAmount,
-      pendingCount,
-      partialCount,
-      overdueCount,
-      paidCount,
+      totalPayables: totals.totalPayables,
+      totalPaidAmount: totals.totalPaidAmount,
+      totalRemainingAmount: totals.totalRemainingAmount,
+      pendingCount: statusCountMap.pending ?? 0,
+      partialCount: statusCountMap.partial ?? 0,
+      overdueCount: statusCountMap.overdue ?? 0,
+      paidCount: statusCountMap.paid ?? 0,
     },
     pagination: {
       page,
@@ -178,6 +206,8 @@ export default async function PayablesPage({
     sourceType?: string;
     sortBy?: string;
     sortOrder?: string;
+    startDate?: string;
+    endDate?: string;
   }>;
 }) {
   const params = await searchParams;
@@ -223,6 +253,14 @@ export default async function PayablesPage({
         : 'createdAt';
     })(),
     sortOrder: (params.sortOrder as 'asc' | 'desc') || 'desc',
+    startDate:
+      typeof params.startDate === 'string' && params.startDate.trim().length > 0
+        ? params.startDate
+        : undefined,
+    endDate:
+      typeof params.endDate === 'string' && params.endDate.trim().length > 0
+        ? params.endDate
+        : undefined,
   };
 
   const queryClient = new QueryClient({

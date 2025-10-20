@@ -1,12 +1,20 @@
-/**
- * 库存操作表单的自定义Hook
- * 提取表单配置、验证和提交逻辑
- */
+'use client';
 
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import {
+  useMutation,
+  useQuery,
+  useQueryClient,
+  type UseMutationResult,
+} from '@tanstack/react-query';
+import { useCallback, useMemo, useState } from 'react';
+import {
+  useForm,
+  useWatch,
+  type DefaultValues,
+  type UseFormReturn,
+} from 'react-hook-form';
+import type { ZodType } from 'zod';
 
 import {
   adjustInventory,
@@ -14,19 +22,21 @@ import {
   createInbound,
   createOutbound,
 } from '@/lib/api/inventory';
-import { getProduct, productQueryKeys } from '@/lib/api/products';
 import { queryKeys } from '@/lib/queryKeys';
-import { type InboundFormData } from '@/lib/types/inbound';
-import {
-  type InboundRecord,
-  type Inventory,
-  type OutboundRecord,
+import { INBOUND_REASON_OPTIONS } from '@/lib/types/inbound';
+import type {
+  Inventory,
+  InventoryAdjustInput,
+  OutboundCreateInput,
 } from '@/lib/types/inventory';
-import { createInboundSchema } from '@/lib/validations/inbound';
+import { logger } from '@/lib/utils/console-logger';
 import {
-  inventoryAdjustDefaults,
+  createInboundSchema,
+  type CreateInboundData,
+} from '@/lib/validations/inbound';
+import {
+  ADJUST_REASON_LABELS,
   inventoryAdjustSchema,
-  outboundCreateDefaults,
   outboundCreateSchema,
   type InventoryAdjustFormData,
   type OutboundCreateFormData,
@@ -34,230 +44,437 @@ import {
 
 export type OperationMode = 'inbound' | 'outbound' | 'adjust';
 
-export interface UseInventoryOperationFormProps {
-  mode: OperationMode;
-  onSuccess?: (result: InboundRecord | OutboundRecord | Inventory) => void;
+type FormValuesByMode = {
+  inbound: CreateInboundData;
+  outbound: OutboundCreateFormData;
+  adjust: InventoryAdjustFormData;
+};
+
+type OperationResultByMode = {
+  inbound: Inventory;
+  outbound: Inventory;
+  adjust: Inventory;
+};
+
+type AvailabilityResult = Awaited<
+  ReturnType<typeof checkInventoryAvailability>
+>;
+
+type CreateMutationResult = UseMutationResult<
+  Inventory,
+  Error,
+  CreateInboundData
+>;
+
+type UpdateMutationVariables = OutboundCreateInput | InventoryAdjustInput;
+
+type UpdateMutationResult = UseMutationResult<
+  Inventory,
+  Error,
+  UpdateMutationVariables
+>;
+
+interface FormConfig<M extends OperationMode> {
+  schema: ZodType<FormValuesByMode[M]>;
+  getDefaultValues: () => DefaultValues<FormValuesByMode[M]>;
+  title: string;
+  description: string;
+  typeOptions?: Array<{ value: string; label: string }>;
 }
 
-export function useInventoryOperationForm({
+const generateIdempotencyKey = () =>
+  typeof crypto !== 'undefined' && crypto.randomUUID
+    ? crypto.randomUUID()
+    : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+const OUTBOUND_TYPE_OPTIONS: Array<{ value: string; label: string }> = [
+  { value: 'normal_outbound', label: '正常出库' },
+  { value: 'sales_outbound', label: '销售出库' },
+  { value: 'adjust_outbound', label: '调整出库' },
+];
+
+const FORM_CONFIG: {
+  [K in OperationMode]: FormConfig<K>;
+} = {
+  inbound: {
+    schema: createInboundSchema,
+    getDefaultValues: () =>
+      ({
+        idempotencyKey: generateIdempotencyKey(),
+        productId: '',
+        variantId: undefined,
+        inputQuantity: 1,
+        inputUnit: 'pieces',
+        quantity: 1,
+        reason: 'purchase',
+        remarks: '',
+        batchNumber: '',
+        piecesPerUnit: 1,
+        weight: 0.01,
+      }) satisfies DefaultValues<CreateInboundData>,
+    title: '库存入库',
+    description: '添加新的库存记录',
+    typeOptions: INBOUND_REASON_OPTIONS.map(option => ({
+      value: option.value,
+      label: option.label,
+    })),
+  },
+  outbound: {
+    schema: outboundCreateSchema,
+    getDefaultValues: () =>
+      ({
+        idempotencyKey: generateIdempotencyKey(),
+        type: 'normal_outbound',
+        productId: '',
+        batchNumber: '',
+        quantity: 1,
+        unitCost: undefined,
+        customerId: '',
+        salesOrderId: '',
+        remarks: '',
+        variantId: '',
+        reason: undefined,
+        notes: '',
+      }) satisfies DefaultValues<OutboundCreateFormData>,
+    title: '库存出库',
+    description: '减少库存数量',
+    typeOptions: OUTBOUND_TYPE_OPTIONS,
+  },
+  adjust: {
+    schema: inventoryAdjustSchema,
+    getDefaultValues: () =>
+      ({
+        idempotencyKey: generateIdempotencyKey(),
+        productId: '',
+        batchNumber: '',
+        adjustQuantity: 1,
+        reason: 'other',
+        notes: '',
+        variantId: '',
+        currentQuantity: undefined,
+        maxQuantity: undefined,
+        minQuantity: undefined,
+      }) satisfies DefaultValues<InventoryAdjustFormData>,
+    title: '库存调整',
+    description: '调整库存数量',
+  },
+};
+
+export interface UseInventoryOperationFormProps<
+  M extends OperationMode = OperationMode,
+> {
+  mode: M;
+  onSuccess?: (result: OperationResultByMode[M]) => void;
+}
+
+interface UseInventoryOperationFormReturn<
+  M extends OperationMode = OperationMode,
+> {
+  form: UseFormReturn<FormValuesByMode[M], unknown, FormValuesByMode[M]>;
+  formConfig: Pick<FormConfig<M>, 'title' | 'description'>;
+  availabilityData: AvailabilityResult | undefined;
+  submitError: string;
+  isLoading: boolean;
+  onSubmit: (values: FormValuesByMode[M]) => Promise<void>;
+  getTypeOptions: () => Array<{ value: string; label: string }>;
+}
+
+export function useInventoryOperationForm<
+  M extends OperationMode = OperationMode,
+>({
   mode,
   onSuccess,
-}: UseInventoryOperationFormProps) {
+}: UseInventoryOperationFormProps<M>): UseInventoryOperationFormReturn<M> {
+  const config = useMemo(() => FORM_CONFIG[mode], [mode]);
+  const buildDefaultValues = useCallback(
+    () => config.getDefaultValues(),
+    [config]
+  );
+  const defaultValues = useMemo(
+    () => buildDefaultValues(),
+    [buildDefaultValues]
+  );
+
   const queryClient = useQueryClient();
   const [submitError, setSubmitError] = useState<string>('');
 
-  // 表单配置
-  const getFormConfig = () => {
-    switch (mode) {
-      case 'inbound':
-        return {
-          schema: createInboundSchema,
-          defaultValues: {
-            productId: '',
-            inputQuantity: 1,
-            inputUnit: 'pieces' as const,
-            quantity: 1,
-            reason: 'purchase' as const,
-            remarks: '',
-            batchNumber: '', // 空字符串,避免受控组件警告
-            piecesPerUnit: 1,
-            weight: 0.01,
-          },
-          title: '库存入库',
-          description: '添加新的库存记录',
-        };
-      case 'outbound':
-        return {
-          schema: outboundCreateSchema,
-          defaultValues: outboundCreateDefaults,
-          title: '库存出库',
-          description: '减少库存数量',
-        };
-      case 'adjust':
-        return {
-          schema: inventoryAdjustSchema,
-          defaultValues: inventoryAdjustDefaults,
-          title: '库存调整',
-          description: '调整库存数量',
-        };
-      default:
-        throw new Error(`Unsupported mode: ${mode}`);
-    }
-  };
-
-  const formConfig = getFormConfig();
-
-  const form = useForm<
-    InboundFormData | OutboundCreateFormData | InventoryAdjustFormData
-  >({
-    resolver: zodResolver(formConfig.schema),
-    defaultValues: formConfig.defaultValues,
+  const form = useForm<FormValuesByMode[M], unknown, FormValuesByMode[M]>({
+    resolver: zodResolver(config.schema),
+    defaultValues,
   });
 
-  // 监听产品变化
-  const watchedProductId = form.watch('productId');
-  const watchedQuantity = form.watch('quantity' as keyof typeof form.getValues);
+  const watchedProductId = useWatch({
+    control: form.control,
+    name: 'productId' as any,
+  });
+  const productId =
+    typeof watchedProductId === 'string' && watchedProductId.trim().length > 0
+      ? watchedProductId.trim()
+      : undefined;
 
-  // 获取产品信息
-  const { data: productData } = useQuery({
-    queryKey: queryKeys.products.detail(watchedProductId),
-    queryFn: () => getProduct(watchedProductId),
-    enabled: !!watchedProductId,
+  const watchedQuantity = useWatch({
+    control: form.control,
+    name: 'quantity' as any,
+  });
+  const outboundQuantity =
+    mode === 'outbound' && typeof watchedQuantity === 'number'
+      ? watchedQuantity
+      : undefined;
+
+  const availabilityQuery = useAvailabilityData({
+    productId,
+    quantity: outboundQuantity,
+    enabled: mode === 'outbound',
   });
 
-  // 检查库存可用性（仅出库时）
-  const { data: availabilityData } = useQuery({
-    queryKey: queryKeys.inventory.availability(watchedProductId, undefined),
-    queryFn: () =>
-      checkInventoryAvailability(
-        watchedProductId,
-        Number(watchedQuantity) || 0
-      ),
-    enabled: mode === 'outbound' && !!watchedProductId && !!watchedQuantity,
-    staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
+  const createMutation = useCreateMutation({
+    queryClient,
+    onSuccess,
+    setSubmitError,
+    resetForm: () => form.reset(buildDefaultValues()),
   });
 
-  // 入库 Mutation
-  const inboundMutation = useMutation({
-    mutationFn: createInbound,
-    onSuccess: response => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.lists() });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.all,
-      });
-      queryClient.invalidateQueries({
-        queryKey: productQueryKeys.lists(),
-      });
-      if (response.productId) {
-        queryClient.invalidateQueries({
-          queryKey: productQueryKeys.detail(response.productId),
-        });
-      }
-      form.reset();
+  const updateMutation = useUpdateMutation({
+    queryClient,
+    onSuccess,
+    setSubmitError,
+    mode,
+    resetForm: () => form.reset(buildDefaultValues()),
+  });
+
+  const loadingState = combineLoadingState({
+    createMutation,
+    updateMutation,
+    availabilityQuery,
+  });
+
+  const handleSubmit = useCallback(
+    async (values: FormValuesByMode[M]) => {
       setSubmitError('');
-      onSuccess?.(response);
-    },
-    onError: error => {
-      setSubmitError(error instanceof Error ? error.message : '入库失败');
-    },
-  });
-
-  // 出库 Mutation
-  const outboundMutation = useMutation({
-    mutationFn: createOutbound,
-    onSuccess: response => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.lists() });
-      queryClient.invalidateQueries({
-        queryKey: queryKeys.inventory.all,
-      });
-      form.reset();
-      setSubmitError('');
-      onSuccess?.(response);
-    },
-    onError: error => {
-      setSubmitError(error instanceof Error ? error.message : '出库失败');
-    },
-  });
-
-  // 调整 Mutation
-  const adjustMutation = useMutation({
-    mutationFn: adjustInventory,
-    onSuccess: response => {
-      queryClient.invalidateQueries({ queryKey: queryKeys.inventory.lists() });
-      form.reset();
-      setSubmitError('');
-      onSuccess?.(response);
-    },
-    onError: error => {
-      setSubmitError(error instanceof Error ? error.message : '调整失败');
-    },
-  });
-
-  const isLoading =
-    inboundMutation.isPending ||
-    outboundMutation.isPending ||
-    adjustMutation.isPending;
-
-  // 表单提交
-  const onSubmit = async (
-    data: InboundFormData | OutboundCreateFormData | InventoryAdjustFormData
-  ) => {
-    try {
-      setSubmitError('');
-      switch (mode) {
-        case 'inbound': {
-          // 生成幂等性键
-          const idempotencyKey = crypto.randomUUID();
-          const formData = data as InboundFormData;
-
-          // 确保所有必需字段都有值
-          if (
-            !formData.inputQuantity ||
-            !formData.quantity ||
-            !formData.piecesPerUnit ||
-            !formData.weight
-          ) {
-            setSubmitError('请填写完整的入库信息');
-            return;
-          }
-
-          await inboundMutation.mutateAsync({
-            idempotencyKey,
-            productId: formData.productId,
-            variantId: formData.variantId,
-            inputQuantity: formData.inputQuantity,
-            inputUnit: formData.inputUnit,
-            quantity: formData.quantity,
-            reason: formData.reason,
-            remarks: formData.remarks,
-            batchNumber: formData.batchNumber,
-            piecesPerUnit: formData.piecesPerUnit,
-            weight: formData.weight,
-          });
-          break;
+      try {
+        if (mode === 'inbound') {
+          await createMutation.mutateAsync(
+            normalizeInboundValues(values as CreateInboundData)
+          );
+          return;
         }
-        case 'outbound':
-          await outboundMutation.mutateAsync(data as OutboundCreateFormData);
-          break;
-        case 'adjust':
-          await adjustMutation.mutateAsync(data as InventoryAdjustFormData);
-          break;
-      }
-    } catch (error) {
-      console.error('[useInventoryOperationForm] 库存操作提交失败', error);
-    }
-  };
 
-  // 获取操作类型选项
-  const getTypeOptions = () => {
-    switch (mode) {
-      case 'inbound':
-        return [
-          { value: 'purchase', label: '采购入库' },
-          { value: 'return', label: '退货入库' },
-          { value: 'transfer', label: '调拨入库' },
-          { value: 'surplus', label: '盘盈入库' },
-          { value: 'other', label: '其他入库' },
-        ];
-      case 'outbound':
-        return [
-          { value: 'normal_outbound', label: '正常出库' },
-          { value: 'sales_outbound', label: '销售出库' },
-          { value: 'adjust_outbound', label: '调整出库' },
-        ];
-      default:
-        return [];
+        if (mode === 'outbound') {
+          await updateMutation.mutateAsync(
+            normalizeOutboundValues(values as OutboundCreateFormData)
+          );
+          return;
+        }
+
+        await updateMutation.mutateAsync(
+          normalizeAdjustValues(values as InventoryAdjustFormData)
+        );
+      } catch (error) {
+        logger.error('[useInventoryOperationForm] 提交失败', { error });
+        if (error instanceof Error && !error.message.includes('失败')) {
+          setSubmitError(error.message);
+        }
+      }
+    },
+    [createMutation, mode, updateMutation]
+  );
+
+  const getTypeOptions = useCallback(() => {
+    if (mode === 'inbound') {
+      return config.typeOptions ?? [];
     }
-  };
+    if (mode === 'outbound') {
+      return config.typeOptions ?? OUTBOUND_TYPE_OPTIONS;
+    }
+    return Object.entries(ADJUST_REASON_LABELS).map(([value, label]) => ({
+      value,
+      label,
+    }));
+  }, [config.typeOptions, mode]);
 
   return {
     form,
-    formConfig,
-    productData,
-    availabilityData,
+    formConfig: {
+      title: config.title,
+      description: config.description,
+    },
+    availabilityData: availabilityQuery.data,
     submitError,
-    isLoading,
-    onSubmit,
+    isLoading: loadingState.isLoading,
+    onSubmit: handleSubmit,
     getTypeOptions,
   };
 }
+
+function useAvailabilityData({
+  productId,
+  quantity,
+  enabled,
+}: {
+  productId?: string;
+  quantity?: number;
+  enabled: boolean;
+}) {
+  return useQuery({
+    queryKey: [
+      'inventory',
+      'availability-check',
+      productId ?? null,
+      quantity ?? null,
+    ] as const,
+    queryFn: () =>
+      checkInventoryAvailability(
+        productId ?? '',
+        typeof quantity === 'number' ? quantity : 0
+      ),
+    enabled:
+      enabled &&
+      Boolean(productId) &&
+      typeof quantity === 'number' &&
+      quantity > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+function useCreateMutation({
+  queryClient,
+  onSuccess,
+  setSubmitError,
+  resetForm,
+}: {
+  queryClient: ReturnType<typeof useQueryClient>;
+  onSuccess?: (result: Inventory) => void;
+  setSubmitError: (value: string) => void;
+  resetForm: () => void;
+}): CreateMutationResult {
+  return useMutation({
+    mutationFn: createInbound,
+    onSuccess: async inventory => {
+      await invalidateInventoryQueries(queryClient);
+      resetForm();
+      onSuccess?.(inventory);
+    },
+    onError: error => {
+      setSubmitError(error.message || '入库失败');
+    },
+  });
+}
+
+function useUpdateMutation({
+  queryClient,
+  onSuccess,
+  setSubmitError,
+  mode,
+  resetForm,
+}: {
+  queryClient: ReturnType<typeof useQueryClient>;
+  onSuccess?: (result: Inventory) => void;
+  setSubmitError: (value: string) => void;
+  mode: OperationMode;
+  resetForm: () => void;
+}): UpdateMutationResult {
+  return useMutation<Inventory, Error, UpdateMutationVariables>({
+    mutationFn: async variables => {
+      if (mode === 'adjust') {
+        return adjustInventory(variables as InventoryAdjustInput);
+      }
+      return createOutbound(variables as OutboundCreateInput);
+    },
+    onSuccess: async inventory => {
+      await invalidateInventoryQueries(queryClient);
+      resetForm();
+      onSuccess?.(inventory);
+    },
+    onError: error => {
+      setSubmitError(error.message || '操作失败');
+    },
+  });
+}
+
+function combineLoadingState({
+  createMutation,
+  updateMutation,
+  availabilityQuery,
+}: {
+  createMutation: CreateMutationResult;
+  updateMutation: UpdateMutationResult;
+  availabilityQuery: ReturnType<typeof useAvailabilityData>;
+}) {
+  const isLoading =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    availabilityQuery.isLoading;
+
+  return {
+    isLoading,
+  };
+}
+
+async function invalidateInventoryQueries(
+  queryClient: ReturnType<typeof useQueryClient>
+) {
+  await queryClient.invalidateQueries({
+    queryKey: queryKeys.inventory.lists(),
+  });
+  await queryClient.invalidateQueries({
+    queryKey: queryKeys.inventory.all,
+  });
+}
+
+function normalizeInboundValues(values: CreateInboundData): CreateInboundData {
+  return {
+    ...values,
+    idempotencyKey: values.idempotencyKey || generateIdempotencyKey(),
+    batchNumber: normalizeOptionalText(values.batchNumber),
+    remarks: normalizeOptionalText(values.remarks),
+    variantId: normalizeOptionalText(values.variantId),
+  };
+}
+
+function normalizeOutboundValues(
+  values: OutboundCreateFormData
+): OutboundCreateInput {
+  return {
+    idempotencyKey: values.idempotencyKey || generateIdempotencyKey(),
+    type: values.type,
+    productId: values.productId,
+    batchNumber: normalizeOptionalText(values.batchNumber),
+    quantity: values.quantity,
+    unitCost: values.unitCost,
+    customerId: normalizeOptionalText(values.customerId),
+    salesOrderId: normalizeOptionalText(values.salesOrderId),
+    remarks: normalizeOptionalText(values.remarks),
+    variantId: normalizeOptionalText(values.variantId),
+    reason: normalizeOptionalText(values.reason),
+    notes: normalizeOptionalText(values.notes),
+  };
+}
+
+function normalizeAdjustValues(
+  values: InventoryAdjustFormData
+): InventoryAdjustInput {
+  return {
+    idempotencyKey: values.idempotencyKey || generateIdempotencyKey(),
+    productId: values.productId,
+    batchNumber: normalizeOptionalText(values.batchNumber),
+    adjustQuantity: values.adjustQuantity,
+    reason: values.reason,
+    notes: normalizeOptionalText(values.notes),
+    variantId: normalizeOptionalText(values.variantId),
+    currentQuantity: values.currentQuantity,
+    maxQuantity: values.maxQuantity,
+    minQuantity: values.minQuantity,
+  };
+}
+
+function normalizeOptionalText<T extends string | undefined | null>(
+  value: T
+): string | undefined {
+  if (typeof value !== 'string') {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  return trimmed === '' ? undefined : trimmed;
+}
+
+export type { FormValuesByMode };
