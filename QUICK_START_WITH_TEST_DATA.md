@@ -207,11 +207,11 @@ npm run db:studio
 ### 数据库直接查询
 
 ```bash
-# 如果使用 SQLite
-sqlite3 prisma/dev.db
+# MySQL 数据库查询
+mysql -u root -p kucun_dev
 
 # 查看所有表
-.tables
+SHOW TABLES;
 
 # 查询示例
 SELECT * FROM users;
