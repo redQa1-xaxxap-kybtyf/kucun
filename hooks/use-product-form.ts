@@ -358,10 +358,18 @@ async function handleUpdateSubmit(
   const normalizedUpdateData = ProductDataUtils.transformer.toUpdateApiData(
     parsed.data
   );
-  await updateMutation.mutateAsync({
-    id: targetId,
-    data: normalizedUpdateData,
-  });
+
+  // ✅ 使用 try-catch 捕获错误，防止 Runtime Error overlay 显示
+  // onError 会处理错误显示，这里只是防止错误冒泡
+  try {
+    await updateMutation.mutateAsync({
+      id: targetId,
+      data: normalizedUpdateData,
+    });
+  } catch (_error) {
+    // 错误已由 onError 处理，这里只是防止冒泡
+    // 不需要额外处理，因为 onError 已经设置了错误消息和显示了 Toast
+  }
 }
 
 async function handleCreateSubmit(args: SubmitHandlerArgs): Promise<void> {
@@ -426,7 +434,15 @@ async function handleCreateSubmit(args: SubmitHandlerArgs): Promise<void> {
   }
 
   const createData = ProductDataUtils.transformer.toCreateApiData(parsed.data);
-  await createMutation.mutateAsync(createData);
+
+  // ✅ 使用 try-catch 捕获错误，防止 Runtime Error overlay 显示
+  // onError 会处理错误显示，这里只是防止错误冒泡
+  try {
+    await createMutation.mutateAsync(createData);
+  } catch (_error) {
+    // 错误已由 onError 处理，这里只是防止冒泡
+    // 不需要额外处理，因为 onError 已经设置了错误消息和显示了 Toast
+  }
 }
 
 function getProductFormDefaultValues(
