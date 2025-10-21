@@ -130,7 +130,7 @@ export const POST = withAuth(
           throw ApiError.badRequest('指定的产品分类不存在');
         }
 
-        if (category.status !== 'active') {
+        if (category.status.toLowerCase() !== 'active') {
           throw ApiError.badRequest('指定的产品分类已被禁用');
         }
       }
