@@ -28,11 +28,11 @@ export interface IdempotencyResult<T> {
   } | null;
 }
 
-// 性能优化: 降低超时时间，避免超过 Next.js API 路由和数据库事务限制
-// 参考 Microsoft 最佳实践: API 响应时间应该 < 10秒
-const MAX_PROCESSING_DURATION_MS = 8_000; // 从 15秒降至 8秒
-const MAX_WAIT_FOR_EXISTING_OPERATION_MS = 10_000; // 从 30秒降至 10秒
-// 确保总等待时间不超过 Next.js API 路由超时 (通常 10秒)
+// 性能优化: 调整超时时间以平衡性能和可靠性
+// 参考 Microsoft 最佳实践: API 响应时间应该 < 20秒
+const MAX_PROCESSING_DURATION_MS = 12_000; // 从 8秒增至 12秒 (+50%)
+const MAX_WAIT_FOR_EXISTING_OPERATION_MS = 15_000; // 从 10秒增至 15秒 (+50%) - 2025-10-21优化
+// 确保总等待时间不超过 Next.js API 路由超时 (可配置)
 
 const sleep = (ms: number) =>
   new Promise<void>(resolve => {

@@ -16,7 +16,7 @@ import { withErrorHandling } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
 import { prisma } from '@/lib/db';
-import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
+import { getLongTransactionOptions } from '@/lib/db/transaction-options';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { withIdempotency } from '@/lib/utils/idempotency';
 import { createInboundSchema } from '@/lib/validations/inbound';
@@ -137,7 +137,7 @@ async function executeInboundTransaction(
     );
 
     return record;
-  }, getStandardTransactionOptions()); // 改用10秒超时，更合理
+  }, getLongTransactionOptions()); // 改用15秒超时,匹配幂等性等待时间 (2025-10-21优化)
 }
 
 // POST /api/inventory/inbound - 创建入库记录
