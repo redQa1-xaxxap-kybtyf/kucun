@@ -5,6 +5,7 @@
 
 import { Prisma } from '@prisma/client';
 
+import { ApiError } from '@/lib/api/errors';
 import { prisma } from '@/lib/db';
 
 export type OperationType =
@@ -27,7 +28,16 @@ export interface IdempotencyResult<T> {
   } | null;
 }
 
-const MAX_PROCESSING_DURATION_MS = 15_000;
+// 性能优化: 降低超时时间，避免超过 Next.js API 路由和数据库事务限制
+// 参考 Microsoft 最佳实践: API 响应时间应该 < 10秒
+const MAX_PROCESSING_DURATION_MS = 8_000; // 从 15秒降至 8秒
+const MAX_WAIT_FOR_EXISTING_OPERATION_MS = 10_000; // 从 30秒降至 10秒
+// 确保总等待时间不超过 Next.js API 路由超时 (通常 10秒)
+
+const sleep = (ms: number) =>
+  new Promise<void>(resolve => {
+    setTimeout(resolve, ms);
+  });
 
 /**
  * 检查幂等性键是否已存在
@@ -210,11 +220,21 @@ export async function withIdempotency<T>(
   requestData: Record<string, unknown>,
   operation: () => Promise<T>
 ): Promise<T> {
-  const maxRetries = 20; // 最大重试次数（总等待时间约2-4秒）
   const retryDelayMs = 100; // 初始重试延迟(毫秒)
   const maxRetryDelayMs = 500; // 最大重试延迟(毫秒)
+  const maxWaitMs = MAX_WAIT_FOR_EXISTING_OPERATION_MS;
+  const startTime = Date.now();
+  let attempt = 0;
 
-  for (let attempt = 0; attempt < maxRetries; attempt++) {
+  const waitForNextAttempt = async (overrideDelay?: number) => {
+    const delay =
+      overrideDelay ??
+      Math.min(retryDelayMs * Math.pow(1.5, attempt), maxRetryDelayMs);
+    await sleep(delay);
+    attempt += 1;
+  };
+
+  while (Date.now() - startTime <= maxWaitMs) {
     try {
       // 策略1：乐观锁 - 先尝试创建记录
       // 优点：在无并发时性能最优，避免了先检查后创建的竞态窗口
@@ -275,16 +295,12 @@ export async function withIdempotency<T>(
               idempotencyKey,
               'processing timeout, record auto reset'
             );
-            await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+            await waitForNextAttempt(retryDelayMs);
             continue;
           }
 
           // 使用指数退避策略，避免过度轮询
-          const delay = Math.min(
-            retryDelayMs * Math.pow(1.5, attempt),
-            maxRetryDelayMs
-          );
-          await new Promise(resolve => setTimeout(resolve, delay));
+          await waitForNextAttempt();
           continue; // 继续下一次重试
         }
 
@@ -292,12 +308,12 @@ export async function withIdempotency<T>(
         // 直接进入下一轮循环，尝试重新创建记录
         if (!existing.isNew && existing.operation?.status === 'failed') {
           // 稍微延迟后重试创建
-          await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+          await waitForNextAttempt(retryDelayMs);
           continue;
         }
 
         // 情况4：其他未知状态，等待后重试
-        await new Promise(resolve => setTimeout(resolve, retryDelayMs));
+        await waitForNextAttempt();
         continue;
       }
 
@@ -308,11 +324,7 @@ export async function withIdempotency<T>(
         (error instanceof Prisma.PrismaClientUnknownRequestError &&
           /timed out/i.test(error.message))
       ) {
-        const delay = Math.min(
-          retryDelayMs * Math.pow(1.5, attempt + 1),
-          maxRetryDelayMs
-        );
-        await new Promise(resolve => setTimeout(resolve, delay));
+        await waitForNextAttempt();
         continue;
       }
 
@@ -321,9 +333,16 @@ export async function withIdempotency<T>(
     }
   }
 
-  // 超过最大重试次数，说明操作持续时间过长或系统负载过高
-  throw new Error(
-    `操作超时：请求处理时间过长（超过${maxRetries}次重试），请稍后重试。` +
+  const existing = await checkIdempotency(idempotencyKey);
+  if (!existing.isNew && existing.data) {
+    return existing.data as T;
+  }
+
+  const elapsedSeconds = Math.ceil((Date.now() - startTime) / 1000);
+
+  // 超过最大等待时间，说明操作持续时间过长或系统负载过高
+  throw ApiError.internalError(
+    `操作超时：请求处理时间过长（超过${elapsedSeconds}秒等待），请稍后重试。` +
       `这可能是由于系统繁忙或操作耗时过长导致的。`
   );
 }

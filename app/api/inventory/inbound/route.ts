@@ -1,8 +1,10 @@
 // 产品入库API路由
 // 提供入库记录的CRUD操作接口
 
+import type { PrismaClient } from '@prisma/client';
 import { type NextRequest, NextResponse } from 'next/server';
 
+import { ApiError } from '@/lib/api/errors';
 import {
   createInboundRecord,
   getInboundRecords,
@@ -44,32 +46,37 @@ export const GET = withRateLimit(RateLimitType.READ)(getInboundRecordsHandler);
  */
 async function generateBatchNumber(
   productId: string,
-  providedBatchNumber?: string
+  providedBatchNumber?: string,
+  prismaClient: Omit<
+    PrismaClient,
+    '$connect' | '$disconnect' | '$on' | '$transaction' | '$use' | '$extends'
+  > = prisma
 ): Promise<string | undefined> {
   if (providedBatchNumber) {
     return providedBatchNumber;
   }
 
-  // 获取产品信息用于生成批次号
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    select: { code: true },
-  });
+  // 性能优化: 并行查询产品信息和现有批次数量
+  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+
+  const [product, existingBatches] = await Promise.all([
+    prismaClient.product.findUnique({
+      where: { id: productId },
+      select: { code: true },
+    }),
+    prismaClient.inboundRecord.count({
+      where: {
+        productId,
+        batchNumber: {
+          contains: `${today}-`, // 使用 contains 而非 startsWith 提升性能
+        },
+      },
+    }),
+  ]);
 
   if (!product) {
-    return undefined;
+    throw ApiError.notFound('产品');
   }
-
-  // 生成批次号格式：产品编码-日期-序号
-  const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const existingBatches = await prisma.inboundRecord.count({
-    where: {
-      productId,
-      batchNumber: {
-        startsWith: `${product.code}-${today}-`,
-      },
-    },
-  });
 
   const sequence = String(existingBatches + 1).padStart(3, '0');
   return `${product.code}-${today}-${sequence}`;
@@ -98,7 +105,8 @@ async function executeInboundTransaction(
     // 性能优化: 在事务内部生成批次号，避免在重试循环中重复执行
     const finalBatchNumber = await generateBatchNumber(
       validatedData.productId,
-      validatedData.batchNumber
+      validatedData.batchNumber,
+      tx
     );
 
     // 创建入库记录
