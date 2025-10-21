@@ -26,12 +26,20 @@ const INBOUND_REASON_LABELS = {
   other: '其他',
 } as const;
 
-interface InboundRecordWithProduct extends Omit<BaseInboundRecord, 'product'> {
+interface InboundRecordWithProduct
+  extends Omit<BaseInboundRecord, 'product' | 'batchSpecification'> {
   product?: {
     code: string;
     name: string;
     specification?: string;
     piecesPerUnit: number;
+  };
+  batchSpecification?: {
+    id: string;
+    batchNumber: string | null;
+    piecesPerUnit: number;
+    weight: number | null;
+    thickness: number | null;
   };
 }
 
@@ -114,6 +122,12 @@ const formatQuantity = (quantity: number, piecesPerUnit: number) => {
   return `${units}件${pieces}片（共${quantity}片）`;
 };
 
+// 获取记录实际使用的每件片数（优先使用批次规格参数）
+const getActualPiecesPerUnit = (record: InboundRecordWithProduct) =>
+  record.batchSpecification?.piecesPerUnit ??
+  record.product?.piecesPerUnit ??
+  1;
+
 /**
  * 入库记录表格组件
  * ✅ 符合产品模块UI风格规范
@@ -182,16 +196,14 @@ export function InboundRecordsTable({
                     {formatSpecification(record.product?.specification) || '-'}
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
-                    {record.product?.piecesPerUnit || '-'}
+                    {getActualPiecesPerUnit(record) || '-'}
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
                     <span className="font-medium">
-                      {record.product?.piecesPerUnit
-                        ? formatQuantity(
-                            record.quantity,
-                            record.product.piecesPerUnit
-                          )
-                        : `${record.quantity}片`}
+                      {formatQuantity(
+                        record.quantity,
+                        getActualPiecesPerUnit(record)
+                      )}
                     </span>
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">

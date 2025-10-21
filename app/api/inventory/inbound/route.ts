@@ -91,13 +91,20 @@ const postInboundRecordHandler = withAuth(
 
       // 步骤5: 同步更新批次规格 (事务外轻量操作)
       // 批次规格更新很快(< 50ms),不会导致超时
-      if (piecesPerUnit && weight) {
+      // ✅ 修复: 只要提供piecesPerUnit就保存批次规格,不强制要求weight
+      if (piecesPerUnit) {
         try {
-          await upsertBatchSpecification({
+          const batchSpec = await upsertBatchSpecification({
             productId: validatedData.productId,
             batchNumber,
             piecesPerUnit,
-            weight,
+            weight: weight || undefined,
+          });
+
+          // ✅ 修复: 更新入库记录的批次规格关联
+          await prisma.inboundRecord.update({
+            where: { id: inboundRecord.id },
+            data: { batchSpecificationId: batchSpec.id },
           });
         } catch {
           // 批次规格更新失败不影响主流程
