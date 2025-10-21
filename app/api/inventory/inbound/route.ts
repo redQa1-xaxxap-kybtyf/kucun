@@ -56,65 +56,29 @@ const postInboundRecordHandler = withAuth(
     withErrorHandling(async () => {
       // 步骤1: 解析和验证请求数据
       const body = await request.json();
-
-      // 🐛 调试: 打印原始请求数据
-      console.log('📥 [入库API] 收到请求:', {
-        timestamp: new Date().toISOString(),
-        body: JSON.stringify(body, null, 2),
-      });
-
-      try {
-        const validatedData = createInboundSchema.parse(body);
-        const { idempotencyKey, productId, piecesPerUnit, weight } =
-          validatedData;
-
-        console.log('✅ [入库API] 数据验证通过:', {
-          idempotencyKey,
-          productId,
-          quantity: validatedData.quantity,
-          piecesPerUnit,
-          weight,
-        });
-      } catch (validationError) {
-        // 🐛 调试: 打印详细的验证错误
-        console.error('❌ [入库API] 数据验证失败:', {
-          error: validationError,
-          body,
-        });
-        throw validationError;
-      }
-
-      const t0 = Date.now();
       const validatedData = createInboundSchema.parse(body);
       const { idempotencyKey, productId, piecesPerUnit, weight } =
         validatedData;
-      console.log(`⏱️  [入库API] 数据验证耗时: ${Date.now() - t0}ms`);
 
       // 步骤2: 产品验证 (事务外执行,快速失败)
-      const t1 = Date.now();
       const productInfo =
         await validateProductExistsOutsideTransaction(productId);
-      console.log(`⏱️  [入库API] 产品验证耗时: ${Date.now() - t1}ms`);
 
       // 步骤3: 批次号生成 (事务外执行,允许重试)
-      const t2 = Date.now();
       const batchNumber = await generateBatchNumberOutsideTransaction(
         productInfo,
         validatedData.batchNumber
       );
-      console.log(`⏱️  [入库API] 批次号生成耗时: ${Date.now() - t2}ms`);
 
       // 步骤4: 最小化核心事务 (幂等性保护)
-      const t3 = Date.now();
       const inboundRecord = await withIdempotency(
         idempotencyKey,
         'inbound',
         productId,
         context.user.id,
         { ...validatedData, batchNumber },
-        async () => {
-          const t4 = Date.now();
-          const result = await executeMinimalInboundTransaction({
+        async () =>
+          await executeMinimalInboundTransaction({
             productId: validatedData.productId,
             variantId: validatedData.variantId,
             quantity: validatedData.quantity,
@@ -122,32 +86,23 @@ const postInboundRecordHandler = withAuth(
             remarks: validatedData.remarks,
             batchNumber, // 使用预生成的批次号
             userId: context.user.id,
-          });
-          console.log(`⏱️  [入库API] 核心事务耗时: ${Date.now() - t4}ms`);
-          return result;
-        }
+          })
       );
-      console.log(`⏱️  [入库API] 幂等性包装总耗时: ${Date.now() - t3}ms`);
 
       // 步骤5: 同步更新批次规格 (事务外轻量操作)
       // 批次规格更新很快(< 50ms),不会导致超时
       if (piecesPerUnit && weight) {
         try {
-          const t5 = Date.now();
           await upsertBatchSpecification({
             productId: validatedData.productId,
             batchNumber,
             piecesPerUnit,
             weight,
           });
-          console.log(`⏱️  [入库API] 批次规格更新耗时: ${Date.now() - t5}ms`);
-        } catch (err) {
-          // 批次规格更新失败不影响主流程,仅记录日志
-          console.error('Failed to upsert batch specification:', err);
+        } catch {
+          // 批次规格更新失败不影响主流程
         }
       }
-
-      console.log(`✅ [入库API] 总耗时: ${Date.now() - t0}ms`);
 
       // 步骤6: 立即返回成功响应
       return NextResponse.json({

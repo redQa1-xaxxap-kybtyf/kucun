@@ -245,7 +245,6 @@ export async function withIdempotency<T>(
       // 策略1：乐观锁 - 先尝试创建记录
       // 优点：在无并发时性能最优，避免了先检查后创建的竞态窗口
       // 如果创建成功，说明是第一个请求，直接执行操作
-      const t1 = Date.now();
       await prisma.inventoryOperation.create({
         data: {
           idempotencyKey,
@@ -257,21 +256,16 @@ export async function withIdempotency<T>(
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24小时后过期
         },
       });
-      console.log(`⏱️  [幂等性] 创建幂等性记录耗时: ${Date.now() - t1}ms`);
 
       // 创建成功，说明这是第一个请求，执行实际操作
       try {
-        const t2 = Date.now();
         const result = await operation();
-        console.log(`⏱️  [幂等性] 实际操作耗时: ${Date.now() - t2}ms`);
 
         // 操作成功，标记为完成
-        const t3 = Date.now();
         await completeIdempotencyRecord(
           idempotencyKey,
           result as Record<string, unknown>
         );
-        console.log(`⏱️  [幂等性] 标记完成耗时: ${Date.now() - t3}ms`);
 
         return result;
       } catch (error) {
