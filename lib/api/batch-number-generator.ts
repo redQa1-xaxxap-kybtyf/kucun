@@ -10,18 +10,23 @@
 
 import { prisma } from '@/lib/db';
 
+export interface MinimalProductCodeContext {
+  id: string;
+  code: string;
+}
+
 /**
  * 生成批次号(事务外执行)
  *
  * 格式: {产品编码}-{日期YYYYMMDD}-{序号001}
  * 示例: TILE001-20251021-001
  *
- * @param productId 产品ID
+ * @param product 产品ID 或包含编码的最小产品信息
  * @param providedBatchNumber 用户提供的批次号(可选)
  * @returns 最终批次号
  */
 export async function generateBatchNumberOutsideTransaction(
-  productId: string,
+  product: string | MinimalProductCodeContext,
   providedBatchNumber?: string
 ): Promise<string> {
   // 如果用户提供了批次号,直接返回
@@ -29,20 +34,31 @@ export async function generateBatchNumberOutsideTransaction(
     return providedBatchNumber;
   }
 
-  // 获取产品信息
-  const product = await prisma.product.findUnique({
-    where: { id: productId },
-    select: { code: true },
-  });
+  const productId = typeof product === 'string' ? product : product.id;
+  let productCode = typeof product === 'string' ? undefined : product.code;
 
-  if (!product) {
-    throw new Error(`产品不存在: ${productId}`);
+  // 获取产品信息
+  if (!productCode) {
+    const dbProduct = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { code: true },
+    });
+
+    if (!dbProduct) {
+      throw new Error(`产品不存在: ${productId}`);
+    }
+
+    productCode = dbProduct.code;
+  }
+
+  if (!productCode) {
+    throw new Error(`产品编码缺失: ${productId}`);
   }
 
   // 生成日期前缀
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
-  const batchPrefix = `${product.code}-${dateStr}-`;
+  const batchPrefix = `${productCode}-${dateStr}-`;
 
   // 性能优化: 使用 findFirst + orderBy 代替 count 查询
   // 优势: 只需要扫描索引,不需要计数所有记录
@@ -104,37 +120,56 @@ export async function generateBatchNumbersForBatch(
 
   // 为每个产品组生成批次号
   for (const [productId, group] of productGroups) {
-    let baseSequence = 0;
+    const groupResults: Array<{
+      productId: string;
+      batchNumber: string;
+      order: number;
+    }> = [];
+    const autoIndexes: number[] = [];
 
-    for (const item of group) {
+    group.forEach((item, index) => {
       if (item.batchNumber) {
-        // 用户提供了批次号,直接使用
+        groupResults.push({
+          productId: item.productId,
+          batchNumber: item.batchNumber,
+          order: index,
+        });
+      } else {
+        autoIndexes.push(index);
+      }
+    });
+
+    if (autoIndexes.length > 0) {
+      const baseBatchNumber =
+        await generateBatchNumberOutsideTransaction(productId);
+      const parts = baseBatchNumber.split('-');
+      const sequencePart = parts.pop() ?? '0';
+      const baseSequenceNumber = parseInt(sequencePart, 10);
+      const prefix = parts.join('-');
+
+      let currentSequence = baseSequenceNumber;
+      for (const index of autoIndexes) {
+        const batchNumber = `${prefix}-${String(currentSequence).padStart(
+          3,
+          '0'
+        )}`;
+        groupResults.push({
+          productId,
+          batchNumber,
+          order: index,
+        });
+        currentSequence += 1;
+      }
+    }
+
+    groupResults
+      .sort((a, b) => a.order - b.order)
+      .forEach(item =>
         results.push({
           productId: item.productId,
           batchNumber: item.batchNumber,
-        });
-      } else {
-        // 生成批次号,序号递增
-        const batchNumber = await generateBatchNumberOutsideTransaction(
-          productId
-        );
-
-        // 解析序号并递增
-        const parts = batchNumber.split('-');
-        const sequence = parseInt(parts[parts.length - 1] || '0', 10);
-        parts[parts.length - 1] = String(sequence + baseSequence).padStart(
-          3,
-          '0'
-        );
-
-        results.push({
-          productId: item.productId,
-          batchNumber: parts.join('-'),
-        });
-
-        baseSequence++;
-      }
-    }
+        })
+      );
   }
 
   return results;

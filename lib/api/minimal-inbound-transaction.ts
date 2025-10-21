@@ -118,27 +118,36 @@ export async function executeMinimalInboundTransaction(
     });
 
     // 🎯 核心操作 2: 原子更新库存
-    // 使用 upsert + atomic increment 确保并发安全
-    await tx.inventory.upsert({
+    // 使用 findFirst + create/update 模式,因为 upsert 的 where 条件无法正确匹配 NULL 值
+    const existingInventory = await tx.inventory.findFirst({
       where: {
-        productId_variantId_batchNumber: {
-          productId: data.productId,
-          variantId: (data.variantId || null) as string,
-          batchNumber: (data.batchNumber || null) as string,
-        },
-      },
-      create: {
         productId: data.productId,
         variantId: data.variantId || null,
         batchNumber: data.batchNumber || null,
-        quantity: data.quantity,
-        reservedQuantity: 0,
-      },
-      update: {
-        quantity: { increment: data.quantity }, // 原子递增
-        updatedAt: new Date(),
       },
     });
+
+    if (existingInventory) {
+      // 更新现有库存
+      await tx.inventory.update({
+        where: { id: existingInventory.id },
+        data: {
+          quantity: { increment: data.quantity }, // 原子递增
+          updatedAt: new Date(),
+        },
+      });
+    } else {
+      // 创建新库存记录
+      await tx.inventory.create({
+        data: {
+          productId: data.productId,
+          variantId: data.variantId || null,
+          batchNumber: data.batchNumber || null,
+          quantity: data.quantity,
+          reservedQuantity: 0,
+        },
+      });
+    }
 
     // 返回入库记录
     return {
@@ -176,17 +185,20 @@ export async function executeMinimalInboundTransaction(
  * 验证产品是否存在(事务外执行)
  *
  * @param productId 产品ID
+ * @returns 产品最小信息（包含编码）
  * @throws ApiError 如果产品不存在
  */
 export async function validateProductExistsOutsideTransaction(
   productId: string
-): Promise<void> {
+): Promise<{ id: string; code: string }> {
   const product = await prisma.product.findUnique({
     where: { id: productId },
-    select: { id: true },
+    select: { id: true, code: true },
   });
 
   if (!product) {
     throw ApiError.notFound('产品');
   }
+
+  return product;
 }

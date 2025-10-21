@@ -25,16 +25,18 @@ export interface IdempotencyResult<T> {
     id: string;
     status: string;
     createdAt: Date;
+    expiresAt: Date;
   } | null;
 }
 
-// 性能优化: 调整超时时间以平衡性能和可靠性
-// 参考 Microsoft 最佳实践: API 响应时间应该 < 30秒
-// 2025-10-21紧急修复: 由于事务内有多个串行操作(批次号生成+批次规格+入库记录+库存更新)
-// 在高并发+READ COMMITTED下仍可能因锁等待超过15秒,增至20秒
-const MAX_PROCESSING_DURATION_MS = 18_000; // 从 12秒增至 18秒
-const MAX_WAIT_FOR_EXISTING_OPERATION_MS = 20_000; // 从 15秒增至 20秒
-// 确保总等待时间不超过 Next.js API 路由超时 (默认30秒,可配置)
+// ⚙️ 幂等性控制参数
+// 结合最小化事务 (≈200-500ms) 后, 正常入库应在 < 1秒 完成。
+// 因此将处理中状态的最长寿命降到 3 秒, 并在 5 秒后终止等待。
+const MAX_PROCESSING_DURATION_MS = 3_000; // 单次操作允许的最大处理时长
+const MAX_WAIT_FOR_EXISTING_OPERATION_MS = 5_000; // 并发等待的最大时长
+const PROCESSING_RECORD_TTL_MS = MAX_PROCESSING_DURATION_MS + 2_000; // processing 记录的生命周期 (额外缓冲 2s)
+const COMPLETED_RECORD_TTL_MS = 24 * 60 * 60 * 1_000; // completed 保留 24 小时, 支持客户端重放
+const FAILED_RECORD_TTL_MS = 60 * 60 * 1_000; // failed 保留 1 小时, 方便排查
 
 const sleep = (ms: number) =>
   new Promise<void>(resolve => {
@@ -70,6 +72,7 @@ export async function checkIdempotency(
         id: operation.id,
         status: operation.status,
         createdAt: operation.createdAt,
+        expiresAt: operation.expiresAt,
       },
     };
   }
@@ -85,6 +88,7 @@ export async function checkIdempotency(
           id: operation.id,
           status: operation.status,
           createdAt: operation.createdAt,
+          expiresAt: operation.expiresAt,
         },
       };
     } catch {
@@ -129,9 +133,7 @@ export async function createIdempotencyRecord(
   operatorId: string,
   requestData: Record<string, unknown>
 ): Promise<string> {
-  // 设置过期时间为24小时后
-  const expiresAt = new Date();
-  expiresAt.setHours(expiresAt.getHours() + 24);
+  const expiresAt = new Date(Date.now() + PROCESSING_RECORD_TTL_MS);
 
   const operation = await prisma.inventoryOperation.create({
     data: {
@@ -163,6 +165,7 @@ export async function completeIdempotencyRecord(
       status: 'completed',
       responseData: JSON.stringify(responseData),
       completedAt: new Date(),
+      expiresAt: new Date(Date.now() + COMPLETED_RECORD_TTL_MS),
     },
   });
 }
@@ -182,6 +185,7 @@ export async function failIdempotencyRecord(
       status: 'failed',
       errorMessage,
       completedAt: new Date(),
+      expiresAt: new Date(Date.now() + FAILED_RECORD_TTL_MS),
     },
   });
 }
@@ -241,6 +245,7 @@ export async function withIdempotency<T>(
       // 策略1：乐观锁 - 先尝试创建记录
       // 优点：在无并发时性能最优，避免了先检查后创建的竞态窗口
       // 如果创建成功，说明是第一个请求，直接执行操作
+      const t1 = Date.now();
       await prisma.inventoryOperation.create({
         data: {
           idempotencyKey,
@@ -252,16 +257,21 @@ export async function withIdempotency<T>(
           expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24小时后过期
         },
       });
+      console.log(`⏱️  [幂等性] 创建幂等性记录耗时: ${Date.now() - t1}ms`);
 
       // 创建成功，说明这是第一个请求，执行实际操作
       try {
+        const t2 = Date.now();
         const result = await operation();
+        console.log(`⏱️  [幂等性] 实际操作耗时: ${Date.now() - t2}ms`);
 
         // 操作成功，标记为完成
+        const t3 = Date.now();
         await completeIdempotencyRecord(
           idempotencyKey,
           result as Record<string, unknown>
         );
+        console.log(`⏱️  [幂等性] 标记完成耗时: ${Date.now() - t3}ms`);
 
         return result;
       } catch (error) {
@@ -289,13 +299,27 @@ export async function withIdempotency<T>(
         // 情况2：操作仍在处理中，等待后重试
         if (!existing.isNew && existing.operation?.status === 'processing') {
           const createdAt = existing.operation.createdAt;
+          const expiresAt = existing.operation.expiresAt.getTime();
+          const now = Date.now();
+
+          const isExpiredByTtl = expiresAt <= now;
+
           if (
             createdAt &&
-            Date.now() - createdAt.getTime() > MAX_PROCESSING_DURATION_MS
+            now - createdAt.getTime() > MAX_PROCESSING_DURATION_MS
           ) {
             await failIdempotencyRecord(
               idempotencyKey,
               'processing timeout, record auto reset'
+            );
+            await waitForNextAttempt(retryDelayMs);
+            continue;
+          }
+
+          if (isExpiredByTtl) {
+            await failIdempotencyRecord(
+              idempotencyKey,
+              'processing ttl expired, record auto reset'
             );
             await waitForNextAttempt(retryDelayMs);
             continue;
