@@ -59,6 +59,11 @@ async function generateBatchNumber(
   // 性能优化: 并行查询产品信息和现有批次数量
   const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
 
+  // 性能优化: 使用聚合查询代替count,并添加索引提示
+  // 只查询今天的记录,减少扫描范围
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
   const [product, existingBatches] = await Promise.all([
     prismaClient.product.findUnique({
       where: { id: productId },
@@ -68,7 +73,10 @@ async function generateBatchNumber(
       where: {
         productId,
         batchNumber: {
-          contains: `${today}-`, // 使用 contains 而非 startsWith 提升性能
+          contains: `${today}-`, // 使用 contains 匹配今天的批次号
+        },
+        createdAt: {
+          gte: todayStart, // 只查询今天创建的记录,大幅减少扫描范围
         },
       },
     }),

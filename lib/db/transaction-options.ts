@@ -143,13 +143,17 @@ export function getStandardTransactionOptions(): TransactionOptions {
 }
 
 /**
- * 快捷方法：获取长事务选项（15秒超时）
+ * 快捷方法：获取长事务选项（20秒超时）
  * 适用于复杂业务逻辑，如订单创建、库存调整等
+ *
+ * 2025-10-21紧急修复: 从15秒增至20秒
+ * 原因: 入库事务包含多个串行操作(批次号生成+批次规格+入库记录+库存更新)
+ * 在高并发下即使使用READ COMMITTED仍可能因锁等待超过15秒
  *
  * @returns 事务选项
  */
 export function getLongTransactionOptions(): TransactionOptions {
-  return getTransactionOptions(15000);
+  return getTransactionOptions(20000); // 从15000增至20000
 }
 
 /**

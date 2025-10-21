@@ -158,7 +158,8 @@
       "Bash(rm:*)",
       "Bash(mysql:*)",
       "Bash(npx dotenv -e .env -- bash -c 'mysql -h ${DATABASE_HOST} -u ${DATABASE_USER} -p${DATABASE_PASSWORD} ${DATABASE_NAME} < /tmp/fix_text_fields.sql')",
-      "Bash(git restore:*)"
+      "Bash(git restore:*)",
+      "WebFetch(domain:www.prisma.io)"
     ],
     "deny": [],
     "ask": []

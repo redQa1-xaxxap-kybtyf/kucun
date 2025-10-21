@@ -69,12 +69,21 @@ export function useProductSelector(
 
   // 处理命令项选择
   const handleCommandSelect = (commandValue: string) => {
-    // 从 value 中提取产品ID（格式：CODE-ID）
-    const productId = commandValue.split('-').slice(1).join('-');
-    const selectedProductItem = products.find(p => p.value === productId);
+    // 直接根据commandValue查找产品
+    // CommandItem的value格式为: `${product.code}-${product.value}`
+    // 由于产品编码可能包含'-',不能简单split,应该直接从products列表中查找
+    const selectedProductItem = products.find(
+      p => `${p.code}-${p.value}` === commandValue
+    );
 
     if (selectedProductItem) {
       handleSelect(selectedProductItem);
+    } else {
+      console.warn(
+        '[useProductSelector] 未找到匹配的产品',
+        commandValue,
+        products
+      );
     }
   };
 

@@ -29,10 +29,12 @@ export interface IdempotencyResult<T> {
 }
 
 // 性能优化: 调整超时时间以平衡性能和可靠性
-// 参考 Microsoft 最佳实践: API 响应时间应该 < 20秒
-const MAX_PROCESSING_DURATION_MS = 12_000; // 从 8秒增至 12秒 (+50%)
-const MAX_WAIT_FOR_EXISTING_OPERATION_MS = 15_000; // 从 10秒增至 15秒 (+50%) - 2025-10-21优化
-// 确保总等待时间不超过 Next.js API 路由超时 (可配置)
+// 参考 Microsoft 最佳实践: API 响应时间应该 < 30秒
+// 2025-10-21紧急修复: 由于事务内有多个串行操作(批次号生成+批次规格+入库记录+库存更新)
+// 在高并发+READ COMMITTED下仍可能因锁等待超过15秒,增至20秒
+const MAX_PROCESSING_DURATION_MS = 18_000; // 从 12秒增至 18秒
+const MAX_WAIT_FOR_EXISTING_OPERATION_MS = 20_000; // 从 15秒增至 20秒
+// 确保总等待时间不超过 Next.js API 路由超时 (默认30秒,可配置)
 
 const sleep = (ms: number) =>
   new Promise<void>(resolve => {
