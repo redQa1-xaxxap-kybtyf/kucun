@@ -33,6 +33,7 @@ interface InboundRecordWithProduct
     name: string;
     specification?: string;
     piecesPerUnit: number;
+    weight?: number;
   };
   batchSpecification?: {
     id: string;
@@ -128,6 +129,13 @@ const getActualPiecesPerUnit = (record: InboundRecordWithProduct) =>
   record.product?.piecesPerUnit ??
   1;
 
+// 获取记录的重量（优先使用批次规格参数）
+const getActualWeight = (record: InboundRecordWithProduct) => {
+  const weight =
+    record.batchSpecification?.weight ?? record.product?.weight ?? null;
+  return weight ? `${weight.toFixed(2)}kg` : '-';
+};
+
 /**
  * 入库记录表格组件
  * ✅ 符合产品模块UI风格规范
@@ -162,6 +170,7 @@ export function InboundRecordsTable({
               <TableHead>产品名称</TableHead>
               <TableHead>规格</TableHead>
               <TableHead>每件片数</TableHead>
+              <TableHead>重量</TableHead>
               <TableHead>入库数量</TableHead>
               <TableHead>操作类型</TableHead>
               <TableHead>批次号</TableHead>
@@ -172,7 +181,7 @@ export function InboundRecordsTable({
           <TableBody>
             {records.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="p-8">
+                <TableCell colSpan={10} className="p-8">
                   <EmptyState
                     title="暂无入库记录"
                     icon={<Package className="text-muted-foreground h-6 w-6" />}
@@ -197,6 +206,9 @@ export function InboundRecordsTable({
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {getActualPiecesPerUnit(record) || '-'}
+                  </TableCell>
+                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    {getActualWeight(record)}
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-primary))]">
                     <span className="font-medium">

@@ -126,6 +126,11 @@ function buildBatchSpecificationWhereClause(queryData: {
 }): Prisma.BatchSpecificationWhereInput {
   const where: Prisma.BatchSpecificationWhereInput = {};
 
+  // ✅ 防御性编程: 只查询有效产品的批次规格,过滤孤儿记录
+  where.product = {
+    is: {}, // 确保存在关联的产品
+  };
+
   // 搜索条件
   if (queryData.search) {
     where.OR = [
@@ -250,6 +255,11 @@ export async function getBatchSpecificationById(
     throw new Error('批次规格参数不存在');
   }
 
+  // ✅ 防御性检查: 如果是孤儿记录(产品不存在),抛出错误
+  if (!specification.product) {
+    throw new Error('批次规格参数关联的产品不存在(孤儿记录)');
+  }
+
   const formatted = formatBatchSpecifications([specification]);
   return formatted[0];
 }
@@ -286,6 +296,12 @@ export async function getBatchSpecificationByProductAndBatch(
   });
 
   if (!specification) {
+    return null;
+  }
+
+  // ✅ 防御性检查: 如果是孤儿记录(产品不存在),返回null
+  if (!specification.product) {
+    // 孤儿记录: 批次规格关联的产品不存在
     return null;
   }
 

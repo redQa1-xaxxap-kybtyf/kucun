@@ -23,6 +23,7 @@ import {
 } from '@/lib/api/minimal-inbound-transaction';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
+import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { withIdempotency } from '@/lib/utils/idempotency-redis'; // 🚀 使用 Redis 优化版本
 import { createInboundSchema } from '@/lib/validations/inbound';

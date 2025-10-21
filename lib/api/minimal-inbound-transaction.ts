@@ -16,8 +16,19 @@ import { generateInboundRecordNumber } from '@/lib/api/inbound-handlers';
 import type { ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
 import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
+import { INBOUND_REASON_LABELS } from '@/lib/types/inbound';
 import { toISOString } from '@/lib/utils/datetime';
 import { cleanRemarks } from '@/lib/validations/inbound';
+
+/**
+ * 生成默认备注
+ * 当用户未填写备注时,根据入库原因自动生成备注
+ */
+function generateDefaultRemarks(reason: string): string {
+  const reasonLabel =
+    INBOUND_REASON_LABELS[reason as keyof typeof INBOUND_REASON_LABELS];
+  return reasonLabel ? `${reasonLabel}` : '入库';
+}
 
 /**
  * 最小化入库事务输入数据
@@ -87,6 +98,10 @@ export async function executeMinimalInboundTransaction(
     // 生成唯一记录编号
     const recordNumber = generateInboundRecordNumber();
 
+    // 处理备注:如果用户没有填写,则自动生成默认备注
+    const finalRemarks =
+      cleanRemarks(data.remarks) || generateDefaultRemarks(data.reason);
+
     const inboundRecord = await tx.inboundRecord.create({
       data: {
         recordNumber,
@@ -96,7 +111,7 @@ export async function executeMinimalInboundTransaction(
         batchSpecificationId: null, // 批次规格关联将在异步队列中处理
         quantity: data.quantity,
         reason: data.reason,
-        remarks: cleanRemarks(data.remarks),
+        remarks: finalRemarks,
         userId: data.userId,
       },
       include: {

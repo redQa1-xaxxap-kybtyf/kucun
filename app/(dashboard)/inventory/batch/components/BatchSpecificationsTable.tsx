@@ -1,12 +1,14 @@
 'use client';
 
-import { History, Pencil, Trash2 } from 'lucide-react';
+import { format } from 'date-fns';
+import { zhCN } from 'date-fns/locale';
+import { Calendar, History, PackageSearch, Pencil, Trash2 } from 'lucide-react';
 import Link from 'next/link';
-import * as React from 'react';
 
-import { Badge } from '@/components/ui/badge';
+import { EmptyState } from '@/components/common/empty-state';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Pagination } from '@/components/ui/pagination';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -15,13 +17,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Pagination } from '@/components/ui/pagination';
-import { Skeleton } from '@/components/ui/skeleton';
 import type {
   BatchSpecification,
   BatchSpecificationListResponse,
 } from '@/lib/types/batch-specification';
-import { formatDateTimeCN } from '@/lib/utils/datetime';
 import { formatNumber } from '@/lib/utils/format';
 
 interface BatchSpecificationsTableProps {
@@ -46,101 +45,125 @@ export function BatchSpecificationsTable({
   const showSkeleton = isLoading && !data.length;
   const showEmptyState = !isLoading && data.length === 0;
 
+  const formatMeasurement = (
+    value: number | null | undefined,
+    unit: string,
+    precision: number = 2
+  ) => {
+    if (value === undefined || value === null) {
+      return '-';
+    }
+
+    return `${formatNumber(value, precision)}${unit}`;
+  };
+
+  const formatDate = (dateString: string) =>
+    format(new Date(dateString), 'yyyy年MM月dd日 HH:mm', { locale: zhCN });
+
   return (
-    <Card className="border border-[hsl(var(--color-border-primary))]">
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-        <CardTitle className="text-lg font-semibold text-[hsl(var(--color-text-primary))]">
-          批次规格列表
-        </CardTitle>
-        {isFetching && !isLoading ? (
-          <span className="text-muted-foreground text-xs">刷新中…</span>
-        ) : null}
-      </CardHeader>
-      <CardContent className="p-0">
+    <div
+      className="overflow-hidden rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-card))]"
+      style={{ boxShadow: 'var(--shadow-medium)' }}
+    >
+      <div className="border-b border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] px-4 py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <PackageSearch className="h-4 w-4 text-[hsl(var(--color-primary))]" />
+            <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+              批次规格列表 ({pagination.total} 条)
+            </span>
+          </div>
+          {isFetching && !isLoading ? (
+            <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
+              更新中...
+            </span>
+          ) : null}
+        </div>
+      </div>
+
+      <div className="p-0">
         <div className="overflow-x-auto">
           <Table>
-            <TableHeader className="bg-[hsl(var(--color-bg-secondary))]">
+            <TableHeader style={{ boxShadow: 'var(--shadow-light)' }}>
               <TableRow>
-                <TableHead className="min-w-[160px]">批次号</TableHead>
-                <TableHead className="min-w-[220px]">产品信息</TableHead>
-                <TableHead className="w-[120px] text-right">每件片数</TableHead>
-                <TableHead className="w-[120px] text-right">
-                  重量 (kg)
-                </TableHead>
-                <TableHead className="w-[120px] text-right">
-                  厚度 (mm)
-                </TableHead>
-                <TableHead className="min-w-[160px]">最近更新</TableHead>
-                <TableHead className="w-[160px] text-right">操作</TableHead>
+                <TableHead>批次号</TableHead>
+                <TableHead>产品编码</TableHead>
+                <TableHead>产品名称</TableHead>
+                <TableHead>规格</TableHead>
+                <TableHead>每件片数</TableHead>
+                <TableHead>重量</TableHead>
+                <TableHead>厚度</TableHead>
+                <TableHead>创建时间</TableHead>
+                <TableHead>操作</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {showSkeleton
                 ? Array.from({ length: 5 }).map((_, index) => (
                     <TableRow key={`batch-skeleton-${index}`}>
-                      <TableCell>
-                        <Skeleton className="h-4 w-36" />
+                      <TableCell className="py-3">
+                        <Skeleton className="h-4 w-28" />
                       </TableCell>
-                      <TableCell>
-                        <Skeleton className="h-4 w-40" />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Skeleton className="ml-auto h-4 w-16" />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Skeleton className="ml-auto h-4 w-16" />
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Skeleton className="ml-auto h-4 w-16" />
-                      </TableCell>
-                      <TableCell>
+                      <TableCell className="py-3">
                         <Skeleton className="h-4 w-24" />
                       </TableCell>
-                      <TableCell className="text-right">
-                        <Skeleton className="ml-auto h-8 w-24" />
+                      <TableCell className="py-3">
+                        <Skeleton className="h-4 w-32" />
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Skeleton className="h-4 w-20" />
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Skeleton className="h-4 w-16" />
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Skeleton className="h-4 w-32" />
+                      </TableCell>
+                      <TableCell className="py-3">
+                        <Skeleton className="h-8 w-32" />
                       </TableCell>
                     </TableRow>
                   ))
                 : data.map(spec => (
-                    <TableRow key={spec.id} className="text-sm">
-                      <TableCell className="font-mono text-[hsl(var(--color-primary))]">
+                    <TableRow
+                      key={spec.id}
+                      className="h-12 border-b border-[hsl(var(--color-border-primary))] transition-colors hover:bg-[hsl(var(--color-primary-light))]"
+                    >
+                      <TableCell className="text-xs font-medium text-[hsl(var(--color-primary))]">
                         {spec.batchNumber}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium text-[hsl(var(--color-text-primary))]">
-                            {spec.product?.name ?? '—'}
-                          </span>
-                          <span className="text-muted-foreground text-xs">
-                            编码：{spec.product?.code ?? '—'}
-                          </span>
+                      <TableCell className="text-xs font-medium text-[hsl(var(--color-primary))]">
+                        {spec.product?.code || '-'}
+                      </TableCell>
+                      <TableCell className="text-xs font-medium text-[hsl(var(--color-text-primary))]">
+                        {spec.product?.name || '-'}
+                      </TableCell>
+                      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                        {spec.product?.specification || '-'}
+                      </TableCell>
+                      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                        {formatNumber(spec.piecesPerUnit)}
+                      </TableCell>
+                      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                        {formatMeasurement(spec.weight, 'kg', 2)}
+                      </TableCell>
+                      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                        {formatMeasurement(spec.thickness, 'mm', 2)}
+                      </TableCell>
+                      <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                        <div className="flex items-center gap-1">
+                          <Calendar className="h-3 w-3" />
+                          {formatDate(spec.createdAt)}
                         </div>
                       </TableCell>
-                      <TableCell className="text-right font-semibold text-[hsl(var(--color-success))]">
-                        {formatNumber(spec.piecesPerUnit)} 片
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {spec.weight !== undefined && spec.weight !== null
-                          ? `${formatNumber(spec.weight)} kg`
-                          : '—'}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        {spec.thickness !== undefined && spec.thickness !== null
-                          ? `${formatNumber(spec.thickness)} mm`
-                          : '—'}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col gap-1">
-                          <span className="text-xs text-[hsl(var(--color-text-secondary))]">
-                            {formatDateTimeCN(spec.updatedAt)}
-                          </span>
-                          <Badge variant="outline" className="w-fit">
-                            创建于 {formatDateTimeCN(spec.createdAt)}
-                          </Badge>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
+                      <TableCell className="text-xs">
+                        <div className="flex gap-2">
                           <Button variant="outline" size="sm" asChild>
                             <Link
                               href={`/inventory/batch/${encodeURIComponent(
@@ -148,7 +171,7 @@ export function BatchSpecificationsTable({
                               )}/history?productId=${spec.productId}`}
                               prefetch={false}
                             >
-                              <History className="mr-1 h-4 w-4" />
+                              <History className="mr-1 h-3 w-3" />
                               流水
                             </Link>
                           </Button>
@@ -157,7 +180,7 @@ export function BatchSpecificationsTable({
                             size="sm"
                             onClick={() => onEdit(spec)}
                           >
-                            <Pencil className="mr-1 h-4 w-4" />
+                            <Pencil className="mr-1 h-3 w-3" />
                             编辑
                           </Button>
                           <Button
@@ -165,7 +188,7 @@ export function BatchSpecificationsTable({
                             size="sm"
                             onClick={() => onDelete(spec)}
                           >
-                            <Trash2 className="mr-1 h-4 w-4" />
+                            <Trash2 className="mr-1 h-3 w-3" />
                             删除
                           </Button>
                         </div>
@@ -174,10 +197,15 @@ export function BatchSpecificationsTable({
                   ))}
               {showEmptyState ? (
                 <TableRow>
-                  <TableCell colSpan={7}>
-                    <div className="text-muted-foreground py-10 text-center text-sm">
-                      暂无批次规格参数记录，请创建新的批次规格。
-                    </div>
+                  <TableCell colSpan={9} className="p-8">
+                    <EmptyState
+                      title="暂无批次规格"
+                      description="请调整筛选条件或点击右上角按钮新建批次规格"
+                      icon={
+                        <PackageSearch className="text-muted-foreground h-6 w-6" />
+                      }
+                      compact
+                    />
                   </TableCell>
                 </TableRow>
               ) : null}
@@ -191,7 +219,7 @@ export function BatchSpecificationsTable({
           disabled={isLoading}
           containerClassName="px-4 py-3"
         />
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
