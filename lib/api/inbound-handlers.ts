@@ -452,30 +452,12 @@ export async function createInboundRecord(
 
   // 验证产品存在 - 使用事务上下文确保原子性
   await validateProductExists(data.productId, prismaClient);
-  let batchSpecificationId: string | null = null;
 
-  // 如果提供了批次号和规格参数，创建或更新批次规格参数
-  if (data.batchNumber && (data.piecesPerUnit || data.weight)) {
-    const { upsertBatchSpecification } = await import(
-      './batch-specification-handlers'
-    );
-
-    const batchSpec = await upsertBatchSpecification(
-      {
-        productId: data.productId,
-        batchNumber: data.batchNumber,
-        piecesPerUnit: data.piecesPerUnit || 1,
-        weight: data.weight,
-      },
-      prismaClient
-    );
-
-    batchSpecificationId = batchSpec.id;
-
-    // 性能优化: 将产品表同步操作移到事务外部异步执行
-    // 原因: 减少事务持有时间，避免锁等待。产品规格同步不影响核心入库逻辑
-    // 同步操作会在事务提交后由调用方异步执行
-  }
+  // ⚡ 性能优化: 批次规格参数操作移到事务外部异步执行
+  // 原因: upsertBatchSpecification 会持有 batch_specifications 表的锁,
+  //       导致事务时间从 500ms 增加到 10-20 秒
+  // 修复: 批次规格关联设置为 null, 由调用方在事务外异步更新
+  const batchSpecificationId: string | null = null;
 
   // 生成记录编号
   const recordNumber = generateInboundRecordNumber();
