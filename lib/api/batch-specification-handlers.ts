@@ -18,8 +18,13 @@ import { toISOString } from '@/lib/utils/datetime';
 /**
  * 验证产品是否存在
  */
-async function validateProductExists(productId: string): Promise<void> {
-  const product = await prisma.product.findUnique({
+async function validateProductExists(
+  productId: string,
+  tx?: Prisma.TransactionClient
+): Promise<void> {
+  const prismaClient = tx || prisma;
+
+  const product = await prismaClient.product.findUnique({
     where: { id: productId },
     select: { id: true, status: true },
   });
@@ -166,10 +171,10 @@ export async function upsertBatchSpecification(
   data: CreateBatchSpecificationRequest,
   tx?: Prisma.TransactionClient
 ): Promise<BatchSpecification> {
-  // 验证产品存在
-  await validateProductExists(data.productId);
-
   const prismaClient = tx || prisma;
+
+  // ✅ 验证产品存在 - 传递事务上下文确保原子性
+  await validateProductExists(data.productId, prismaClient);
 
   // 使用upsert确保批次规格参数的唯一性
   const specification = await prismaClient.batchSpecification.upsert({
