@@ -6,6 +6,7 @@
 import type { Prisma, PrismaClient } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 
+import { ApiError } from '@/lib/api/errors';
 import { authOptions } from '@/lib/auth';
 import type { ProductUnit } from '@/lib/config/product';
 import { prisma } from '@/lib/db';
@@ -419,7 +420,7 @@ export async function validateProductExists(
   });
 
   if (!product) {
-    throw new Error('产品不存在');
+    throw ApiError.notFound('产品');
   }
 
   return product;

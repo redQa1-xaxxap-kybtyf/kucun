@@ -5,6 +5,7 @@
 
 import type { Prisma } from '@prisma/client';
 
+import { ApiError } from '@/lib/api/errors';
 import { prisma } from '@/lib/db';
 import type {
   BatchSpecification,
@@ -30,11 +31,11 @@ async function validateProductExists(
   });
 
   if (!product) {
-    throw new Error('产品不存在');
+    throw ApiError.notFound('产品');
   }
 
   if (product.status !== 'active') {
-    throw new Error('产品已停用，无法操作');
+    throw ApiError.forbidden('产品已停用，无法操作');
   }
 }
 
@@ -48,7 +49,7 @@ async function validateBatchSpecificationExists(id: string): Promise<void> {
   });
 
   if (!specification) {
-    throw new Error('批次规格参数不存在');
+    throw ApiError.notFound('批次规格参数');
   }
 }
 
@@ -405,7 +406,7 @@ export async function deleteBatchSpecification(id: string): Promise<void> {
   });
 
   if (relatedRecords > 0) {
-    throw new Error('该批次规格参数已被入库记录使用，无法删除');
+    throw ApiError.badRequest('该批次规格参数已被入库记录使用，无法删除');
   }
 
   await prisma.batchSpecification.delete({

@@ -218,19 +218,33 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
     ),
   ];
 
+  // ✅ 防御性编程：只查询有效产品的批次规格，过滤孤儿记录
   const batchSpecs = await prisma.batchSpecification.findMany({
     where: {
       batchNumber: { in: batchNumbers },
+      productId: { in: productIds }, // 确保批次规格对应的产品在查询范围内
     },
     select: {
       batchNumber: true,
       piecesPerUnit: true,
+      productId: true, // 用于验证
     },
+  });
+
+  // ✅ 防御性过滤：移除任何可能的孤儿记录
+  const validBatchSpecs = batchSpecs.filter(spec => {
+    if (!spec.productId || !productIds.includes(spec.productId)) {
+      console.warn(
+        `⚠️  警告: 批次规格 ${spec.batchNumber} 的产品不在查询范围内 (productId: ${spec.productId})`
+      );
+      return false;
+    }
+    return true;
   });
 
   // 3. 构建批次号到每件片数的映射
   const batchSpecMap = new Map<string, number>();
-  batchSpecs.forEach(spec => {
+  validBatchSpecs.forEach(spec => {
     batchSpecMap.set(spec.batchNumber, spec.piecesPerUnit);
   });
 

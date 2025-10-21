@@ -141,6 +141,8 @@ export function useCreateInboundRecord() {
       });
       // 刷新库存数据
       queryClient.invalidateQueries({ queryKey: queryKeys.inventory.all });
+      // ✅ 刷新产品搜索缓存，确保入库后搜索显示最新库存
+      queryClient.invalidateQueries({ queryKey: queryKeys.products.all });
     },
   });
 }
