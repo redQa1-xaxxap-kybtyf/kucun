@@ -463,24 +463,6 @@ export function ERPSalesOrderList({
 
           {/* 搜索栏和日期筛选的组合布局 */}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-4">
-            {/* 日期范围筛选器 */}
-            <div className="lg:w-[280px]">
-              <DateRangePicker
-                value={{
-                  startDate: initialParams?.startDate,
-                  endDate: initialParams?.endDate,
-                }}
-                label=""
-                placeholder="选择订单日期"
-                onChange={({ startDate, endDate }) => {
-                  const dateRangeJson = JSON.stringify({ startDate, endDate });
-                  externalOnFilter?.('dateRange', dateRangeJson);
-                }}
-                showPresets={true}
-                showClearButton={true}
-              />
-            </div>
-
             {/* 搜索栏区域 */}
             <div className="flex-1">
               <UnifiedSearchBar
@@ -511,6 +493,24 @@ export function ERPSalesOrderList({
                   status: initialParams?.status || 'all',
                 }}
                 onFilterChange={handleFilterChange}
+              />
+            </div>
+
+            {/* 日期范围筛选器 */}
+            <div className="lg:w-[280px]">
+              <DateRangePicker
+                value={{
+                  startDate: initialParams?.startDate,
+                  endDate: initialParams?.endDate,
+                }}
+                label=""
+                placeholder="选择订单日期"
+                onChange={({ startDate, endDate }) => {
+                  const dateRangeJson = JSON.stringify({ startDate, endDate });
+                  externalOnFilter?.('dateRange', dateRangeJson);
+                }}
+                showPresets={true}
+                showClearButton={true}
               />
             </div>
           </div>
