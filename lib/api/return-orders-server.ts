@@ -125,17 +125,17 @@ export async function getReturnOrdersServer(
               select: {
                 id: true,
                 name: true,
-                productCode: true,
+                code: true,
                 unit: true,
               },
             },
           },
         },
-        refunds: {
+        refundRecords: {
           select: {
             id: true,
             refundAmount: true,
-            refundedAt: true,
+            refundDate: true,
           },
         },
       },
