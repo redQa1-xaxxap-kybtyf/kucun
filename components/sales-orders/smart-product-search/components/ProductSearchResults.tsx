@@ -61,7 +61,7 @@ interface ProductSearchResultItemProps {
 }
 
 const productSearchResultItemClassName =
-  'flex items-start justify-between gap-6 p-4 hover:bg-blue-50/50 transition-colors border-b border-gray-100 last:border-b-0';
+  'flex items-start justify-between gap-4 p-4';
 
 const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
   ({
@@ -221,39 +221,33 @@ function ProductResultInfo({
     <div className="flex min-w-0 flex-1 items-start gap-3">
       <Check
         className={cn(
-          'h-5 w-5 shrink-0 text-green-600',
+          'h-4 w-4 shrink-0',
           isSelected ? 'opacity-100' : 'opacity-0'
         )}
       />
-      <div className="min-w-0 flex-1 space-y-2">
-        {/* 产品编码 - 更突出 */}
-        {product.code && (
-          <div className="flex items-center gap-2">
+      <Package className="text-muted-foreground h-5 w-5 shrink-0" />
+      <div className="min-w-0 flex-1 space-y-1.5">
+        <div className="flex items-center gap-2">
+          {product.code && (
             <Badge
               variant="outline"
-              className="border-blue-400 bg-blue-600 px-3 py-1 font-mono text-sm font-bold text-white shadow-sm"
+              className="border-blue-300 bg-gradient-to-r from-blue-50 to-blue-100 px-2.5 py-0.5 font-mono text-xs font-bold text-blue-800 shadow-sm"
             >
               {highlightedCode}
             </Badge>
-            {product.status === 'inactive' && (
-              <Badge variant="secondary" className="text-xs">
-                停用
-              </Badge>
-            )}
-          </div>
-        )}
-        {/* 产品名称 */}
-        <div className="text-base font-semibold text-gray-900">
-          {highlightedName}
+          )}
+          <span className="font-semibold text-gray-900">{highlightedName}</span>
+          {product.status === 'inactive' && (
+            <Badge variant="secondary" className="text-xs">
+              停用
+            </Badge>
+          )}
         </div>
-        {/* 规格 */}
         {specification && (
-          <div className="flex items-center gap-1.5 text-sm text-gray-600">
-            <Package className="h-3.5 w-3.5 text-gray-400" />
-            <span>{highlightedSpecification}</span>
+          <div className="text-sm text-gray-600">
+            规格：{highlightedSpecification}
           </div>
         )}
-        {/* 批次列表 */}
         {batches.length > 0 && (
           <ProductBatchList
             productId={product.id}
@@ -282,29 +276,23 @@ function ProductInventorySummary({
 }: ProductInventorySummaryProps) {
   if (!hasInventory) {
     return (
-      <div className="flex h-full items-center rounded-lg border-2 border-gray-200 bg-gray-50 px-4 py-3">
-        <div className="text-center">
-          <div className="text-xs font-medium text-gray-400">无库存</div>
-        </div>
+      <div className="rounded-md bg-gray-50 px-3 py-1">
+        <div className="text-xs text-gray-500">无库存信息</div>
       </div>
     );
   }
 
   return (
-    <div className="shrink-0 text-right">
-      <div className="rounded-lg border-2 border-green-200 bg-gradient-to-br from-green-50 to-white px-4 py-3 shadow-sm">
-        <div className="mb-1 text-[10px] font-medium tracking-wide text-green-600 uppercase">
-          可用库存
-        </div>
-        <div className="text-lg font-bold text-green-700">
+    <div className="shrink-0 space-y-1 text-right">
+      <div className="rounded-md bg-green-50 px-3 py-1">
+        <div className="text-xs text-gray-600">可用库存</div>
+        <div className="text-sm font-semibold text-green-600">
           {availableDisplay}
         </div>
-        {showTotal && (
-          <div className="mt-1 text-xs text-gray-500">
-            总量 <span className="font-medium">{totalDisplay}</span>
-          </div>
-        )}
       </div>
+      {showTotal && (
+        <div className="text-xs text-gray-500">总量 {totalDisplay}</div>
+      )}
     </div>
   );
 }

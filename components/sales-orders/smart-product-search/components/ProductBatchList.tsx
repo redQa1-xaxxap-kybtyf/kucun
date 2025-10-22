@@ -17,21 +17,12 @@ export function ProductBatchList({
   piecesPerUnit,
   onSelectBatch,
 }: ProductBatchListProps) {
-  // 如果只有一个批次，自动选择，不显示批次列表
-  if (batches.length === 1) {
-    return null;
-  }
-
   return (
-    <div className="mt-2 space-y-2">
-      <div className="flex items-center gap-2">
-        <div className="h-px flex-1 bg-gray-200" />
-        <span className="text-xs font-medium text-gray-500">
-          选择批次 ({batches.length}个)
-        </span>
-        <div className="h-px flex-1 bg-gray-200" />
+    <div className="space-y-1">
+      <div className="text-xs font-medium text-gray-600">
+        点击批次进行选择：
       </div>
-      <div className="grid grid-cols-2 gap-2">
+      <div className="flex flex-wrap gap-2">
         {batches.map(batch => {
           const effectivePieces =
             typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
@@ -39,11 +30,6 @@ export function ProductBatchList({
               : piecesPerUnit > 0
                 ? piecesPerUnit
                 : 0;
-
-          const stockDisplay = formatInventoryQuantity(
-            batch.quantity,
-            effectivePieces
-          );
 
           return (
             <button
@@ -53,23 +39,23 @@ export function ProductBatchList({
                 event.stopPropagation();
                 onSelectBatch(productId, batch.batchNumber);
               }}
-              className="group relative flex flex-col gap-1 rounded-lg border-2 border-blue-200 bg-gradient-to-br from-blue-50 to-white p-2.5 text-left transition-all hover:-translate-y-0.5 hover:border-blue-500 hover:shadow-lg active:translate-y-0"
+              className="flex items-center gap-1.5 rounded-md border-2 border-blue-200 bg-blue-50 px-3 py-1.5 text-xs whitespace-nowrap transition-all hover:border-blue-400 hover:bg-blue-100 hover:shadow-md active:scale-95"
             >
-              {/* 批次号 */}
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-xs font-bold text-blue-700 group-hover:text-blue-900">
-                  {batch.batchNumber}
-                </span>
-                {effectivePieces > 0 && (
-                  <span className="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 group-hover:bg-blue-100 group-hover:text-blue-700">
-                    {effectivePieces}片/件
+              <span className="font-mono font-semibold text-blue-700">
+                {batch.batchNumber}
+              </span>
+              <span className="text-gray-400">|</span>
+              <span className="font-medium text-green-600">
+                {formatInventoryQuantity(batch.quantity, effectivePieces)}
+              </span>
+              {effectivePieces > 0 && (
+                <>
+                  <span className="text-gray-300">|</span>
+                  <span className="text-[11px] text-gray-500">
+                    每件{effectivePieces}片
                   </span>
-                )}
-              </div>
-              {/* 库存 */}
-              <div className="text-sm font-semibold text-green-600 group-hover:text-green-700">
-                {stockDisplay}
-              </div>
+                </>
+              )}
             </button>
           );
         })}
