@@ -3,7 +3,7 @@
  * 用于异步处理入库后处理任务
  */
 
-import { QueueOptions, WorkerOptions } from 'bullmq';
+import type { QueueOptions, WorkerOptions } from 'bullmq';
 import Redis from 'ioredis';
 
 import { env } from '@/lib/env';

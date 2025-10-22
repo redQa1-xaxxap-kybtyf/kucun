@@ -7,8 +7,6 @@ import {
   ChevronDown,
   ChevronRight,
   ChevronsUpDown,
-  Store,
-  User,
 } from 'lucide-react';
 import { useState } from 'react';
 import { type Control, type FieldPath, useController } from 'react-hook-form';
@@ -36,12 +34,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 // API and Types
 import { searchCustomers } from '@/lib/api/customers';
 import { queryKeys } from '@/lib/queryKeys';
-import {
-  type Customer,
-  type CustomerType,
-  CUSTOMER_TYPE_LABELS,
-  CUSTOMER_TYPE_VARIANTS,
-} from '@/lib/types/customer';
+import { type Customer } from '@/lib/types/customer';
 import { cn } from '@/lib/utils';
 
 // 客户层级树节点类型
@@ -59,40 +52,6 @@ interface CustomerHierarchyTreeProps {
   maxLevel?: number;
   showStats?: boolean;
 }
-
-const CUSTOMER_TYPE_VALUES = ['company', 'store', 'individual'] as const;
-
-const isCustomerType = (value: unknown): value is CustomerType =>
-  typeof value === 'string' &&
-  (CUSTOMER_TYPE_VALUES as readonly string[]).includes(value);
-
-const extractCustomerType = (
-  extendedInfo?: string
-): CustomerType | undefined => {
-  if (!extendedInfo) {
-    return undefined;
-  }
-
-  try {
-    const info = JSON.parse(extendedInfo) as { customerType?: unknown };
-    return isCustomerType(info?.customerType) ? info.customerType : undefined;
-  } catch {
-    return undefined;
-  }
-};
-
-const renderCustomerTypeBadge = (extendedInfo?: string) => {
-  const type = extractCustomerType(extendedInfo);
-  if (!type) {
-    return null;
-  }
-
-  return (
-    <Badge variant={CUSTOMER_TYPE_VARIANTS[type]} className="text-xs">
-      {CUSTOMER_TYPE_LABELS[type]}
-    </Badge>
-  );
-};
 
 // 客户层级树组件
 // eslint-disable-next-line max-lines-per-function
@@ -135,28 +94,10 @@ export function CustomerHierarchyTree({
     setExpandedNodes(newExpanded);
   };
 
-  // eslint-disable-next-line max-lines-per-function
   const renderTreeNode = (node: CustomerTreeNode) => {
     const hasChildren = node.children && node.children.length > 0;
     const isSelected = selectedCustomerId === node.id;
     const isExpanded = node.expanded;
-
-    const customerType = extractCustomerType(node.extendedInfo);
-
-    // 客户类型图标
-    const getCustomerIcon = (extendedInfo?: string) => {
-      const type = extractCustomerType(extendedInfo);
-      switch (type) {
-        case 'company':
-          return <Building2 className="h-4 w-4" />;
-        case 'store':
-          return <Store className="h-4 w-4" />;
-        case 'individual':
-          return <User className="h-4 w-4" />;
-        default:
-          return <Building2 className="h-4 w-4" />;
-      }
-    };
 
     return (
       <div key={node.id} className="select-none">
@@ -194,7 +135,7 @@ export function CustomerHierarchyTree({
 
           {/* 客户图标 */}
           <div className="text-muted-foreground mr-2">
-            {getCustomerIcon(node.extendedInfo)}
+            <Building2 className="h-4 w-4" />
           </div>
 
           {/* 客户信息 */}
@@ -208,16 +149,6 @@ export function CustomerHierarchyTree({
               >
                 {node.name}
               </span>
-
-              {/* 客户类型标签 */}
-              {customerType && (
-                <Badge
-                  variant={CUSTOMER_TYPE_VARIANTS[customerType]}
-                  className="text-xs"
-                >
-                  {CUSTOMER_TYPE_LABELS[customerType]}
-                </Badge>
-              )}
             </div>
 
             {/* 联系信息 */}
@@ -364,10 +295,7 @@ export function CustomerSelector<
             disabled={disabled}
           >
             {selectedCustomer ? (
-              <div className="flex items-center space-x-2">
-                <span className="truncate">{selectedCustomer.name}</span>
-                {renderCustomerTypeBadge(selectedCustomer.extendedInfo)}
-              </div>
+              <span className="truncate">{selectedCustomer.name}</span>
             ) : (
               placeholder
             )}
@@ -433,7 +361,6 @@ export function CustomerSelector<
                           <span className="truncate font-medium">
                             {customer.name}
                           </span>
-                          {renderCustomerTypeBadge(customer.extendedInfo)}
                         </div>
                         <div className="text-muted-foreground truncate text-xs">
                           {customer.phone && <span>{customer.phone}</span>}

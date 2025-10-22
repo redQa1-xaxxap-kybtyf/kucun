@@ -15,6 +15,7 @@ import {
 import Link from 'next/link';
 import * as React from 'react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -25,7 +26,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ContentLoading } from '@/components/common/loading';
 import { dashboardUtils, useDismissAlert } from '@/lib/api/dashboard';
 import type { InventoryAlert } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';

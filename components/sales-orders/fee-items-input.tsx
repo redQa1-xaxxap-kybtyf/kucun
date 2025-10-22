@@ -33,7 +33,7 @@ interface FeeItemsInputProps {
  * 使用 React.memo 优化性能
  */
 export const FeeItemsInput = React.memo<FeeItemsInputProps>(
-  function FeeItemsInput({ feeItems, onChange, disabled = false }) {
+  ({ feeItems, onChange, disabled = false }) => {
     const sanitizeFeeItems = (
       items: SalesOrderFeeItem[]
     ): SalesOrderFeeItem[] =>

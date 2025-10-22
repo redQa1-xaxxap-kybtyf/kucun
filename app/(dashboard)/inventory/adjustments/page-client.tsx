@@ -13,12 +13,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import type { AdjustmentQueryParams } from '@/lib/types/inventory';
 
 import { AdjustmentDetailDialog } from './components/AdjustmentDetailDialog';
 import { AdjustmentRecordsFilters } from './components/AdjustmentRecordsFilters';
 import { AdjustmentRecordsTable } from './components/AdjustmentRecordsTable';
 import { useAdjustmentRecords } from './hooks/useAdjustmentRecords';
-import type { AdjustmentQueryParams } from '@/lib/types/inventory';
 
 /**
  * 库存调整记录客户端组件

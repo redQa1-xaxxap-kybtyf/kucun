@@ -1,10 +1,10 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { logger } from '@/lib/logger';
+import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import { productVariantUpdateSchema } from '@/lib/validations/product';
-import { resolveParams } from '@/lib/api/middleware';
 
 // 获取单个产品变体详情
 export const GET = withAuth(

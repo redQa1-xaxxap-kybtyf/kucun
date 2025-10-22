@@ -11,12 +11,12 @@ import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { storageConfig } from '@/lib/env';
 import { extractRequestInfo, logSystemEventInfo } from '@/lib/logger';
+import { clearQiniuConfigCache } from '@/lib/services/qiniu-upload';
 import type {
   QiniuStorageConfig,
   SettingsApiResponse,
 } from '@/lib/types/settings';
 import { QiniuStorageConfigSchema } from '@/lib/validations/settings';
-import { clearQiniuConfigCache } from '@/lib/services/qiniu-upload';
 
 // 使用环境配置的加密密钥
 const ENCRYPTION_KEY = storageConfig.encryptionKey;

@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
 
+import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { getNotificationDelegate } from '@/lib/db/notification-delegate';
-import { resolveParams } from '@/lib/api/middleware';
 
 /**
  * 删除通知

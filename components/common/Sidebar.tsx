@@ -10,11 +10,11 @@ import { Separator } from '@/components/ui/separator';
 import type { NavigationItem, SidebarState } from '@/lib/types/layout';
 import { cn } from '@/lib/utils';
 
-import { SidebarNavItem } from './SidebarNavItem';
 import {
   bottomNavigationItems,
   navigationItems,
 } from './sidebar-navigation-config';
+import { SidebarNavItem } from './SidebarNavItem';
 import { useSidebarKeyboard } from './useSidebarKeyboard';
 
 interface SidebarProps {
@@ -56,10 +56,10 @@ function SidebarComponent({
 
   // 检查路径是否匹配 (使用 useCallback 优化)
   const isPathActive = React.useCallback(
-    (href: string) => {
+    (href: string) => 
       // 精确匹配：pathname 必须完全等于 href，或者以 href/ 开头
-      return pathname === href || pathname.startsWith(href + '/');
-    },
+       pathname === href || pathname.startsWith(`${href}/`)
+    ,
     [pathname]
   );
 

@@ -10,9 +10,9 @@
 
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { withAuth } from '@/lib/auth/api-helpers';
 import { ApiError } from '@/lib/api/errors';
 import { withErrorHandling } from '@/lib/api/middleware';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { paginationConfig } from '@/lib/env';
 import { createCategory, getCategories } from '@/lib/services/category-service';
 import {
@@ -24,8 +24,7 @@ import {
  * GET /api/categories - 获取分类列表
  */
 export const GET = withAuth(
-  async (request: NextRequest) => {
-    return withErrorHandling(async request => {
+  async (request: NextRequest) => withErrorHandling(async request => {
       const { searchParams } = request.nextUrl;
 
       // 1. 解析查询参数
@@ -54,8 +53,7 @@ export const GET = withAuth(
         data: result.categories,
         pagination: result.pagination,
       });
-    })(request, {});
-  },
+    })(request, {}),
   { permissions: ['categories:view'] }
 );
 
@@ -63,8 +61,7 @@ export const GET = withAuth(
  * POST /api/categories - 创建分类
  */
 export const POST = withAuth(
-  async (request: NextRequest) => {
-    return withErrorHandling(async request => {
+  async (request: NextRequest) => withErrorHandling(async request => {
       // 1. 解析请求体
       const body = await request.json();
 
@@ -90,7 +87,6 @@ export const POST = withAuth(
         }
         throw error;
       }
-    })(request, {});
-  },
+    })(request, {}),
   { permissions: ['categories:create'] }
 );

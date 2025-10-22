@@ -1,6 +1,6 @@
 'use client';
 
-import { Check, Copy, RefreshCw, Loader2, AlertCircle } from 'lucide-react';
+import { AlertCircle, Check, Copy, Loader2, RefreshCw } from 'lucide-react';
 import * as React from 'react';
 
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -110,7 +110,7 @@ export function OrderNumberGenerator({
           message: data.error || '验证失败',
         });
       }
-    } catch (error) {
+    } catch (_error) {
       setValidationResult({
         valid: false,
         available: false,
@@ -135,7 +135,7 @@ export function OrderNumberGenerator({
         description: '订单号已复制到剪贴板',
       });
       setTimeout(() => setCopied(false), 2000);
-    } catch (error) {
+    } catch (_error) {
       toast({
         title: '复制失败',
         description: '无法复制到剪贴板',

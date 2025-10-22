@@ -143,7 +143,7 @@ model Product {
   specification String? @db.Text
   unit          String  @default("piece") // 瓷砖行业专用单位：piece(件), sheet(片)
   piecesPerUnit Int     @default(1) @map("pieces_per_unit")
-  weight        Float?
+  weight        Float? // 每件重量(kg) - 可选，优先使用批次规格中的重量
   thickness     Float? // 产品厚度(mm)，瓷砖行业特有字段
   categoryId    String? @map("category_id") // 产品分类ID
   status        String  @default("active") // active, inactive
@@ -412,7 +412,7 @@ model BatchSpecification {
   productId     String   @map("product_id")
   batchNumber   String   @map("batch_number")
   piecesPerUnit Int      @default(1) @map("pieces_per_unit") // 每单位片数
-  weight        Float? // 产品重量(kg)
+  weight        Float? // 每件重量(kg) - 入库时录入
   thickness     Float? // 产品厚度(mm)
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")

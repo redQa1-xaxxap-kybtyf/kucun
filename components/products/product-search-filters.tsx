@@ -11,9 +11,9 @@ import { Filter } from 'lucide-react';
 import { UnifiedSearchBar } from '@/components/common/unified-search-bar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { PRODUCT_STATUS_OPTIONS } from '@/lib/config/product';
 import type { Category } from '@/lib/types/category';
 import type { ProductStatus } from '@/lib/types/product';
-import { PRODUCT_STATUS_OPTIONS } from '@/lib/config/product';
 
 interface ProductSearchFiltersProps {
   searchValue: string;

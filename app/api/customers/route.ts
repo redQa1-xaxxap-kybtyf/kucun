@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
 import { createCustomer, getCustomerList } from '@/lib/api/customer-handlers';
-import { withAuth } from '@/lib/auth/api-helpers';
 import { withErrorHandling } from '@/lib/api/middleware';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { paginationValidations } from '@/lib/validations/base';
 import { customerCreateSchema } from '@/lib/validations/customer';
 
@@ -10,8 +10,7 @@ import { customerCreateSchema } from '@/lib/validations/customer';
  * 获取客户列表
  */
 export const GET = withAuth(
-  async (request: NextRequest) => {
-    return withErrorHandling(async request => {
+  async (request: NextRequest) => withErrorHandling(async request => {
       const { searchParams } = new URL(request.url);
 
       // 验证分页参数
@@ -53,8 +52,7 @@ export const GET = withAuth(
         success: true,
         ...result,
       });
-    })(request, {});
-  },
+    })(request, {}),
   { permissions: ['customers:view'] }
 );
 
@@ -62,8 +60,7 @@ export const GET = withAuth(
  * 创建客户
  */
 export const POST = withAuth(
-  async (request: NextRequest) => {
-    return withErrorHandling(async request => {
+  async (request: NextRequest) => withErrorHandling(async request => {
       const body = await request.json();
 
       // 验证输入数据
@@ -76,7 +73,6 @@ export const POST = withAuth(
         success: true,
         data: customer,
       });
-    })(request, {});
-  },
+    })(request, {}),
   { permissions: ['customers:create'] }
 );

@@ -18,9 +18,6 @@
 
 'use client';
 
-import { Calendar as CalendarIcon, X } from 'lucide-react';
-import * as React from 'react';
-import type { DateRange } from 'react-day-picker';
 import {
   endOfMonth,
   endOfWeek,
@@ -31,6 +28,9 @@ import {
   subMonths,
 } from 'date-fns';
 import { zhCN } from 'date-fns/locale';
+import { Calendar as CalendarIcon, X } from 'lucide-react';
+import * as React from 'react';
+import type { DateRange } from 'react-day-picker';
 
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
@@ -165,7 +165,7 @@ const DEFAULT_PRESETS: DateRangePreset[] = [
 /**
  * 日期范围选择器组件
  */
-export const DateRangePicker = React.memo(function DateRangePicker({
+export const DateRangePicker = React.memo(({
   value,
   onChange,
   label = '日期范围',
@@ -177,7 +177,7 @@ export const DateRangePicker = React.memo(function DateRangePicker({
   disabled = false,
   className,
   showClearButton = true,
-}: DateRangePickerProps) {
+}: DateRangePickerProps) => {
   const [isOpen, setIsOpen] = React.useState(false);
 
   // 将字符串日期转换为 Date 对象
@@ -364,14 +364,13 @@ export const DateRangePicker = React.memo(function DateRangePicker({
 /**
  * 简化版日期范围选择器（用于内联显示）
  */
-export const DateRangePickerInline = React.memo(function DateRangePickerInline({
+export const DateRangePickerInline = React.memo(({
   value,
   onChange,
   showPresets = false,
   className,
   ...props
-}: DateRangePickerProps) {
-  return (
+}: DateRangePickerProps) => (
     <DateRangePicker
       value={value}
       onChange={onChange}
@@ -379,5 +378,4 @@ export const DateRangePickerInline = React.memo(function DateRangePickerInline({
       className={className}
       {...props}
     />
-  );
-});
+  ));

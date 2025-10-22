@@ -254,7 +254,7 @@ export async function warmupCacheBatch<T>(
  * @param invalidationStrategy 失效策略
  * @param warmupFn 预热函数
  */
-export function createInvalidationWithWarmup<T>(
+export function createInvalidationWithWarmup<_T>(
   invalidationStrategy: InvalidationLevel,
   warmupFn?: (options: InvalidationOptions) => Promise<void>
 ) {

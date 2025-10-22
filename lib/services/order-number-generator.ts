@@ -64,7 +64,7 @@ export async function generateUniqueOrderNumber(
                 currentSequence: 1,
               },
             });
-          } catch (error) {
+          } catch (_error) {
             // 如果记录已存在，则更新序列号
             await tx.orderSequence.updateMany({
               where: {
@@ -199,7 +199,7 @@ export async function batchGenerateOrderNumbers(
             currentSequence: count,
           },
         });
-      } catch (error) {
+      } catch (_error) {
         // 如果记录已存在，则更新序列号
         await tx.orderSequence.updateMany({
           where: {

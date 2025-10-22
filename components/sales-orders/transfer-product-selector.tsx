@@ -125,8 +125,23 @@ export function TransferProductSelector({
     setSearchValue('');
   };
 
+  // 处理选择器打开/关闭
+  const handleOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      setOpen(nextOpen);
+      if (nextOpen && selectedProduct) {
+        // 打开时，如果有已选商品，自动填充搜索框以便用户快速定位（优先使用编码）
+        setSearchValue(selectedProduct.code || selectedProduct.name || '');
+      } else if (!nextOpen) {
+        // 关闭时清空搜索框
+        setSearchValue('');
+      }
+    },
+    [selectedProduct]
+  );
+
   return (
-    <Popover open={open} onOpenChange={setOpen}>
+    <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger asChild>
         <Button
           variant="outline"

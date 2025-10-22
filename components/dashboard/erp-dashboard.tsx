@@ -10,8 +10,8 @@ import {
   Users,
   Zap,
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import * as React from 'react';
 
 import { FactoryShipments } from '@/components/dashboard/factory-shipments';

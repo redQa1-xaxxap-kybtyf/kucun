@@ -555,7 +555,7 @@ export async function batchDeleteSuppliers(
       const result = await prisma.supplier.deleteMany({
         where: { id: { in: deletableIds } },
       });
-      deletedCount += result.count;
+      const _deletedCount = result.count;
       const notDeleted = deletableIds.length - result.count;
       if (notDeleted > 0) {
         failedCount += notDeleted;

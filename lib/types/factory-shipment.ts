@@ -223,13 +223,28 @@ export interface UpdateFactoryShipmentOrderData {
 // 厂家发货订单列表查询参数
 export interface FactoryShipmentOrderListParams {
   page?: number;
+  limit?: number;
   pageSize?: number;
   status?: FactoryShipmentStatus;
   customerId?: string;
   containerNumber?: string;
   orderNumber?: string;
-  startDate?: Date;
-  endDate?: Date;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  startDate?: Date | string;
+  endDate?: Date | string;
+}
+
+// 厂家发货订单查询参数（用于前端）
+export interface FactoryShipmentQueryParams {
+  page?: number;
+  limit?: number;
+  containerNumber?: string;
+  status?: FactoryShipmentStatus;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
+  startDate?: string;
+  endDate?: string;
 }
 
 // 厂家发货订单统计数据

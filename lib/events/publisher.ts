@@ -4,8 +4,8 @@
  */
 
 import { redis } from '@/lib/redis/redis-client';
-import type { BusinessEvent, EventChannel } from './types';
-import { EventChannels } from './types';
+
+import { EventChannels, type BusinessEvent, type EventChannel } from './types';
 
 /**
  * Redis 频道前缀

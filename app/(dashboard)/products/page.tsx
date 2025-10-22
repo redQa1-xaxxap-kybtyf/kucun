@@ -3,6 +3,7 @@ import { getProductsForServer } from '@/lib/api/products-server';
 import { paginationConfig, productConfig } from '@/lib/env';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Product } from '@/lib/types/product';
+
 import { ProductsPageClient } from './page-client';
 
 /**

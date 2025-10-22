@@ -9,8 +9,8 @@
  * 4. 提供类型安全的用户信息访问接口
  */
 
-import { getServerSession } from 'next-auth';
 import type { NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
 
 import { authOptions } from '@/lib/auth';
 

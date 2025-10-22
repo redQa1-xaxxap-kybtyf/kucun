@@ -3,9 +3,9 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import DOMPurify from 'isomorphic-dompurify';
 import { CheckCircle, Loader2, Lock, Shield, User } from 'lucide-react';
-import { getSession, signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { getSession, signIn } from 'next-auth/react';
 import React, {
   useCallback,
   useEffect,
@@ -182,16 +182,14 @@ export default function SignInPage() {
   );
 
   // 组件卸载时清理所有定时器
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       if (redirectTimerRef.current) {
         clearTimeout(redirectTimerRef.current);
       }
       if (redirectDelayTimerRef.current) {
         clearTimeout(redirectDelayTimerRef.current);
       }
-    };
-  }, []);
+    }, []);
 
   // 处理登录失败逻辑
   const handleLoginError = useCallback(

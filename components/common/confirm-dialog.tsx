@@ -12,7 +12,7 @@
 
 'use client';
 
-import { AlertCircle, AlertTriangle, Info, CheckCircle } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle, Info } from 'lucide-react';
 import * as React from 'react';
 
 import {
@@ -25,7 +25,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Button } from '@/components/ui/button';
 
 /**
  * 对话框变体
@@ -241,15 +240,14 @@ export function useConfirmDialog() {
   const confirm = React.useCallback(
     (
       options: Omit<ConfirmDialogProps, 'open' | 'onOpenChange' | 'onConfirm'>
-    ) => {
-      return new Promise<boolean>(resolve => {
+    ) =>
+      new Promise<boolean>(resolve => {
         setDialogState({
           open: true,
           ...options,
           resolve,
         });
-      });
-    },
+      }),
     []
   );
 

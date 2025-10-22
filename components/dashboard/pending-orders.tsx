@@ -1,7 +1,5 @@
 'use client';
 
-import React from 'react';
-import Link from 'next/link';
 import {
   AlertCircle,
   ArrowRight,
@@ -11,13 +9,15 @@ import {
   Package,
   User,
 } from 'lucide-react';
+import Link from 'next/link';
+import React from 'react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ContentLoading } from '@/components/common/loading';
-import { formatCurrency } from '@/lib/utils';
 import type { SalesOrder } from '@/lib/types/sales-order';
+import { formatCurrency } from '@/lib/utils';
 
 interface PendingOrdersProps {
   orders: SalesOrder[];
@@ -33,9 +33,7 @@ const getDaysOld = (dateString: string) => {
 };
 
 // 判断是否紧急
-const isUrgent = (dateString: string) => {
-  return getDaysOld(dateString) > 3;
-};
+const isUrgent = (dateString: string) => getDaysOld(dateString) > 3;
 
 // 格式化日期
 const formatDate = (dateString: string) => {

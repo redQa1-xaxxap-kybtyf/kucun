@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import type { z } from 'zod';
 
 import { ProductSelector } from '@/components/inventory/product-selector';
 import { Button } from '@/components/ui/button';
@@ -16,8 +16,8 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import type { ProductOption } from '@/lib/types/inbound';
 import type { CreateBatchSpecificationRequest } from '@/lib/types/batch-specification';
+import type { ProductOption } from '@/lib/types/inbound';
 import {
   createBatchSpecificationSchema,
   batchSpecificationDefaults,
@@ -53,8 +53,7 @@ export function BatchSpecificationForm({
     null
   );
 
-  const initialValues = useMemo<FormValues>(() => {
-    return {
+  const initialValues = useMemo<FormValues>(() => ({
       productId: defaultValues?.productId ?? '',
       batchNumber: defaultValues?.batchNumber ?? '',
       piecesPerUnit:
@@ -62,8 +61,7 @@ export function BatchSpecificationForm({
         batchSpecificationDefaults.piecesPerUnit,
       weight: defaultValues?.weight,
       thickness: defaultValues?.thickness,
-    };
-  }, [defaultValues]);
+    }), [defaultValues]);
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),

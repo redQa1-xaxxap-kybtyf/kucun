@@ -2,7 +2,7 @@
  * 退款管理客户端 API
  */
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 
 import type { RefundRecordDetail } from '@/lib/types/refund';
 

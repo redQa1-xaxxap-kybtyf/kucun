@@ -12,8 +12,8 @@
  * ```
  */
 
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import type { NextRequest, NextResponse } from 'next/server';
+
 
 import { logger } from '@/lib/logger';
 import {
@@ -89,7 +89,7 @@ export function withDatabaseMetrics<T>(
     .catch(error => {
       const errorType = error instanceof Error ? error.name : 'UnknownError';
 
-      // eslint-disable-next-line @typescript-eslint/no-require-imports -- Dynamic import for metrics
+       
       const { recordDatabaseError } = require('@/lib/logger/metrics');
       recordDatabaseError(operation, table, errorType);
 

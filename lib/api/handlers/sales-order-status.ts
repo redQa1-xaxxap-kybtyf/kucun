@@ -6,14 +6,14 @@
 
 import { prisma, withTransaction } from '@/lib/db';
 import {
+  generateUniqueOrderNumber,
+  type OrderNumberConfig,
+} from '@/lib/services/order-number-generator';
+import {
   findAvailableInventory,
   hasEnoughInventory,
   getAvailableQuantity,
 } from '@/lib/utils/inventory-variant-mapper';
-import {
-  generateUniqueOrderNumber,
-  type OrderNumberConfig,
-} from '@/lib/services/order-number-generator';
 
 /**
  * 出库单号配置

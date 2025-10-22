@@ -46,7 +46,7 @@ export const GET = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        '参数验证失败: ' + validationResult.error.issues[0]?.message,
+        `参数验证失败: ${validationResult.error.issues[0]?.message}`,
         400
       );
     }
@@ -60,10 +60,10 @@ export const GET = withAuth(
     // 使用缓存包装查询
     const result = await getOrSetJSON(
       cacheKey,
-      async () => {
+      async () => 
         // 调用服务层
-        return await getReceivables(validationResult.data);
-      },
+         await getReceivables(validationResult.data)
+      ,
       CACHE_STRATEGY.aggregateData.redisTTL, // 财务数据变化较慢，使用10分钟缓存
       {
         enableRandomTTL: true, // 防止缓存雪崩
@@ -94,7 +94,7 @@ export const POST = withAuth(
 
     if (!validationResult.success) {
       return errorResponse(
-        '参数验证失败: ' + validationResult.error.issues[0]?.message,
+        `参数验证失败: ${validationResult.error.issues[0]?.message}`,
         400
       );
     }

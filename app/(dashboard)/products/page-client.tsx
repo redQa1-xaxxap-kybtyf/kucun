@@ -5,8 +5,8 @@ import Link from 'next/link';
 import * as React from 'react';
 
 import { PageHeader } from '@/components/common/page-header';
-import { Button } from '@/components/ui/button';
 import { ERPProductList } from '@/components/products/erp-product-list';
+import { Button } from '@/components/ui/button';
 import type { PaginatedResponse } from '@/lib/types/api';
 import type { Category } from '@/lib/types/category';
 import type { Product, ProductQueryParams } from '@/lib/types/product';

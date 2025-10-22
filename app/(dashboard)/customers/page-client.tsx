@@ -79,8 +79,6 @@ export function CustomersPageClient({
       sortBy: initialParams.sortBy ?? 'createdAt',
       sortOrder: initialParams.sortOrder ?? 'desc',
       parentCustomerId: initialParams.parentCustomerId,
-      customerType: initialParams.customerType,
-      level: initialParams.level,
       region: initialParams.region,
     } satisfies CustomerQueryParams;
   }, [initialParams]);

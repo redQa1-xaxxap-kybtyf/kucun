@@ -13,12 +13,13 @@
  * @see https://nextjs.org/docs/app/building-your-application/data-fetching/server-actions-and-mutations
  */
 
+import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useOptimistic, useTransition, useState } from 'react';
+
 import { adjustInventory, type ActionResult } from '@/app/actions/inventory';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
 import {
   Select,
   SelectContent,
@@ -26,7 +27,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 interface InventoryAdjustFormProps {
   inventory: {

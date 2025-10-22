@@ -16,7 +16,6 @@ export interface Customer {
   parentCustomerId?: string | null;
   parentCustomer?: CustomerParentInfo | null;
   subCustomers?: CustomerParentInfo[];
-  customerType?: CustomerType;
   createdAt: string;
   updatedAt: string;
 
@@ -39,6 +38,12 @@ export interface CustomerExtendedInfo {
 
   // 备注信息
   notes?: string;
+
+  // 地区
+  region?: string;
+
+  // 标签
+  tags?: string[];
 }
 
 // API 查询参数类型
@@ -56,6 +61,8 @@ export interface CustomerQueryParams {
     | 'cooperationDays'
     | 'returnOrderCount';
   sortOrder?: 'asc' | 'desc';
+  parentCustomerId?: string;
+  region?: string;
 }
 
 // API 响应类型
@@ -79,11 +86,17 @@ export interface CustomerDetailResponse {
   message?: string;
 }
 
+// 客户详情结果类型（包含子客户）
+export interface CustomerDetailResult extends Customer {
+  childCustomers?: CustomerParentInfo[];
+}
+
 // 客户创建输入类型
 export interface CustomerCreateInput {
   name: string;
   phone?: string;
   address?: string;
+  parentCustomerId?: string;
   extendedInfo?: CustomerExtendedInfo;
 }
 
@@ -93,6 +106,7 @@ export interface CustomerUpdateInput {
   name?: string;
   phone?: string;
   address?: string;
+  parentCustomerId?: string;
   extendedInfo?: CustomerExtendedInfo;
 }
 
@@ -142,21 +156,4 @@ export const CUSTOMER_FIELD_LABELS = {
   returnOrderCount: '退货次数',
   createdAt: '创建时间',
   updatedAt: '更新时间',
-} as const;
-
-export type CustomerType = 'company' | 'store' | 'individual';
-
-export const CUSTOMER_TYPE_LABELS: Record<CustomerType, string> = {
-  company: '企业客户',
-  store: '门店客户',
-  individual: '个人客户',
-} as const;
-
-export const CUSTOMER_TYPE_VARIANTS: Record<
-  CustomerType,
-  'default' | 'secondary' | 'outline'
-> = {
-  company: 'default',
-  store: 'secondary',
-  individual: 'outline',
 } as const;

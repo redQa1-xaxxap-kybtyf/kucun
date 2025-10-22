@@ -4,10 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronDown, Package, Plus } from 'lucide-react';
 import { useState } from 'react';
 
-import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
-import { useSalesOrderReturnableItems } from '@/lib/api/return-orders';
-import type { ReturnableItem } from '@/lib/services/sales-order-service';
-import type { ReturnOrderItem } from '@/lib/types/return-order';
 import { Button } from '@/components/ui/button';
 import {
   Collapsible,
@@ -23,6 +19,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useSalesOrderReturnableItems } from '@/lib/api/return-orders';
+import { getSalesOrders, salesOrderQueryKeys } from '@/lib/api/sales-orders';
+import type { ReturnableItem } from '@/lib/services/sales-order-service';
+import type { ReturnOrderItem } from '@/lib/types/return-order';
 import type { SalesOrder } from '@/lib/types/sales-order';
 
 interface MultiOrderItemSelectorProps {

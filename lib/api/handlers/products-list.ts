@@ -187,7 +187,12 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
   if (productIds.length === 0) {
     return new Map<
       string,
-      Array<{ batchNumber: string; piecesPerUnit: number; quantity: number }>
+      Array<{
+        batchNumber: string;
+        piecesPerUnit: number;
+        quantity: number;
+        weight?: number | null;
+      }>
     >();
   }
 
@@ -309,7 +314,12 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
   // 5. 转换为最终格式
   const result = new Map<
     string,
-    Array<{ batchNumber: string; piecesPerUnit: number; quantity: number }>
+    Array<{
+      batchNumber: string;
+      piecesPerUnit: number;
+      quantity: number;
+      weight?: number | null;
+    }>
   >();
 
   productBatchMap.forEach((batchMap, productId) => {

@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Eye, EyeOff, Loader2, Save, TestTube } from 'lucide-react';
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import type { z } from 'zod';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -33,7 +34,6 @@ import {
   QiniuStorageConfigFormSchema,
   QiniuStorageConfigSchema,
 } from '@/lib/validations/settings';
-import type { z } from 'zod';
 
 interface QiniuStorageFormProps {
   /** 初始配置数据 */

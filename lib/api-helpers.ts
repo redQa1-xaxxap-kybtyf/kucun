@@ -4,8 +4,7 @@
  * 遵循唯一真理源原则和全栈类型安全原则
  */
 
-import type { NextRequest } from 'next/server';
-import { NextResponse } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import type { ZodType } from 'zod';
 
 /**

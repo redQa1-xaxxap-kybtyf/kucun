@@ -1,15 +1,17 @@
 'use server';
 
+import type { Prisma } from '@prisma/client';
 import { getServerSession } from 'next-auth';
 import { revalidatePath } from 'next/cache';
 import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
-import { FACTORY_SHIPMENT_STATUS } from '@/lib/types/factory-shipment';
 import { generateFactoryShipmentNumber } from '@/lib/services/simple-order-number-generator';
-import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
-import type { Prisma } from '@prisma/client';
+import {
+  FACTORY_SHIPMENT_STATUS,
+  type FactoryShipmentStatus,
+} from '@/lib/types/factory-shipment';
 
 const FACTORY_SHIPMENT_STATUS_VALUES = Object.values(
   FACTORY_SHIPMENT_STATUS

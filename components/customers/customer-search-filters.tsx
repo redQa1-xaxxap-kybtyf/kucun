@@ -69,8 +69,8 @@ export function CustomerSearchFilters({
             },
           ]}
           filterValues={{
-            sortBy: sortBy,
-            sortOrder: sortOrder,
+            sortBy,
+            sortOrder,
           }}
           onFilterChange={handleFilterChange}
         />

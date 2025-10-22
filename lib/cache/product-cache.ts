@@ -1,8 +1,4 @@
-import {
-  buildCacheKey,
-  getOrSetJSON,
-  invalidateNamespace,
-} from '@/lib/cache/cache';
+import { getOrSetJSON, invalidateNamespace } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { cacheConfig } from '@/lib/env';
 import type { PaginatedResponse } from '@/lib/types/api';
@@ -19,7 +15,7 @@ import type { Product, ProductQueryParams } from '@/lib/types/product';
  * - 或完全不缓存，依靠数据库查询优化（索引、分页）
  */
 export async function getCachedProducts(
-  params: ProductQueryParams
+  _params: ProductQueryParams
 ): Promise<PaginatedResponse<Product> | null> {
   // 返回 null，强制调用方直接查询数据库或使用极短 TTL 缓存
   return null;
@@ -32,8 +28,8 @@ export async function getCachedProducts(
  * 该函数已停用，不会设置任何缓存
  */
 export async function setCachedProducts(
-  params: ProductQueryParams,
-  data: PaginatedResponse<Product>
+  _params: ProductQueryParams,
+  _data: PaginatedResponse<Product>
 ): Promise<void> {
   // 空实现 - 不再缓存列表数据
   // 如果确实需要短期缓存，请在 API 路由中直接使用 getOrSetJSON

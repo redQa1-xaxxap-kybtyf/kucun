@@ -13,7 +13,7 @@ export interface BatchSpecification {
   batchNumber: string;
   /** 每单位片数 */
   piecesPerUnit: number;
-  /** 产品重量(kg) */
+  /** 每件重量(kg) - 入库时录入 */
   weight?: number;
   /** 产品厚度(mm) */
   thickness?: number;
@@ -35,7 +35,7 @@ export interface CreateBatchSpecificationRequest {
   batchNumber: string;
   /** 每单位片数 */
   piecesPerUnit: number;
-  /** 产品重量(kg) */
+  /** 每件重量(kg) - 入库时录入 */
   weight?: number;
   /** 产品厚度(mm) */
   thickness?: number;

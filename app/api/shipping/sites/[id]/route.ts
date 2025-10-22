@@ -1,8 +1,7 @@
 import type { NextRequest } from 'next/server';
 
-import { withAuth } from '@/lib/auth/api-helpers';
 import { withErrorHandling, resolveParams } from '@/lib/api/middleware';
-import { successResponse, errorResponse } from '@/lib/auth/api-helpers';
+import { withAuth, successResponse, errorResponse } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import type { ShippingSiteUpdateInput } from '@/lib/types/shipping';
 import {

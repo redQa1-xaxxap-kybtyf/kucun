@@ -24,7 +24,7 @@ export async function getProvinces(): Promise<ProvinceData[]> {
     }
 
     return result.data;
-  } catch (error) {
+  } catch (_error) {
     // 获取省份数据失败，返回空数组
     return [];
   }
@@ -47,7 +47,7 @@ export async function getCitiesByProvince(
     }
 
     return result.data;
-  } catch (error) {
+  } catch (_error) {
     // 获取城市数据失败，返回空数组
     return [];
   }
@@ -70,7 +70,7 @@ export async function getDistrictsByCity(
     }
 
     return result.data;
-  } catch (error) {
+  } catch (_error) {
     // 获取区县数据失败，返回空数组
     return [];
   }

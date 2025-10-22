@@ -2,8 +2,8 @@ import bcrypt from 'bcryptjs';
 import { NextResponse, type NextRequest } from 'next/server';
 import { z } from 'zod';
 
-import { withAuth } from '@/lib/auth/api-helpers';
 import { updatePassword } from '@/lib/auth';
+import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
 import { baseValidations } from '@/lib/validations/base';

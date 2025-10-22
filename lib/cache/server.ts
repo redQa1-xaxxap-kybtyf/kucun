@@ -9,11 +9,10 @@
  * - 集成 Redis 缓存作为二级缓存
  */
 
-import { cache } from 'react';
 import { unstable_cache } from 'next/cache';
+import { cache } from 'react';
 
 import { getOrSetJSON } from './cache';
-import type { CacheTag } from './tags';
 
 /**
  * 服务器组件缓存选项
@@ -81,9 +80,8 @@ export function cachedServerFn<Args extends unknown[], Result>(
   }
 
   // 3. 生成缓存键（用于 Next.js 和 Redis）
-  const generateCacheKey = (...args: Args): string => {
-    return `${fn.name}:${JSON.stringify(args)}`;
-  };
+  const generateCacheKey = (...args: Args): string =>
+    `${fn.name}:${JSON.stringify(args)}`;
 
   // 4. 应用 Next.js unstable_cache
   if (tags.length > 0 || revalidate !== undefined) {
@@ -100,10 +98,9 @@ export function cachedServerFn<Args extends unknown[], Result>(
         // 尝试从 Redis 获取
         const result = await getOrSetJSON<Result>(
           cacheKey,
-          async () => {
+          async () =>
             // Redis 未命中，调用 Next.js 缓存
-            return await nextCached(...args);
-          },
+            await nextCached(...args),
           redisTTL
         );
 
@@ -215,16 +212,15 @@ export function cachedDetail<Args extends unknown[], Result>(
   const wrapped = cache(fn);
 
   return async (...args: Args): Promise<Result> => {
-    const tags = tagsBuilder(...args);
+    const _tags = tagsBuilder(...args);
     const cacheKey = `detail:${fn.name}:${JSON.stringify(args)}`;
 
     // 先检查 Redis
     const cached = await getOrSetJSON<Result>(
       cacheKey,
-      async () => {
+      async () =>
         // Redis 未命中，查询数据库
-        return await wrapped(...args);
-      },
+        await wrapped(...args),
       3600 // 详情数据缓存 1 小时
     );
 

@@ -50,7 +50,6 @@ import {
   salesOrderQueryKeys,
   updateSalesOrder,
 } from '@/lib/api/sales-orders';
-import { salesOrderFormDefaults } from '@/lib/validations/sales-order';
 // 重复导入已删除
 import {
   SALES_ORDER_STATUS_LABELS,
@@ -65,8 +64,6 @@ import { type SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   salesOrderUpdateSchema as UpdateSalesOrderSchema,
-  type SalesOrderCreateFormData as CreateSalesOrderData,
-  type SalesOrderUpdateFormData as UpdateSalesOrderData,
 } from '@/lib/validations/sales-order';
 
 interface SalesOrderFormProps {

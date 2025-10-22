@@ -122,7 +122,7 @@ export interface Product {
   unit: ProductUnit;
   /** 每件包含的片数，用于单位换算 */
   piecesPerUnit: number;
-  /** 产品重量，单位：千克(kg) */
+  /** 每件重量，单位：千克(kg) - 可选，优先使用批次规格中的重量 */
   weight?: number;
   /** 产品厚度，单位：毫米(mm) */
   thickness?: number;

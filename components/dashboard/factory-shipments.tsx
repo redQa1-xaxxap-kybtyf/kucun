@@ -6,16 +6,16 @@
 import { ArrowRight, Clock, Package, Truck, User } from 'lucide-react';
 import Link from 'next/link';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge, type BadgeProps } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { ContentLoading } from '@/components/common/loading';
-import { formatCurrency } from '@/lib/utils';
+import type { DashboardFactoryShipmentSummary } from '@/lib/types/dashboard';
 import {
   FACTORY_SHIPMENT_STATUS_LABELS,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
-import type { DashboardFactoryShipmentSummary } from '@/lib/types/dashboard';
+import { formatCurrency } from '@/lib/utils';
 
 interface FactoryShipmentsProps {
   orders: DashboardFactoryShipmentSummary[];

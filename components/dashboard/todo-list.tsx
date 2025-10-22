@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import * as React from 'react';
 
+import { ContentLoading } from '@/components/common/loading';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -27,7 +28,6 @@ import {
 } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { ContentLoading } from '@/components/common/loading';
 import { dashboardUtils, useCompleteTodoItem } from '@/lib/api/dashboard';
 import type { TodoItem } from '@/lib/types/dashboard';
 import { cn } from '@/lib/utils';

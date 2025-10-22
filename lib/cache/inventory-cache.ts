@@ -1,8 +1,4 @@
-import {
-  buildCacheKey,
-  getOrSetJSON,
-  invalidateNamespace,
-} from '@/lib/cache/cache';
+import { getOrSetJSON, invalidateNamespace } from '@/lib/cache/cache';
 import { prisma } from '@/lib/db';
 import { cacheConfig } from '@/lib/env';
 import { redis } from '@/lib/redis/redis-client';
@@ -24,7 +20,7 @@ import type { Inventory, InventoryQueryParams } from '@/lib/types/inventory';
  * 或完全不缓存，使用数据库查询优化（索引、分页、字段选择）
  */
 export async function getCachedInventory(
-  params: InventoryQueryParams
+  _params: InventoryQueryParams
 ): Promise<PaginatedResponse<Inventory> | null> {
   // 返回 null，强制调用方直接查询数据库
   return null;
@@ -37,8 +33,8 @@ export async function getCachedInventory(
  * 该函数已停用，不会设置任何缓存
  */
 export async function setCachedInventory(
-  params: InventoryQueryParams,
-  data: PaginatedResponse<Inventory>
+  _params: InventoryQueryParams,
+  _data: PaginatedResponse<Inventory>
 ): Promise<void> {
   // 空实现 - 不再缓存列表数据
   // 如果确实需要短期缓存，请在 API 路由中直接使用 getOrSetJSON

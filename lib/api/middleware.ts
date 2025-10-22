@@ -13,7 +13,7 @@ import {
 } from '@/lib/api/errors';
 import { authOptions } from '@/lib/auth';
 import { env } from '@/lib/env';
-import { checkRateLimit, RateLimitType } from '@/lib/rate-limit';
+import { checkRateLimit, type RateLimitType } from '@/lib/rate-limit';
 
 import { badRequestResponse, unauthorizedResponse } from './response';
 

@@ -21,14 +21,12 @@ const ChildMenuList = React.memo(
     const items = children;
 
     // 找到最佳匹配的子菜单（最长路径匹配）
-    const bestMatch = React.useMemo(() => {
-      return items
+    const bestMatch = React.useMemo(() => items
         .filter(
           child =>
-            pathname === child.href || pathname.startsWith(child.href + '/')
+            pathname === child.href || pathname.startsWith(`${child.href}/`)
         )
-        .sort((a, b) => b.href.length - a.href.length)[0];
-    }, [items, pathname]);
+        .sort((a, b) => b.href.length - a.href.length)[0], [items, pathname]);
 
     return (
       <div className="mt-2 ml-3 space-y-1 rounded-md border border-[hsl(var(--sidebar-subtle-border))] bg-[hsl(var(--sidebar-subtle-bg))] p-2">
@@ -114,7 +112,7 @@ export const SidebarNavItem = React.memo(
           item.children?.some(
             child =>
               (pathname === child.href ||
-                pathname.startsWith(child.href + '/')) &&
+                pathname.startsWith(`${child.href}/`)) &&
               child.href !== item.href
           ) ?? false,
         [item.children, item.href, pathname]

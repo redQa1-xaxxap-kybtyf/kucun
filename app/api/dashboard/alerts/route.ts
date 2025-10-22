@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
-import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { buildCacheKey, getOrSetWithLock, CACHE_STRATEGY } from '@/lib/cache';
 import { prisma } from '@/lib/db';
 import { inventoryConfig } from '@/lib/env';
+import { logger } from '@/lib/logger';
 
 // 获取库存预警数据
 export const GET = withAuth(async () => {

@@ -3,7 +3,6 @@ import {
   CreditCard,
   DollarSign,
   Edit,
-  FileText,
   FolderTree,
   Globe,
   HelpCircle,

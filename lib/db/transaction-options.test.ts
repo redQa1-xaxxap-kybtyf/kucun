@@ -5,11 +5,10 @@
 
 import {
   detectDatabaseType,
-  getTransactionOptions,
-  getStandardTransactionOptions,
   getLongTransactionOptions,
   getShortTransactionOptions,
-  type DatabaseType,
+  getStandardTransactionOptions,
+  getTransactionOptions,
 } from './transaction-options';
 
 // 保存原始环境变量

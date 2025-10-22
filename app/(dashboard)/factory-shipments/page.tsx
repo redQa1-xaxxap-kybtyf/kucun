@@ -7,7 +7,10 @@ import {
 import { factoryShipmentQueryKeys } from '@/lib/api/factory-shipments';
 import { getFactoryShipmentOrdersServer } from '@/lib/api/factory-shipments-server';
 import { paginationConfig } from '@/lib/env';
-import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
+import type {
+  FactoryShipmentQueryParams,
+  FactoryShipmentStatus,
+} from '@/lib/types/factory-shipment';
 
 import { FactoryShipmentsPageClient } from './page-client';
 

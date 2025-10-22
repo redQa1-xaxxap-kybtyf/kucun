@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { logger } from '@/lib/logger';
 import { withAuth } from '@/lib/auth/api-helpers';
+import { logger } from '@/lib/logger';
 
 // 获取快速操作数据
 export const GET = withAuth(async (request: NextRequest, { user }) => {

@@ -3,10 +3,10 @@
  * 集成 Redis Pub/Sub 和事务功能，提供实时库存更新和通知
  */
 
-import { publish } from '@/lib/redis/redis-pubsub';
-import { redis } from '@/lib/redis/redis-client';
 import { revalidateInventory } from '@/lib/cache/revalidate';
 import { prisma } from '@/lib/db';
+import { redis } from '@/lib/redis/redis-client';
+import { publish } from '@/lib/redis/redis-pubsub';
 
 /**
  * 库存变更类型

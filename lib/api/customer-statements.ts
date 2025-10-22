@@ -1,5 +1,4 @@
-import { useQuery } from '@tanstack/react-query';
-import type { QueryKey } from '@tanstack/react-query';
+import { useQuery, type QueryKey } from '@tanstack/react-query';
 
 import type {
   CustomerStatementDetail,

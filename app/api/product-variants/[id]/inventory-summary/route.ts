@@ -1,9 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server';
 
-import { logger } from '@/lib/logger';
+import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
-import { resolveParams } from '@/lib/api/middleware';
+import { logger } from '@/lib/logger';
 
 interface BatchSummary {
   batchNumber: string;

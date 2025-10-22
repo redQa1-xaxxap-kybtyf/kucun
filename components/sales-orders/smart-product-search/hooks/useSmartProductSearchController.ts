@@ -35,6 +35,8 @@ export function useSmartProductSearchController({
     onSearchChange,
     clearSearch,
     debouncedSearchValue,
+    selectedProduct,
+    setSearchValue,
   });
 
   const handleSearchValueChange = useCallback(
@@ -113,6 +115,8 @@ interface UseSearchLifecycleParams {
   onSearchChange?: (value: string) => void;
   clearSearch: () => void;
   debouncedSearchValue: string;
+  selectedProduct: ProductWithInventory | null;
+  setSearchValue: (value: string) => void;
 }
 
 function useSearchLifecycle({
@@ -121,13 +125,27 @@ function useSearchLifecycle({
   onSearchChange,
   clearSearch,
   debouncedSearchValue,
+  selectedProduct,
+  setSearchValue,
 }: UseSearchLifecycleParams) {
+  // 打开时自动填充已选商品编码
   useEffect(() => {
-    if (!open && !showAddDialog) {
+    if (open && selectedProduct) {
+      // 优先使用商品编码，其次使用名称
+      setSearchValue(selectedProduct.code || selectedProduct.name || '');
+    } else if (!open && !showAddDialog) {
+      // 关闭时清空搜索框
       clearSearch();
       onSearchChange?.('');
     }
-  }, [open, showAddDialog, clearSearch, onSearchChange]);
+  }, [
+    open,
+    showAddDialog,
+    clearSearch,
+    onSearchChange,
+    selectedProduct,
+    setSearchValue,
+  ]);
 
   useEffect(() => {
     if (!open) {

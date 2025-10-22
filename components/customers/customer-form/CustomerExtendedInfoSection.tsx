@@ -1,7 +1,6 @@
 /* eslint-disable max-lines-per-function */
 
 import { Plus, X } from 'lucide-react';
-import React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { Badge } from '@/components/ui/badge';
@@ -15,26 +14,15 @@ import {
 } from '@/components/ui/card';
 import {
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-  FormDescription,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
-import {
-  CUSTOMER_LEVEL_LABELS,
-  CUSTOMER_TYPE_LABELS,
-} from '@/lib/types/customer';
 import type {
   CustomerCreateFormData,
   CustomerUpdateFormData,
@@ -108,68 +96,6 @@ export function CustomerExtendedInfoSection({
         <div>
           <h4 className="mb-3 text-sm font-medium">业务信息</h4>
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <FormField
-              control={form.control}
-              name="extendedInfo.customerType"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>客户类型</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isLoading}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择客户类型" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Object.entries(CUSTOMER_TYPE_LABELS).map(
-                        ([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="extendedInfo.level"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>客户等级</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                    disabled={isLoading}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="选择客户等级" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {Object.entries(CUSTOMER_LEVEL_LABELS).map(
-                        ([value, label]) => (
-                          <SelectItem key={value} value={value}>
-                            {label}
-                          </SelectItem>
-                        )
-                      )}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
             {[
               {
                 name: 'extendedInfo.industry',
@@ -204,49 +130,6 @@ export function CustomerExtendedInfoSection({
                 )}
               />
             ))}
-
-            <FormField
-              control={form.control}
-              name="extendedInfo.creditLimit"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>信用额度 (元)</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="如：100000"
-                      disabled={isLoading}
-                      {...field}
-                      onChange={event => {
-                        const value = event.target.value;
-                        field.onChange(value ? parseFloat(value) : undefined);
-                      }}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
-              name="extendedInfo.paymentTerms"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>付款条件</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="如：月结30天"
-                      disabled={isLoading}
-                      {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
           </div>
         </div>
 

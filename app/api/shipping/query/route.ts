@@ -1,20 +1,19 @@
 import type { NextRequest } from 'next/server';
 
-import { withAuth } from '@/lib/auth/api-helpers';
 import { withErrorHandling } from '@/lib/api/middleware';
-import { successResponse, errorResponse } from '@/lib/auth/api-helpers';
+import { withAuth, successResponse, errorResponse } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { PuppeteerService } from '@/lib/services/puppeteer-service';
-import { chineseToPinyinUppercase } from '@/lib/utils/pinyin';
 import type {
   ExtractSelectors,
   ShippingQueryInput,
 } from '@/lib/types/shipping';
+import { parseDate } from '@/lib/utils/datetime';
+import { chineseToPinyinUppercase } from '@/lib/utils/pinyin';
 import {
   normalizeSelector,
   normalizeSelectorGroup,
 } from '@/lib/utils/selector-normalizer';
-import { parseDate } from '@/lib/utils/datetime';
 
 /**
  * GET /api/shipping/query - 获取查询历史
