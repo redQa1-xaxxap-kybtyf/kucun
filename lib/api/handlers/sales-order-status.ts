@@ -11,8 +11,8 @@ import {
 } from '@/lib/services/order-number-generator';
 import {
   findAvailableInventory,
-  hasEnoughInventory,
   getAvailableQuantity,
+  hasEnoughInventory,
 } from '@/lib/utils/inventory-variant-mapper';
 
 /**
@@ -81,6 +81,7 @@ async function executeOrderStatusUpdateWithInventory(
           product: {
             select: {
               id: true,
+              code: true,
               name: true,
             },
           },
@@ -119,25 +120,24 @@ async function executeOrderStatusUpdateWithInventory(
   }
 
   return await withTransaction(async tx => {
-    // 更新订单状态
-    const order = await tx.salesOrder.update({
-      where: { id: orderId },
-      data: {
-        status,
-        ...(remarks !== undefined && { remarks }),
-        // 如果状态变更为已发货，记录发货时间
-        ...(status === 'shipped' && { shippedAt: new Date() }),
-      },
-      select: {
-        id: true,
-        orderNumber: true,
-        status: true,
-        remarks: true,
-      },
-    });
+    // 第一步：先检查所有商品的库存，收集库存不足的信息
+    const insufficientStockItems: Array<{
+      productCode: string;
+      productName: string;
+      colorInfo: string;
+      availableQty: number;
+      requiredQty: number;
+      shortage: number;
+    }> = [];
 
-    // 更新库存并创建出库记录 - 使用乐观锁
-    // 对于调货销售，部分商品可能没有本地库存，这是正常的，只扣减有库存的商品
+    const inventoryChecks: Array<{
+      item: (typeof existingOrder.items)[0];
+      outboundRecordNumber: string;
+      inventory: NonNullable<
+        Awaited<ReturnType<typeof findAvailableInventory>>
+      >;
+    }> = [];
+
     for (const { item, outboundRecordNumber } of itemsWithInventory) {
       // 使用类型安全的库存查找（支持变体和批次映射）
       const inventory = await findAvailableInventory(
@@ -158,11 +158,62 @@ async function executeOrderStatusUpdateWithInventory(
       // 检查库存是否足够（考虑预留量）
       if (!hasEnoughInventory(inventory, item.quantity)) {
         const availableQty = getAvailableQuantity(inventory);
+        const shortage = item.quantity - availableQty;
+        const productCode = item.product?.code || '未知编码';
+        const productName = item.product?.name || '未知产品';
+        const colorInfo = item.colorCode ? ` (色号: ${item.colorCode})` : '';
+
+        insufficientStockItems.push({
+          productCode,
+          productName,
+          colorInfo,
+          availableQty,
+          requiredQty: item.quantity,
+          shortage,
+        });
+      } else {
+        // 库存充足，保存检查结果用于后续更新
+        inventoryChecks.push({ item, outboundRecordNumber, inventory });
+      }
+    }
+
+    // 如果有库存不足的商品，抛出详细的错误信息
+    if (insufficientStockItems.length > 0) {
+      if (insufficientStockItems.length === 1) {
+        const item = insufficientStockItems[0];
         throw new Error(
-          `产品 ${item.product?.name || '未知产品'} (色号: ${item.colorCode || '无'}) 库存不足。可用: ${availableQty}, 需要: ${item.quantity}`
+          `产品 [${item.productCode}] ${item.productName}${item.colorInfo} 库存不足，当前库存：${item.availableQty}片，需要：${item.requiredQty}片，缺少：${item.shortage}片`
+        );
+      } else {
+        const errorMessages = insufficientStockItems.map(
+          item =>
+            `- [${item.productCode}] ${item.productName}${item.colorInfo}：当前库存 ${item.availableQty}片，需要 ${item.requiredQty}片，缺少 ${item.shortage}片`
+        );
+        throw new Error(
+          `以下 ${insufficientStockItems.length} 个商品库存不足：\n${errorMessages.join('\n')}`
         );
       }
+    }
 
+    // 第二步：更新订单状态
+    const order = await tx.salesOrder.update({
+      where: { id: orderId },
+      data: {
+        status,
+        ...(remarks !== undefined && { remarks }),
+        // 如果状态变更为已发货，记录发货时间
+        ...(status === 'shipped' && { shippedAt: new Date() }),
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        status: true,
+        remarks: true,
+      },
+    });
+
+    // 第三步：更新库存并创建出库记录 - 使用乐观锁
+    for (const { item, outboundRecordNumber, inventory } of inventoryChecks) {
       // 使用乐观锁更新库存 - 确保并发安全
       const updatedCount = await tx.inventory.updateMany({
         where: {

@@ -159,7 +159,10 @@ export function InventoryChecker({
     return null;
   }
 
-  // 简化显示：只在有库存问题时显示最必要的信息
+  // 显示详细的库存不足信息
+  const errorItems = checkResults.filter(r => r.severity === 'error');
+  const warningItems = checkResults.filter(r => r.severity === 'warning');
+
   return (
     <Alert
       variant={stats.errors > 0 ? 'destructive' : 'default'}
@@ -167,12 +170,72 @@ export function InventoryChecker({
     >
       <AlertTriangle className="h-4 w-4" />
       <AlertDescription>
-        {stats.errors > 0 && `${stats.errors} 个商品库存不足`}
-        {stats.errors === 0 &&
-          stats.warnings > 0 &&
-          `${stats.warnings} 个商品库存偏低`}
-        {stats.errors > 0 && '，无法完成订单'}
-        {stats.errors === 0 && stats.warnings > 0 && '，建议及时补货'}
+        {stats.errors > 0 && (
+          <div className="space-y-1">
+            {errorItems.length === 1 ? (
+              <div>
+                产品 [{errorItems[0].product?.code || '未知编码'}]{' '}
+                {errorItems[0].product?.name || '未知产品'} 库存不足，当前库存：
+                {errorItems[0].availableQuantity}
+                {errorItems[0].product?.unit || '片'}，需要：
+                {errorItems[0].requestedQuantity}
+                {errorItems[0].product?.unit || '片'}，缺少：
+                {errorItems[0].requestedQuantity -
+                  errorItems[0].availableQuantity}
+                {errorItems[0].product?.unit || '片'}
+              </div>
+            ) : (
+              <div>
+                <div className="mb-1">
+                  以下 {errorItems.length} 个商品库存不足：
+                </div>
+                <div className="space-y-0.5 text-sm">
+                  {errorItems.map((item, index) => (
+                    <div key={index}>
+                      - [{item.product?.code || '未知编码'}]{' '}
+                      {item.product?.name || '未知产品'}：当前库存{' '}
+                      {item.availableQuantity}
+                      {item.product?.unit || '片'}，需要{' '}
+                      {item.requestedQuantity}
+                      {item.product?.unit || '片'}，缺少{' '}
+                      {item.requestedQuantity - item.availableQuantity}
+                      {item.product?.unit || '片'}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+        {stats.errors === 0 && stats.warnings > 0 && (
+          <div className="space-y-1">
+            {warningItems.length === 1 ? (
+              <div>
+                产品 [{warningItems[0].product?.code || '未知编码'}]{' '}
+                {warningItems[0].product?.name || '未知产品'}{' '}
+                库存偏低，当前库存：
+                {warningItems[0].availableQuantity}
+                {warningItems[0].product?.unit || '片'}，建议及时补货
+              </div>
+            ) : (
+              <div>
+                <div className="mb-1">
+                  以下 {warningItems.length} 个商品库存偏低，建议及时补货：
+                </div>
+                <div className="space-y-0.5 text-sm">
+                  {warningItems.map((item, index) => (
+                    <div key={index}>
+                      - [{item.product?.code || '未知编码'}]{' '}
+                      {item.product?.name || '未知产品'}：当前库存{' '}
+                      {item.availableQuantity}
+                      {item.product?.unit || '片'}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </AlertDescription>
     </Alert>
   );
