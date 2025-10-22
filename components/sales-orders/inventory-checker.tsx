@@ -104,14 +104,17 @@ export function InventoryChecker({
         let message = '';
         let severity: 'success' | 'warning' | 'error' = 'success';
 
+        // 系统内部统一使用"片"作为单位，避免单位混淆
+        const unitLabel = '片';
+
         if (!isAvailable) {
-          message = `库存不足！需要 ${requestedQuantity}${product.unit}，可用 ${availableQuantity}${product.unit}`;
+          message = `库存不足！需要 ${requestedQuantity}${unitLabel}，可用 ${availableQuantity}${unitLabel}`;
           severity = 'error';
         } else if (isLowStock) {
-          message = `库存预警！剩余 ${availableQuantity}${product.unit}`;
+          message = `库存预警！剩余 ${availableQuantity}${unitLabel}`;
           severity = 'warning';
         } else {
-          message = `库存充足，剩余 ${availableQuantity}${product.unit}`;
+          message = `库存充足，剩余 ${availableQuantity}${unitLabel}`;
         }
 
         return {
@@ -177,30 +180,11 @@ export function InventoryChecker({
               <div>
                 产品 [{errorItems[0].product?.code || '未知编码'}]{' '}
                 {errorItems[0].product?.name || '未知产品'} 库存不足，当前库存：
-                {errorItems[0].availableQuantity}
-                {errorItems[0].product?.unit
-                  ? PRODUCT_UNIT_LABELS[
-                      errorItems[0].product
-                        .unit as keyof typeof PRODUCT_UNIT_LABELS
-                    ] || errorItems[0].product.unit
-                  : '片'}
-                ，需要：
-                {errorItems[0].requestedQuantity}
-                {errorItems[0].product?.unit
-                  ? PRODUCT_UNIT_LABELS[
-                      errorItems[0].product
-                        .unit as keyof typeof PRODUCT_UNIT_LABELS
-                    ] || errorItems[0].product.unit
-                  : '片'}
-                ，缺少：
+                {errorItems[0].availableQuantity}片，需要：
+                {errorItems[0].requestedQuantity}片，缺少：
                 {errorItems[0].requestedQuantity -
                   errorItems[0].availableQuantity}
-                {errorItems[0].product?.unit
-                  ? PRODUCT_UNIT_LABELS[
-                      errorItems[0].product
-                        .unit as keyof typeof PRODUCT_UNIT_LABELS
-                    ] || errorItems[0].product.unit
-                  : '片'}
+                片
               </div>
             ) : (
               <div>
@@ -212,27 +196,9 @@ export function InventoryChecker({
                     <div key={index}>
                       - [{item.product?.code || '未知编码'}]{' '}
                       {item.product?.name || '未知产品'}：当前库存{' '}
-                      {item.availableQuantity}
-                      {item.product?.unit
-                        ? PRODUCT_UNIT_LABELS[
-                            item.product
-                              .unit as keyof typeof PRODUCT_UNIT_LABELS
-                          ] || item.product.unit
-                        : '片'}
-                      ，需要 {item.requestedQuantity}
-                      {item.product?.unit
-                        ? PRODUCT_UNIT_LABELS[
-                            item.product
-                              .unit as keyof typeof PRODUCT_UNIT_LABELS
-                          ] || item.product.unit
-                        : '片'}
-                      ，缺少 {item.requestedQuantity - item.availableQuantity}
-                      {item.product?.unit
-                        ? PRODUCT_UNIT_LABELS[
-                            item.product
-                              .unit as keyof typeof PRODUCT_UNIT_LABELS
-                          ] || item.product.unit
-                        : '片'}
+                      {item.availableQuantity}片，需要 {item.requestedQuantity}
+                      片，缺少 {item.requestedQuantity - item.availableQuantity}
+                      片
                     </div>
                   ))}
                 </div>

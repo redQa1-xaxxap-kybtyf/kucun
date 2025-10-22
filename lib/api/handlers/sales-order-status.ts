@@ -4,7 +4,6 @@
  * 遵循全局约定规范和唯一真理原则
  */
 
-import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import { prisma, withTransaction } from '@/lib/db';
 import {
   generateUniqueOrderNumber,
@@ -165,11 +164,8 @@ async function executeOrderStatusUpdateWithInventory(
         const productCode = item.product?.code || '未知编码';
         const productName = item.product?.name || '未知产品';
         const colorInfo = item.colorCode ? ` (色号: ${item.colorCode})` : '';
-        const productUnit = item.product?.unit || 'piece';
-        const unitLabel =
-          PRODUCT_UNIT_LABELS[
-            productUnit as keyof typeof PRODUCT_UNIT_LABELS
-          ] || productUnit;
+        // 系统内部统一使用"片"作为单位，因为库存和订单数量都是以片为单位存储的
+        const unitLabel = '片';
 
         insufficientStockItems.push({
           productCode,
