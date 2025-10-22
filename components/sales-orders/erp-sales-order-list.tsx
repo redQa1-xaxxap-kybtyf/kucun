@@ -461,7 +461,7 @@ export function ERPSalesOrderList({
             </div>
           )}
 
-          {/* 搜索栏和时间筛选按钮的组合布局 */}
+          {/* 搜索栏和日期筛选的组合布局 */}
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-6">
             {/* 搜索栏区域 */}
             <div className="flex-1">
@@ -488,28 +488,15 @@ export function ERPSalesOrderList({
                     ],
                     width: 'w-24',
                   },
-                  {
-                    key: 'sortBy',
-                    label: '排序',
-                    includeAllOption: false,
-                    options: [
-                      { label: '创建时间', value: 'createdAt' },
-                      { label: '订单号', value: 'orderNumber' },
-                      { label: '金额', value: 'totalAmount' },
-                      { label: '更新时间', value: 'updatedAt' },
-                    ],
-                    width: 'w-24',
-                  },
                 ]}
                 filterValues={{
                   status: initialParams?.status || 'all',
-                  sortBy: initialParams?.sortBy || 'createdAt',
                 }}
                 onFilterChange={handleFilterChange}
               />
             </div>
 
-            {/* 统一日期范围筛选器 */}
+            {/* 日期范围筛选器 */}
             <div className="flex flex-col gap-2 lg:w-auto lg:min-w-[280px]">
               <DateRangePicker
                 value={{
