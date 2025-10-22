@@ -883,6 +883,7 @@ model StatementTransaction {
   // 关联关系
   statement AccountStatement @relation(fields: [statementId], references: [id], onDelete: Cascade)
 
+  @@unique([referenceId, transactionType], map: "unique_reference_transaction_type")
   @@index([statementId], map: "idx_statement_transactions_statement")
   @@index([transactionType], map: "idx_statement_transactions_type")
   @@index([referenceId], map: "idx_statement_transactions_reference")

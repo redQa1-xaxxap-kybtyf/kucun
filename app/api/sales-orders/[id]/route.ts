@@ -420,8 +420,9 @@ export const PUT = withAuth(
     };
 
     const ledgerAmount = Number(fullOrder.totalAmount ?? 0);
-    const becameConfirmed =
-      status === 'confirmed' && existingOrder.status !== 'confirmed';
+    // ✅ 业务规则: 订单发货时记录应收款，取消已发货订单时冲销应收款
+    const becameShipped =
+      status === 'shipped' && !['shipped', 'completed'].includes(existingOrder.status);
     const becameCancelled =
       status === 'cancelled' &&
       ['confirmed', 'shipped', 'completed'].includes(
@@ -429,8 +430,9 @@ export const PUT = withAuth(
       );
 
     if (ledgerAmount > 0) {
-      if (becameConfirmed) {
+      if (becameShipped) {
         try {
+          // 1. 记录应收款
           await recordPartnerTransaction({
             partnerId: fullOrder.customerId,
             partnerRole: 'customer',
@@ -439,7 +441,7 @@ export const PUT = withAuth(
             amount: ledgerAmount,
             referenceId: fullOrder.id,
             referenceNumber: fullOrder.orderNumber,
-            description: `销售订单 ${fullOrder.orderNumber} 确认`,
+            description: `销售订单 ${fullOrder.orderNumber} 已发货`,
             occurredAt: fullOrder.updatedAt ?? new Date(),
             metadata: {
               previousStatus: existingOrder.status,
@@ -447,6 +449,50 @@ export const PUT = withAuth(
               triggeredBy: 'order:status-change',
             },
           });
+
+          // 2. ✅ 补充记录：检查是否有已确认的收款记录，需要补充记录到往来账单
+          const confirmedPayments = await prisma.paymentRecord.findMany({
+            where: {
+              salesOrderId: fullOrder.id,
+              status: 'confirmed',
+              paymentType: 'order_payment',
+            },
+            select: {
+              id: true,
+              paymentNumber: true,
+              actualPaymentAmount: true,
+              paymentDate: true,
+              paymentMethod: true,
+            },
+          });
+
+          // 为每笔已确认的收款补充往来账记录
+          for (const payment of confirmedPayments) {
+            try {
+              await recordPartnerTransaction({
+                partnerId: fullOrder.customerId,
+                partnerRole: 'customer',
+                entityType: 'customer',
+                transactionType: 'payment_in',
+                amount: Number(payment.actualPaymentAmount),
+                referenceId: payment.id,
+                referenceNumber: payment.paymentNumber,
+                description: `收款 ${payment.paymentNumber}（订单发货时补记）`,
+                occurredAt: payment.paymentDate ?? new Date(),
+                metadata: {
+                  paymentMethod: payment.paymentMethod,
+                  paymentType: 'order_payment',
+                  salesOrderId: fullOrder.id,
+                  triggeredBy: 'order:shipped-補記',
+                },
+              });
+            } catch (error) {
+              logger.error('sales-orders', '补记收款往来账失败', error, {
+                paymentId: payment.id,
+                paymentNumber: payment.paymentNumber,
+              });
+            }
+          }
         } catch (error) {
           logger.error('sales-orders', '记录销售订单往来账失败', error, {
             orderId: fullOrder.id,
@@ -461,7 +507,7 @@ export const PUT = withAuth(
             partnerId: fullOrder.customerId,
             partnerRole: 'customer',
             entityType: 'customer',
-            transactionType: 'sales_return',
+            transactionType: 'order_cancellation', // ✅ 使用订单取消类型,而非销售退货
             amount: ledgerAmount,
             referenceId: fullOrder.id,
             referenceNumber: fullOrder.orderNumber,

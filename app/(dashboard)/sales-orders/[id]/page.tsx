@@ -37,6 +37,7 @@ import {
   SALES_ORDER_STATUS_LABELS,
   TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
+import { FEE_TYPE_LABELS } from '@/lib/types/sales-order-fee';
 import { formatCurrency, formatDate } from '@/lib/utils';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
 import { getErrorMessage } from '@/lib/utils/error-handler';
@@ -417,6 +418,11 @@ export default function SalesOrderDetailPage() {
   );
   const totalTransferQuantity = orderItems.reduce(
     (sum, item) => sum + (item.transferQuantity ?? 0),
+    0
+  );
+  // 计算产品小计（不含额外费用）
+  const productSubtotal = orderItems.reduce(
+    (sum, item) => sum + (item.subtotal || 0),
     0
   );
   const canEditOrder = order.status === 'draft';
@@ -818,24 +824,28 @@ export default function SalesOrderDetailPage() {
               className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
               style={{ boxShadow: 'var(--shadow-medium)' }}
             >
-              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-blue-50/30 py-4">
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center text-lg font-semibold text-[hsl(var(--color-text-primary))]">
-                    <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500 shadow-sm">
+                    <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-lg bg-[hsl(var(--color-primary))] shadow-sm">
                       <ShoppingCart className="h-5 w-5 text-white" />
                     </div>
                     订单明细
                   </CardTitle>
                   <div className="flex items-center gap-3">
-                    <div className="rounded-lg bg-white px-3 py-1.5 shadow-sm">
-                      <span className="text-xs text-gray-600">产品种类</span>
-                      <span className="ml-2 text-sm font-bold text-[hsl(var(--color-primary))]">
+                    <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-white px-3 py-1.5">
+                      <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                        产品种类
+                      </span>
+                      <span className="ml-2 text-sm font-bold text-[hsl(var(--color-text-primary))]">
                         {orderItems.length}
                       </span>
                     </div>
-                    <div className="rounded-lg bg-white px-3 py-1.5 shadow-sm">
-                      <span className="text-xs text-gray-600">总数量</span>
-                      <span className="ml-2 text-sm font-bold text-[hsl(var(--color-primary))]">
+                    <div className="rounded-lg border border-[hsl(var(--color-border-secondary))] bg-white px-3 py-1.5">
+                      <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                        总数量
+                      </span>
+                      <span className="ml-2 text-sm font-bold text-[hsl(var(--color-text-primary))]">
                         {formatDecimal(totalDisplayQuantity)}
                       </span>
                     </div>
@@ -846,43 +856,34 @@ export default function SalesOrderDetailPage() {
                 {/* ERP风格表格 */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="sticky top-0 z-10 border-b-2 border-blue-200 bg-gradient-to-r from-gray-50 to-blue-50/50 shadow-sm">
-                      <tr className="text-xs font-semibold text-gray-700">
-                        <th className="px-4 py-3.5 text-left">
-                          <div className="flex items-center gap-1.5">
-                            <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
-                            产品信息
-                          </div>
+                    <thead className="sticky top-0 z-10 border-b-2 border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
+                      <tr className="text-xs font-semibold text-[hsl(var(--color-text-secondary))]">
+                        <th className="px-4 py-3.5 text-left font-medium">
+                          产品信息
                         </th>
-                        <th className="px-4 py-3.5 text-left">
-                          <div className="flex items-center gap-1.5">
-                            <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
-                            产品编码
-                          </div>
+                        <th className="px-4 py-3.5 text-left font-medium">
+                          产品编码
                         </th>
-                        <th className="px-4 py-3.5 text-center">每件片数</th>
-                        <th className="px-4 py-3.5 text-center">
+                        <th className="px-4 py-3.5 text-center font-medium">
+                          每件片数
+                        </th>
+                        <th className="px-4 py-3.5 text-center font-medium">
                           批次 / 生产日期
                         </th>
-                        <th className="px-4 py-3.5 text-left">规格</th>
-                        <th className="px-4 py-3.5 text-center">单位</th>
-                        <th className="px-4 py-3.5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            数量
-                            <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
-                          </div>
+                        <th className="px-4 py-3.5 text-left font-medium">
+                          规格
                         </th>
-                        <th className="px-4 py-3.5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            单价
-                            <div className="h-1.5 w-1.5 rounded-full bg-orange-500"></div>
-                          </div>
+                        <th className="px-4 py-3.5 text-center font-medium">
+                          单位
                         </th>
-                        <th className="px-4 py-3.5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            小计
-                            <div className="h-1.5 w-1.5 rounded-full bg-purple-500"></div>
-                          </div>
+                        <th className="px-4 py-3.5 text-right font-medium">
+                          数量
+                        </th>
+                        <th className="px-4 py-3.5 text-right font-medium">
+                          单价
+                        </th>
+                        <th className="px-4 py-3.5 text-right font-medium">
+                          小计
                         </th>
                         {order.orderType === 'TRANSFER' && (
                           <>
@@ -1005,17 +1006,17 @@ export default function SalesOrderDetailPage() {
                               </span>
                             </td>
                             <td className="px-4 py-3.5 text-right">
-                              <span className="inline-flex rounded-md bg-green-50 px-2.5 py-1 font-semibold text-green-700">
+                              <span className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                                 {quantityDisplay}
                               </span>
                             </td>
                             <td className="px-4 py-3.5 text-right">
-                              <span className="text-sm text-gray-700">
+                              <span className="text-sm text-[hsl(var(--color-text-secondary))]">
                                 {formatCurrency(item.unitPrice)}
                               </span>
                             </td>
                             <td className="px-4 py-3.5 text-right">
-                              <span className="inline-flex rounded-md bg-purple-50 px-2.5 py-1 font-semibold text-purple-700">
+                              <span className="text-sm font-bold text-[hsl(var(--color-text-primary))]">
                                 {formatCurrency(item.subtotal)}
                               </span>
                             </td>
@@ -1040,7 +1041,7 @@ export default function SalesOrderDetailPage() {
                                   </span>
                                 </td>
                                 <td className="px-4 py-3.5 text-right">
-                                  <span className="inline-flex rounded-md bg-green-50 px-2 py-0.5 text-sm font-medium text-green-600">
+                                  <span className="text-sm font-semibold text-[hsl(var(--color-success))]">
                                     {item.profitAmount
                                       ? formatCurrency(item.profitAmount)
                                       : '-'}
@@ -1049,13 +1050,15 @@ export default function SalesOrderDetailPage() {
                               </>
                             )}
                             <td className="px-4 py-3.5">
-                              <div className="max-w-xs text-xs text-gray-600">
+                              <div className="max-w-xs text-xs text-[hsl(var(--color-text-tertiary))]">
                                 {remarkText !== '-' ? (
-                                  <div className="rounded-md bg-amber-50 px-2 py-1 text-amber-800">
+                                  <div className="rounded-md border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] px-2 py-1">
                                     {remarkText}
                                   </div>
                                 ) : (
-                                  <span className="text-gray-400">-</span>
+                                  <span className="text-[hsl(var(--color-text-tertiary))]">
+                                    -
+                                  </span>
                                 )}
                               </div>
                             </td>
@@ -1064,51 +1067,48 @@ export default function SalesOrderDetailPage() {
                       })}
                     </tbody>
                     {/* 合计行 */}
-                    <tfoot className="border-t-2 border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <tfoot className="border-t-2 border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]">
                       <tr className="font-semibold">
                         <td
                           colSpan={6}
-                          className="px-4 py-4 text-right text-gray-700"
+                          className="px-4 py-4 text-right text-[hsl(var(--color-text-primary))]"
                         >
                           <div className="flex items-center justify-end gap-2">
-                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500">
-                              <span className="text-xs text-white">∑</span>
-                            </div>
-                            <span className="text-base">合计</span>
+                            <span className="text-base">产品小计</span>
                           </div>
                         </td>
                         <td className="px-4 py-4 text-right">
-                          <div className="inline-flex rounded-lg bg-green-100 px-3 py-1.5 text-sm font-bold text-green-700 shadow-sm">
+                          <span className="text-sm font-bold text-[hsl(var(--color-text-primary))]">
                             {formatDecimal(totalDisplayQuantity)}
-                          </div>
+                          </span>
                         </td>
                         <td className="px-4 py-4"></td>
                         <td className="px-4 py-4 text-right">
-                          <div className="inline-flex rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-1.5 text-base font-bold text-white shadow-md">
-                            {formatCurrency(order.totalAmount)}
-                          </div>
+                          <span className="text-base font-bold text-[hsl(var(--color-text-primary))]">
+                            {formatCurrency(productSubtotal)}
+                          </span>
                         </td>
                         {order.orderType === 'TRANSFER' && (
                           <>
                             <td className="px-4 py-4 text-right">
-                              <span className="text-sm text-gray-900">
+                              <span className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                                 {formatDecimal(totalLocalQuantity)} 片
                               </span>
                             </td>
                             <td className="px-4 py-4 text-right">
-                              <span className="text-sm text-gray-900">
+                              <span className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                                 {formatDecimal(totalTransferQuantity)} 片
                               </span>
                             </td>
                             <td className="px-4 py-4 text-right">
-                              <span className="text-sm text-gray-900">
+                              <span className="text-sm font-semibold text-[hsl(var(--color-text-primary))]">
                                 {formatCurrency(order.costAmount)}
                               </span>
                             </td>
                             <td className="px-4 py-4 text-right">
-                              <div className="inline-flex rounded-lg bg-green-100 px-3 py-1.5 text-base font-bold text-green-700 shadow-sm">
+                              <span className="text-base font-bold text-[hsl(var(--color-success))]">
                                 {formatCurrency(order.profitAmount)}
-                              </div>
+                              </span>
                             </td>
                           </>
                         )}
@@ -1119,6 +1119,123 @@ export default function SalesOrderDetailPage() {
                 </div>
               </CardContent>
             </Card>
+
+            {/* 额外费用明细 */}
+            {order.feeItems && order.feeItems.length > 0 && (
+              <Card
+                className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
+                style={{ boxShadow: 'var(--shadow-medium)' }}
+              >
+                <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))] py-3">
+                  <CardTitle className="flex items-center justify-between text-base text-[hsl(var(--color-text-primary))]">
+                    <div className="flex items-center">
+                      <DollarSign className="mr-2 h-4 w-4 text-[hsl(var(--color-primary))]" />
+                      额外费用明细
+                    </div>
+                    <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
+                      共 {order.feeItems.length} 项
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="bg-[hsl(var(--color-bg-card))] p-0">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead className="border-b-2 border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
+                        <tr className="text-xs font-semibold text-[hsl(var(--color-text-secondary))]">
+                          <th className="px-4 py-3 text-center font-medium">
+                            序号
+                          </th>
+                          <th className="px-4 py-3 text-left font-medium">
+                            费用类型
+                          </th>
+                          <th className="px-4 py-3 text-left font-medium">
+                            费用名称
+                          </th>
+                          <th className="px-4 py-3 text-right font-medium">
+                            费用金额
+                          </th>
+                          <th className="px-4 py-3 text-left font-medium">
+                            备注
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-[hsl(var(--color-border-secondary))]">
+                        {order.feeItems.map((fee, index) => (
+                          <tr
+                            key={fee.id}
+                            className="transition-colors hover:bg-[hsl(var(--color-bg-secondary))]/50"
+                          >
+                            <td className="px-4 py-3.5 text-center">
+                              <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
+                                {index + 1}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <span className="inline-flex rounded-md border border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] px-2 py-1 text-xs font-medium text-[hsl(var(--color-text-secondary))]">
+                                {FEE_TYPE_LABELS[
+                                  fee.feeType as keyof typeof FEE_TYPE_LABELS
+                                ] || fee.feeType}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <span className="text-sm font-medium text-[hsl(var(--color-text-primary))]">
+                                {fee.feeName}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5 text-right">
+                              <span className="text-sm font-bold text-[hsl(var(--color-primary))]">
+                                {formatCurrency(fee.feeAmount)}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                                {fee.remarks || '-'}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr className="border-t-2 border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))] font-semibold">
+                          <td
+                            colSpan={3}
+                            className="px-4 py-3 text-right text-[hsl(var(--color-text-primary))]"
+                          >
+                            <span className="text-sm">额外费用小计</span>
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <span className="text-sm font-bold text-[hsl(var(--color-text-primary))]">
+                              {formatCurrency(order.additionalFees)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3"></td>
+                        </tr>
+                        <tr className="border-t border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-tertiary))] font-bold">
+                          <td
+                            colSpan={3}
+                            className="px-4 py-4 text-right text-[hsl(var(--color-text-primary))]"
+                          >
+                            <div className="flex items-center justify-end gap-2">
+                              <span className="text-base">订单总金额</span>
+                              <span className="text-xs font-normal text-[hsl(var(--color-text-tertiary))]">
+                                (产品 {formatCurrency(productSubtotal)} + 费用{' '}
+                                {formatCurrency(order.additionalFees)})
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-4 text-right">
+                            <span className="text-lg font-bold text-[hsl(var(--color-primary))]">
+                              {formatCurrency(order.totalAmount)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-4"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* 右侧边栏 */}

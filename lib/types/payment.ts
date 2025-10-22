@@ -147,6 +147,11 @@ export interface PaymentRecordResponse {
   success: boolean;
   data: PaymentRecord;
   error?: string;
+  details?: Array<{
+    path?: string[];
+    message: string;
+    code?: string;
+  }>;
 }
 
 export interface PaymentRecordListResponse {

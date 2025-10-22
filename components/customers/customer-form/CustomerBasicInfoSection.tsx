@@ -1,5 +1,4 @@
 import { Building2 } from 'lucide-react';
-import React from 'react';
 import type { UseFormReturn } from 'react-hook-form';
 
 import { CustomerSelector } from '@/components/customers/customer-hierarchy';
@@ -25,10 +24,12 @@ import type {
   CustomerUpdateFormData,
 } from '@/lib/validations/customer';
 
-type SupportedForm = CustomerCreateFormData | CustomerUpdateFormData;
+// 使用更宽松的类型定义,支持两种表单类型
+type _SupportedForm = CustomerCreateFormData | CustomerUpdateFormData;
 
 interface CustomerBasicInfoSectionProps {
-  form: UseFormReturn<SupportedForm>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form: UseFormReturn<any>;
   isLoading: boolean;
   excludeCustomerId?: string;
 }

@@ -11,6 +11,7 @@ export type PartnerRole = 'customer' | 'supplier' | 'both';
 export type TransactionType =
   | 'sale'
   | 'sales_return'
+  | 'order_cancellation'
   | 'payment_in'
   | 'payment_out'
   | 'prepayment_in'
@@ -279,6 +280,13 @@ export const DEFAULT_TRANSACTION_TYPES: TransactionTypeConfig[] = [
     type: 'sales_return',
     label: '销售退货',
     description: '销售退货单',
+    isDebit: false,
+    isActive: true,
+  },
+  {
+    type: 'order_cancellation',
+    label: '订单取消',
+    description: '销售订单取消',
     isDebit: false,
     isActive: true,
   },

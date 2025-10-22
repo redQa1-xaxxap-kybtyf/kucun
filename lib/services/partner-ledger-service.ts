@@ -11,6 +11,7 @@ import type {
 
 import { publishFinanceChange } from '@/lib/cache/pubsub';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 import type {
   AccountStatementDetail,
   PartnerRole,
@@ -61,6 +62,7 @@ const DEFAULT_TRANSACTION_STATUS: Record<
 > = {
   sale: 'completed',
   sales_return: 'completed',
+  order_cancellation: 'completed',
   payment_in: 'completed',
   payment_out: 'completed',
   prepayment_in: 'completed',
@@ -89,6 +91,12 @@ const TRANSACTION_RULES: Record<TransactionType, TransactionRule> = {
     affectsPendingAmount: true,
   },
   sales_return: {
+    direction: 'credit',
+    balanceDelta: amount => -amount,
+    affectsTotalAmount: true,
+    affectsPendingAmount: true,
+  },
+  order_cancellation: {
     direction: 'credit',
     balanceDelta: amount => -amount,
     affectsTotalAmount: true,
@@ -144,6 +152,7 @@ const FINANCE_EVENT_TYPE: Record<
 > = {
   sale: 'receivable',
   sales_return: 'receivable',
+  order_cancellation: 'receivable',
   payment_in: 'payment',
   payment_out: 'payment',
   prepayment_in: 'payment',
@@ -353,6 +362,28 @@ export async function recordPartnerTransaction(
     'completed';
 
   return prisma.$transaction(async tx => {
+    // ✅ 防重复: 检查是否已经记录过相同的referenceId和transactionType
+    const existingTransaction = await tx.statementTransaction.findFirst({
+      where: {
+        referenceId: input.referenceId,
+        transactionType: input.transactionType,
+      },
+    });
+
+    if (existingTransaction) {
+      logger.warn(
+        'partner-ledger',
+        '检测到重复的往来账交易记录,跳过创建',
+        undefined,
+        {
+          referenceId: input.referenceId,
+          transactionType: input.transactionType,
+          existingTransactionId: existingTransaction.id,
+        }
+      );
+      return existingTransaction;
+    }
+
     const partner = await resolvePartnerEntity(input.partnerId);
     const incomingRole = input.partnerRole ?? partner.role;
     const existingStatement = await tx.accountStatement.findUnique({

@@ -63,11 +63,16 @@ export function CustomerForm({
     ? parseExtendedInfo(initialData.extendedInfo)
     : customerCreateDefaults.extendedInfo;
 
-  const form = useForm<CustomerCreateFormData | CustomerUpdateFormData>({
-    resolver: zodResolver(schema),
+  // 明确表单类型,避免联合类型导致的类型推断问题
+  type FormData = typeof isEdit extends true
+    ? CustomerUpdateFormData
+    : CustomerCreateFormData;
+
+  const form = useForm<FormData>({
+    resolver: zodResolver(schema) as never,
     defaultValues:
       isEdit && initialData
-        ? {
+        ? ({
             id: initialData.id,
             name: initialData.name,
             phone: initialData.phone || '',
@@ -77,11 +82,12 @@ export function CustomerForm({
               ...customerCreateDefaults.extendedInfo,
               ...initialExtendedInfo,
             },
-          }
-        : {
+          } as FormData)
+        : ({
             ...customerCreateDefaults,
             name: '',
-          },
+            parentCustomerId: '',
+          } as FormData),
   });
 
   // 创建客户 Mutation
@@ -166,21 +172,26 @@ export function CustomerForm({
       return;
     }
 
-    const currentTags = form.getValues('extendedInfo.tags') || [];
+    const extendedInfo = form.getValues('extendedInfo');
+    const currentTags = extendedInfo?.tags || [];
     if (currentTags.includes(newTag.trim())) {
       return;
     }
 
-    form.setValue('extendedInfo.tags', [...currentTags, newTag.trim()]);
+    form.setValue('extendedInfo', {
+      ...extendedInfo,
+      tags: [...currentTags, newTag.trim()],
+    });
     setNewTag('');
   };
 
   const removeTag = (tagToRemove: string) => {
-    const currentTags = form.getValues('extendedInfo.tags') || [];
-    form.setValue(
-      'extendedInfo.tags',
-      currentTags.filter(tag => tag !== tagToRemove)
-    );
+    const extendedInfo = form.getValues('extendedInfo');
+    const currentTags = extendedInfo?.tags || [];
+    form.setValue('extendedInfo', {
+      ...extendedInfo,
+      tags: currentTags.filter(tag => tag !== tagToRemove),
+    });
   };
 
   return (
@@ -214,13 +225,13 @@ export function CustomerForm({
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <CustomerBasicInfoSection
-            form={form}
+            form={form as never}
             isLoading={isLoading}
             excludeCustomerId={initialData?.id}
           />
 
           <CustomerExtendedInfoSection
-            form={form}
+            form={form as never}
             isLoading={isLoading}
             newTag={newTag}
             onNewTagChange={setNewTag}

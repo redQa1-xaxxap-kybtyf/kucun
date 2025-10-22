@@ -89,6 +89,8 @@ const extendedInfoValidations = {
     .max(500, '备注信息不能超过500个字符')
     .optional()
     .or(z.literal('')),
+
+  tags: z.array(z.string()).optional(),
 };
 
 // 客户创建表单验证
@@ -96,6 +98,7 @@ export const customerCreateSchema = z.object({
   name: baseValidations.name,
   phone: baseValidations.phone,
   address: baseValidations.address,
+  parentCustomerId: z.string().optional(),
   extendedInfo: z.object(extendedInfoValidations).optional(),
 });
 
@@ -105,6 +108,7 @@ export const customerUpdateSchema = z.object({
   name: baseValidations.name.optional(),
   phone: baseValidations.phone,
   address: baseValidations.address,
+  parentCustomerId: z.string().optional(),
   extendedInfo: z.object(extendedInfoValidations).optional(),
 });
 

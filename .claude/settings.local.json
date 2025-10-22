@@ -161,7 +161,8 @@
       "Bash(git restore:*)",
       "WebFetch(domain:www.prisma.io)",
       "Bash(npx prettier:*)",
-      "Bash(git diff:*)"
+      "Bash(git diff:*)",
+      "mcp__serena__find_referencing_symbols"
     ],
     "deny": [],
     "ask": []

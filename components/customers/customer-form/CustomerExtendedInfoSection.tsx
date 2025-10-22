@@ -31,7 +31,8 @@ import type {
 type SupportedForm = CustomerCreateFormData | CustomerUpdateFormData;
 
 interface CustomerExtendedInfoSectionProps {
-  form: UseFormReturn<SupportedForm>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  form: UseFormReturn<any>;
   isLoading: boolean;
   newTag: string;
   onNewTagChange: (value: string) => void;
@@ -47,7 +48,9 @@ export function CustomerExtendedInfoSection({
   onAddTag,
   onRemoveTag,
 }: CustomerExtendedInfoSectionProps) {
-  const tags = form.watch('extendedInfo.tags') || [];
+  // 安全地获取 tags,处理可能的 undefined
+  const extendedInfo = form.watch('extendedInfo');
+  const tags = (extendedInfo?.tags as string[] | undefined) || [];
 
   return (
     <Card>

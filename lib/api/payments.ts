@@ -134,11 +134,19 @@ export const paymentsApi = {
       body: JSON.stringify(data),
     });
 
+    // ✅ 修复: 无论响应状态如何，都尝试解析JSON以获取详细错误信息
+    const result: PaymentRecordResponse = await response.json();
+
     if (!response.ok) {
-      throw new Error(`创建收款记录失败: ${response.statusText}`);
+      // 如果有详细的验证错误，显示第一个错误的详细信息
+      if (result.details && Array.isArray(result.details) && result.details.length > 0) {
+        const firstError = result.details[0];
+        throw new Error(`${firstError.path?.join('.') || '字段'}: ${firstError.message}`);
+      }
+      // 否则显示通用错误消息
+      throw new Error(result.error || `创建收款记录失败: ${response.statusText}`);
     }
 
-    const result: PaymentRecordResponse = await response.json();
     if (!result.success) {
       throw new Error(result.error || '创建收款记录失败');
     }
@@ -200,11 +208,13 @@ export const paymentsApi = {
       body: JSON.stringify({ notes }),
     });
 
+    // ✅ 修复: 无论响应状态如何，都尝试解析JSON以获取详细错误信息
+    const result: PaymentRecordResponse = await response.json();
+
     if (!response.ok) {
-      throw new Error(`确认收款失败: ${response.statusText}`);
+      throw new Error(result.error || `确认收款失败: ${response.statusText}`);
     }
 
-    const result: PaymentRecordResponse = await response.json();
     if (!result.success) {
       throw new Error(result.error || '确认收款失败');
     }

@@ -41,9 +41,9 @@ export default async function FactoryShipmentsPage({
   const sortBy = (params.sortBy as string) || 'createdAt';
   const sortOrder = (params.sortOrder as 'asc' | 'desc') || 'desc';
 
-  // 日期筛选参数 - 保持字符串格式，避免序列化问题
-  const startDate = (params.startDate as string) || undefined;
-  const endDate = (params.endDate as string) || undefined;
+  // 日期筛选参数 - 转换为 Date 对象传递给服务端
+  const startDateStr = (params.startDate as string) || undefined;
+  const endDateStr = (params.endDate as string) || undefined;
 
   const queryParams = {
     page,
@@ -52,8 +52,8 @@ export default async function FactoryShipmentsPage({
     status,
     sortBy,
     sortOrder,
-    startDate,
-    endDate,
+    startDate: startDateStr ? new Date(startDateStr) : undefined,
+    endDate: endDateStr ? new Date(endDateStr) : undefined,
   };
 
   // ✅ 创建 QueryClient 用于服务端预取
@@ -63,9 +63,12 @@ export default async function FactoryShipmentsPage({
   const initialData = await getFactoryShipmentOrdersServer(queryParams);
 
   // ✅ 使用 setQueryData 预填充缓存（而非 prefetchQuery）
+  // 注意: API 返回 { data, total, page, limit },不是 { data, pagination }
   queryClient.setQueryData(factoryShipmentQueryKeys.list(queryParams), {
     data: initialData.data,
-    pagination: initialData.pagination,
+    total: initialData.total,
+    page: initialData.page,
+    limit: initialData.limit,
   });
 
   return (

@@ -78,10 +78,11 @@ export default async function ReturnOrdersPage({ searchParams }: PageProps) {
   const initialData = await getReturnOrdersServer(initialParams);
 
   // ✅ 使用 setQueryData 预填充缓存（而不是通过 props）
-  queryClient.setQueryData(queryKeys.returnOrders.list(initialParams), {
-    data: initialData.data,
-    pagination: initialData.pagination,
-  });
+  // 注意: initialData 是 ReturnOrderListResponse 类型,包含 { success, data: { returnOrders, pagination } }
+  queryClient.setQueryData(
+    queryKeys.returnOrders.list(initialParams),
+    initialData
+  );
 
   return (
     // ✅ 使用 HydrationBoundary 传递 QueryClient 状态

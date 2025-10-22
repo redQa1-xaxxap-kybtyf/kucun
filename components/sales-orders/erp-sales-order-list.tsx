@@ -369,12 +369,37 @@ export function ERPSalesOrderList({
   const getPaymentStatusBadge = (order: SalesOrder) => {
     const paidAmount = order.paidAmount || 0;
     const remainingAmount = order.remainingAmount || 0;
-    // 未发货的订单不显示收款状态
-    if (order.status !== 'shipped' && order.status !== 'completed') {
+
+    // 已取消的订单不显示收款状态
+    if (order.status === 'cancelled') {
       return (
         <span className="text-xs text-[hsl(var(--color-text-tertiary))]">
           -
         </span>
+      );
+    }
+
+    // 草稿状态显示"待确认"
+    if (order.status === 'draft') {
+      return (
+        <Badge
+          variant="outline"
+          className="border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-tertiary))] text-xs font-medium text-[hsl(var(--color-text-secondary))]"
+        >
+          待确认
+        </Badge>
+      );
+    }
+
+    // 已确认但未发货显示"待发货"
+    if (order.status === 'confirmed') {
+      return (
+        <Badge
+          variant="outline"
+          className="border-[hsl(var(--color-primary))] bg-[hsl(var(--color-primary-light))] text-xs font-medium text-[hsl(var(--color-primary))]"
+        >
+          待发货
+        </Badge>
       );
     }
 
@@ -390,6 +415,7 @@ export function ERPSalesOrderList({
       );
     }
 
+    // 已发货订单，显示收款状态
     // 未收款
     if (paidAmount === 0) {
       return (

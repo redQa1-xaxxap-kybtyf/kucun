@@ -147,10 +147,16 @@ export const POST = withAuth(
 
       await clearCacheAfterPayment();
 
+      // ✅ 修复: 只有订单已发货时才记录往来账单的收款
+      // 预收款不记录(预收款在冲抵时才影响往来账)
+      // 未发货订单的收款也不记录(因为还没有应收款记录)
       if (
         updated.customerId &&
+        updated.paymentType === 'order_payment' &&
         Number(updated.actualPaymentAmount) > 0 &&
-        updated.status === 'confirmed'
+        updated.status === 'confirmed' &&
+        updated.salesOrder?.status &&
+        ['shipped', 'completed'].includes(updated.salesOrder.status) // ✅ 关键修复: 只有已发货订单才记录收款
       ) {
         try {
           await recordPartnerTransaction({

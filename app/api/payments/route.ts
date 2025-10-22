@@ -322,16 +322,19 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
           },
         });
 
-        // ✅ 仅订单付款需要验证金额和更新订单状态
+        // ✅ 仅订单付款需要验证金额
         if (data.paymentType === 'order_payment' && data.salesOrderId) {
-          // 从之前的验证中获取订单信息(避免重复查询)
+          // ✅ 修复: 查询现有的收款记录,排除当前正在创建的记录(通过ID不等于新创建的记录ID)
           const salesOrder = await tx.salesOrder.findUnique({
             where: { id: data.salesOrderId },
             select: {
               totalAmount: true,
               status: true,
               payments: {
-                where: { status: { in: ['confirmed', 'pending'] } },
+                where: {
+                  status: { in: ['confirmed', 'pending'] },
+                  id: { not: newPayment.id }, // ✅ 关键修复: 排除当前正在创建的记录
+                },
                 select: { paymentAmount: true, status: true },
               },
             },
@@ -356,20 +359,9 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
             throw new Error('收款金额超过订单总额');
           }
 
-          // 如果收款金额达到或超过订单总额且订单已发货,自动更新为已完成
-          const newTotalPaid = confirmedAmount + data.paymentAmount;
-          if (
-            newTotalPaid >= salesOrder.totalAmount &&
-            salesOrder.status === 'shipped'
-          ) {
-            await tx.salesOrder.update({
-              where: { id: data.salesOrderId },
-              data: {
-                status: 'completed', // 已发货 + 全额收款 = 已完成
-                updatedAt: new Date(),
-              },
-            });
-          }
+          // ✅ 修复: 移除创建收款时的订单状态自动更新逻辑
+          // 订单状态更新应该在收款确认时进行(POST /api/payments/[id]/confirm)
+          // 创建收款记录时不应该立即更新订单状态,因为收款记录可能还未确认
         }
 
         return newPayment;
@@ -380,10 +372,16 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
     // 清除相关缓存
     await clearCacheAfterPayment();
 
+    // ✅ 修复: 只有订单已发货时才记录往来账单的收款
+    // 预收款不记录(预收款在冲抵时才影响往来账)
+    // 未发货订单的收款也不记录(因为还没有应收款记录)
     if (
       payment.status === 'confirmed' &&
+      payment.paymentType === 'order_payment' &&
       payment.customerId &&
-      Number(payment.actualPaymentAmount) > 0
+      Number(payment.actualPaymentAmount) > 0 &&
+      payment.salesOrder?.status &&
+      ['shipped', 'completed'].includes(payment.salesOrder.status) // ✅ 关键修复: 只有已发货订单才记录收款
     ) {
       try {
         await recordPartnerTransaction({

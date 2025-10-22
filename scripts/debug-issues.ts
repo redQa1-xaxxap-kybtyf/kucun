@@ -1,0 +1,56 @@
+/**
+ * 调试数据库问题
+ */
+
+import { PrismaClient } from '@prisma/client';
+
+const prisma = new PrismaClient();
+
+async function main() {
+  // 1. 检查收款状态
+  console.log('1. 检查收款状态问题:\n');
+  const payment = await prisma.paymentRecord.findFirst({
+    where: { paymentNumber: 'SK-20251022-008' },
+  });
+  console.log('收款记录:', payment);
+  console.log('状态:', payment?.status);
+  console.log('合法状态: pending, confirmed, cancelled');
+  console.log('');
+
+  // 2. 检查订单金额
+  console.log('2. 检查订单金额问题:\n');
+  const order = await prisma.salesOrder.findFirst({
+    where: { orderNumber: 'SO202510220107' },
+    include: {
+      items: true,
+      feeItems: true,
+    },
+  });
+
+  console.log('订单总额:', order?.totalAmount);
+
+  const itemsTotal = order?.items.reduce((sum, item) => sum + item.subtotal, 0) || 0;
+  console.log('明细合计:', itemsTotal);
+
+  const feesTotal = order?.feeItems.reduce((sum, fee) => sum + fee.feeAmount, 0) || 0;
+  console.log('费用合计:', feesTotal);
+
+  console.log('应该的总额:', itemsTotal + feesTotal);
+
+  console.log('\n明细列表:');
+  order?.items.forEach((item, index) => {
+    console.log(
+      `  ${index + 1}. ${item.productName} x ${item.quantity} = ${item.subtotal}`
+    );
+  });
+
+  console.log('\n费用列表:');
+  order?.feeItems.forEach((fee, index) => {
+    console.log(`  ${index + 1}. ${fee.feeName}: ${fee.feeAmount}`);
+  });
+
+  await prisma.$disconnect();
+}
+
+main();
+

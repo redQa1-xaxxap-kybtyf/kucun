@@ -16,8 +16,8 @@ import {
 import {
   type FeeType,
   type SalesOrderFeeItem,
-  FEE_TYPE_OPTIONS,
   FEE_TYPE_LABELS,
+  FEE_TYPE_OPTIONS,
 } from '@/lib/types/sales-order-fee';
 import { formatCurrency } from '@/lib/utils/format';
 
@@ -91,6 +91,15 @@ export const FeeItemsInput = React.memo<FeeItemsInputProps>(
     ) => {
       const updated = localItems.map((item, i) => {
         if (i === index) {
+          // 当费用类型改变时，同时更新费用名称为对应的默认名称
+          if (field === 'feeType') {
+            const newFeeType = value as FeeType;
+            return {
+              ...item,
+              feeType: newFeeType,
+              feeName: FEE_TYPE_LABELS[newFeeType],
+            };
+          }
           return {
             ...item,
             [field]: value,

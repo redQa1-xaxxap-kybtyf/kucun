@@ -24,6 +24,7 @@ interface StatementTransactionsProps {
 const TRANSACTION_TYPE_LABEL: Record<string, string> = {
   sale: '销售',
   sales_return: '销售退货',
+  order_cancellation: '订单取消',
   payment_in: '收款',
   payment_out: '付款',
   prepayment_in: '预收款',
