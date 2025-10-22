@@ -156,7 +156,7 @@ function DateRangeFields({
   }
 
   return (
-    <div className="md:col-span-2">
+    <div>
       <DateRangePicker
         value={{ startDate, endDate }}
         onChange={({ startDate, endDate }) => {
