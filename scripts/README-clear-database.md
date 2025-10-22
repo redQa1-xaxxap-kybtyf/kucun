@@ -48,10 +48,45 @@
 npx tsx scripts/clear-database.ts
 ```
 
+**输出示例**：
+
+```
+🧹 开始清空数据库...
+⚠️  警告：此操作将删除所有业务数据，但保留管理员账户！
+
+1️⃣ 清空运输查询数据...
+   ✅ 已清空运输查询记录
+...
+2️⃣1️⃣ 验证管理员账户...
+   ✅ 保留了 1 个管理员账户：
+      - 系统管理员 (admin / admin@inventory.com)
+
+✨ 数据库清空完成！
+```
+
 ### 2. 验证管理员账户
 
 ```bash
 npx tsx scripts/verify-admin.ts
+```
+
+**输出示例**：
+
+```
+🔍 验证管理员账户...
+
+✅ 找到 1 个管理员账户：
+
+👤 系统管理员
+   用户名: admin
+   邮箱: admin@inventory.com
+   状态: active
+   密码验证: ✅ 正确 (admin123456)
+
+📊 用户统计：
+   总用户数: 1
+   管理员: 1
+   销售员: 0
 ```
 
 ### 3. 重新初始化测试数据（可选）
@@ -59,7 +94,7 @@ npx tsx scripts/verify-admin.ts
 如果需要重新生成测试数据，可以运行：
 
 ```bash
-npm run seed
+npm run db:seed
 ```
 
 ## 注意事项
@@ -78,8 +113,36 @@ npm run seed
 3. 建议在执行前做好数据库备份
 4. 可以通过环境变量限制脚本只在开发环境运行
 
+## 完整清理流程
+
+```bash
+# 1. 清空数据库
+npx tsx scripts/clear-database.ts
+
+# 2. 验证管理员账户
+npx tsx scripts/verify-admin.ts
+
+# 3. （可选）重新生成测试数据
+npm run db:seed
+```
+
 ## 相关脚本
 
-- `scripts/clear-database.ts` - 清空数据库脚本
-- `scripts/verify-admin.ts` - 验证管理员账户脚本
+- `scripts/clear-database.ts` - 清空数据库脚本（新增）
+- `scripts/verify-admin.ts` - 验证管理员账户脚本（新增）
+- `scripts/create-correct-admin.ts` - 创建管理员账户脚本
+- `scripts/clear-test-data.ts` - 清空测试数据脚本（保留用户）
 - `prisma/seed.ts` - 初始化种子数据脚本
+
+## 执行记录
+
+### 最近一次执行
+
+- **执行时间**: 2025-10-22
+- **执行结果**: ✅ 成功
+- **保留账户**: 1 个管理员账户（admin@inventory.com）
+- **删除记录**: 所有业务数据已清空
+
+---
+
+**提示**：如有任何问题，请查看脚本输出的详细日志。
