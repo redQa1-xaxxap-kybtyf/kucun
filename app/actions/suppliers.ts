@@ -519,7 +519,6 @@ export async function batchDeleteSuppliers(
     const foundIds = new Set(suppliers.map(s => s.id));
     const notFoundIds = supplierIds.filter(id => !foundIds.has(id));
 
-    let deletedCount = 0;
     let failedCount = 0;
     const failedSuppliers: {
       id: string;
