@@ -1,3 +1,11 @@
+import {
+  dehydrate,
+  HydrationBoundary,
+  QueryClient,
+} from '@tanstack/react-query';
+
+import { getReturnOrders } from '@/lib/api/return-orders';
+import { queryKeys } from '@/lib/queryKeys';
 import type { ReturnOrderStatus } from '@/lib/types/return-order';
 
 import { ReturnOrdersPageClient } from './page-client';
@@ -28,11 +36,13 @@ interface PageProps {
 /**
  * 退货订单管理页面
  *
- * ✅ Next.js 15 最佳实践：
- * - Server Component 架构
- * - Route Segment Config 缓存控制
- * - 类型安全的 searchParams
- * - 客户端状态管理分离
+ * ✅ Next.js 15 + React Query 最佳实践：
+ * 1. Route Segment Config - 明确缓存策略
+ * 2. Server Components - 服务端数据获取
+ * 3. HydrationBoundary - SSR 数据传递（关键！）
+ * 4. QueryClient.setQueryData - 预填充缓存
+ *
+ * @see https://tanstack.com/query/latest/docs/framework/react/guides/advanced-ssr
  */
 
 // ============================================
@@ -61,5 +71,22 @@ export default async function ReturnOrdersPage({ searchParams }: PageProps) {
     endDate: params?.endDate || undefined,
   };
 
-  return <ReturnOrdersPageClient initialParams={initialParams} />;
+  // ✅ 创建 QueryClient 用于服务端预取
+  const queryClient = new QueryClient();
+
+  // ✅ 服务端获取初始数据
+  const initialData = await getReturnOrders(initialParams);
+
+  // ✅ 使用 setQueryData 预填充缓存（而不是通过 props）
+  queryClient.setQueryData(queryKeys.returnOrders.list(initialParams), {
+    data: initialData.data,
+    pagination: initialData.pagination,
+  });
+
+  return (
+    // ✅ 使用 HydrationBoundary 传递 QueryClient 状态
+    <HydrationBoundary state={dehydrate(queryClient)}>
+      <ReturnOrdersPageClient initialParams={initialParams} />
+    </HydrationBoundary>
+  );
 }

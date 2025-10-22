@@ -42,19 +42,19 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { useToast } from '@/components/ui/use-toast';
+import { getReturnOrders } from '@/lib/api/return-orders';
 import { paginationConfig } from '@/lib/env';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   type ReturnOrder,
   type ReturnOrderQueryParams,
-  type ReturnOrderStatus,
   RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
 } from '@/lib/types/return-order';
 import { formatCurrency } from '@/lib/utils';
-import { formatDateTime } from '@/lib/utils/datetime';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { formatDateTime } from '@/lib/utils/datetime';
 
 interface ERPReturnOrderListProps {
   initialParams?: ReturnOrderQueryParams;
@@ -87,66 +87,45 @@ export function ERPReturnOrderList({
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // 查询参数状态
-  const [queryParams, setQueryParams] = useState<ReturnOrderQueryParams>(
-    initialParams || {
-      page: 1,
-      limit: paginationConfig.defaultPageSize,
-      sortBy: 'createdAt',
-      sortOrder: 'desc',
-    }
-  );
+  // ✅ 移除内部 queryParams 状态，完全依赖外部传入的 initialParams
+  // ✅ 单一数据源原则：状态统一在父组件管理
 
   // 取消对话框状态
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
   const [orderToCancel, setOrderToCancel] = useState<ReturnOrder | null>(null);
 
-  // 获取退货订单数据
+  // ✅ 默认查询参数（确保类型正确）
+  const queryParams: ReturnOrderQueryParams = {
+    page: initialParams?.page || 1,
+    limit: initialParams?.limit || paginationConfig.defaultPageSize,
+    search: initialParams?.search,
+    status: initialParams?.status,
+    sortBy: initialParams?.sortBy || 'createdAt',
+    sortOrder: initialParams?.sortOrder || 'desc',
+    startDate: initialParams?.startDate,
+    endDate: initialParams?.endDate,
+  };
+
+  // ✅ 获取退货订单列表数据 - 从 HydrationBoundary 自动获取服务端预取的数据
   const {
     data: queryData,
     isLoading,
     error,
-    refetch: _refetch,
+    isFetching,
+    refetch,
   } = useQuery({
     queryKey: queryKeys.returnOrders.list(queryParams),
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/return-orders?${new URLSearchParams(
-          Object.entries(queryParams)
-            .filter(
-              ([_, value]) =>
-                value !== undefined && value !== null && value !== ''
-            )
-            .map(([key, value]) => [key, String(value)])
-        ).toString()}`
-      );
-
-      if (!response.ok) {
-        throw new Error(`获取退货订单列表失败: ${response.statusText}`);
-      }
-
-      return response.json();
-    },
-    staleTime: 5 * 60 * 1000, // 5分钟内认为数据是新鲜的
-    refetchOnWindowFocus: false,
+    queryFn: () => getReturnOrders(queryParams),
+    // ✅ 移除 initialData - 数据已在 QueryClient 中（通过 HydrationBoundary）
+    staleTime: 30 * 1000, // ✅ 30秒内数据视为新鲜，避免频繁请求导致数据闪烁
+    refetchOnWindowFocus: false, // 避免窗口聚焦时不必要的刷新
+    placeholderData: previousData => previousData, // ✅ 保持上一次数据，避免数据清空
+    refetchOnMount: false, // 避免挂载时重新获取
+    gcTime: 10 * 60 * 1000, // ✅ 缓存时间10分钟，提升后退/前进体验
   });
 
-  // 临时模拟数据（当API不可用时）
-  const mockData = {
-    success: true,
-    data: {
-      returnOrders: [],
-      pagination: {
-        page: 1,
-        limit: 20,
-        total: 0,
-        totalPages: 1,
-      },
-    },
-  };
-
-  // 如果API失败，使用模拟数据
-  const displayData = error ? mockData : queryData;
+  // ✅ 直接使用 queryData，不再使用 mock 数据回退
+  const displayData = queryData;
 
   // 取消退货订单mutation
   const cancelMutation = useMutation({
@@ -222,16 +201,6 @@ export function ERPReturnOrderList({
     (key: string, value: string | undefined) => {
       if (onFilter) {
         onFilter(key, value);
-      } else {
-        if (key === 'status') {
-          setQueryParams(prev => ({
-            ...prev,
-            status: (value === 'all' || !value ? undefined : value) as
-              | ReturnOrderStatus
-              | undefined,
-            page: 1,
-          }));
-        }
       }
     },
     [onFilter]
@@ -239,13 +208,9 @@ export function ERPReturnOrderList({
 
   const handleDateRangeChange = React.useCallback(
     (range: DateRangeValue) => {
-      setQueryParams(prev => ({
-        ...prev,
-        startDate: range.startDate,
-        endDate: range.endDate,
-        page: 1,
-      }));
-      onDateRangeChange?.(range);
+      if (onDateRangeChange) {
+        onDateRangeChange(range);
+      }
     },
     [onDateRangeChange]
   );
@@ -284,18 +249,32 @@ export function ERPReturnOrderList({
     }
   };
 
-  // 格式化金额
   // 获取状态颜色（使用统一的 badge-helpers）
   const getStatusColor = (status: string) =>
     getReturnOrderStatusBadgeVariant(status);
 
-  // 如果有真实数据错误且没有模拟数据，显示错误
-  if (error && !displayData) {
+  // ✅ 改进的错误处理：显示错误信息并提供重试功能
+  if (error) {
     return (
       <Card className="shadow-lg shadow-gray-200/50">
         <CardContent className="pt-6">
-          <div className="text-center text-red-600">
-            加载退货订单失败: {error.message}
+          <div className="flex flex-col items-center justify-center gap-4 py-8">
+            <div className="text-center">
+              <p className="text-lg font-semibold text-[hsl(var(--color-error))]">
+                加载退货订单失败
+              </p>
+              <p className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
+                {error instanceof Error ? error.message : '未知错误'}
+              </p>
+            </div>
+            <Button
+              variant="outline"
+              onClick={() => refetch()}
+              className="mt-2"
+            >
+              <TrendingDown className="mr-2 h-4 w-4" />
+              重试
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -307,6 +286,14 @@ export function ERPReturnOrderList({
       {/* 搜索和筛选 */}
       <Card className="shadow-md shadow-gray-200/50">
         <CardContent className="space-y-4 pt-6">
+          {/* ✅ 加载指示器：提升用户体验 */}
+          {isFetching && (
+            <div className="mb-2 flex items-center gap-2 text-xs text-[hsl(var(--color-primary))]">
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-[hsl(var(--color-primary))] border-t-transparent"></div>
+              <span>搜索中...</span>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center gap-3">
             <div className="min-w-[280px] flex-1">
               <UnifiedSearchBar
