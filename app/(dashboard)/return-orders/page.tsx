@@ -4,7 +4,7 @@ import {
   QueryClient,
 } from '@tanstack/react-query';
 
-import { getReturnOrders } from '@/lib/api/return-orders';
+import { getReturnOrdersServer } from '@/lib/api/return-orders-server';
 import { queryKeys } from '@/lib/queryKeys';
 import type { ReturnOrderStatus } from '@/lib/types/return-order';
 
@@ -74,8 +74,8 @@ export default async function ReturnOrdersPage({ searchParams }: PageProps) {
   // ✅ 创建 QueryClient 用于服务端预取
   const queryClient = new QueryClient();
 
-  // ✅ 服务端获取初始数据
-  const initialData = await getReturnOrders(initialParams);
+  // ✅ 服务端获取初始数据（直接查询数据库）
+  const initialData = await getReturnOrdersServer(initialParams);
 
   // ✅ 使用 setQueryData 预填充缓存（而不是通过 props）
   queryClient.setQueryData(queryKeys.returnOrders.list(initialParams), {
