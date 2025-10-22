@@ -17,6 +17,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { calculatePieceDisplay } from '@/lib/utils/piece-calculation';
 
 interface Batch {
   batchNumber: string;
@@ -54,6 +55,21 @@ export function BatchSelector({
     setOpen(false);
   };
 
+  // 格式化批次库存显示
+  const formatBatchStock = (batch: Batch): string => {
+    const piecesPerUnit =
+      typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
+        ? batch.piecesPerUnit
+        : 1;
+
+    if (batch.quantity <= 0) {
+      return '0片';
+    }
+
+    const result = calculatePieceDisplay(batch.quantity, piecesPerUnit);
+    return result.displayText;
+  };
+
   // 如果只有一个批次，自动选择并显示
   React.useEffect(() => {
     if (batches.length === 1 && !value) {
@@ -83,7 +99,7 @@ export function BatchSelector({
         >
           <span className="truncate">
             {selectedBatch
-              ? `${selectedBatch.batchNumber} (${selectedBatch.quantity} 片)`
+              ? `${selectedBatch.batchNumber} (${formatBatchStock(selectedBatch)}${selectedBatch.piecesPerUnit && selectedBatch.piecesPerUnit > 1 ? `, 每件${selectedBatch.piecesPerUnit}片` : ''})`
               : placeholder}
           </span>
           <ChevronsUpDown className="ml-2 h-3 w-3 shrink-0 opacity-50" />
@@ -99,27 +115,31 @@ export function BatchSelector({
                   key={`${batch.batchNumber}-${idx}`}
                   value={batch.batchNumber}
                   onSelect={() => handleBatchSelect(batch.batchNumber)}
-                  className="flex items-center justify-between p-3"
+                  className="flex flex-col items-start gap-1 p-3"
                 >
-                  <div className="flex items-center gap-2">
-                    <Check
-                      className={cn(
-                        'h-4 w-4',
-                        value === batch.batchNumber
-                          ? 'opacity-100'
-                          : 'opacity-0'
-                      )}
-                    />
-                    <span className="font-mono text-sm font-medium text-blue-700">
-                      {batch.batchNumber}
-                    </span>
+                  <div className="flex w-full items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Check
+                        className={cn(
+                          'h-4 w-4',
+                          value === batch.batchNumber
+                            ? 'opacity-100'
+                            : 'opacity-0'
+                        )}
+                      />
+                      <span className="font-mono text-sm font-medium text-blue-700">
+                        {batch.batchNumber}
+                      </span>
+                    </div>
+                    <div className="text-sm font-semibold text-green-600">
+                      {formatBatchStock(batch)}
+                    </div>
                   </div>
-                  <div className="text-sm">
-                    <span className="font-semibold text-green-600">
-                      {batch.quantity}
-                    </span>
-                    <span className="ml-1 text-gray-500">片</span>
-                  </div>
+                  {batch.piecesPerUnit && batch.piecesPerUnit > 1 && (
+                    <div className="ml-6 text-xs text-gray-500">
+                      每件 {batch.piecesPerUnit} 片
+                    </div>
+                  )}
                 </CommandItem>
               ))}
             </CommandGroup>

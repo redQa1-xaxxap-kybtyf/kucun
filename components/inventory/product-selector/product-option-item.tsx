@@ -20,52 +20,32 @@ export function ProductOptionItem({
   const batchSpecs = product.batchSpecs ?? [];
   const isMultipleBatches = batchSpecs.length > 1;
 
-  // 获取实际每件片数：优先使用批次规格中的值（用于库存计算）
-  const effectivePiecesPerUnit = React.useMemo(() => {
-    if (batchSpecs.length > 0) {
-      return batchSpecs[0].piecesPerUnit || 1;
-    }
-    return product.piecesPerUnit || 1;
-  }, [batchSpecs, product.piecesPerUnit]);
-
-  const piecesPerUnitDisplay = React.useMemo(() => {
-    if (batchSpecs.length === 0) {
-      const value = product.piecesPerUnit;
-      return value && value > 0 ? `每件${value}片` : null;
-    }
-    if (batchSpecs.length === 1) {
-      return `每件${batchSpecs[0].piecesPerUnit}片`;
-    }
-    return '多批次，请选择批次';
-  }, [batchSpecs, product.piecesPerUnit]);
-
+  // 库存显示逻辑
   const stockDisplay = React.useMemo(() => {
     const totalPieces = product.currentStock ?? 0;
     if (!totalPieces || totalPieces <= 0) {
       return '0片';
     }
 
-    // 调试：打印实际值
-    if (process.env.NODE_ENV === 'development') {
-      console.log('产品库存计算:', {
-        code: product.code,
-        totalPieces,
-        productPiecesPerUnit: product.piecesPerUnit,
-        effectivePiecesPerUnit,
-        hasBatchSpecs: !!product.batchSpecs,
-        batchSpecsLength: product.batchSpecs?.length,
-      });
+    // 如果有多个批次，每个批次的每件片数可能不同，只显示总片数
+    if (isMultipleBatches) {
+      return `${totalPieces}片 (多批次)`;
     }
+
+    // 如果只有一个批次或没有批次，使用该批次的每件片数或产品默认值
+    const effectivePiecesPerUnit =
+      batchSpecs.length > 0
+        ? batchSpecs[0].piecesPerUnit || 1
+        : product.piecesPerUnit || 1;
 
     return formatPieceSummary(totalPieces, effectivePiecesPerUnit, {
       fallbackUnit: '片',
     });
   }, [
     product.currentStock,
-    effectivePiecesPerUnit,
-    product.code,
     product.piecesPerUnit,
-    product.batchSpecs,
+    batchSpecs,
+    isMultipleBatches,
   ]);
 
   return (
@@ -77,7 +57,7 @@ export function ProductOptionItem({
           <span className="font-mono text-base font-semibold text-[hsl(var(--color-primary))]">
             {product.code}
           </span>
-          {/* 产品名称、规格和每件片数 - 普通样式 */}
+          {/* 产品名称和规格 - 普通样式 */}
           <div className="flex min-w-0 items-center gap-2">
             <span className="text-muted-foreground truncate text-xs">
               {product.label}
@@ -87,21 +67,6 @@ export function ProductOptionItem({
                 <span className="text-muted-foreground text-xs">·</span>
                 <span className="text-muted-foreground truncate text-xs">
                   {product.specification}
-                </span>
-              </>
-            )}
-            {/* 每件片数显示 */}
-            {piecesPerUnitDisplay && (
-              <>
-                <span className="text-muted-foreground text-xs">·</span>
-                <span
-                  className={
-                    isMultipleBatches
-                      ? 'text-xs text-amber-600'
-                      : 'text-muted-foreground text-xs'
-                  }
-                >
-                  {piecesPerUnitDisplay}
                 </span>
               </>
             )}

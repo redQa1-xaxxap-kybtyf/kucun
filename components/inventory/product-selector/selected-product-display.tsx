@@ -19,30 +19,7 @@ export function SelectedProductDisplay({
   const batchSpecs = selectedProduct?.batchSpecs ?? [];
   const isMultipleBatches = batchSpecs.length > 1;
 
-  const effectivePiecesPerUnit = React.useMemo(() => {
-    if (!selectedProduct) {
-      return 1;
-    }
-    if (batchSpecs.length > 0) {
-      return batchSpecs[0].piecesPerUnit || 1;
-    }
-    return selectedProduct.piecesPerUnit || 1;
-  }, [batchSpecs, selectedProduct]);
-
-  const piecesPerUnitDisplay = React.useMemo(() => {
-    if (!selectedProduct) {
-      return null;
-    }
-    if (batchSpecs.length === 0) {
-      const value = selectedProduct.piecesPerUnit;
-      return value && value > 0 ? `每件${value}片` : null;
-    }
-    if (batchSpecs.length === 1) {
-      return `每件${batchSpecs[0].piecesPerUnit}片`;
-    }
-    return '多批次，请在下方选择批次';
-  }, [batchSpecs, selectedProduct]);
-
+  // 库存显示逻辑
   const stockDisplay = React.useMemo(() => {
     if (!selectedProduct) {
       return '0片';
@@ -53,10 +30,21 @@ export function SelectedProductDisplay({
       return '0片';
     }
 
+    // 如果有多个批次，每个批次的每件片数可能不同，只显示总片数
+    if (isMultipleBatches) {
+      return `${totalPieces}片 (多批次)`;
+    }
+
+    // 如果只有一个批次或没有批次，使用该批次的每件片数或产品默认值
+    const effectivePiecesPerUnit =
+      batchSpecs.length > 0
+        ? batchSpecs[0].piecesPerUnit || 1
+        : selectedProduct.piecesPerUnit || 1;
+
     return formatPieceSummary(totalPieces, effectivePiecesPerUnit, {
       fallbackUnit: '片',
     });
-  }, [selectedProduct, effectivePiecesPerUnit]);
+  }, [selectedProduct, batchSpecs, isMultipleBatches]);
 
   if (!selectedProduct) {
     return <span className="text-muted-foreground">{placeholder}</span>;
@@ -80,20 +68,6 @@ export function SelectedProductDisplay({
             <span className="text-muted-foreground shrink-0 text-xs">·</span>
             <span className="text-muted-foreground truncate text-xs">
               {selectedProduct.specification}
-            </span>
-          </>
-        )}
-        {piecesPerUnitDisplay && (
-          <>
-            <span className="text-muted-foreground shrink-0 text-xs">·</span>
-            <span
-              className={
-                isMultipleBatches
-                  ? 'shrink-0 text-xs text-amber-600'
-                  : 'text-muted-foreground shrink-0 text-xs'
-              }
-            >
-              {piecesPerUnitDisplay}
             </span>
           </>
         )}
