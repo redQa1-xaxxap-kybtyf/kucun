@@ -4,6 +4,7 @@
  * 遵循全局约定规范和唯一真理原则
  */
 
+import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import { prisma, withTransaction } from '@/lib/db';
 import {
   generateUniqueOrderNumber,
@@ -83,6 +84,7 @@ async function executeOrderStatusUpdateWithInventory(
               id: true,
               code: true,
               name: true,
+              unit: true,
             },
           },
         },
@@ -128,6 +130,7 @@ async function executeOrderStatusUpdateWithInventory(
       availableQty: number;
       requiredQty: number;
       shortage: number;
+      unit: string;
     }> = [];
 
     const inventoryChecks: Array<{
@@ -162,6 +165,11 @@ async function executeOrderStatusUpdateWithInventory(
         const productCode = item.product?.code || '未知编码';
         const productName = item.product?.name || '未知产品';
         const colorInfo = item.colorCode ? ` (色号: ${item.colorCode})` : '';
+        const productUnit = item.product?.unit || 'piece';
+        const unitLabel =
+          PRODUCT_UNIT_LABELS[
+            productUnit as keyof typeof PRODUCT_UNIT_LABELS
+          ] || productUnit;
 
         insufficientStockItems.push({
           productCode,
@@ -170,6 +178,7 @@ async function executeOrderStatusUpdateWithInventory(
           availableQty,
           requiredQty: item.quantity,
           shortage,
+          unit: unitLabel,
         });
       } else {
         // 库存充足，保存检查结果用于后续更新
@@ -182,12 +191,12 @@ async function executeOrderStatusUpdateWithInventory(
       if (insufficientStockItems.length === 1) {
         const item = insufficientStockItems[0];
         throw new Error(
-          `产品 [${item.productCode}] ${item.productName}${item.colorInfo} 库存不足，当前库存：${item.availableQty}片，需要：${item.requiredQty}片，缺少：${item.shortage}片`
+          `产品 [${item.productCode}] ${item.productName}${item.colorInfo} 库存不足，当前库存：${item.availableQty}${item.unit}，需要：${item.requiredQty}${item.unit}，缺少：${item.shortage}${item.unit}`
         );
       } else {
         const errorMessages = insufficientStockItems.map(
           item =>
-            `- [${item.productCode}] ${item.productName}${item.colorInfo}：当前库存 ${item.availableQty}片，需要 ${item.requiredQty}片，缺少 ${item.shortage}片`
+            `- [${item.productCode}] ${item.productName}${item.colorInfo}：当前库存 ${item.availableQty}${item.unit}，需要 ${item.requiredQty}${item.unit}，缺少 ${item.shortage}${item.unit}`
         );
         throw new Error(
           `以下 ${insufficientStockItems.length} 个商品库存不足：\n${errorMessages.join('\n')}`

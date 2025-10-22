@@ -6,6 +6,7 @@ import * as React from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { PRODUCT_UNIT_LABELS } from '@/lib/config/product';
 import type { Product } from '@/lib/types/product';
 import { cn } from '@/lib/utils';
 
@@ -177,12 +178,29 @@ export function InventoryChecker({
                 产品 [{errorItems[0].product?.code || '未知编码'}]{' '}
                 {errorItems[0].product?.name || '未知产品'} 库存不足，当前库存：
                 {errorItems[0].availableQuantity}
-                {errorItems[0].product?.unit || '片'}，需要：
+                {errorItems[0].product?.unit
+                  ? PRODUCT_UNIT_LABELS[
+                      errorItems[0].product
+                        .unit as keyof typeof PRODUCT_UNIT_LABELS
+                    ] || errorItems[0].product.unit
+                  : '片'}
+                ，需要：
                 {errorItems[0].requestedQuantity}
-                {errorItems[0].product?.unit || '片'}，缺少：
+                {errorItems[0].product?.unit
+                  ? PRODUCT_UNIT_LABELS[
+                      errorItems[0].product
+                        .unit as keyof typeof PRODUCT_UNIT_LABELS
+                    ] || errorItems[0].product.unit
+                  : '片'}
+                ，缺少：
                 {errorItems[0].requestedQuantity -
                   errorItems[0].availableQuantity}
-                {errorItems[0].product?.unit || '片'}
+                {errorItems[0].product?.unit
+                  ? PRODUCT_UNIT_LABELS[
+                      errorItems[0].product
+                        .unit as keyof typeof PRODUCT_UNIT_LABELS
+                    ] || errorItems[0].product.unit
+                  : '片'}
               </div>
             ) : (
               <div>
@@ -195,11 +213,26 @@ export function InventoryChecker({
                       - [{item.product?.code || '未知编码'}]{' '}
                       {item.product?.name || '未知产品'}：当前库存{' '}
                       {item.availableQuantity}
-                      {item.product?.unit || '片'}，需要{' '}
-                      {item.requestedQuantity}
-                      {item.product?.unit || '片'}，缺少{' '}
-                      {item.requestedQuantity - item.availableQuantity}
-                      {item.product?.unit || '片'}
+                      {item.product?.unit
+                        ? PRODUCT_UNIT_LABELS[
+                            item.product
+                              .unit as keyof typeof PRODUCT_UNIT_LABELS
+                          ] || item.product.unit
+                        : '片'}
+                      ，需要 {item.requestedQuantity}
+                      {item.product?.unit
+                        ? PRODUCT_UNIT_LABELS[
+                            item.product
+                              .unit as keyof typeof PRODUCT_UNIT_LABELS
+                          ] || item.product.unit
+                        : '片'}
+                      ，缺少 {item.requestedQuantity - item.availableQuantity}
+                      {item.product?.unit
+                        ? PRODUCT_UNIT_LABELS[
+                            item.product
+                              .unit as keyof typeof PRODUCT_UNIT_LABELS
+                          ] || item.product.unit
+                        : '片'}
                     </div>
                   ))}
                 </div>
@@ -215,7 +248,13 @@ export function InventoryChecker({
                 {warningItems[0].product?.name || '未知产品'}{' '}
                 库存偏低，当前库存：
                 {warningItems[0].availableQuantity}
-                {warningItems[0].product?.unit || '片'}，建议及时补货
+                {warningItems[0].product?.unit
+                  ? PRODUCT_UNIT_LABELS[
+                      warningItems[0].product
+                        .unit as keyof typeof PRODUCT_UNIT_LABELS
+                    ] || warningItems[0].product.unit
+                  : '片'}
+                ，建议及时补货
               </div>
             ) : (
               <div>
@@ -228,7 +267,12 @@ export function InventoryChecker({
                       - [{item.product?.code || '未知编码'}]{' '}
                       {item.product?.name || '未知产品'}：当前库存{' '}
                       {item.availableQuantity}
-                      {item.product?.unit || '片'}
+                      {item.product?.unit
+                        ? PRODUCT_UNIT_LABELS[
+                            item.product
+                              .unit as keyof typeof PRODUCT_UNIT_LABELS
+                          ] || item.product.unit
+                        : '片'}
                     </div>
                   ))}
                 </div>
