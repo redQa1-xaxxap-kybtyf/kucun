@@ -9,6 +9,7 @@ import React from 'react';
 import {
   useFieldArray,
   useForm,
+  useWatch,
   type FieldErrors,
   type Path,
 } from 'react-hook-form';
@@ -37,18 +38,18 @@ import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import {
   createSalesOrder,
-  updateSalesOrder,
   salesOrderQueryKeys,
+  updateSalesOrder,
 } from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
 import type { Customer } from '@/lib/types/customer';
 import type { Product } from '@/lib/types/product';
 import {
   TRANSFER_MODE_LABELS,
-  type SalesOrderStatus,
-  type TransferFulfillmentMode,
   type SalesOrder,
   type SalesOrderItem,
+  type SalesOrderStatus,
+  type TransferFulfillmentMode,
 } from '@/lib/types/sales-order';
 import type { SalesOrderFeeItem } from '@/lib/types/sales-order-fee';
 import type { Supplier } from '@/lib/types/supplier';
@@ -61,8 +62,8 @@ import {
 import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
-  type SalesOrderUpdateFormData as UpdateSalesOrderFormData,
   type SalesOrderItemFormData,
+  type SalesOrderUpdateFormData as UpdateSalesOrderFormData,
 } from '@/lib/validations/sales-order';
 
 import { OrderItemsSection } from './erp-sales-order-form/OrderItemsSection';
@@ -576,7 +577,11 @@ export function ERPSalesOrderForm({
   });
 
   // 计算总金额：始终基于系统数量（片数）和片单价
-  const watchedItems = (form.watch('items') ?? []) as SalesOrderItemFormData[];
+  const watchedItems = (useWatch<CreateSalesOrderData>({
+    control: form.control,
+    name: 'items',
+    defaultValue: form.getValues('items'),
+  }) ?? []) as SalesOrderItemFormData[];
 
   const inventoryCheckItems = React.useMemo(
     () =>
@@ -664,10 +669,8 @@ export function ERPSalesOrderForm({
     })} 片`;
 
   // 重量格式化工具函数 - 始终以吨为单位显示,保留1位小数
-  const formatWeight = (totalKg: number): string => {
-    const tons = totalKg / 1000;
-    return `${Math.round(tons * 10) / 10}吨`;
-  };
+  const formatWeight = (totalKg: number): string =>
+    `${Number.isFinite(totalKg) ? (totalKg / 1000).toFixed(1) : '0.0'}吨`;
 
   // 计算总重量：根据单位和每件片数正确计算
   const productMap = React.useMemo(() => {
@@ -682,7 +685,7 @@ export function ERPSalesOrderForm({
 
   const totalWeight = React.useMemo(
     () =>
-      watchedItems.reduce((sum, item) => {
+      watchedItems.reduce((sum, item, index) => {
         const quantityPieces = Number(item.quantity ?? 0);
         if (!Number.isFinite(quantityPieces) || quantityPieces <= 0) {
           return sum;
@@ -709,38 +712,66 @@ export function ERPSalesOrderForm({
             : undefined) ??
           1;
 
-        let weightPerPieceKg: number | undefined;
+        let weightKg: number | undefined;
 
         if (item.isManualProduct) {
+          // 手动输入商品：manualWeight是用户输入的重量，根据displayUnit判断是每件还是每片
           const manualWeight = Number(item.manualWeight ?? 0);
           if (manualWeight > 0) {
-            weightPerPieceKg =
-              item.displayUnit === '件'
-                ? manualWeight / effectivePiecesPerUnit
-                : manualWeight;
+            if (item.displayUnit === '件') {
+              // 用户输入的是每件重量
+              weightKg = manualWeight * Number(item.displayQuantity ?? 0);
+            } else {
+              // 用户输入的是每片重量
+              weightKg = manualWeight * quantityPieces;
+            }
           }
         } else {
-          const batchWeight =
-            batchSpec && batchSpec.weight && batchSpec.weight > 0
+          // 库存商品：weight字段存储的是每件的重量(kg)，不是每片
+          const weightPerUnit =
+            (batchSpec && batchSpec.weight && batchSpec.weight > 0
               ? batchSpec.weight
-              : undefined;
-          const productWeight =
-            product && product.weight && product.weight > 0
+              : undefined) ??
+            (product && product.weight && product.weight > 0
               ? product.weight
-              : undefined;
+              : undefined);
 
-          if (batchWeight) {
-            weightPerPieceKg = batchWeight / effectivePiecesPerUnit;
-          } else if (productWeight) {
-            weightPerPieceKg = productWeight / effectivePiecesPerUnit;
+          if (weightPerUnit && weightPerUnit > 0) {
+            if (item.displayUnit === '件') {
+              // 销售单位是"件"：总重量 = 每件重量 × 件数
+              const displayQty = Number(item.displayQuantity ?? 0);
+              weightKg = weightPerUnit * displayQty;
+            } else {
+              // 销售单位是"片"：总重量 = (每件重量 / 每件片数) × 片数
+              const weightPerPiece = weightPerUnit / effectivePiecesPerUnit;
+              weightKg = weightPerPiece * quantityPieces;
+            }
+          }
+
+          // 调试日志：输出重量计算详情
+          if (productId && index === 0) {
+            // 只输出第一个商品的调试信息，避免刷屏
+            console.log('🔍 重量计算调试 [第1个商品]:', {
+              productCode: product?.code,
+              productName: product?.name,
+              batchNumber: item.batchNumber,
+              displayUnit: item.displayUnit,
+              displayQuantity: item.displayQuantity,
+              quantityPieces,
+              effectivePiecesPerUnit,
+              batchWeight: batchSpec?.weight,
+              productWeight: product?.weight,
+              weightPerUnit,
+              calculatedWeightKg: weightKg,
+            });
           }
         }
 
-        if (!weightPerPieceKg || !Number.isFinite(weightPerPieceKg)) {
+        if (!weightKg || !Number.isFinite(weightKg)) {
           return sum;
         }
 
-        return sum + quantityPieces * weightPerPieceKg;
+        return sum + weightKg;
       }, 0),
     [watchedItems, productMap]
   );
@@ -772,6 +803,7 @@ export function ERPSalesOrderForm({
       manualSpecification: '',
       manualWeight: undefined,
       manualUnit: '',
+      weightPerPieceKg: undefined,
     });
   };
 
@@ -849,6 +881,7 @@ export function ERPSalesOrderForm({
           manualUnit: item.manualUnit ?? '',
           localQuantity: item.localQuantity ?? undefined,
           transferQuantity: item.transferQuantity ?? undefined,
+          weightPerPieceKg: undefined,
         };
       }
     );

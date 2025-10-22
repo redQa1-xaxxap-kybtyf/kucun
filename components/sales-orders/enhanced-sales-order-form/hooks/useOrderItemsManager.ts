@@ -84,7 +84,8 @@ export function useOrderItemsManager(
     fields,
     update,
     products,
-    setStockWarnings
+    setStockWarnings,
+    form
   );
   const handleInventoryCheck = useInventoryCheckHandler(setStockWarnings);
   const totalAmount = useTotalAmount(fields);
@@ -142,10 +143,13 @@ function useOrderItemUpdaters(
   fields: FieldArrayWithId<CreateSalesOrderData, 'items', 'id'>[],
   update: UseFieldArrayUpdate<CreateSalesOrderData, 'items'>,
   products: Product[],
-  setStockWarnings: React.Dispatch<React.SetStateAction<Record<number, string>>>
+  setStockWarnings: React.Dispatch<
+    React.SetStateAction<Record<number, string>>
+  >,
+  form: UseFormReturn<CreateSalesOrderData>
 ) {
   const checkProductStock = React.useCallback(
-    (productId: string, itemIndex: number) => {
+    (productId: string, itemIndex: number, quantityOverride?: number) => {
       const product = products.find(current => current.id === productId);
       if (!product?.inventory) {
         setStockWarnings(prev => {
@@ -160,7 +164,21 @@ function useOrderItemUpdaters(
       }
 
       const availableStock = product.inventory.availableQuantity ?? 0;
-      const requestedQuantity = fields[itemIndex]?.quantity ?? 0;
+
+      let requestedQuantity: number;
+      if (quantityOverride !== undefined && quantityOverride !== null) {
+        const parsed = Number(quantityOverride);
+        requestedQuantity = Number.isFinite(parsed) ? parsed : 0;
+      } else {
+        const items = form.getValues('items') ?? [];
+        const formQuantity = items[itemIndex]?.quantity ?? 0;
+        const parsed = Number(formQuantity);
+        requestedQuantity = Number.isFinite(parsed) ? parsed : 0;
+      }
+
+      if (requestedQuantity < 0) {
+        requestedQuantity = 0;
+      }
 
       setStockWarnings(prev => {
         if (requestedQuantity > availableStock) {
@@ -177,7 +195,7 @@ function useOrderItemUpdaters(
         return next;
       });
     },
-    [fields, products, setStockWarnings]
+    [form, products, setStockWarnings]
   );
 
   const updateOrderItem = React.useCallback(
@@ -210,8 +228,31 @@ function useOrderItemUpdaters(
 
       update(index, updatedItem as SalesOrderItemFormData);
 
-      if (field === 'productId' && typeof value === 'string' && value) {
-        checkProductStock(value, index);
+      const nextProductId =
+        field === 'productId' && typeof value === 'string'
+          ? value
+          : typeof updatedItem.productId === 'string'
+            ? updatedItem.productId
+            : '';
+
+      if (field === 'productId' && !nextProductId) {
+        setStockWarnings(prev => {
+          if (!prev[index]) {
+            return prev;
+          }
+          const next = { ...prev };
+          delete next[index];
+          return next;
+        });
+      }
+
+      if (nextProductId && (field === 'productId' || field === 'quantity')) {
+        const quantityInput =
+          field === 'quantity' ? value : updatedItem.quantity;
+        const parsed = Number(quantityInput ?? 0);
+        const quantityForCheck = Number.isFinite(parsed) ? parsed : 0;
+
+        checkProductStock(nextProductId, index, quantityForCheck);
       }
     },
     [checkProductStock, fields, update]
