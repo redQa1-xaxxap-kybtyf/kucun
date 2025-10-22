@@ -76,22 +76,74 @@ const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
       [product.specification]
     );
     const piecesPerUnit = product.piecesPerUnit ?? 0;
-    const availableDisplay = React.useMemo(
-      () =>
-        formatInventoryQuantity(
-          product.inventory?.availableInventory ?? 0,
-          piecesPerUnit
-        ),
-      [product.inventory?.availableInventory, piecesPerUnit]
-    );
-    const totalDisplay = React.useMemo(
-      () =>
-        formatInventoryQuantity(
-          product.inventory?.totalInventory ?? 0,
-          piecesPerUnit
-        ),
-      [product.inventory?.totalInventory, piecesPerUnit]
-    );
+
+    // 检查是否有多个批次
+    const batches = React.useMemo(() => {
+      const inventoryBatches = product.inventory?.batches ?? [];
+      const batchSpecs = product.batchSpecs ?? [];
+
+      if (inventoryBatches.length === 0 && batchSpecs.length === 0) {
+        return [];
+      }
+
+      const specMap = new Map(batchSpecs.map(spec => [spec.batchNumber, spec]));
+
+      if (inventoryBatches.length > 0) {
+        return inventoryBatches.map(batch => {
+          const spec = specMap.get(batch.batchNumber);
+          const normalizedPieces =
+            typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
+              ? batch.piecesPerUnit
+              : spec?.piecesPerUnit;
+
+          return {
+            batchNumber: batch.batchNumber,
+            quantity: batch.quantity,
+            piecesPerUnit: normalizedPieces,
+          };
+        });
+      }
+
+      return batchSpecs.map(spec => ({
+        batchNumber: spec.batchNumber,
+        quantity: spec.quantity,
+        piecesPerUnit: spec.piecesPerUnit,
+      }));
+    }, [product]);
+
+    const isMultipleBatches = batches.length > 1;
+
+    // 库存显示逻辑：多批次只显示片数，单批次或无批次显示件数+片数
+    const availableDisplay = React.useMemo(() => {
+      const availableQty = product.inventory?.availableInventory ?? 0;
+      if (isMultipleBatches) {
+        return `${availableQty}片 (多批次)`;
+      }
+      const effectivePiecesPerUnit =
+        batches.length > 0 ? batches[0].piecesPerUnit || 1 : piecesPerUnit || 1;
+      return formatInventoryQuantity(availableQty, effectivePiecesPerUnit);
+    }, [
+      product.inventory?.availableInventory,
+      piecesPerUnit,
+      batches,
+      isMultipleBatches,
+    ]);
+
+    const totalDisplay = React.useMemo(() => {
+      const totalQty = product.inventory?.totalInventory ?? 0;
+      if (isMultipleBatches) {
+        return `${totalQty}片 (多批次)`;
+      }
+      const effectivePiecesPerUnit =
+        batches.length > 0 ? batches[0].piecesPerUnit || 1 : piecesPerUnit || 1;
+      return formatInventoryQuantity(totalQty, effectivePiecesPerUnit);
+    }, [
+      product.inventory?.totalInventory,
+      piecesPerUnit,
+      batches,
+      isMultipleBatches,
+    ]);
+
     const renderedKeywords = React.useMemo(
       () => buildProductKeywords(product, specification),
       [product, specification]
@@ -109,6 +161,7 @@ const ProductSearchResultItem = React.memo<ProductSearchResultItemProps>(
           isSelected={isSelected}
           specification={specification}
           piecesPerUnit={piecesPerUnit}
+          batches={batches}
           highlightTokens={highlightTokens}
           onSelectBatch={onSelectBatch}
         />
@@ -133,6 +186,11 @@ interface ProductResultInfoProps {
   isSelected: boolean;
   specification: string;
   piecesPerUnit: number;
+  batches: Array<{
+    batchNumber: string;
+    quantity: number;
+    piecesPerUnit?: number;
+  }>;
   highlightTokens: string[];
   onSelectBatch: (productId: string, batchNumber: string) => void;
 }
@@ -142,6 +200,7 @@ function ProductResultInfo({
   isSelected,
   specification,
   piecesPerUnit,
+  batches,
   highlightTokens,
   onSelectBatch,
 }: ProductResultInfoProps) {
@@ -157,38 +216,6 @@ function ProductResultInfo({
     () => renderHighlightedText(specification, highlightTokens),
     [highlightTokens, specification]
   );
-  const batches = React.useMemo(() => {
-    const inventoryBatches = product.inventory?.batches ?? [];
-    const batchSpecs = product.batchSpecs ?? [];
-
-    if (inventoryBatches.length === 0 && batchSpecs.length === 0) {
-      return [];
-    }
-
-    const specMap = new Map(batchSpecs.map(spec => [spec.batchNumber, spec]));
-
-    if (inventoryBatches.length > 0) {
-      return inventoryBatches.map(batch => {
-        const spec = specMap.get(batch.batchNumber);
-        const normalizedPieces =
-          typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
-            ? batch.piecesPerUnit
-            : spec?.piecesPerUnit;
-
-        return {
-          batchNumber: batch.batchNumber,
-          quantity: batch.quantity,
-          piecesPerUnit: normalizedPieces,
-        };
-      });
-    }
-
-    return batchSpecs.map(spec => ({
-      batchNumber: spec.batchNumber,
-      quantity: spec.quantity,
-      piecesPerUnit: spec.piecesPerUnit,
-    }));
-  }, [product]);
 
   return (
     <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -219,12 +246,6 @@ function ProductResultInfo({
         {specification && (
           <div className="text-sm text-gray-600">
             规格：{highlightedSpecification}
-          </div>
-        )}
-        {piecesPerUnit > 0 && (
-          <div className="text-sm text-gray-600">
-            每件片数：
-            <span className="font-medium text-blue-600">{piecesPerUnit}</span>
           </div>
         )}
         {batches.length > 0 && (
