@@ -818,26 +818,27 @@ export default function SalesOrderDetailPage() {
               className="overflow-hidden border border-[hsl(var(--color-border-primary))]"
               style={{ boxShadow: 'var(--shadow-medium)' }}
             >
-              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]">
+              <CardHeader className="border-b border-[hsl(var(--color-border-secondary))] bg-gradient-to-r from-[hsl(var(--color-bg-secondary))] to-blue-50/30 py-4">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center text-[hsl(var(--color-text-primary))]">
-                    <ShoppingCart className="mr-2 h-5 w-5 text-[hsl(var(--color-primary))]" />
+                  <CardTitle className="flex items-center text-lg font-semibold text-[hsl(var(--color-text-primary))]">
+                    <div className="mr-3 flex h-9 w-9 items-center justify-center rounded-lg bg-blue-500 shadow-sm">
+                      <ShoppingCart className="h-5 w-5 text-white" />
+                    </div>
                     订单明细
                   </CardTitle>
-                  <div className="flex items-center gap-4 text-xs text-[hsl(var(--color-text-secondary))]">
-                    <span>
-                      共{' '}
-                      <strong className="text-[hsl(var(--color-primary))]">
+                  <div className="flex items-center gap-3">
+                    <div className="rounded-lg bg-white px-3 py-1.5 shadow-sm">
+                      <span className="text-xs text-gray-600">产品种类</span>
+                      <span className="ml-2 text-sm font-bold text-[hsl(var(--color-primary))]">
                         {orderItems.length}
-                      </strong>{' '}
-                      种产品
-                    </span>
-                    <span>
-                      总数量：
-                      <strong className="text-[hsl(var(--color-primary))]">
+                      </span>
+                    </div>
+                    <div className="rounded-lg bg-white px-3 py-1.5 shadow-sm">
+                      <span className="text-xs text-gray-600">总数量</span>
+                      <span className="ml-2 text-sm font-bold text-[hsl(var(--color-primary))]">
                         {formatDecimal(totalDisplayQuantity)}
-                      </strong>
-                    </span>
+                      </span>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
@@ -845,37 +846,43 @@ export default function SalesOrderDetailPage() {
                 {/* ERP风格表格 */}
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead
-                      className="border-b border-[hsl(var(--color-border-secondary))] bg-[hsl(var(--color-bg-secondary))]"
-                      style={{ boxShadow: 'var(--shadow-light)' }}
-                    >
-                      <tr className="text-xs text-[hsl(var(--color-text-secondary))]">
-                        <th className="px-4 py-3 text-left font-medium">
-                          产品信息
+                    <thead className="sticky top-0 z-10 border-b-2 border-blue-200 bg-gradient-to-r from-gray-50 to-blue-50/50 shadow-sm">
+                      <tr className="text-xs font-semibold text-gray-700">
+                        <th className="px-4 py-3.5 text-left">
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                            产品信息
+                          </div>
                         </th>
-                        <th className="px-4 py-3 text-left font-medium">
-                          产品编码
+                        <th className="px-4 py-3.5 text-left">
+                          <div className="flex items-center gap-1.5">
+                            <div className="h-1.5 w-1.5 rounded-full bg-blue-500"></div>
+                            产品编码
+                          </div>
                         </th>
-                        <th className="px-4 py-3 text-center font-medium">
-                          每件片数
-                        </th>
-                        <th className="px-4 py-3 text-center font-medium">
+                        <th className="px-4 py-3.5 text-center">每件片数</th>
+                        <th className="px-4 py-3.5 text-center">
                           批次 / 生产日期
                         </th>
-                        <th className="px-4 py-3 text-left font-medium">
-                          规格
+                        <th className="px-4 py-3.5 text-left">规格</th>
+                        <th className="px-4 py-3.5 text-center">单位</th>
+                        <th className="px-4 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            数量
+                            <div className="h-1.5 w-1.5 rounded-full bg-green-500"></div>
+                          </div>
                         </th>
-                        <th className="px-4 py-3 text-center font-medium">
-                          单位
+                        <th className="px-4 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            单价
+                            <div className="h-1.5 w-1.5 rounded-full bg-orange-500"></div>
+                          </div>
                         </th>
-                        <th className="px-4 py-3 text-right font-medium">
-                          数量
-                        </th>
-                        <th className="px-4 py-3 text-right font-medium">
-                          单价
-                        </th>
-                        <th className="px-4 py-3 text-right font-medium">
-                          小计
+                        <th className="px-4 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            小计
+                            <div className="h-1.5 w-1.5 rounded-full bg-purple-500"></div>
+                          </div>
                         </th>
                         {order.orderType === 'TRANSFER' && (
                           <>
@@ -898,8 +905,8 @@ export default function SalesOrderDetailPage() {
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y">
-                      {orderItems.map(item => {
+                    <tbody className="divide-y divide-gray-100">
+                      {orderItems.map((item, index) => {
                         const unitLabel = resolveUnitLabel(item);
                         const quantityDisplay = formatQuantityDisplay(item);
                         const piecesPerUnitDisplay =
@@ -937,117 +944,175 @@ export default function SalesOrderDetailPage() {
                         return (
                           <tr
                             key={item.id}
-                            className="transition-colors hover:bg-gray-50/50"
+                            className={`group transition-all duration-150 hover:bg-blue-50/30 ${
+                              index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'
+                            }`}
                           >
-                            <td className="px-4 py-3">
-                              <div className="font-medium text-gray-900">
-                                {item.isManualProduct
-                                  ? item.manualProductName
-                                  : item.product?.name}
+                            <td className="px-4 py-3.5">
+                              <div className="flex items-center gap-2">
+                                <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-100 text-xs font-semibold text-blue-700 group-hover:bg-blue-200">
+                                  {index + 1}
+                                </div>
+                                <div className="font-medium text-gray-900">
+                                  {item.isManualProduct
+                                    ? item.manualProductName
+                                    : item.product?.name}
+                                </div>
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-gray-700">
-                              <div className="font-mono text-sm">
+                            <td className="px-4 py-3.5">
+                              <div className="inline-flex rounded-md bg-gray-100 px-2 py-1 font-mono text-xs text-gray-700 group-hover:bg-gray-200">
                                 {!item.isManualProduct
                                   ? item.product?.code
                                   : '-'}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-center text-gray-600">
-                              {typeof piecesPerUnitDisplay === 'number'
-                                ? formatDecimal(piecesPerUnitDisplay)
-                                : '-'}
+                            <td className="px-4 py-3.5 text-center">
+                              <span className="inline-flex items-center rounded-full bg-green-50 px-2.5 py-0.5 text-xs font-medium text-green-700">
+                                {typeof piecesPerUnitDisplay === 'number'
+                                  ? formatDecimal(piecesPerUnitDisplay)
+                                  : '-'}
+                              </span>
                             </td>
-                            <td className="px-4 py-3 text-center text-gray-700">
-                              <div className="text-xs font-medium text-gray-900">
-                                {item.batchNumber || '-'}
+                            <td className="px-4 py-3.5 text-center">
+                              <div className="space-y-0.5">
+                                <div className="inline-flex rounded-md bg-purple-50 px-2 py-0.5 text-xs font-medium text-purple-700">
+                                  {item.batchNumber || '-'}
+                                </div>
+                                {item.productionDate && (
+                                  <div className="text-[11px] text-gray-500">
+                                    {formatDate(item.productionDate)}
+                                  </div>
+                                )}
                               </div>
-                              {item.productionDate && (
-                                <div className="mt-0.5 text-[11px] text-gray-500">
-                                  {formatDate(item.productionDate)}
+                            </td>
+                            <td className="px-4 py-3.5">
+                              <div className="space-y-0.5">
+                                <div className="text-sm text-gray-900">
+                                  {specificationText}
                                 </div>
-                              )}
+                                {item.colorCode && (
+                                  <div className="inline-flex items-center gap-1 rounded bg-orange-50 px-1.5 py-0.5 text-[11px] text-orange-700">
+                                    <div className="h-2 w-2 rounded-full bg-orange-400"></div>
+                                    {item.colorCode}
+                                  </div>
+                                )}
+                              </div>
                             </td>
-                            <td className="px-4 py-3 text-gray-700">
-                              <div className="text-sm">{specificationText}</div>
-                              {item.colorCode && (
-                                <div className="mt-0.5 text-[11px] text-gray-500">
-                                  色号：{item.colorCode}
-                                </div>
-                              )}
+                            <td className="px-4 py-3.5 text-center">
+                              <span className="text-sm text-gray-700">
+                                {unitLabel || '-'}
+                              </span>
                             </td>
-                            <td className="px-4 py-3 text-center text-gray-700">
-                              {unitLabel || '-'}
+                            <td className="px-4 py-3.5 text-right">
+                              <span className="inline-flex rounded-md bg-green-50 px-2.5 py-1 font-semibold text-green-700">
+                                {quantityDisplay}
+                              </span>
                             </td>
-                            <td className="px-4 py-3 text-right font-medium text-gray-900">
-                              {quantityDisplay}
+                            <td className="px-4 py-3.5 text-right">
+                              <span className="text-sm text-gray-700">
+                                {formatCurrency(item.unitPrice)}
+                              </span>
                             </td>
-                            <td className="px-4 py-3 text-right text-gray-700">
-                              {formatCurrency(item.unitPrice)}
-                            </td>
-                            <td className="px-4 py-3 text-right font-medium text-gray-900">
-                              {formatCurrency(item.subtotal)}
+                            <td className="px-4 py-3.5 text-right">
+                              <span className="inline-flex rounded-md bg-purple-50 px-2.5 py-1 font-semibold text-purple-700">
+                                {formatCurrency(item.subtotal)}
+                              </span>
                             </td>
                             {order.orderType === 'TRANSFER' && (
                               <>
-                                <td className="px-4 py-3 text-right text-gray-700">
-                                  {formatDecimal(item.localQuantity ?? 0)} 片
+                                <td className="px-4 py-3.5 text-right">
+                                  <span className="text-sm text-gray-700">
+                                    {formatDecimal(item.localQuantity ?? 0)} 片
+                                  </span>
                                 </td>
-                                <td className="px-4 py-3 text-right text-gray-700">
-                                  {formatDecimal(item.transferQuantity ?? 0)} 片
+                                <td className="px-4 py-3.5 text-right">
+                                  <span className="text-sm text-gray-700">
+                                    {formatDecimal(item.transferQuantity ?? 0)}{' '}
+                                    片
+                                  </span>
                                 </td>
-                                <td className="px-4 py-3 text-right text-gray-600">
-                                  {item.costSubtotal
-                                    ? formatCurrency(item.costSubtotal)
-                                    : '-'}
+                                <td className="px-4 py-3.5 text-right">
+                                  <span className="text-sm text-gray-600">
+                                    {item.costSubtotal
+                                      ? formatCurrency(item.costSubtotal)
+                                      : '-'}
+                                  </span>
                                 </td>
-                                <td className="px-4 py-3 text-right font-medium text-green-600">
-                                  {item.profitAmount
-                                    ? formatCurrency(item.profitAmount)
-                                    : '-'}
+                                <td className="px-4 py-3.5 text-right">
+                                  <span className="inline-flex rounded-md bg-green-50 px-2 py-0.5 text-sm font-medium text-green-600">
+                                    {item.profitAmount
+                                      ? formatCurrency(item.profitAmount)
+                                      : '-'}
+                                  </span>
                                 </td>
                               </>
                             )}
-                            <td className="px-4 py-3 text-gray-700">
-                              <div className="text-sm">{remarkText}</div>
+                            <td className="px-4 py-3.5">
+                              <div className="max-w-xs text-xs text-gray-600">
+                                {remarkText !== '-' ? (
+                                  <div className="rounded-md bg-amber-50 px-2 py-1 text-amber-800">
+                                    {remarkText}
+                                  </div>
+                                ) : (
+                                  <span className="text-gray-400">-</span>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );
                       })}
                     </tbody>
                     {/* 合计行 */}
-                    <tfoot className="border-t-2 bg-gray-50/80 font-medium">
-                      <tr>
+                    <tfoot className="border-t-2 border-blue-300 bg-gradient-to-r from-blue-50 to-indigo-50">
+                      <tr className="font-semibold">
                         <td
                           colSpan={6}
-                          className="px-4 py-3 text-right text-gray-700"
+                          className="px-4 py-4 text-right text-gray-700"
                         >
-                          合计
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="flex h-7 w-7 items-center justify-center rounded-full bg-blue-500">
+                              <span className="text-xs text-white">∑</span>
+                            </div>
+                            <span className="text-base">合计</span>
+                          </div>
                         </td>
-                        <td className="px-4 py-3 text-right text-gray-900">
-                          <div>{formatDecimal(totalDisplayQuantity)}</div>
+                        <td className="px-4 py-4 text-right">
+                          <div className="inline-flex rounded-lg bg-green-100 px-3 py-1.5 text-sm font-bold text-green-700 shadow-sm">
+                            {formatDecimal(totalDisplayQuantity)}
+                          </div>
                         </td>
-                        <td className="px-4 py-3"></td>
-                        <td className="px-4 py-3 text-right text-lg text-blue-600">
-                          {formatCurrency(order.totalAmount)}
+                        <td className="px-4 py-4"></td>
+                        <td className="px-4 py-4 text-right">
+                          <div className="inline-flex rounded-lg bg-gradient-to-r from-blue-500 to-purple-500 px-4 py-1.5 text-base font-bold text-white shadow-md">
+                            {formatCurrency(order.totalAmount)}
+                          </div>
                         </td>
                         {order.orderType === 'TRANSFER' && (
                           <>
-                            <td className="px-4 py-3 text-right text-gray-900">
-                              {formatDecimal(totalLocalQuantity)} 片
+                            <td className="px-4 py-4 text-right">
+                              <span className="text-sm text-gray-900">
+                                {formatDecimal(totalLocalQuantity)} 片
+                              </span>
                             </td>
-                            <td className="px-4 py-3 text-right text-gray-900">
-                              {formatDecimal(totalTransferQuantity)} 片
+                            <td className="px-4 py-4 text-right">
+                              <span className="text-sm text-gray-900">
+                                {formatDecimal(totalTransferQuantity)} 片
+                              </span>
                             </td>
-                            <td className="px-4 py-3 text-right text-gray-900">
-                              {formatCurrency(order.costAmount)}
+                            <td className="px-4 py-4 text-right">
+                              <span className="text-sm text-gray-900">
+                                {formatCurrency(order.costAmount)}
+                              </span>
                             </td>
-                            <td className="px-4 py-3 text-right text-lg text-green-600">
-                              {formatCurrency(order.profitAmount)}
+                            <td className="px-4 py-4 text-right">
+                              <div className="inline-flex rounded-lg bg-green-100 px-3 py-1.5 text-base font-bold text-green-700 shadow-sm">
+                                {formatCurrency(order.profitAmount)}
+                              </div>
                             </td>
                           </>
                         )}
-                        <td className="px-4 py-3"></td>
+                        <td className="px-4 py-4"></td>
                       </tr>
                     </tfoot>
                   </table>
