@@ -381,15 +381,27 @@ function OrderItemRow({
                     <FormLabel>数量</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        max="999999.99"
+                        type="text"
+                        inputMode="decimal"
                         disabled={disabled}
                         {...field}
+                        value={field.value ?? ''}
                         onChange={e => {
                           const value = e.target.value;
-                          field.onChange(value ? parseFloat(value) : 0);
+                          // 允许输入数字、小数点
+                          if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                            field.onChange(value === '' ? 0 : value);
+                          }
+                        }}
+                        onBlur={e => {
+                          const value = e.target.value;
+                          if (value && value !== '.') {
+                            const numValue = parseFloat(value);
+                            if (!isNaN(numValue)) {
+                              field.onChange(numValue);
+                            }
+                          }
+                          field.onBlur();
                         }}
                       />
                     </FormControl>
@@ -409,15 +421,27 @@ function OrderItemRow({
                     <FormLabel>单价 (元)</FormLabel>
                     <FormControl>
                       <Input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        max="999999.99"
+                        type="text"
+                        inputMode="decimal"
                         disabled={disabled}
                         {...field}
+                        value={field.value ?? ''}
                         onChange={e => {
                           const value = e.target.value;
-                          field.onChange(value ? parseFloat(value) : 0);
+                          // 允许输入数字、小数点、负号
+                          if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
+                            field.onChange(value === '' ? 0 : value);
+                          }
+                        }}
+                        onBlur={e => {
+                          const value = e.target.value;
+                          if (value && value !== '-' && value !== '.') {
+                            const numValue = parseFloat(value);
+                            if (!isNaN(numValue)) {
+                              field.onChange(numValue);
+                            }
+                          }
+                          field.onBlur();
                         }}
                       />
                     </FormControl>

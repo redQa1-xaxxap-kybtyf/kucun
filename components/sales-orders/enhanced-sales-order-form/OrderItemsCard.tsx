@@ -206,13 +206,25 @@ function OrderItemRow({
       <TableCell>
         <div className="space-y-1">
           <Input
-            type="number"
-            min="0.01"
-            step="0.01"
+            type="text"
+            inputMode="decimal"
             value={item.quantity ?? ''}
-            onChange={event =>
-              onUpdateItem(index, 'quantity', Number(event.target.value))
-            }
+            onChange={event => {
+              const value = event.target.value;
+              // 允许输入数字、小数点
+              if (value === '' || /^\d*\.?\d*$/.test(value)) {
+                onUpdateItem(index, 'quantity', value === '' ? 0 : value);
+              }
+            }}
+            onBlur={event => {
+              const value = event.target.value;
+              if (value && value !== '.') {
+                const numValue = parseFloat(value);
+                if (!isNaN(numValue)) {
+                  onUpdateItem(index, 'quantity', numValue);
+                }
+              }
+            }}
             className="w-full"
           />
           {warning && <div className="text-destructive text-xs">{warning}</div>}
@@ -221,13 +233,25 @@ function OrderItemRow({
 
       <TableCell>
         <Input
-          type="number"
-          min="0"
-          step="0.01"
+          type="text"
+          inputMode="decimal"
           value={item.unitPrice ?? ''}
-          onChange={event =>
-            onUpdateItem(index, 'unitPrice', Number(event.target.value))
-          }
+          onChange={event => {
+            const value = event.target.value;
+            // 允许输入数字、小数点、负号
+            if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
+              onUpdateItem(index, 'unitPrice', value === '' ? 0 : value);
+            }
+          }}
+          onBlur={event => {
+            const value = event.target.value;
+            if (value && value !== '-' && value !== '.') {
+              const numValue = parseFloat(value);
+              if (!isNaN(numValue)) {
+                onUpdateItem(index, 'unitPrice', numValue);
+              }
+            }
+          }}
           className="w-full"
         />
       </TableCell>

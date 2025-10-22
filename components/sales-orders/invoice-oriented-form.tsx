@@ -510,17 +510,36 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                             {/* 数量 */}
                             <TableCell className="border-r">
                               <Input
-                                type="number"
-                                min="0.01"
-                                step="0.01"
-                                value={item.quantity}
-                                onChange={e =>
-                                  updateOrderItem(
-                                    index,
-                                    'quantity',
-                                    Number(e.target.value)
-                                  )
-                                }
+                                type="text"
+                                inputMode="decimal"
+                                value={item.quantity ?? ''}
+                                onChange={e => {
+                                  const value = e.target.value;
+                                  // 允许输入数字、小数点
+                                  if (
+                                    value === '' ||
+                                    /^\d*\.?\d*$/.test(value)
+                                  ) {
+                                    updateOrderItem(
+                                      index,
+                                      'quantity',
+                                      value === '' ? 0 : value
+                                    );
+                                  }
+                                }}
+                                onBlur={e => {
+                                  const value = e.target.value;
+                                  if (value && value !== '.') {
+                                    const numValue = parseFloat(value);
+                                    if (!isNaN(numValue)) {
+                                      updateOrderItem(
+                                        index,
+                                        'quantity',
+                                        numValue
+                                      );
+                                    }
+                                  }
+                                }}
                                 className="h-8 text-center text-sm"
                               />
                               {hasStockWarning && (
@@ -533,17 +552,36 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
                             {/* 单价 */}
                             <TableCell className="border-r">
                               <Input
-                                type="number"
-                                min="0"
-                                step="0.01"
-                                value={item.unitPrice}
-                                onChange={e =>
-                                  updateOrderItem(
-                                    index,
-                                    'unitPrice',
-                                    Number(e.target.value)
-                                  )
-                                }
+                                type="text"
+                                inputMode="decimal"
+                                value={item.unitPrice ?? ''}
+                                onChange={e => {
+                                  const value = e.target.value;
+                                  // 允许输入数字、小数点、负号
+                                  if (
+                                    value === '' ||
+                                    /^-?\d*\.?\d*$/.test(value)
+                                  ) {
+                                    updateOrderItem(
+                                      index,
+                                      'unitPrice',
+                                      value === '' ? 0 : value
+                                    );
+                                  }
+                                }}
+                                onBlur={e => {
+                                  const value = e.target.value;
+                                  if (value && value !== '-' && value !== '.') {
+                                    const numValue = parseFloat(value);
+                                    if (!isNaN(numValue)) {
+                                      updateOrderItem(
+                                        index,
+                                        'unitPrice',
+                                        numValue
+                                      );
+                                    }
+                                  }
+                                }}
                                 className="h-8 text-right text-sm"
                               />
                             </TableCell>

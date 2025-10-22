@@ -141,8 +141,8 @@ function QuantityInputCell({
           <FormItem>
             <FormControl>
               <Input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 value={field.value ?? ''}
                 className="h-8 text-xs"
                 placeholder="数量"
@@ -190,15 +190,28 @@ export function UnitPriceCell({
           <FormItem>
             <FormControl>
               <Input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 {...field}
-                value={field.value || ''}
+                value={field.value ?? ''}
                 className="h-8 text-xs"
                 placeholder="单价"
                 onChange={event => {
                   const value = event.target.value;
-                  field.onChange(value === '' ? undefined : parseFloat(value));
+                  // 允许输入数字、小数点、负号
+                  if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
+                    field.onChange(value === '' ? undefined : value);
+                  }
+                }}
+                onBlur={event => {
+                  const value = event.target.value;
+                  if (value && value !== '-' && value !== '.') {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                      field.onChange(numValue);
+                    }
+                  }
+                  field.onBlur();
                 }}
               />
             </FormControl>
@@ -227,15 +240,28 @@ export function UnitCostCell({
           <FormItem>
             <FormControl>
               <Input
-                type="number"
-                step="0.01"
+                type="text"
+                inputMode="decimal"
                 {...field}
                 value={field.value ?? ''}
                 className="h-8 text-xs"
                 placeholder="成本单价"
                 onChange={event => {
                   const value = event.target.value;
-                  field.onChange(value === '' ? undefined : parseFloat(value));
+                  // 允许输入数字、小数点、负号
+                  if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
+                    field.onChange(value === '' ? undefined : value);
+                  }
+                }}
+                onBlur={event => {
+                  const value = event.target.value;
+                  if (value && value !== '-' && value !== '.') {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                      field.onChange(numValue);
+                    }
+                  }
+                  field.onBlur();
                 }}
               />
             </FormControl>
