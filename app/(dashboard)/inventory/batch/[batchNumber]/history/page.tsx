@@ -1,3 +1,4 @@
+/* eslint-disable max-lines */
 import { ActivitySquare, ArrowLeft, Clock, PackageSearch } from 'lucide-react';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
@@ -15,8 +16,11 @@ import {
 } from '@/components/ui/table';
 import { getBatchHistoryByNumber } from '@/lib/api/batch-history-server';
 import { requirePagePermission } from '@/lib/auth/page-permission';
+import { INBOUND_REASON_LABELS, type InboundReason } from '@/lib/types/inbound';
 import {
+  ADJUSTMENT_REASON_LABELS,
   OUTBOUND_REASON_LABELS,
+  type AdjustmentReason,
   type BatchHistoryResult,
   type BatchMovementGroup,
   type InventoryMovementEntry,
@@ -427,6 +431,24 @@ function MovementHistoryCard({ groups }: { groups: BatchMovementGroup[] }) {
   );
 }
 
+function resolveMovementReason(entry: InventoryMovementEntry) {
+  if (!entry.reason) {
+    return undefined;
+  }
+
+  if (entry.type === 'inbound') {
+    return INBOUND_REASON_LABELS[entry.reason as InboundReason] ?? entry.reason;
+  }
+
+  if (entry.type === 'outbound') {
+    return OUTBOUND_REASON_LABELS[entry.reason] ?? entry.reason;
+  }
+
+  return (
+    ADJUSTMENT_REASON_LABELS[entry.reason as AdjustmentReason] ?? entry.reason
+  );
+}
+
 function MovementTable({ groups }: { groups: BatchMovementGroup[] }) {
   return (
     <div className="overflow-x-auto">
@@ -497,6 +519,7 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
       ? formatPieceSummary(value, piecesPerUnit, { fallbackUnit: '片' })
       : `${formatNumber(value)}片`;
   };
+  const reasonLabel = resolveMovementReason(entry);
 
   return (
     <TableRow className="transition-colors hover:bg-gray-50/50">
@@ -529,9 +552,7 @@ function MovementRow({ entry }: { entry: InventoryMovementEntry }) {
       <TableCell className="px-4 py-3">
         <div className="max-w-xs">
           <div className="text-sm text-[hsl(var(--color-text-secondary))]">
-            {entry.reason
-              ? (OUTBOUND_REASON_LABELS[entry.reason] ?? entry.reason)
-              : '—'}
+            {reasonLabel ?? entry.reason ?? '—'}
           </div>
           {entry.referenceNumber ? (
             <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">

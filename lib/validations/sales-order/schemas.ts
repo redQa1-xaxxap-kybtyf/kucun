@@ -212,6 +212,14 @@ export const salesOrderItemSchema = z.object({
     .max(20, '单位不能超过20个字符')
     .optional()
     .or(z.literal('')),
+
+  weightPerPieceKg: nullableNumber(
+    z
+      .number()
+      .min(0, '重量不能为负数')
+      .max(99999.9999, '重量不能超过99,999.9999')
+      .multipleOf(0.0001, '重量最多保留4位小数')
+  ),
 });
 
 // 导出类型

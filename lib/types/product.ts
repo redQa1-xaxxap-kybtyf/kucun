@@ -54,6 +54,10 @@ export interface ProductInventoryBatch {
   batchNumber: string;
   /** 批次库存数量 */
   quantity: number;
+  /** 批次对应的每件片数（若存在批次规格） */
+  piecesPerUnit?: number;
+  /** 批次对应的每件重量(kg) */
+  weight?: number;
 }
 
 /**
@@ -69,6 +73,21 @@ export interface ProductInventory {
   availableQuantity: number;
   /** 批次明细列表 */
   batches?: ProductInventoryBatch[];
+}
+
+/**
+ * 产品批次规格信息
+ * 用于在产品层面缓存不同批次的件片数
+ */
+export interface ProductBatchSpec {
+  /** 批次号 */
+  batchNumber: string;
+  /** 每件对应的片数 */
+  piecesPerUnit: number;
+  /** 当前批次的库存数量（片） */
+  quantity: number;
+  /** 每件重量(kg) */
+  weight?: number;
 }
 
 /**
@@ -117,6 +136,8 @@ export interface Product {
   thumbnailUrl?: string;
   /** 产品图片数组 */
   images?: ProductImage[];
+  /** 产品维度的批次规格列表（可选） */
+  batchSpecs?: ProductBatchSpec[];
   /** 创建时间 */
   createdAt: string;
   /** 更新时间 */

@@ -42,6 +42,7 @@ import {
 } from '@/lib/api/sales-orders';
 import { getSuppliers, supplierQueryKeys } from '@/lib/api/suppliers';
 import type { Customer } from '@/lib/types/customer';
+import type { Product } from '@/lib/types/product';
 import {
   TRANSFER_MODE_LABELS,
   type SalesOrderStatus,
@@ -500,9 +501,16 @@ export function ERPSalesOrderForm({
   });
 
   const { data: productsData, isLoading: _productsLoading } = useQuery({
-    queryKey: productQueryKeys.list({ includeInventory: true }),
+    queryKey: productQueryKeys.list({
+      includeInventory: true,
+      includeBatchSpecs: true,
+    }),
     queryFn: () =>
-      getProducts({ includeInventory: true, includeStatistics: false }),
+      getProducts({
+        includeInventory: true,
+        includeStatistics: false,
+        includeBatchSpecs: true,
+      }),
   });
 
   const { data: suppliersData, isLoading: suppliersLoading } = useQuery({
@@ -662,24 +670,80 @@ export function ERPSalesOrderForm({
   };
 
   // 计算总重量：根据单位和每件片数正确计算
-  const totalWeight = watchedItems.reduce((sum, item) => {
-    // 查找对应的产品数据
-    const product = productsData?.data?.find(p => p.id === item.productId);
-    if (!product || !product.weight) {
-      return sum;
-    }
+  const productMap = React.useMemo(() => {
+    const map = new Map<string, Product>();
+    (productsData?.data ?? []).forEach(product => {
+      if (product?.id) {
+        map.set(product.id, product);
+      }
+    });
+    return map;
+  }, [productsData?.data]);
 
-    // product.weight 是每件的重量(kg)
-    // item.quantity 是系统数量(片数)
-    // item.piecesPerUnit 是每件片数
-    const piecesPerUnit = item.piecesPerUnit || product.piecesPerUnit || 1;
+  const totalWeight = React.useMemo(
+    () =>
+      watchedItems.reduce((sum, item) => {
+        const quantityPieces = Number(item.quantity ?? 0);
+        if (!Number.isFinite(quantityPieces) || quantityPieces <= 0) {
+          return sum;
+        }
 
-    // 计算件数 = 片数 ÷ 每件片数
-    const unitCount = (item.quantity || 0) / piecesPerUnit;
+        const productId = (item.productId ?? '').toString().trim();
+        const product = productId ? productMap.get(productId) : undefined;
+        const batchSpec =
+          product && item.batchNumber
+            ? product.batchSpecs?.find(
+                spec => spec.batchNumber === item.batchNumber
+              )
+            : undefined;
 
-    // 重量 = 件数 × 每件重量
-    return sum + unitCount * product.weight;
-  }, 0);
+        const effectivePiecesPerUnit =
+          (item.piecesPerUnit && item.piecesPerUnit > 0
+            ? item.piecesPerUnit
+            : undefined) ??
+          (batchSpec?.piecesPerUnit && batchSpec.piecesPerUnit > 0
+            ? batchSpec.piecesPerUnit
+            : undefined) ??
+          (product?.piecesPerUnit && product.piecesPerUnit > 0
+            ? product.piecesPerUnit
+            : undefined) ??
+          1;
+
+        let weightPerPieceKg: number | undefined;
+
+        if (item.isManualProduct) {
+          const manualWeight = Number(item.manualWeight ?? 0);
+          if (manualWeight > 0) {
+            weightPerPieceKg =
+              item.displayUnit === '件'
+                ? manualWeight / effectivePiecesPerUnit
+                : manualWeight;
+          }
+        } else {
+          const batchWeight =
+            batchSpec && batchSpec.weight && batchSpec.weight > 0
+              ? batchSpec.weight
+              : undefined;
+          const productWeight =
+            product && product.weight && product.weight > 0
+              ? product.weight
+              : undefined;
+
+          if (batchWeight) {
+            weightPerPieceKg = batchWeight / effectivePiecesPerUnit;
+          } else if (productWeight) {
+            weightPerPieceKg = productWeight / effectivePiecesPerUnit;
+          }
+        }
+
+        if (!weightPerPieceKg || !Number.isFinite(weightPerPieceKg)) {
+          return sum;
+        }
+
+        return sum + quantityPieces * weightPerPieceKg;
+      }, 0),
+    [watchedItems, productMap]
+  );
 
   // 添加商品
   const addOrderItem = () => {

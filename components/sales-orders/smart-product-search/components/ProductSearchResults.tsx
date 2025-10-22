@@ -157,6 +157,38 @@ function ProductResultInfo({
     () => renderHighlightedText(specification, highlightTokens),
     [highlightTokens, specification]
   );
+  const batches = React.useMemo(() => {
+    const inventoryBatches = product.inventory?.batches ?? [];
+    const batchSpecs = product.batchSpecs ?? [];
+
+    if (inventoryBatches.length === 0 && batchSpecs.length === 0) {
+      return [];
+    }
+
+    const specMap = new Map(batchSpecs.map(spec => [spec.batchNumber, spec]));
+
+    if (inventoryBatches.length > 0) {
+      return inventoryBatches.map(batch => {
+        const spec = specMap.get(batch.batchNumber);
+        const normalizedPieces =
+          typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
+            ? batch.piecesPerUnit
+            : spec?.piecesPerUnit;
+
+        return {
+          batchNumber: batch.batchNumber,
+          quantity: batch.quantity,
+          piecesPerUnit: normalizedPieces,
+        };
+      });
+    }
+
+    return batchSpecs.map(spec => ({
+      batchNumber: spec.batchNumber,
+      quantity: spec.quantity,
+      piecesPerUnit: spec.piecesPerUnit,
+    }));
+  }, [product]);
 
   return (
     <div className="flex min-w-0 flex-1 items-start gap-3">
@@ -195,10 +227,10 @@ function ProductResultInfo({
             <span className="font-medium text-blue-600">{piecesPerUnit}</span>
           </div>
         )}
-        {product.inventory?.batches && product.inventory.batches.length > 0 && (
+        {batches.length > 0 && (
           <ProductBatchList
             productId={product.id}
-            batches={product.inventory.batches}
+            batches={batches}
             piecesPerUnit={piecesPerUnit}
             onSelectBatch={onSelectBatch}
           />

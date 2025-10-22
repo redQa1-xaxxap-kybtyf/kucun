@@ -1,5 +1,7 @@
 'use client';
 
+import { useWatch } from 'react-hook-form';
+
 import { BatchSelector } from '@/components/sales-orders/batch-selector';
 import { IntelligentProductInput } from '@/components/sales-orders/intelligent-product-input';
 import {
@@ -38,28 +40,62 @@ export function ProductCodeCell({
 }
 
 export function ProductNameCell({
+  form,
+  index,
   products,
   productId,
-  manualProductName,
+  isManualProduct,
 }: {
+  form: OrderFormInstance;
+  index: number;
   products: Product[];
   productId?: string;
-  manualProductName?: string;
+  isManualProduct: boolean;
 }) {
+  const manualNamePath = `items.${index}.manualProductName` as const;
   const resolvedName =
     productId && products.find(product => product.id === productId)?.name;
 
   return (
     <TableCell className="min-w-[140px]">
-      <div className="flex h-8 items-center text-xs text-gray-700">
-        {resolvedName ? (
-          <span className="truncate">{resolvedName}</span>
-        ) : manualProductName ? (
-          <span className="truncate">{manualProductName}</span>
-        ) : (
-          <span className="text-muted-foreground">-</span>
-        )}
-      </div>
+      {isManualProduct ? (
+        <FormField
+          control={form.control}
+          name={manualNamePath}
+          rules={{
+            required: '请输入商品名称',
+            validate: value => {
+              const trimmed = (value ?? '').toString().trim();
+              return trimmed.length > 0 || '请输入商品名称';
+            },
+          }}
+          render={({ field }) => (
+            <FormItem>
+              <FormControl>
+                <Input
+                  {...field}
+                  value={field.value ?? ''}
+                  className="h-8 text-xs"
+                  placeholder="手动商品名称"
+                  onChange={event => {
+                    const next = event.target.value;
+                    field.onChange(next === '' ? undefined : next);
+                  }}
+                />
+              </FormControl>
+              <FormMessage className="text-xs" />
+            </FormItem>
+          )}
+        />
+      ) : (
+        <div className="flex h-8 items-center text-xs text-gray-700">
+          {resolvedName ? (
+            <span className="truncate">{resolvedName}</span>
+          ) : (
+            <span className="text-muted-foreground">-</span>
+          )}
+        </div>
+      )}
     </TableCell>
   );
 }
@@ -68,10 +104,12 @@ export function PiecesPerUnitCell({
   form,
   index,
   isManualProduct,
+  resolvedProduct,
 }: {
   form: OrderFormInstance;
   index: number;
   isManualProduct: boolean;
+  resolvedProduct: Product | null;
 }) {
   const piecesPerUnitPath = `items.${index}.piecesPerUnit` as const;
   return (
@@ -87,7 +125,12 @@ export function PiecesPerUnitCell({
                 min="1"
                 step="1"
                 {...field}
-                value={field.value ?? ''}
+                value={
+                  field.value ??
+                  (isManualProduct
+                    ? ''
+                    : (resolvedProduct?.piecesPerUnit ?? ''))
+                }
                 className="h-8 text-xs"
                 placeholder="每件片数"
                 disabled={!isManualProduct}
@@ -111,11 +154,19 @@ export function BatchSelectorCell({
   form,
   index,
   availableBatches,
+  resolvedProduct,
+  isManualProduct,
   disabled,
 }: {
   form: OrderFormInstance;
   index: number;
-  availableBatches: Array<{ batchNumber: string; quantity: number }>;
+  availableBatches: Array<{
+    batchNumber: string;
+    quantity: number;
+    piecesPerUnit?: number;
+  }>;
+  resolvedProduct: Product | null;
+  isManualProduct: boolean;
   disabled: boolean;
 }) {
   const batchNumberPath = `items.${index}.batchNumber` as const;
@@ -130,7 +181,35 @@ export function BatchSelectorCell({
               <BatchSelector
                 batches={availableBatches}
                 value={field.value}
-                onValueChange={field.onChange}
+                onValueChange={batchNumber => {
+                  field.onChange(batchNumber);
+
+                  if (!isManualProduct) {
+                    const matched = availableBatches.find(
+                      batch => batch.batchNumber === batchNumber
+                    );
+                    const fallback =
+                      typeof resolvedProduct?.piecesPerUnit === 'number' &&
+                      resolvedProduct.piecesPerUnit > 0
+                        ? resolvedProduct.piecesPerUnit
+                        : undefined;
+                    const nextPieces =
+                      matched &&
+                      matched.piecesPerUnit &&
+                      matched.piecesPerUnit > 0
+                        ? matched.piecesPerUnit
+                        : fallback;
+
+                    form.setValue(
+                      `items.${index}.piecesPerUnit` as const,
+                      nextPieces,
+                      {
+                        shouldDirty: false,
+                        shouldValidate: false,
+                      }
+                    );
+                  }
+                }}
                 disabled={disabled}
               />
             </FormControl>
@@ -151,31 +230,18 @@ export function ManualInfoCells({
   index: number;
   isManualProduct: boolean;
 }) {
-  const manualNamePath = `items.${index}.manualProductName` as const;
   const manualSpecPath = `items.${index}.manualSpecification` as const;
-  const manualUnitPath = `items.${index}.manualUnit` as const;
+  const specificationPath = `items.${index}.specification` as const;
+
+  const specificationValue =
+    useWatch({
+      control: form.control,
+      name: specificationPath,
+    }) ?? '';
+
   return (
-    <>
-      <TableCell className="min-w-[120px]">
-        <FormField
-          control={form.control}
-          name={manualNamePath}
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Input
-                  {...field}
-                  className="h-8 text-xs"
-                  placeholder="手动商品名称"
-                  disabled={!isManualProduct}
-                />
-              </FormControl>
-              <FormMessage className="text-xs" />
-            </FormItem>
-          )}
-        />
-      </TableCell>
-      <TableCell className="min-w-[120px]">
+    <TableCell className="min-w-[150px]">
+      {isManualProduct ? (
         <FormField
           control={form.control}
           name={manualSpecPath}
@@ -184,35 +250,26 @@ export function ManualInfoCells({
               <FormControl>
                 <Input
                   {...field}
+                  value={field.value ?? ''}
                   className="h-8 text-xs"
                   placeholder="规格"
-                  disabled={!isManualProduct}
+                  onChange={event => {
+                    const value = event.target.value;
+                    field.onChange(value === '' ? undefined : value);
+                  }}
                 />
               </FormControl>
               <FormMessage className="text-xs" />
             </FormItem>
           )}
         />
-      </TableCell>
-      <TableCell className="min-w-[100px]">
-        <FormField
-          control={form.control}
-          name={manualUnitPath}
-          render={({ field }) => (
-            <FormItem>
-              <FormControl>
-                <Input
-                  {...field}
-                  className="h-8 text-xs"
-                  placeholder="单位"
-                  disabled={!isManualProduct}
-                />
-              </FormControl>
-              <FormMessage className="text-xs" />
-            </FormItem>
-          )}
-        />
-      </TableCell>
-    </>
+      ) : (
+        <div className="flex h-8 items-center text-xs text-gray-700">
+          <span className="truncate">
+            {specificationValue ? specificationValue : '—'}
+          </span>
+        </div>
+      )}
+    </TableCell>
   );
 }

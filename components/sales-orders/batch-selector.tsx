@@ -21,6 +21,7 @@ import { cn } from '@/lib/utils';
 interface Batch {
   batchNumber: string;
   quantity: number;
+  piecesPerUnit?: number | null;
 }
 
 interface BatchSelectorProps {

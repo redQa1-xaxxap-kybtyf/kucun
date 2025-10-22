@@ -227,6 +227,7 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
     select: {
       batchNumber: true,
       piecesPerUnit: true,
+      weight: true,
       productId: true, // 用于验证
     },
   });
@@ -243,9 +244,15 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
   });
 
   // 3. 构建批次号到每件片数的映射
-  const batchSpecMap = new Map<string, number>();
+  const batchSpecMap = new Map<
+    string,
+    { piecesPerUnit: number; weight?: number | null }
+  >();
   validBatchSpecs.forEach(spec => {
-    batchSpecMap.set(spec.batchNumber, spec.piecesPerUnit);
+    batchSpecMap.set(spec.batchNumber, {
+      piecesPerUnit: spec.piecesPerUnit,
+      weight: spec.weight,
+    });
   });
 
   // 4. 按产品ID分组，构建每个产品的批次规格列表
@@ -253,19 +260,32 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
     string,
     Map<
       string,
-      { batchNumber: string; piecesPerUnit: number; quantity: number }
+      {
+        batchNumber: string;
+        piecesPerUnit: number;
+        quantity: number;
+        weight?: number | null;
+      }
     >
   >();
 
   inventoryRecords.forEach(inv => {
     if (!inv.batchNumber) return;
 
-    // 获取该批次的每件片数（优先使用批次规格，否则使用产品默认值）
-    const piecesPerUnit =
-      batchSpecMap.get(inv.batchNumber) ?? inv.product.piecesPerUnit ?? 1;
+    // ✅ 修复: 获取该批次的每件片数 - 必须从批次规格表获取
+    // 如果批次规格表中没有记录，说明数据不完整，跳过该批次
+    const batchSpec = batchSpecMap.get(inv.batchNumber);
+
+    if (!batchSpec) {
+      // 批次规格缺失，跳过该批次（防止显示错误的每件片数）
+      console.warn(
+        `⚠️  警告: 批次 ${inv.batchNumber} 没有批次规格记录，跳过 (productId: ${inv.productId})`
+      );
+      return;
+    }
 
     // 使用特殊分隔符避免与批次号中的 - 冲突
-    const key = `${inv.batchNumber}|||${piecesPerUnit}`;
+    const key = `${inv.batchNumber}|||${batchSpec.piecesPerUnit}`;
 
     if (!productBatchMap.has(inv.productId)) {
       productBatchMap.set(inv.productId, new Map());
@@ -279,8 +299,9 @@ export async function getProductsBatchSpecifications(productIds: string[]) {
     } else {
       batchMap.set(key, {
         batchNumber: inv.batchNumber,
-        piecesPerUnit,
+        piecesPerUnit: batchSpec.piecesPerUnit,
         quantity: inv.quantity,
+        weight: batchSpec.weight,
       });
     }
   });
@@ -334,7 +355,12 @@ export function formatProductList(params: {
   includeStatistics: boolean;
   batchSpecsMap?: Map<
     string,
-    Array<{ batchNumber: string; piecesPerUnit: number; quantity: number }>
+    Array<{
+      batchNumber: string;
+      piecesPerUnit: number;
+      quantity: number;
+      weight?: number | null;
+    }>
   >;
 }) {
   const {
@@ -346,9 +372,12 @@ export function formatProductList(params: {
   } = params;
 
   return products.map(product => {
-    const inventory = includeInventory
-      ? (inventoryMap.get(product.id) ?? { ...DEFAULT_INVENTORY })
-      : { ...DEFAULT_INVENTORY };
+    const rawInventory = includeInventory
+      ? (inventoryMap.get(product.id) ?? { ...DEFAULT_INVENTORY, batches: [] })
+      : {
+          ...DEFAULT_INVENTORY,
+          batches: [] as Array<{ batchNumber: string; quantity: number }>,
+        };
 
     const counts =
       includeStatistics && '_count' in product ? product._count : undefined;
@@ -363,6 +392,32 @@ export function formatProductList(params: {
       : undefined;
 
     const batchSpecs = batchSpecsMap?.get(product.id) ?? [];
+    const batchPiecesMap = new Map(
+      batchSpecs.map(spec => [
+        spec.batchNumber,
+        { piecesPerUnit: spec.piecesPerUnit, weight: spec.weight },
+      ])
+    );
+
+    const inventory = {
+      totalQuantity: rawInventory.totalQuantity ?? 0,
+      reservedQuantity: rawInventory.reservedQuantity ?? 0,
+      availableQuantity: rawInventory.availableQuantity ?? 0,
+      batches: (rawInventory.batches ?? []).map(batch => ({
+        batchNumber: batch.batchNumber,
+        quantity: batch.quantity,
+        piecesPerUnit:
+          (batch as { piecesPerUnit?: number }).piecesPerUnit &&
+          (batch as { piecesPerUnit?: number }).piecesPerUnit! > 0
+            ? (batch as { piecesPerUnit?: number }).piecesPerUnit
+            : batchPiecesMap.get(batch.batchNumber)?.piecesPerUnit,
+        weight:
+          (batch as { weight?: number }).weight &&
+          (batch as { weight?: number }).weight! > 0
+            ? (batch as { weight?: number }).weight
+            : (batchPiecesMap.get(batch.batchNumber)?.weight ?? undefined),
+      })),
+    };
 
     return {
       id: product.id,

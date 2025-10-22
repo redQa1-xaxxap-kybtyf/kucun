@@ -204,8 +204,15 @@ function useProducts(): Product[] {
       page: 1,
       limit: 200,
       includeInventory: true,
+      includeBatchSpecs: true,
     }),
-    queryFn: () => getProducts({ page: 1, limit: 200, includeInventory: true }),
+    queryFn: () =>
+      getProducts({
+        page: 1,
+        limit: 200,
+        includeInventory: true,
+        includeBatchSpecs: true,
+      }),
   });
 
   return React.useMemo(() => productsData?.data ?? [], [productsData]);

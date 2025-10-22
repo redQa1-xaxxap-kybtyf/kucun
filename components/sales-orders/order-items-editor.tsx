@@ -73,8 +73,13 @@ export function OrderItemsEditor<
 
   // 获取产品列表（包含库存信息）
   const { data: productsResponse } = useQuery({
-    queryKey: productQueryKeys.list({ status: 'active', limit: 1000 }),
-    queryFn: () => getProducts({ status: 'active', limit: 1000 }),
+    queryKey: productQueryKeys.list({
+      status: 'active',
+      limit: 1000,
+      includeBatchSpecs: true,
+    }),
+    queryFn: () =>
+      getProducts({ status: 'active', limit: 1000, includeBatchSpecs: true }),
   });
 
   const products = productsResponse?.data || [];

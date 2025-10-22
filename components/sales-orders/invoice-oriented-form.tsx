@@ -121,8 +121,13 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
 
   // 获取产品列表
   const { data: productsData } = useQuery({
-    queryKey: productQueryKeys.list({ page: 1, limit: 100 }),
-    queryFn: () => getProducts({ page: 1, limit: 100 }),
+    queryKey: productQueryKeys.list({
+      page: 1,
+      limit: 100,
+      includeBatchSpecs: true,
+    }),
+    queryFn: () =>
+      getProducts({ page: 1, limit: 100, includeBatchSpecs: true }),
   });
 
   // 创建销售订单Mutation

@@ -1,3 +1,5 @@
+import type { ProductBatchSpec } from '@/lib/types/product';
+
 export interface ProductWithInventory {
   id: string;
   code: string;
@@ -5,7 +7,9 @@ export interface ProductWithInventory {
   specification?: string | null;
   unit: string;
   piecesPerUnit?: number | null;
+  weight?: number | null;
   status?: string;
+  batchSpecs?: ProductBatchSpec[];
   inventory?: {
     totalInventory: number;
     availableInventory: number;
@@ -13,6 +17,8 @@ export interface ProductWithInventory {
     batches?: Array<{
       batchNumber: string;
       quantity: number;
+      piecesPerUnit?: number | null;
+      weight?: number | null;
     }>;
   } | null;
 }

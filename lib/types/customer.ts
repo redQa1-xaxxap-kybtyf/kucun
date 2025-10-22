@@ -2,12 +2,21 @@
 // 遵循命名约定：数据库 snake_case → API camelCase → 前端 camelCase
 
 // 基础客户信息类型（对应数据库模型）
+export interface CustomerParentInfo {
+  id: string;
+  name: string;
+}
+
 export interface Customer {
   id: string;
   name: string;
   phone?: string;
   address?: string;
   extendedInfo?: string; // JSON格式的扩展信息
+  parentCustomerId?: string | null;
+  parentCustomer?: CustomerParentInfo | null;
+  subCustomers?: CustomerParentInfo[];
+  customerType?: CustomerType;
   createdAt: string;
   updatedAt: string;
 
@@ -133,4 +142,21 @@ export const CUSTOMER_FIELD_LABELS = {
   returnOrderCount: '退货次数',
   createdAt: '创建时间',
   updatedAt: '更新时间',
+} as const;
+
+export type CustomerType = 'company' | 'store' | 'individual';
+
+export const CUSTOMER_TYPE_LABELS: Record<CustomerType, string> = {
+  company: '企业客户',
+  store: '门店客户',
+  individual: '个人客户',
+} as const;
+
+export const CUSTOMER_TYPE_VARIANTS: Record<
+  CustomerType,
+  'default' | 'secondary' | 'outline'
+> = {
+  company: 'default',
+  store: 'secondary',
+  individual: 'outline',
 } as const;

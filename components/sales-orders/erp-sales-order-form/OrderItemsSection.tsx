@@ -68,6 +68,9 @@ function populateProductSelection({
     `items.${index}.unit`,
     unitMapping[product.unit?.toLowerCase() || ''] || product.unit || ''
   );
+  form.setValue(`items.${index}.manualProductName`, '');
+  form.setValue(`items.${index}.manualSpecification`, '');
+  form.setValue(`items.${index}.manualUnit`, '');
   form.setValue(`items.${index}.productCode`, product.code || '');
   form.setValue(
     `items.${index}.piecesPerUnit`,
@@ -162,7 +165,10 @@ export function OrderItemsSection({
                 <TableHead className="h-8 text-xs">数量</TableHead>
                 <TableHead className="h-8 text-xs">单价</TableHead>
                 {orderType === 'TRANSFER' && (
-                  <TableHead className="h-8 text-xs">成本单价</TableHead>
+                  <>
+                    <TableHead className="h-8 text-xs">成本单价</TableHead>
+                    <TableHead className="h-8 text-xs">调货信息</TableHead>
+                  </>
                 )}
                 <TableHead className="h-8 text-xs">金额</TableHead>
                 <TableHead className="h-8 text-xs">备注</TableHead>

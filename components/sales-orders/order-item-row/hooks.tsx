@@ -225,17 +225,119 @@ export function useAvailableBatches(
 ) {
   return React.useMemo(() => {
     const inventoryBatches = resolvedProduct?.inventory?.batches ?? [];
+    const batchSpecMap = new Map(
+      (resolvedProduct?.batchSpecs ?? []).map(spec => [spec.batchNumber, spec])
+    );
+    const normalized = inventoryBatches.map(batch => ({
+      batchNumber: batch.batchNumber,
+      quantity: batch.quantity,
+      piecesPerUnit:
+        typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
+          ? batch.piecesPerUnit
+          : batchSpecMap.get(batch.batchNumber)?.piecesPerUnit,
+      weight:
+        typeof (batch as { weight?: number }).weight === 'number' &&
+        (batch as { weight?: number }).weight! > 0
+          ? (batch as { weight?: number }).weight
+          : batchSpecMap.get(batch.batchNumber)?.weight,
+    }));
+
     if (
       currentBatchNumber &&
-      !inventoryBatches.some(batch => batch.batchNumber === currentBatchNumber)
+      !normalized.some(batch => batch.batchNumber === currentBatchNumber)
     ) {
+      const spec = batchSpecMap.get(currentBatchNumber);
       return [
-        { batchNumber: currentBatchNumber, quantity: 0 },
-        ...inventoryBatches,
+        {
+          batchNumber: currentBatchNumber,
+          quantity: 0,
+          piecesPerUnit:
+            typeof resolvedProduct?.piecesPerUnit === 'number' &&
+            resolvedProduct.piecesPerUnit > 0
+              ? resolvedProduct.piecesPerUnit
+              : spec?.piecesPerUnit,
+          weight:
+            spec?.weight ??
+            (typeof resolvedProduct?.weight === 'number' &&
+            resolvedProduct.weight > 0
+              ? resolvedProduct.weight
+              : undefined),
+        },
+        ...normalized,
       ];
     }
-    return inventoryBatches;
-  }, [currentBatchNumber, resolvedProduct?.inventory?.batches]);
+    return normalized;
+  }, [
+    currentBatchNumber,
+    resolvedProduct?.inventory?.batches,
+    resolvedProduct?.piecesPerUnit,
+    resolvedProduct?.batchSpecs,
+    resolvedProduct?.weight,
+  ]);
+}
+
+export function useBatchPiecesPerUnitSync(
+  form: OrderFormInstance,
+  index: number,
+  resolvedProduct: Product | null,
+  batchNumber: string | undefined,
+  isManualProduct: boolean
+) {
+  React.useEffect(() => {
+    if (isManualProduct) {
+      return;
+    }
+
+    if (!resolvedProduct) {
+      return;
+    }
+
+    const inventoryBatches = resolvedProduct.inventory?.batches ?? [];
+    const matchedBatch = batchNumber
+      ? inventoryBatches.find(batch => batch.batchNumber === batchNumber)
+      : undefined;
+
+    let nextPieces: number | undefined;
+    if (
+      matchedBatch &&
+      typeof matchedBatch.piecesPerUnit === 'number' &&
+      matchedBatch.piecesPerUnit > 0
+    ) {
+      nextPieces = matchedBatch.piecesPerUnit;
+    } else if (
+      typeof resolvedProduct.piecesPerUnit === 'number' &&
+      resolvedProduct.piecesPerUnit > 0
+    ) {
+      nextPieces = resolvedProduct.piecesPerUnit;
+    } else {
+      nextPieces = undefined;
+    }
+
+    const currentValue = form.getValues(
+      `items.${index}.piecesPerUnit` as const
+    );
+    const normalizedCurrent =
+      typeof currentValue === 'number'
+        ? currentValue
+        : currentValue === null || currentValue === undefined
+          ? undefined
+          : Number(currentValue);
+
+    if (normalizedCurrent !== nextPieces) {
+      form.setValue(`items.${index}.piecesPerUnit` as const, nextPieces, {
+        shouldDirty: false,
+        shouldValidate: false,
+      });
+    }
+  }, [
+    form,
+    index,
+    resolvedProduct,
+    batchNumber,
+    isManualProduct,
+    resolvedProduct?.inventory?.batches,
+    resolvedProduct?.piecesPerUnit,
+  ]);
 }
 
 export function useDisplayQuantitySync(

@@ -23,6 +23,8 @@ import {
 } from '@/lib/api/minimal-inbound-transaction';
 import { withAuth } from '@/lib/auth/api-helpers';
 import type { AuthUser } from '@/lib/auth/context';
+import { revalidateProducts } from '@/lib/cache';
+import { invalidateInventoryCache } from '@/lib/cache/inventory-cache';
 import { prisma } from '@/lib/db';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
 import { withIdempotency } from '@/lib/utils/idempotency-redis'; // 🚀 使用 Redis 优化版本
@@ -113,6 +115,15 @@ const postInboundRecordHandler = withAuth(
       }
 
       // 步骤6: 立即返回成功响应
+      try {
+        await Promise.all([
+          invalidateInventoryCache(validatedData.productId),
+          revalidateProducts(validatedData.productId),
+        ]);
+      } catch (cacheError) {
+        console.error('Inbound cache revalidation failed:', cacheError);
+      }
+
       return NextResponse.json({
         success: true,
         data: inboundRecord,

@@ -115,9 +115,14 @@ export function FactoryShipmentOrderForm({
     queryKey: queryKeys.products.list({
       page: 1,
       limit: factoryShipmentConfig.queryLimit,
+      includeBatchSpecs: true,
     }),
     queryFn: () =>
-      getProducts({ page: 1, limit: factoryShipmentConfig.queryLimit }),
+      getProducts({
+        page: 1,
+        limit: factoryShipmentConfig.queryLimit,
+        includeBatchSpecs: true,
+      }),
   });
   const products = productsResponse?.data || [];
 

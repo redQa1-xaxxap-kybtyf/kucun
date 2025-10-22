@@ -8,6 +8,8 @@ import { Prisma } from '@prisma/client';
 import { ApiError } from '@/lib/api/errors';
 import { prisma } from '@/lib/db';
 
+// cspell:ignore MEDIUMTEXT
+
 export type OperationType =
   | 'inbound'
   | 'outbound'
@@ -218,6 +220,7 @@ export async function cleanupExpiredIdempotencyRecords(): Promise<number> {
  * - 存储完整的请求和响应数据（遵循行业最佳实践）
  * - 使用MEDIUMTEXT字段类型(16MB)确保足够的存储空间
  */
+/* eslint-disable-next-line max-lines-per-function */
 export async function withIdempotency<T>(
   idempotencyKey: string,
   operationType: OperationType,

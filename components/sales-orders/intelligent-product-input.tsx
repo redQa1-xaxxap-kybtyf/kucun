@@ -71,6 +71,7 @@ export function IntelligentProductInput<
         limit: 50,
         includeInventory: true,
         includeStatistics: false,
+        includeBatchSpecs: true,
       });
 
       if (!controller.signal.aborted) {
@@ -294,28 +295,58 @@ export function IntelligentProductInput<
   };
 
   // 转换产品数据格式以匹配 SmartProductSearch 的类型要求
-  const productsWithInventory = allProducts.map(p => ({
-    id: p.id,
-    code: p.code,
-    name: p.name,
-    specification: p.specification,
-    unit: p.unit,
-    piecesPerUnit: p.piecesPerUnit,
-    status: p.status,
-    inventory: p.inventory
-      ? {
-          totalInventory: p.inventory.totalQuantity || 0,
-          availableInventory: p.inventory.availableQuantity || 0,
-          reservedInventory: p.inventory.reservedQuantity || 0,
-          batches: p.inventory.batches
-            ? p.inventory.batches.map(b => ({
-                batchNumber: b.batchNumber,
-                quantity: b.quantity,
-              }))
-            : undefined,
-        }
-      : null,
-  }));
+  const productsWithInventory = allProducts.map(p => {
+    const batchSpecs = p.batchSpecs ?? [];
+    const batchSpecMap = new Map(
+      batchSpecs.map(spec => [spec.batchNumber, spec])
+    );
+
+    const inventoryBatches = p.inventory?.batches
+      ? p.inventory.batches.map(b => {
+          const spec = batchSpecMap.get(b.batchNumber);
+          const normalizedPieces =
+            typeof b.piecesPerUnit === 'number' && b.piecesPerUnit > 0
+              ? b.piecesPerUnit
+              : spec?.piecesPerUnit && spec.piecesPerUnit > 0
+                ? spec.piecesPerUnit
+                : undefined;
+          const normalizedWeight =
+            typeof (b as { weight?: number }).weight === 'number' &&
+            (b as { weight?: number }).weight! > 0
+              ? (b as { weight?: number }).weight
+              : spec?.weight && spec.weight > 0
+                ? spec.weight
+                : undefined;
+
+          return {
+            batchNumber: b.batchNumber,
+            quantity: b.quantity,
+            piecesPerUnit: normalizedPieces,
+            weight: normalizedWeight,
+          };
+        })
+      : undefined;
+
+    return {
+      id: p.id,
+      code: p.code,
+      name: p.name,
+      specification: p.specification,
+      unit: p.unit,
+      piecesPerUnit: p.piecesPerUnit,
+      weight: p.weight,
+      status: p.status,
+      batchSpecs: batchSpecs.length > 0 ? batchSpecs : undefined,
+      inventory: p.inventory
+        ? {
+            totalInventory: p.inventory.totalQuantity || 0,
+            availableInventory: p.inventory.availableQuantity || 0,
+            reservedInventory: p.inventory.reservedQuantity || 0,
+            batches: inventoryBatches,
+          }
+        : null,
+    };
+  });
 
   return (
     <FormField

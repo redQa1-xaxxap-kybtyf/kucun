@@ -1,5 +1,6 @@
 'use client';
 
+import { useMemo } from 'react';
 import { type UseFormReturn } from 'react-hook-form';
 
 import { ProductSelector } from '@/components/inventory/product-selector';
@@ -39,6 +40,28 @@ export function InboundProductSection({
   showProductPrompt = false,
 }: InboundProductSectionProps) {
   const selectedBatchNumber = form.watch('batchNumber');
+
+  const batchSpecs = selectedProduct?.batchSpecs ?? [];
+  const isMultipleBatches = batchSpecs.length > 1;
+  const piecesPerUnitDisplay = useMemo(() => {
+    if (!selectedProduct) {
+      return '—';
+    }
+
+    if (
+      !selectedProduct.batchSpecs ||
+      selectedProduct.batchSpecs.length === 0
+    ) {
+      const fallback = selectedProduct.piecesPerUnit;
+      return `${fallback ?? 1} 片`;
+    }
+
+    if (selectedProduct.batchSpecs.length === 1) {
+      return `${selectedProduct.batchSpecs[0].piecesPerUnit} 片`;
+    }
+
+    return '多批次，请在下方选择批次';
+  }, [selectedProduct]);
 
   const handleBatchSelect = (spec: {
     batchNumber: string;
@@ -133,8 +156,13 @@ export function InboundProductSection({
             </div>
             <div className="flex flex-col gap-0.5">
               <span className="text-gray-600">每件片数</span>
-              <span className="font-medium text-gray-800">
-                {selectedProduct.piecesPerUnit || 1} 片
+              <span
+                className={cn(
+                  'font-medium',
+                  isMultipleBatches ? 'text-amber-600' : 'text-gray-800'
+                )}
+              >
+                {piecesPerUnitDisplay}
               </span>
             </div>
             <div className="flex flex-col gap-0.5">
@@ -143,81 +171,78 @@ export function InboundProductSection({
                 {selectedProduct.currentStock || 0} 片
               </span>
             </div>
-            {selectedProduct.batchSpecs &&
-              selectedProduct.batchSpecs.length > 0 && (
-                <div className="col-span-5 flex flex-col gap-1.5 border-t border-green-200 pt-2">
-                  <span className="font-medium text-gray-600">
-                    现有批次规格
-                  </span>
-                  <p className="text-muted-foreground text-xs">
-                    点击批次可快速切换入库批次，并同步每件片数。
-                  </p>
-                  <div className="flex flex-col gap-1.5">
-                    {selectedProduct.batchSpecs.map((spec, index) => {
-                      // 计算件数和剩余片数
-                      const units = Math.floor(
-                        spec.quantity / spec.piecesPerUnit
-                      );
-                      const remainingPieces =
-                        spec.quantity % spec.piecesPerUnit;
+            {batchSpecs.length > 0 && (
+              <div className="col-span-5 flex flex-col gap-1.5 border-t border-green-200 pt-2">
+                <span className="font-medium text-gray-600">现有批次规格</span>
+                <p className="text-muted-foreground text-xs">
+                  点击批次可快速切换入库批次，并同步每件片数。
+                </p>
+                <div className="flex flex-col gap-1.5">
+                  {batchSpecs.map((spec, index) => {
+                    // 计算件数和剩余片数
+                    const units = Math.floor(
+                      spec.quantity / spec.piecesPerUnit
+                    );
+                    const remainingPieces = spec.quantity % spec.piecesPerUnit;
 
-                      // 格式化库存显示
-                      let stockDisplay = '';
-                      if (units > 0 && remainingPieces > 0) {
-                        stockDisplay = `${units}件+${remainingPieces}片`;
-                      } else if (units > 0) {
-                        stockDisplay = `${units}件`;
-                      } else {
-                        stockDisplay = `${remainingPieces}片`;
-                      }
+                    // 格式化库存显示
+                    let stockDisplay = '';
+                    if (units > 0 && remainingPieces > 0) {
+                      stockDisplay = `${units}件+${remainingPieces}片`;
+                    } else if (units > 0) {
+                      stockDisplay = `${units}件`;
+                    } else {
+                      stockDisplay = `${remainingPieces}片`;
+                    }
 
-                      return (
-                        <button
-                          type="button"
-                          key={index}
-                          onClick={() => handleBatchSelect(spec)}
-                          className={cn(
-                            'flex items-center gap-2 rounded border px-3 py-1.5 text-left transition',
-                            selectedBatchNumber === spec.batchNumber
-                              ? 'border-blue-500 bg-blue-100/80 shadow-sm'
-                              : 'border-blue-200 bg-blue-50 hover:border-blue-300 hover:bg-blue-100'
-                          )}
-                        >
-                          <span className="font-mono text-xs font-semibold text-blue-800">
-                            {spec.batchNumber}
-                          </span>
-                          <span className="text-gray-400">|</span>
-                          <span className="text-xs text-gray-700">
-                            每件{' '}
-                            <span className="font-semibold text-blue-700">
-                              {spec.piecesPerUnit}
-                            </span>{' '}
-                            片
-                          </span>
-                          <span className="text-gray-400">|</span>
-                          <span className="text-xs text-emerald-700">
-                            库存{' '}
-                            <span className="font-semibold">
-                              {stockDisplay}
-                            </span>
-                          </span>
-                        </button>
-                      );
-                    })}
-                  </div>
-                  {selectedBatchNumber && (
-                    <div className="flex justify-end">
+                    return (
                       <button
                         type="button"
-                        className="text-xs text-blue-600 hover:text-blue-700"
-                        onClick={handleClearBatchSelection}
+                        key={index}
+                        onClick={() => handleBatchSelect(spec)}
+                        className={cn(
+                          'flex items-center gap-2 rounded border px-3 py-1.5 text-left transition',
+                          selectedBatchNumber === spec.batchNumber
+                            ? 'border-blue-500 bg-blue-100/80 shadow-sm'
+                            : 'border-blue-200 bg-blue-50 hover:border-blue-300 hover:bg-blue-100'
+                        )}
                       >
-                        清除批次选择
+                        <span className="font-mono text-xs font-semibold text-blue-800">
+                          {spec.batchNumber}
+                        </span>
+                        <span className="text-gray-400">|</span>
+                        <span className="text-xs text-gray-700">
+                          每件{' '}
+                          <span className="font-semibold text-blue-700">
+                            {spec.piecesPerUnit}
+                          </span>{' '}
+                          片
+                        </span>
+                        <span className="text-gray-400">|</span>
+                        <span className="text-xs text-emerald-700">
+                          库存{' '}
+                          <span className="font-semibold">{stockDisplay}</span>
+                          <span className="text-gray-500">
+                            （共 {spec.quantity} 片）
+                          </span>
+                        </span>
                       </button>
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-              )}
+                {selectedBatchNumber && (
+                  <div className="flex justify-end">
+                    <button
+                      type="button"
+                      className="text-xs text-blue-600 hover:text-blue-700"
+                      onClick={handleClearBatchSelection}
+                    >
+                      清除批次选择
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </div>
       )}

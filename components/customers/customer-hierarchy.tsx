@@ -38,6 +38,7 @@ import { searchCustomers } from '@/lib/api/customers';
 import { queryKeys } from '@/lib/queryKeys';
 import {
   type Customer,
+  type CustomerType,
   CUSTOMER_TYPE_LABELS,
   CUSTOMER_TYPE_VARIANTS,
 } from '@/lib/types/customer';
@@ -59,7 +60,42 @@ interface CustomerHierarchyTreeProps {
   showStats?: boolean;
 }
 
+const CUSTOMER_TYPE_VALUES = ['company', 'store', 'individual'] as const;
+
+const isCustomerType = (value: unknown): value is CustomerType =>
+  typeof value === 'string' &&
+  (CUSTOMER_TYPE_VALUES as readonly string[]).includes(value);
+
+const extractCustomerType = (
+  extendedInfo?: string
+): CustomerType | undefined => {
+  if (!extendedInfo) {
+    return undefined;
+  }
+
+  try {
+    const info = JSON.parse(extendedInfo) as { customerType?: unknown };
+    return isCustomerType(info?.customerType) ? info.customerType : undefined;
+  } catch {
+    return undefined;
+  }
+};
+
+const renderCustomerTypeBadge = (extendedInfo?: string) => {
+  const type = extractCustomerType(extendedInfo);
+  if (!type) {
+    return null;
+  }
+
+  return (
+    <Badge variant={CUSTOMER_TYPE_VARIANTS[type]} className="text-xs">
+      {CUSTOMER_TYPE_LABELS[type]}
+    </Badge>
+  );
+};
+
 // 客户层级树组件
+// eslint-disable-next-line max-lines-per-function
 export function CustomerHierarchyTree({
   customers,
   onSelectCustomer,
@@ -74,20 +110,17 @@ export function CustomerHierarchyTree({
     customers: Customer[],
     parentId?: string,
     level = 0
-  ): CustomerTreeNode[] => {
-    if (level > maxLevel) {
-      return [];
-    }
-
-    return customers
-      .filter(customer => customer.parentCustomerId === parentId)
-      .map(customer => ({
-        ...customer,
-        level,
-        children: buildTree(customers, customer.id, level + 1),
-        expanded: expandedNodes.has(customer.id),
-      }));
-  };
+  ): CustomerTreeNode[] =>
+    level > maxLevel
+      ? []
+      : customers
+          .filter(customer => customer.parentCustomerId === parentId)
+          .map(customer => ({
+            ...customer,
+            level,
+            children: buildTree(customers, customer.id, level + 1),
+            expanded: expandedNodes.has(customer.id),
+          }));
 
   const treeData = buildTree(customers);
 
@@ -102,28 +135,26 @@ export function CustomerHierarchyTree({
     setExpandedNodes(newExpanded);
   };
 
-  // 渲染树节点
+  // eslint-disable-next-line max-lines-per-function
   const renderTreeNode = (node: CustomerTreeNode) => {
     const hasChildren = node.children && node.children.length > 0;
     const isSelected = selectedCustomerId === node.id;
     const isExpanded = node.expanded;
 
+    const customerType = extractCustomerType(node.extendedInfo);
+
     // 客户类型图标
     const getCustomerIcon = (extendedInfo?: string) => {
-      try {
-        const info = extendedInfo ? JSON.parse(extendedInfo) : {};
-        switch (info.customerType) {
-          case 'company':
-            return <Building2 className="h-4 w-4" />;
-          case 'store':
-            return <Store className="h-4 w-4" />;
-          case 'individual':
-            return <User className="h-4 w-4" />;
-          default:
-            return <Building2 className="h-4 w-4" />;
-        }
-      } catch {
-        return <Building2 className="h-4 w-4" />;
+      const type = extractCustomerType(extendedInfo);
+      switch (type) {
+        case 'company':
+          return <Building2 className="h-4 w-4" />;
+        case 'store':
+          return <Store className="h-4 w-4" />;
+        case 'individual':
+          return <User className="h-4 w-4" />;
+        default:
+          return <Building2 className="h-4 w-4" />;
       }
     };
 
@@ -179,23 +210,14 @@ export function CustomerHierarchyTree({
               </span>
 
               {/* 客户类型标签 */}
-              {node.extendedInfo &&
-                (() => {
-                  try {
-                    const info = JSON.parse(node.extendedInfo);
-                    if (info.customerType) {
-                      return (
-                        <Badge
-                          variant={CUSTOMER_TYPE_VARIANTS[info.customerType]}
-                          className="text-xs"
-                        >
-                          {CUSTOMER_TYPE_LABELS[info.customerType]}
-                        </Badge>
-                      );
-                    }
-                  } catch {}
-                  return null;
-                })()}
+              {customerType && (
+                <Badge
+                  variant={CUSTOMER_TYPE_VARIANTS[customerType]}
+                  className="text-xs"
+                >
+                  {CUSTOMER_TYPE_LABELS[customerType]}
+                </Badge>
+              )}
             </div>
 
             {/* 联系信息 */}
@@ -227,7 +249,7 @@ export function CustomerHierarchyTree({
           {/* 子客户数量 */}
           {hasChildren && (
             <Badge variant="outline" className="text-xs">
-              {node.children!.length}
+              {node.children?.length ?? 0}
             </Badge>
           )}
         </div>
@@ -235,7 +257,7 @@ export function CustomerHierarchyTree({
         {/* 子节点 */}
         {hasChildren && isExpanded && (
           <div className="ml-2">
-            {node.children!.map(child => renderTreeNode(child))}
+            {(node.children ?? []).map(child => renderTreeNode(child))}
           </div>
         )}
       </div>
@@ -275,6 +297,7 @@ interface CustomerSelectorProps<
 }
 
 // 客户选择器组件
+// eslint-disable-next-line max-lines-per-function
 export function CustomerSelector<
   TFieldValues extends Record<string, unknown> = Record<string, unknown>,
 >({
@@ -343,23 +366,7 @@ export function CustomerSelector<
             {selectedCustomer ? (
               <div className="flex items-center space-x-2">
                 <span className="truncate">{selectedCustomer.name}</span>
-                {selectedCustomer.extendedInfo &&
-                  (() => {
-                    try {
-                      const info = JSON.parse(selectedCustomer.extendedInfo);
-                      if (info.customerType) {
-                        return (
-                          <Badge
-                            variant={CUSTOMER_TYPE_VARIANTS[info.customerType]}
-                            className="text-xs"
-                          >
-                            {CUSTOMER_TYPE_LABELS[info.customerType]}
-                          </Badge>
-                        );
-                      }
-                    } catch {}
-                    return null;
-                  })()}
+                {renderCustomerTypeBadge(selectedCustomer.extendedInfo)}
               </div>
             ) : (
               placeholder
@@ -426,27 +433,7 @@ export function CustomerSelector<
                           <span className="truncate font-medium">
                             {customer.name}
                           </span>
-                          {customer.extendedInfo &&
-                            (() => {
-                              try {
-                                const info = JSON.parse(customer.extendedInfo);
-                                if (info.customerType) {
-                                  return (
-                                    <Badge
-                                      variant={
-                                        CUSTOMER_TYPE_VARIANTS[
-                                          info.customerType
-                                        ]
-                                      }
-                                      className="text-xs"
-                                    >
-                                      {CUSTOMER_TYPE_LABELS[info.customerType]}
-                                    </Badge>
-                                  );
-                                }
-                              } catch {}
-                              return null;
-                            })()}
+                          {renderCustomerTypeBadge(customer.extendedInfo)}
                         </div>
                         <div className="text-muted-foreground truncate text-xs">
                           {customer.phone && <span>{customer.phone}</span>}

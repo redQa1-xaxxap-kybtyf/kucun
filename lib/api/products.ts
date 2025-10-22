@@ -14,6 +14,7 @@ import type {
 export type ProductListQueryParams = ProductQueryParams & {
   includeInventory?: boolean;
   includeStatistics?: boolean;
+  includeBatchSpecs?: boolean;
 };
 
 const API_BASE = '/api/products';

@@ -25,6 +25,7 @@ import {
 import {
   useAvailableBatches,
   useAutoRemarks,
+  useBatchPiecesPerUnitSync,
   useDisplayQuantitySync,
   useOrderItemWatchers,
   useResolvedProductState,
@@ -50,13 +51,16 @@ interface OrderItemRowViewProps {
   transferMode?: TransferFulfillmentMode;
   isManualProduct: boolean;
   resolvedProduct: Product | null;
-  availableBatches: Array<{ batchNumber: string; quantity: number }>;
+  availableBatches: Array<{
+    batchNumber: string;
+    quantity: number;
+    piecesPerUnit?: number;
+  }>;
   localQuantityDisplay: number;
   transferQuantityDisplay: number;
   itemAmount: number;
   formatQuantity: (value: number) => string;
   watchedProductId?: string;
-  watchedManualProductName?: string;
   onProductOverride: (product: Product | null) => void;
 }
 
@@ -98,7 +102,6 @@ function OrderItemRowView({
   itemAmount,
   formatQuantity,
   watchedProductId,
-  watchedManualProductName,
   onProductOverride,
 }: OrderItemRowViewProps) {
   return (
@@ -110,19 +113,24 @@ function OrderItemRowView({
         onProductChange={onProductOverride}
       />
       <ProductNameCell
+        form={form}
+        index={index}
         products={products}
         productId={watchedProductId}
-        manualProductName={watchedManualProductName}
+        isManualProduct={isManualProduct}
       />
       <PiecesPerUnitCell
         form={form}
         index={index}
         isManualProduct={isManualProduct}
+        resolvedProduct={resolvedProduct}
       />
       <BatchSelectorCell
         form={form}
         index={index}
         availableBatches={availableBatches}
+        resolvedProduct={resolvedProduct}
+        isManualProduct={isManualProduct}
         disabled={!resolvedProduct}
       />
       <ManualInfoCells
@@ -182,6 +190,14 @@ function useOrderItemRowController({
   const availableBatches = useAvailableBatches(
     resolvedProduct,
     watchers.batchNumber
+  );
+
+  useBatchPiecesPerUnitSync(
+    form,
+    index,
+    resolvedProduct,
+    watchers.batchNumber,
+    isManualProduct
   );
 
   useDisplayQuantitySync(
@@ -247,7 +263,6 @@ function useOrderItemRowController({
     itemAmount,
     formatQuantity,
     watchedProductId: watchers.productId,
-    watchedManualProductName: watchers.manualProductName,
     onProductOverride: handleProductOverride,
   };
 }

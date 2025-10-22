@@ -62,6 +62,7 @@ export const productKeys = {
       ids?: string;
       includeInventory?: boolean;
       includeStatistics?: boolean;
+      includeBatchSpecs?: boolean;
     }
   ) => [...productKeys.lists(), filters] as const,
 

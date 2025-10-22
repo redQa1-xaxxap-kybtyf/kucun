@@ -82,7 +82,7 @@ function UnitSelectCell({
                   form.setValue(
                     unitPricePath,
                     Math.round(newPrice * 100) / 100,
-                    { shouldDirty: true, shouldValidate: true }
+                    { shouldDirty: true, shouldValidate: false }
                   );
                 }
 

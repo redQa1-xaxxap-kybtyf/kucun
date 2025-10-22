@@ -46,6 +46,7 @@ type ProductSelectorQuery = {
   status?: 'active' | 'inactive';
   includeInventory: boolean;
   includeStatistics: boolean;
+  includeBatchSpecs: boolean;
 };
 
 function buildProductSelectorQuery(
@@ -63,6 +64,7 @@ function buildProductSelectorQuery(
     status: normalizedStatus,
     includeInventory: false,
     includeStatistics: false,
+    includeBatchSpecs: true,
   };
 }
 

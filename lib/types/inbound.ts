@@ -1,7 +1,7 @@
 // 产品入库相关类型定义
 // 遵循命名约定：数据库 snake_case → API camelCase → 前端 camelCase
 
-import type { Product } from './product';
+import type { Product, ProductBatchSpec } from './product';
 import type { User } from './user';
 
 // 入库原因枚举
@@ -151,11 +151,7 @@ export interface InboundStats {
 }
 
 // 批次规格信息
-export interface BatchSpecInfo {
-  batchNumber: string;
-  piecesPerUnit: number; // 每件片数
-  quantity: number; // 该规格的库存数量（片）
-}
+export type BatchSpecInfo = ProductBatchSpec;
 
 // 产品选择器选项
 export interface ProductOption {
