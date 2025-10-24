@@ -96,7 +96,10 @@ export default function UsersSettingsPage() {
       if (!result.success) {
         throw new Error(result.error || '获取用户列表失败');
       }
-      return result.data!;
+      if (!result.data) {
+        throw new Error('获取用户列表失败：返回数据为空');
+      }
+      return result.data;
     },
   });
 

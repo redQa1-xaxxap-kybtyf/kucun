@@ -11,6 +11,7 @@ import {
 import { customerQueryKeys, getCustomers } from '@/lib/api/customers';
 import { getProducts, productQueryKeys } from '@/lib/api/products';
 import { createSalesOrder, salesOrderQueryKeys } from '@/lib/api/sales-orders';
+import { queryKeys } from '@/lib/queryKeys';
 import type { Customer } from '@/lib/types/customer';
 import type { Product } from '@/lib/types/product';
 import { transformFormDataToCreateInput } from '@/lib/utils/sales-order-transforms';
@@ -366,7 +367,14 @@ export function useSalesOrderSubmission({
         title: '创建成功',
         description: `销售订单"${data.orderNumber}"创建成功！`,
       });
+
+      // ✅ 失效销售订单缓存
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
+
+      // ✅ 关键修复：同时失效应收款缓存
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.receivables(),
+      });
 
       if (onSuccess) {
         onSuccess(data);

@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 产品模块错误边界
@@ -24,7 +25,12 @@ export default function ProductsError({
 }) {
   useEffect(() => {
     // 记录错误到监控服务
-    console.error('产品模块错误:', error);
+    logger.error(
+      'dashboard:products:error-boundary',
+      '产品模块错误',
+      error,
+      { digest: error.digest }
+    );
   }, [error]);
 
   return (

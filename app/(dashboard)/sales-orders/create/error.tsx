@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 新建销售订单页面错误边界
@@ -20,7 +21,12 @@ export default function CreateSalesOrderError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('新建销售订单页面错误:', error);
+    logger.error(
+      'dashboard:sales-orders:create:error-boundary',
+      '新建销售订单页面错误',
+      error,
+      { digest: error.digest }
+    );
   }, [error]);
 
   return (

@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 销售订单模块错误边界
@@ -24,7 +25,12 @@ export default function SalesOrdersError({
 }) {
   useEffect(() => {
     // 记录错误到监控服务
-    console.error('销售订单模块错误:', error);
+    logger.error(
+      'dashboard:sales-orders:error-boundary',
+      '销售订单模块错误',
+      error,
+      { digest: error.digest }
+    );
   }, [error]);
 
   return (

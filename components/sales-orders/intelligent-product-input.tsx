@@ -310,10 +310,10 @@ export function IntelligentProductInput<
               : spec?.piecesPerUnit && spec.piecesPerUnit > 0
                 ? spec.piecesPerUnit
                 : undefined;
+          const batchWeight = (b as { weight?: number }).weight;
           const normalizedWeight =
-            typeof (b as { weight?: number }).weight === 'number' &&
-            (b as { weight?: number }).weight! > 0
-              ? (b as { weight?: number }).weight
+            typeof batchWeight === 'number' && batchWeight > 0
+              ? batchWeight
               : spec?.weight && spec.weight > 0
                 ? spec.weight
                 : undefined;

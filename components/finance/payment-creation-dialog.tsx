@@ -10,7 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { DollarSign, Save } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
@@ -41,43 +41,27 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import { formatCurrency } from '@/lib/utils';
 
-// 收款记录表单验证Schema
-const paymentSchema = z
-  .object({
-    paymentType: z.literal('order_payment').default('order_payment'),
-    salesOrderId: z.string().min(1, { message: '销售订单ID不能为空' }),
-    customerId: z.string().min(1, { message: '客户ID不能为空' }),
-    paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other'], {
-      message: '请选择收款方式',
-    }),
-    paymentAmount: z.number().min(0.01, { message: '收款金额必须大于0' }),
-    actualPaymentAmount: z.number().min(0, { message: '实际收款金额不能为负' }),
-    roundingAmount: z
-      .number()
-      .min(-9999999, { message: '抹零金额不能低于 -9,999,999' })
-      .max(9999999, { message: '抹零金额不能超过 9,999,999' }),
-    paymentDate: z.string().min(1, { message: '请选择收款日期' }),
-    bankInfo: z.string().optional(),
-    remarks: z.string().optional(),
-  })
-  .superRefine((value, ctx) => {
-    const expected = Number(
-      (value.actualPaymentAmount + value.roundingAmount).toFixed(2)
-    );
-    const recorded = Number(value.paymentAmount.toFixed(2));
-    if (Math.abs(expected - recorded) >= 0.01) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['actualPaymentAmount'],
-        message: '收款金额应等于实际收款金额与抹零金额之和',
-      });
-    }
-  });
+// ✅ 收款记录表单验证Schema - 支持抹零模式
+const paymentSchema = z.object({
+  paymentType: z.literal('order_payment').default('order_payment'),
+  salesOrderId: z.string().min(1, { message: '销售订单ID不能为空' }),
+  customerId: z.string().min(1, { message: '客户ID不能为空' }),
+  paymentMethod: z.enum(['cash', 'bank_transfer', 'check', 'other'], {
+    message: '请选择收款方式',
+  }),
+  paymentAmount: z.number().min(0.01, { message: '收款金额必须大于0' }),
+  actualPaymentAmount: z.number().min(0, { message: '实际收款金额不能为负' }),
+  roundingAmount: z.number().default(0),
+  paymentDate: z.string().min(1, { message: '请选择收款日期' }),
+  bankInfo: z.string().optional(),
+  remarks: z.string().optional(),
+});
 
 type PaymentFormData = z.infer<typeof paymentSchema>;
 
@@ -87,6 +71,7 @@ interface OrderInfo {
   customerId: string;
   customerName: string;
   totalAmount: number;
+  roundingAdjustment: number; // 新增:订单抹零金额
   paidAmount: number;
   remainingAmount: number;
 }
@@ -139,6 +124,9 @@ export function PaymentCreationDialog({
   const watchedPaymentAmount = form.watch('paymentAmount');
   const watchedActualAmount = form.watch('actualPaymentAmount');
 
+  // ✅ 新增：是否启用抹零模式
+  const [enableRounding, setEnableRounding] = useState(false);
+
   // 当订单信息变化时，更新表单默认值
   useEffect(() => {
     if (orderInfo) {
@@ -154,26 +142,46 @@ export function PaymentCreationDialog({
         bankInfo: '',
         remarks: '',
       });
+      setEnableRounding(false); // 重置抹零开关
     }
   }, [orderInfo, form]);
 
+  // ✅ 修复: 根据抹零模式决定同步逻辑
   useEffect(() => {
     if (
       typeof watchedPaymentAmount === 'number' &&
-      !Number.isNaN(watchedPaymentAmount) &&
-      typeof watchedActualAmount === 'number' &&
-      !Number.isNaN(watchedActualAmount)
+      !Number.isNaN(watchedPaymentAmount)
     ) {
-      const rounding = Number(
-        (watchedPaymentAmount - watchedActualAmount).toFixed(2)
-      );
-      if (rounding !== form.getValues('roundingAmount')) {
-        form.setValue('roundingAmount', rounding, { shouldDirty: true });
+      if (!enableRounding) {
+        // 普通模式：自动同步实际收款金额 = 收款金额
+        const currentActual = form.getValues('actualPaymentAmount');
+        if (currentActual !== watchedPaymentAmount) {
+          form.setValue('actualPaymentAmount', watchedPaymentAmount, { shouldValidate: false });
+          form.setValue('roundingAmount', 0, { shouldValidate: false });
+        }
       }
-    } else if (form.getValues('roundingAmount') !== 0) {
-      form.setValue('roundingAmount', 0, { shouldDirty: true });
+      // 抹零模式：不自动同步，由用户手动输入实际收款
     }
-  }, [watchedPaymentAmount, watchedActualAmount, form]);
+  }, [watchedPaymentAmount, form, enableRounding]);
+
+  // ✅ 新增：抹零模式下，自动计算抹零金额
+  useEffect(() => {
+    if (enableRounding) {
+      if (
+        typeof watchedPaymentAmount === 'number' &&
+        !Number.isNaN(watchedPaymentAmount) &&
+        typeof watchedActualAmount === 'number' &&
+        !Number.isNaN(watchedActualAmount)
+      ) {
+        const rounding = Number(
+          (watchedPaymentAmount - watchedActualAmount).toFixed(2)
+        );
+        if (rounding !== form.getValues('roundingAmount')) {
+          form.setValue('roundingAmount', rounding, { shouldValidate: false });
+        }
+      }
+    }
+  }, [watchedPaymentAmount, watchedActualAmount, form, enableRounding]);
 
   // 创建收款记录mutation
   const createPaymentMutation = useMutation({
@@ -272,10 +280,38 @@ export function PaymentCreationDialog({
               <Separator />
               <div className="flex justify-between">
                 <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
-                  订单金额
+                  商品总额
                 </span>
                 <span className="text-base font-bold text-[hsl(var(--color-text-primary))]">
                   {formatCurrency(orderInfo.totalAmount)}
+                </span>
+              </div>
+              {orderInfo.roundingAdjustment !== 0 && (
+                <div className="flex justify-between">
+                  <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
+                    订单抹零
+                  </span>
+                  <span
+                    className={`text-sm font-semibold ${
+                      orderInfo.roundingAdjustment > 0
+                        ? 'text-[hsl(var(--color-success))]'
+                        : 'text-[hsl(var(--color-error))]'
+                    }`}
+                  >
+                    {orderInfo.roundingAdjustment > 0 ? '+' : ''}
+                    {formatCurrency(orderInfo.roundingAdjustment)}
+                  </span>
+                </div>
+              )}
+              <Separator />
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-[hsl(var(--color-text-tertiary))]">
+                  实际应收
+                </span>
+                <span className="text-base font-bold text-[hsl(var(--color-primary))]">
+                  {formatCurrency(
+                    orderInfo.totalAmount + orderInfo.roundingAdjustment
+                  )}
                 </span>
               </div>
               <div className="flex justify-between">
@@ -347,74 +383,95 @@ export function PaymentCreationDialog({
                     />
                   </FormControl>
                   <FormDescription>
-                    记入订单的金额，将用于冲抵应收款
+                    输入本次实际收款金额（支持全额或部分收款）
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="actualPaymentAmount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>实际收款金额 *</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="0.00"
-                      value={field.value}
-                      onChange={e =>
-                        field.onChange(
-                          e.target.value === ''
-                            ? 0
-                            : parseFloat(e.target.value) || 0
-                        )
-                      }
-                    />
-                  </FormControl>
-                  <FormDescription>
-                    与客户实际到账金额，可低于收款金额以实现抹零
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
+            {/* 抹零优惠开关 */}
+            <div className="flex items-center justify-between rounded-lg border border-[hsl(var(--color-border-primary))] bg-[hsl(var(--color-bg-secondary))]/50 p-4">
+              <div className="space-y-0.5">
+                <label className="text-sm font-medium">
+                  启用抹零优惠
+                </label>
+                <p className="text-xs text-[hsl(var(--color-text-tertiary))]">
+                  当实际收款金额少于应收金额时启用（如客户没有零钱）
+                </p>
+              </div>
+              <Switch
+                checked={enableRounding}
+                onCheckedChange={setEnableRounding}
+              />
+            </div>
 
-            <FormField
-              control={form.control}
-              name="roundingAmount"
-              render={({ field }) => {
-                const displayValue =
-                  typeof field.value === 'number' && !Number.isNaN(field.value)
-                    ? field.value.toFixed(2)
-                    : '0.00';
+            {/* 抹零模式：显示实际收款金额和抹零金额 */}
+            {enableRounding && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="actualPaymentAmount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>实际到账金额 *</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="0.00"
+                          value={field.value}
+                          onChange={e =>
+                            field.onChange(
+                              e.target.value === ''
+                                ? 0
+                                : parseFloat(e.target.value) || 0
+                            )
+                          }
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        客户实际支付的金额（可以少于收款金额）
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
-                return (
-                  <FormItem>
-                    <FormLabel>抹零金额</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="number"
-                        step="0.01"
-                        readOnly
-                        name={field.name}
-                        ref={field.ref}
-                        value={displayValue}
-                        className="bg-muted"
-                      />
-                    </FormControl>
-                    <FormDescription>
-                      系统根据差额自动计算，正值表示抹零减免，负值表示多收
-                    </FormDescription>
-                    <FormMessage />
-                  </FormItem>
-                );
-              }}
-            />
+                <FormField
+                  control={form.control}
+                  name="roundingAmount"
+                  render={({ field }) => {
+                    const displayValue =
+                      typeof field.value === 'number' && !Number.isNaN(field.value)
+                        ? field.value.toFixed(2)
+                        : '0.00';
+
+                    return (
+                      <FormItem>
+                        <FormLabel>抹零优惠金额</FormLabel>
+                        <FormControl>
+                          <Input
+                            type="number"
+                            step="0.01"
+                            readOnly
+                            name={field.name}
+                            ref={field.ref}
+                            value={displayValue}
+                            className="bg-muted"
+                          />
+                        </FormControl>
+                        <FormDescription>
+                          自动计算：收款金额 - 实际到账 = 抹零优惠
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    );
+                  }}
+                />
+              </>
+            )}
 
             {/* 收款日期 */}
             <FormField

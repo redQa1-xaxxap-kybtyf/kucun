@@ -15,6 +15,7 @@ import type {
   PaymentOutRecordDetail,
   PaymentOutRecordListResponse,
 } from '@/lib/types/payable';
+import { parseLocalDateString } from '@/lib/utils/datetime';
 import { generatePaymentOutNumber } from '@/lib/utils/payment-number-generator';
 import {
   createPaymentOutRecordSchema,
@@ -83,10 +84,12 @@ export const GET = withAuth(
     if (startDate || endDate) {
       const dateFilter: { gte?: Date; lte?: Date } = {};
       if (startDate) {
-        dateFilter.gte = new Date(startDate);
+        const parsedStart = parseLocalDateString(startDate) ?? new Date(startDate);
+        dateFilter.gte = parsedStart;
       }
       if (endDate) {
-        dateFilter.lte = new Date(endDate);
+        const parsedEnd = parseLocalDateString(endDate) ?? new Date(endDate);
+        dateFilter.lte = parsedEnd;
       }
       where.paymentDate = dateFilter;
     }
@@ -219,7 +222,9 @@ export const POST = withAuth(
             ...data,
             paymentNumber,
             userId: user.id,
-            paymentDate: new Date(data.paymentDate),
+            paymentDate:
+              parseLocalDateString(data.paymentDate) ??
+              new Date(data.paymentDate),
           },
           include: {
             payableRecord: {

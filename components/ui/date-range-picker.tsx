@@ -40,6 +40,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 日期范围值接口
@@ -208,7 +209,15 @@ export const DateRangePicker = React.memo(({
 
       return `${startStr} - ${endStr}`;
     } catch (error) {
-      console.error('❌ 日期格式化失败:', error);
+      logger.error(
+        'ui:date-range-picker',
+        '日期格式化失败',
+        error,
+        {
+          startDate: value?.startDate,
+          endDate: value?.endDate,
+        }
+      );
       return '';
     }
   }, [value?.startDate, value?.endDate]);

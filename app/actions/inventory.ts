@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 export type ActionResult<T = unknown> =
   | { success: true; data: T }
@@ -196,7 +197,9 @@ export async function adjustInventory(
 
     return { success: true, data: result };
   } catch (error) {
-    console.error('库存调整失败:', error);
+    logger.error('actions:inventory', '库存调整失败', error, {
+      action: 'adjustInventory',
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : '库存调整失败',
@@ -254,7 +257,9 @@ export async function batchAdjustInventory(
 
     return { success: true, data: { count: normalizedInputs.length } };
   } catch (error) {
-    console.error('批量调整失败:', error);
+    logger.error('actions:inventory', '批量调整失败', error, {
+      action: 'batchAdjustInventory',
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : '批量调整失败',

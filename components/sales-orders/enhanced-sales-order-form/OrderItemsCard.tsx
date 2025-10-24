@@ -213,7 +213,11 @@ function OrderItemRow({
               const value = event.target.value;
               // 允许输入数字、小数点
               if (value === '' || /^\d*\.?\d*$/.test(value)) {
-                onUpdateItem(index, 'quantity', value === '' ? 0 : value);
+                onUpdateItem(
+                  index,
+                  'quantity',
+                  value === '' ? undefined : Number(value)
+                );
               }
             }}
             onBlur={event => {
@@ -232,17 +236,21 @@ function OrderItemRow({
       </TableCell>
 
       <TableCell>
-        <Input
-          type="text"
-          inputMode="decimal"
-          value={item.unitPrice ?? ''}
-          onChange={event => {
-            const value = event.target.value;
-            // 允许输入数字、小数点、负号
-            if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
-              onUpdateItem(index, 'unitPrice', value === '' ? 0 : value);
-            }
-          }}
+          <Input
+            type="text"
+            inputMode="decimal"
+            value={item.unitPrice ?? ''}
+            onChange={event => {
+              const value = event.target.value;
+              // 允许输入数字、小数点、负号
+              if (value === '' || /^-?\d*\.?\d*$/.test(value)) {
+                onUpdateItem(
+                  index,
+                  'unitPrice',
+                  value === '' ? undefined : Number(value)
+                );
+              }
+            }}
           onBlur={event => {
             const value = event.target.value;
             if (value && value !== '-' && value !== '.') {

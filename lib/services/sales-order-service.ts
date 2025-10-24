@@ -128,26 +128,35 @@ export async function getReturnableItems(
   );
 
   // 构建可退货明细
-  const returnableItems: ReturnableItem[] = salesOrder.items
-    .filter(item => item.productId !== null) // 过滤掉没有产品ID的项
-    .map(item => {
-      const returnedQuantity = returnedQuantities[item.id] || 0;
-      const availableQuantity = item.quantity - returnedQuantity;
+  const returnableItems: ReturnableItem[] = salesOrder.items.reduce<
+    ReturnableItem[]
+  >((acc, item) => {
+    if (!item.productId || !item.product) {
+      return acc;
+    }
 
-      return {
-        salesOrderItemId: item.id,
-        productId: item.productId!,
-        product: item.product!,
-        originalQuantity: item.quantity,
-        returnedQuantity,
-        availableQuantity,
-        unitPrice: item.unitPrice,
-        maxReturnAmount: availableQuantity * item.unitPrice,
-        colorCode: item.colorCode,
-        productionDate: item.productionDate,
-      };
-    })
-    .filter(item => item.availableQuantity > 0); // 只返回还可以退货的明细
+    const returnedQuantity = returnedQuantities[item.id] || 0;
+    const availableQuantity = item.quantity - returnedQuantity;
+
+    if (availableQuantity <= 0) {
+      return acc;
+    }
+
+    acc.push({
+      salesOrderItemId: item.id,
+      productId: item.productId,
+      product: item.product,
+      originalQuantity: item.quantity,
+      returnedQuantity,
+      availableQuantity,
+      unitPrice: item.unitPrice,
+      maxReturnAmount: availableQuantity * item.unitPrice,
+      colorCode: item.colorCode,
+      productionDate: item.productionDate,
+    });
+
+    return acc;
+  }, []);
 
   return {
     salesOrder: {

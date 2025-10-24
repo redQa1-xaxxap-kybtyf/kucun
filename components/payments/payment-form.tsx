@@ -67,6 +67,7 @@ import {
   type CreatePaymentRecordInput,
   type UpdatePaymentRecordInput,
 } from '@/lib/validations/payment';
+import { logger } from '@/lib/utils/console-logger';
 
 export interface PaymentFormProps {
   initialData?: PaymentRecordDetail;
@@ -170,7 +171,7 @@ const PaymentForm = React.forwardRef<HTMLDivElement, PaymentFormProps>(
         setIsSubmitting(true);
         await onSubmit(data);
       } catch (error) {
-        console.error('提交表单失败:', error);
+        logger.error('finance:payment-form', '提交表单失败', error);
       } finally {
         setIsSubmitting(false);
       }

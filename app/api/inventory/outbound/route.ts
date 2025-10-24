@@ -67,6 +67,7 @@ type OutboundRecordWithProduct = {
   quantity: number;
   reason: string;
   notes: string | null;
+  batchNumber: string | null;
   createdAt: Date;
   updatedAt: Date;
   product: {
@@ -74,6 +75,7 @@ type OutboundRecordWithProduct = {
     name: string;
     specification: string | null;
     piecesPerUnit: number;
+    weight: number | null;
   };
 };
 
@@ -89,6 +91,7 @@ function formatOutboundRecord(record: OutboundRecordWithProduct) {
     productName: record.product.name,
     productSpecification: record.product.specification,
     piecesPerUnit: record.product.piecesPerUnit,
+    batchNumber: record.batchNumber,
     quantity: record.quantity,
     type: record.reason,
     reason: record.notes || undefined,
@@ -231,6 +234,7 @@ const getOutboundRecordsHandler = withAuth(
                 name: true,
                 specification: true,
                 piecesPerUnit: true,
+                weight: true,
               },
             },
           },
@@ -238,8 +242,56 @@ const getOutboundRecordsHandler = withAuth(
         prisma.outboundRecord.count({ where }),
       ]);
 
-      // 格式化数据
-      const formattedRecords = records.map(formatOutboundRecord);
+      // 查询每个批次的规格信息以获取实际的每件片数
+      const batchSpecMap = new Map<string, number>();
+      const batchQueries = records.reduce<
+        Array<{ productId: string; batchNumber: string }>
+      >((acc, record) => {
+        if (!record.batchNumber) {
+          return acc;
+        }
+        acc.push({
+          productId: record.productId,
+          batchNumber: record.batchNumber,
+        });
+        return acc;
+      }, []);
+
+      if (batchQueries.length > 0) {
+        const batchSpecs = await prisma.batchSpecification.findMany({
+          where: {
+            OR: batchQueries.map(q => ({
+              productId: q.productId,
+              batchNumber: q.batchNumber,
+            })),
+          },
+          select: {
+            productId: true,
+            batchNumber: true,
+            piecesPerUnit: true,
+          },
+        });
+
+        batchSpecs.forEach(spec => {
+          const key = `${spec.productId}-${spec.batchNumber}`;
+          batchSpecMap.set(key, spec.piecesPerUnit);
+        });
+      }
+
+      // 格式化数据，使用批次规格的每件片数
+      const formattedRecords = records.map(record => {
+        const batchKey = record.batchNumber
+          ? `${record.productId}-${record.batchNumber}`
+          : null;
+        const piecesPerUnit = batchKey
+          ? batchSpecMap.get(batchKey) ?? record.product.piecesPerUnit
+          : record.product.piecesPerUnit;
+
+        return {
+          ...formatOutboundRecord(record),
+          piecesPerUnit,
+        };
+      });
 
       return NextResponse.json({
         data: formattedRecords,

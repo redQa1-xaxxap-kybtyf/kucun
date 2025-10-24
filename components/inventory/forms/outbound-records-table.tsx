@@ -17,24 +17,9 @@ import {
   OUTBOUND_REASON_LABELS,
   OUTBOUND_TYPE_LABELS,
   OUTBOUND_TYPE_VARIANTS,
-  type OutboundType,
+  type OutboundRecord,
 } from '@/lib/types/inventory';
 import { formatDateTimeCN } from '@/lib/utils/datetime';
-
-interface OutboundRecord {
-  id: string;
-  recordNumber: string;
-  productId: string;
-  productCode: string;
-  productName: string;
-  productSpecification?: string;
-  piecesPerUnit: number;
-  quantity: number;
-  type: OutboundType;
-  reason?: string;
-  createdAt: string;
-  updatedAt: string;
-}
 
 interface OutboundRecordsTableProps {
   records: OutboundRecord[];
@@ -74,7 +59,7 @@ const formatSpecification = (specification?: string) => {
 };
 
 // 格式化数量显示（X件Y片（共XX片））
-const formatQuantity = (quantity: number, piecesPerUnit: number) => {
+const formatQuantity = (quantity: number, piecesPerUnit?: number) => {
   // 数据验证
   if (!quantity || !piecesPerUnit || piecesPerUnit <= 0) {
     return `${quantity || 0}片`;
@@ -123,6 +108,7 @@ export function OutboundRecordsTable({
               <TableHead>产品编码</TableHead>
               <TableHead>产品名称</TableHead>
               <TableHead>规格</TableHead>
+              <TableHead>批次号</TableHead>
               <TableHead>每件片数</TableHead>
               <TableHead>出库数量</TableHead>
               <TableHead>出库类型</TableHead>
@@ -133,7 +119,7 @@ export function OutboundRecordsTable({
           <TableBody>
             {records.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="p-8">
+                <TableCell colSpan={9} className="p-8">
                   <EmptyState
                     title="暂无出库记录"
                     icon={<Package className="text-muted-foreground h-6 w-6" />}
@@ -155,6 +141,9 @@ export function OutboundRecordsTable({
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {formatSpecification(record.productSpecification) || '-'}
+                  </TableCell>
+                  <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
+                    {record.batchNumber || '-'}
                   </TableCell>
                   <TableCell className="text-xs text-[hsl(var(--color-text-secondary))]">
                     {record.piecesPerUnit || '-'}

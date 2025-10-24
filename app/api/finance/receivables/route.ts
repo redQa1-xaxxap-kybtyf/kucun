@@ -51,9 +51,9 @@ export const GET = withAuth(
       );
     }
 
-    // 构建缓存键
+    // 构建缓存键 (v2: 包含roundingAdjustment修复)
     const cacheKey = buildCacheKey(
-      `finance:receivables:list:${user.id}`,
+      `finance:receivables:list:v2:${user.id}`,
       validationResult.data
     );
 

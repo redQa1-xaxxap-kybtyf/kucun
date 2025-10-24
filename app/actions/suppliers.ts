@@ -12,6 +12,7 @@ import {
   ensureSupplierCanBeDeactivated,
   ensureSupplierCanBeDeleted,
 } from '@/lib/services/supplier-service';
+import { logger } from '@/lib/logger';
 
 /**
  * 供应商管理模块 Server Actions
@@ -209,7 +210,9 @@ export async function createSupplier(
       },
     };
   } catch (error) {
-    console.error('创建供应商失败:', error);
+    logger.error('actions:suppliers', '创建供应商失败', error, {
+      action: 'createSupplier',
+    });
     if (error instanceof z.ZodError) {
       return { success: false, error: error.issues[0].message };
     }
@@ -223,6 +226,8 @@ export async function createSupplier(
 export async function updateSupplier(
   formData: FormData
 ): Promise<ActionResult<{ id: string; name: string }>> {
+  let supplierIdForLog: string | undefined;
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -235,6 +240,7 @@ export async function updateSupplier(
     }
 
     const supplierId = formData.get('supplierId') as string;
+    supplierIdForLog = supplierId;
     const rawData = JSON.parse(formData.get('data') as string);
     const data = updateSupplierSchema.parse(rawData);
 
@@ -288,7 +294,10 @@ export async function updateSupplier(
       data: { id: supplier.id, name: supplier.name },
     };
   } catch (error) {
-    console.error('更新供应商失败:', error);
+    logger.error('actions:suppliers', '更新供应商失败', error, {
+      action: 'updateSupplier',
+      supplierId: supplierIdForLog,
+    });
     if (error instanceof z.ZodError) {
       return { success: false, error: error.issues[0].message };
     }
@@ -302,6 +311,9 @@ export async function updateSupplier(
 export async function updateSupplierStatus(
   formData: FormData
 ): Promise<ActionResult> {
+  let supplierId: string | undefined;
+  let status: 'active' | 'inactive' | undefined;
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -319,6 +331,8 @@ export async function updateSupplierStatus(
     };
 
     const data = updateSupplierStatusSchema.parse(rawData);
+    supplierId = data.supplierId;
+    status = data.status;
 
     // 检查供应商是否存在
     const supplier = await prisma.supplier.findUnique({
@@ -355,7 +369,11 @@ export async function updateSupplierStatus(
 
     return { success: true };
   } catch (error) {
-    console.error('更新供应商状态失败:', error);
+    logger.error('actions:suppliers', '更新供应商状态失败', error, {
+      action: 'updateSupplierStatus',
+      supplierId,
+      status,
+    });
     if (error instanceof z.ZodError) {
       return { success: false, error: error.issues[0].message };
     }
@@ -402,7 +420,10 @@ export async function deleteSupplier(
 
     return { success: true };
   } catch (error) {
-    console.error('删除供应商失败:', error);
+    logger.error('actions:suppliers', '删除供应商失败', error, {
+      action: 'deleteSupplier',
+      supplierId,
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : '删除供应商失败',
@@ -478,7 +499,9 @@ export async function batchUpdateSupplierStatus(
 
     return { success: true };
   } catch (error) {
-    console.error('批量更新供应商状态失败:', error);
+    logger.error('actions:suppliers', '批量更新供应商状态失败', error, {
+      action: 'bulkUpdateSupplierStatus',
+    });
     return { success: false, error: '批量更新供应商状态失败' };
   }
 }
@@ -583,7 +606,9 @@ export async function batchDeleteSuppliers(
 
     return { success: true };
   } catch (error) {
-    console.error('批量删除供应商失败:', error);
+    logger.error('actions:suppliers', '批量删除供应商失败', error, {
+      action: 'bulkDeleteSuppliers',
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : '批量删除供应商失败',

@@ -38,14 +38,17 @@ import {
   TRANSFER_MODE_LABELS,
 } from '@/lib/types/sales-order';
 import { FEE_TYPE_LABELS } from '@/lib/types/sales-order-fee';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import { getSalesOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 
 interface PaymentRecord {
   id: string;
   paymentNumber: string;
   paymentAmount: number;
+  actualPaymentAmount: number; // ✅ 新增: 实际到账金额
+  roundingAmount: number; // ✅ 新增: 收款抹零金额
   paymentMethod: string;
   paymentDate: string;
   status: string;
@@ -68,7 +71,9 @@ interface SalesOrderDetail {
   totalAmount: number;
   costAmount: number;
   profitAmount: number;
-  paidAmount: number;
+  actualPaidAmount: number; // ✅ 新增: 实际到账金额
+  paymentRounding: number; // ✅ 新增: 收款抹零金额
+  paidAmount: number; // 等效已收款
   remainingAmount: number;
   remarks?: string;
   shippedAt?: string;
@@ -547,7 +552,9 @@ export default function SalesOrderDetailPage() {
         </Card>
 
         {/* 金额统计卡片 - 顶部突出显示 */}
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <div
+          className={`grid gap-4 md:grid-cols-2 ${order.roundingAdjustment !== 0 ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}
+        >
           <Card
             className="border border-[hsl(var(--color-border-primary))]"
             style={{ boxShadow: 'var(--shadow-light)' }}
@@ -562,6 +569,46 @@ export default function SalesOrderDetailPage() {
             </CardContent>
           </Card>
 
+          {/* ✅ 订单抹零金额卡片(只在有订单抹零时显示) */}
+          {order.roundingAdjustment !== 0 && (
+            <Card
+              className="border border-orange-200 bg-orange-50/50"
+              style={{ boxShadow: 'var(--shadow-light)' }}
+            >
+              <CardContent className="p-4">
+                <div className="text-xs font-medium text-gray-600">
+                  订单抹零
+                </div>
+                <div className="mt-2 text-2xl font-bold text-orange-600">
+                  -{formatCurrency(Math.abs(order.roundingAdjustment))}
+                </div>
+                <div className="mt-1 text-xs text-gray-500">
+                  订单创建时设定
+                  {order.roundingAdjustment > 0 ? '(加价)' : '(减价)'}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* ✅ 收款抹零金额卡片(只在有收款抹零时显示) */}
+          {order.paymentRounding !== 0 && (
+            <Card
+              className="border border-purple-200 bg-purple-50/50"
+              style={{ boxShadow: 'var(--shadow-light)' }}
+            >
+              <CardContent className="p-4">
+                <div className="text-xs font-medium text-gray-600">
+                  收款抹零
+                </div>
+                <div className="mt-2 text-2xl font-bold text-purple-600">
+                  {order.paymentRounding > 0 ? '+' : ''}
+                  {formatCurrency(Math.abs(order.paymentRounding))}
+                </div>
+                <div className="mt-1 text-xs text-gray-500">收款优惠减免</div>
+              </CardContent>
+            </Card>
+          )}
+
           <Card
             className="border border-green-200 bg-green-50/50"
             style={{ boxShadow: 'var(--shadow-light)' }}
@@ -569,14 +616,15 @@ export default function SalesOrderDetailPage() {
             <CardContent className="p-4">
               <div className="text-xs font-medium text-gray-600">已收金额</div>
               <div className="mt-2 text-2xl font-bold text-green-600">
-                {formatCurrency(order.paidAmount)}
+                {formatCurrency(order.actualPaidAmount)}
               </div>
               <div className="mt-1 text-xs text-gray-500">
+                实际到账{' '}
                 {
                   order.paymentRecords.filter(r => r.status === 'confirmed')
                     .length
                 }{' '}
-                笔收款
+                笔
               </div>
             </CardContent>
           </Card>
@@ -702,7 +750,7 @@ export default function SalesOrderDetailPage() {
                       创建时间
                     </div>
                     <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                      {formatDate(order.createdAt, 'datetime')}
+                      {formatDateTime(order.createdAt)}
                     </div>
                   </div>
                   {order.shippedAt && (
@@ -711,7 +759,7 @@ export default function SalesOrderDetailPage() {
                         发货时间
                       </div>
                       <div className="mt-2 text-sm font-medium text-[hsl(var(--color-primary))]">
-                        {formatDate(order.shippedAt, 'datetime')}
+                        {formatDateTime(order.shippedAt)}
                       </div>
                     </div>
                   )}
@@ -720,7 +768,7 @@ export default function SalesOrderDetailPage() {
                       更新时间
                     </div>
                     <div className="mt-2 text-sm text-[hsl(var(--color-text-secondary))]">
-                      {formatDate(order.updatedAt, 'datetime')}
+                      {formatDateTime(order.updatedAt)}
                     </div>
                   </div>
                 </div>
@@ -1263,18 +1311,50 @@ export default function SalesOrderDetailPage() {
               <CardContent className="bg-[hsl(var(--color-bg-card))] p-6">
                 {/* 订单金额总览 */}
                 <div className="mb-4 rounded-lg border border-blue-200 bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 p-4">
-                  <div className="mb-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500">
-                        <DollarSign className="h-4 w-4 text-white" />
+                  {/* 订单金额信息 */}
+                  <div className="mb-3 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500">
+                          <DollarSign className="h-4 w-4 text-white" />
+                        </div>
+                        <span className="text-sm font-semibold text-gray-700">
+                          订单总金额
+                        </span>
                       </div>
-                      <span className="text-sm font-semibold text-gray-700">
-                        订单总金额
-                      </span>
+                      <div className="text-xl font-bold text-blue-600">
+                        {formatCurrency(order.totalAmount)}
+                      </div>
                     </div>
-                    <div className="text-xl font-bold text-blue-600">
-                      {formatCurrency(order.totalAmount)}
-                    </div>
+
+                    {/* ✅ 新增: 抹零金额显示(只在有抹零时显示) */}
+                    {order.roundingAdjustment !== 0 && (
+                      <div className="flex items-center justify-between rounded-md bg-white/60 px-3 py-2">
+                        <span className="text-xs font-medium text-gray-600">
+                          订单抹零
+                          <span className="ml-1 text-[10px] text-gray-500">
+                            {order.roundingAdjustment > 0 ? '(加价)' : '(减价)'}
+                          </span>
+                        </span>
+                        <div className="text-sm font-bold text-orange-600">
+                          -{formatCurrency(Math.abs(order.roundingAdjustment))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* ✅ 新增: 实际应收金额(只在有抹零时显示) */}
+                    {order.roundingAdjustment !== 0 && (
+                      <div className="flex items-center justify-between rounded-md bg-white/80 px-3 py-2">
+                        <span className="text-xs font-semibold text-gray-700">
+                          实际应收
+                        </span>
+                        <div className="text-lg font-bold text-purple-600">
+                          {formatCurrency(
+                            order.totalAmount + order.roundingAdjustment
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* 收款进度条 */}
@@ -1284,9 +1364,11 @@ export default function SalesOrderDetailPage() {
                         收款进度
                       </span>
                       <span className="text-xs font-bold text-green-600">
-                        {order.totalAmount > 0
+                        {order.totalAmount + order.roundingAdjustment > 0
                           ? (
-                              (order.paidAmount / order.totalAmount) *
+                              (order.paidAmount /
+                                (order.totalAmount +
+                                  order.roundingAdjustment)) *
                               100
                             ).toFixed(1)
                           : '0.0'}
@@ -1297,7 +1379,7 @@ export default function SalesOrderDetailPage() {
                       <div
                         className="h-full rounded-full bg-gradient-to-r from-green-500 to-emerald-500 transition-all duration-500"
                         style={{
-                          width: `${order.totalAmount > 0 ? (order.paidAmount / order.totalAmount) * 100 : 0}%`,
+                          width: `${order.totalAmount + order.roundingAdjustment > 0 ? (order.paidAmount / (order.totalAmount + order.roundingAdjustment)) * 100 : 0}%`,
                         }}
                       ></div>
                     </div>
@@ -1375,76 +1457,92 @@ export default function SalesOrderDetailPage() {
                             .map((record, index) => (
                               <div
                                 key={record.id}
-                                className="group relative overflow-hidden rounded-lg border-2 border-yellow-300 bg-yellow-50 p-4 shadow-sm transition-all hover:border-yellow-400 hover:shadow-md"
+                                className="group relative overflow-hidden rounded-lg border border-yellow-200 bg-gradient-to-br from-yellow-50 to-white p-5 shadow-sm transition-all hover:shadow-md"
                               >
-                                <div className="absolute top-0 left-0 h-full w-1 bg-yellow-500"></div>
-                                <div className="pl-3">
-                                  <div className="mb-2 flex items-start justify-between">
-                                    <div>
-                                      <div className="text-lg font-bold text-gray-900">
-                                        {formatCurrency(record.paymentAmount)}
-                                      </div>
-                                      <div className="mt-0.5 text-xs text-gray-600">
-                                        待确认第 {index + 1} 笔
-                                      </div>
+                                <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-yellow-400 to-yellow-500"></div>
+
+                                {/* 顶部: 金额和状态 */}
+                                <div className="mb-4 flex items-start justify-between pl-4">
+                                  <div className="flex-1">
+                                    <div className="mb-1 text-xs font-medium text-yellow-700">
+                                      待确认第 {index + 1} 笔
                                     </div>
-                                    <Badge className="border-yellow-300 bg-yellow-100 text-yellow-700">
-                                      ⏱ 待确认
-                                    </Badge>
+                                    <div className="text-2xl font-bold text-gray-900">
+                                      {formatCurrency(record.paymentAmount)}
+                                    </div>
+
+                                    {/* 金额明细 */}
+                                    {record.roundingAmount !== 0 && (
+                                      <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-white/80 px-3 py-1.5 text-xs">
+                                        <span className="text-gray-600">实际到账</span>
+                                        <span className="font-semibold text-gray-900">
+                                          {formatCurrency(record.actualPaymentAmount)}
+                                        </span>
+                                        <span className="text-gray-400">+</span>
+                                        <span className="text-gray-600">抹零</span>
+                                        <span className="font-semibold text-yellow-700">
+                                          {formatCurrency(record.roundingAmount)}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
-                                  <div className="grid grid-cols-2 gap-2 rounded-md bg-white/60 p-2 text-xs">
-                                    <div>
-                                      <span className="text-gray-600">
-                                        收款日期
-                                      </span>
-                                      <div className="mt-0.5 font-medium text-gray-800">
-                                        {formatDate(
-                                          record.paymentDate,
-                                          'datetime'
-                                        )}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-600">
-                                        支付方式
-                                      </span>
-                                      <div className="mt-0.5 font-medium text-gray-800">
-                                        {record.paymentMethod === 'cash'
-                                          ? '💵 现金'
-                                          : record.paymentMethod ===
-                                              'bank_transfer'
-                                            ? '🏦 银行转账'
-                                            : record.paymentMethod === 'alipay'
-                                              ? '🔵 支付宝'
-                                              : record.paymentMethod ===
-                                                  'wechat'
-                                                ? '💚 微信支付'
-                                                : record.paymentMethod ===
-                                                    'check'
-                                                  ? '📝 支票'
-                                                  : '📌 其他'}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  {record.paymentNumber && (
-                                    <div className="mt-2 flex items-center gap-1 text-xs">
-                                      <span className="text-gray-600">
-                                        单号:
-                                      </span>
-                                      <code className="rounded bg-white px-1.5 py-0.5 font-mono text-gray-700">
-                                        {record.paymentNumber}
-                                      </code>
-                                    </div>
-                                  )}
-                                  {record.remarks && (
-                                    <div className="mt-2 rounded border-l-2 border-yellow-400 bg-white px-2 py-1.5 text-xs text-gray-700">
-                                      <span className="font-medium text-gray-600">
-                                        备注：
-                                      </span>
-                                      {record.remarks}
-                                    </div>
-                                  )}
+
+                                  <Badge className="ml-3 border-yellow-400 bg-yellow-100 text-yellow-700 shadow-sm">
+                                    ⏱ 待确认
+                                  </Badge>
                                 </div>
+
+                                {/* 中部: 核心信息 */}
+                                <div className="mb-3 grid grid-cols-2 gap-3 pl-4">
+                                  <div className="rounded-lg bg-white/80 p-3">
+                                    <div className="mb-1 text-xs font-medium text-gray-500">
+                                      收款日期
+                                    </div>
+                                    <div className="text-sm font-semibold text-gray-900">
+                                      {formatDateTime(record.paymentDate)}
+                                    </div>
+                                  </div>
+
+                                  <div className="rounded-lg bg-white/80 p-3">
+                                    <div className="mb-1 text-xs font-medium text-gray-500">
+                                      支付方式
+                                    </div>
+                                    <div className="text-sm font-semibold text-gray-900">
+                                      {record.paymentMethod === 'cash'
+                                        ? '💵 现金'
+                                        : record.paymentMethod === 'bank_transfer'
+                                          ? '🏦 银行转账'
+                                          : record.paymentMethod === 'alipay'
+                                            ? '🔵 支付宝'
+                                            : record.paymentMethod === 'wechat'
+                                              ? '💚 微信支付'
+                                              : record.paymentMethod === 'check'
+                                                ? '📝 支票'
+                                                : '📌 其他'}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* 底部: 补充信息 */}
+                                {(record.paymentNumber || record.remarks) && (
+                                  <div className="space-y-2 border-t border-yellow-100 pt-3 pl-4">
+                                    {record.paymentNumber && (
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <span className="font-medium text-gray-500">单号</span>
+                                        <code className="rounded bg-white px-2 py-1 font-mono text-gray-700 shadow-sm">
+                                          {record.paymentNumber}
+                                        </code>
+                                      </div>
+                                    )}
+
+                                    {record.remarks && (
+                                      <div className="rounded-lg border-l-4 border-yellow-400 bg-white/80 px-3 py-2 text-xs">
+                                        <span className="font-semibold text-gray-600">备注：</span>
+                                        <span className="text-gray-700">{record.remarks}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             ))}
                         </div>
@@ -1468,76 +1566,92 @@ export default function SalesOrderDetailPage() {
                             .map((record, index) => (
                               <div
                                 key={record.id}
-                                className="group relative overflow-hidden rounded-lg border-2 border-green-300 bg-green-50 p-4 shadow-sm transition-all hover:border-green-400 hover:shadow-md"
+                                className="group relative overflow-hidden rounded-lg border border-green-200 bg-gradient-to-br from-green-50 to-white p-5 shadow-sm transition-all hover:shadow-md"
                               >
-                                <div className="absolute top-0 left-0 h-full w-1 bg-green-500"></div>
-                                <div className="pl-3">
-                                  <div className="mb-2 flex items-start justify-between">
-                                    <div>
-                                      <div className="text-lg font-bold text-gray-900">
-                                        {formatCurrency(record.paymentAmount)}
-                                      </div>
-                                      <div className="mt-0.5 text-xs text-gray-600">
-                                        已确认第 {index + 1} 笔
-                                      </div>
+                                <div className="absolute top-0 left-0 h-full w-1 bg-gradient-to-b from-green-500 to-emerald-500"></div>
+
+                                {/* 顶部: 金额和状态 */}
+                                <div className="mb-4 flex items-start justify-between pl-4">
+                                  <div className="flex-1">
+                                    <div className="mb-1 text-xs font-medium text-green-700">
+                                      已确认第 {index + 1} 笔
                                     </div>
-                                    <Badge className="border-green-300 bg-green-100 text-green-700">
-                                      ✓ 已确认
-                                    </Badge>
+                                    <div className="text-2xl font-bold text-gray-900">
+                                      {formatCurrency(record.paymentAmount)}
+                                    </div>
+
+                                    {/* 金额明细 */}
+                                    {record.roundingAmount !== 0 && (
+                                      <div className="mt-2 inline-flex items-center gap-2 rounded-md bg-white/80 px-3 py-1.5 text-xs">
+                                        <span className="text-gray-600">实际到账</span>
+                                        <span className="font-semibold text-gray-900">
+                                          {formatCurrency(record.actualPaymentAmount)}
+                                        </span>
+                                        <span className="text-gray-400">+</span>
+                                        <span className="text-gray-600">抹零</span>
+                                        <span className="font-semibold text-green-700">
+                                          {formatCurrency(record.roundingAmount)}
+                                        </span>
+                                      </div>
+                                    )}
                                   </div>
-                                  <div className="grid grid-cols-2 gap-2 rounded-md bg-white/60 p-2 text-xs">
-                                    <div>
-                                      <span className="text-gray-600">
-                                        收款日期
-                                      </span>
-                                      <div className="mt-0.5 font-medium text-gray-800">
-                                        {formatDate(
-                                          record.paymentDate,
-                                          'datetime'
-                                        )}
-                                      </div>
-                                    </div>
-                                    <div>
-                                      <span className="text-gray-600">
-                                        支付方式
-                                      </span>
-                                      <div className="mt-0.5 font-medium text-gray-800">
-                                        {record.paymentMethod === 'cash'
-                                          ? '💵 现金'
-                                          : record.paymentMethod ===
-                                              'bank_transfer'
-                                            ? '🏦 银行转账'
-                                            : record.paymentMethod === 'alipay'
-                                              ? '🔵 支付宝'
-                                              : record.paymentMethod ===
-                                                  'wechat'
-                                                ? '💚 微信支付'
-                                                : record.paymentMethod ===
-                                                    'check'
-                                                  ? '📝 支票'
-                                                  : '📌 其他'}
-                                      </div>
-                                    </div>
-                                  </div>
-                                  {record.paymentNumber && (
-                                    <div className="mt-2 flex items-center gap-1 text-xs">
-                                      <span className="text-gray-600">
-                                        单号:
-                                      </span>
-                                      <code className="rounded bg-white px-1.5 py-0.5 font-mono text-gray-700">
-                                        {record.paymentNumber}
-                                      </code>
-                                    </div>
-                                  )}
-                                  {record.remarks && (
-                                    <div className="mt-2 rounded border-l-2 border-green-400 bg-white px-2 py-1.5 text-xs text-gray-700">
-                                      <span className="font-medium text-gray-600">
-                                        备注：
-                                      </span>
-                                      {record.remarks}
-                                    </div>
-                                  )}
+
+                                  <Badge className="ml-3 border-green-400 bg-green-100 text-green-700 shadow-sm">
+                                    ✓ 已确认
+                                  </Badge>
                                 </div>
+
+                                {/* 中部: 核心信息 */}
+                                <div className="mb-3 grid grid-cols-2 gap-3 pl-4">
+                                  <div className="rounded-lg bg-white/80 p-3">
+                                    <div className="mb-1 text-xs font-medium text-gray-500">
+                                      收款日期
+                                    </div>
+                                    <div className="text-sm font-semibold text-gray-900">
+                                      {formatDateTime(record.paymentDate)}
+                                    </div>
+                                  </div>
+
+                                  <div className="rounded-lg bg-white/80 p-3">
+                                    <div className="mb-1 text-xs font-medium text-gray-500">
+                                      支付方式
+                                    </div>
+                                    <div className="text-sm font-semibold text-gray-900">
+                                      {record.paymentMethod === 'cash'
+                                        ? '💵 现金'
+                                        : record.paymentMethod === 'bank_transfer'
+                                          ? '🏦 银行转账'
+                                          : record.paymentMethod === 'alipay'
+                                            ? '🔵 支付宝'
+                                            : record.paymentMethod === 'wechat'
+                                              ? '💚 微信支付'
+                                              : record.paymentMethod === 'check'
+                                                ? '📝 支票'
+                                                : '📌 其他'}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* 底部: 补充信息 */}
+                                {(record.paymentNumber || record.remarks) && (
+                                  <div className="space-y-2 border-t border-green-100 pt-3 pl-4">
+                                    {record.paymentNumber && (
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <span className="font-medium text-gray-500">单号</span>
+                                        <code className="rounded bg-white px-2 py-1 font-mono text-gray-700 shadow-sm">
+                                          {record.paymentNumber}
+                                        </code>
+                                      </div>
+                                    )}
+
+                                    {record.remarks && (
+                                      <div className="rounded-lg border-l-4 border-green-400 bg-white/80 px-3 py-2 text-xs">
+                                        <span className="font-semibold text-gray-600">备注：</span>
+                                        <span className="text-gray-700">{record.remarks}</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
                               </div>
                             ))}
                         </div>
@@ -1568,7 +1682,7 @@ export default function SalesOrderDetailPage() {
                         订单创建
                       </div>
                       <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
-                        {formatDate(order.createdAt, 'datetime')}
+                        {formatDateTime(order.createdAt)}
                       </div>
                       <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
                         创建人：{userName}
@@ -1583,7 +1697,7 @@ export default function SalesOrderDetailPage() {
                           订单更新
                         </div>
                         <div className="mt-0.5 text-xs text-[hsl(var(--color-text-tertiary))]">
-                          {formatDate(order.updatedAt, 'datetime')}
+                          {formatDateTime(order.updatedAt)}
                         </div>
                       </div>
                     </div>

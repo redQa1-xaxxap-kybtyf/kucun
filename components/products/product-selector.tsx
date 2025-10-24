@@ -176,7 +176,10 @@ export function ProductSelector({
     staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
-  const products = productsResponse?.data ?? [];
+  const products = React.useMemo(
+    () => productsResponse?.data ?? [],
+    [productsResponse]
+  );
   const totalCount = productsResponse?.pagination?.total || 0;
   const hasMoreResults = totalCount > MAX_DISPLAY_PRODUCTS;
   const selectedProductFromList = value
@@ -340,7 +343,10 @@ export function MultiProductSelector({
     staleTime: 5 * 60 * 1000, // 5分钟（与全局策略一致）
   });
 
-  const products = productsResponse?.data ?? [];
+  const products = React.useMemo(
+    () => productsResponse?.data ?? [],
+    [productsResponse]
+  );
 
   const selectedProductsQueryKey = React.useMemo(
     () => productQueryKeys.list({ ids: [...value].sort().join(',') }),

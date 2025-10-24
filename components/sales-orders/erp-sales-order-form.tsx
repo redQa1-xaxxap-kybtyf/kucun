@@ -536,7 +536,13 @@ export function ERPSalesOrderForm({
         title: '订单创建成功',
         description: `订单号：${data.orderNumber}`,
       });
+
+      // ✅ 失效销售订单缓存
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.all });
+
+      // ✅ 关键修复：同时失效应收款缓存
+      queryClient.invalidateQueries({ queryKey: ['finance', 'receivables'] });
+
       onSuccess?.(data);
     },
     onError: error => {
@@ -751,7 +757,7 @@ export function ERPSalesOrderForm({
           // 调试日志：输出重量计算详情
           if (productId && index === 0) {
             // 只输出第一个商品的调试信息，避免刷屏
-            console.log('🔍 重量计算调试 [第1个商品]:', {
+            logger.debug('sales-orders', '重量计算调试 [第1个商品]', {
               productCode: product?.code,
               productName: product?.name,
               batchNumber: item.batchNumber,
@@ -914,6 +920,13 @@ export function ERPSalesOrderForm({
   React.useEffect(() => {
     if (mode === 'create') {
       const generateOrderNumber = async () => {
+        const generateLocalOrderNumber = () => {
+          const now = new Date();
+          const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
+          const timeStr = now.getTime().toString().slice(-4);
+          return `SO${dateStr}${timeStr}`;
+        };
+
         try {
           const response = await fetch(
             '/api/sales-orders/generate-order-number',
@@ -922,19 +935,27 @@ export function ERPSalesOrderForm({
               headers: {
                 'Content-Type': 'application/json',
               },
+              credentials: 'include',
             }
           );
           const data = await response.json();
-          if (data.success) {
+          if (response.ok && data?.success && data.data?.orderNumber) {
             setAutoOrderNumber(data.data.orderNumber);
+            return;
           }
+
+          // 接口可达但未成功，降级到本地生成
+          logger.warn(
+            'sales-orders',
+            '自动生成订单号返回非成功结果',
+            undefined,
+            { status: response.status, body: data }
+          );
+          setAutoOrderNumber(generateLocalOrderNumber());
         } catch (error) {
           logger.error('sales-orders', '自动生成订单号失败', error);
           // 如果API失败，使用本地生成逻辑作为备用
-          const now = new Date();
-          const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
-          const timeStr = now.getTime().toString().slice(-4);
-          setAutoOrderNumber(`SO${dateStr}${timeStr}`);
+          setAutoOrderNumber(generateLocalOrderNumber());
         }
       };
 

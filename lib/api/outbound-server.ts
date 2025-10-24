@@ -96,6 +96,8 @@ type OutboundRecordWithRelations = {
     name: string;
     specification: string | null;
     unit: string;
+    piecesPerUnit: number | null;
+    weight: number | null;
   };
   variant: {
     id: string;
@@ -127,6 +129,9 @@ function formatOutboundRecord(record: OutboundRecordWithRelations) {
     productCode: record.product.code,
     productName: record.product.name,
     productSpecification: record.product.specification,
+    batchNumber: record.batchNumber ?? undefined,
+    piecesPerUnit: record.product.piecesPerUnit ?? undefined,
+    weightPerUnit: record.product.weight ?? undefined,
     quantity: Number(record.quantity),
     type: mapOutboundReasonToType(record.reason),
     reason: record.reason,
@@ -209,10 +214,77 @@ export async function getOutboundRecordsServer(searchParams: URLSearchParams) {
     prisma.outboundRecord.count({ where }),
   ]);
 
-  // 格式化数据
-  const formattedRecords = records.map(record =>
-    formatOutboundRecord(record as OutboundRecordWithRelations)
-  );
+  const batchSpecMap = new Map<string, { piecesPerUnit?: number; weight?: number }>();
+  const batchQueries = records.reduce<
+    Array<{ productId: string; batchNumber: string }>
+  >((acc, record) => {
+    if (record.batchNumber) {
+      acc.push({
+        productId: record.productId,
+        batchNumber: record.batchNumber,
+      });
+    }
+    return acc;
+  }, []);
+
+  if (batchQueries.length > 0) {
+    const batchSpecs = await prisma.batchSpecification.findMany({
+      where: {
+        OR: batchQueries.map(query => ({
+          productId: query.productId,
+          batchNumber: query.batchNumber,
+        })),
+      },
+      select: {
+        productId: true,
+        batchNumber: true,
+        piecesPerUnit: true,
+        weight: true,
+      },
+    });
+
+    batchSpecs.forEach(spec => {
+      const key = `${spec.productId}-${spec.batchNumber}`;
+      batchSpecMap.set(key, {
+        piecesPerUnit: spec.piecesPerUnit ?? undefined,
+        weight: spec.weight ?? undefined,
+      });
+    });
+  }
+
+  const formattedRecords = records.map(record => {
+    const formatted = formatOutboundRecord(
+      record as OutboundRecordWithRelations
+    );
+
+    const batchKey = record.batchNumber
+      ? `${record.productId}-${record.batchNumber}`
+      : null;
+    const batchOverride = batchKey ? batchSpecMap.get(batchKey) : undefined;
+    const piecesPerUnit =
+      batchOverride?.piecesPerUnit ?? record.product.piecesPerUnit ?? undefined;
+    const weightPerUnit =
+      batchOverride?.weight ?? record.product.weight ?? undefined;
+
+    let totalWeight: number | undefined;
+    if (weightPerUnit !== undefined) {
+      const effectivePiecesPerUnit =
+        piecesPerUnit && piecesPerUnit > 0 ? piecesPerUnit : undefined;
+      const units =
+        effectivePiecesPerUnit
+          ? Number(record.quantity) / effectivePiecesPerUnit
+          : Number(record.quantity);
+      const rawTotal = units * weightPerUnit;
+      totalWeight = Math.round(rawTotal * 1000) / 1000;
+    }
+
+    return {
+      ...formatted,
+      piecesPerUnit,
+      weightPerUnit,
+      totalWeight,
+    };
+  });
 
   return {
     data: formattedRecords,

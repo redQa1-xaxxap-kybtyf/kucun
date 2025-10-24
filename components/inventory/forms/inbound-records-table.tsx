@@ -33,14 +33,14 @@ interface InboundRecordWithProduct
     name: string;
     specification?: string;
     piecesPerUnit: number;
-    weight?: number;
+    weight?: number | null;
   };
   batchSpecification?: {
     id: string;
-    batchNumber: string | null;
+    batchNumber?: string | null;
     piecesPerUnit: number;
-    weight: number | null;
-    thickness: number | null;
+    weight?: number | null;
+    thickness?: number | null;
   };
 }
 

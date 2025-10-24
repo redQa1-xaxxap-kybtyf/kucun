@@ -1,7 +1,88 @@
 'use client';
 
-import html2canvas from 'html2canvas';
 import { useCallback, useState } from 'react';
+
+type Html2Canvas = (
+  element: HTMLElement,
+  options?: {
+    scale?: number;
+    backgroundColor?: string;
+    useCORS?: boolean;
+    allowTaint?: boolean;
+    logging?: boolean;
+    imageTimeout?: number;
+    removeContainer?: boolean;
+    windowWidth?: number;
+    windowHeight?: number;
+  }
+) => Promise<HTMLCanvasElement>;
+
+declare global {
+  interface Window {
+    html2canvas?: Html2Canvas;
+  }
+}
+
+const HTML2CANVAS_CDN =
+  'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+
+let html2canvasPromise: Promise<Html2Canvas> | null = null;
+
+function loadHtml2canvas(): Promise<Html2Canvas> {
+  if (typeof window === 'undefined') {
+    return Promise.reject(new Error('html2canvas 只能在浏览器环境使用'));
+  }
+
+  if (typeof window.html2canvas === 'function') {
+    return Promise.resolve(window.html2canvas);
+  }
+
+  if (!html2canvasPromise) {
+    const loadPromise = new Promise<Html2Canvas>((resolve, reject) => {
+      const existingScript = document.querySelector<HTMLScriptElement>(
+        'script[data-lib="html2canvas"]'
+      );
+
+      if (existingScript) {
+        existingScript.addEventListener('load', () => {
+          if (typeof window.html2canvas === 'function') {
+            resolve(window.html2canvas);
+          } else {
+            reject(new Error('html2canvas 脚本加载失败'));
+          }
+        });
+        existingScript.addEventListener('error', () =>
+          reject(new Error('html2canvas 脚本加载失败'))
+        );
+        return;
+      }
+
+      const script = document.createElement('script');
+      script.src = HTML2CANVAS_CDN;
+      script.async = true;
+      script.dataset.lib = 'html2canvas';
+      script.onload = () => {
+        if (typeof window.html2canvas === 'function') {
+          resolve(window.html2canvas);
+        } else {
+          reject(new Error('html2canvas 未正确加载'));
+        }
+      };
+      script.onerror = () => {
+        script.remove();
+        reject(new Error('html2canvas 脚本加载失败'));
+      };
+      document.head.appendChild(script);
+    });
+
+    html2canvasPromise = loadPromise.catch(error => {
+      html2canvasPromise = null;
+      throw error;
+    });
+  }
+
+  return html2canvasPromise;
+}
 
 interface ExportToImageOptions {
   /** 图片文件名,不包含扩展名 */
@@ -58,6 +139,8 @@ export function useExportToImage(): ExportToImageResult {
       setError(null);
 
       try {
+        const html2canvas = await loadHtml2canvas();
+
         // 生成canvas
         const canvas = await html2canvas(element, {
           scale,

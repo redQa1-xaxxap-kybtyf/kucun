@@ -65,7 +65,13 @@ export function ConfirmInboundDialog({
   );
 
   const itemsWithProduct = useMemo(
-    () => actionableItems.filter(item => Boolean(item.productId)),
+    () =>
+      actionableItems.filter(
+        (
+          item
+        ): item is (typeof actionableItems)[number] & { productId: string } =>
+          typeof item.productId === 'string' && item.productId.length > 0
+      ),
     [actionableItems]
   );
 
@@ -140,7 +146,7 @@ export function ConfirmInboundDialog({
 
         const inboundPayload: CreateInboundRequest = {
           idempotencyKey: crypto.randomUUID(),
-          productId: item.productId!,
+          productId: item.productId,
           inputQuantity: quantity,
           inputUnit: 'units',
           quantity,

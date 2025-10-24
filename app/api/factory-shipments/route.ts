@@ -373,18 +373,34 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
 
       // ✅ 使用批量创建优化性能 (从 20 次数据库往返降至 2 次)
       // 记录客户产品价格历史（厂家发货价格类型）
-      const customerPriceData = items
-        .filter(
-          item => !item.isManualProduct && item.productId && item.unitPrice
-        )
-        .map(item => ({
+      const customerPriceData = items.reduce<
+        Array<{
+          customerId: string;
+          productId: string;
+          priceType: 'FACTORY';
+          unitPrice: number;
+          orderId: string;
+          orderType: 'FACTORY_SHIPMENT';
+        }>
+      >((acc, item) => {
+        if (
+          item.isManualProduct ||
+          !item.productId ||
+          item.unitPrice === undefined
+        ) {
+          return acc;
+        }
+
+        acc.push({
           customerId,
-          productId: item.productId!,
-          priceType: 'FACTORY' as const,
+          productId: item.productId,
+          priceType: 'FACTORY',
           unitPrice: item.unitPrice,
           orderId: newOrder.id,
-          orderType: 'FACTORY_SHIPMENT' as const,
-        }));
+          orderType: 'FACTORY_SHIPMENT',
+        });
+        return acc;
+      }, []);
 
       if (customerPriceData.length > 0) {
         await tx.customerProductPrice.createMany({
@@ -393,20 +409,31 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
       }
 
       // 记录供应商产品价格历史
-      const supplierPriceData = items
-        .filter(
-          item =>
-            !item.isManualProduct &&
-            item.productId &&
-            item.supplierId &&
-            item.unitPrice
-        )
-        .map(item => ({
-          supplierId: item.supplierId!,
-          productId: item.productId!,
+      const supplierPriceData = items.reduce<
+        Array<{
+          supplierId: string;
+          productId: string;
+          unitPrice: number;
+          orderId: string;
+        }>
+      >((acc, item) => {
+        if (
+          item.isManualProduct ||
+          !item.productId ||
+          !item.supplierId ||
+          item.unitPrice === undefined
+        ) {
+          return acc;
+        }
+
+        acc.push({
+          supplierId: item.supplierId,
+          productId: item.productId,
           unitPrice: item.unitPrice,
           orderId: newOrder.id,
-        }));
+        });
+        return acc;
+      }, []);
 
       if (supplierPriceData.length > 0) {
         await tx.supplierProductPrice.createMany({

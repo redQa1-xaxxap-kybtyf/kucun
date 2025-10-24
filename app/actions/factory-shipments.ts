@@ -12,6 +12,7 @@ import {
   FACTORY_SHIPMENT_STATUS,
   type FactoryShipmentStatus,
 } from '@/lib/types/factory-shipment';
+import { logger } from '@/lib/logger';
 
 const FACTORY_SHIPMENT_STATUS_VALUES = Object.values(
   FACTORY_SHIPMENT_STATUS
@@ -309,7 +310,9 @@ export async function createFactoryShipment(
       data: { id: result.id, containerNumber: result.containerNumber },
     };
   } catch (error) {
-    console.error('创建厂家发货订单失败:', error);
+    logger.error('actions:factory-shipments', '创建厂家发货订单失败', error, {
+      action: 'createFactoryShipment',
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -326,6 +329,9 @@ export async function createFactoryShipment(
 export async function updateFactoryShipmentStatus(
   formData: FormData
 ): Promise<ActionResult> {
+  let shipmentIdForLog: string | undefined;
+  let statusForLog: FactoryShipmentStatus | undefined;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -338,6 +344,8 @@ export async function updateFactoryShipmentStatus(
     };
 
     const data = updateFactoryShipmentStatusSchema.parse(rawData);
+    shipmentIdForLog = data.shipmentId;
+    statusForLog = data.status;
 
     await prisma.$transaction(async tx => {
       // 获取发货单详情
@@ -389,7 +397,11 @@ export async function updateFactoryShipmentStatus(
 
     return { success: true };
   } catch (error) {
-    console.error('更新发货单状态失败:', error);
+    logger.error('actions:factory-shipments', '更新发货单状态失败', error, {
+      action: 'updateFactoryShipmentStatus',
+      shipmentId: shipmentIdForLog,
+      status: statusForLog,
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -443,7 +455,10 @@ export async function deleteFactoryShipment(
 
     return { success: true };
   } catch (error) {
-    console.error('删除发货单失败:', error);
+    logger.error('actions:factory-shipments', '删除发货单失败', error, {
+      action: 'deleteFactoryShipment',
+      shipmentId,
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : '删除发货单失败',
@@ -457,6 +472,8 @@ export async function deleteFactoryShipment(
 export async function updateFactoryShipment(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  let shipmentIdForLog: string | undefined;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -467,6 +484,7 @@ export async function updateFactoryShipment(
     if (typeof shipmentIdValue !== 'string' || !shipmentIdValue) {
       return { success: false, error: '发货单 ID 不能为空' };
     }
+    shipmentIdForLog = shipmentIdValue;
     const shipmentId = shipmentIdValue;
 
     const rawData = parseJsonPayload<FactoryShipmentFormData>(formData, 'data');
@@ -549,7 +567,10 @@ export async function updateFactoryShipment(
 
     return { success: true, data: { id: shipmentId } };
   } catch (error) {
-    console.error('更新厂家发货订单失败:', error);
+    logger.error('actions:factory-shipments', '更新厂家发货订单失败', error, {
+      action: 'updateFactoryShipment',
+      shipmentId: shipmentIdForLog,
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,

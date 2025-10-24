@@ -62,10 +62,15 @@ export interface ReturnOrder {
   updatedAt: string;
 
   // 关联对象
-  salesOrder?: SalesOrder;
-  customer?: Customer;
-  user?: User;
+  salesOrder?: Pick<SalesOrder, 'id' | 'orderNumber'>;
+  customer?: Pick<Customer, 'id' | 'name' | 'phone' | 'address'>;
+  user?: Pick<User, 'id' | 'name'>;
   items?: ReturnOrderItem[];
+  refundRecords?: Array<{
+    id: string;
+    refundAmount: number;
+    refundDate: string;
+  }>;
 }
 
 // 退货订单明细接口
@@ -85,7 +90,7 @@ export interface ReturnOrderItem {
   condition: 'good' | 'damaged' | 'defective';
 
   // 关联对象
-  product?: Product;
+  product?: Pick<Product, 'id' | 'name' | 'code' | 'unit'>;
   salesOrderItem?: {
     id: string;
     quantity: number;

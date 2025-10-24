@@ -33,6 +33,7 @@ interface PaymentRecord {
     id: string;
     orderNumber: string;
     totalAmount: number;
+    roundingAdjustment: number; // ✅ 新增: 订单抹零金额
     paidAmount: number;
     pendingAmount: number;
     remainingAmount: number;
@@ -243,7 +244,17 @@ export function PaymentsPageClient({
         router.push(`/finance/payments?${params.toString()}`);
       });
     },
-    [router, search, initialParams, status, paymentMethod, sortBy, sortOrder]
+    [
+      router,
+      search,
+      initialParams,
+      status,
+      paymentMethod,
+      sortBy,
+      sortOrder,
+      startDate,
+      endDate,
+    ]
   );
 
   // 分页处理

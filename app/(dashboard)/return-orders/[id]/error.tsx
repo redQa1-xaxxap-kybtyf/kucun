@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 退货订单详情页面错误边界
@@ -20,7 +21,12 @@ export default function ReturnOrderDetailError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('退货订单详情页面错误:', error);
+    logger.error(
+      'dashboard:return-orders:detail:error-boundary',
+      '退货订单详情页面错误',
+      error,
+      { digest: error.digest }
+    );
   }, [error]);
 
   return (

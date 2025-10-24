@@ -8,6 +8,7 @@ import { getStandardTransactionOptions } from '@/lib/db/transaction-options';
 import { publishFinanceEvent } from '@/lib/events';
 import { logger } from '@/lib/logger';
 import { recordPartnerTransaction } from '@/lib/services/partner-ledger-service';
+import { parseLocalDateString } from '@/lib/utils/datetime';
 import { generatePaymentNumber } from '@/lib/utils/payment-number-generator';
 import {
   createPaymentRecordSchema,
@@ -86,10 +87,12 @@ export const GET = withAuth(async (request: NextRequest, { user }) => {
     if (startDate || endDate) {
       const paymentDateFilter: { gte?: Date; lte?: Date } = {};
       if (startDate) {
-        paymentDateFilter.gte = new Date(startDate);
+        const parsedStart = parseLocalDateString(startDate) ?? new Date(startDate);
+        paymentDateFilter.gte = parsedStart;
       }
       if (endDate) {
-        paymentDateFilter.lte = new Date(endDate);
+        const parsedEnd = parseLocalDateString(endDate) ?? new Date(endDate);
+        paymentDateFilter.lte = parsedEnd;
       }
       where.paymentDate = paymentDateFilter;
     }
@@ -291,7 +294,9 @@ export const POST = withAuth(async (request: NextRequest, { user }) => {
             actualPaymentAmount: data.actualPaymentAmount,
             roundingAmount: data.roundingAmount,
             appliedAmount: 0, // ✅ 预收款初始已冲抵金额为0
-            paymentDate: new Date(data.paymentDate),
+            paymentDate:
+              parseLocalDateString(data.paymentDate) ??
+              new Date(data.paymentDate),
             status: data.paymentType === 'prepayment' ? 'confirmed' : 'pending', // ✅ 预收款直接确认
             remarks: data.remarks,
             receiptNumber: data.receiptNumber,

@@ -53,7 +53,11 @@ export interface OutboundRecord {
   recordNumber: string;
   type: OutboundType;
   productId: string;
+  productCode?: string;
+  productName?: string;
+  productSpecification?: string;
   batchNumber?: string;
+  piecesPerUnit?: number;
   variantId?: string;
   quantity: number;
   unitCost?: number;
@@ -67,6 +71,8 @@ export interface OutboundRecord {
   reason?: string;
   inventoryId?: string;
   inventoryBalance?: number;
+  weightPerUnit?: number;
+  totalWeight?: number;
 
   // 关联数据（可选）
   product?: Pick<

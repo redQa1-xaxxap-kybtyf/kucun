@@ -67,6 +67,112 @@ export function parseDate(input: DateInput): Date | null {
   }
 }
 
+const DATE_ONLY_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * 将仅包含日期（yyyy-MM-dd）的字符串解析为本地时区的 Date 对象
+ * 解决 new Date('yyyy-MM-dd') 默认按 UTC 解析导致的 8 小时时差问题
+ */
+export function parseLocalDateString(dateString: string | null | undefined): Date | null {
+  if (!dateString) {
+    return null;
+  }
+
+  const trimmed = dateString.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  if (DATE_ONLY_REGEX.test(trimmed)) {
+    const [year, month, day] = trimmed.split('-').map(Number);
+    if ([year, month, day].some(value => Number.isNaN(value))) {
+      return null;
+    }
+    return new Date(year, month - 1, day);
+  }
+
+  return parseDate(trimmed);
+}
+
+/**
+ * 专用于收款/付款日期显示的格式化函数
+ * 统一使用标准的日期时间格式化
+ */
+export function formatPaymentDateTime(
+  input: DateInput,
+  fallback?: DateInput
+): string {
+  if (!input && !fallback) {
+    return '';
+  }
+
+  const fallbackDate = fallback ? parseDate(fallback) : null;
+
+  if (!input) {
+    if (fallbackDate) {
+      try {
+        return format(fallbackDate, DATE_FORMATS.DATETIME, { locale: zhCN });
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  }
+
+  let trimmed: string | null = null;
+  if (typeof input === 'string') {
+    trimmed = input.trim();
+    if (!trimmed) {
+      return fallbackDate
+        ? format(fallbackDate, DATE_FORMATS.DATETIME, { locale: zhCN })
+        : '';
+    }
+  }
+
+  const isDateOnly = Boolean(trimmed && DATE_ONLY_REGEX.test(trimmed));
+  const isExplicitMidnight = Boolean(trimmed && trimmed.includes('T00:00:00'));
+
+  const date = parseDate(input);
+  if (!date) {
+    if (fallbackDate) {
+      try {
+        return format(fallbackDate, DATE_FORMATS.DATETIME, { locale: zhCN });
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  }
+
+  try {
+    const formatted = format(date, DATE_FORMATS.DATETIME, { locale: zhCN });
+
+    if (
+      (isDateOnly || isExplicitMidnight || formatted.endsWith('00:00')) &&
+      fallbackDate
+    ) {
+      const datePart = format(date, DATE_FORMATS.DATE, { locale: zhCN });
+      const timePart = format(fallbackDate, DATE_FORMATS.TIME, {
+        locale: zhCN,
+      });
+      if (timePart !== '00:00') {
+        return `${datePart} ${timePart}`;
+      }
+    }
+
+    return formatted;
+  } catch {
+    if (fallbackDate) {
+      try {
+        return format(fallbackDate, DATE_FORMATS.DATETIME, { locale: zhCN });
+      } catch {
+        return '';
+      }
+    }
+    return '';
+  }
+}
+
 /**
  * 将任意时间输入转换为ISO字符串
  * API响应统一使用此函数

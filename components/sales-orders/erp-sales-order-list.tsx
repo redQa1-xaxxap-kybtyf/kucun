@@ -185,7 +185,13 @@ export function ERPSalesOrderList({
       return response.json();
     },
     onSuccess: () => {
+      // ✅ 失效销售订单缓存
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
+
+      // ✅ 关键修复：同时失效应收款缓存
+      // 因为订单状态变更会影响应收款数据
+      queryClient.invalidateQueries({ queryKey: ['finance', 'receivables'] });
+
       toast({
         title: '操作成功',
         description: '订单状态已更新',

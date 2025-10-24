@@ -11,8 +11,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ErrorMessage } from '@/components/ui/error-message';
 import { Separator } from '@/components/ui/separator';
 import { queryKeys } from '@/lib/queryKeys';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import { getReceivableStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 
 interface ReceivableDetail {
@@ -233,13 +234,17 @@ export default function ReceivableDetailPage() {
                     <label className="text-muted-foreground text-sm font-medium">
                       创建时间
                     </label>
-                    <p className="mt-1">{formatDate(receivable.createdAt)}</p>
+                    <p className="mt-1">
+                      {formatDateTime(receivable.createdAt)}
+                    </p>
                   </div>
                   <div>
                     <label className="text-muted-foreground text-sm font-medium">
                       更新时间
                     </label>
-                    <p className="mt-1">{formatDate(receivable.updatedAt)}</p>
+                    <p className="mt-1">
+                      {formatDateTime(receivable.updatedAt)}
+                    </p>
                   </div>
                 </div>
                 {receivable.description && (

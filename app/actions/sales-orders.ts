@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * 销售订单模块 Server Actions
@@ -193,7 +194,9 @@ export async function createSalesOrder(
       data: { id: result.id, orderNumber: result.orderNumber },
     };
   } catch (error) {
-    console.error('创建销售订单失败:', error);
+    logger.error('actions:sales-orders', '创建销售订单失败', error, {
+      action: 'createSalesOrder',
+    });
     if (error instanceof z.ZodError) {
       return { success: false, error: error.issues[0].message };
     }
@@ -207,6 +210,15 @@ export async function createSalesOrder(
 export async function updateSalesOrderStatus(
   formData: FormData
 ): Promise<ActionResult> {
+  let orderIdForLog: string | undefined;
+  let statusForLog:
+    | 'draft'
+    | 'confirmed'
+    | 'shipped'
+    | 'delivered'
+    | 'cancelled'
+    | undefined;
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -219,6 +231,8 @@ export async function updateSalesOrderStatus(
     };
 
     const data = updateSalesOrderStatusSchema.parse(rawData);
+    orderIdForLog = data.orderId;
+    statusForLog = data.status;
 
     await prisma.$transaction(async tx => {
       // 获取订单详情
@@ -275,7 +289,11 @@ export async function updateSalesOrderStatus(
 
     return { success: true };
   } catch (error) {
-    console.error('更新订单状态失败:', error);
+    logger.error('actions:sales-orders', '更新订单状态失败', error, {
+      action: 'updateSalesOrderStatus',
+      salesOrderId: orderIdForLog,
+      status: statusForLog,
+    });
     if (error instanceof z.ZodError) {
       return { success: false, error: error.issues[0].message };
     }
@@ -328,7 +346,10 @@ export async function deleteSalesOrder(orderId: string): Promise<ActionResult> {
 
     return { success: true };
   } catch (error) {
-    console.error('删除订单失败:', error);
+    logger.error('actions:sales-orders', '删除订单失败', error, {
+      action: 'deleteSalesOrder',
+      orderId,
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : '删除订单失败',
@@ -342,6 +363,8 @@ export async function deleteSalesOrder(orderId: string): Promise<ActionResult> {
 export async function updateSalesOrder(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  let orderIdForLog: string | undefined;
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -349,6 +372,7 @@ export async function updateSalesOrder(
     }
 
     const orderId = formData.get('orderId') as string;
+    orderIdForLog = orderId;
     const rawData = JSON.parse(formData.get('data') as string);
     const data = createSalesOrderSchema.parse(rawData);
 
@@ -427,7 +451,10 @@ export async function updateSalesOrder(
 
     return { success: true, data: { id: orderId } };
   } catch (error) {
-    console.error('更新销售订单失败:', error);
+    logger.error('actions:sales-orders', '更新销售订单失败', error, {
+      action: 'updateSalesOrder',
+      orderId: orderIdForLog,
+    });
     if (error instanceof z.ZodError) {
       return { success: false, error: error.issues[0].message };
     }
@@ -437,3 +464,4 @@ export async function updateSalesOrder(
     };
   }
 }
+

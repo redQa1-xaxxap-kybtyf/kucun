@@ -140,20 +140,7 @@ export const Captcha = React.forwardRef<HTMLCanvasElement, CaptchaProps>(
       }, 100); // 延迟100ms确保DOM完全渲染
 
       return () => clearTimeout(timer);
-    }, []); // 空依赖数组，只在挂载时执行
-
-    // 当尺寸或长度变化时重新绘制
-    useEffect(() => {
-      if (captchaText) {
-        // 只有在已经初始化后才重新绘制
-        const timer = setTimeout(() => {
-          drawCaptcha();
-        }, 50);
-
-        return () => clearTimeout(timer);
-      }
-      return undefined;
-    }, [width, height, length, drawCaptcha]);
+    }, [drawCaptcha]);
 
     return (
       <div className={cn('flex items-center gap-2', className)}>

@@ -30,6 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { formatPaymentDateTime } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 
 interface PaymentOutRecord {
@@ -412,9 +413,9 @@ export function PaymentsOutClient({
 
                           <p>
                             <span className="font-medium">付款日期：</span>
-                            {format(
-                              new Date(payment.paymentDate),
-                              'yyyy-MM-dd'
+                            {formatPaymentDateTime(
+                              payment.paymentDate,
+                              payment.createdAt
                             )}
                           </p>
 

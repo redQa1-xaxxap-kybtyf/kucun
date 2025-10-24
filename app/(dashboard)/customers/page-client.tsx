@@ -38,8 +38,11 @@ export function CustomersPageClient({
   // 本地状态管理
   const [search, setSearch] = React.useState(initialParams.search || '');
   type SortField = NonNullable<CustomerQueryParams['sortBy']>;
-  const isSortField = (value: string): value is SortField =>
-    CUSTOMER_SORT_OPTIONS.some(option => option.value === value);
+  const isSortField = React.useCallback(
+    (value: string): value is SortField =>
+      CUSTOMER_SORT_OPTIONS.some(option => option.value === value),
+    []
+  );
   const [sortBy, setSortBy] = React.useState<SortField>(
     initialParams.sortBy ?? 'createdAt'
   );
@@ -64,7 +67,7 @@ export function CustomersPageClient({
       setSortBy('createdAt');
     }
     setSortOrder(initialParams.sortOrder === 'asc' ? 'asc' : 'desc');
-  }, [initialParams]);
+  }, [initialParams, isSortField]);
 
   const queryParams = React.useMemo(() => {
     const normalizedSearch =

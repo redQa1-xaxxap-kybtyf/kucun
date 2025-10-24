@@ -22,7 +22,16 @@ async function main() {
   const order = await prisma.salesOrder.findFirst({
     where: { orderNumber: 'SO202510220107' },
     include: {
-      items: true,
+      items: {
+        include: {
+          product: {
+            select: {
+              name: true,
+              code: true,
+            },
+          },
+        },
+      },
       feeItems: true,
     },
   });
@@ -39,8 +48,14 @@ async function main() {
 
   console.log('\n明细列表:');
   order?.items.forEach((item, index) => {
+    const manualName =
+      'manualProductName' in item
+        ? ((item as { manualProductName?: string }).manualProductName ?? '')
+        : '';
+    const itemName =
+      (item.product?.name ?? manualName) || '未知产品';
     console.log(
-      `  ${index + 1}. ${item.productName} x ${item.quantity} = ${item.subtotal}`
+      `  ${index + 1}. ${itemName} x ${item.quantity} = ${item.subtotal}`
     );
   });
 

@@ -3,6 +3,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
+import { financeKeys } from '@/lib/queryKeys';
 import type {
   AccountsReceivableQuery,
   AccountsReceivableResponse,
@@ -439,6 +440,12 @@ export const useUpdatePaymentRecord = () => {
       });
       queryClient.invalidateQueries({
         queryKey: paymentQueryKeys.statistics(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: financeKeys.receivables(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: financeKeys.stats(),
       });
     },
   });

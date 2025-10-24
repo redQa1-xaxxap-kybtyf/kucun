@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 创建厂家发货订单页面错误边界
@@ -20,7 +21,12 @@ export default function CreateFactoryShipmentError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('创建厂家发货订单页面错误:', error);
+    logger.error(
+      'dashboard:factory-shipments:create:error-boundary',
+      '创建厂家发货订单页面错误',
+      error,
+      { digest: error.digest }
+    );
   }, [error]);
 
   return (

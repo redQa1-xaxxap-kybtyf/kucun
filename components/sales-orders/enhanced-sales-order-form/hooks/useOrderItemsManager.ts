@@ -58,6 +58,7 @@ function createEmptyOrderItem(): SalesOrderItemFormData {
     manualSpecification: '',
     manualWeight: undefined,
     manualUnit: '',
+    weightPerPieceKg: undefined,
   };
 }
 
@@ -255,7 +256,7 @@ function useOrderItemUpdaters(
         checkProductStock(nextProductId, index, quantityForCheck);
       }
     },
-    [checkProductStock, fields, update]
+    [checkProductStock, fields, setStockWarnings, update]
   );
 
   const handleProductSelect = React.useCallback(

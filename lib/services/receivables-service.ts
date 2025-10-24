@@ -24,6 +24,9 @@ export interface ReceivableItem {
   customerPhone?: string;
   orderDate: string;
   totalAmount: number;
+  roundingAdjustment: number; // ✅ 新增: 订单抹零金额(正数加价,负数抹零)
+  paymentRoundingAmount: number; // ✅ 新增: 已确认收款抹零金额
+  pendingRoundingAmount: number; // ✅ 新增: 待确认收款抹零金额
   paidAmount: number;
   pendingAmount: number;
   remainingAmount: number;
@@ -169,6 +172,7 @@ function transformToReceivable(order: {
   orderNumber: string;
   customerId: string;
   totalAmount: number;
+  roundingAdjustment: number | null;
   createdAt: Date;
   customer: {
     id: string;
@@ -176,7 +180,8 @@ function transformToReceivable(order: {
     phone: string | null;
   };
   payments: Array<{
-    paymentAmount: number;
+    actualPaymentAmount: number; // ✅ 修复: 使用实际到账金额
+    roundingAmount: number | null;
     paymentDate: Date;
     status: string;
   }>;
@@ -186,24 +191,47 @@ function transformToReceivable(order: {
   const pendingPayments =
     order.payments?.filter(payment => payment.status === 'pending') || [];
 
-  const paidAmount =
+  // ✅ 修复: 使用实际到账金额 + 抹零金额计算已收款和待确认
+  // ⚠️ 关键修复: Prisma Decimal 类型必须转换为 number
+  const confirmedActual =
     confirmedPayments.reduce(
-      (sum, payment) => sum + payment.paymentAmount,
+      (sum, payment) => sum + Number(payment.actualPaymentAmount),
       0
     ) || 0;
-  const pendingAmount =
-    pendingPayments.reduce((sum, payment) => sum + payment.paymentAmount, 0) ||
-    0;
+  const confirmedRounding =
+    confirmedPayments.reduce(
+      (sum, payment) => sum + Number(payment.roundingAmount ?? 0),
+      0
+    ) || 0;
+  const pendingActual =
+    pendingPayments.reduce(
+      (sum, payment) => sum + Number(payment.actualPaymentAmount),
+      0
+    ) || 0;
+  const pendingRounding =
+    pendingPayments.reduce(
+      (sum, payment) => sum + Number(payment.roundingAmount ?? 0),
+      0
+    ) || 0;
 
-  const remainingAmount = Math.max(
-    0,
-    order.totalAmount - paidAmount - pendingAmount
-  );
+  const totalAmountNum = Number(order.totalAmount);
+  const orderRounding = Number(order.roundingAdjustment || 0);
+
+  // ✅ 修复: 订单实际应收 = 商品总额 + 订单抹零
+  const orderDue = totalAmountNum + orderRounding;
+
+  // ✅ 修复: 等效已收款 = 实际到账 + 收款抹零(优惠/减免算作已收)
+  const paidAgainstOrder = confirmedActual + confirmedRounding;
+  const pendingAgainstOrder = pendingActual + pendingRounding;
+
+  // ✅ 修复: 待收金额 = 订单应收 - 等效已收款
+  const remainingAmount = Math.max(0, orderDue - paidAgainstOrder);
+
   const paymentStatus = calculatePaymentStatus(
-    paidAmount,
-    order.totalAmount,
+    paidAgainstOrder,
+    orderDue,
     order.createdAt,
-    pendingAmount
+    pendingAgainstOrder
   );
 
   const lastPayment = order.payments?.sort(
@@ -217,9 +245,12 @@ function transformToReceivable(order: {
     customerName: order.customer.name,
     customerPhone: order.customer.phone || undefined,
     orderDate: order.createdAt.toISOString().split('T')[0],
-    totalAmount: order.totalAmount,
-    paidAmount,
-    pendingAmount,
+    totalAmount: totalAmountNum, // 商品总额
+    roundingAdjustment: orderRounding, // 订单抹零
+    paymentRoundingAmount: confirmedRounding, // ✅ 修复: 只包含已确认收款的抹零
+    pendingRoundingAmount: pendingRounding, // ✅ 修复: 待确认收款的抹零
+    paidAmount: confirmedActual, // 已确认实际到账金额
+    pendingAmount: pendingActual, // 待确认实际到账金额
     remainingAmount,
     paymentStatus,
     lastPaymentDate: lastPayment
@@ -348,12 +379,19 @@ interface BaseReceivableOrder {
   orderNumber: string;
   customerId: string;
   totalAmount: Prisma.Decimal | number | null;
+  roundingAdjustment: Prisma.Decimal | number | null; // ✅ 新增: 订单抹零金额
   createdAt: Date;
 }
 
 type PaymentTotals = {
-  confirmed: number;
-  pending: number;
+  confirmed: {
+    actual: number;
+    rounding: number;
+  };
+  pending: {
+    actual: number;
+    rounding: number;
+  };
 };
 
 async function fetchReceivableBaseOrders(
@@ -367,6 +405,7 @@ async function fetchReceivableBaseOrders(
       orderNumber: true,
       customerId: true,
       totalAmount: true,
+      roundingAdjustment: true, // ✅ 新增: 获取订单抹零金额
       createdAt: true,
     },
     orderBy,
@@ -380,13 +419,17 @@ async function aggregatePaymentsByOrder(
     return {};
   }
 
+  // ✅ 修复: 使用实际到账金额(actualPaymentAmount)统计
   const paymentAggregations = await prisma.paymentRecord.groupBy({
     by: ['salesOrderId', 'status'],
     where: {
       salesOrderId: { in: orderIds },
       status: { in: ['confirmed', 'pending'] },
     },
-    _sum: { paymentAmount: true },
+    _sum: {
+      actualPaymentAmount: true,
+      roundingAmount: true,
+    }, // ✅ 改用实际到账金额并统计抹零
   });
 
   return paymentAggregations.reduce<Record<string, PaymentTotals>>(
@@ -396,15 +439,18 @@ async function aggregatePaymentsByOrder(
       }
 
       const existing = acc[item.salesOrderId] ?? {
-        confirmed: 0,
-        pending: 0,
+        confirmed: { actual: 0, rounding: 0 },
+        pending: { actual: 0, rounding: 0 },
       };
-      const amount = Number(item._sum.paymentAmount ?? 0);
+      const amount = Number(item._sum.actualPaymentAmount ?? 0); // ✅ 改用实际到账金额
+      const rounding = Number(item._sum.roundingAmount ?? 0);
 
       if (item.status === 'confirmed') {
-        existing.confirmed += amount;
+        existing.confirmed.actual += amount;
+        existing.confirmed.rounding += rounding;
       } else if (item.status === 'pending') {
-        existing.pending += amount;
+        existing.pending.actual += amount;
+        existing.pending.rounding += rounding;
       }
 
       acc[item.salesOrderId] = existing;
@@ -420,20 +466,27 @@ function createSummaryReceivables(
 ): ReceivableItem[] {
   return orders.map(order => {
     const amounts = paymentsByOrder[order.id] ?? {
-      confirmed: 0,
-      pending: 0,
+      confirmed: { actual: 0, rounding: 0 },
+      pending: { actual: 0, rounding: 0 },
     };
 
     const totalAmount = Number(order.totalAmount ?? 0);
-    const remainingAmount = Math.max(
-      0,
-      totalAmount - amounts.confirmed - amounts.pending
-    );
+    const roundingAdjustment = Number(order.roundingAdjustment ?? 0); // ✅ 新增: 获取抹零金额
+    const confirmedActual = amounts.confirmed.actual;
+    const confirmedRounding = amounts.confirmed.rounding;
+    const pendingActual = amounts.pending.actual;
+    const pendingRounding = amounts.pending.rounding;
+
+    const appliedRounding = confirmedRounding + pendingRounding;
+    const orderDue = totalAmount + roundingAdjustment;
+    const paidAgainstOrder = confirmedActual + appliedRounding;
+    const pendingAgainstOrder = pendingActual;
+    const remainingAmount = Math.max(0, orderDue - paidAgainstOrder);
     const statusDerived = calculatePaymentStatus(
-      amounts.confirmed,
-      totalAmount,
+      paidAgainstOrder,
+      orderDue, // ✅ 使用实际应收金额
       order.createdAt,
-      amounts.pending
+      pendingAgainstOrder
     );
 
     return {
@@ -444,8 +497,11 @@ function createSummaryReceivables(
       customerPhone: undefined,
       orderDate: order.createdAt.toISOString().split('T')[0],
       totalAmount,
-      paidAmount: amounts.confirmed,
-      pendingAmount: amounts.pending,
+      roundingAdjustment, // ✅ 新增: 订单抹零金额
+      paymentRoundingAmount: appliedRounding,
+      pendingRoundingAmount: 0,
+      paidAmount: confirmedActual,
+      pendingAmount: pendingActual,
       remainingAmount,
       paymentStatus: statusDerived,
       lastPaymentDate: undefined,
@@ -488,9 +544,16 @@ async function fetchReceivableDetails(orderIds: string[]) {
     return [];
   }
 
+  // ✅ 修复: 只使用 select,不能同时使用 include 和 select
   return prisma.salesOrder.findMany({
     where: { id: { in: orderIds } },
-    include: {
+    select: {
+      id: true,
+      orderNumber: true,
+      customerId: true,
+      totalAmount: true,
+      roundingAdjustment: true, // ✅ 新增: 获取订单抹零金额
+      createdAt: true,
       customer: {
         select: {
           id: true,
@@ -501,7 +564,8 @@ async function fetchReceivableDetails(orderIds: string[]) {
       payments: {
         where: { status: { in: ['confirmed', 'pending'] } },
         select: {
-          paymentAmount: true,
+          actualPaymentAmount: true, // ✅ 修复: 使用实际到账金额
+          roundingAmount: true,
           paymentDate: true,
           status: true,
         },

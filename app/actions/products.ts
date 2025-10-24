@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 /**
  * 产品模块 Server Actions
@@ -134,7 +135,9 @@ export async function createProduct(
       data: { id: result.id, code: result.code },
     };
   } catch (error) {
-    console.error('创建产品失败:', error);
+    logger.error('actions:products', '创建产品失败', error, {
+      action: 'createProduct',
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -151,6 +154,8 @@ export async function createProduct(
 export async function updateProduct(
   formData: FormData
 ): Promise<ActionResult<{ id: string }>> {
+  let productIdForLog: string | undefined;
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -158,6 +163,7 @@ export async function updateProduct(
     }
 
     const productId = formData.get('productId') as string;
+    productIdForLog = productId;
     const rawData = JSON.parse(formData.get('data') as string);
     const data = updateProductSchema.parse(rawData);
 
@@ -219,7 +225,10 @@ export async function updateProduct(
 
     return { success: true, data: { id: productId } };
   } catch (error) {
-    console.error('更新产品失败:', error);
+    logger.error('actions:products', '更新产品失败', error, {
+      action: 'updateProduct',
+      productId: productIdForLog,
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -236,6 +245,9 @@ export async function updateProduct(
 export async function updateProductStatus(
   formData: FormData
 ): Promise<ActionResult> {
+  let productIdForLog: string | undefined;
+  let statusForLog: 'active' | 'inactive' | undefined;
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -248,6 +260,8 @@ export async function updateProductStatus(
     };
 
     const data = updateProductStatusSchema.parse(rawData);
+    productIdForLog = data.productId;
+    statusForLog = data.status;
 
     await prisma.product.update({
       where: { id: data.productId },
@@ -259,7 +273,11 @@ export async function updateProductStatus(
 
     return { success: true };
   } catch (error) {
-    console.error('更新产品状态失败:', error);
+    logger.error('actions:products', '更新产品状态失败', error, {
+      action: 'updateProductStatus',
+      productId: productIdForLog,
+      status: statusForLog,
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -326,7 +344,10 @@ export async function deleteProduct(productId: string): Promise<ActionResult> {
 
     return { success: true };
   } catch (error) {
-    console.error('删除产品失败:', error);
+    logger.error('actions:products', '删除产品失败', error, {
+      action: 'deleteProduct',
+      productId,
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : '删除产品失败',
@@ -364,7 +385,10 @@ export async function batchUpdateProductStatus(
 
     return { success: true };
   } catch (error) {
-    console.error('批量更新产品状态失败:', error);
+    logger.error('actions:products', '批量更新产品状态失败', error, {
+      action: 'bulkUpdateProductStatus',
+      status,
+    });
     return { success: false, error: '批量更新产品状态失败' };
   }
 }

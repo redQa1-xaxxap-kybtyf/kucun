@@ -17,7 +17,10 @@ export function ProductOptionItem({
   product,
   isSelected,
 }: ProductOptionItemProps) {
-  const batchSpecs = product.batchSpecs ?? [];
+  const batchSpecs = React.useMemo(
+    () => product.batchSpecs ?? [],
+    [product.batchSpecs]
+  );
   const isMultipleBatches = batchSpecs.length > 1;
 
   // 库存显示逻辑

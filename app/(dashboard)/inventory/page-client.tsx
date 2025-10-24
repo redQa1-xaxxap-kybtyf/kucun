@@ -184,14 +184,12 @@ export function InventoryPageClient({
     return undefined;
   }, [data, initialParams.limit, initialParams.page, limit]);
 
-  const inventories = normalizedData?.inventories ?? [];
-  const pagination = normalizedData?.pagination;
   const listData = React.useMemo(
     () => ({
-      data: inventories,
-      pagination,
+      data: normalizedData?.inventories ?? [],
+      pagination: normalizedData?.pagination,
     }),
-    [inventories, pagination]
+    [normalizedData]
   );
 
   // ✅ 防抖更新URL - 只在用户停止输入后才更新URL和触发数据请求

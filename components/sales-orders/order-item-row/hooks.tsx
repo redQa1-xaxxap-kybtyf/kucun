@@ -228,19 +228,23 @@ export function useAvailableBatches(
     const batchSpecMap = new Map(
       (resolvedProduct?.batchSpecs ?? []).map(spec => [spec.batchNumber, spec])
     );
-    const normalized = inventoryBatches.map(batch => ({
-      batchNumber: batch.batchNumber,
-      quantity: batch.quantity,
-      piecesPerUnit:
-        typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
-          ? batch.piecesPerUnit
-          : batchSpecMap.get(batch.batchNumber)?.piecesPerUnit,
-      weight:
-        typeof (batch as { weight?: number }).weight === 'number' &&
-        (batch as { weight?: number }).weight! > 0
-          ? (batch as { weight?: number }).weight
-          : batchSpecMap.get(batch.batchNumber)?.weight,
-    }));
+    const normalized = inventoryBatches.map(batch => {
+      const batchWeight = (batch as { weight?: number }).weight;
+      const normalizedWeight =
+        typeof batchWeight === 'number' && batchWeight > 0
+          ? batchWeight
+          : batchSpecMap.get(batch.batchNumber)?.weight;
+
+      return {
+        batchNumber: batch.batchNumber,
+        quantity: batch.quantity,
+        piecesPerUnit:
+          typeof batch.piecesPerUnit === 'number' && batch.piecesPerUnit > 0
+            ? batch.piecesPerUnit
+            : batchSpecMap.get(batch.batchNumber)?.piecesPerUnit,
+        weight: normalizedWeight,
+      };
+    });
 
     if (
       currentBatchNumber &&

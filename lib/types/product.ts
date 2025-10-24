@@ -57,7 +57,7 @@ export interface ProductInventoryBatch {
   /** 批次对应的每件片数（若存在批次规格） */
   piecesPerUnit?: number;
   /** 批次对应的每件重量(kg) */
-  weight?: number;
+  weight?: number | null;
 }
 
 /**
@@ -87,7 +87,7 @@ export interface ProductBatchSpec {
   /** 当前批次的库存数量（片） */
   quantity: number;
   /** 每件重量(kg) */
-  weight?: number;
+  weight?: number | null;
 }
 
 /**
@@ -123,7 +123,7 @@ export interface Product {
   /** 每件包含的片数，用于单位换算 */
   piecesPerUnit: number;
   /** 每件重量，单位：千克(kg) - 可选，优先使用批次规格中的重量 */
-  weight?: number;
+  weight?: number | null;
   /** 产品厚度，单位：毫米(mm) */
   thickness?: number;
   /** 产品状态 */

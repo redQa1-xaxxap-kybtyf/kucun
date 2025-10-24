@@ -34,7 +34,8 @@ import type {
   CustomerStatementQuery,
   CustomerStatementSummary,
 } from '@/lib/types/customer-statement';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
+import { formatDate } from '@/lib/utils/datetime';
 
 interface CustomerStatementsPageClientProps {
   initialData?: {

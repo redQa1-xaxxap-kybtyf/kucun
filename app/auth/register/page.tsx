@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { userValidations } from '@/lib/validations/base';
+import { logger } from '@/lib/utils/console-logger';
 
 // 扩展注册表单类型以包含确认密码
 const registerFormSchema = userValidations.register.extend({
@@ -83,7 +84,10 @@ export default function RegisterPage() {
         setFormError(result.error || '注册失败，请稍后重试');
       }
     } catch (error) {
-      console.error('注册错误:', error);
+      logger.error('auth:register', '注册错误', error, {
+        email: data.email,
+        username: data.username,
+      });
       setFormError('注册失败，请稍后重试');
     } finally {
       setIsLoading(false);

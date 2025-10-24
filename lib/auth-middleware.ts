@@ -25,6 +25,7 @@ const protectedPaths = [
   '/api/customers',
   '/api/products',
   '/api/sales',
+  '/api/sales-orders',
   '/api/inventory',
   '/api/inbound',
   '/api/finance',

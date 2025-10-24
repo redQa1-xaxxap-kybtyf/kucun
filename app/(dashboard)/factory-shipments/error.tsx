@@ -5,6 +5,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 厂家发货模块错误边界
@@ -24,7 +25,12 @@ export default function FactoryShipmentsError({
 }) {
   useEffect(() => {
     // 记录错误到监控服务
-    console.error('厂家发货模块错误:', error);
+    logger.error(
+      'dashboard:factory-shipments:error-boundary',
+      '厂家发货模块错误',
+      error,
+      { digest: error.digest }
+    );
   }, [error]);
 
   return (

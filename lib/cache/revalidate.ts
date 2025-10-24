@@ -176,7 +176,7 @@ async function cascadeInvalidate(tag: string): Promise<void> {
 
     // 销售订单变更 → 失效财务、库存汇总
     [CacheTags.SalesOrders.all]: [
-      CacheTags.Finance.receivablesList,
+      CacheTags.Finance.receivables, // ✅ 修复: 使用 receivables 而不是 receivablesList
       CacheTags.Finance.statementsList,
       CacheTags.Inventory.all, // 订单影响库存预留
     ],

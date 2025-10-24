@@ -48,7 +48,9 @@ function groupByProduct(inventories: Inventory[]): ProductGroup[] {
   inventories.forEach(inventory => {
     const code = inventory.product?.code || 'UNKNOWN';
 
-    if (!groups.has(code)) {
+    const existingGroup = groups.get(code);
+
+    if (!existingGroup) {
       groups.set(code, {
         productCode: code,
         productName: inventory.product?.name || '-',
@@ -59,7 +61,7 @@ function groupByProduct(inventories: Inventory[]): ProductGroup[] {
         remainingPieces: 0,
       });
     } else {
-      groups.get(code)!.items.push(inventory);
+      existingGroup.items.push(inventory);
     }
   });
 

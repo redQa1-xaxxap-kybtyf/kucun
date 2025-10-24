@@ -4,6 +4,7 @@ import { resolveParams } from '@/lib/api/middleware';
 import { withAuth } from '@/lib/auth/api-helpers';
 import { prisma } from '@/lib/db';
 import { logger } from '@/lib/logger';
+import { parseLocalDateString } from '@/lib/utils/datetime';
 import { updatePaymentRecordSchema } from '@/lib/validations/payment';
 
 /**
@@ -154,7 +155,9 @@ export const PUT = withAuth(
       const updateDataWithDate = {
         ...updateData,
         ...(updateData.paymentDate && {
-          paymentDate: new Date(updateData.paymentDate),
+          paymentDate:
+            parseLocalDateString(updateData.paymentDate) ??
+            new Date(updateData.paymentDate),
         }),
       };
 

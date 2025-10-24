@@ -18,6 +18,7 @@ import {
 } from '@/hooks/use-inbound-form';
 import { useInboundFormSubmit } from '@/hooks/use-inbound-form-submit';
 import { type ProductOption } from '@/lib/types/inbound';
+import { logger } from '@/lib/utils/console-logger';
 
 interface ERPInboundFormProps {
   onSuccess?: () => void;
@@ -78,7 +79,11 @@ export function ERPInboundForm({ onSuccess }: ERPInboundFormProps) {
     try {
       await handleFormSubmit();
     } catch (error) {
-      console.error('[ERPInboundForm] 表单提交失败', error);
+      logger.error(
+        'inventory:erp-inbound-form',
+        '[ERPInboundForm] 表单提交失败',
+        error
+      );
     }
   };
 

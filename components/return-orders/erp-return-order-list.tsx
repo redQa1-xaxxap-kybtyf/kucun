@@ -180,20 +180,40 @@ export function ERPReturnOrderList({
     }
   }, [orderToCancel, cancelMutation]);
 
+  const updateQueryStringParams = React.useCallback(
+    (updates: Partial<ReturnOrderQueryParams>) => {
+      if (typeof window === 'undefined') {
+        return;
+      }
+
+      const params = new URLSearchParams(window.location.search);
+      Object.entries(updates).forEach(([key, value]) => {
+        if (value === undefined || value === null || value === '') {
+          params.delete(key);
+        } else {
+          params.set(key, String(value));
+        }
+      });
+
+      const query = params.toString();
+      router.push(query ? `?${query}` : '?', { scroll: false });
+    },
+    [router]
+  );
+
   // 处理搜索
   const handleSearch = React.useCallback(
     (search: string) => {
       if (onSearch) {
         onSearch(search);
       } else {
-        setQueryParams(prev => ({
-          ...prev,
+        updateQueryStringParams({
           search: search || undefined,
           page: 1,
-        }));
+        });
       }
     },
-    [onSearch]
+    [onSearch, updateQueryStringParams]
   );
 
   // 统一处理筛选器变更
@@ -408,9 +428,13 @@ export function ERPReturnOrderList({
                       const hasAdjustment =
                         Math.abs(actualAmount - returnOrder.totalAmount) >
                         0.005;
+                      const remainingAmount =
+                        typeof returnOrder.remainingAmount === 'number'
+                          ? returnOrder.remainingAmount
+                          : undefined;
                       const hasRemaining =
-                        typeof returnOrder.remainingAmount === 'number' &&
-                        returnOrder.remainingAmount > 0.005;
+                        typeof remainingAmount === 'number' &&
+                        remainingAmount > 0.005;
 
                       return (
                         <div className="flex flex-col items-end gap-0.5">
@@ -424,7 +448,7 @@ export function ERPReturnOrderList({
                           {hasRemaining && (
                             <span className="text-xs text-[hsl(var(--color-warning))]">
                               待处理{' '}
-                              {formatCurrency(returnOrder.remainingAmount!)}
+                              {formatCurrency(remainingAmount)}
                             </span>
                           )}
                         </div>

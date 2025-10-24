@@ -182,8 +182,11 @@ export function ReturnOrderForm({
     if (mode === 'create') {
       createMutation.mutate(data as CreateReturnOrderFormData);
     } else {
+      if (!initialData) {
+        throw new Error('编辑退货订单时缺少初始数据');
+      }
       updateMutation.mutate({
-        id: initialData!.id,
+        id: initialData.id,
         data: data as UpdateReturnOrderFormData,
       });
     }

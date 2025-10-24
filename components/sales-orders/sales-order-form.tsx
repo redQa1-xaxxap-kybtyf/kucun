@@ -65,6 +65,7 @@ import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   salesOrderUpdateSchema as UpdateSalesOrderSchema,
 } from '@/lib/validations/sales-order';
+import { logger } from '@/lib/utils/console-logger';
 
 interface SalesOrderFormProps {
   mode: 'create' | 'edit';
@@ -133,7 +134,12 @@ export function SalesOrderForm({
   const createMutation = useMutation({
     mutationFn: createSalesOrder,
     onSuccess: response => {
+      // ✅ 失效销售订单缓存
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
+
+      // ✅ 关键修复：同时失效应收款缓存
+      queryClient.invalidateQueries({ queryKey: ['finance', 'receivables'] });
+
       if (onSuccess) {
         onSuccess(response);
       } else {
@@ -191,7 +197,11 @@ export function SalesOrderForm({
         await createMutation.mutateAsync(createData as SalesOrderCreateInput);
       }
     } catch (error) {
-      console.error('[SalesOrderForm] 销售订单提交失败', error);
+      logger.error(
+        'sales-orders:form',
+        '[SalesOrderForm] 销售订单提交失败',
+        error
+      );
     }
   };
 

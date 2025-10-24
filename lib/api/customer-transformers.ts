@@ -39,6 +39,7 @@ export interface CustomerDetailResult extends Customer {
   totalOrders: number;
   totalAmount: number;
   lastOrderDate?: string;
+  childCustomers?: Customer[];
 }
 
 export interface CustomerDetailQueryResult extends PrismaCustomerBase {

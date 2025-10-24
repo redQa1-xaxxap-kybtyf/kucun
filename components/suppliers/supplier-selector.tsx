@@ -18,6 +18,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/utils/console-logger';
 
 interface Supplier {
   id: string;
@@ -101,7 +102,12 @@ export function SupplierSelector({
         if (controller.signal.aborted) {
           return;
         }
-        console.error('获取供应商列表失败:', error);
+        logger.error(
+          'suppliers:selector',
+          '获取供应商列表失败',
+          error,
+          { search: normalizedSearch }
+        );
         setError('获取供应商列表失败，请稍后重试');
       } finally {
         setLoading(false);

@@ -7,6 +7,7 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { logger } from '@/lib/logger';
 
 
 /**
@@ -146,7 +147,9 @@ export async function createCategory(
       data: { id: category.id, name: category.name },
     };
   } catch (error) {
-    console.error('创建分类失败:', error);
+    logger.error('actions:categories', '创建分类失败', error, {
+      action: 'createCategory',
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -163,6 +166,8 @@ export async function createCategory(
 export async function updateCategory(
   formData: FormData
 ): Promise<ActionResult<{ id: string; name: string }>> {
+  let categoryIdForLog: string | undefined;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -173,6 +178,7 @@ export async function updateCategory(
     if (typeof categoryIdValue !== 'string' || !categoryIdValue) {
       return { success: false, error: '分类 ID 不能为空' };
     }
+    categoryIdForLog = categoryIdValue;
     const categoryId = categoryIdValue;
 
     const rawPayload = formData.get('data');
@@ -272,7 +278,10 @@ export async function updateCategory(
       data: { id: category.id, name: category.name },
     };
   } catch (error) {
-    console.error('更新分类失败:', error);
+    logger.error('actions:categories', '更新分类失败', error, {
+      action: 'updateCategory',
+      categoryId: categoryIdForLog,
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -289,6 +298,9 @@ export async function updateCategory(
 export async function updateCategoryStatus(
   formData: FormData
 ): Promise<ActionResult> {
+  let categoryIdForLog: string | undefined;
+  let statusForLog: 'active' | 'inactive' | undefined;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -303,6 +315,8 @@ export async function updateCategoryStatus(
     };
 
     const data = updateCategoryStatusSchema.parse(rawData);
+    categoryIdForLog = data.categoryId;
+    statusForLog = data.status;
 
     // 检查分类是否存在
     const category = await prisma.category.findUnique({
@@ -344,7 +358,11 @@ export async function updateCategoryStatus(
 
     return { success: true };
   } catch (error) {
-    console.error('更新分类状态失败:', error);
+    logger.error('actions:categories', '更新分类状态失败', error, {
+      action: 'updateCategoryStatus',
+      categoryId: categoryIdForLog,
+      status: statusForLog,
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -403,7 +421,10 @@ export async function deleteCategory(
 
     return { success: true };
   } catch (error) {
-    console.error('删除分类失败:', error);
+    logger.error('actions:categories', '删除分类失败', error, {
+      action: 'deleteCategory',
+      categoryId,
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : '删除分类失败',
@@ -417,16 +438,19 @@ export async function deleteCategory(
 export async function batchUpdateCategoryStatus(
   formData: FormData
 ): Promise<ActionResult> {
+  let categoryIds: string[] = [];
+  let status: 'active' | 'inactive' | undefined;
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
 
-    const categoryIds = JSON.parse(
+    categoryIds = JSON.parse(
       formData.get('categoryIds') as string
     ) as string[];
-    const status = formData.get('status') as 'active' | 'inactive';
+    status = formData.get('status') as 'active' | 'inactive';
 
     if (!categoryIds || categoryIds.length === 0) {
       return { success: false, error: '未选择分类' };
@@ -471,7 +495,11 @@ export async function batchUpdateCategoryStatus(
 
     return { success: true };
   } catch (error) {
-    console.error('批量更新分类状态失败:', error);
+    logger.error('actions:categories', '批量更新分类状态失败', error, {
+      action: 'bulkUpdateCategoryStatus',
+      categoryCount: categoryIds.length || undefined,
+      status,
+    });
     return { success: false, error: '批量更新分类状态失败' };
   }
 }

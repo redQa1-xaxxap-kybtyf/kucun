@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { formatCurrency } from '@/lib/utils';
+import { formatPaymentDateTime } from '@/lib/utils/datetime';
 
 interface PaymentRecord {
   id: string;
@@ -214,82 +215,83 @@ export function PaymentDetailClient({
           </div>
         </div>
 
-        {/* 收款金额卡片 - 最突出 */}
-        <Card className="overflow-hidden border-2 border-blue-200 shadow-lg">
+        {/* 收款金额卡片 - 采用左右布局 */}
+        <Card className="overflow-hidden border border-[hsl(var(--color-border-secondary))] shadow-md">
           <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
-                    <DollarSign className="h-7 w-7 text-white" />
+            <div className="flex items-start justify-between gap-6">
+              {/* 左侧：主要信息 */}
+              <div className="flex-1 space-y-4">
+                {/* 标题行 */}
+                <div className="flex items-center gap-3">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg">
+                    <DollarSign className="h-6 w-6 text-white" />
                   </div>
                   <div>
-                    <p className="mb-1 text-sm text-gray-500">收款单号</p>
-                    <p className="text-lg font-semibold text-gray-900">
+                    <p className="text-xs text-[hsl(var(--color-text-tertiary))]">收款单号</p>
+                    <p className="text-lg font-bold text-[hsl(var(--color-text-primary))]">
                       {payment.paymentNumber}
                     </p>
                   </div>
                   <StatusBadge status={payment.status} />
                 </div>
 
-                <div className="grid grid-cols-3 gap-6">
+                {/* 金额信息 - 横向排列,顺序:记账金额 → 抹零 → 实际收款 */}
+                <div className="flex items-center gap-6 border-t border-[hsl(var(--color-border-secondary))] pt-4">
                   <div>
-                    <p className="mb-1 text-xs text-gray-500">实际收款金额</p>
-                    <p className="text-3xl font-bold text-green-600">
-                      {formatCurrency(payment.actualPaymentAmount)}
+                    <p className="mb-1 text-xs text-[hsl(var(--color-text-tertiary))]">记账金额</p>
+                    <p className="text-2xl font-bold text-[hsl(var(--color-primary))]">
+                      {formatCurrency(payment.paymentAmount)}
                     </p>
-                    <div className="mt-2 space-y-1 text-xs text-gray-500">
-                      <div className="flex items-center justify-between">
-                        <span>记账金额</span>
-                        <span className="font-medium text-gray-700">
-                          {formatCurrency(payment.paymentAmount)}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span>抹零金额</span>
-                        <span
-                          className={`font-medium ${
-                            payment.roundingAmount > 0
-                              ? 'text-orange-600'
-                              : payment.roundingAmount < 0
-                                ? 'text-blue-600'
-                                : 'text-gray-700'
-                          }`}
-                        >
-                          {formatCurrency(payment.roundingAmount)}
-                        </span>
-                      </div>
-                    </div>
                   </div>
-                  <div>
-                    <p className="mb-1 text-xs text-gray-500">收款方式</p>
-                    <div className="mt-1">
-                      <PaymentMethodDisplay method={payment.paymentMethod} />
+                  {payment.roundingAmount !== 0 && (
+                    <div>
+                      <p className="mb-1 text-xs text-[hsl(var(--color-text-tertiary))]">抹零</p>
+                      <p
+                        className={`text-2xl font-bold ${
+                          payment.roundingAmount > 0
+                            ? 'text-orange-600'
+                            : 'text-blue-600'
+                        }`}
+                      >
+                        {formatCurrency(Math.abs(payment.roundingAmount))}
+                      </p>
                     </div>
-                  </div>
+                  )}
                   <div>
-                    <p className="mb-1 text-xs text-gray-500">收款日期</p>
-                    <p className="text-base font-medium text-gray-900">
-                      {new Date(payment.paymentDate).toLocaleString('zh-CN', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                      })}
+                    <p className="mb-1 text-xs text-[hsl(var(--color-text-tertiary))]">实际收款</p>
+                    <p className="text-2xl font-bold text-[hsl(var(--color-success))]">
+                      {formatCurrency(payment.actualPaymentAmount)}
                     </p>
                   </div>
                 </div>
 
-                {payment.receiptNumber && (
-                  <div className="mt-4 border-t border-gray-200 pt-4">
-                    <p className="mb-1 text-xs text-gray-500">收据号码</p>
-                    <p className="font-mono text-sm text-gray-700">
-                      {payment.receiptNumber}
+                {/* 收款信息 - 2列网格 */}
+                <div className="grid grid-cols-2 gap-4 border-t border-[hsl(var(--color-border-secondary))] pt-4 text-sm">
+                  <div>
+                    <p className="mb-1 text-xs text-[hsl(var(--color-text-tertiary))]">收款方式</p>
+                    <PaymentMethodDisplay method={payment.paymentMethod} />
+                  </div>
+                  <div>
+                    <p className="mb-1 text-xs text-[hsl(var(--color-text-tertiary))]">收款日期</p>
+                    <p className="font-medium text-[hsl(var(--color-text-primary))]">
+                      {formatPaymentDateTime(
+                        payment.paymentDate,
+                        payment.createdAt
+                      )}
                     </p>
                   </div>
-                )}
+                  {payment.receiptNumber && (
+                    <div className="col-span-2">
+                      <p className="mb-1 text-xs text-[hsl(var(--color-text-tertiary))]">收据号码</p>
+                      <p className="font-mono text-sm text-[hsl(var(--color-text-secondary))]">
+                        {payment.receiptNumber}
+                      </p>
+                    </div>
+                  )}
+                </div>
               </div>
+
+              {/* 右侧：操作按钮 - 仅在详情页顶部显示 */}
             </div>
           </CardContent>
         </Card>

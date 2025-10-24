@@ -15,7 +15,8 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { StatementTransaction } from '@/lib/types/statement';
-import { formatCurrency, formatDate } from '@/lib/utils/format';
+import { formatDateTime } from '@/lib/utils/datetime';
+import { formatCurrency } from '@/lib/utils/format';
 
 interface StatementTransactionsProps {
   transactions: StatementTransaction[];
@@ -118,7 +119,7 @@ export function StatementTransactions({
                     )}
                   </TableCell>
                   <TableCell>
-                    {formatDate(transaction.transactionDate, 'datetime')}
+                    {formatDateTime(transaction.transactionDate)}
                   </TableCell>
                   <TableCell>
                     {getTransactionStatusBadge(transaction.status)}

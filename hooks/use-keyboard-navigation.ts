@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 /**
  * 键盘导航配置选项
@@ -42,65 +42,71 @@ export function useKeyboardNavigation(
   const itemRefs = useRef<(HTMLElement | null)[]>([]);
 
   // 设置焦点到指定索引
-  const setFocus = (index: number) => {
-    if (index >= 0 && index < itemCount) {
-      setFocusedIndex(index);
-      onFocusChange?.(index);
+  const setFocus = useCallback(
+    (index: number) => {
+      if (index >= 0 && index < itemCount) {
+        setFocusedIndex(index);
+        onFocusChange?.(index);
 
-      // 滚动到可见区域
-      const element = itemRefs.current[index];
-      if (element) {
-        element.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-        });
+        // 滚动到可见区域
+        const element = itemRefs.current[index];
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest',
+          });
+        }
       }
-    }
-  };
+    },
+    [itemCount, onFocusChange]
+  );
 
   // 移动焦点
-  const moveFocus = (direction: 'up' | 'down' | 'first' | 'last') => {
-    if (itemCount === 0) {
-      return;
-    }
+  const moveFocus = useCallback(
+    (direction: 'up' | 'down' | 'first' | 'last') => {
+      if (itemCount === 0) {
+        return;
+      }
 
-    let newIndex = focusedIndex;
+      let newIndex = focusedIndex;
 
-    switch (direction) {
-      case 'up':
-        newIndex =
-          focusedIndex <= 0 ? (loop ? itemCount - 1 : 0) : focusedIndex - 1;
-        break;
-      case 'down':
-        newIndex =
-          focusedIndex >= itemCount - 1
-            ? loop
-              ? 0
-              : itemCount - 1
-            : focusedIndex + 1;
-        break;
-      case 'first':
-        newIndex = 0;
-        break;
-      case 'last':
-        newIndex = itemCount - 1;
-        break;
-    }
+      switch (direction) {
+        case 'up':
+          newIndex =
+            focusedIndex <= 0 ? (loop ? itemCount - 1 : 0) : focusedIndex - 1;
+          break;
+        case 'down':
+          newIndex =
+            focusedIndex >= itemCount - 1
+              ? loop
+                ? 0
+                : itemCount - 1
+              : focusedIndex + 1;
+          break;
+        case 'first':
+          newIndex = 0;
+          break;
+        case 'last':
+          newIndex = itemCount - 1;
+          break;
+      }
 
-    setFocus(newIndex);
-  };
+      setFocus(newIndex);
+    },
+    [focusedIndex, itemCount, loop, setFocus]
+  );
 
   // 选择当前焦点项
-  const selectFocused = () => {
+  const selectFocused = useCallback(() => {
     if (focusedIndex >= 0 && focusedIndex < itemCount) {
       onSelect?.(focusedIndex);
     }
-  };
+  }, [focusedIndex, itemCount, onSelect]);
 
   // 清除焦点
-  const clearFocus = () => {
+  const clearFocus = useCallback(() => {
     setFocusedIndex(-1);
-  };
+  }, []);
 
   // 键盘事件处理
   useEffect(() => {
@@ -145,7 +151,7 @@ export function useKeyboardNavigation(
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [enabled, focusedIndex, itemCount, loop, onKeyDown, onSelect]);
+  }, [enabled, focusedIndex, onKeyDown, moveFocus, selectFocused, clearFocus]);
 
   // 重置焦点当项目数量变化时
   useEffect(() => {

@@ -102,9 +102,20 @@ export function useAdjustmentRecords(
   );
 
   const adjustments = data?.adjustments || [];
-  const pagination = data?.pagination || {
-    page: queryParams.page ?? DEFAULT_QUERY_PARAMS.page!,
-    limit: queryParams.limit ?? DEFAULT_QUERY_PARAMS.limit!,
+  const fallbackPage =
+    queryParams.page ??
+    (typeof DEFAULT_QUERY_PARAMS.page === 'number'
+      ? DEFAULT_QUERY_PARAMS.page
+      : 1);
+  const fallbackLimit =
+    queryParams.limit ??
+    (typeof DEFAULT_QUERY_PARAMS.limit === 'number'
+      ? DEFAULT_QUERY_PARAMS.limit
+      : 20);
+
+  const pagination = data?.pagination ?? {
+    page: fallbackPage,
+    limit: fallbackLimit,
     total: 0,
     totalPages: 0,
   };

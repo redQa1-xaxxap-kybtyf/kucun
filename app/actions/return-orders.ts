@@ -7,6 +7,7 @@ import { auth } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { returnRefundConfig } from '@/lib/env';
 import type { SalesOrderStatus } from '@/lib/types/sales-order';
+import { logger } from '@/lib/logger';
 
 /**
  * 退货订单管理模块 Server Actions
@@ -221,7 +222,9 @@ export async function createReturnOrder(
       },
     };
   } catch (error) {
-    console.error('创建退货订单失败:', error);
+    logger.error('actions:return-orders', '创建退货订单失败', error, {
+      action: 'createReturnOrder',
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -238,6 +241,9 @@ export async function createReturnOrder(
 export async function updateReturnOrderStatus(
   formData: FormData
 ): Promise<ActionResult> {
+  let returnOrderId: string | undefined;
+  let nextStatus: string | undefined;
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -254,6 +260,8 @@ export async function updateReturnOrderStatus(
     };
 
     const data = updateReturnOrderStatusSchema.parse(rawData);
+    returnOrderId = data.returnOrderId;
+    nextStatus = data.status;
 
     // 检查退货订单是否存在
     const returnOrder = await prisma.returnOrder.findUnique({
@@ -330,7 +338,11 @@ export async function updateReturnOrderStatus(
 
     return { success: true };
   } catch (error) {
-    console.error('更新退货订单状态失败:', error);
+    logger.error('actions:return-orders', '更新退货订单状态失败', error, {
+      action: 'updateReturnOrderStatus',
+      returnOrderId,
+      status: nextStatus,
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -347,6 +359,9 @@ export async function updateReturnOrderStatus(
 export async function approveReturnOrder(
   formData: FormData
 ): Promise<ActionResult> {
+  let returnOrderId: string | undefined;
+  let approved: boolean | undefined;
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -363,6 +378,8 @@ export async function approveReturnOrder(
     };
 
     const data = approveReturnOrderSchema.parse(rawData);
+    returnOrderId = data.returnOrderId;
+    approved = data.approved;
 
     // 检查退货订单是否存在
     const returnOrder = await prisma.returnOrder.findUnique({
@@ -407,7 +424,11 @@ export async function approveReturnOrder(
 
     return { success: true };
   } catch (error) {
-    console.error('审核退货订单失败:', error);
+    logger.error('actions:return-orders', '审核退货订单失败', error, {
+      action: 'approveReturnOrder',
+      returnOrderId,
+      approved,
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -466,7 +487,10 @@ export async function cancelReturnOrder(
 
     return { success: true };
   } catch (error) {
-    console.error('取消退货订单失败:', error);
+    logger.error('actions:return-orders', '取消退货订单失败', error, {
+      action: 'cancelReturnOrder',
+      returnOrderId,
+    });
     return { success: false, error: '取消退货订单失败' };
   }
 }
@@ -524,7 +548,10 @@ export async function deleteReturnOrder(
 
     return { success: true };
   } catch (error) {
-    console.error('删除退货订单失败:', error);
+    logger.error('actions:return-orders', '删除退货订单失败', error, {
+      action: 'deleteReturnOrder',
+      returnOrderId,
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : '删除退货订单失败',
@@ -538,16 +565,19 @@ export async function deleteReturnOrder(
 export async function batchUpdateReturnOrderStatus(
   formData: FormData
 ): Promise<ActionResult> {
+  let returnOrderIds: string[] = [];
+  let batchAction: string | undefined;
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
 
-    const returnOrderIds = JSON.parse(
+    returnOrderIds = JSON.parse(
       formData.get('returnOrderIds') as string
     ) as string[];
-    const action = formData.get('action') as string;
+    batchAction = formData.get('action') as string;
 
     if (!returnOrderIds || returnOrderIds.length === 0) {
       return { success: false, error: '未选择退货订单' };
@@ -572,7 +602,7 @@ export async function batchUpdateReturnOrderStatus(
         }
       });
 
-      if (action === 'cancel') {
+      if (batchAction === 'cancel') {
         // 批量取消
         await tx.returnOrder.updateMany({
           where: {
@@ -581,7 +611,7 @@ export async function batchUpdateReturnOrderStatus(
           },
           data: { status: 'cancelled' },
         });
-      } else if (action === 'approve') {
+      } else if (batchAction === 'approve') {
         // 批量批准（仅限提交状态）
         await tx.returnOrder.updateMany({
           where: {
@@ -590,7 +620,7 @@ export async function batchUpdateReturnOrderStatus(
           },
           data: { status: 'approved' },
         });
-      } else if (action === 'reject') {
+      } else if (batchAction === 'reject') {
         // 批量拒绝（仅限提交状态）
         await tx.returnOrder.updateMany({
           where: {
@@ -612,7 +642,11 @@ export async function batchUpdateReturnOrderStatus(
 
     return { success: true };
   } catch (error) {
-    console.error('批量更新退货订单状态失败:', error);
+    logger.error('actions:return-orders', '批量更新退货订单状态失败', error, {
+      action: 'batchUpdateReturnOrderStatus',
+      batchAction,
+      count: returnOrderIds.length || undefined,
+    });
     return { success: false, error: '批量更新退货订单状态失败' };
   }
 }
@@ -623,13 +657,15 @@ export async function batchUpdateReturnOrderStatus(
 export async function batchDeleteReturnOrders(
   formData: FormData
 ): Promise<ActionResult> {
+  let returnOrderIds: string[] = [];
+
   try {
     const session = await auth();
     if (!session?.user?.id) {
       return { success: false, error: '未授权操作' };
     }
 
-    const returnOrderIds = JSON.parse(
+    returnOrderIds = JSON.parse(
       formData.get('returnOrderIds') as string
     ) as string[];
 
@@ -678,7 +714,10 @@ export async function batchDeleteReturnOrders(
 
     return { success: true };
   } catch (error) {
-    console.error('批量删除退货订单失败:', error);
+    logger.error('actions:return-orders', '批量删除退货订单失败', error, {
+      action: 'batchDeleteReturnOrders',
+      count: returnOrderIds.length || undefined,
+    });
     return {
       success: false,
       error: error instanceof Error ? error.message : '批量删除退货订单失败',

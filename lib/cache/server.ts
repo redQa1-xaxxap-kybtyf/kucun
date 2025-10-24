@@ -104,7 +104,11 @@ export function cachedServerFn<Args extends unknown[], Result>(
           redisTTL
         );
 
-        return result!;
+        if (result === undefined || result === null) {
+          throw new Error('Redis 缓存返回空结果');
+        }
+
+        return result;
       };
     }
 
@@ -122,7 +126,11 @@ export function cachedServerFn<Args extends unknown[], Result>(
         redisTTL
       );
 
-      return result!;
+      if (result === undefined || result === null) {
+        throw new Error('Redis 缓存返回空结果');
+      }
+
+      return result;
     };
   }
 
@@ -224,7 +232,11 @@ export function cachedDetail<Args extends unknown[], Result>(
       3600 // 详情数据缓存 1 小时
     );
 
-    return cached!;
+    if (cached === undefined || cached === null) {
+      throw new Error('Redis 缓存返回空结果');
+    }
+
+    return cached;
   };
 }
 

@@ -41,6 +41,7 @@ import {
 } from '@/lib/types/payment';
 import { formatCurrency } from '@/lib/utils';
 import { createPaymentRecordSchema } from '@/lib/validations/payment';
+import { logger } from '@/lib/utils/console-logger';
 
 type FormValues = CreatePaymentRecordData;
 
@@ -179,18 +180,30 @@ export function ReceivablePaymentDialog({
 
     try {
       // ✅ 修复: 添加详细的日志记录
-      console.log('[收款对话框] 开始创建收款记录', {
-        orderId: receivable.id,
-        customerId: receivable.customerId,
-        paymentAmount: payload.paymentAmount,
-        actualPaymentAmount: payload.actualPaymentAmount,
-      });
+      logger.info(
+        'finance:receivable-payment-dialog',
+        '开始创建收款记录',
+        {
+          orderId: receivable.id,
+          customerId: receivable.customerId,
+          paymentAmount: payload.paymentAmount,
+          actualPaymentAmount: payload.actualPaymentAmount,
+        }
+      );
 
       const paymentRecord = await createPaymentMutation.mutateAsync(payload);
-      console.log('[收款对话框] 收款记录已创建', paymentRecord);
+      logger.info(
+        'finance:receivable-payment-dialog',
+        '收款记录已创建',
+        { paymentRecord }
+      );
 
       await confirmPaymentMutation.mutateAsync({ id: paymentRecord.id });
-      console.log('[收款对话框] 收款记录已确认');
+      logger.info(
+        'finance:receivable-payment-dialog',
+        '收款记录已确认',
+        { paymentRecordId: paymentRecord.id }
+      );
 
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.receivables(),
@@ -205,7 +218,15 @@ export function ReceivablePaymentDialog({
       handleClose(false);
       onSuccess?.();
     } catch (error) {
-      console.error('[收款对话框] 收款失败', error);
+      logger.error(
+        'finance:receivable-payment-dialog',
+        '收款失败',
+        error,
+        {
+          orderId: receivable?.id,
+          customerId: receivable?.customerId,
+        }
+      );
       toast({
         title: '收款失败',
         description: error instanceof Error ? error.message : '请稍后重试',

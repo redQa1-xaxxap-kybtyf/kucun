@@ -38,13 +38,14 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 import { queryKeys } from '@/lib/queryKeys';
 import {
+  RETURN_ORDER_MODE_LABELS,
   RETURN_ORDER_STATUS_LABELS,
   RETURN_ORDER_TYPE_LABELS,
   RETURN_PROCESS_TYPE_LABELS,
-  RETURN_ORDER_MODE_LABELS,
 } from '@/lib/types/return-order';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import { getReturnOrderStatusBadgeVariant } from '@/lib/utils/badge-helpers';
+import { formatDateTime } from '@/lib/utils/datetime';
 import { getErrorMessage } from '@/lib/utils/error-handler';
 
 interface ReturnOrderDetail {
@@ -383,11 +384,14 @@ export function ReturnOrderDetailPageClient({
                           <Button
                             variant="link"
                             className="h-auto p-0 text-[hsl(var(--color-primary))] hover:underline"
-                            onClick={() =>
+                            onClick={() => {
+                              if (!order.salesOrder) {
+                                return;
+                              }
                               router.push(
-                                `/sales-orders/${order.salesOrder!.id}`
-                              )
-                            }
+                                `/sales-orders/${order.salesOrder.id}`
+                              );
+                            }}
                           >
                             {order.salesOrder.orderNumber}
                           </Button>
@@ -420,7 +424,7 @@ export function ReturnOrderDetailPageClient({
                       创建时间
                     </label>
                     <p className="mt-1 text-[hsl(var(--color-text-secondary))]">
-                      {formatDate(order.createdAt)}
+                      {formatDateTime(order.createdAt)}
                     </p>
                   </div>
                   <div>
@@ -428,7 +432,7 @@ export function ReturnOrderDetailPageClient({
                       更新时间
                     </label>
                     <p className="mt-1 text-[hsl(var(--color-text-secondary))]">
-                      {formatDate(order.updatedAt)}
+                      {formatDateTime(order.updatedAt)}
                     </p>
                   </div>
                 </div>
@@ -634,7 +638,7 @@ export function ReturnOrderDetailPageClient({
                   <div className="flex-1">
                     <p className="text-sm font-medium">退货申请创建</p>
                     <p className="text-muted-foreground text-xs">
-                      {formatDate(order.createdAt)}
+                      {formatDateTime(order.createdAt)}
                     </p>
                   </div>
                 </div>
@@ -660,7 +664,7 @@ export function ReturnOrderDetailPageClient({
                         }
                       </p>
                       <p className="text-muted-foreground text-xs">
-                        {formatDate(order.updatedAt)}
+                        {formatDateTime(order.updatedAt)}
                       </p>
                     </div>
                   </div>

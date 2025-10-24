@@ -8,6 +8,7 @@ import {
   type PaymentOutRecordDetail,
   type PaymentOutStatus,
 } from '@/lib/types/payable';
+import { parseLocalDateString } from '@/lib/utils/datetime';
 
 const ALLOWED_PAYMENT_OUT_METHODS: PaymentOutMethod[] = [
   'cash',
@@ -108,10 +109,12 @@ async function getPaymentsOutData(searchParams: {
   if (startDateParam || endDateParam) {
     const paymentDateFilter: { gte?: Date; lte?: Date } = {};
     if (startDateParam) {
-      paymentDateFilter.gte = new Date(startDateParam);
+      paymentDateFilter.gte =
+        parseLocalDateString(startDateParam) ?? new Date(startDateParam);
     }
     if (endDateParam) {
-      const endDate = new Date(endDateParam);
+      const endDate =
+        parseLocalDateString(endDateParam) ?? new Date(endDateParam);
       endDate.setHours(23, 59, 59, 999);
       paymentDateFilter.lte = endDate;
     }

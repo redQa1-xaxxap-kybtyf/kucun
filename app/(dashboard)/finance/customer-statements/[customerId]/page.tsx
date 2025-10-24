@@ -25,7 +25,8 @@ import {
   CUSTOMER_STATEMENT_TRANSACTION_TYPES,
   type CustomerStatementTransaction,
 } from '@/lib/types/customer-statement';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
+import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
 const DEFAULT_RANGE_DAYS = 30;
 
@@ -338,14 +339,14 @@ export default function CustomerStatementDetailPage() {
               {statementDetail.customerName}
             </h1>
             <p className="text-muted-foreground text-sm">
-              对账期间：{formatDate(statementDetail.periodStart, 'date')} -{' '}
-              {formatDate(statementDetail.periodEnd, 'date')}
+              对账期间：{formatDate(statementDetail.periodStart)} -{' '}
+              {formatDate(statementDetail.periodEnd)}
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground text-sm">
-            数据生成于 {formatDate(statementDetail.generatedAt, 'datetime')}
+            数据生成于 {formatDateTime(statementDetail.generatedAt)}
           </span>
         </div>
       </div>
@@ -407,7 +408,7 @@ export default function CustomerStatementDetailPage() {
           <CardHeader className="space-y-1">
             <CardTitle className="text-sm font-medium">期初余额</CardTitle>
             <p className="text-muted-foreground text-xs">
-              {formatDate(statementDetail.periodStart, 'date')} 之前
+              {formatDate(statementDetail.periodStart)} 之前
             </p>
           </CardHeader>
           <CardContent>
@@ -521,7 +522,7 @@ export default function CustomerStatementDetailPage() {
                     (transaction: CustomerStatementTransaction) => (
                       <TableRow key={transaction.id}>
                         <TableCell>
-                          {formatDate(transaction.transactionDate, 'datetime')}
+                          {formatDateTime(transaction.transactionDate)}
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline">

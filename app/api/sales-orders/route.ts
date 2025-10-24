@@ -11,6 +11,7 @@ import {
   buildCacheKey,
   CACHE_STRATEGY,
   getOrSetJSON,
+  revalidateFinance,
   revalidateSalesOrders,
 } from '@/lib/cache';
 import { RateLimitType, withRateLimit } from '@/lib/rate-limit';
@@ -92,6 +93,10 @@ const createSalesOrderHandler = withErrorHandling(
 
       // 使用统一的缓存失效系统（自动级联失效相关缓存）
       await revalidateSalesOrders();
+
+      // ✅ 关键修复：销售订单创建后，同时失效应收款缓存
+      // 因为应收款数据来源于销售订单，新订单会影响应收款列表
+      await revalidateFinance('receivables');
 
       return successResponse(order, 201, '销售订单创建成功');
     },

@@ -47,6 +47,7 @@ import {
   salesOrderCreateSchema as CreateSalesOrderSchema,
   type SalesOrderCreateFormData as CreateSalesOrderData,
 } from '@/lib/validations/sales-order';
+import { logger } from '@/lib/utils/console-logger';
 
 interface SalesOrderFormProps {
   onSuccess?: (order: CreateSalesOrderData) => void;
@@ -83,8 +84,11 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
           setAutoOrderNumber(data.data.orderNumber);
         }
       } catch (error) {
-        // eslint-disable-next-line no-console
-        console.error('自动生成订单号失败:', error);
+        logger.error(
+          'sales-orders:invoice-form',
+          '自动生成订单号失败',
+          error
+        );
         // 如果API失败，使用本地生成逻辑作为备用
         const now = new Date();
         const dateStr = now.toISOString().slice(0, 10).replace(/-/g, '');
@@ -104,6 +108,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
       status: 'draft',
       remarks: '',
       items: [],
+      roundingAdjustment: undefined, // ✅ 新增: 抹零金额默认值
     },
   });
 
@@ -138,7 +143,12 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
         title: '销售订单创建成功',
         description: `订单号 "${data.orderNumber}" 已创建`,
       });
+
+      // ✅ 失效销售订单缓存
       queryClient.invalidateQueries({ queryKey: salesOrderQueryKeys.lists() });
+
+      // ✅ 关键修复：同时失效应收款缓存
+      queryClient.invalidateQueries({ queryKey: ['finance', 'receivables'] });
 
       if (onSuccess) {
         // data 是 SalesOrder 类型,需要转换为 CreateSalesOrderData
@@ -262,6 +272,7 @@ export function SalesOrderForm({ onSuccess, onCancel }: SalesOrderFormProps) {
     const orderData = {
       ...submitData,
       totalAmount,
+      roundingAdjustment: submitData.roundingAdjustment, // ✅ 新增: 包含抹零金额
       items: submitData.items.map(item => ({
         ...item,
         subtotal: (item.quantity ?? 0) * (item.unitPrice || 0),

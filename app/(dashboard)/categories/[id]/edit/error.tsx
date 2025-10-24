@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 编辑分类页面错误边界
@@ -20,7 +21,12 @@ export default function EditCategoryError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('编辑分类页面错误:', error);
+    logger.error(
+      'dashboard:categories:edit:error-boundary',
+      '编辑分类页面错误',
+      error,
+      { digest: error.digest }
+    );
   }, [error]);
 
   return (

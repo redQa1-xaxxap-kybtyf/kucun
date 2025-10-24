@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 分类管理主页面错误边界
@@ -20,7 +21,12 @@ export default function CategoriesError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('分类管理页面错误:', error);
+    logger.error(
+      'dashboard:categories:error-boundary',
+      '分类管理页面错误',
+      error,
+      { digest: error.digest }
+    );
   }, [error]);
 
   return (

@@ -21,6 +21,7 @@ import { TableCell, TableRow } from '@/components/ui/table';
 import type { Inventory } from '@/lib/types/inventory';
 import { getInventoryStatus } from '@/lib/types/inventory-status';
 import { PRODUCT_UNIT_LABELS } from '@/lib/types/product';
+import { formatDateTime } from '@/lib/utils/datetime';
 import { formatPieceSummary } from '@/lib/utils/piece-calculation';
 
 interface InventoryTableRowProps {
@@ -138,10 +139,10 @@ function useInventoryRowData(item: Inventory) {
     });
   }, [item.quantity, item.reservedQuantity, packaging, unitLabel]);
 
-  const formattedDate = React.useMemo(
-    () => new Date(item.updatedAt).toLocaleDateString('zh-CN'),
-    [item.updatedAt]
-  );
+  const formattedDate = React.useMemo(() => {
+    const formatted = formatDateTime(item.updatedAt);
+    return formatted ? formatted : '-';
+  }, [item.updatedAt]);
 
   return {
     packaging,

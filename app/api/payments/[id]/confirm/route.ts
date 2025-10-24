@@ -115,25 +115,30 @@ export const POST = withAuth(
             select: {
               id: true,
               totalAmount: true,
+              roundingAdjustment: true, // ✅ 新增: 获取订单抹零金额
               status: true,
             },
           });
 
           if (salesOrder) {
+            // ✅ 修复: 使用实际到账金额(actualPaymentAmount)统计已收款
             const confirmedSum = await tx.paymentRecord.aggregate({
               where: {
                 salesOrderId: updatedPayment.salesOrderId,
                 status: { in: ['confirmed', 'applied'] },
               },
-              _sum: { paymentAmount: true },
+              _sum: { actualPaymentAmount: true }, // ✅ 改用实际到账金额
             });
 
-            const totalConfirmed = confirmedSum._sum.paymentAmount ?? 0;
+            const totalConfirmed = confirmedSum._sum.actualPaymentAmount ?? 0;
 
-            if (
-              salesOrder.status === 'shipped' &&
-              totalConfirmed >= Number(salesOrder.totalAmount ?? 0)
-            ) {
+            // ✅ 修复: 实际应收金额 = totalAmount + roundingAdjustment
+            const actualTotalAmount =
+              Number(salesOrder.totalAmount ?? 0) +
+              Number(salesOrder.roundingAdjustment || 0);
+
+            // ✅ 修复: 使用实际到账金额与实际应收金额比较
+            if (salesOrder.status === 'shipped' && totalConfirmed >= actualTotalAmount) {
               await tx.salesOrder.update({
                 where: { id: salesOrder.id },
                 data: { status: 'completed' },

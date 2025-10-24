@@ -26,6 +26,48 @@ import { formatCurrency } from '@/lib/utils';
 import { formatDateTime } from '@/lib/utils/datetime';
 
 const CHANGE_TOLERANCE = 0.05;
+const FINANCE_EPSILON = 0.000001;
+
+function isMeaningfulAmount(value: number): boolean {
+  return Math.abs(value) > FINANCE_EPSILON;
+}
+
+function getRoundingColorClass(
+  value: number,
+  positiveIsIncrease: boolean
+): string {
+  if (!isMeaningfulAmount(value)) {
+    return 'text-[hsl(var(--color-text-secondary))]';
+  }
+
+  const isPositive = value > 0;
+
+  if (positiveIsIncrease) {
+    return isPositive
+      ? 'text-[hsl(var(--color-error))]'
+      : 'text-[hsl(var(--color-success))]';
+  }
+
+  return isPositive
+    ? 'text-[hsl(var(--color-success))]'
+    : 'text-[hsl(var(--color-error))]';
+}
+
+function formatCurrencyWithSign(
+  value: number,
+  {
+    positiveSign = '+',
+    negativeSign = '-',
+  }: { positiveSign?: string; negativeSign?: string } = {}
+): string {
+  if (!isMeaningfulAmount(value)) {
+    return formatCurrency(0);
+  }
+
+  const absValue = Math.abs(value);
+  const sign = value >= 0 ? positiveSign : negativeSign;
+  return `${sign}${formatCurrency(absValue)}`;
+}
 
 function formatCollectionRateChange(change: number): string {
   if (Math.abs(change) < CHANGE_TOLERANCE) {
@@ -79,6 +121,7 @@ export function ReceivablesClient({
     customerId: string;
     customerName: string;
     totalAmount: number;
+    roundingAdjustment: number;
     paidAmount: number;
     remainingAmount: number;
   } | null>(null);
@@ -228,7 +271,11 @@ export function ReceivablesClient({
         customerId: receivable.customerId,
         customerName: receivable.customerName,
         totalAmount: receivable.totalAmount,
-        paidAmount: receivable.paidAmount,
+        roundingAdjustment: receivable.roundingAdjustment || 0,
+        paidAmount: Math.max(
+          0,
+          receivable.paidAmount + receivable.paymentRoundingAmount
+        ),
         remainingAmount: receivable.remainingAmount,
       });
       setIsPaymentDialogOpen(true);
@@ -397,35 +444,91 @@ export function ReceivablesClient({
                     </div>
 
                     {/* 金额信息区域 - 增强视觉层次 */}
-                    <div className="grid grid-cols-3 gap-px bg-[hsl(var(--color-border-secondary))]/30">
-                      <div className="flex flex-col items-center justify-center bg-white px-6 py-6 transition-colors hover:bg-[hsl(var(--color-bg-secondary))]">
-                        <span className="mb-2 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
-                          订单金额
-                        </span>
-                        <span className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
-                          {formatCurrency(receivable.totalAmount)}
-                        </span>
-                      </div>
-                      <div className="flex flex-col items-center justify-center bg-white px-6 py-6 transition-colors hover:bg-[hsl(var(--color-success))]/5">
-                        <span className="mb-2 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
-                          已收金额
-                        </span>
-                        <span className="text-2xl font-bold tracking-tight text-[hsl(var(--color-success))]">
-                          {formatCurrency(receivable.paidAmount)}
-                        </span>
-                      </div>
-                      <div className="relative flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[hsl(var(--color-warning))]/5 to-white px-6 py-6 transition-all hover:from-[hsl(var(--color-warning))]/10">
-                        {receivable.remainingAmount > 0 && (
-                          <div className="absolute top-2 right-2 h-2 w-2 animate-pulse rounded-full bg-[hsl(var(--color-warning))]"></div>
-                        )}
-                        <span className="mb-2 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
-                          待收金额
-                        </span>
-                        <span className="text-2xl font-bold tracking-tight text-[hsl(var(--color-warning))]">
-                          {formatCurrency(receivable.remainingAmount)}
-                        </span>
-                      </div>
-                    </div>
+                    {(() => {
+                      // ✅ 订单抹零: 正数=加价, 负数=减价(抹零)
+                      const orderRounding = receivable.roundingAdjustment ?? 0;
+                      // ✅ 收款抹零总和: 已确认 + 待确认
+                      const paymentRounding = receivable.paymentRoundingAmount ?? 0;
+                      const pendingRounding = receivable.pendingRoundingAmount ?? 0;
+                      const totalPaymentRounding = paymentRounding + pendingRounding;
+
+                      // ✅ 实际到账金额
+                      const paidActual = receivable.paidAmount ?? 0;
+                      // ✅ 待确认金额
+                      const pendingActual = receivable.pendingAmount ?? 0;
+
+                      // ✅ 用户需求的显示逻辑：
+                      // 1. 订单金额 = 商品总额 (不含任何抹零)
+                      const orderAmount = receivable.totalAmount;
+
+                      // 2. 抹零金额 = 订单抹零 - 收款抹零总和
+                      //    收款抹零显示为负数，因为是减免/优惠
+                      //    例如：订单抹零+2，收款抹零0.5 → 显示 2 - 0.5 = 1.5
+                      //    例如：订单抹零0，收款抹零0.5 → 显示 -0.5
+                      const totalRounding = orderRounding - totalPaymentRounding;
+
+                      // 3. 待收金额 = 订单金额 + 抹零金额 - 已收
+                      //    = orderAmount + (orderRounding - totalPaymentRounding) - paidActual
+                      const actualRemaining = orderAmount + orderRounding - totalPaymentRounding - paidActual;
+
+                      // 显示样式
+                      const roundingColorClass = getRoundingColorClass(totalRounding, true);
+                      const roundingDisplay = isMeaningfulAmount(totalRounding)
+                        ? formatCurrencyWithSign(totalRounding, {
+                            positiveSign: '+',  // 正数显示+号
+                            negativeSign: '-',  // 负数显示-号
+                          })
+                        : formatCurrency(0);
+
+                      return (
+                        <div className="grid gap-px bg-[hsl(var(--color-border-secondary))]/30 grid-cols-4">
+                          {/* 订单金额：商品总额（不含抹零） */}
+                          <div className="flex flex-col items-center justify-center bg-white px-6 py-6 transition-colors hover:bg-[hsl(var(--color-bg-secondary))]">
+                            <span className="mb-2 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
+                              订单金额
+                            </span>
+                            <span className="text-2xl font-bold tracking-tight text-[hsl(var(--color-text-primary))]">
+                              {formatCurrency(orderAmount)}
+                            </span>
+                          </div>
+
+                          {/* 抹零金额：订单抹零 + 收款抹零总和 */}
+                          <div className="flex flex-col items-center justify-center bg-white px-6 py-6 transition-colors hover:bg-[hsl(var(--color-bg-secondary))]">
+                            <span className="mb-2 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
+                              抹零金额
+                            </span>
+                            <span
+                              className={`text-2xl font-bold tracking-tight ${roundingColorClass}`}
+                            >
+                              {roundingDisplay}
+                            </span>
+                          </div>
+
+                          {/* 待收金额：实际还需要收的金额 */}
+                          <div className="relative flex flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[hsl(var(--color-warning))]/5 to-white px-6 py-6 transition-all hover:from-[hsl(var(--color-warning))]/10">
+                            {actualRemaining > 0 && (
+                              <div className="absolute top-2 right-2 h-2 w-2 animate-pulse rounded-full bg-[hsl(var(--color-warning))]"></div>
+                            )}
+                            <span className="mb-2 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
+                              待收金额
+                            </span>
+                            <span className="text-2xl font-bold tracking-tight text-[hsl(var(--color-warning))]">
+                              {formatCurrency(Math.max(0, actualRemaining))}
+                            </span>
+                          </div>
+
+                          {/* 已收金额：实际已经收到的金额 */}
+                          <div className="flex flex-col items-center justify-center bg-white px-6 py-6 transition-colors hover:bg-[hsl(var(--color-success))]/5">
+                            <span className="mb-2 text-xs font-semibold tracking-wider text-[hsl(var(--color-text-tertiary))] uppercase">
+                              已收金额
+                            </span>
+                            <span className="text-2xl font-bold tracking-tight text-[hsl(var(--color-success))]">
+                              {formatCurrency(paidActual)}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })()}
 
                     {/* 日期信息栏 - 精简设计 */}
                     <div className="flex items-center gap-6 border-t border-[hsl(var(--color-border-secondary))]/30 bg-[hsl(var(--color-bg-tertiary))]/30 px-6 py-3.5 text-xs">

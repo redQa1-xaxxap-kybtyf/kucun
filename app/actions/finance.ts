@@ -7,6 +7,8 @@ import { z } from 'zod';
 
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
+import { parseLocalDateString } from '@/lib/utils/datetime';
+import { logger } from '@/lib/logger';
 
 // cspell:words payables
 
@@ -102,7 +104,9 @@ export async function createPaymentRecord(
             ).toFixed(2)
           ),
       paymentMethod: formData.get('paymentMethod') as string,
-      paymentDate: new Date(formData.get('paymentDate') as string),
+      paymentDate:
+        parseLocalDateString(formData.get('paymentDate') as string) ??
+        new Date(formData.get('paymentDate') as string),
       receiptNumber: formData.get('receiptNumber') as string,
       remarks: formData.get('remarks') as string,
     };
@@ -170,7 +174,9 @@ export async function createPaymentRecord(
 
     return { success: true, data: { id: result.id } };
   } catch (error) {
-    console.error('创建收款记录失败:', error);
+    logger.error('actions:finance', '创建收款记录失败', error, {
+      action: 'createPaymentRecord',
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -203,7 +209,10 @@ export async function confirmPaymentRecord(
 
     return { success: true };
   } catch (error) {
-    console.error('确认收款记录失败:', error);
+    logger.error('actions:finance', '确认收款记录失败', error, {
+      action: 'confirmPaymentRecord',
+      paymentId,
+    });
     return { success: false, error: '确认收款记录失败' };
   }
 }
@@ -270,7 +279,9 @@ export async function createPayableRecord(
     revalidatePath('/finance/payables');
     return { success: true, data: { id: result.id } };
   } catch (error) {
-    console.error('创建应付款记录失败:', error);
+    logger.error('actions:finance', '创建应付款记录失败', error, {
+      action: 'createPayableRecord',
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -310,7 +321,9 @@ export async function createPaymentOutRecord(
       payableRecordId: formData.get('payableRecordId') as string,
       paymentAmount: parseFloat(formData.get('paymentAmount') as string),
       paymentMethod: formData.get('paymentMethod') as string,
-      paymentDate: new Date(formData.get('paymentDate') as string),
+      paymentDate:
+        parseLocalDateString(formData.get('paymentDate') as string) ??
+        new Date(formData.get('paymentDate') as string),
       voucherNumber: formData.get('voucherNumber') as string,
       remarks: formData.get('remarks') as string,
     };
@@ -378,7 +391,9 @@ export async function createPaymentOutRecord(
 
     return { success: true, data: { id: result.id } };
   } catch (error) {
-    console.error('创建付款记录失败:', error);
+    logger.error('actions:finance', '创建付款记录失败', error, {
+      action: 'createPaymentOutRecord',
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -411,7 +426,10 @@ export async function confirmPaymentOutRecord(
 
     return { success: true };
   } catch (error) {
-    console.error('确认付款记录失败:', error);
+    logger.error('actions:finance', '确认付款记录失败', error, {
+      action: 'confirmPaymentOutRecord',
+      paymentId,
+    });
     return { success: false, error: '确认付款记录失败' };
   }
 }
@@ -526,7 +544,9 @@ export async function createRefundRecord(
 
     return { success: true, data: { id: result.id } };
   } catch (error) {
-    console.error('创建退款记录失败:', error);
+    logger.error('actions:finance', '创建退款记录失败', error, {
+      action: 'createRefundRecord',
+    });
     if (error instanceof z.ZodError) {
       return {
         success: false,
@@ -558,7 +578,10 @@ export async function confirmRefundRecord(
 
     return { success: true };
   } catch (error) {
-    console.error('确认退款记录失败:', error);
+    logger.error('actions:finance', '确认退款记录失败', error, {
+      action: 'confirmRefundRecord',
+      refundId,
+    });
     return { success: false, error: '确认退款记录失败' };
   }
 }

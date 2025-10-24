@@ -92,17 +92,53 @@ async function main() {
     await prisma.supplier.deleteMany();
     console.log('   ✅ 已清空供应商');
 
+    console.log('\n6️⃣ 清空非管理员用户...');
+    const deletedUsers = await prisma.user.deleteMany({
+      where: {
+        role: { not: 'admin' },
+      },
+    });
+    console.log(`   ✅ 已删除 ${deletedUsers.count} 个非管理员用户`);
+
+    console.log('\n7️⃣ 清空系统日志...');
+    await prisma.systemLog.deleteMany();
+    console.log('   ✅ 已清空系统日志');
+
+    await prisma.settingChangeLog.deleteMany();
+    console.log('   ✅ 已清空设置变更日志');
+
     console.log('\n✨ 测试数据清空完成！');
     console.log('\n📊 保留的数据：');
-    console.log('   - 用户账号');
+    console.log('   - 管理员账号');
     console.log('   - 系统配置');
 
     // 统计剩余数据
-    const userCount = await prisma.user.count();
+    const adminCount = await prisma.user.count({
+      where: { role: 'admin' },
+    });
     const settingCount = await prisma.systemSetting.count();
     console.log(`\n📈 当前数据统计：`);
-    console.log(`   - 用户: ${userCount} 个`);
+    console.log(`   - 管理员用户: ${adminCount} 个`);
     console.log(`   - 系统配置: ${settingCount} 项`);
+
+    // 显示管理员信息
+    const admins = await prisma.user.findMany({
+      where: { role: 'admin' },
+      select: {
+        id: true,
+        username: true,
+        email: true,
+        name: true,
+        status: true,
+      },
+    });
+
+    console.log('\n👨‍💼 保留的管理员账户：');
+    admins.forEach((admin, index) => {
+      console.log(`   ${index + 1}. ${admin.name} (@${admin.username})`);
+      console.log(`      邮箱: ${admin.email}`);
+      console.log(`      状态: ${admin.status}`);
+    });
   } catch (error) {
     console.error('\n❌ 清空数据失败:', error);
     throw error;

@@ -114,6 +114,8 @@ export const GET = withAuth(
             id: true,
             paymentNumber: true,
             paymentAmount: true,
+            actualPaymentAmount: true, // ✅ 新增: 实际到账金额
+            roundingAmount: true, // ✅ 新增: 收款抹零金额
             paymentMethod: true,
             paymentDate: true,
             status: true,
@@ -148,11 +150,27 @@ export const GET = withAuth(
     }
 
     // 计算收款统计
-    const paidAmount = salesOrder.payments
-      .filter(record => record.status === 'confirmed')
-      .reduce((sum, record) => sum + Number(record.paymentAmount), 0);
+    // ✅ 修复: 等效已收款 = 实际到账金额 + 收款抹零金额
+    // 收款抹零算作已收款(优惠/减免视为收款完成)
+    const confirmedPayments = salesOrder.payments.filter(
+      record => record.status === 'confirmed'
+    );
+    const actualPaidAmount = confirmedPayments.reduce(
+      (sum, record) => sum + Number(record.actualPaymentAmount),
+      0
+    );
+    const paymentRounding = confirmedPayments.reduce(
+      (sum, record) => sum + Number(record.roundingAmount || 0),
+      0
+    );
+    const paidAmount = actualPaidAmount + paymentRounding;
 
-    const remainingAmount = Number(salesOrder.totalAmount) - paidAmount;
+    // ✅ 修复: 实际应收金额 = totalAmount + roundingAdjustment
+    // roundingAdjustment 可正可负: 正数表示加价，负数表示减价(抹零)
+    const actualTotalAmount =
+      Number(salesOrder.totalAmount) +
+      Number(salesOrder.roundingAdjustment || 0);
+    const remainingAmount = Math.max(0, actualTotalAmount - paidAmount);
 
     const { returnOrders, ...rest } = salesOrder;
 
@@ -167,8 +185,15 @@ export const GET = withAuth(
           status: order.status,
           createdAt: order.createdAt.toISOString(),
         })),
-        paymentRecords: salesOrder.payments,
-        paidAmount,
+        // ✅ 修复: 转换收款记录中的 Date 对象为 ISO 字符串
+        paymentRecords: salesOrder.payments.map(payment => ({
+          ...payment,
+          paymentDate: payment.paymentDate.toISOString(),
+          createdAt: payment.createdAt.toISOString(),
+        })),
+        actualPaidAmount, // ✅ 新增: 实际到账金额
+        paymentRounding, // ✅ 新增: 收款抹零金额
+        paidAmount, // 等效已收款(到账+抹零)
         remainingAmount,
       },
     });
@@ -240,20 +265,31 @@ export const PUT = withAuth(
         where: { id },
         select: {
           totalAmount: true,
+          roundingAdjustment: true, // ✅ 新增: 获取订单抹零金额
           payments: {
             where: { status: 'confirmed' },
-            select: { paymentAmount: true },
+            select: {
+              actualPaymentAmount: true, // 实际到账金额
+              roundingAmount: true, // 收款抹零金额(优惠/减免)
+            },
           },
         },
       });
 
       if (orderWithPayments) {
+        // ✅ 修复: 等效收款 = 实际到账 + 收款抹零(优惠/减免算作已收)
         const paidAmount = orderWithPayments.payments.reduce(
-          (sum, record) => sum + Number(record.paymentAmount),
+          (sum, record) =>
+            sum +
+            Number(record.actualPaymentAmount) +
+            Number(record.roundingAmount || 0),
           0
         );
-        const remainingAmount =
-          Number(orderWithPayments.totalAmount) - paidAmount;
+        // ✅ 修复: 实际应收金额 = totalAmount + roundingAdjustment
+        const actualTotalAmount =
+          Number(orderWithPayments.totalAmount) +
+          Number(orderWithPayments.roundingAdjustment || 0);
+        const remainingAmount = actualTotalAmount - paidAmount;
 
         if (remainingAmount > 0.01) {
           // 允许0.01的浮点误差
@@ -314,6 +350,64 @@ export const PUT = withAuth(
         existingOrder.costAmount || 0,
         userId
       );
+    }
+
+    // ✅ 修复: 如果订单状态变更为已发货,检查是否已全额收款,如果是则自动完成订单
+    let autoCompletedOrder = false;
+    if (status === 'shipped') {
+      const orderWithPayments = await prisma.salesOrder.findUnique({
+        where: { id },
+        select: {
+          totalAmount: true,
+          roundingAdjustment: true, // ✅ 新增: 获取订单抹零金额
+          payments: {
+            where: { status: 'confirmed' },
+            select: {
+              actualPaymentAmount: true, // 实际到账金额
+              roundingAmount: true, // 收款抹零金额(优惠/减免)
+            },
+          },
+        },
+      });
+
+      if (orderWithPayments) {
+        // ✅ 修复: 等效收款 = 实际到账 + 收款抹零(优惠/减免算作已收)
+        const paidAmount = orderWithPayments.payments.reduce(
+          (sum, record) =>
+            sum +
+            Number(record.actualPaymentAmount) +
+            Number(record.roundingAmount || 0),
+          0
+        );
+        // ✅ 修复: 实际应收金额 = totalAmount + roundingAdjustment
+        const actualTotalAmount =
+          Number(orderWithPayments.totalAmount) +
+          Number(orderWithPayments.roundingAdjustment || 0);
+        const remainingAmount = actualTotalAmount - paidAmount;
+
+        // 如果已全额收款(允许0.01的浮点误差),自动完成订单
+        if (remainingAmount <= 0.01) {
+          await prisma.salesOrder.update({
+            where: { id },
+            data: { status: 'completed' },
+          });
+          autoCompletedOrder = true;
+
+          logger.info(
+            'sales-orders',
+            `订单 ${existingOrder.orderNumber} 发货后检测到已全额收款,自动完成订单`,
+            {
+              orderId: id,
+              orderNumber: existingOrder.orderNumber,
+              totalAmount: orderWithPayments.totalAmount,
+              roundingAdjustment: orderWithPayments.roundingAdjustment,
+              actualTotalAmount,
+              paidAmount,
+              remainingAmount,
+            }
+          );
+        }
+      }
     }
 
     // 获取更新后的完整订单信息
@@ -422,7 +516,8 @@ export const PUT = withAuth(
     const ledgerAmount = Number(fullOrder.totalAmount ?? 0);
     // ✅ 业务规则: 订单发货时记录应收款，取消已发货订单时冲销应收款
     const becameShipped =
-      status === 'shipped' && !['shipped', 'completed'].includes(existingOrder.status);
+      status === 'shipped' &&
+      !['shipped', 'completed'].includes(existingOrder.status);
     const becameCancelled =
       status === 'cancelled' &&
       ['confirmed', 'shipped', 'completed'].includes(
@@ -542,10 +637,20 @@ export const PUT = withAuth(
       userId: user.id,
     });
 
+    // ✅ 关键修复：销售订单状态更新后，失效应收款缓存
+    // 因为订单状态变更（特别是发货、完成、取消）会影响应收款数据
+    const { revalidateFinance } = await import('@/lib/cache');
+    await revalidateFinance('receivables');
+
+    // 根据是否自动完成订单生成不同的提示消息
+    const message = autoCompletedOrder
+      ? '销售订单已发货，检测到已全额收款，订单已自动完成'
+      : '销售订单更新成功';
+
     return NextResponse.json({
       success: true,
       data: formattedOrder,
-      message: '销售订单更新成功',
+      message,
     });
   },
   { permissions: ['orders:edit'] }

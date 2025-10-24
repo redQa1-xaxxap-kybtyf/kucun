@@ -82,7 +82,11 @@ export async function getCustomer(id: string): Promise<Customer> {
     throw new Error(data.error || '获取客户详情失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('获取客户详情失败：返回数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -109,7 +113,11 @@ export async function createCustomer(
     throw new Error(data.error || '创建客户失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('创建客户失败：返回数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -140,7 +148,11 @@ export async function updateCustomer(
     throw new Error(data.error || '更新客户失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('更新客户失败：返回数据为空');
+  }
+
+  return data.data;
 }
 
 /**
@@ -203,5 +215,9 @@ export async function searchCustomers(
     throw new Error(data.error || '搜索客户失败');
   }
 
-  return data.data!;
+  if (!data.data) {
+    throw new Error('搜索客户失败：返回数据为空');
+  }
+
+  return data.data;
 }

@@ -360,7 +360,17 @@ export function formatProductList(params: {
       inboundRecords: number;
     };
   }>;
-  inventoryMap: Map<string, typeof DEFAULT_INVENTORY>;
+  inventoryMap: Map<
+    string,
+    typeof DEFAULT_INVENTORY & {
+      batches?: Array<{
+        batchNumber: string;
+        quantity: number;
+        piecesPerUnit?: number;
+        weight?: number | null;
+      }>;
+    }
+  >;
   includeInventory: boolean;
   includeStatistics: boolean;
   batchSpecsMap?: Map<
@@ -382,12 +392,24 @@ export function formatProductList(params: {
   } = params;
 
   return products.map(product => {
-    const rawInventory = includeInventory
-      ? (inventoryMap.get(product.id) ?? { ...DEFAULT_INVENTORY, batches: [] })
-      : {
-          ...DEFAULT_INVENTORY,
-          batches: [] as Array<{ batchNumber: string; quantity: number }>,
-        };
+    const fallbackInventory: {
+      totalQuantity: number;
+      reservedQuantity: number;
+      availableQuantity: number;
+      batches: Array<{
+        batchNumber: string;
+        quantity: number;
+        piecesPerUnit?: number;
+        weight?: number | null;
+      }>;
+    } = {
+      ...DEFAULT_INVENTORY,
+      batches: [],
+    };
+
+    const rawInventory =
+      (includeInventory ? inventoryMap.get(product.id) : undefined) ??
+      fallbackInventory;
 
     const counts =
       includeStatistics && '_count' in product ? product._count : undefined;
@@ -413,20 +435,23 @@ export function formatProductList(params: {
       totalQuantity: rawInventory.totalQuantity ?? 0,
       reservedQuantity: rawInventory.reservedQuantity ?? 0,
       availableQuantity: rawInventory.availableQuantity ?? 0,
-      batches: (rawInventory.batches ?? []).map(batch => ({
-        batchNumber: batch.batchNumber,
-        quantity: batch.quantity,
-        piecesPerUnit:
-          (batch as { piecesPerUnit?: number }).piecesPerUnit &&
-          (batch as { piecesPerUnit?: number }).piecesPerUnit! > 0
-            ? (batch as { piecesPerUnit?: number }).piecesPerUnit
-            : batchPiecesMap.get(batch.batchNumber)?.piecesPerUnit,
-        weight:
-          (batch as { weight?: number }).weight &&
-          (batch as { weight?: number }).weight! > 0
-            ? (batch as { weight?: number }).weight
-            : (batchPiecesMap.get(batch.batchNumber)?.weight ?? undefined),
-      })),
+      batches: (rawInventory.batches ?? []).map(batch => {
+        const resolvedPieces =
+          batch.piecesPerUnit && batch.piecesPerUnit > 0
+            ? batch.piecesPerUnit
+            : batchPiecesMap.get(batch.batchNumber)?.piecesPerUnit;
+        const resolvedWeight =
+          batch.weight && batch.weight > 0
+            ? batch.weight
+            : batchPiecesMap.get(batch.batchNumber)?.weight ?? undefined;
+
+        return {
+          batchNumber: batch.batchNumber,
+          quantity: batch.quantity,
+          piecesPerUnit: resolvedPieces,
+          weight: resolvedWeight,
+        };
+      }),
     };
 
     return {

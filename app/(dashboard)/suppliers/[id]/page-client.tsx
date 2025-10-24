@@ -7,11 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { formatCurrency, formatDate } from '@/lib/utils';
+import { formatCurrency } from '@/lib/utils';
 import {
   getCommonStatusBadgeVariant,
   getPayableStatusBadgeVariant,
 } from '@/lib/utils/badge-helpers';
+import { formatDate, formatDateTime } from '@/lib/utils/datetime';
 
 interface SupplierDetail {
   id: string;
@@ -186,7 +187,7 @@ export function SupplierDetailPageClient({
                     </label>
                     <div className="mt-1 flex items-center space-x-2">
                       <Calendar className="text-muted-foreground h-4 w-4" />
-                      <span>{formatDate(supplier.createdAt)}</span>
+                      <span>{formatDateTime(supplier.createdAt)}</span>
                     </div>
                   </div>
                 </div>
@@ -286,7 +287,7 @@ export function SupplierDetailPageClient({
                             {shipment.shipmentNumber}
                           </p>
                           <p className="text-muted-foreground text-sm">
-                            {formatDate(shipment.createdAt)}
+                            {formatDateTime(shipment.createdAt)}
                           </p>
                         </div>
                         <div className="space-y-1 text-right">

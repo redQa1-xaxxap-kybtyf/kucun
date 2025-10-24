@@ -22,6 +22,7 @@ import {
   PAYMENT_OUT_METHOD_LABELS,
   type PayableRecordDetail,
 } from '@/lib/types/payable';
+import { formatPaymentDateTime } from '@/lib/utils/datetime';
 import { formatCurrency } from '@/lib/utils/format';
 
 interface PayableDetailClientProps {
@@ -229,12 +230,12 @@ export function PayableDetailClient({ payable }: PayableDetailClientProps) {
                               {PAYMENT_OUT_METHOD_LABELS[payment.paymentMethod]}
                             </p>
                             <p>
-                              付款日期：
-                              {new Date(
-                                payment.paymentDate
-                              ).toLocaleDateString()}
+                              <span className="font-medium">付款日期：</span>
+                              {formatPaymentDateTime(
+                                payment.paymentDate,
+                                payment.createdAt
+                              )}
                             </p>
-                            {payment.remarks && <p>备注：{payment.remarks}</p>}
                           </div>
                         </div>
                         <div className="text-right">

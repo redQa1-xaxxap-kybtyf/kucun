@@ -25,6 +25,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 对话框变体
@@ -150,7 +151,7 @@ export function ConfirmDialog({
       onOpenChange(false);
     } catch (error) {
       // 错误由调用方处理
-      console.error('Confirm dialog error:', error);
+      logger.error('ui:confirm-dialog', 'Confirm dialog error', error);
     } finally {
       setIsConfirming(false);
     }
@@ -231,35 +232,43 @@ export function useConfirmDialog() {
     confirmText?: string;
     cancelText?: string;
     variant?: ConfirmDialogVariant;
-    resolve?: (value: boolean) => void;
   }>({
     open: false,
     title: '',
   });
+  const resolverRef = React.useRef<((value: boolean) => void) | undefined>();
 
   const confirm = React.useCallback(
     (
       options: Omit<ConfirmDialogProps, 'open' | 'onOpenChange' | 'onConfirm'>
     ) =>
       new Promise<boolean>(resolve => {
+        resolverRef.current = resolve;
         setDialogState({
           open: true,
-          ...options,
-          resolve,
+          title: options.title,
+          description: options.description,
+          confirmText: options.confirmText,
+          cancelText: options.cancelText,
+          variant: options.variant,
         });
       }),
     []
   );
 
-  const handleConfirm = React.useCallback(() => {
-    dialogState.resolve?.(true);
+  const closeDialog = React.useCallback((result: boolean) => {
+    resolverRef.current?.(result);
+    resolverRef.current = undefined;
     setDialogState(prev => ({ ...prev, open: false }));
-  }, [dialogState.resolve]);
+  }, []);
+
+  const handleConfirm = React.useCallback(() => {
+    closeDialog(true);
+  }, [closeDialog]);
 
   const handleCancel = React.useCallback(() => {
-    dialogState.resolve?.(false);
-    setDialogState(prev => ({ ...prev, open: false }));
-  }, [dialogState.resolve]);
+    closeDialog(false);
+  }, [closeDialog]);
 
   const confirmDialog = (
     <ConfirmDialog

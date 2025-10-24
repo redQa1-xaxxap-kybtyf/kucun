@@ -16,7 +16,10 @@ export function SelectedProductDisplay({
   selectedProduct,
   placeholder,
 }: SelectedProductDisplayProps) {
-  const batchSpecs = selectedProduct?.batchSpecs ?? [];
+  const batchSpecs = React.useMemo(
+    () => selectedProduct?.batchSpecs ?? [],
+    [selectedProduct]
+  );
   const isMultipleBatches = batchSpecs.length > 1;
 
   // 库存显示逻辑

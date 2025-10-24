@@ -162,7 +162,10 @@
       "WebFetch(domain:www.prisma.io)",
       "Bash(npx prettier:*)",
       "Bash(git diff:*)",
-      "mcp__serena__find_referencing_symbols"
+      "mcp__serena__find_referencing_symbols",
+      "Bash(echo:*)",
+      "Bash(sed:*)",
+      "Bash(npx dotenv:*)"
     ],
     "deny": [],
     "ask": []

@@ -5,6 +5,7 @@ import React from 'react';
 
 import { queryKeys } from '@/lib/queryKeys';
 import type {
+  OutboundRecord,
   OutboundRecordQueryParams,
   OutboundType,
 } from '@/lib/types/inventory';
@@ -14,21 +15,6 @@ interface OutboundFilters {
   endDate: string;
   type: OutboundType | '';
   search?: string;
-}
-
-interface OutboundRecord {
-  id: string;
-  recordNumber: string;
-  productId: string;
-  productCode: string;
-  productName: string;
-  productSpecification?: string;
-  piecesPerUnit: number;
-  quantity: number;
-  type: OutboundType;
-  reason?: string;
-  createdAt: string;
-  updatedAt: string;
 }
 
 const DEFAULT_QUERY_PARAMS: OutboundRecordQueryParams = {

@@ -101,11 +101,13 @@ async function executeOrderStatusUpdateWithInventory(
   // 预先生成所有出库单号（在事务外部，避免嵌套事务）
   const itemsWithInventory: Array<{
     item: (typeof existingOrder.items)[0];
+    productId: string;
     outboundRecordNumber: string;
   }> = [];
 
   for (const item of existingOrder.items) {
-    if (!item.productId) {
+    const productId = item.productId;
+    if (!productId) {
       continue; // 跳过手动输入的商品
     }
 
@@ -116,6 +118,7 @@ async function executeOrderStatusUpdateWithInventory(
 
     itemsWithInventory.push({
       item,
+      productId,
       outboundRecordNumber,
     });
   }
@@ -132,25 +135,22 @@ async function executeOrderStatusUpdateWithInventory(
       unit: string;
     }> = [];
 
-    const inventoryChecks: Array<{
-      item: (typeof existingOrder.items)[0];
-      outboundRecordNumber: string;
-      inventory: NonNullable<
-        Awaited<ReturnType<typeof findAvailableInventory>>
-      >;
-    }> = [];
+  const inventoryChecks: Array<{
+    item: (typeof existingOrder.items)[0];
+    productId: string;
+    outboundRecordNumber: string;
+    inventory: NonNullable<
+      Awaited<ReturnType<typeof findAvailableInventory>>
+    >;
+  }> = [];
 
-    for (const { item, outboundRecordNumber } of itemsWithInventory) {
+  for (const { item, productId, outboundRecordNumber } of itemsWithInventory) {
       // 使用类型安全的库存查找（支持变体和批次映射）
-      const inventory = await findAvailableInventory(
-        item.productId!,
-        item.quantity,
-        {
-          colorCode: item.colorCode,
-          productionDate: item.productionDate,
-          tx,
-        }
-      );
+      const inventory = await findAvailableInventory(productId, item.quantity, {
+        colorCode: item.colorCode,
+        productionDate: item.productionDate,
+        tx,
+      });
 
       // 如果没有找到库存记录，跳过该商品（可能是调货商品）
       if (!inventory) {
@@ -178,7 +178,7 @@ async function executeOrderStatusUpdateWithInventory(
         });
       } else {
         // 库存充足，保存检查结果用于后续更新
-        inventoryChecks.push({ item, outboundRecordNumber, inventory });
+        inventoryChecks.push({ item, productId, outboundRecordNumber, inventory });
       }
     }
 
@@ -218,7 +218,12 @@ async function executeOrderStatusUpdateWithInventory(
     });
 
     // 第三步：更新库存并创建出库记录 - 使用乐观锁
-    for (const { item, outboundRecordNumber, inventory } of inventoryChecks) {
+    for (const {
+      item,
+      productId,
+      outboundRecordNumber,
+      inventory,
+    } of inventoryChecks) {
       // 使用乐观锁更新库存 - 确保并发安全
       const updatedCount = await tx.inventory.updateMany({
         where: {
@@ -244,7 +249,7 @@ async function executeOrderStatusUpdateWithInventory(
       await tx.outboundRecord.create({
         data: {
           recordNumber: outboundRecordNumber,
-          productId: item.productId!,
+          productId,
           variantId: inventory.variantId,
           batchNumber: item.batchNumber || inventory.batchNumber || undefined,
           inventoryId: inventory.id,

@@ -67,18 +67,14 @@ export const createInboundSchema = z.object({
 
   // 产品参数字段（入库时确定）
   piecesPerUnit: z
-    .number({
-      invalid_type_error: '每单位片数必须是数字',
-    })
+    .number()
     .int({ error: '每单位片数必须是整数' })
     .min(1, { error: '每单位片数至少为1' })
     .max(10000, { error: '每单位片数不能超过10000' })
     .optional(),
 
   weight: z
-    .number({
-      invalid_type_error: '重量必须是数字',
-    })
+    .number()
     .min(0.01, { error: '重量必须大于0' })
     .max(10000, { error: '重量不能超过10000kg' })
     .optional(),

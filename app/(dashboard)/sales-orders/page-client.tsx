@@ -7,6 +7,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { ERPSalesOrderList } from '@/components/sales-orders/erp-sales-order-list';
 import { SalesOrderPageHeader } from '@/components/sales-orders/sales-order-page-header';
 import type { SalesOrderQueryParams } from '@/lib/types/sales-order';
+import { logger } from '@/lib/utils/console-logger';
 
 interface SalesOrdersPageClientProps {
   initialParams: SalesOrderQueryParams;
@@ -192,7 +193,12 @@ export function SalesOrdersPageClient({
           overrides.startDate = startDate;
           overrides.endDate = endDate;
         } catch (error) {
-          console.error('❌ 解析日期范围失败:', error);
+          logger.error(
+            'dashboard:sales-orders:page-client',
+            '解析日期范围失败',
+            error,
+            { rawValue: value }
+          );
         }
       }
 

@@ -512,8 +512,8 @@ export function BatchSpecificationPageClient({
                     productCode: editingSpec.product?.code,
                     batchNumber: editingSpec.batchNumber,
                     piecesPerUnit: editingSpec.piecesPerUnit,
-                    weight: editingSpec.weight,
-                    thickness: editingSpec.thickness,
+                    weight: editingSpec.weight ?? undefined,
+                    thickness: editingSpec.thickness ?? undefined,
                   }
                 : undefined
             }

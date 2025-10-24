@@ -89,7 +89,10 @@ export function TransferProductSelector({
     staleTime: 5 * 60 * 1000, // 5分钟缓存
   });
 
-  const products = productsResponse?.data || [];
+  const products = React.useMemo(
+    () => productsResponse?.data ?? [],
+    [productsResponse]
+  );
   const selectedProduct = products.find(product => product.id === value);
 
   // 过滤产品列表

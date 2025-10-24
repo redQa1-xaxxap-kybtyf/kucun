@@ -54,7 +54,10 @@ export default function StorageSettingsPage() {
       if (!result.success) {
         throw new Error(result.error || '获取存储配置失败');
       }
-      return result.data!;
+      if (!result.data) {
+        throw new Error('获取存储配置失败：返回数据为空');
+      }
+      return result.data;
     },
   });
 
@@ -111,7 +114,10 @@ export default function StorageSettingsPage() {
       if (!result.success) {
         throw new Error(result.error || '连接测试失败');
       }
-      return result.data!;
+      if (!result.data) {
+        throw new Error('连接测试失败：返回数据为空');
+      }
+      return result.data;
     },
     onSuccess: data => {
       setTestResult(data);

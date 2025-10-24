@@ -51,6 +51,7 @@ import {
   DEFAULT_PAYMENT_STATUSES,
 } from '@/lib/types/payment';
 import { cn } from '@/lib/utils';
+import { formatPaymentDateTime } from '@/lib/utils/datetime';
 
 // 使用T11移动端组件
 
@@ -307,7 +308,10 @@ const PaymentList = React.forwardRef<HTMLDivElement, PaymentListProps>(
                   {payment.paymentNumber}
                 </div>
                 <div className="text-muted-foreground mt-1 text-xs">
-                  {format(new Date(payment.paymentDate), 'yyyy-MM-dd HH:mm')}
+                  {formatPaymentDateTime(
+                    payment.paymentDate,
+                    payment.createdAt
+                  )}
                 </div>
               </div>
               <Badge

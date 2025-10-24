@@ -5,6 +5,7 @@ import {
   type MutableRefObject,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from 'react';
@@ -37,13 +38,17 @@ function useStubbedChannel<TEvent>(
 ): WebSocketConnectionState {
   const [isConnected, setIsConnected] = useState(false);
   const handlerRef = useHandlerRef(handler);
+  const depsKey = useMemo(
+    () => deps.map(dep => String(dep)).join('|'),
+    [deps]
+  );
 
   useEffect(() => {
     setIsConnected(true);
     return () => {
       setIsConnected(false);
     };
-  }, deps);
+  }, [depsKey]);
 
   useEffect(() => {
     if (!handlerRef.current) {

@@ -4,6 +4,7 @@ import { Bug, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
+import { logger } from '@/lib/utils/console-logger';
 
 interface DebugLog {
   timestamp: string;
@@ -26,11 +27,11 @@ export function DebugPanel() {
       return;
     }
 
-    // 保存原始的控制台方法
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-    const originalInfo = console.info;
+    // 保存原始的 logger 方法
+    const originalDebug = logger.debug.bind(logger) as typeof logger.debug;
+    const originalInfo = logger.info.bind(logger) as typeof logger.info;
+    const originalWarn = logger.warn.bind(logger) as typeof logger.warn;
+    const originalError = logger.error.bind(logger) as typeof logger.error;
 
     // 添加日志的辅助函数
     const addLog = (type: DebugLog['type'], args: ReadonlyArray<unknown>) => {
@@ -60,37 +61,27 @@ export function DebugPanel() {
       ]);
     };
 
-    // 拦截控制台方法
-    console.log = (...args: unknown[]) => {
-      const typedArgs = args as Parameters<typeof console.log>;
-      originalLog(...typedArgs);
-      addLog('log', args);
-    };
+    const wrapLogger =
+      <T extends DebugLog['type'], Fn extends (...args: any[]) => void>(
+        level: T,
+        original: Fn
+      ) =>
+      (...args: Parameters<Fn>) => {
+        original(...args);
+        addLog(level, args);
+      };
 
-    console.error = (...args: unknown[]) => {
-      const typedArgs = args as Parameters<typeof console.error>;
-      originalError(...typedArgs);
-      addLog('error', args);
-    };
-
-    console.warn = (...args: unknown[]) => {
-      const typedArgs = args as Parameters<typeof console.warn>;
-      originalWarn(...typedArgs);
-      addLog('warn', args);
-    };
-
-    console.info = (...args: unknown[]) => {
-      const typedArgs = args as Parameters<typeof console.info>;
-      originalInfo(...typedArgs);
-      addLog('info', args);
-    };
+    logger.debug = wrapLogger('log', originalDebug) as typeof logger.debug;
+    logger.info = wrapLogger('info', originalInfo) as typeof logger.info;
+    logger.warn = wrapLogger('warn', originalWarn) as typeof logger.warn;
+    logger.error = wrapLogger('error', originalError) as typeof logger.error;
 
     // 清理函数
     return () => {
-      console.log = originalLog;
-      console.error = originalError;
-      console.warn = originalWarn;
-      console.info = originalInfo;
+      logger.debug = originalDebug;
+      logger.info = originalInfo;
+      logger.warn = originalWarn;
+      logger.error = originalError;
     };
   }, []);
 

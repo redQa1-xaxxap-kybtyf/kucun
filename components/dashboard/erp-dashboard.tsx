@@ -36,6 +36,7 @@ import type {
 } from '@/lib/types/dashboard';
 import type { FactoryShipmentStatus } from '@/lib/types/factory-shipment';
 import { cn } from '@/lib/utils';
+import { logger } from '@/lib/utils/console-logger';
 
 /**
  * 仪表盘数据类型定义
@@ -332,11 +333,13 @@ export function ERPDashboard({
         setDashboardData(transformedData);
       } else {
         // 如果API数据不可用，设置为null，显示加载状态
-        console.warn('仪表盘API数据不可用');
+        logger.warn('dashboard:erp', '仪表盘API数据不可用');
         setDashboardData(null);
       }
     } catch (error) {
-      console.error('加载仪表盘数据失败:', error);
+      logger.error('dashboard:erp', '加载仪表盘数据失败', error, {
+        action: 'loadDashboardData',
+      });
       // 错误时设置为null，显示错误状态
       setDashboardData(null);
     }
@@ -375,7 +378,9 @@ export function ERPDashboard({
         );
       }
     } catch (error) {
-      console.error('加载订单数据失败:', error);
+      logger.error('dashboard:erp', '加载订单数据失败', error, {
+        action: 'loadSalesOrderSummary',
+      });
     } finally {
       setIsLoadingOrders(false);
     }
@@ -394,7 +399,9 @@ export function ERPDashboard({
       // 同时刷新订单数据
       await loadOrdersData();
     } catch (error) {
-      console.error('刷新仪表盘数据失败:', error);
+      logger.error('dashboard:erp', '刷新仪表盘数据失败', error, {
+        action: 'refreshDashboard',
+      });
     } finally {
       setIsRefreshing(false);
     }
